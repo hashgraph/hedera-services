@@ -44,15 +44,11 @@ import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
-import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.PlatformConstructor;
-import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
-import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.intake.ChatterEventMapper;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.gossip.AbstractGossip;
@@ -65,7 +61,6 @@ import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.peer.PeerInstance;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
-import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
@@ -95,7 +90,6 @@ public class ChatterGossip extends AbstractGossip {
     private final ReconnectController reconnectController;
     private final ChatterCore<GossipEvent> chatterCore;
     private final List<StoppableThread> chatterThreads = new LinkedList<>();
-    private final ChatterEventMapper chatterEventMapper = new ChatterEventMapper();
     private final SequenceCycle<GossipEvent> intakeCycle;
 
     /**
@@ -119,14 +113,10 @@ public class ChatterGossip extends AbstractGossip {
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
-     * @param freezeManager                 handles freezes
-     * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
      * @param stateManagementComponent      manages the lifecycle of the state
      * @param eventValidator                validates events, and passes valid events along the intake pipeline
      * @param eventObserverDispatcher       the object used to wire event intake
-     * @param eventMapper                   a data structure used to track the most recent event from each node
-     * @param eventIntakeMetrics            metrics for event intake
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
      * @param platformStatusManager         the platform status manager
@@ -147,14 +137,10 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
-            @NonNull final FreezeManager freezeManager,
-            @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
             @NonNull final EventValidator eventValidator,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
-            @NonNull final EventMapper eventMapper,
-            @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final PlatformStatusManager platformStatusManager,
@@ -169,12 +155,8 @@ public class ChatterGossip extends AbstractGossip {
                 selfId,
                 appVersion,
                 intakeQueue,
-                freezeManager,
-                startUpEventFrozenManager,
                 swirldStateManager,
                 stateManagementComponent,
-                eventMapper,
-                eventIntakeMetrics,
                 syncMetrics,
                 eventObserverDispatcher,
                 platformStatusManager,
@@ -294,7 +276,6 @@ public class ChatterGossip extends AbstractGossip {
         thingsToStart.add(() -> chatterThreads.forEach(StoppableThread::start));
 
         eventObserverDispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
-        eventObserverDispatcher.addObserver(chatterEventMapper);
 
         clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
@@ -303,8 +284,6 @@ public class ChatterGossip extends AbstractGossip {
                         // eventLinker is not thread safe, so the intake thread needs to be paused while it's being
                         // cleared
                         Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
-                        Pair.of(eventMapper, "eventMapper"),
-                        Pair.of(chatterEventMapper, "chatterEventMapper"),
                         Pair.of(shadowGraph, "shadowGraph")));
     }
 
@@ -324,7 +303,7 @@ public class ChatterGossip extends AbstractGossip {
     protected CriticalQuorum buildCriticalQuorum() {
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         return new CriticalQuorumImpl(
-                platformContext.getMetrics(), selfId, addressBook, false, chatterConfig.criticalQuorumSoftening());
+                platformContext.getMetrics(), selfId, addressBook, chatterConfig.criticalQuorumSoftening());
     }
 
     /**
@@ -354,7 +333,6 @@ public class ChatterGossip extends AbstractGossip {
      */
     @Override
     public void loadFromSignedState(@NonNull SignedState signedState) {
-        chatterEventMapper.loadFromSignedState(signedState);
         chatterCore.loadFromSignedState(signedState);
     }
 

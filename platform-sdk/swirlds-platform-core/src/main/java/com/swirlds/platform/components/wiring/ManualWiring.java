@@ -31,7 +31,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.payloads.FatalErrorPayload;
-import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
@@ -66,7 +65,6 @@ public class ManualWiring {
     private final PlatformContext platformContext;
     private final ThreadManager threadManager;
     private final AddressBook addressBook;
-    private final FreezeManager freezeManager;
     private final Shutdown shutdown;
     /** A list of all formal platform components */
     private final List<PlatformComponent> platformComponentList = new ArrayList<>();
@@ -80,14 +78,11 @@ public class ManualWiring {
     private final QueueThread<Runnable> asyncLatestCompleteStateQueue;
 
     public ManualWiring(
-            final PlatformContext platformContext,
-            final ThreadManager threadManager,
-            final AddressBook addressBook,
-            final FreezeManager freezeManager) {
+            final PlatformContext platformContext, final ThreadManager threadManager, final AddressBook addressBook) {
+
         this.platformContext = platformContext;
         this.threadManager = threadManager;
         this.addressBook = addressBook;
-        this.freezeManager = freezeManager;
         this.wiringMetrics = new WiringMetrics(platformContext.getMetrics());
         this.shutdown = new Shutdown();
 
@@ -183,13 +178,7 @@ public class ManualWiring {
         });
 
         // FUTURE WORK: make the call to the app communication component asynchronous
-        stateManagementComponentFactory.stateToDiskConsumer((ss, path, success) -> {
-            freezeManager.stateToDisk(ss, path, success);
-            appCommunicationComponent.stateToDiskAttempt(ss, path, success);
-        });
-
-        stateManagementComponentFactory.stateLacksSignaturesConsumer(freezeManager::stateLacksSignatures);
-        stateManagementComponentFactory.newCompleteStateConsumer(freezeManager::stateHasEnoughSignatures);
+        stateManagementComponentFactory.stateToDiskConsumer(appCommunicationComponent);
 
         stateManagementComponentFactory.prioritySystemTransactionConsumer(prioritySystemTransactionSubmitter);
         stateManagementComponentFactory.haltRequestedConsumer(haltRequestedConsumer);

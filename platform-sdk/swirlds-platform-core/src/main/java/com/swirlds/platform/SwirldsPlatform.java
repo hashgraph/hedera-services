@@ -76,7 +76,6 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.components.EventIntake;
-import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
@@ -93,7 +92,6 @@ import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
-import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.event.preconsensus.AsyncPreconsensusEventWriter;
@@ -156,7 +154,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -180,13 +177,6 @@ public class SwirldsPlatform implements Platform, Startable {
      * value
      */
     private final NodeId selfId;
-
-    /** A type used by Hashgraph, Statistics, and SyncUtils. Only Hashgraph modifies this type instance. */
-    private final EventMapper eventMapper;
-    /** The platforms freeze manager */
-    private final FreezeManager freezeManager;
-    /** is used for pausing event creation for a while at start up */
-    private final StartUpEventFrozenManager startUpEventFrozenManager;
     /**
      * The shadow graph manager. This wraps a shadow graph, which is an Event graph that adds child pointers to the
      * Hashgraph Event graph. Used for gossiping.
@@ -357,8 +347,6 @@ public class SwirldsPlatform implements Platform, Startable {
         this.selfId = id;
         this.currentAddressBook = initialState.getAddressBook();
 
-        this.eventMapper = new EventMapper(platformContext.getMetrics(), selfId);
-
         platformStatusManager =
                 components.add(new PlatformStatusManager(platformContext, time, threadManager, notificationEngine));
 
@@ -384,13 +372,10 @@ public class SwirldsPlatform implements Platform, Startable {
 
         this.crypto = crypto;
 
-        startUpEventFrozenManager = new StartUpEventFrozenManager(metrics, Instant::now);
-        freezeManager = new FreezeManager();
-        FreezeMetrics.registerFreezeMetrics(metrics, freezeManager, startUpEventFrozenManager);
         EventCounter.registerEventCounterMetrics(metrics);
 
         // Manually wire components for now.
-        final ManualWiring wiring = new ManualWiring(platformContext, threadManager, getAddressBook(), freezeManager);
+        final ManualWiring wiring = new ManualWiring(platformContext, threadManager, getAddressBook());
         metrics.addUpdater(wiring::updateMetrics);
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
@@ -484,7 +469,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 preconsensusSystemTransactionManager,
                 consensusSystemTransactionManager,
                 platformStatusManager,
-                freezeManager::isFreezeStarted,
                 initialState.getState(),
                 appVersion);
 
@@ -503,7 +487,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventStreamManager,
                 stateHashSignQueue,
                 preconsensusEventWriter::waitUntilDurable,
-                freezeManager::freezeStarted,
                 platformStatusManager,
                 stateManagementComponent::roundAppliedToState,
                 appVersion));
@@ -514,7 +497,6 @@ public class SwirldsPlatform implements Platform, Startable {
         final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
                 new ShadowGraphEventObserver(shadowGraph),
                 consensusRoundHandler,
-                eventMapper,
                 addedEventMetrics,
                 eventIntakeMetrics,
                 (PreConsensusEventObserver) event -> {
@@ -546,7 +528,7 @@ public class SwirldsPlatform implements Platform, Startable {
             intakeEventCounter = new NoOpIntakeEventCounter();
         }
 
-        eventLinker = buildEventLinker(time, isDuplicateChecks, intakeEventCounter);
+        eventLinker = buildEventLinker(isDuplicateChecks, intakeEventCounter);
 
         final PhaseTimer<EventIntakePhase> eventIntakePhaseTimer = new PhaseTimerBuilder<>(
                         platformContext, time, "platform", EventIntakePhase.class)
@@ -610,7 +592,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 intakeQueue,
                 eventObserverDispatcher,
                 platformStatusManager::getCurrentStatus,
-                startUpEventFrozenManager,
                 latestReconnectRound::get,
                 stateManagementComponent::getLatestSavedStateRound);
 
@@ -636,14 +617,10 @@ public class SwirldsPlatform implements Platform, Startable {
                 emergencyRecoveryManager,
                 consensusRef,
                 intakeQueue,
-                freezeManager,
-                startUpEventFrozenManager,
                 swirldStateManager,
                 stateManagementComponent,
                 eventValidator,
                 eventObserverDispatcher,
-                eventMapper,
-                eventIntakeMetrics,
                 syncMetrics,
                 eventLinker,
                 platformStatusManager,
@@ -666,7 +643,7 @@ public class SwirldsPlatform implements Platform, Startable {
             stateManagementComponent.stateToLoad(initialState, SourceOfSignedState.DISK);
             consensusRoundHandler.loadDataFromSignedState(initialState, false);
 
-            loadStateIntoConsensusAndEventMapper(initialState);
+            loadStateIntoConsensus(initialState);
             loadStateIntoEventCreator(initialState);
             eventLinker.loadFromSignedState(initialState);
 
@@ -685,11 +662,7 @@ public class SwirldsPlatform implements Platform, Startable {
             });
         }
 
-        final Clearable pauseEventCreation = () -> {
-            if (tipsetEventCreator != null) {
-                tipsetEventCreator.pauseEventCreation();
-            }
-        };
+        final Clearable pauseEventCreation = tipsetEventCreator::pauseEventCreation;
 
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
@@ -827,11 +800,11 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
-     * Loads the signed state data into consensus and event mapper
+     * Loads the signed state data into consensus
      *
      * @param signedState the state to get the data from
      */
-    private void loadStateIntoConsensusAndEventMapper(@NonNull final SignedState signedState) {
+    private void loadStateIntoConsensus(@NonNull final SignedState signedState) {
         Objects.requireNonNull(signedState);
 
         consensusRef.set(new ConsensusImpl(
@@ -852,17 +825,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     consensusRef.get().getMinRoundGeneration());
         }
 
-        // Data that is needed for the intake system to work
-        for (final EventImpl e : signedState.getEvents()) {
-            eventMapper.eventAdded(e);
-        }
-
         gossip.loadFromSignedState(signedState);
-
-        logger.info(
-                STARTUP.getMarker(),
-                "Last known events after restart are {}",
-                eventMapper.getMostRecentEventsByEachCreator());
     }
 
     /**
@@ -908,7 +871,7 @@ public class SwirldsPlatform implements Platform, Startable {
             latestReconnectRound.set(signedState.getRound());
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
 
-            loadStateIntoConsensusAndEventMapper(signedState);
+            loadStateIntoConsensus(signedState);
             loadStateIntoEventCreator(signedState);
             // eventLinker is not thread safe, which is not a problem regularly because it is only used by a single
             // thread. after a reconnect, it needs to load the minimum generation from a state on a different thread,
@@ -956,7 +919,6 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     private void haltRequested(final String reason) {
         logger.error(EXCEPTION.getMarker(), "System halt requested. Reason: {}", reason);
-        freezeManager.freezeEventCreation();
         gossip.stop();
     }
 
@@ -965,7 +927,6 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     @NonNull
     private EventLinker buildEventLinker(
-            @NonNull final Time time,
             @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
@@ -974,29 +935,20 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
-        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
-        if (chatterConfig.useChatter() || eventConfig.forceUseOfOrphanBuffer()) {
-            final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
-                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                    parentFinder,
-                    chatterConfig.futureGenerationLimit(),
-                    intakeEventCounter);
-            metrics.getOrCreate(
-                    new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
-                            .withDescription("the number of events without parents buffered")
-                            .withFormat("%d"));
+        final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
+                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                parentFinder,
+                chatterConfig.futureGenerationLimit(),
+                intakeEventCounter);
+        metrics.getOrCreate(
+                new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
+                        .withDescription("the number of events without parents buffered")
+                        .withFormat("%d"));
 
-            isDuplicateChecks.add(orphanBuffer::isOrphan);
+        isDuplicateChecks.add(orphanBuffer::isOrphan);
 
-            return orphanBuffer;
-        } else {
-            return new InOrderLinker(
-                    time,
-                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                    parentFinder,
-                    eventMapper::getMostRecentEvent);
-        }
+        return orphanBuffer;
     }
 
     /**
@@ -1051,7 +1003,6 @@ public class SwirldsPlatform implements Platform, Startable {
         Optional.of(tipsetEventCreator).ifPresent(Startable::start);
 
         replayPreconsensusEvents();
-        configureStartupEventFreeze();
         gossip.start();
     }
 
@@ -1099,21 +1050,6 @@ public class SwirldsPlatform implements Platform, Startable {
 
         platformStatusManager.submitStatusAction(
                 new DoneReplayingEventsAction(Time.getCurrent().now()));
-    }
-
-    /**
-     * We don't want to create events right after starting up. Configure that pause in event creation.
-     */
-    private void configureStartupEventFreeze() {
-        final int freezeSecondsAfterStartup = platformContext
-                .getConfiguration()
-                .getConfigData(BasicConfig.class)
-                .freezeSecondsAfterStartup();
-        if (freezeSecondsAfterStartup > 0) {
-            final Instant startUpEventFrozenEndTime = Instant.now().plusSeconds(freezeSecondsAfterStartup);
-            startUpEventFrozenManager.setStartUpEventFrozenEndTime(startUpEventFrozenEndTime);
-            logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
-        }
     }
 
     /**
