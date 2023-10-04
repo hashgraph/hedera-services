@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package contract;
+package common;
 
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
@@ -76,6 +76,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.config.api.Configuration;
+import contract.ContractScaffoldingComponent;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -89,7 +90,7 @@ import java.util.function.Function;
 import javax.inject.Singleton;
 
 /**
- * A helper module for Dagger2 to instantiate an {@link ScaffoldingComponent}; provides
+ * A helper module for Dagger2 to instantiate an {@link ContractScaffoldingComponent}; provides
  * any bindings not already provided by {@link HandlersInjectionModule}. Most of the
  * bindings in this module are the production implementations of their interfaces, but
  * some are not. The exceptions are,
@@ -103,7 +104,7 @@ import javax.inject.Singleton;
  * since the persistence layer and some "environment" details are faked.
  */
 @Module
-public interface ScaffoldingModule {
+public interface BaseScaffoldingModule {
     @Provides
     @Singleton
     static HederaState provideState() {

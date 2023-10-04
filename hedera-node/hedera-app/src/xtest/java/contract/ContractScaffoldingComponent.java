@@ -16,29 +16,21 @@
 
 package contract;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.contract.impl.exec.processors.HtsTranslatorsModule;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.config.api.Configuration;
+import common.BaseScaffoldingComponent;
+import common.BaseScaffoldingModule;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -62,29 +54,14 @@ import javax.inject.Singleton;
  * {@link Inject}-able constructors, this class will need to be
  * updated, either with a new {@link dagger.Module} that provides
  * the new bindings; or with additions to the existing
- * {@link ScaffoldingModule}.
+ * {@link BaseScaffoldingModule}.
  */
 @Singleton
-@Component(modules = {HandlersInjectionModule.class, ScaffoldingModule.class, HtsTranslatorsModule.class})
-public interface ScaffoldingComponent {
+@Component(modules = {HandlersInjectionModule.class, BaseScaffoldingModule.class, HtsTranslatorsModule.class})
+public interface ContractScaffoldingComponent extends BaseScaffoldingComponent {
     @Component.Factory
     interface Factory {
-        ScaffoldingComponent create(@BindsInstance Metrics metrics);
+        ContractScaffoldingComponent create(@BindsInstance Metrics metrics);
     }
-
-    HederaState hederaState();
-
-    Configuration config();
-
-    WorkingStateAccessor workingStateAccessor();
-
-    Function<TransactionBody, HandleContext> txnContextFactory();
-
-    BiFunction<Query, AccountID, QueryContext> queryContextFactory();
-
-    FeeManager feeManager();
-
-    ExchangeRateManager exchangeRateManager();
-
     List<HtsCallTranslator> callTranslators();
 }
