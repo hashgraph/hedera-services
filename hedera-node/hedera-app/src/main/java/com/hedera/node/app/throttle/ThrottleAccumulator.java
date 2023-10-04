@@ -78,9 +78,9 @@ import org.apache.logging.log4j.Logger;
  * Meant to be used in single-threaded context only as part of the {@link com.hedera.node.app.workflows.handle.HandleWorkflow}.
  */
 @Singleton
-public class GeneralThrottleAccumulator {
+public class ThrottleAccumulator {
 
-    private static final Logger log = LogManager.getLogger(GeneralThrottleAccumulator.class);
+    private static final Logger log = LogManager.getLogger(ThrottleAccumulator.class);
     private static final Set<HederaFunctionality> GAS_THROTTLED_FUNCTIONS =
             EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
     private static final int CAPACITY_SPLIT = 1;
@@ -91,7 +91,7 @@ public class GeneralThrottleAccumulator {
     private GasLimitDeterministicThrottle gasThrottle;
     private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 
-    public GeneralThrottleAccumulator(@NonNull final ConfigProvider configProvider) {
+    public ThrottleAccumulator(@NonNull final ConfigProvider configProvider) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
     }
 

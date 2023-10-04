@@ -66,7 +66,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
-import com.hedera.node.app.throttle.HapiThrottling;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -124,7 +124,7 @@ class IngestCheckerTest extends AppTestBase {
     private Authorizer authorizer;
 
     @Mock(strictness = LENIENT)
-    private HapiThrottling hapiThrottling;
+    private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     private DeduplicationCache deduplicationCache;
 
@@ -179,7 +179,7 @@ class IngestCheckerTest extends AppTestBase {
                 dispatcher,
                 feeManager,
                 authorizer,
-                hapiThrottling);
+                synchronizedThrottleAccumulator);
     }
 
     @Nested
@@ -228,7 +228,7 @@ class IngestCheckerTest extends AppTestBase {
                 dispatcher,
                 feeManager,
                 authorizer,
-                hapiThrottling);
+                synchronizedThrottleAccumulator);
 
         // Then the checker should throw a PreCheckException
         assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
@@ -318,7 +318,8 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("When the transaction is throttled, the transaction should be rejected")
         void testThrottleFails() {
             // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
-            when(hapiThrottling.shouldThrottle(transactionInfo, state)).thenReturn(true);
+            when(synchronizedThrottleAccumulator.shouldThrottle(transactionInfo, state))
+                    .thenReturn(true);
 
             // When the transaction is submitted
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
@@ -330,7 +331,7 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from HapiThrottling, the exception is bubbled up")
         void randomException() {
             // Given a HapiThrottling that will throw a RuntimeException
-            when(hapiThrottling.shouldThrottle(transactionInfo, state))
+            when(synchronizedThrottleAccumulator.shouldThrottle(transactionInfo, state))
                     .thenThrow(new RuntimeException("shouldThrottle exception"));
 
             // When the transaction is submitted, then the exception is bubbled up

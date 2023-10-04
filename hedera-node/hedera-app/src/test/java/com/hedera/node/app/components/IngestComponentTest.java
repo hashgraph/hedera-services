@@ -34,8 +34,8 @@ import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.fees.congestion.ThrottleMultiplierSource;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
-import com.hedera.node.app.throttle.GeneralThrottleAccumulator;
-import com.hedera.node.app.throttle.HapiThrottling;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.throttle.impl.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.version.HederaSoftwareVersion;
@@ -72,7 +72,7 @@ class IngestComponentTest {
     private Metrics metrics;
 
     @Mock
-    private HapiThrottling hapiThrottling;
+    private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     private HederaInjectionComponent app;
 
@@ -96,32 +96,32 @@ class IngestComponentTest {
                         SemanticVersion.newBuilder().major(2).build()));
 
         final var configProvider = new ConfigProviderImpl(false);
-        final var handleThrottling = new GeneralThrottleAccumulator(configProvider);
+        final var handleThrottling = new ThrottleAccumulator(configProvider);
         final var monoMultiplierSources = new MonoMultiplierSources(
-                new ThrottleMultiplierSource(null, null, null, null, null, null, null),
-                new ThrottleMultiplierSource(null, null, null, null, null, null, null));
+            new ThrottleMultiplierSource(null, null, null, null, null, null, null),
+            new ThrottleMultiplierSource(null, null, null, null, null, null, null));
 
         final var exchangeRateManager = new ExchangeRateManager(configProvider);
 
         final var throttleManager = new ThrottleManager();
         app = DaggerHederaInjectionComponent.builder()
-                .initTrigger(InitTrigger.GENESIS)
-                .platform(platform)
-                .crypto(CryptographyHolder.get())
-                .bootstrapProps(new BootstrapProperties())
-                .configuration(configProvider)
-                .systemFileUpdateFacility(new SystemFileUpdateFacility(
-                        configProvider, throttleManager, exchangeRateManager, monoMultiplierSources, handleThrottling))
-                .networkUtilizationManager(new NetworkUtilizationManagerImpl(handleThrottling, monoMultiplierSources))
-                .throttleManager(throttleManager)
-                .self(selfNodeInfo)
-                .maxSignedTxnSize(1024)
-                .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
-                .servicesRegistry(Set::of)
-                .instantSource(InstantSource.system())
-                .exchangeRateManager(exchangeRateManager)
-                .genesisRecordsConsensusHook(mock(GenesisRecordsConsensusHook.class))
-                .hapiThrottling(hapiThrottling)
+            .initTrigger(InitTrigger.GENESIS)
+            .platform(platform)
+            .crypto(CryptographyHolder.get())
+            .bootstrapProps(new BootstrapProperties())
+            .configuration(configProvider)
+            .systemFileUpdateFacility(new SystemFileUpdateFacility(
+                configProvider, throttleManager, exchangeRateManager, monoMultiplierSources, handleThrottling))
+            .networkUtilizationManager(new NetworkUtilizationManagerImpl(handleThrottling, monoMultiplierSources))
+            .throttleManager(throttleManager)
+            .self(selfNodeInfo)
+            .maxSignedTxnSize(1024)
+            .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
+            .servicesRegistry(Set::of)
+            .instantSource(InstantSource.system())
+            .exchangeRateManager(exchangeRateManager)
+            .genesisRecordsConsensusHook(mock(GenesisRecordsConsensusHook.class))
+            .synchronizedThrottleAccumulator(synchronizedThrottleAccumulator)
                 .build();
 
         final var state = new FakeHederaState();

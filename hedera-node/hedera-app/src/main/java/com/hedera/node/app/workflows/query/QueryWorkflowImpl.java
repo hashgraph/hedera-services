@@ -47,7 +47,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.HapiThrottling;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
@@ -92,7 +92,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final Authorizer authorizer;
     private final ExchangeRateManager exchangeRateManager;
     private final FeeManager feeManager;
-    private final HapiThrottling hapiThrottling;
+    private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -109,7 +109,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param authorizer the {@link Authorizer} to check permissions and special privileges
      * @param exchangeRateManager the {@link ExchangeRateManager} to get the {@link ExchangeRateInfo}
      * @param feeManager the {@link FeeManager} to calculate the fees
-     * @param hapiThrottling the {@link HapiThrottling} that checks transaction should be throttled
+     * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -125,7 +125,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final Authorizer authorizer,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
-            @NonNull final HapiThrottling hapiThrottling) {
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
         this.stateAccessor = requireNonNull(stateAccessor, "stateAccessor must not be null");
         this.submissionManager = requireNonNull(submissionManager, "submissionManager must not be null");
         this.ingestChecker = requireNonNull(ingestChecker, "ingestChecker must not be null");
@@ -137,7 +137,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
-        this.hapiThrottling = requireNonNull(hapiThrottling, "hapiThrottling must not be null");
+        this.synchronizedThrottleAccumulator =
+                requireNonNull(synchronizedThrottleAccumulator, "hapiThrottling must not be null");
     }
 
     @Override
@@ -171,7 +172,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 3. Check query throttles
-            if (hapiThrottling.shouldThrottleQuery(
+            if (synchronizedThrottleAccumulator.shouldThrottleQuery(
                     query, HederaFunctionality.fromProtobufOrdinal(function.protoOrdinal()))) {
                 throw new PreCheckException(BUSY);
             }

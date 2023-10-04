@@ -41,7 +41,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.HapiThrottling;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -74,7 +74,7 @@ public final class IngestChecker {
     private final FeeManager feeManager;
     private final AccountID nodeAccount;
     private final Authorizer authorizer;
-    private final HapiThrottling hapiThrottling;
+    private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     /**
      * Constructor of the {@code IngestChecker}
@@ -87,7 +87,7 @@ public final class IngestChecker {
      * @param signatureVerifier the {@link SignatureVerifier} that verifies signature data
      * @param dispatcher the {@link TransactionDispatcher} that dispatches transactions
      * @param feeManager the {@link FeeManager} that manages {@link com.hedera.node.app.spi.fees.FeeCalculator}s
-     * @param hapiThrottling the {@link HapiThrottling} that checks transaction should be throttled
+     * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -102,7 +102,7 @@ public final class IngestChecker {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final FeeManager feeManager,
             @NonNull final Authorizer authorizer,
-            @NonNull final HapiThrottling hapiThrottling) {
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
         this.nodeAccount = requireNonNull(nodeAccount, "nodeAccount must not be null");
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus, "currentPlatformStatus must not be null");
         this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
@@ -113,7 +113,7 @@ public final class IngestChecker {
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
-        this.hapiThrottling = requireNonNull(hapiThrottling);
+        this.synchronizedThrottleAccumulator = requireNonNull(synchronizedThrottleAccumulator);
     }
 
     /**
@@ -166,7 +166,7 @@ public final class IngestChecker {
         }
 
         // 4. Check throttles
-        if (hapiThrottling.shouldThrottle(txInfo, state)) {
+        if (synchronizedThrottleAccumulator.shouldThrottle(txInfo, state)) {
             throw new PreCheckException(BUSY);
         }
 

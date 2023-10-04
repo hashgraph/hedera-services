@@ -70,7 +70,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.HapiThrottling;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
@@ -140,7 +140,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     private FeeManager feeManager;
 
     @Mock(strictness = LENIENT)
-    private HapiThrottling hapiThrottling;
+    private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     private VersionedConfiguration configuration;
     private Query query;
@@ -209,7 +209,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                 authorizer,
                 exchangeRateManager,
                 feeManager,
-                hapiThrottling);
+                synchronizedThrottleAccumulator);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -227,7 +227,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         authorizer,
                         exchangeRateManager,
                         feeManager,
-                        hapiThrottling))
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -241,7 +241,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         authorizer,
                         exchangeRateManager,
                         feeManager,
-                        hapiThrottling))
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -255,7 +255,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         authorizer,
                         exchangeRateManager,
                         feeManager,
-                        hapiThrottling))
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -269,7 +269,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         authorizer,
                         exchangeRateManager,
                         feeManager,
-                        hapiThrottling))
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -283,7 +283,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         authorizer,
                         exchangeRateManager,
                         feeManager,
-                        hapiThrottling))
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -297,7 +297,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         authorizer,
                         exchangeRateManager,
                         feeManager,
-                        hapiThrottling))
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -311,7 +311,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         authorizer,
                         exchangeRateManager,
                         feeManager,
-                        hapiThrottling))
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -325,7 +325,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         authorizer,
                         exchangeRateManager,
                         feeManager,
-                        hapiThrottling))
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -339,7 +339,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         authorizer,
                         exchangeRateManager,
                         feeManager,
-                        hapiThrottling))
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -353,7 +353,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         null,
                         exchangeRateManager,
                         feeManager,
-                        hapiThrottling))
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -367,7 +367,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         authorizer,
                         null,
                         feeManager,
-                        hapiThrottling))
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -548,7 +548,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Test
     void testThrottleFails() throws IOException {
         // given
-        when(hapiThrottling.shouldThrottleQuery(any(), eq(HederaFunctionality.FILE_GET_INFO)))
+        when(synchronizedThrottleAccumulator.shouldThrottleQuery(any(), eq(HederaFunctionality.FILE_GET_INFO)))
                 .thenReturn(true);
         final var responseBuffer = newEmptyBuffer();
 

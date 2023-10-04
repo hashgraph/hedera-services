@@ -42,8 +42,8 @@ import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.LedgerValidator;
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.throttle.HapiThrottling;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.DualStateUpdateFacility;
@@ -171,7 +171,7 @@ public interface HederaInjectionComponent {
         Builder genesisRecordsConsensusHook(GenesisRecordsConsensusHook genesisRecordsBuilder);
 
         @BindsInstance
-        Builder hapiThrottling(HapiThrottling hapiThrottling);
+        Builder synchronizedThrottleAccumulator(SynchronizedThrottleAccumulator synchronizedThrottleAccumulator);
 
         HederaInjectionComponent build();
     }

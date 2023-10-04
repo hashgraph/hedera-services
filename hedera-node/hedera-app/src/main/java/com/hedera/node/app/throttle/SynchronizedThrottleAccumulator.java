@@ -26,21 +26,20 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;
 
-public class HapiThrottling {
+public class SynchronizedThrottleAccumulator {
 
-    private final GeneralThrottleAccumulator generalThrottleAccumulator;
+    private final ThrottleAccumulator throttleAccumulator;
 
     @Inject
-    public HapiThrottling(GeneralThrottleAccumulator generalThrottleAccumulator) {
-        this.generalThrottleAccumulator =
-                requireNonNull(generalThrottleAccumulator, "generalThrottleAccumulator must not be null");
+    public SynchronizedThrottleAccumulator(ThrottleAccumulator throttleAccumulator) {
+        this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
     }
 
     public synchronized boolean shouldThrottle(@NonNull TransactionInfo txnInfo, HederaState state) {
-        return generalThrottleAccumulator.shouldThrottle(txnInfo, Instant.now(), state);
+        return throttleAccumulator.shouldThrottle(txnInfo, Instant.now(), state);
     }
 
     public synchronized boolean shouldThrottleQuery(Query query, HederaFunctionality queryFunction) {
-        return generalThrottleAccumulator.shouldThrottleQuery(queryFunction, Instant.now(), query);
+        return throttleAccumulator.shouldThrottleQuery(queryFunction, Instant.now(), query);
     }
 }

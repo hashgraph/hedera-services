@@ -25,7 +25,7 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.GeneralThrottleAccumulator;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -49,7 +49,7 @@ public class SystemFileUpdateFacility {
     private final ThrottleManager throttleManager;
     private final ExchangeRateManager exchangeRateManager;
     private final MonoMultiplierSources monoMultiplierSources;
-    private final GeneralThrottleAccumulator generalThrottleAccumulator;
+    private final ThrottleAccumulator throttleAccumulator;
 
     /**
      * Creates a new instance of this class.
@@ -61,13 +61,12 @@ public class SystemFileUpdateFacility {
             @NonNull final ThrottleManager throttleManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final MonoMultiplierSources monoMultiplierSources,
-            @NonNull final GeneralThrottleAccumulator generalThrottleAccumulator) {
+            @NonNull final ThrottleAccumulator throttleAccumulator) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.throttleManager = requireNonNull(throttleManager, " throttleManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.monoMultiplierSources = requireNonNull(monoMultiplierSources, "multiplierSources must not be null");
-        this.generalThrottleAccumulator =
-                requireNonNull(generalThrottleAccumulator, "generalThrottleAccumulator must not be null");
+        this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
     }
 
     /**
@@ -118,7 +117,7 @@ public class SystemFileUpdateFacility {
                 exchangeRateManager.update(FileUtilities.getFileContent(state, fileID), payer);
             } else if (fileNum == config.networkProperties()) {
                 configProvider.update(FileUtilities.getFileContent(state, fileID));
-                generalThrottleAccumulator.applyGasConfig();
+                throttleAccumulator.applyGasConfig();
 
                 // Updating the multiplier source to use the new gas throttle
                 // values that are coming from the network properties
@@ -127,7 +126,7 @@ public class SystemFileUpdateFacility {
                 logger.error("Update of HAPI permissions not implemented");
             } else if (fileNum == config.throttleDefinitions()) {
                 throttleManager.update(FileUtilities.getFileContent(state, fileID));
-                generalThrottleAccumulator.rebuildFor(throttleManager.throttleDefinitions());
+                throttleAccumulator.rebuildFor(throttleManager.throttleDefinitions());
 
                 // Updating the multiplier source to use the new throttle definitions
                 monoMultiplierSources.resetExpectations();

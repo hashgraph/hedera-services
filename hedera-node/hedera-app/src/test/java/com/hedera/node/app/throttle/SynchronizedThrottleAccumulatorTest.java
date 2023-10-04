@@ -33,19 +33,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HapiThrottlingTest {
+class SynchronizedThrottleAccumulatorTest {
 
     @Mock
-    private GeneralThrottleAccumulator generalThrottleAccumulator;
+    private ThrottleAccumulator throttleAccumulator;
 
     @Mock
     private TransactionInfo transactionInfo;
 
-    HapiThrottling subject;
+    SynchronizedThrottleAccumulator subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HapiThrottling(generalThrottleAccumulator);
+        subject = new SynchronizedThrottleAccumulator(throttleAccumulator);
     }
 
     @Test
@@ -57,7 +57,7 @@ class HapiThrottlingTest {
         subject.shouldThrottle(transactionInfo, state);
 
         // then
-        verify(generalThrottleAccumulator, times(1)).shouldThrottle(eq(transactionInfo), any(), eq(state));
+        verify(throttleAccumulator, times(1)).shouldThrottle(eq(transactionInfo), any(), eq(state));
     }
 
     @Test
@@ -69,7 +69,7 @@ class HapiThrottlingTest {
         subject.shouldThrottleQuery(query, HederaFunctionality.CONTRACT_CREATE);
 
         // then
-        verify(generalThrottleAccumulator, times(1))
+        verify(throttleAccumulator, times(1))
                 .shouldThrottleQuery(eq(HederaFunctionality.CONTRACT_CREATE), any(), eq(query));
     }
 }
