@@ -190,9 +190,10 @@ public final class Hedera implements SwirldMain {
         requireNonNull(constructableRegistry);
 
         // Print welcome message
-        logger.info(HEDERA);
-        logger.info("Welcome to Hedera! Developed with ❤\uFE0F by the Open Source Community. "
-                + "https://github.com/hashgraph/hedera-services");
+        logger.info(
+                "\n{}\n\nWelcome to Hedera! Developed with ❤\uFE0F by the Open Source Community. "
+                        + "https://github.com/hashgraph/hedera-services\n",
+                HEDERA);
 
         // Load the bootstrap configuration. These config values are NOT stored in state, so we don't need to have
         // state up and running for getting their values. We use this bootstrap config only in this constructor.
