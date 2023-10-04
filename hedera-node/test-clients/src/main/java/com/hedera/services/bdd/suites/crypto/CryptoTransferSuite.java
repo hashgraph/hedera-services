@@ -1333,53 +1333,47 @@ public class CryptoTransferSuite extends HapiSuite {
                                                 Pair.of(firstRoyaltyCollector, firstFungible),
                                                 Pair.of(secondRoyaltyCollector, firstFungible),
                                                 Pair.of(firstRoyaltyCollector, secondFungible),
-                                                Pair.of(secondRoyaltyCollector, secondFungible)))))
-                        //                        getAccountInfo(PARTY)
-                        //                                .has(accountWith()
-                        //                                        .newAssociationsFromSnapshot(
-                        //                                                PARTY,
-                        //                                                List.of(
-                        //                                                        relationshipWith(uniqueWithRoyalty)
-                        //                                                                .balance(0),
-                        //                                                        relationshipWith(firstFungible)
-                        //                                                                .balance(netExchangeAmount),
-                        //                                                        relationshipWith(secondFungible)
-                        //
-                        // .balance(netExchangeAmount)))),
-                        //                        getAccountInfo(COUNTERPARTY)
-                        //                                .has(accountWith()
-                        //                                        .newAssociationsFromSnapshot(
-                        //                                                PARTY,
-                        //                                                List.of(
-                        //                                                        relationshipWith(uniqueWithRoyalty)
-                        //                                                                .balance(1),
-                        //                                                        relationshipWith(firstFungible)
-                        //                                                                .balance(1000L -
-                        // exchangeAmount),
-                        //                                                        relationshipWith(secondFungible)
-                        //                                                                .balance(1000L -
-                        // exchangeAmount)))),
-                        //                        getAccountInfo(firstRoyaltyCollector)
-                        //                                .has(accountWith()
-                        //                                        .newAssociationsFromSnapshot(
-                        //                                                PARTY,
-                        //                                                List.of(
-                        //                                                        relationshipWith(firstFungible)
-                        //                                                                .balance(exchangeAmount / 12),
-                        //                                                        relationshipWith(secondFungible)
-                        //                                                                .balance(exchangeAmount /
-                        // 12)))),
-                        //                        getAccountInfo(secondRoyaltyCollector)
-                        //                                .has(accountWith()
-                        //                                        .newAssociationsFromSnapshot(
-                        //                                                PARTY,
-                        //                                                List.of(
-                        //                                                        relationshipWith(firstFungible)
-                        //                                                                .balance(exchangeAmount / 15),
-                        //                                                        relationshipWith(secondFungible)
-                        //                                                                .balance(exchangeAmount /
-                        // 15))))
-                        );
+                                                Pair.of(secondRoyaltyCollector, secondFungible))))),
+                        getAccountInfo(PARTY)
+                                .has(accountWith()
+                                        .newAssociationsFromSnapshot(
+                                                PARTY,
+                                                List.of(
+                                                        relationshipWith(uniqueWithRoyalty)
+                                                                .balance(0),
+                                                        relationshipWith(firstFungible)
+                                                                .balance(netExchangeAmount),
+                                                        relationshipWith(secondFungible)
+                                                                .balance(netExchangeAmount)))),
+                        getAccountInfo(COUNTERPARTY)
+                                .has(accountWith()
+                                        .newAssociationsFromSnapshot(
+                                                PARTY,
+                                                List.of(
+                                                        relationshipWith(uniqueWithRoyalty)
+                                                                .balance(1),
+                                                        relationshipWith(firstFungible)
+                                                                .balance(1000L - exchangeAmount),
+                                                        relationshipWith(secondFungible)
+                                                                .balance(1000L - exchangeAmount)))),
+                        getAccountInfo(firstRoyaltyCollector)
+                                .has(accountWith()
+                                        .newAssociationsFromSnapshot(
+                                                PARTY,
+                                                List.of(
+                                                        relationshipWith(firstFungible)
+                                                                .balance(exchangeAmount / 12),
+                                                        relationshipWith(secondFungible)
+                                                                .balance(exchangeAmount / 12)))),
+                        getAccountInfo(secondRoyaltyCollector)
+                                .has(accountWith()
+                                        .newAssociationsFromSnapshot(
+                                                PARTY,
+                                                List.of(
+                                                        relationshipWith(firstFungible)
+                                                                .balance(exchangeAmount / 15),
+                                                        relationshipWith(secondFungible)
+                                                                .balance(exchangeAmount / 15)))));
     }
 
     private HapiSpec royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots() {

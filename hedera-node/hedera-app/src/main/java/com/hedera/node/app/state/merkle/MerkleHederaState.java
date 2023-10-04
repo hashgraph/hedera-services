@@ -381,6 +381,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
                 throw new IllegalArgumentException(
                         "A label must be computed based on the same " + "service name and state key in the metadata!");
             }
+            System.out.println(
+                    "Putting " + def.stateKey() + " for " + md.serviceName() + " at position " + getNumberOfChildren());
 
             setChild(getNumberOfChildren(), node);
         }

@@ -25,7 +25,6 @@ import static java.util.Collections.emptyList;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -67,11 +66,10 @@ public class CustomFeeAssessor extends BaseTokenHandler {
             final int maxTransfersSize,
             final AccountID receiver,
             final AssessmentResult result,
-            final ReadableTokenRelationStore tokenRelStore,
-            final ReadableAccountStore accountStore) {
+            final ReadableTokenRelationStore tokenRelStore) {
         fixedFeeAssessor.assessFixedFees(feeMeta, sender, result);
 
-        validateBalanceChanges(result, maxTransfersSize, tokenRelStore, accountStore);
+        validateBalanceChanges(result, maxTransfersSize, tokenRelStore);
 
         // A FUNGIBLE_COMMON token can have fractional fees but not royalty fees.
         // A NON_FUNGIBLE_UNIQUE token can have royalty fees but not fractional fees.
@@ -81,14 +79,11 @@ public class CustomFeeAssessor extends BaseTokenHandler {
         } else {
             royaltyFeeAssessor.assessRoyaltyFees(feeMeta, sender, receiver, result);
         }
-        validateBalanceChanges(result, maxTransfersSize, tokenRelStore, accountStore);
+        validateBalanceChanges(result, maxTransfersSize, tokenRelStore);
     }
 
     private void validateBalanceChanges(
-            final AssessmentResult result,
-            final int maxTransfersSize,
-            final ReadableTokenRelationStore tokenRelStore,
-            final ReadableAccountStore accountStore) {
+            final AssessmentResult result, final int maxTransfersSize, final ReadableTokenRelationStore tokenRelStore) {
         var inputFungibleTransfers = 0;
         var newFungibleTransfers = 0;
         for (final var entry : result.getMutableInputTokenAdjustments().entrySet()) {
