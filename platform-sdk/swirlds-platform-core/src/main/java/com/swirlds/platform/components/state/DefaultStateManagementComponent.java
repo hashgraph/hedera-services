@@ -174,8 +174,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
             @NonNull final StateToDiskAttemptConsumer stateToDiskEventConsumer,
             @NonNull final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer,
-            @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer,
-            @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
+            @Nullable final StateLacksSignaturesConsumer stateLacksSignaturesConsumer,
+            @Nullable final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final IssConsumer issConsumer,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
@@ -193,8 +193,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         Objects.requireNonNull(prioritySystemTransactionSubmitter);
         Objects.requireNonNull(stateToDiskEventConsumer);
         Objects.requireNonNull(newLatestCompleteStateConsumer);
-        Objects.requireNonNull(stateLacksSignaturesConsumer);
-        Objects.requireNonNull(stateHasEnoughSignaturesConsumer);
         Objects.requireNonNull(issConsumer);
         Objects.requireNonNull(haltRequestedConsumer);
         Objects.requireNonNull(fatalErrorConsumer);
@@ -239,15 +237,25 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 setMinimumGenerationToStore,
                 statusActionSubmitter);
 
-        final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer = ss -> {
-            stateHasEnoughSignatures(ss);
-            stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(ss);
-        };
+        final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer;
+        if (stateHasEnoughSignaturesConsumer != null) {
+            combinedStateHasEnoughSignaturesConsumer = ss -> {
+                stateHasEnoughSignatures(ss);
+                stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(ss);
+            };
+        } else {
+            combinedStateHasEnoughSignaturesConsumer = this::stateHasEnoughSignatures;
+        }
 
-        final StateLacksSignaturesConsumer combinedStateLacksSignaturesConsumer = ss -> {
-            stateLacksSignatures(ss);
-            stateLacksSignaturesConsumer.stateLacksSignatures(ss);
-        };
+        final StateLacksSignaturesConsumer combinedStateLacksSignaturesConsumer;
+        if (stateLacksSignaturesConsumer != null) {
+            combinedStateLacksSignaturesConsumer = ss -> {
+                stateLacksSignatures(ss);
+                stateLacksSignaturesConsumer.stateLacksSignatures(ss);
+            };
+        } else {
+            combinedStateLacksSignaturesConsumer = this::stateLacksSignatures;
+        }
 
         signedStateManager = new SignedStateManager(
                 platformContext.getConfiguration().getConfigData(StateConfig.class),
