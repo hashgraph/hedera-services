@@ -116,7 +116,20 @@ final class EventStreamValidationTestUtils {
      * @return the generated data
      */
     @NonNull
-    public PlannedStreamData generatePlannedStreamData(@NonNull final Random random) {
+    public PlannedStreamData generatePlannedStreamData(
+            @NonNull final Random random,
+            final int stateCount,
+            final int eventCount,
+            final int eventsPerPCESFile,
+            final int eventsPerCESFile) {
+
+        final List<EventImpl> events = generateRawEvents(random, eventCount);
+
+        final List<GossipEvent> preconsensusOrder = convertToGossipEvents(events);
+        final List<EventImpl> consensusOrder = shuffleEvents(random, events);
+
+        setConsensusInformation(random, consensusOrder);
+
         return null; // TODO
     }
 
@@ -173,7 +186,9 @@ final class EventStreamValidationTestUtils {
         }
 
         final StandardGraphGenerator generator =
-                new StandardGraphGenerator(random.nextLong(), (EventSource<?>) sources);
+                new StandardGraphGenerator(random.nextLong(), (EventSource<?>) sources)
+                        .setEventPeriodMean(0.1)
+                        .setEventPeriodStandardDeviation(0.03);
 
         final List<EventImpl> events = new ArrayList<>();
         for (int i = 0; i < count; i++) {
@@ -269,4 +284,33 @@ final class EventStreamValidationTestUtils {
         }
         return gossipEvents;
     }
+
+    /**
+     * Add fake consensus information to a list of events.
+     *
+     * @param events the events to modify
+     */
+    private void setConsensusInformation(
+            @NonNull final Random random,
+            @NonNull final List<EventImpl> events) {
+
+        Instant previousTime = Instant.EPOCH;
+        int previousConsensusOrder = random.nextInt();
+
+        for (final EventImpl event : events) {
+            event.setConsensusOrder(previousConsensusOrder++);
+
+            if (previousTime.isBefore(event.getTimeCreated())) {
+                event.getConsensusData().setConsensusTimestamp(event.getTimeCreated());
+
+            } else {
+                previousTime = previousTime.plusNanos(1);
+                event.getConsensusData().setConsensusTimestamp(previousTime.plusNanos(
+                        random.nextInt(100, 10000)));
+            }
+
+            previousTime = event.getConsensusData().getConsensusTimestamp();
+        }
+    }
+
 }
