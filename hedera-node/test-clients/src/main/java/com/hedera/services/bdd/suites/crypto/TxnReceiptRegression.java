@@ -43,7 +43,7 @@ import org.apache.logging.log4j.Logger;
 public class TxnReceiptRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(TxnReceiptRegression.class);
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
         new TxnReceiptRegression().runSuiteSync();
     }
 
@@ -65,6 +65,7 @@ public class TxnReceiptRegression extends HapiSuite {
         });
     }
 
+    @HapiTest
     private HapiSpec returnsInvalidForUnspecifiedTxnId() {
         return defaultHapiSpec("ReturnsInvalidForUnspecifiedTxnId")
                 .given()
@@ -96,6 +97,7 @@ public class TxnReceiptRegression extends HapiSuite {
                         getReceipt("success").hasPriorityStatus(UNKNOWN));
     }
 
+    @HapiTest
     private HapiSpec receiptAvailableWithinCacheTtl() {
         return defaultHapiSpec("ReceiptAvailableWithinCacheTtl")
                 .given(cryptoCreate("misc").via("success").balance(1_000L))
@@ -113,12 +115,13 @@ public class TxnReceiptRegression extends HapiSuite {
                 .then(getReceipt("failingTxn").hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND));
     }
 
+    @HapiTest
     private HapiSpec receiptNotFoundOnUnknownTransactionID() {
         return defaultHapiSpec("receiptNotFoundOnUnknownTransactionID")
                 .given()
                 .when()
                 .then(withOpContext((spec, ctxLog) -> {
-                    HapiGetReceipt op =
+                    final HapiGetReceipt op =
                             getReceipt(spec.txns().defaultTransactionID()).hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND);
                     CustomSpecAssert.allRunFor(spec, op);
                 }));
