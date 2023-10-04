@@ -18,7 +18,9 @@ package com.swirlds.platform.test.sync;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -214,6 +216,12 @@ public class SyncNode {
             receivedEventQueue.add(event);
         };
 
+        final QueueThread<GossipEvent> intakeQueueThread = mock(QueueThread.class);
+        when(intakeQueueThread.add(any())).thenAnswer(invocation -> {
+            eventHandler.accept(invocation.getArgument(0));
+            return true;
+        });
+
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
@@ -224,7 +232,7 @@ public class SyncNode {
                 numNodes,
                 mock(SyncMetrics.class),
                 this::getConsensus,
-                mock(QueueThread.class),
+                intakeQueueThread,
                 syncManager,
                 mock(IntakeEventCounter.class),
                 executor,
