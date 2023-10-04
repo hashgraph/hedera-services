@@ -35,7 +35,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
 
     private static final String SENDER = "0.0.1301";
     private static final String RECEIVER = "0.0.1302";
-    private static final String LAST_CREATED_ACCOUNT = "0.0.21063";
+    private static final String LAST_CREATED_ACCOUNT = "0.0.3500";
     private static final String FIRST_CREATED_TOPIC = "0.0.3600";
     private static final String LAST_CREATED_TOPIC = "0.0.6000";
     private static final String INVALID_TOPIC_ID = "0.0.41064";
