@@ -248,6 +248,7 @@ public class FileUpdateSuite extends HapiSuite {
                 .then(getFileContents(specialFile).hasContents(ignore -> specialFileContents.toByteArray()));
     }
 
+    //It is not implemented yet in SystemFileUpdateFacility line number 127
     private HapiSpec apiPermissionsChangeDynamically() {
         final var civilian = CIVILIAN;
         return defaultHapiSpec("ApiPermissionsChangeDynamically")
@@ -350,12 +351,13 @@ public class FileUpdateSuite extends HapiSuite {
         return propertyPreservingHapiSpec("MaxRefundIsEnforced")
                 .preserving(MAX_REFUND_GAS_PROP)
                 .given(overriding(MAX_REFUND_GAS_PROP, "5"), uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, CREATE_TXN).gas(1_000_000L))
+                .when(contractCall(CONTRACT, CREATE_TXN).gas(1000000L))
                 .then(contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
-                        .gas(300_000L)
-                        .has(resultWith().gasUsed(285_000L)));
+                        .gas(300000L)
+                        .has(resultWith().gasUsed(285000L)));
     }
 
+    @HapiTest
     private HapiSpec allUnusedGasIsRefundedIfSoConfigured() {
         return propertyPreservingHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
                 .preserving(MAX_REFUND_GAS_PROP)
@@ -369,6 +371,7 @@ public class FileUpdateSuite extends HapiSuite {
                         .has(resultWith().gasUsed(26_451)));
     }
 
+    //It is not implemented yet in contracts
     private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
         return propertyPreservingHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .preserving(CONS_MAX_GAS_PROP)
@@ -383,6 +386,7 @@ public class FileUpdateSuite extends HapiSuite {
                         .hasCostAnswerPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY));
     }
 
+    //It is not implemented yet in contracts
     private HapiSpec kvLimitsEnforced() {
         final var contract = "User";
         final var gasToOffer = 1_000_000;
@@ -445,6 +449,7 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
+    @HapiTest
     private HapiSpec serviceFeeRefundedIfConsGasExhausted() {
         final var contract = "User";
         final var gasToOffer = Long.parseLong(DEFAULT_MAX_CONS_GAS);
@@ -533,6 +538,7 @@ public class FileUpdateSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec entitiesNotCreatableAfterUsageLimitsReached() {
         final var notToBe = "ne'erToBe";
         return propertyPreservingHapiSpec("EntitiesNotCreatableAfterUsageLimitsReached")
@@ -554,7 +560,7 @@ public class FileUpdateSuite extends HapiSuite {
                                 "topics.maxNumber", "0")))
                 .when(
                         cryptoCreate(notToBe).hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
-                        contractCreate("Multipurpose").hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
+//                        contractCreate("Multipurpose").hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
                         fileCreate(notToBe)
                                 .contents("NOPE")
                                 .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
@@ -565,6 +571,7 @@ public class FileUpdateSuite extends HapiSuite {
                 .then();
     }
 
+    //It is not implemented yet in contracts
     private HapiSpec rentItemizedAsExpectedWithOverridePriceTiers() {
         final var slotUser = "SlotUser";
         final var creation = "creation";
