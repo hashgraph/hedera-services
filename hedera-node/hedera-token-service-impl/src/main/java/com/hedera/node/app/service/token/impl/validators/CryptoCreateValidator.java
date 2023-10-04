@@ -116,7 +116,7 @@ public class CryptoCreateValidator {
         }
         final boolean isValidAlias = op.alias().length() == EVM_ADDRESS_SIZE
                 || (op.alias().length() == ECDSA_SECP256K1_ALIAS_SIZE
-                && op.alias().toHex().startsWith(ECDSA_KEY_ALIAS_PREFIX));
+                        && op.alias().toHex().startsWith(ECDSA_KEY_ALIAS_PREFIX));
         validateTrue(isValidAlias, INVALID_ALIAS_KEY);
         validateFalse(isMirror(op.alias()), INVALID_ALIAS_KEY);
         validateTrue(readableAccountStore.getAccountIDByAlias(op.alias()) == null, ALIAS_ALREADY_ASSIGNED);

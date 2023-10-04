@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAliasSizeGreaterThanEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 
@@ -23,6 +24,7 @@ import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
@@ -30,9 +32,11 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
 import java.util.Optional;
 
 /**
@@ -85,8 +89,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
     @Override
     @Nullable
     public Account getAccountById(@NonNull final AccountID accountID) {
-        final var account = getAccountLeaf(accountID);
-        return account == null ? null : account;
+        return getAccountLeaf(accountID);
     }
 
     @Override
@@ -116,8 +119,8 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                         if (isOfEvmAddressSize(alias) && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
-                            final var entityNum = aliases.get(new ProtoBytes(alias));
-                            yield entityNum == null ? 0L : entityNum.accountNum();
+                            final var entityId = unaliasWithEvmAddressConversionIfNeeded(alias);
+                            yield entityId == null ? null : entityId.accountNumOrThrow();
                         }
                     }
                     case UNSET -> 0L;
@@ -130,6 +133,33 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                         .shardNum(id.shardNum())
                         .accountNum(accountNum)
                         .build());
+    }
+
+    /**
+     * Returns the {@link AccountID} referenced by the given alias, whether it is a direct reference or
+     * an "indirect" reference by a proto ECDSA key whose implied EVM address is the alias.
+     *
+     * @param alias the alias to look up
+     * @return the account id referenced by the alias, or null if not found
+     */
+    private @Nullable AccountID unaliasWithEvmAddressConversionIfNeeded(@NonNull final Bytes alias) {
+        final var maybeDirectReference = aliases.get(new ProtoBytes(alias));
+        if (maybeDirectReference != null) {
+            return maybeDirectReference;
+        } else {
+            try {
+                final var protoKey = Key.PROTOBUF.parseStrict(BufferedData.wrap(alias.toByteArray()));
+                if (protoKey.hasEcdsaSecp256k1()) {
+                    final var evmAddress = recoverAddressFromPubKey(
+                            protoKey.ecdsaSecp256k1OrThrow().toByteArray());
+                    return evmAddress.length > 0 ? aliases.get(new ProtoBytes(Bytes.wrap(evmAddress))) : null;
+                } else {
+                    return null;
+                }
+            } catch (IOException ignore) {
+                return null;
+            }
+        }
     }
 
     /**

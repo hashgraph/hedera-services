@@ -59,7 +59,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
@@ -219,6 +218,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     HapiSpec depositSuccess() {
         return defaultHapiSpec("depositSuccess")
                 .given(
@@ -287,6 +287,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(3L)));
     }
 
+    @HapiTest
     HapiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {
         final var largerThanMaxCalldata = new byte[MAX_CALL_DATA_SIZE + 1];
         return defaultHapiSpec("ethereumCallWithCalldataBiggerThanMaxSucceeds")
@@ -390,6 +391,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
+    @HapiTest
     HapiSpec bigContractCreate() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("bigContractCreate")
@@ -435,6 +437,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
+    @HapiTest
     HapiSpec contractCreateWithConstructorArgs() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("contractCreateWithConstructorArgs")

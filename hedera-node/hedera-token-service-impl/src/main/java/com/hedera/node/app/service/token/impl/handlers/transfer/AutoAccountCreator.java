@@ -139,7 +139,8 @@ public class AutoAccountCreator {
         }
         childRecord.transactionFee(fee);
 
-        final var createdAccountId = accountStore.getAccountIDByAlias(evmAddress == null ? alias : Bytes.wrap(evmAddress));
+        final var createdAccountId =
+                accountStore.getAccountIDByAlias(evmAddress == null ? alias : Bytes.wrap(evmAddress));
         validateTrue(createdAccountId != null, FAIL_INVALID);
         return createdAccountId;
     }
