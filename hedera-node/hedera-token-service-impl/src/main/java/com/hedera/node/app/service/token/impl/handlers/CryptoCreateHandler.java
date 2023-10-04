@@ -53,6 +53,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -336,11 +337,14 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         // Variable bytes plus two additional longs for balance and auto-renew period; plus a boolean for receiver sig
         // required.
         final var op = feeContext.body().cryptoCreateAccountOrThrow();
+        return cryptoCreateFees(op, feeContext.feeCalculator(SubType.DEFAULT));
+    }
+
+    public static Fees cryptoCreateFees(final CryptoCreateTransactionBody op, final FeeCalculator feeCalculator) {
         final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.keyOrThrow())) : 0L;
         final var baseSize = op.memo().length() + keySize + (op.maxAutomaticTokenAssociations() > 0 ? INT_SIZE : 0L);
         final var lifeTime = op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
-        return feeContext
-                .feeCalculator(SubType.DEFAULT)
+        return feeCalculator
                 .addBytesPerTransaction(baseSize + 2 * LONG_SIZE + BOOL_SIZE)
                 .addRamByteSeconds((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime)
                 .addRamByteSeconds(op.maxAutomaticTokenAssociations() * lifeTime * CREATE_SLOT_MULTIPLIER)

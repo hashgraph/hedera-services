@@ -62,7 +62,7 @@ public final class CryptoTransferLoadTestWithInvalidAccounts extends LoadTest {
                     .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
         };
 
-        return defaultHapiSpec("RunCryptoTransfers")
+        return defaultHapiSpec("RunCryptoTransfers-InvalidAccount")
                 .given(
                         withOpContext(
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),

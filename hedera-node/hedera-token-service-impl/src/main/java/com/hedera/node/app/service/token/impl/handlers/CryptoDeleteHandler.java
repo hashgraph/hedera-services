@@ -18,16 +18,25 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
+import com.hedera.node.app.service.mono.fees.calculation.crypto.txns.CryptoDeleteResourceUsage;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -80,5 +89,20 @@ public class CryptoDeleteHandler implements TransactionHandler {
                         op.transferAccountIDOrThrow(),
                         context.expiryValidator(),
                         context.recordBuilder(CryptoDeleteRecordBuilder.class));
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var body = feeContext.body();
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            try {
+                return new CryptoDeleteResourceUsage(new CryptoFeeBuilder())
+                        .usageGiven(fromPbj(body), sigValueObj, null);
+            } catch (InvalidTxBodyException e) {
+                throw new HandleException(INVALID_TRANSACTION_BODY);
+            }
+        });
     }
 }

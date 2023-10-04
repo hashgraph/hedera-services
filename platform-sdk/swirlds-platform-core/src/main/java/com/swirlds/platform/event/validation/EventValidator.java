@@ -22,6 +22,7 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.intake.EventIntakePhase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -52,20 +53,28 @@ public class EventValidator {
     private final PhaseTimer<EventIntakePhase> phaseTimer;
 
     /**
+     * Keeps track of the number of events in the intake pipeline from each peer
+     */
+    private final IntakeEventCounter intakeEventCounter;
+
+    /**
      * Constructor
      *
      * @param gossipEventValidator a validator for gossip events
      * @param eventIntake          a consumer of valid events
      * @param phaseTimer           measures the time spent in each phase of event intake
+     * @param intakeEventCounter   keeps track of the number of events in the intake pipeline from each peer
      */
     public EventValidator(
             @NonNull final GossipEventValidator gossipEventValidator,
             @NonNull final Consumer<GossipEvent> eventIntake,
-            @NonNull final PhaseTimer<EventIntakePhase> phaseTimer) {
+            @NonNull final PhaseTimer<EventIntakePhase> phaseTimer,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.gossipEventValidator = Objects.requireNonNull(gossipEventValidator);
         this.eventIntake = Objects.requireNonNull(eventIntake);
         this.phaseTimer = Objects.requireNonNull(phaseTimer);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         this.cryptography = CryptographyHolder.get();
     }
@@ -90,6 +99,7 @@ public class EventValidator {
             phaseTimer.activatePhase(EventIntakePhase.VALIDATING);
             if (!gossipEventValidator.isEventValid(gossipEvent)) {
                 phaseTimer.activatePhase(EventIntakePhase.IDLE);
+                intakeEventCounter.eventExitedIntakePipeline(gossipEvent.getSenderId());
                 return;
             }
 
