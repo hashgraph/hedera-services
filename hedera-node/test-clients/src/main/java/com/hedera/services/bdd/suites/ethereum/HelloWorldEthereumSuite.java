@@ -218,6 +218,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     HapiSpec depositSuccess() {
         return defaultHapiSpec("depositSuccess")
                 .given(
@@ -390,6 +391,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
+    @HapiTest
     HapiSpec bigContractCreate() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("bigContractCreate")
@@ -435,6 +437,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
+    @HapiTest
     HapiSpec contractCreateWithConstructorArgs() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("contractCreateWithConstructorArgs")
