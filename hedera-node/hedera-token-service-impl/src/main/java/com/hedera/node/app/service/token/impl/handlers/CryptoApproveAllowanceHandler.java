@@ -320,7 +320,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * @param tokenId the token number
      */
     private void updateTokenAllowance(
-                final ArrayList<AccountFungibleTokenAllowance> mutableAllowances,
+            final ArrayList<AccountFungibleTokenAllowance> mutableAllowances,
             final long amount,
             final AccountID spenderId,
             final TokenID tokenId) {
