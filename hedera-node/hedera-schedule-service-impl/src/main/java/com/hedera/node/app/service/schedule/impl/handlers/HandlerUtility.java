@@ -162,42 +162,15 @@ final class HandlerUtility {
     @NonNull
     static Schedule markExecuted(@NonNull final Schedule schedule, @NonNull final Instant consensusTime) {
         final Timestamp consensusTimestamp = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
-        return new Schedule(
-                schedule.scheduleId(),
-                schedule.deleted(),
-                true,
-                schedule.waitForExpiry(),
-                schedule.memo(),
-                schedule.schedulerAccountId(),
-                schedule.payerAccountId(),
-                schedule.adminKey(),
-                schedule.scheduleValidStart(),
-                schedule.providedExpirationSecond(),
-                schedule.calculatedExpirationSecond(),
-                consensusTimestamp,
-                schedule.scheduledTransaction(),
-                schedule.originalCreateTransaction(),
-                schedule.signatories());
+        return schedule.copyBuilder()
+                .executed(true)
+                .resolutionTime(consensusTimestamp)
+                .build();
     }
 
     @NonNull
     static Schedule replaceSignatories(@NonNull final Schedule schedule, @NonNull final Set<Key> newSignatories) {
-        return new Schedule(
-                schedule.scheduleId(),
-                schedule.deleted(),
-                schedule.executed(),
-                schedule.waitForExpiry(),
-                schedule.memo(),
-                schedule.schedulerAccountId(),
-                schedule.payerAccountId(),
-                schedule.adminKey(),
-                schedule.scheduleValidStart(),
-                schedule.providedExpirationSecond(),
-                schedule.calculatedExpirationSecond(),
-                schedule.resolutionTime(),
-                schedule.scheduledTransaction(),
-                schedule.originalCreateTransaction(),
-                List.copyOf(newSignatories));
+        return schedule.copyBuilder().signatories(List.copyOf(newSignatories)).build();
     }
 
     @NonNull
@@ -206,22 +179,8 @@ final class HandlerUtility {
             @NonNull final Set<Key> newSignatories,
             @NonNull final Instant consensusTime) {
         final Timestamp consensusTimestamp = new Timestamp(consensusTime.getEpochSecond(), consensusTime.getNano());
-        return new Schedule(
-                schedule.scheduleId(),
-                schedule.deleted(),
-                true,
-                schedule.waitForExpiry(),
-                schedule.memo(),
-                schedule.schedulerAccountId(),
-                schedule.payerAccountId(),
-                schedule.adminKey(),
-                schedule.scheduleValidStart(),
-                schedule.providedExpirationSecond(),
-                schedule.calculatedExpirationSecond(),
-                consensusTimestamp,
-                schedule.scheduledTransaction(),
-                schedule.originalCreateTransaction(),
-                List.copyOf(newSignatories));
+        final Schedule.Builder builder = schedule.copyBuilder().executed(true).resolutionTime(consensusTimestamp);
+        return builder.signatories(List.copyOf(newSignatories)).build();
     }
 
     /**
@@ -278,17 +237,9 @@ final class HandlerUtility {
         final TransactionID parentTransactionId = originalTransaction.transactionIDOrThrow();
         final ScheduleID finalId = getNextScheduleID(parentTransactionId, newEntityNumber);
 
-        Schedule.Builder build = Schedule.newBuilder();
+        Schedule.Builder build = provisionalSchedule.copyBuilder();
         build.scheduleId(finalId).deleted(false).executed(false);
-        build.waitForExpiry(provisionalSchedule.waitForExpiry());
-        build.adminKey(provisionalSchedule.adminKey()).schedulerAccountId(parentTransactionId.accountID());
-        build.payerAccountId(provisionalSchedule.payerAccountId());
-        build.schedulerAccountId(provisionalSchedule.schedulerAccountId());
-        build.scheduleValidStart(provisionalSchedule.scheduleValidStart());
-        build.calculatedExpirationSecond(provisionalSchedule.calculatedExpirationSecond());
-        build.originalCreateTransaction(provisionalSchedule.originalCreateTransaction());
-        build.memo(provisionalSchedule.memo());
-        build.scheduledTransaction(provisionalSchedule.scheduledTransaction());
+        build.schedulerAccountId(parentTransactionId.accountID());
         build.signatories(List.copyOf(finalSignatories));
         return build.build();
     }
@@ -298,10 +249,9 @@ final class HandlerUtility {
             @NonNull final TransactionID parentTransactionId, final long newScheduleNumber) {
         final AccountID schedulingAccount = parentTransactionId.accountIDOrThrow();
         final long shardNumber = schedulingAccount.shardNum();
-        final long reamlNumber = schedulingAccount.realmNum();
-        final Builder builder = ScheduleID.newBuilder().shardNum(shardNumber).realmNum(reamlNumber);
-        builder.scheduleNum(newScheduleNumber);
-        return builder.build();
+        final long realmNumber = schedulingAccount.realmNum();
+        final Builder builder = ScheduleID.newBuilder().shardNum(shardNumber).realmNum(realmNumber);
+        return builder.scheduleNum(newScheduleNumber).build();
     }
 
     @NonNull

@@ -187,8 +187,8 @@ public final class IngestChecker {
         verifyPayerSignature(txInfo, payerKey);
 
         // 7. Check payer solvency
-        final FeeContext feeContext =
-                new FeeContextImpl(consensusTime, txInfo, payerKey, feeManager, storeFactory, configuration);
+        final FeeContext feeContext = new FeeContextImpl(
+                consensusTime, txInfo, payerKey, feeManager, storeFactory, configuration, authorizer);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
         solvencyPreCheck.checkSolvency(txInfo, payer, fees);
 
