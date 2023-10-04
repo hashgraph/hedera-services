@@ -37,8 +37,8 @@ final class Task<T> extends ForkJoinTask<Void> {
      * execution.
      * <p>
      * Most tasks start out with a count of 2. When the work is provided via
-     * {@link #provideObjectForConsumer(Object, Task)}, the count is decremented by one. When the previous task has
-     * been completed, the count is decremented by one again. It is possible for the work to be provided prior to the
+     * {@link #provideObjectForConsumer(Object, Task)}, the count is decremented by one. When the previous task has been
+     * completed, the count is decremented by one again. It is possible for the work to be provided prior to the
      * previous task being executed. It is also possible for the previous task to be executed prior to the work being
      * provided. In either case, both must happen before this task can be executed.
      * <p>
@@ -47,14 +47,21 @@ final class Task<T> extends ForkJoinTask<Void> {
      */
     private final AtomicInteger count;
 
+    /**
+     * The consumer that will accept the data on this wire.
+     */
     private final Consumer<T> consumer;
 
+    /**
+     * The data that this task will send to the consumer.
+     */
     private T t;
 
     /**
      * Constructor.
      *
-     * @param initial if true, this is the first task for this wire. False for all tasks after the first.
+     * @param consumer where data on this wire is sent
+     * @param initial  if true, this is the first task for this wire. False for all tasks after the first.
      */
     public Task(@NonNull final Consumer<T> consumer, final boolean initial) {
         this.consumer = Objects.requireNonNull(consumer);
