@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.util.EntityIdUtils.accountIdFromHexedMirrorAddress;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -69,7 +70,13 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 final var receiverId = aa.receiverAccountID();
                 final var senderId = aa.senderAccountID();
                 // sender should be associated already. If not throw exception
-                validateTrue(tokenRelStore.get(senderId, tokenId) != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+                if (senderId.hasAlias()) {
+                    validateTrue(
+                            tokenRelStore.get(accountIdFromHexedMirrorAddress(senderId.alias()), tokenId) != null,
+                            TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+                } else {
+                    validateTrue(tokenRelStore.get(senderId, tokenId) != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+                }
                 validateAndAutoAssociate(
                         receiverId, tokenId, token, accountStore, tokenRelStore, handleContext, recordBuilder);
             }

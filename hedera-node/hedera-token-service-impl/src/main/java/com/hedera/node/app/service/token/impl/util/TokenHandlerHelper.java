@@ -42,6 +42,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hedera.node.app.service.token.impl.util.EntityIdUtils.accountIdFromHexedMirrorAddress;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -192,7 +193,11 @@ public class TokenHandlerHelper {
         requireNonNull(tokenId);
         requireNonNull(tokenRelStore);
 
-        final var tokenRel = tokenRelStore.get(accountId, tokenId);
+        var tokenRel = tokenRelStore.get(accountId, tokenId);
+        if (accountId.hasAlias()) {
+            tokenRel = tokenRelStore.get(accountIdFromHexedMirrorAddress(accountId.alias()), tokenId);
+        }
+
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
         validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
 
