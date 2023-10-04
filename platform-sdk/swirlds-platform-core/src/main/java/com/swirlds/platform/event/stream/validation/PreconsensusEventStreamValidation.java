@@ -192,7 +192,6 @@ public final class PreconsensusEventStreamValidation {
             parents.add(event.getHashedData().getSelfParentHash());
             parents.add(event.getHashedData().getOtherParentHash());
 
-
             event.buildDescriptor();
             allDescriptors.add(event.getDescriptor());
             final boolean alreadyPresent = allDescriptorsInContiguousStream.add(event.getDescriptor());
