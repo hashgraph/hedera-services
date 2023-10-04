@@ -14,22 +14,45 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint;
+package com.swirlds.platform.gossip;
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
-public class NonFungibleMintCall extends AbstractHtsCall implements MintCall {
-    public NonFungibleMintCall(@NonNull final HederaWorldUpdater.Enhancement enhancement) {
-        super(enhancement);
+/**
+ * A no-op implementation of {@link IntakeEventCounter}.
+ */
+public class NoOpIntakeEventCounter implements IntakeEventCounter {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasUnprocessedEvents(@NonNull NodeId peer) {
+        return false;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public @NonNull PricedResult execute() {
-        throw new AssertionError("Not implemented");
+    public void eventEnteredIntakePipeline(@NonNull NodeId peer) {
+        // no-op
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void eventExitedIntakePipeline(@Nullable NodeId peer) {
+        // no-op
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void reset() {
+        // no-op
     }
 }

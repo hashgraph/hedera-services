@@ -76,6 +76,11 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
         final var contractGetBytecode = ContractGetBytecodeResponse.newBuilder().header(header);
+
+        // although ResponseType enum includes an unsupported field ResponseType#ANSWER_STATE_PROOF,
+        // the response returned ONLY when both
+        // the ResponseHeader#nodeTransactionPrecheckCode is OK and the requested response type is
+        // ResponseType#ANSWER_ONLY
         if (header.nodeTransactionPrecheckCode() == OK && header.responseType() == ANSWER_ONLY) {
             final var contract = requireNonNull(contractFrom(context));
             contractGetBytecode.bytecode(bytecodeFrom(context, contract));

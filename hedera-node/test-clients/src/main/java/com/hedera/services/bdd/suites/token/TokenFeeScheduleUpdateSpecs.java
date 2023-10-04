@@ -95,6 +95,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
                 .then(validateChargedUsdWithin("baseFeeSchUpd", expectedBasePriceUsd, 1.0));
     }
 
+    @HapiTest
     private HapiSpec onlyValidCustomFeeScheduleCanBeUpdated() {
         final var hbarAmount = 1_234L;
         final var htsAmount = 2_345L;

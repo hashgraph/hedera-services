@@ -39,6 +39,7 @@ import com.swirlds.platform.event.validation.GossipEventValidator;
 import com.swirlds.platform.event.validation.GossipEventValidators;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.test.event.GossipEventBuilder;
@@ -91,8 +92,8 @@ class EventValidatorTests {
     void eventValidator() {
         final Set<GossipEvent> intakeEvents = new HashSet<>();
         final AtomicBoolean isValid = new AtomicBoolean(true);
-        final EventValidator eventValidator =
-                new EventValidator((e) -> isValid.get(), intakeEvents::add, mock(PhaseTimer.class));
+        final EventValidator eventValidator = new EventValidator(
+                (e) -> isValid.get(), intakeEvents::add, mock(PhaseTimer.class), mock(IntakeEventCounter.class));
 
         final GossipEvent validEvent = GossipEventBuilder.builder().buildEvent();
         eventValidator.validateEvent(validEvent);
