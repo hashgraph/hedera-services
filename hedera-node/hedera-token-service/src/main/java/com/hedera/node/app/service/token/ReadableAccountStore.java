@@ -50,6 +50,12 @@ public interface ReadableAccountStore {
     AccountID getAccountIDByAlias(@NonNull final Bytes alias);
 
     /**
+     *
+     * @return
+     */
+    long getNumberOfAccounts();
+
+    /**
      * Fetches an {@link Account} object from state with the given {@link ContractID}. If the contract account could not
      * be fetched because the given contract doesn't exist, returns {@code null}.
      *
