@@ -43,6 +43,7 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -921,6 +922,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
         given(context.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
         given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+        given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
 
         return context;
     }
