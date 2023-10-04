@@ -19,7 +19,8 @@ package com.hedera.node.app.service.networkadmin.impl.handlers;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
-import com.hedera.node.app.spi.state.WritableFreezeStore;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,13 +30,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
-import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,28 +56,30 @@ public class FreezeUpgradeActions {
     private final NetworkAdminConfig adminServiceConfig;
     private final WritableFreezeStore freezeStore;
 
-    @Inject
+    private final Executor executor;
+
     public FreezeUpgradeActions(
-            @NonNull final NetworkAdminConfig adminServiceConfig, @NonNull final WritableFreezeStore freezeStore) {
+            @NonNull final NetworkAdminConfig adminServiceConfig,
+            @NonNull final WritableFreezeStore freezeStore,
+            @NonNull final Executor executor) {
         requireNonNull(adminServiceConfig);
         requireNonNull(freezeStore);
+        requireNonNull(executor);
 
         this.adminServiceConfig = adminServiceConfig;
         this.freezeStore = freezeStore;
+        this.executor = executor;
     }
 
     public void externalizeFreezeIfUpgradePending() {
-        // @todo('Issue #6201'): call networkCtx.hasPreparedUpgrade()
-        // final var isUpgradePrepared = networkCtx.hasPreparedUpgrade();
-        final boolean isUpgradePrepared = true;
-
-        if (isUpgradePrepared) {
+        // @todo('Issue #8660') this code is not currently triggered anywhere
+        if (freezeStore.updateFileHash() != null) {
             writeCheckMarker(NOW_FROZEN_MARKER);
         }
     }
 
     public CompletableFuture<Void> extractTelemetryUpgrade(
-            @NonNull final Bytes archiveData, @Nullable final Instant now) {
+            @NonNull final Bytes archiveData, @Nullable final Timestamp now) {
         requireNonNull(archiveData);
         return extractNow(archiveData, TELEMETRY_UPGRADE_DESC, EXEC_TELEMETRY_MARKER, now);
     }
@@ -88,35 +89,30 @@ public class FreezeUpgradeActions {
         return extractNow(archiveData, PREPARE_UPGRADE_DESC, EXEC_IMMEDIATE_MARKER, null);
     }
 
-    public CompletableFuture<Void> scheduleFreezeOnlyAt(@NonNull final Instant freezeTime) {
+    public void scheduleFreezeOnlyAt(@NonNull final Timestamp freezeTime) {
         requireNonNull(freezeTime);
-        withNonNullDualState("schedule freeze", ds -> ds.freezeTime(freezeTime));
-        return CompletableFuture.completedFuture(null); // return a future which completes immediately
+        requireNonNull(freezeStore, "Cannot schedule freeze without access to the dual state");
+        freezeStore.freezeTime(freezeTime);
     }
 
-    public CompletableFuture<Void> scheduleFreezeUpgradeAt(@NonNull final Instant freezeTime) {
+    public void scheduleFreezeUpgradeAt(@NonNull final Timestamp freezeTime) {
         requireNonNull(freezeTime);
-        withNonNullDualState("schedule freeze", ds -> {
-            ds.freezeTime(freezeTime);
-            writeSecondMarker(FREEZE_SCHEDULED_MARKER, freezeTime);
-        });
-        return CompletableFuture.completedFuture(null); // return a future which completes immediately
+        requireNonNull(freezeStore, "Cannot schedule freeze without access to the dual state");
+        freezeStore.freezeTime(freezeTime);
+        writeSecondMarker(FREEZE_SCHEDULED_MARKER, freezeTime);
     }
 
-    public CompletableFuture<Void> abortScheduledFreeze() {
-        withNonNullDualState("abort freeze", ds -> {
-            ds.freezeTime(null);
-            writeCheckMarker(FREEZE_ABORTED_MARKER);
-        });
-        return CompletableFuture.completedFuture(null); // return a future which completes immediately
+    public void abortScheduledFreeze() {
+        requireNonNull(freezeStore, "Cannot abort freeze without access to the dual state");
+        freezeStore.freezeTime(null);
+        writeCheckMarker(FREEZE_ABORTED_MARKER);
     }
 
     public boolean isFreezeScheduled() {
         final var ans = new AtomicBoolean();
-        withNonNullDualState("check freeze schedule", ds -> {
-            final var freezeTime = ds.freezeTime();
-            ans.set(freezeTime != null && !freezeTime.equals(ds.lastFrozenTime()));
-        });
+        requireNonNull(freezeStore, "Cannot check freeze schedule without access to the dual state");
+        final var freezeTime = freezeStore.freezeTime();
+        ans.set(freezeTime != null && !freezeTime.equals(freezeStore.lastFrozenTime()));
         return ans.get();
     }
 
@@ -126,7 +122,7 @@ public class FreezeUpgradeActions {
             @NonNull final Bytes archiveData,
             @NonNull final String desc,
             @NonNull final String marker,
-            @Nullable final Instant now) {
+            @Nullable final Timestamp now) {
         requireNonNull(archiveData);
         requireNonNull(desc);
         requireNonNull(marker);
@@ -137,11 +133,11 @@ public class FreezeUpgradeActions {
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         // we spin off a separate thread to avoid blocking handleTransaction
         // if we block handle, there could be a dramatic spike in E2E latency at the time of PREPARE_UPGRADE
-        return runAsync(() -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now));
+        return runAsync(() -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now), executor);
     }
 
     private void extractAndReplaceArtifacts(
-            String artifactsLoc, Bytes archiveData, long size, String desc, String marker, Instant now) {
+            String artifactsLoc, Bytes archiveData, long size, String desc, String marker, Timestamp now) {
         try {
             try (Stream<Path> paths = Files.walk(Paths.get(artifactsLoc))) {
                 // delete any existing files in the artifacts directory
@@ -165,25 +161,17 @@ public class FreezeUpgradeActions {
         }
     }
 
-    private void withNonNullDualState(
-            @NonNull final String actionDesc, @NonNull final Consumer<WritableFreezeStore> action) {
-        requireNonNull(actionDesc);
-        requireNonNull(action);
-        requireNonNull(freezeStore, "Cannot " + actionDesc + " without access to the dual state");
-        action.accept(freezeStore);
-    }
-
     private void writeCheckMarker(@NonNull final String file) {
         requireNonNull(file);
         writeMarker(file, null);
     }
 
-    private void writeSecondMarker(@NonNull final String file, @Nullable final Instant now) {
+    private void writeSecondMarker(@NonNull final String file, @Nullable final Timestamp now) {
         requireNonNull(file);
         writeMarker(file, now);
     }
 
-    private void writeMarker(@NonNull final String file, @Nullable final Instant now) {
+    private void writeMarker(@NonNull final String file, @Nullable final Timestamp now) {
         requireNonNull(file);
         final Path artifactsDirPath = Paths.get(adminServiceConfig.upgradeArtifactsPath());
         final var filePath = artifactsDirPath.resolve(file);
@@ -191,7 +179,7 @@ public class FreezeUpgradeActions {
             if (!artifactsDirPath.toFile().exists()) {
                 Files.createDirectories(artifactsDirPath);
             }
-            final var contents = (now == null) ? MARK : (String.valueOf(now.getEpochSecond()));
+            final var contents = (now == null) ? MARK : (String.valueOf(now.seconds()));
             Files.writeString(filePath, contents);
             log.info("Wrote marker {}", filePath);
         } catch (final IOException e) {

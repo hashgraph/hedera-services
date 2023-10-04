@@ -49,6 +49,7 @@ import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +66,7 @@ public class BaseTokenHandler {
      * @param tokenStore the token store
      * @param tokenRelationStore the token relation store
      */
-    protected void mintFungible(
+    protected long mintFungible(
             @NonNull final Token token,
             @NonNull final TokenRelation treasuryRel,
             final long amount,
@@ -83,7 +84,7 @@ public class BaseTokenHandler {
         if (!isMintOnTokenCreation) {
             validateTrue(token.supplyKey() != null, TOKEN_HAS_NO_SUPPLY_KEY);
         }
-        changeSupply(
+        return changeSupply(
                 token, treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT, accountStore, tokenStore, tokenRelationStore);
     }
 
@@ -102,7 +103,7 @@ public class BaseTokenHandler {
      * @param tokenStore the token store
      * @param tokenRelationStore the token relation store
      */
-    protected void changeSupply(
+    protected long changeSupply(
             @NonNull final Token token,
             @NonNull final TokenRelation treasuryRel,
             final long amount,
@@ -160,6 +161,8 @@ public class BaseTokenHandler {
         accountStore.put(copyTreasuryAccount.build());
         tokenStore.put(copyToken.build());
         tokenRelationStore.put(copyTreasuryRel.build());
+
+        return newTotalSupply;
     }
 
     /**
@@ -279,8 +282,9 @@ public class BaseTokenHandler {
             }
 
             // Create the new token relation
-            final var isFrozen = token.hasFreezeKey() && token.accountsFrozenByDefault();
-            final var kycGranted = !token.hasKycKey();
+            boolean isTreasuryAccount = Objects.equals(token.treasuryAccountId(), account.accountId());
+            final var isFrozen = token.hasFreezeKey() && token.accountsFrozenByDefault() && !isTreasuryAccount;
+            final var kycGranted = !token.hasKycKey() || isTreasuryAccount;
             final var newTokenRel = new TokenRelation(
                     token.tokenId(),
                     account.accountId(),

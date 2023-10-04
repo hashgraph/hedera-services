@@ -23,11 +23,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl.isMirror;
+import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -48,6 +50,8 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoCreateValidator {
     private static final int EVM_ADDRESS_SIZE = 20;
+    public static final String ECDSA_KEY_ALIAS_PREFIX = "3a21";
+    public static final int ECDSA_SECP256K1_ALIAS_SIZE = 35;
 
     @Inject
     public CryptoCreateValidator() { // Exists for injection
@@ -56,24 +60,26 @@ public class CryptoCreateValidator {
     /**
      * Validates Key Alias and EVM Address combinations.
      *
-     * @param op    the crypto create transaction body
+     * @param op                   the crypto create transaction body
      * @param attributeValidator   AttributeValidator
-     * @param config    CryptoCreateWithAliasConfig
-     * @param readableAccountStore    ReadableAccountStore
+     * @param config               CryptoCreateWithAliasConfig
+     * @param readableAccountStore ReadableAccountStore
+     * @param isInternalDispatch whether this is a hollow account creation (permits empty key list)
      * @throws HandleException if the inputs are not invalid
      */
     public void validateKeyAliasAndEvmAddressCombinations(
             @NonNull final CryptoCreateTransactionBody op,
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final CryptoCreateWithAliasConfig config,
-            @NonNull final ReadableAccountStore readableAccountStore) {
+            @NonNull final ReadableAccountStore readableAccountStore,
+            final boolean isInternalDispatch) {
         if (op.hasKey() && op.alias().equals(Bytes.EMPTY)) {
             validateKey(op, attributeValidator);
         } else if (!op.hasKey() && !op.alias().equals(Bytes.EMPTY)) {
             final var responseCode = config.enabled() ? INVALID_ALIAS_KEY : NOT_SUPPORTED;
             throw new HandleException(responseCode);
         } else if (op.hasKey() && !op.alias().equals(Bytes.EMPTY)) {
-            validateKeyAndAliasProvidedCase(op, attributeValidator, config, readableAccountStore);
+            validateKeyAndAliasProvidedCase(op, attributeValidator, config, readableAccountStore, isInternalDispatch);
         } else {
             // This is the case when no key and no alias are provided
             throw new HandleException(KEY_REQUIRED);
@@ -102,13 +108,22 @@ public class CryptoCreateValidator {
             @NonNull final CryptoCreateTransactionBody op,
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final CryptoCreateWithAliasConfig config,
-            @NonNull final ReadableAccountStore readableAccountStore) {
+            @NonNull final ReadableAccountStore readableAccountStore,
+            final boolean isInternalDispatch) {
         validateTrue(config.enabled(), NOT_SUPPORTED);
-        // TODO - to match the mono-service synthetic hollow account creation, we need an empty key list here
-        validateKey(op, attributeValidator);
-        validateTrue(op.alias().length() == EVM_ADDRESS_SIZE, INVALID_ALIAS_KEY);
+        if (!canSkipNormalKeyValidation(op.keyOrThrow(), isInternalDispatch)) {
+            validateKey(op, attributeValidator);
+        }
+        final boolean isValidAlias = op.alias().length() == EVM_ADDRESS_SIZE
+                || (op.alias().length() == ECDSA_SECP256K1_ALIAS_SIZE
+                        && op.alias().toHex().startsWith(ECDSA_KEY_ALIAS_PREFIX));
+        validateTrue(isValidAlias, INVALID_ALIAS_KEY);
         validateFalse(isMirror(op.alias()), INVALID_ALIAS_KEY);
         validateTrue(readableAccountStore.getAccountIDByAlias(op.alias()) == null, ALIAS_ALREADY_ASSIGNED);
+    }
+
+    private boolean canSkipNormalKeyValidation(@NonNull final Key key, final boolean isInternalDispatch) {
+        return isInternalDispatch && IMMUTABILITY_SENTINEL_KEY.equals(key);
     }
 
     /** check if the number of auto associations is too many

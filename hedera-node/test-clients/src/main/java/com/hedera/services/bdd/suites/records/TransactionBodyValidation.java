@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertEventuallyPasses;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.junit.TransactionBodyValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -29,7 +28,6 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class TransactionBodyValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TransactionBodyValidation.class);
 

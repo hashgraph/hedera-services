@@ -18,6 +18,8 @@ package com.swirlds.virtualmap;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_FIRST;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
 import static com.swirlds.virtualmap.VirtualMapTestUtils.createMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -44,7 +46,9 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.Metric.ValueType;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
@@ -62,6 +66,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -863,6 +868,65 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test
     @Tags({@Tag("VirtualMerkle")})
+    @DisplayName("Tests nodeCacheSizeMb metric")
+    void testNodeCacheSizeMetric() throws IOException, InterruptedException {
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
+        when(registry.register(any(), any(), any())).thenReturn(true);
+        final Metrics metrics = new DefaultMetrics(
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
+
+        VirtualMap<TestKey, TestValue> map0 = createMap();
+        map0.registerMetrics(metrics);
+
+        Metric metric = metrics.getMetric(VirtualMapStatistics.STAT_CATEGORY, "vmap_lifecycle_nodeCacheSizeMb_Test");
+        assertNotNull(metric);
+        if (!(metric instanceof LongGauge)) {
+            throw new AssertionError("nodeCacheSizeMb metric is not a gauge");
+        }
+
+        long metricValue = (long) metric.get(ValueType.VALUE);
+        for (int i = 0; i < 100; i++) {
+            for (int j = 0; j < 50; j++) {
+                map0.put(new TestKey((char) (i * 50 + j)), new TestValue(String.valueOf(i * j + 1)));
+            }
+
+            VirtualMap<TestKey, TestValue> map1 = map0.copy();
+            map0.release();
+            map0 = map1;
+
+            long newValue = (long) metric.get(ValueType.VALUE);
+            assertTrue(
+                    newValue >= metricValue,
+                    "Node cache size must be increasing" + " old value = " + metricValue + " new value = " + newValue);
+            metricValue = newValue;
+        }
+
+        final long value = metricValue;
+
+        final VirtualRootNode<TestKey, TestValue> lastRoot = map0.getRight();
+        lastRoot.enableFlush();
+        VirtualMap<TestKey, TestValue> map1 = map0.copy();
+        map0.release();
+        lastRoot.waitUntilFlushed();
+        map1.release();
+
+        assertEventuallyTrue(
+                () -> {
+                    long lastValue = (long) metric.get(ValueType.VALUE);
+                    return lastValue < value;
+                },
+                Duration.ofSeconds(4),
+                "Node cache size must decrease after flush");
+    }
+
+    @Test
+    @Tags({@Tag("VirtualMerkle")})
     @DisplayName("Tests vMapFlushes metric")
     void testFlushCount() throws IOException, InterruptedException {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
@@ -879,7 +943,7 @@ class VirtualMapTests extends VirtualTestBase {
         VirtualMap<TestKey, TestValue> map0 = createMap();
         map0.registerMetrics(metrics);
 
-        int flushCount = 0;
+        long flushCount = 0;
         final int totalCount = 1000;
         for (int i = 0; i < totalCount; i++) {
             VirtualMap<TestKey, TestValue> map1 = map0.copy();
@@ -911,7 +975,13 @@ class VirtualMapTests extends VirtualTestBase {
         if (!(metric instanceof Counter counterMetric)) {
             throw new AssertionError("flushCount metric is not a counter");
         }
-        assertEquals(flushCount, counterMetric.get());
+        // There is a potential race condition here, as we release `VirtualRootNode.flushLatch`
+        // before we update the statiscs (see https://github.com/hashgraph/hedera-services/issues/8439)
+        assertEventuallyEquals(
+                flushCount,
+                () -> counterMetric.get(),
+                Duration.ofSeconds(4),
+                "Expected flush count (%s) to match actual value (%s)".formatted(flushCount, counterMetric.get()));
     }
 
     /*

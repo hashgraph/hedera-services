@@ -23,6 +23,7 @@ import com.swirlds.platform.Utilities;
 import com.swirlds.platform.gossip.shadowgraph.SyncTimeoutException;
 import java.io.Closeable;
 import java.io.IOException;
+import javax.net.ssl.SSLException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -89,7 +90,11 @@ public final class NetworkUtils {
      * @return the marker to use for logging
      */
     public static Marker determineExceptionMarker(final Exception e) {
-        return Utilities.isCausedByIOException(e) || Utilities.isRootCauseSuppliedType(e, SyncTimeoutException.class)
+        return Utilities.isCausedByIOException(e)
+                        || Utilities.isRootCauseSuppliedType(e, SyncTimeoutException.class)
+                        // All SSLExceptions regardless of nested root cause need to be classified as SOCKET_EXCEPTIONS.
+                        // https://github.com/hashgraph/hedera-services/issues/7762
+                        || Utilities.hasAnyCauseSuppliedType(e, SSLException.class)
                 ? SOCKET_EXCEPTIONS.getMarker()
                 : EXCEPTION.getMarker();
     }

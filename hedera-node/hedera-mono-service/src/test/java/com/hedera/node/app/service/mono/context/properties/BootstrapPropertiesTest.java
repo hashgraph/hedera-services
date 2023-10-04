@@ -19,7 +19,7 @@ package com.hedera.node.app.service.mono.context.properties;
 import static com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_RESOURCE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
@@ -337,7 +337,7 @@ class BootstrapPropertiesTest {
             entry(ACCOUNTS_SYSTEM_ADMIN, 50L),
             entry(ACCOUNTS_SYSTEM_DELETE_ADMIN, 59L),
             entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, 60L),
-            entry(ACCOUNTS_STORE_ON_DISK, false),
+            entry(ACCOUNTS_STORE_ON_DISK, true),
             entry(ACCOUNTS_TREASURY, 2L),
             entry(AUTO_RENEW_GRANT_FREE_RENEWALS, false),
             entry(CONTRACTS_ALLOW_CREATE2, true),
@@ -522,9 +522,9 @@ class BootstrapPropertiesTest {
             entry(TOKENS_NFTS_MAX_BATCH_SIZE_MINT, 10),
             entry(TOKENS_NFTS_MAX_BATCH_SIZE_BURN, 10),
             entry(TOKENS_NFTS_MAX_METADATA_BYTES, 100),
-            entry(TOKENS_NFTS_MAX_ALLOWED_MINTS, 5000000L),
+            entry(TOKENS_NFTS_MAX_ALLOWED_MINTS, 10_000_000L),
             entry(TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR, ScaleFactor.from("5:2")),
-            entry(TOKENS_NFTS_USE_VIRTUAL_MERKLE, false),
+            entry(TOKENS_NFTS_USE_VIRTUAL_MERKLE, true),
             entry(UPGRADE_ARTIFACTS_PATH, "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current"),
             entry(HEDERA_ALLOWANCES_MAX_TXN_LIMIT, 20),
             entry(HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, 100),
@@ -532,7 +532,7 @@ class BootstrapPropertiesTest {
             entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, false),
             entry(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION, 6),
             entry(HEDERA_RECORD_STREAM_SIG_FILE_VERSION, 6),
-            entry(ACCOUNTS_MAX_NUM, 5_000_000L),
+            entry(ACCOUNTS_MAX_NUM, 20_000_000L),
             entry(CONTRACTS_MAX_NUM, 5_000_000L),
             entry(CONTRACTS_STORAGE_SLOT_PRICE_TIERS, "0til100M,2000til450M"),
             entry(CONTRACTS_REFERENCE_SLOT_LIFETIME, 31536000L),
@@ -554,11 +554,11 @@ class BootstrapPropertiesTest {
             entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
             entry(WORKFLOWS_ENABLED, Set.of()),
             entry(ACCOUNTS_BLOCKLIST_ENABLED, true),
-            entry(ACCOUNTS_BLOCKLIST_RESOURCE, "evm-addresses-blocklist.csv"),
+            entry(ACCOUNTS_BLOCKLIST_PATH, "hedera-node/data/onboard/evm-addresses-blocklist.csv"),
             entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, 500),
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30),
             entry(CONFIG_VERSION, 10),
-            entry(RECORDS_USE_CONSOLIDATED_FCQ, false));
+            entry(RECORDS_USE_CONSOLIDATED_FCQ, true));
 
     @Test
     void containsProperty() {

@@ -28,6 +28,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -59,7 +60,10 @@ public class EthereumTransactionHandler implements TransactionHandler {
         requireNonNull(context);
         final var body = context.body().ethereumTransactionOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        final var ethTxData = callDataHydration.tryToHydrate(body, fileStore).ethTxData();
+        final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
+        final var ethTxData = callDataHydration
+                .tryToHydrate(body, fileStore, hederaConfig.firstUserEntity())
+                .ethTxData();
         if (ethTxData != null) {
             // Ignore the return value; we just want to cache the signature for use in handle()
             ethereumSignatures.computeIfAbsent(ethTxData);

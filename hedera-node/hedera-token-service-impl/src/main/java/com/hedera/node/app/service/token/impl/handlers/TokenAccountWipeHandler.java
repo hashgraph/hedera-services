@@ -17,10 +17,14 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
+import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator.verifyTokenInstanceAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -30,6 +34,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
@@ -45,6 +50,8 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -184,6 +191,24 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         // changes for records
     }
 
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var op = feeContext.body();
+        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
+        final var tokenType =
+                readableTokenStore.get(op.tokenWipeOrThrow().tokenOrThrow()).tokenType();
+        final var meta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(fromPbj(op));
+        return feeContext
+                .feeCalculator(
+                        tokenType.equals(TokenType.FUNGIBLE_COMMON)
+                                ? SubType.TOKEN_FUNGIBLE_COMMON
+                                : SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
+                .addBytesPerTransaction(meta.getBpt())
+                .addNetworkRamByteSeconds(meta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs())
+                .calculate();
+    }
+
     private ValidationResult validateSemantics(
             @NonNull final AccountID accountId,
             @NonNull final TokenID tokenId,
@@ -205,6 +230,9 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         validateTrue(token.wipeKey() != null, ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY);
 
         final var accountRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
+        if (token.hasKycKey()) {
+            validateTrue(accountRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+        }
         validateFalse(
                 token.treasuryAccountId().equals(accountRel.accountId()),
                 ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);

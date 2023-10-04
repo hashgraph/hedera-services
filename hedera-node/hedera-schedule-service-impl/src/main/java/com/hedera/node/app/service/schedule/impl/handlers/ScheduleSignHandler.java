@@ -38,6 +38,7 @@ import com.hedera.node.config.data.SchedulingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -74,6 +75,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
         final ReadableScheduleStore scheduleStore = context.createStore(ReadableScheduleStore.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
@@ -113,6 +115,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
     @SuppressWarnings({"FeatureEnvy", "OverlyCoupledMethod"})
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
+        Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
         final Instant currentConsensusTime = context.consensusNow();
         final WritableScheduleStore scheduleStore = context.writableStore(WritableScheduleStore.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
@@ -139,10 +142,10 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                                 updatedSignatories,
                                 validationResult,
                                 isLongTermEnabled)) {
-                            scheduleStore.put(ScheduleUtility.replaceSignatoriesAndMarkExecuted(
+                            scheduleStore.put(HandlerUtility.replaceSignatoriesAndMarkExecuted(
                                     scheduleToSign, updatedSignatories, currentConsensusTime));
                         } else {
-                            scheduleStore.put(ScheduleUtility.replaceSignatories(scheduleToSign, updatedSignatories));
+                            scheduleStore.put(HandlerUtility.replaceSignatories(scheduleToSign, updatedSignatories));
                         }
                     } else {
                         // Note, this will never happen, but Sonar static analysis can't figure that out.
@@ -155,7 +158,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                 throw new HandleException(validationResult);
             }
         } else {
-            throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
+            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION);
         }
     }
 

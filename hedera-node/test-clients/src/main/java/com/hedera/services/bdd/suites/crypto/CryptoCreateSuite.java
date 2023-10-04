@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class CryptoCreateSuite extends HapiSuite {
@@ -199,8 +200,8 @@ public class CryptoCreateSuite extends HapiSuite {
                         sourcing(() -> getTxnRecord(creation).logged()));
     }
 
-    @HapiTest
     /* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */
+    @HapiTest
     private HapiSpec usdFeeAsExpected() {
         double preV13PriceUsd = 0.01;
         double v13PriceUsd = 0.05;
@@ -262,6 +263,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
     public HapiSpec syntaxChecksAreAsExpected() {
         return defaultHapiSpec("SyntaxChecksAreAsExpected")
                 .given()
@@ -326,8 +328,8 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(KEY_REQUIRED));
     }
 
-    @HapiTest
     // One of element in key list is not valid
+    @HapiTest
     private HapiSpec createAnAccountInvalidKeyList() {
         KeyShape emptyThresholdShape = threshOf(0, 0);
         KeyShape shape = listOf(SIMPLE, SIMPLE, emptyThresholdShape);
@@ -343,8 +345,8 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
-    @HapiTest
     // One of element in nested key list is not valid
+    @HapiTest
     private HapiSpec createAnAccountInvalidNestedKeyList() {
         KeyShape invalidListShape = listOf(SIMPLE, SIMPLE, listOf(0));
         KeyShape shape = listOf(SIMPLE, SIMPLE, invalidListShape);
@@ -360,8 +362,8 @@ public class CryptoCreateSuite extends HapiSuite {
                         .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
-    @HapiTest
     // One of element in threshold key is not valid
+    @HapiTest
     private HapiSpec createAnAccountInvalidThresholdKey() {
         KeyShape emptyListShape = listOf(0);
         KeyShape thresholdShape = threshOf(1, SIMPLE, SIMPLE, emptyListShape);

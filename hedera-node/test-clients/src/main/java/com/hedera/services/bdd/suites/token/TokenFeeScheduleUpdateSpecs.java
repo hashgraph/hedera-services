@@ -41,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -67,6 +68,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
         });
     }
 
+    @HapiTest
     private HapiSpec baseOperationIsChargedExpectedFee() {
         final var htsAmount = 2_345L;
         final var targetToken = "immutableToken";
@@ -93,6 +95,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
                 .then(validateChargedUsdWithin("baseFeeSchUpd", expectedBasePriceUsd, 1.0));
     }
 
+    @HapiTest
     private HapiSpec onlyValidCustomFeeScheduleCanBeUpdated() {
         final var hbarAmount = 1_234L;
         final var htsAmount = 2_345L;

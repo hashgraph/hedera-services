@@ -8,50 +8,34 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app,
             com.hedera.node.app.service.network.admin.impl,
             com.hedera.node.app.service.schedule.impl,
-            com.hedera.node.app.service.schedule.impl.test,
             com.hedera.node.app.service.token.impl,
-            com.hedera.node.app.service.token.impl.test,
-            com.hedera.node.app.service.networkadmin.impl.test,
             com.hedera.node.app.service.consensus.impl,
-            com.hedera.node.app.service.consensus.impl.test,
             com.hedera.node.services.cli;
     exports com.hedera.node.app.service.mono.exceptions to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.service.schedule.impl,
             com.hedera.node.app,
-            com.hedera.node.app.service.schedule.impl.test,
             com.hedera.node.app.service.token.impl;
     exports com.hedera.node.app.service.mono.context.domain.process to
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.legacy.core.jproto to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.service.token.impl,
-            com.hedera.node.app.service.token.impl.test,
-            com.hedera.node.app.service.schedule.impl.test,
+            com.hedera.node.app.service.schedule.impl,
             com.hedera.node.app.service.contract.impl,
-            com.hedera.node.app.service.contract.impl.test,
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app,
-            com.hedera.node.app.service.consensus.impl.test,
-            com.hedera.node.app.service.schedule.impl,
             com.hedera.node.app.service.file.impl,
             com.hedera.node.services.cli;
     exports com.hedera.node.app.service.mono.utils to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.service.schedule.impl,
-            com.hedera.node.app.service.schedule.impl.test,
             com.hedera.node.app,
-            com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app.service.token.impl,
             com.hedera.node.app.service.contract.impl,
-            com.hedera.node.app.service.contract.impl.test,
             com.hedera.node.app.service.consensus.impl,
-            com.hedera.node.app.service.networkadmin.impl,
-            com.hedera.node.app.service.consensus.impl.test,
-            com.hedera.node.app.service.networkadmin.impl.test,
             com.hedera.node.services.cli,
             com.hedera.node.app.service.file.impl,
-            com.hedera.node.app.service.file.impl.test,
             com.hedera.node.app.service.network.admin.impl;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.test.fixtures,
@@ -61,8 +45,7 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.state.validation to
             com.hedera.node.app,
-            com.hedera.node.app.service.consensus.impl,
-            com.hedera.node.app.service.consensus.impl.test;
+            com.hedera.node.app.service.consensus.impl;
     exports com.hedera.node.app.service.mono.utils.accessors;
     exports com.hedera.node.app.service.mono.sigs.metadata to
             com.hedera.node.app;
@@ -81,20 +64,17 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.state.virtual.schedule to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.service.schedule.impl,
-            com.hedera.node.app.service.schedule.impl.test,
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.store.schedule to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.store.tokens to
             com.hedera.node.app.service.mono.test.fixtures,
-            com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.context;
     exports com.hedera.node.app.service.mono.context.properties;
     exports com.hedera.node.app.service.mono.state.enums to
             com.hedera.node.app.service.mono.test.fixtures,
-            com.hedera.node.app.service.token.impl.test,
             com.hedera.node.services.cli;
     exports com.hedera.node.app.service.mono.state.exports to
             com.hedera.node.app;
@@ -255,6 +235,8 @@ module com.hedera.node.app.service.mono {
     opens com.hedera.node.app.service.mono.state.migration to
             com.swirlds.common;
 
+    exports com.hedera.node.app.service.mono.fees.calculation.meta;
+
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.evm;
@@ -296,6 +278,8 @@ module com.hedera.node.app.service.mono {
     requires org.apache.commons.collections4;
     requires org.apache.commons.io;
     requires org.bouncycastle.provider;
+    requires org.hyperledger.besu.secp256k1;
+    requires com.sun.jna;
     requires org.eclipse.collections.impl;
     requires org.slf4j;
     requires static com.github.spotbugs.annotations;

@@ -16,16 +16,19 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
+import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
-import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -43,6 +46,7 @@ import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -167,41 +171,49 @@ public class CustomFeeAssessmentStep {
         final var copy = op.copyBuilder();
         final var changedFungibleTokenTransfers = result.getMutableInputTokenAdjustments();
         final List<TokenTransferList> tokenTransferLists = new ArrayList<>();
-        // If there are no changes for the token , add as it is
-        for (final var xfers : op.tokenTransfers()) {
+        for (final var xfers : op.tokenTransfersOrElse(emptyList())) {
             final var token = xfers.token();
+            // If there are no changes for the token, leave its list untouched
             if (!changedFungibleTokenTransfers.containsKey(token)) {
                 tokenTransferLists.add(xfers);
+            } else {
+                final var postAssessmentBalances = changedFungibleTokenTransfers.get(token);
+                final var adjustsHere = xfers.transfersOrThrow();
+                final var includedNetNewChanges = postAssessmentBalances.size() > adjustsHere.size();
+                if (includedNetNewChanges || balancesChangedBetween(adjustsHere, postAssessmentBalances)) {
+                    final List<AccountAmount> newTransfers = new ArrayList<>(adjustsHere.size());
+                    // First re-use the original transaction body to preserve any approvals or decimals that were set
+                    for (final var aa : adjustsHere) {
+                        final var newAmount = postAssessmentBalances.getOrDefault(aa.accountID(), aa.amount());
+                        newTransfers.add(aa.copyBuilder().amount(newAmount).build());
+                        postAssessmentBalances.remove(aa.accountID());
+                    }
+                    // Add any net-new custom fee adjustments (e.g. credits to fee collectors)
+                    for (final var entry : postAssessmentBalances.entrySet()) {
+                        newTransfers.add(AccountAmount.newBuilder()
+                                .accountID(entry.getKey())
+                                .amount(entry.getValue())
+                                .build());
+                    }
+                    tokenTransferLists.add(
+                            xfers.copyBuilder().transfers(newTransfers).build());
+                } else {
+                    tokenTransferLists.add(xfers);
+                }
             }
-        }
-        // If there are changes modify the token transfer list
-        for (final var entry : changedFungibleTokenTransfers.entrySet()) {
-            final var tokenTransferList = TokenTransferList.newBuilder().token(entry.getKey());
-            final var aaList = new ArrayList<AccountAmount>();
-            for (final var valueEntry : entry.getValue().entrySet()) {
-                aaList.add(AccountAmount.newBuilder()
-                        .accountID(valueEntry.getKey())
-                        .amount(valueEntry.getValue())
-                        .build());
-            }
-            tokenTransferList.transfers(aaList);
-            final var expectedDecimals = getExpectedDecimalsFor(op.tokenTransfers(), entry.getKey());
-            if (expectedDecimals != null) {
-                tokenTransferList.expectedDecimals(expectedDecimals);
-            }
-            tokenTransferLists.add(tokenTransferList.build());
         }
         copy.tokenTransfers(tokenTransferLists);
         return copy.build();
     }
 
-    private Integer getExpectedDecimalsFor(final List<TokenTransferList> tokenTransferLists, final TokenID key) {
-        for (final var tokenTransferList : tokenTransferLists) {
-            if (tokenTransferList.token().equals(key)) {
-                return tokenTransferList.expectedDecimals();
+    private boolean balancesChangedBetween(
+            @NonNull final List<AccountAmount> original, @NonNull final Map<AccountID, Long> postAssessmentBalances) {
+        for (final var aa : original) {
+            if (aa.amount() != postAssessmentBalances.getOrDefault(aa.accountID(), aa.amount())) {
+                return true;
             }
         }
-        return null;
+        return false;
     }
 
     private CryptoTransferTransactionBody buildBodyFromAdjustments(final AssessmentResult result) {
@@ -258,6 +270,11 @@ public class CustomFeeAssessmentStep {
 
             for (final var aa : ftTransfers) {
                 final var adjustment = aa.amount();
+
+                final boolean isFungible = token.tokenType().equals(FUNGIBLE_COMMON);
+                validateFalse(
+                        !isFungible && adjustment != 0, ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
+
                 if (adjustment < 0) {
                     final var sender = aa.accountID();
                     // If sender for this adjustment is same as treasury for token

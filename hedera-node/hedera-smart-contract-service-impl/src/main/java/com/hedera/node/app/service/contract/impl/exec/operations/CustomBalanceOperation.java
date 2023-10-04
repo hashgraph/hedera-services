@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
-import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
@@ -49,7 +50,7 @@ public class CustomBalanceOperation extends BalanceOperation {
             }
             // Otherwise continue to enforce existence checks for backward compatibility
             if (!addressChecks.isPresent(address, frame)) {
-                return new OperationResult(cost(true), CustomExceptionalHaltReason.MISSING_ADDRESS);
+                return new OperationResult(cost(true), INVALID_SOLIDITY_ADDRESS);
             }
             return super.execute(frame, evm);
         } catch (FixedStack.UnderflowException ignore) {

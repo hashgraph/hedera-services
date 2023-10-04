@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static java.util.stream.Collectors.toList;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -224,6 +225,7 @@ public class CostOfEverythingSuite extends HapiSuite {
         };
     }
 
+    @HapiTest
     HapiSpec cryptoGetRecordsHappyPathS() {
         return customHapiSpec("CryptoGetRecordsHappyPathS")
                 .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
@@ -232,6 +234,7 @@ public class CostOfEverythingSuite extends HapiSuite {
                 .then(getAccountRecords(HAIR_TRIGGER_PAYER).has(inOrder(recordWith())));
     }
 
+    @HapiTest
     HapiSpec cryptoGetRecordsHappyPathM() {
         return customHapiSpec("CryptoGetRecordsHappyPathM")
                 .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
@@ -242,6 +245,7 @@ public class CostOfEverythingSuite extends HapiSuite {
                 .then(getAccountRecords(HAIR_TRIGGER_PAYER).has(inOrder(recordWith(), recordWith())));
     }
 
+    @HapiTest
     HapiSpec cryptoGetRecordsHappyPathL() {
         return customHapiSpec("CryptoGetRecordsHappyPathL")
                 .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
@@ -260,6 +264,7 @@ public class CostOfEverythingSuite extends HapiSuite {
         return new HapiSpec[] {cryptoGetAccountInfoHappyPath()};
     }
 
+    @HapiTest
     HapiSpec cryptoGetAccountInfoHappyPath() {
         KeyShape smallKey = threshOf(1, 3);
         KeyShape midsizeKey = listOf(SIMPLE, listOf(2), threshOf(1, 2));
@@ -284,6 +289,7 @@ public class CostOfEverythingSuite extends HapiSuite {
         };
     }
 
+    @HapiTest
     HapiSpec cryptoCreateSimpleKey() {
         KeyShape shape = SIMPLE;
 
@@ -300,6 +306,7 @@ public class CostOfEverythingSuite extends HapiSuite {
         };
     }
 
+    @HapiTest
     HapiSpec cryptoTransferGenesisToFunding() {
         return customHapiSpec("CryptoTransferGenesisToFunding")
                 .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))

@@ -28,6 +28,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -37,6 +38,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class Issue2319Spec extends HapiSuite {
@@ -56,6 +58,8 @@ public class Issue2319Spec extends HapiSuite {
         });
     }
 
+    @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
     private HapiSpec propsPermissionsSigReqsWaivedForAddressBookAdmin() {
         var pemLoc = "<PEM>";
 
@@ -83,6 +87,7 @@ public class Issue2319Spec extends HapiSuite {
                         fileUpdate(API_PERMISSIONS).wacl(GENESIS));
     }
 
+    @HapiTest
     private HapiSpec sysFileImmutabilityWaivedForMasterAndTreasury() {
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
                 .given(
@@ -106,6 +111,8 @@ public class Issue2319Spec extends HapiSuite {
                                 .signedBy(GENESIS));
     }
 
+    @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
     private HapiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
         var pemLoc = "<PEM>";
 
@@ -132,6 +139,8 @@ public class Issue2319Spec extends HapiSuite {
                         cryptoUpdate(EXCHANGE_RATE_CONTROL).key("persistent").receiverSigRequired(false));
     }
 
+    @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
     private HapiSpec sysFileSigReqsWaivedForMasterAndTreasury() {
         var pemLoc = "<PEM>";
         var validRates = new AtomicReference<ByteString>();

@@ -48,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -294,6 +295,7 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     // https://github.com/hashgraph/hedera-services/issues/3037
+    @HapiTest
     private HapiSpec immutableContractKeyFormIsStandard() {
         return defaultHapiSpec("ImmutableContractKeyFormIsStandard")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).immutable())

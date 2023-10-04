@@ -51,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -89,6 +90,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
         });
     }
 
+    @HapiTest
     private HapiSpec canDeleteAllowanceForDeletedSpender() {
         final String owner = "owner";
         final String spender = "spender";
@@ -145,6 +147,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(nft, 3L).hasNoSpender());
     }
 
+    @HapiTest
     private HapiSpec duplicateEntriesDoesntThrow() {
         final String owner = "owner";
         final String spender = "spender";
@@ -221,6 +224,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(nft, 3L).hasNoSpender());
     }
 
+    @HapiTest
     private HapiSpec invalidOwnerFails() {
         final String owner = "owner";
         final String spender = "spender";
@@ -277,6 +281,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
     }
 
+    @HapiTest
     private HapiSpec feesAsExpected() {
         final String owner = "owner";
         final String spender = "spender";
@@ -364,6 +369,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         validateChargedUsdWithin("twoDeleteNft", 0.08124, 0.01));
     }
 
+    @HapiTest
     private HapiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
         final String owner = "owner";
         final String spender = "spender";
@@ -460,6 +466,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                         "hedera.allowances.maxAccountLimit", "100")));
     }
 
+    @HapiTest
     private HapiSpec exceedsTransactionLimit() {
         final String owner = "owner";
         final String spender = "spender";
@@ -534,6 +541,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .overridingProps(Map.of("hedera.allowances.maxTransactionLimit", "20")));
     }
 
+    @HapiTest
     private HapiSpec validatesSerialNums() {
         final String owner = "owner";
         final String spender = "spender";
@@ -589,6 +597,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec invalidTokenTypeFailsInDeleteAllowance() {
         final String owner = "owner";
         final String spender = "spender";
@@ -617,6 +626,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         .hasPrecheck(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES));
     }
 
+    @HapiTest
     private HapiSpec emptyAllowancesDeleteRejected() {
         final String owner = "owner";
         return defaultHapiSpec("emptyAllowancesDeleteRejected")
@@ -625,6 +635,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec tokenNotAssociatedToAccountFailsOnDeleteAllowance() {
         final String owner = "owner";
         final String spender = "spender";
@@ -672,6 +683,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .tokenAllowancesCount(0)));
     }
 
+    @HapiTest
     private HapiSpec canDeleteMultipleOwners() {
         final String owner1 = "owner1";
         final String owner2 = "owner2";
@@ -763,6 +775,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(nft, 5L).hasNoSpender());
     }
 
+    @HapiTest
     private HapiSpec noOwnerDefaultsToPayerInDeleteAllowance() {
         final String payer = "payer";
         final String spender = "spender";
@@ -825,6 +838,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(nft, 1L).hasNoSpender());
     }
 
+    @HapiTest
     private HapiSpec approvedForAllNotAffectedOnDelete() {
         final String owner = "owner";
         final String spender = "spender";
@@ -899,6 +913,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(nft, 1L).hasNoSpender());
     }
 
+    @HapiTest
     private HapiSpec happyPathWorks() {
         final String owner = "owner";
         final String spender = "spender";

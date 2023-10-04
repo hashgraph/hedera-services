@@ -19,6 +19,8 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -171,6 +173,28 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
+    }
+
+    @Test
+    @DisplayName("fee schedule update fails if token is deleted")
+    void rejectsDeletedTokenId() {
+        final var deletedToken = givenValidFungibleToken(payerId, true, false, false, false, true);
+        writableTokenStore.put(deletedToken);
+
+        assertThatThrownBy(() -> subject.handle(context))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_WAS_DELETED));
+    }
+
+    @Test
+    @DisplayName("fee schedule update fails if token is paused")
+    void rejectsPausedTokenId() {
+        final var pausedToken = givenValidFungibleToken(payerId, false, true, false, false, true);
+        writableTokenStore.put(pausedToken);
+
+        assertThatThrownBy(() -> subject.handle(context))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_IS_PAUSED));
     }
 
     @Test

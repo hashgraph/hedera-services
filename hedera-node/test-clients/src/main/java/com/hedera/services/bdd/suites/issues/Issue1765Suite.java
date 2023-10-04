@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshot
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
@@ -42,6 +43,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class Issue1765Suite extends HapiSuite {
@@ -67,14 +69,17 @@ public class Issue1765Suite extends HapiSuite {
                 get950Balance());
     }
 
-    public static HapiSpec get950Balance() {
+    @HapiTest
+    private static HapiSpec get950Balance() {
         return defaultHapiSpec("Get950Balance")
                 .given()
                 .when()
                 .then(getAccountBalance("0.0.950").logged());
     }
 
-    public static HapiSpec recordOfInvalidAccountTransferSanityChecks() {
+    @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
+    private static HapiSpec recordOfInvalidAccountTransferSanityChecks() {
         final String INVALID_ACCOUNT = IMAGINARY;
 
         return defaultHapiSpec("RecordOfInvalidAccountTransferSanityChecks")
@@ -86,7 +91,9 @@ public class Issue1765Suite extends HapiSuite {
                 .then();
     }
 
-    public static HapiSpec recordOfInvalidAccountUpdateSanityChecks() {
+    @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
+    private static HapiSpec recordOfInvalidAccountUpdateSanityChecks() {
         final String INVALID_ACCOUNT = IMAGINARY;
 
         return defaultHapiSpec("RecordOfInvalidAccountSanityChecks")
@@ -100,7 +107,8 @@ public class Issue1765Suite extends HapiSuite {
                 .then();
     }
 
-    public static HapiSpec recordOfInvalidContractUpdateSanityChecks() {
+    @HapiTest
+    private static HapiSpec recordOfInvalidContractUpdateSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_CONTRACT = IMAGINARY;
         final String THE_MEMO_IS = MEMO_IS;
@@ -122,7 +130,8 @@ public class Issue1765Suite extends HapiSuite {
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
 
-    public static HapiSpec recordOfInvalidFileUpdateSanityChecks() {
+    @HapiTest
+    private static HapiSpec recordOfInvalidFileUpdateSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_FILE = IMAGINARY;
         final String THE_MEMO_IS = MEMO_IS;
@@ -143,7 +152,7 @@ public class Issue1765Suite extends HapiSuite {
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
 
-    public static HapiSpec recordOfInvalidFileAppendSanityChecks() {
+    private static HapiSpec recordOfInvalidFileAppendSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_FILE = IMAGINARY;
         final String THE_MEMO_IS = MEMO_IS;

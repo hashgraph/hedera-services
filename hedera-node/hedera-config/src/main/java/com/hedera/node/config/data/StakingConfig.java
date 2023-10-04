@@ -33,9 +33,10 @@ public record StakingConfig(
                 int feesStakingRewardPercentage,
         // @ConfigProperty(defaultValue = "") Map<Long, Long> nodeMaxToMinStakeRatios,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean isEnabled,
-        @ConfigProperty(defaultValue = "" + Long.MAX_VALUE) @NetworkProperty long maxDailyStakeRewardThPerH,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean requireMinStakeToReward,
-        @ConfigProperty(defaultValue = "0") @NetworkProperty long rewardRate,
+        // Can be renamed to just "rewardRate" when the "staking.rewardRate" property is removed
+        // from all production 0.0.121 system files
+        @ConfigProperty(defaultValue = "6849") @NetworkProperty long perHbarRewardRate,
         @ConfigProperty(defaultValue = "25000000000000000") @NetworkProperty long startThreshold,
         @ConfigProperty(defaultValue = "500") @NetworkProperty int sumOfConsensusWeights,
         @ConfigProperty(defaultValue = "0") @NetworkProperty long rewardBalanceThreshold,

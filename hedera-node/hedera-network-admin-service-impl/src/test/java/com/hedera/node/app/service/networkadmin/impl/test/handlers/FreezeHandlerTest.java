@@ -44,11 +44,9 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
-import com.hedera.node.app.service.networkadmin.ReadableUpgradeStore;
-import com.hedera.node.app.service.networkadmin.impl.WritableUpgradeStore;
+import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -56,6 +54,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.io.IOException;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,9 +63,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FreezeHandlerTest {
-    @Mock(strictness = LENIENT)
-    WritableUpgradeStore upgradeStore;
-
     @Mock(strictness = LENIENT)
     ReadableUpgradeFileStore upgradeFileStore;
 
@@ -90,7 +86,8 @@ class FreezeHandlerTest {
             .build();
     private final AccountID nonAdminAccount =
             AccountID.newBuilder().accountNum(9999L).build();
-    private final FreezeHandler subject = new FreezeHandler();
+    private final FreezeHandler subject = new FreezeHandler(new ForkJoinPool(
+            1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true));
 
     @BeforeEach
     void setUp() {
@@ -101,11 +98,9 @@ class FreezeHandlerTest {
         given(account.key()).willReturn(key);
 
         given(preHandleContext.createStore(ReadableAccountStore.class)).willReturn(accountStore);
-        given(preHandleContext.createStore(ReadableUpgradeStore.class)).willReturn(upgradeStore);
         given(preHandleContext.createStore(ReadableUpgradeFileStore.class)).willReturn(upgradeFileStore);
 
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.writableStore(WritableUpgradeStore.class)).willReturn(upgradeStore);
         given(handleContext.readableStore(ReadableUpgradeFileStore.class)).willReturn(upgradeFileStore);
         given(handleContext.writableStore(WritableFreezeStore.class)).willReturn(freezeStore);
     }

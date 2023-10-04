@@ -26,7 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
-import com.hedera.node.app.service.token.records.StakingContext;
+import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -47,7 +47,7 @@ class StakingPeriodTimeHookTest {
     private EndOfStakingPeriodUpdater stakingPeriodCalculator;
 
     @Mock
-    private StakingContext context;
+    private TokenContext context;
 
     private StakingPeriodTimeHook subject;
 

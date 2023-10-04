@@ -21,7 +21,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
@@ -54,6 +56,11 @@ public interface HederaSystemContract extends PrecompiledContract {
                     PrecompileContractResult.revert(
                             Bytes.wrap(reason.protoName().getBytes())),
                     gasRequirement);
+        }
+
+        public static FullResult haltResult(@NonNull final ExceptionalHaltReason reason, final long gasRequirement) {
+            requireNonNull(reason);
+            return new FullResult(PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(reason)), gasRequirement);
         }
 
         public static FullResult successResult(@NonNull final ByteBuffer encoded, final long gasRequirement) {

@@ -48,7 +48,7 @@ public class ActionsHelper {
         return ContractAction.newBuilder()
                 .callType(ContractActionType.CALL)
                 .gas(frame.getRemainingGas())
-                .callDepth(frame.getMessageStackDepth() + 1)
+                .callDepth(frame.getDepth() + 1)
                 .callingContract(contractIdWith(hederaIdNumOfContractIn(frame)))
                 .targetedAddress(tuweniToPbjBytes(frame.getStackItem(1)))
                 .error(MISSING_ADDRESS_ERROR)

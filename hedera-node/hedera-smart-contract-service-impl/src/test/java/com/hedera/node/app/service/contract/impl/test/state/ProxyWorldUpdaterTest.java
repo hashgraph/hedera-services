@@ -16,9 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_VALUE_TRANSFER;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
@@ -45,6 +43,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
@@ -250,7 +249,8 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void cannotCreateWithNonZeroBalance() {
-        assertThrows(IllegalStateException.class, () -> subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, Wei.of(123)));
+        final var balance = Wei.of(123);
+        assertThrows(IllegalStateException.class, () -> subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, balance));
     }
 
     @Test
@@ -399,10 +399,10 @@ class ProxyWorldUpdaterTest {
     @Test
     void delegatesTransfer() {
         given(evmFrameState.tryTransfer(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true))
-                .willReturn(Optional.of(INVALID_RECEIVER_SIGNATURE));
+                .willReturn(Optional.of(CustomExceptionalHaltReason.INVALID_SIGNATURE));
         final var maybeHaltReason = subject.tryTransfer(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true);
         assertTrue(maybeHaltReason.isPresent());
-        assertEquals(INVALID_RECEIVER_SIGNATURE, maybeHaltReason.get());
+        assertEquals(CustomExceptionalHaltReason.INVALID_SIGNATURE, maybeHaltReason.get());
     }
 
     @Test
@@ -429,7 +429,7 @@ class ProxyWorldUpdaterTest {
     @Test
     void doesntBothDecrementingGasOnLazyCreationFailureSinceAboutToHalt() {
         final var pretendCost = 1_234L;
-        final var haltReason = Optional.<ExceptionalHaltReason>of(INVALID_VALUE_TRANSFER);
+        final var haltReason = Optional.<ExceptionalHaltReason>of(FAILURE_DURING_LAZY_ACCOUNT_CREATION);
         given(hederaOperations.lazyCreationCostInGas()).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost * 2);
         given(evmFrameState.tryLazyCreation(SOME_EVM_ADDRESS)).willReturn(haltReason);
@@ -459,7 +459,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void delegatesDeletionTrackingAttempt() {
-        final var haltReason = Optional.<ExceptionalHaltReason>of(SELFDESTRUCT_TO_SELF);
+        final var haltReason = Optional.<ExceptionalHaltReason>of(CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF);
         given(evmFrameState.tryTrackingDeletion(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS))
                 .willReturn(haltReason);
         assertSame(haltReason, subject.tryTrackingDeletion(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS));
@@ -478,5 +478,11 @@ class ProxyWorldUpdaterTest {
 
         subject.externalizeSystemContractResults(contractFunctionResult, ResultStatus.IS_SUCCESS);
         verify(systemContractOperations).externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS);
+    }
+
+    @Test
+    void currentExchangeRateTest() {
+        subject.currentExchangeRate();
+        verify(systemContractOperations).currentExchangeRate();
     }
 }

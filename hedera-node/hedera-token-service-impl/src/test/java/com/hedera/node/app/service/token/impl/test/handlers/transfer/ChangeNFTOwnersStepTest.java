@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.token.impl.test.handlers.transfer.Acco
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenTransferList;
@@ -54,11 +55,13 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
+        writableTokenStore.put(givenValidFungibleToken(ownerId, false, false, false, false, false));
     }
 
     @Test
     void changesNftOwners() {
         final var receiver = asAccount(tokenReceiver);
+        given(handleContext.payer()).willReturn(spenderId);
         final var replacedOp = getReplacedOp();
         changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, payerId);
 

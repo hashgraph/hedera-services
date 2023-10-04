@@ -43,6 +43,8 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.extensions.PhaseTimer;
+import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
@@ -116,13 +118,17 @@ import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
+import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.Gossip;
 import com.swirlds.platform.gossip.GossipFactory;
+import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
-import com.swirlds.platform.intake.IntakeCycleStats;
+import com.swirlds.platform.intake.EventIntakePhase;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.AddedEventMetrics;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
@@ -143,6 +149,8 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
+import com.swirlds.platform.state.signed.StartupStateUtils;
+import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.threading.PauseAndLoad;
@@ -157,11 +165,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -366,7 +374,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
 
-        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
+        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time, selfId);
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
@@ -385,7 +393,25 @@ public class SwirldsPlatform implements Platform, Startable {
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
 
-        preconsensusEventFileManager = buildPreconsensusEventFileManager(softwareUpgrade, emergencyRecoveryManager);
+        final Hash epochHash;
+        if (emergencyRecoveryManager.getEmergencyRecoveryFile() != null) {
+            epochHash = emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
+        } else {
+            epochHash =
+                    initialState.getState().getPlatformState().getPlatformData().getEpochHash();
+        }
+
+        StartupStateUtils.doRecoveryCleanup(
+                platformContext,
+                recycleBin,
+                selfId,
+                swirldName,
+                actualMainClassName,
+                epochHash,
+                initialState.getRound());
+
+        preconsensusEventFileManager = buildPreconsensusEventFileManager(initialState.getRound(), softwareUpgrade);
+
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
         stateManagementComponent = wiring.wireStateManagementComponent(
@@ -510,9 +536,21 @@ public class SwirldsPlatform implements Platform, Startable {
         final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
         isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
 
-        eventLinker = buildEventLinker(time, isDuplicateChecks);
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+        final IntakeEventCounter intakeEventCounter;
+        if (syncConfig.waitForEventsInIntake()) {
+            intakeEventCounter = new DefaultIntakeEventCounter(currentAddressBook);
+        } else {
+            intakeEventCounter = new NoOpIntakeEventCounter();
+        }
 
-        final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
+        eventLinker = buildEventLinker(time, isDuplicateChecks, intakeEventCounter);
+
+        final PhaseTimer<EventIntakePhase> eventIntakePhaseTimer = new PhaseTimerBuilder<>(
+                        platformContext, time, "platform", EventIntakePhase.class)
+                .setInitialPhase(EventIntakePhase.IDLE)
+                .enableFractionalMetrics()
+                .build();
 
         final EventIntake eventIntake = new EventIntake(
                 platformContext,
@@ -523,9 +561,10 @@ public class SwirldsPlatform implements Platform, Startable {
                 consensusRef::get,
                 currentAddressBook,
                 eventObserverDispatcher,
-                intakeCycleStats,
+                eventIntakePhaseTimer,
                 shadowGraph,
-                preConsensusEventHandler::preconsensusEvent);
+                preConsensusEventHandler::preconsensusEvent,
+                intakeEventCounter);
 
         final EventCreator eventCreator = buildEventCreator(eventIntake);
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
@@ -539,24 +578,18 @@ public class SwirldsPlatform implements Platform, Startable {
         validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
         // some events in the PCES might have been created by nodes that are no longer in the current
         // address book but are in the previous one, so we need both for signature validation
-        final List<AddressBook> validationAddressBooks = Stream.of(currentAddressBook, previousAddressBook)
-                .filter(Objects::nonNull)
-                .toList();
         if (basicConfig.verifyEventSigs()) {
-            validators.add(new SignatureValidator(validationAddressBooks, CryptoStatic::verifySignature));
+            validators.add(new SignatureValidator(
+                    previousAddressBook, currentAddressBook, appVersion, CryptoStatic::verifySignature, time));
         }
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 
-        /* validates events received from gossip */
-        final EventValidator eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent);
+        // validates events received from gossip
+        final EventValidator eventValidator = new EventValidator(
+                eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer, intakeEventCounter);
 
         eventTaskDispatcher = new EventTaskDispatcher(
-                time,
-                eventValidator,
-                eventCreator,
-                eventIntake::addUnlinkedEvent,
-                eventIntakeMetrics,
-                intakeCycleStats);
+                time, eventValidator, eventCreator, eventIntake::addUnlinkedEvent, eventIntakeMetrics);
 
         intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)
                 .setNodeId(selfId)
@@ -568,9 +601,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 .setHandler(e -> getGossip().getEventIntakeLambda().accept(e))
                 .setCapacity(eventConfig.eventIntakeQueueSize())
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
-                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
-                        .enableMaxSizeMetric()
-                        .enableBusyTimeMetric())
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
                 .build());
 
         tipsetEventCreator = buildTipsetEventCreationManager(
@@ -596,14 +627,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 new TransactionMetrics(metrics));
 
         final boolean startedFromGenesis = initialState.isGenesisState();
-
-        final Hash epochHash;
-        if (emergencyRecoveryManager.isEmergencyRecoveryFilePresent()) {
-            epochHash = emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
-        } else {
-            epochHash =
-                    initialState.getState().getPlatformState().getPlatformData().getEpochHash();
-        }
 
         gossip = GossipFactory.buildGossip(
                 platformContext,
@@ -632,7 +655,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventLinker,
                 platformStatusManager,
                 this::loadReconnectState,
-                this::clearAllPipelines);
+                this::clearAllPipelines,
+                intakeEventCounter);
 
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;
@@ -831,13 +855,16 @@ public class SwirldsPlatform implements Platform, Startable {
                 getAddressBook(),
                 signedState));
 
-        shadowGraph.initFromEvents(
-                EventUtils.prepareForShadowGraph(
-                        // we need to pass in a copy of the array, otherwise prepareForShadowGraph will rearrange the
-                        // events in the signed state which will cause issues for other components that depend on it
-                        signedState.getEvents().clone()),
-                // we need to provide the minGen from consensus so that expiry matches after a restart/reconnect
-                consensusRef.get().getMinRoundGeneration());
+        if (signedState.getEvents().length > 0) {
+            shadowGraph.initFromEvents(
+                    EventUtils.prepareForShadowGraph(
+                            // we need to pass in a copy of the array, otherwise prepareForShadowGraph will rearrange
+                            // the events in the signed state which will cause issues for other components
+                            // that depend on it
+                            signedState.getEvents().clone()),
+                    // we need to provide the minGen from consensus so that expiry matches after a restart/reconnect
+                    consensusRef.get().getMinRoundGeneration());
+        }
 
         // Data that is needed for the intake system to work
         for (final EventImpl e : signedState.getEvents()) {
@@ -906,7 +933,7 @@ public class SwirldsPlatform implements Platform, Startable {
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 
             try {
-                preconsensusEventWriter.registerDiscontinuity();
+                preconsensusEventWriter.registerDiscontinuity(signedState.getRound());
                 preconsensusEventWriter.setMinimumGenerationNonAncient(signedState
                         .getState()
                         .getPlatformState()
@@ -980,8 +1007,13 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     @NonNull
     private EventLinker buildEventLinker(
-            @NonNull final Time time, @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
+            @NonNull final Time time,
+            @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
+
         Objects.requireNonNull(isDuplicateChecks);
+        Objects.requireNonNull(intakeEventCounter);
+
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
@@ -990,7 +1022,8 @@ public class SwirldsPlatform implements Platform, Startable {
             final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     parentFinder,
-                    chatterConfig.futureGenerationLimit());
+                    chatterConfig.futureGenerationLimit(),
+                    intakeEventCounter);
             metrics.getOrCreate(
                     new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
                             .withDescription("the number of events without parents buffered")
@@ -1010,22 +1043,17 @@ public class SwirldsPlatform implements Platform, Startable {
 
     /**
      * Build the preconsensus event file manager.
+     *
+     * @param startingRound   the round number of the initial state being loaded into the system
+     * @param softwareUpgrade whether or not this node is starting up after a software upgrade
      */
     @NonNull
     private PreconsensusEventFileManager buildPreconsensusEventFileManager(
-            final boolean softwareUpgrade, @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
+            final long startingRound, final boolean softwareUpgrade) {
         try {
-            if (emergencyRecoveryManager.isEmergencyRecoveryFilePresent()) {
-                logger.info(
-                        STARTUP.getMarker(),
-                        "This node was started in emergency recovery mode, "
-                                + "clearing the preconsensus event stream.");
-                PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
-            }
-
             clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade);
-
-            return new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
+            return new PreconsensusEventFileManager(
+                    platformContext, Time.getCurrent(), recycleBin, selfId, startingRound);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
@@ -1059,16 +1087,30 @@ public class SwirldsPlatform implements Platform, Startable {
 
         metrics.start();
 
-        if (tipsetEventCreator != null) {
-            // The event creator is intentionally started before replaying the preconsensus event stream.
-            // This prevents the event creator's intake queue from filling up and blocking. Note that
-            // this component won't actually create events until the platform has the appropriate status.
-            tipsetEventCreator.start();
-        }
+        // The event creator is intentionally started before replaying the preconsensus event stream.
+        // This prevents the event creator's intake queue from filling up and blocking. Note that
+        // this component won't actually create events until the platform has the appropriate status.
+        Optional.of(tipsetEventCreator).ifPresent(Startable::start);
 
         replayPreconsensusEvents();
         configureStartupEventFreeze();
         gossip.start();
+    }
+
+    /**
+     * Performs a PCES recovery:
+     * <ul>
+     *     <li>Starts all components for handling events</li>
+     *     <li>Does not start gossip</li>
+     *     <li>Replays events from PCES, reaches consensus on them and handles them</li>
+     *     <li>Saves the last state produces by this replay to disk</li>
+     * </ul>
+     */
+    public void performPcesRecovery() {
+        components.start();
+        Optional.of(tipsetEventCreator).ifPresent(Startable::start);
+        replayPreconsensusEvents();
+        stateManagementComponent.dumpLatestImmutableState(StateToDiskReason.PCES_RECOVERY_COMPLETE, true);
     }
 
     /**
@@ -1197,11 +1239,12 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param softwareUpgrade true if a software upgrade has occurred
      * @throws UncheckedIOException if the required changes on software upgrade cannot be performed
      */
-    public void clearPCESOnSoftwareUpgradeIfConfigured(final boolean softwareUpgrade) {
+    private void clearPCESOnSoftwareUpgradeIfConfigured(final boolean softwareUpgrade) {
         final boolean clearOnSoftwareUpgrade = platformContext
                 .getConfiguration()
                 .getConfigData(PreconsensusEventStreamConfig.class)
                 .clearOnSoftwareUpgrade();
+
         if (softwareUpgrade && clearOnSoftwareUpgrade) {
             logger.info(STARTUP.getMarker(), "Clearing the preconsensus event stream on software upgrade.");
             PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
