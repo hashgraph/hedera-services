@@ -457,10 +457,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final TokenID tokenId) {
         for (int i = 0; i < ownerAllowances.size(); i++) {
             final var allowance = ownerAllowances.get(i);
-            if (allowance.tokenId() != null
-                    && allowance.spenderId() != null
-                    && allowance.spenderId().equals(spenderId)
-                    && allowance.tokenId().equals(tokenId)) {
+            if (allowance.spenderId().equals(spenderId) && allowance.tokenId().equals(tokenId)) {
                 return i;
             }
         }
