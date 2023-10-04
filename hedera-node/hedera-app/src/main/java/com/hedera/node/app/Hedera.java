@@ -98,25 +98,25 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /*
-****************        ****************************************************************************************
-************                ************                                                                       *
-*********                      *********                                                                       *
-*****                              *****                                                                       *
-****                                ****      ___           ___           ___           ___           ___      *
-**         ĦĦĦĦ          ĦĦĦĦ         **     /\  \         /\  \         /\  \         /\  \         /\  \     *
-**         ĦĦĦĦ          ĦĦĦĦ         **    /::\  \       /::\  \       /::\  \       /::\  \       /::\  \    *
-*          ĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦ          *   /:/\:\  \     /:/\:\  \     /:/\:\  \     /:/\:\  \     /:/\:\  \   *
-           ĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦ             /::\~\:\  \   /:/  \:\__\   /::\~\:\  \   /::\~\:\  \   /::\~\:\  \  *
-           ĦĦĦĦ          ĦĦĦĦ            /:/\:\ \:\__\ /:/__/ \:|__| /:/\:\ \:\__\ /:/\:\ \:\__\ /:/\:\ \:\__\ *
-           ĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦ            \:\~\:\ \/__/ \:\  \ /:/  / \:\~\:\ \/__/ \/_|::\/:/  / \/__\:\/:/  / *
-*          ĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦ          *  \:\ \:\__\    \:\  /:/  /   \:\ \:\__\      |:|::/  /       \::/  /  *
-**         ĦĦĦĦ          ĦĦĦĦ         **   \:\ \/__/     \:\/:/  /     \:\ \/__/      |:|\/__/        /:/  /   *
-***        ĦĦĦĦ          ĦĦĦĦ        ***    \:\__\        \::/__/       \:\__\        |:|  |         /:/  /    *
-****                                ****     \/__/         ~~            \/__/         \|__|         \/__/     *
-******                            ******                                                                       *
-*********                      *********                                                                       *
-************                ************                                                                       *
-****************        ****************************************************************************************
+ ****************        ****************************************************************************************
+ ************                ************                                                                       *
+ *********                      *********                                                                       *
+ *****                              *****                                                                       *
+ ****                                ****      ___           ___           ___           ___           ___      *
+ **         ĦĦĦĦ          ĦĦĦĦ         **     /\  \         /\  \         /\  \         /\  \         /\  \     *
+ **         ĦĦĦĦ          ĦĦĦĦ         **    /::\  \       /::\  \       /::\  \       /::\  \       /::\  \    *
+ *          ĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦ          *   /:/\:\  \     /:/\:\  \     /:/\:\  \     /:/\:\  \     /:/\:\  \   *
+            ĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦ             /::\~\:\  \   /:/  \:\__\   /::\~\:\  \   /::\~\:\  \   /::\~\:\  \  *
+            ĦĦĦĦ          ĦĦĦĦ            /:/\:\ \:\__\ /:/__/ \:|__| /:/\:\ \:\__\ /:/\:\ \:\__\ /:/\:\ \:\__\ *
+            ĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦ            \:\~\:\ \/__/ \:\  \ /:/  / \:\~\:\ \/__/ \/_|::\/:/  / \/__\:\/:/  / *
+ *          ĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦ          *  \:\ \:\__\    \:\  /:/  /   \:\ \:\__\      |:|::/  /       \::/  /  *
+ **         ĦĦĦĦ          ĦĦĦĦ         **   \:\ \/__/     \:\/:/  /     \:\ \/__/      |:|\/__/        /:/  /   *
+ ***        ĦĦĦĦ          ĦĦĦĦ        ***    \:\__\        \::/__/       \:\__\        |:|  |         /:/  /    *
+ ****                                ****     \/__/         ~~            \/__/         \|__|         \/__/     *
+ ******                            ******                                                                       *
+ *********                      *********                                                                       *
+ ************                ************                                                                       *
+ ****************        ****************************************************************************************
 */
 
 /**
@@ -377,9 +377,9 @@ public final class Hedera implements SwirldMain {
     }
 
     /**
-     * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be
-     * newer than the current software version. If it is prior to the current version, then each migration between
-     * the {@code deserializedVersion} and the current version, including the current version, will be executed, thus
+     * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be newer
+     * than the current software version. If it is prior to the current version, then each migration between the
+     * {@code deserializedVersion} and the current version, including the current version, will be executed, thus
      * bringing the state up to date.
      *
      * <p>If the {@code deserializedVersion} is {@code null}, then this is the first time the node has been started,
@@ -436,11 +436,11 @@ public final class Hedera implements SwirldMain {
         if (!isUTF8(defaultCharset)) {
             logger.error(
                     """
-                    Fatal precondition violation in HederaNode#{}: default charset is {} and not UTF-8
-                    LC_ALL={}
-                    LANG={}
-                    file.encoding={}
-                    """,
+                            Fatal precondition violation in HederaNode#{}: default charset is {} and not UTF-8
+                            LC_ALL={}
+                            LANG={}
+                            file.encoding={}
+                            """,
                     daggerApp.nodeId(),
                     defaultCharset,
                     System.getenv("LC_ALL"),
