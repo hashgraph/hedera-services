@@ -18,7 +18,9 @@ package com.hedera.node.app.service.contract.impl.exec;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.QueryHederaNativeOperations;
@@ -42,6 +44,12 @@ import java.util.function.Supplier;
 
 @Module
 public interface QueryModule {
+    @Provides
+    @QueryScope
+    static CustomGasCalculator provideCustomGasCalculator(@NonNull HederaFunctionality functionality) {
+        return new CustomGasCalculator();
+    }
+
     @Provides
     @QueryScope
     static HederaWorldUpdater.Enhancement provideEnhancement(

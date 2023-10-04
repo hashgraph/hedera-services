@@ -18,8 +18,10 @@ package com.hedera.node.app.service.contract.impl.exec;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.contract.impl.annotations.InitialState;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
@@ -53,6 +55,12 @@ import java.util.function.Supplier;
 
 @Module(includes = {TransactionConfigModule.class, TransactionInitialStateModule.class})
 public interface TransactionModule {
+    @Provides
+    @TransactionScope
+    static CustomGasCalculator provideCustomGasCalculator(@NonNull HederaFunctionality functionality) {
+        return new CustomGasCalculator();
+    }
+
     @Provides
     @TransactionScope
     static Instant provideConsensusTime(@NonNull final HandleContext context) {
