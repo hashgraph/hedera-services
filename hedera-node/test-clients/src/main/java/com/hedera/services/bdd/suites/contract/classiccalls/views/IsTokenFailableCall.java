@@ -23,39 +23,27 @@ import static com.hedera.services.bdd.suites.contract.classiccalls.ClassicInvent
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.contract.AbstractFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.AbstractFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.AbstractFailableStaticCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.ClassicFailureMode;
 import com.hedera.services.bdd.suites.contract.classiccalls.ClassicInventory;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
-import java.util.List;
 
-public class FailableIsTokenCall extends AbstractFailableCall {
+public class IsTokenFailableCall extends AbstractFailableStaticCall {
     private static final Function SIGNATURE = new Function("isToken(address)", "(int64,bool)");
 
-    public FailableIsTokenCall() {
+    public IsTokenFailableCall() {
         super(EnumSet.of(INVALID_TOKEN_ID_FAILURE, NO_REASON_TO_FAIL));
     }
 
     @Override
-    public void assertExpectedRecords(List<TransactionRecord> records, HapiSpec spec, ClassicFailureMode mode) {
-        rememberRecordsForMode(mode, records);
-    }
-
-    @Override
-    public void assertExpectedResult(ContractFunctionResult result, HapiSpec spec, ClassicFailureMode mode) {
-        rememberResultForStaticMode(mode, result);
-    }
-
-    @Override
     public String name() {
-        return "IsToken";
+        return "isToken";
     }
 
     @Override
-    public byte[] encodedFailureFromInventory(@NonNull final ClassicFailureMode mode, @NonNull final HapiSpec spec) {
+    public byte[] encodedCall(@NonNull final ClassicFailureMode mode, @NonNull final HapiSpec spec) {
         throwIfUnsupported(mode);
         if (mode == NO_REASON_TO_FAIL) {
             final var tokenAddress =
@@ -64,10 +52,5 @@ public class FailableIsTokenCall extends AbstractFailableCall {
         } else {
             return SIGNATURE.encodeCallWithArgs(INVALID_TOKEN_ADDRESS).array();
         }
-    }
-
-    @Override
-    public boolean staticCallOk() {
-        return true;
     }
 }

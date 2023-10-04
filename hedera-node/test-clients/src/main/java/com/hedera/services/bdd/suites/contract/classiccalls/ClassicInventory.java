@@ -18,23 +18,25 @@ package com.hedera.services.bdd.suites.contract.classiccalls;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.base.utility.Pair;
 import java.util.Set;
 
 public class ClassicInventory {
-    private static final String ALICE = "Alice";
-    private static final String BOB = "Bob";
-    private static final String ALPHA = "Alpha";
-    private static final String BRAVO = "Bravo";
-    private static final String ZERO = "Zero";
-    private static final String ONE = "One";
+    public static final String ALICE = "Alice";
+    public static final String BOB = "Bob";
+    public static final String ALPHA = "Alpha";
+    public static final String BRAVO = "Bravo";
+    public static final String ZERO = "Zero";
+    public static final String ONE = "One";
     public static final String CRYPTO_KEY = "cryptoKey";
     public static final String FAILABLE_CALLS_CONTRACT = "FailableClassicCalls";
     public static final String FAILABLE_CONTROL_KEY = "authorizedContractKey";
     public static final Address INVALID_TOKEN_ADDRESS = HapiPropertySource.idAsHeadlongAddress(
             TokenID.newBuilder().setTokenNum(Long.MAX_VALUE).build());
-
+    public static final Address INVALID_ACCOUNT_ADDRESS = HapiPropertySource.idAsHeadlongAddress(
+            AccountID.newBuilder().setAccountNum(Long.MAX_VALUE).build());
     public static final String[] VALID_ACCOUNT_IDS = new String[] {ALICE, BOB};
 
     public static final String[] VALID_FUNGIBLE_TOKEN_IDS = new String[] {ALPHA, BRAVO};

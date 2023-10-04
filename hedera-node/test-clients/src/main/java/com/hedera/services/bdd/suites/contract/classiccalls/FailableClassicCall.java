@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.classiccalls;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -32,19 +33,21 @@ import java.util.List;
  */
 public interface FailableClassicCall {
     /**
-     * Does something to report on the observed failure modes.
+     * Returns the call result for the given records.
+     *
+     * @param records the records to use to construct the call result
+     * @return the call result for the given records
      */
-    void reportOnAssertedFailureModes();
+    FailableCallResult asCallResult(List<TransactionRecord> records);
 
     /**
-     * Asserts the given records are as expected, given the failure mode within the given spec.
+     * Returns the static call result for the given top level status and result.
+     *
+     * @param topLevelStatus the top level status
+     * @param result the result
+     * @return the static call result for the given top level status and result
      */
-    void assertExpectedRecords(List<TransactionRecord> records, HapiSpec spec, ClassicFailureMode mode);
-
-    /**
-     * Asserts the given static call result is as expected, given the failure mode within the given spec.
-     */
-    void assertExpectedResult(ContractFunctionResult result, HapiSpec spec, ClassicFailureMode mode);
+    FailableStaticCallResult asStaticCallResult(ResponseCodeEnum topLevelStatus, ContractFunctionResult result);
 
     /**
      * Returns the name of the call.
@@ -70,7 +73,7 @@ public interface FailableClassicCall {
      * @param spec the spec to use to resolve inventory ids
      * @return the encoded call that should experience the given failure mode
      */
-    byte[] encodedFailureFromInventory(@NonNull ClassicFailureMode mode, @NonNull HapiSpec spec);
+    byte[] encodedCall(@NonNull ClassicFailureMode mode, @NonNull HapiSpec spec);
 
     /**
      * Returns whether this call can be made statically.

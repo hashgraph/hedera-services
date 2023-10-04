@@ -37,12 +37,14 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
@@ -71,6 +73,9 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 
     @Nullable
     private Consumer<ContractFunctionResult> resultsObs;
+
+    @Nullable
+    private BiConsumer<ResponseCodeEnum, ContractFunctionResult> fullResultsObs;
 
     @Override
     public HederaFunctionality type() {
@@ -114,6 +119,11 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 
     public HapiContractCallLocal exposingResultTo(final Consumer<ContractFunctionResult> resultsObs) {
         this.resultsObs = resultsObs;
+        return this;
+    }
+
+    public HapiContractCallLocal exposingFullResultTo(final BiConsumer<ResponseCodeEnum, ContractFunctionResult> fullResultsObs) {
+        this.fullResultsObs = fullResultsObs;
         return this;
     }
 
@@ -176,6 +186,11 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 
         if (resultsObs != null) {
             resultsObs.accept(response.getContractCallLocal().getFunctionResult());
+        }
+        if (fullResultsObs != null) {
+            fullResultsObs.accept(
+                    response.getContractCallLocal().getHeader().getNodeTransactionPrecheckCode(),
+                    response.getContractCallLocal().getFunctionResult());
         }
         final var rawResult =
                 response.getContractCallLocal().getFunctionResult().getContractCallResult();

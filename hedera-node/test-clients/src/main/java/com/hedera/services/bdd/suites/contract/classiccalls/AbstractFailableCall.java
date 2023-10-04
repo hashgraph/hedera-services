@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.contract;
+package com.hedera.services.bdd.suites.contract.classiccalls;
 
 import com.hedera.services.bdd.suites.contract.classiccalls.ClassicFailureMode;
+import com.hedera.services.bdd.suites.contract.classiccalls.FailableCallResult;
 import com.hedera.services.bdd.suites.contract.classiccalls.FailableClassicCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.FailableStaticCallResult;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.EnumMap;
+
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 public abstract class AbstractFailableCall implements FailableClassicCall {
     private final Set<ClassicFailureMode> failureModes;
-
-    private Map<ClassicFailureMode, List<TransactionRecord>> modeRecords = new EnumMap<>(ClassicFailureMode.class);
-    private Map<ClassicFailureMode, ContractFunctionResult> modeResults = new EnumMap<>(ClassicFailureMode.class);
 
     protected AbstractFailableCall(@NonNull final Set<ClassicFailureMode> failureModes) {
         this.failureModes = Objects.requireNonNull(failureModes);
@@ -43,25 +42,27 @@ public abstract class AbstractFailableCall implements FailableClassicCall {
     }
 
     @Override
-    public void reportOnAssertedFailureModes() {
-        if (staticCallOk()) {
-            System.out.println("---- STATIC " + name() + " ----");
-            modeResults.forEach((mode, result) -> System.out.println(mode.name() + " ➡️ " + result));
-            System.out.println("----------------\n");
+    public FailableCallResult asCallResult(List<TransactionRecord> records) {
+        final var topLevelRecord = records.get(0);
+        if (records.size() > 1) {
+            final var childRecord = records.get(1);
+            return new FailableCallResult(
+                    topLevelRecord.getReceipt().getStatus(),
+                    topLevelRecord.getContractCallResult().getErrorMessage(),
+                    childRecord.getReceipt().getStatus(),
+                    childRecord.getContractCallResult().getErrorMessage());
+        } else {
+            return new FailableCallResult(
+                    topLevelRecord.getReceipt().getStatus(),
+                    topLevelRecord.getContractCallResult().getErrorMessage(),
+                    null,
+                    null);
         }
-        System.out.println("---- CALL " + name() + " ----");
-        modeRecords.forEach((mode, records) -> System.out.println(mode.name() + " ➡️ " + records));
-        System.out.println("----------------\n");
     }
 
-    protected void rememberRecordsForMode(
-            @NonNull final ClassicFailureMode mode, @NonNull final List<TransactionRecord> records) {
-        modeRecords.put(mode, records);
-    }
-
-    protected void rememberResultForStaticMode(
-            @NonNull final ClassicFailureMode mode, @NonNull final ContractFunctionResult result) {
-        modeResults.put(mode, result);
+    @Override
+    public FailableStaticCallResult asStaticCallResult(ResponseCodeEnum topLevelStatus, ContractFunctionResult result) {
+        return new FailableStaticCallResult(topLevelStatus, result.getErrorMessage());
     }
 
     protected void throwIfUnsupported(@NonNull final ClassicFailureMode mode) {
