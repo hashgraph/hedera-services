@@ -196,7 +196,7 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .hasToken(relationshipWith(SUPPLE).balance(1).freeze(Frozen)));
     }
 
-`    private HapiSpec revokedKYCTreasuryCannotBeMintedOrBurned() {
+    private HapiSpec revokedKYCTreasuryCannotBeMintedOrBurned() {
         return defaultHapiSpec("RevokedKYCTreasuryCannotBeMintedOrBurned")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
