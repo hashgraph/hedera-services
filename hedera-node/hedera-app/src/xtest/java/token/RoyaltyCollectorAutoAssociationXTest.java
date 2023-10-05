@@ -18,12 +18,11 @@ public class RoyaltyCollectorAutoAssociationXTest extends AbstractTokenXTest {
 
     @Override
     protected void doScenarioOperations() {
-        System.out.println(namedTokenIds);
         // Transfer some initial balance to the party and counterparty accounts
         handleAndCommitSingleTransaction(
                 component.cryptoTransferHandler(),
                 transfer(
-                        movingFungibleUnits(FIRST_FUNGIBLE, TOKEN_TREASURY, PARTY, INITIAL_BALANCE),
+                        movingFungibleUnits(FIRST_FUNGIBLE, TOKEN_TREASURY, COUNTERPARTY, INITIAL_BALANCE),
                         movingFungibleUnits(SECOND_FUNGIBLE, TOKEN_TREASURY, COUNTERPARTY, INITIAL_BALANCE)),
                 ResponseCodeEnum.OK);
         handleAndCommitSingleTransaction(
