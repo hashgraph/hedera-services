@@ -37,12 +37,14 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
@@ -64,7 +66,16 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     private Optional<Consumer<Object[]>> typedResultsObs = Optional.empty();
 
     @Nullable
+    private byte[] explicitRawParams;
+
+    @Nullable
     private Consumer<byte[]> rawResultsObs;
+
+    @Nullable
+    private Consumer<ContractFunctionResult> resultsObs;
+
+    @Nullable
+    private BiConsumer<ResponseCodeEnum, ContractFunctionResult> fullResultsObs;
 
     @Override
     public HederaFunctionality type() {
@@ -90,6 +101,11 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
         paramsFn = Optional.of(fn);
     }
 
+    public HapiContractCallLocal(String contract, byte[] rawParams) {
+        this.contract = contract;
+        this.explicitRawParams = rawParams;
+    }
+
     public HapiContractCallLocal(String contract) {
         this.abi = FALLBACK_ABI;
         this.params = new Object[0];
@@ -98,6 +114,17 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 
     public HapiContractCallLocal has(ContractFnResultAsserts provider) {
         expectations = Optional.of(provider);
+        return this;
+    }
+
+    public HapiContractCallLocal exposingResultTo(final Consumer<ContractFunctionResult> resultsObs) {
+        this.resultsObs = resultsObs;
+        return this;
+    }
+
+    public HapiContractCallLocal exposingFullResultTo(
+            final BiConsumer<ResponseCodeEnum, ContractFunctionResult> fullResultsObs) {
+        this.fullResultsObs = fullResultsObs;
         return this;
     }
 
@@ -158,6 +185,14 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
                     response.getContractCallLocal()::getFunctionResult);
         }
 
+        if (resultsObs != null) {
+            resultsObs.accept(response.getContractCallLocal().getFunctionResult());
+        }
+        if (fullResultsObs != null) {
+            fullResultsObs.accept(
+                    response.getContractCallLocal().getHeader().getNodeTransactionPrecheckCode(),
+                    response.getContractCallLocal().getFunctionResult());
+        }
         final var rawResult =
                 response.getContractCallLocal().getFunctionResult().getContractCallResult();
         saveResultToEntry.ifPresent(s -> spec.registry().saveBytes(s, rawResult));
@@ -184,16 +219,20 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     }
 
     private Query getContractCallLocal(HapiSpec spec, Transaction payment, boolean costOnly) {
-        if (details.isPresent()) {
-            ActionableContractCallLocal actionable = spec.registry().getActionableLocalCall(details.get());
-            contract = actionable.getContract();
-            abi = actionable.getDetails().getAbi();
-            params = actionable.getDetails().getExampleArgs();
-        } else if (paramsFn.isPresent()) {
-            params = paramsFn.get().apply(spec);
+        final byte[] callData;
+        if (explicitRawParams == null) {
+            if (details.isPresent()) {
+                ActionableContractCallLocal actionable = spec.registry().getActionableLocalCall(details.get());
+                contract = actionable.getContract();
+                abi = actionable.getDetails().getAbi();
+                params = actionable.getDetails().getExampleArgs();
+            } else if (paramsFn.isPresent()) {
+                params = paramsFn.get().apply(spec);
+            }
+            callData = encodeParametersForCall(params, abi);
+        } else {
+            callData = explicitRawParams;
         }
-
-        byte[] callData = encodeParametersForCall(params, abi);
 
         @SuppressWarnings("java:S1874")
         final var opBuilder = ContractCallLocalQuery.newBuilder()

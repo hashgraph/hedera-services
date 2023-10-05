@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -71,8 +72,6 @@ public class ShadowGraphSynchronizer {
      * so we have to make sure we always get the latest one
      */
     private final Supplier<GraphGenerations> generationsSupplier;
-    /** called to provide the sync result when the sync is done */
-    private final Consumer<SyncResult> syncDone;
     /** consumes events received by the peer */
     private final Consumer<GossipEvent> eventHandler;
     /** manages sync related decisions */
@@ -97,25 +96,26 @@ public class ShadowGraphSynchronizer {
             final int numberOfNodes,
             final SyncMetrics syncMetrics,
             final Supplier<GraphGenerations> generationsSupplier,
-            final Consumer<SyncResult> syncDone,
-            final Consumer<GossipEvent> eventHandler,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             final FallenBehindManager fallenBehindManager,
             @NonNull final IntakeEventCounter intakeEventCounter,
             final ParallelExecutor executor,
             final boolean sendRecInitBytes,
             final InterruptableRunnable executePreFetchTips) {
 
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(intakeQueue);
+
         this.shadowGraph = shadowGraph;
         this.numberOfNodes = numberOfNodes;
         this.syncMetrics = syncMetrics;
         this.generationsSupplier = generationsSupplier;
-        this.syncDone = syncDone;
         this.fallenBehindManager = fallenBehindManager;
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.executor = executor;
         this.sendRecInitBytes = sendRecInitBytes;
         this.executePreFetchTips = executePreFetchTips;
-        this.eventHandler = buildEventHandler(platformContext, eventHandler);
+        this.eventHandler = buildEventHandler(platformContext, intakeQueue);
     }
 
     /**
@@ -123,7 +123,7 @@ public class ShadowGraphSynchronizer {
      * passing them down the pipeline.
      */
     private Consumer<GossipEvent> buildEventHandler(
-            @NonNull final PlatformContext platformContext, @NonNull final Consumer<GossipEvent> rawEventHandler) {
+            @NonNull final PlatformContext platformContext, @NonNull final QueueThread<GossipEvent> intakeQueue) {
 
         final boolean hashOnGossipThreads = platformContext
                 .getConfiguration()
@@ -135,11 +135,11 @@ public class ShadowGraphSynchronizer {
             return event -> {
                 cryptography.digestSync(event.getHashedData());
                 event.buildDescriptor();
-                rawEventHandler.accept(event);
+                intakeQueue.add(event);
             };
         }
 
-        return rawEventHandler;
+        return intakeQueue::add;
     }
 
     private static List<Boolean> getMyBooleans(final List<ShadowEvent> theirTipShadows) {
@@ -353,7 +353,7 @@ public class ShadowGraphSynchronizer {
                 SYNC_INFO.getMarker(), "{} writing events done, wrote {} events", conn::getDescription, sendList::size);
         logger.info(SYNC_INFO.getMarker(), "{} reading events done, read {} events", conn.getDescription(), eventsRead);
 
-        syncDone(new SyncResult(conn.isOutbound(), conn.getOtherId(), eventsRead, sendList.size()));
+        syncMetrics.syncDone(new SyncResult(conn.isOutbound(), conn.getOtherId(), eventsRead, sendList.size()));
 
         timing.setTimePoint(5);
         syncMetrics.recordSyncTiming(timing, conn);
@@ -380,11 +380,6 @@ public class ShadowGraphSynchronizer {
             final Callable<T> readTask, final Callable<Void> writeTask, final Connection connection)
             throws ParallelExecutionException {
         return executor.doParallel(readTask, writeTask, connection::disconnect);
-    }
-
-    private void syncDone(final SyncResult info) {
-        syncDone.accept(info);
-        syncMetrics.syncDone(info);
     }
 
     /**

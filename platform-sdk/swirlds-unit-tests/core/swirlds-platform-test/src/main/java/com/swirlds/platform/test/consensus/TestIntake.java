@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.system.NodeId;
@@ -31,7 +30,7 @@ import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
-import com.swirlds.platform.event.linking.InOrderLinker;
+import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -58,7 +57,6 @@ public class TestIntake implements LoadableFromSignedState {
     private static final BiConsumer<Long, Long> NOOP_MINGEN = (l1, l2) -> {};
     private ConsensusImpl consensus;
     private final ShadowGraph shadowGraph;
-    private final EventLinker linker;
     private final EventIntake intake;
     private final ConsensusOutput output;
     private final AddressBook ab;
@@ -76,7 +74,7 @@ public class TestIntake implements LoadableFromSignedState {
      * See {@link #TestIntake(AddressBook, Time, ConsensusConfig)}
      */
     public TestIntake(@NonNull final AddressBook ab, @NonNull final Time time) {
-        this(ab, time, ConfigurationHolder.getConfigData(ConsensusConfig.class));
+        this(ab, time, new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class));
     }
 
     /**
@@ -99,8 +97,10 @@ public class TestIntake implements LoadableFromSignedState {
         output = new ConsensusOutput(time);
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
-        linker = new InOrderLinker(
-                Time.getCurrent(), ConfigurationHolder.getConfigData(ConsensusConfig.class), parentFinder, l -> null);
+
+        final EventLinker linker =
+                new OrphanBufferingLinker(consensusConfig, parentFinder, 100000, mock(IntakeEventCounter.class));
+
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), output);
 
@@ -190,10 +190,6 @@ public class TestIntake implements LoadableFromSignedState {
                 new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, NOOP_MINGEN, ab, signedState);
         shadowGraph.clear();
         shadowGraph.initFromEvents(Arrays.asList(signedState.getEvents()), consensus.getMinRoundGeneration());
-    }
-
-    public int getNumEventsAdded() {
-        return numEventsAdded;
     }
 
     public @NonNull ConsensusOutput getOutput() {

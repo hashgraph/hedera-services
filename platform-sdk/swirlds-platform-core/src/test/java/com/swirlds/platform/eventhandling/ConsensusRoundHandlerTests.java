@@ -128,7 +128,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 eventStreamManager,
                 stateHashSignQueue,
                 e -> {},
-                () -> {},
                 mock(StatusActionSubmitter.class),
                 (round) -> {},
                 new BasicSoftwareVersion(1));
@@ -224,7 +223,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 consensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
                 mock(StatusActionSubmitter.class),
-                () -> false,
                 state,
                 new BasicSoftwareVersion(1));
 
@@ -237,7 +235,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 eventStreamManager,
                 stateHashSignQueue,
                 e -> {},
-                () -> {},
                 mock(StatusActionSubmitter.class),
                 (round) -> {},
                 new BasicSoftwareVersion(1));
