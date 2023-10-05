@@ -163,6 +163,10 @@ public class FileAppendHandler implements TransactionHandler {
         final var file = feeContext
                 .readableStore(ReadableFileStore.class)
                 .getFileLeaf(op.fileAppendOrThrow().fileIDOrThrow());
+
+        // Don't compute fees if file does not exist, let the handle throw the appropriate response code
+        if (file == null) return Fees.FREE;
+
         final var fileNum = file.fileId().fileNum();
         final var firstSoftwareUpdateFile =
                 fileServiceConfig.softwareUpdateRange().left();
