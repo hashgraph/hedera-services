@@ -424,7 +424,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 appCommunicationComponent,
                 preconsensusEventWriter,
                 platformStatusManager::getCurrentStatus,
-                platformStatusManager::submitStatusAction);
+                platformStatusManager::submitStatusAction,
+                epochHash);
         wiring.registerComponents(components);
 
         final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
