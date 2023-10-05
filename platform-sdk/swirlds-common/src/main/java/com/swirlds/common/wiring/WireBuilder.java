@@ -16,9 +16,14 @@
 
 package com.swirlds.common.wiring;
 
+import com.swirlds.common.wiring.internal.AbstractObjectCounter;
+import com.swirlds.common.wiring.internal.BackpressureObjectCounter;
 import com.swirlds.common.wiring.internal.ConcurrentWire;
+import com.swirlds.common.wiring.internal.ObjectCounter;
 import com.swirlds.common.wiring.internal.SequentialWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -29,11 +34,15 @@ import java.util.function.Consumer;
  */
 public class WireBuilder<T> {
 
-    public static final int UNLIMITED_CAPACITY = -1;
+    public static final long UNLIMITED_CAPACITY = -1;
 
     private boolean concurrent = false;
     private final Consumer<T> consumer;
-    private int capacity = UNLIMITED_CAPACITY; // TODO this is a place holder, not currently implemented
+
+    private long scheduledTaskCapacity = UNLIMITED_CAPACITY;
+    private boolean scheduledTaskCountMetricEnabled = false;
+
+    private Duration backpressureSleepDuration = Duration.ofNanos(100);
 
     // Future parameters:
     //  - if we should automatically create metrics for the wire
@@ -63,15 +72,39 @@ public class WireBuilder<T> {
     }
 
     /**
-     * Set the capacity of the wire. Wires that are "full" will apply back pressure. Default is
-     * {@link #UNLIMITED_CAPACITY}.
+     * Set the maximum number of permitted scheduled tasks in the wire. Default is unlimited.
      *
-     * @param capacity the capacity of the wire
+     * @param scheduledTaskCapacity the maximum number of permitted scheduled tasks in the wire
      * @return this
      */
     @NonNull
-    public WireBuilder<T> withCapacity(final int capacity) {
-        this.capacity = capacity;
+    public WireBuilder<T> withScheduledTaskCapacity(final long scheduledTaskCapacity) {
+        this.scheduledTaskCapacity = scheduledTaskCapacity;
+        return this;
+    }
+
+    /**
+     * Set whether the scheduled task count metric should be enabled. Default false.
+     *
+     * @param enabled true if the scheduled task count metric should be enabled, false otherwise
+     * @return this
+     */
+    @NonNull
+    public WireBuilder<T> withScheduledTaskCountMetricEnabled(final boolean enabled) {
+        this.scheduledTaskCountMetricEnabled = enabled;
+        return this;
+    }
+
+    /**
+     * If backpressure is enabled via {@link #withScheduledTaskCapacity(long)}, then sleep this length of time whenever
+     * backpressure needs to be applied. If null then do not sleep (i.e. busy wait). Default 100 nanoseconds.
+     *
+     * @param backpressureSleepDuration the length of time to sleep when backpressure needs to be applied
+     * @return this
+     */
+    @NonNull
+    public WireBuilder<T> withBackpressureSleepDuration(@Nullable final Duration backpressureSleepDuration) {
+        this.backpressureSleepDuration = backpressureSleepDuration;
         return this;
     }
 
@@ -82,9 +115,24 @@ public class WireBuilder<T> {
      */
     @NonNull
     public Wire<T> build() {
-        if (concurrent) {
-            return new ConcurrentWire<>(consumer);
+        final AbstractObjectCounter scheduledTaskCounter;
+        if (scheduledTaskCapacity > UNLIMITED_CAPACITY) {
+            scheduledTaskCounter = new BackpressureObjectCounter(scheduledTaskCapacity, backpressureSleepDuration);
+        } else if (scheduledTaskCountMetricEnabled) {
+            scheduledTaskCounter = new ObjectCounter();
+        } else {
+            scheduledTaskCounter = null;
         }
-        return new SequentialWire<>(consumer);
+
+        if (scheduledTaskCountMetricEnabled) {
+            // TODO register metrics
+            //  we can set up a metric that polls scheduledTaskCounter.getCount() every 3 seconds
+        }
+
+        if (concurrent) {
+            return new ConcurrentWire<>(consumer, scheduledTaskCounter);
+        } else {
+            return new SequentialWire<>(consumer, scheduledTaskCounter);
+        }
     }
 }

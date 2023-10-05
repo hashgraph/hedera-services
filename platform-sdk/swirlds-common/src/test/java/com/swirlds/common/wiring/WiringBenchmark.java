@@ -45,12 +45,19 @@ class WiringBenchmark {
         final EventPool eventPool = new EventPool();
 
         final TopologicalEventSorter orphanBuffer = new TopologicalEventSorter(eventPool);
-        final EventVerifier verifier = new EventVerifier(
-                Wire.builder(orphanBuffer).withConcurrency(false).build());
+        final EventVerifier verifier = new EventVerifier(Wire.builder(orphanBuffer)
+                .withConcurrency(false)
+                .withScheduledTaskCountMetricEnabled(false)
+                .withScheduledTaskCapacity(WireBuilder.UNLIMITED_CAPACITY)
+                .build());
         final Gossip gossip = new Gossip(
                 executor,
                 eventPool,
-                Wire.builder(verifier).withConcurrency(true).build());
+                Wire.builder(verifier)
+                        .withConcurrency(true)
+                        .withScheduledTaskCountMetricEnabled(false)
+                        .withScheduledTaskCapacity(WireBuilder.UNLIMITED_CAPACITY)
+                        .build());
 
         // Create a user thread for running "gossip". It will continue to generate events until explicitly stopped.
         System.out.println("Starting gossip");

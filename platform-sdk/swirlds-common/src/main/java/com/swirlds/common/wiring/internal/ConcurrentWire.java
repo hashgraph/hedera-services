@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.internal;
 
 import com.swirlds.common.wiring.Wire;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -28,14 +29,18 @@ import java.util.function.Consumer;
  */
 public class ConcurrentWire<T> implements Wire<T> {
     private final Consumer<T> consumer;
+    private final AbstractObjectCounter counter;
 
     /**
      * Constructor.
      *
      * @param consumer data on the wire is passed to this consumer
+     * @param counter  an object counter that is incremented when data is added to the wire and decremented when
+     *                 handling begins, ignored if null
      */
-    public ConcurrentWire(@NonNull final Consumer<T> consumer) {
+    public ConcurrentWire(@NonNull final Consumer<T> consumer, @Nullable final AbstractObjectCounter counter) {
         this.consumer = Objects.requireNonNull(consumer);
+        this.counter = counter;
     }
 
     /**
@@ -45,9 +50,37 @@ public class ConcurrentWire<T> implements Wire<T> {
      */
     @Override
     public void accept(@NonNull final T data) {
+        if (counter != null) {
+            counter.onRamp();
+        }
+        hanndle(data);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param data the input argument
+     */
+    @Override
+    public void acceptInterruptably(@NonNull T data) throws InterruptedException {
+        if (counter != null) {
+            counter.interruptableOnRamp();
+        }
+        hanndle(data);
+    }
+
+    /**
+     * Handle data passed to the wire.
+     *
+     * @param data the data to be handled
+     */
+    private void hanndle(@NonNull T data) {
         new AbstractTask() {
             @Override
             protected boolean exec() {
+                if (counter != null) {
+                    counter.offRamp();
+                }
                 consumer.accept(data);
                 return true;
             }

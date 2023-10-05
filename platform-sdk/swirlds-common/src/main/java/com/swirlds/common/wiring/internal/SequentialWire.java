@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.internal;
 
 import com.swirlds.common.wiring.Wire;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -30,15 +31,29 @@ import java.util.function.Consumer;
 public class SequentialWire<T> implements Wire<T> {
     private final Consumer<T> consumer;
     private final AtomicReference<SequentialTask<T>> lastTask;
+    private final AbstractObjectCounter counter;
 
     /**
      * Constructor.
      *
      * @param consumer data on the wire is passed to this consumer
+     * @param counter  an object counter that is incremented when data is added to the wire and decremented when data
+     *                 has been processed, ignored if null
      */
-    public SequentialWire(@NonNull final Consumer<T> consumer) {
-        this.consumer = Objects.requireNonNull(consumer);
+    public SequentialWire(@NonNull final Consumer<T> consumer, @Nullable final AbstractObjectCounter counter) {
+
         this.lastTask = new AtomicReference<>(new SequentialTask<>(1, consumer));
+        this.counter = counter;
+
+        Objects.requireNonNull(consumer);
+        if (counter == null) {
+            this.consumer = consumer;
+        } else {
+            this.consumer = data -> {
+                counter.offRamp();
+                consumer.accept(data);
+            };
+        }
     }
 
     /**
@@ -103,7 +118,29 @@ public class SequentialWire<T> implements Wire<T> {
      */
     @Override
     public void accept(@NonNull final T data) {
+        if (counter != null) {
+            counter.onRamp();
+        }
+        handle(data);
+    }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void acceptInterruptably(@NonNull T data) throws InterruptedException {
+        if (counter != null) {
+            counter.interruptableOnRamp();
+        }
+        handle(data);
+    }
+
+    /**
+     * Handle data passed to the wire.
+     *
+     * @param data the data to be handled
+     */
+    private void handle(@NonNull final T data) {
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
