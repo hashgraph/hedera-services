@@ -16,6 +16,12 @@
 
 package contract;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -44,26 +50,18 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import common.AbstractXTest;
 import common.BaseScaffoldingComponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-import org.junit.jupiter.api.BeforeEach;
-import org.mockito.Mock;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
-
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
-import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.junit.jupiter.api.BeforeEach;
+import org.mockito.Mock;
 
 /**
  * Base class for {@code xtest} scenarios that focus on contract operations.
@@ -94,10 +92,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
     void setUp() {
         component = DaggerContractScaffoldingComponent.factory().create(metrics);
         callAttemptFactory = new HtsCallFactory(
-                LIVE_SYNTHETIC_IDS,
-                addressChecks,
-                LIVE_VERIFICATION_STRATEGIES,
-                component.callTranslators());
+                LIVE_SYNTHETIC_IDS, addressChecks, LIVE_VERIFICATION_STRATEGIES, component.callTranslators());
     }
 
     @Override
@@ -117,23 +112,35 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
             @NonNull final org.apache.tuweni.bytes.Bytes input,
             @NonNull final Consumer<org.apache.tuweni.bytes.Bytes> outputAssertions) {
-        runHtsCallAndExpectOnSuccess(false, sender, input, outputAssertions);
+        runHtsCallAndExpectOnSuccess(false, sender, input, outputAssertions, null);
+    }
+
+    protected void runHtsCallAndExpectOnSuccess(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final Consumer<org.apache.tuweni.bytes.Bytes> outputAssertions,
+            @NonNull final String context) {
+        runHtsCallAndExpectOnSuccess(false, sender, input, outputAssertions, context);
     }
 
     protected void runDelegatedHtsCallAndExpectOnSuccess(
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
             @NonNull final org.apache.tuweni.bytes.Bytes input,
             @NonNull final Consumer<org.apache.tuweni.bytes.Bytes> outputAssertions) {
-        runHtsCallAndExpectOnSuccess(true, sender, input, outputAssertions);
+        runHtsCallAndExpectOnSuccess(true, sender, input, outputAssertions, null);
     }
 
     private void runHtsCallAndExpectOnSuccess(
             final boolean requiresDelegatePermission,
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
             @NonNull final org.apache.tuweni.bytes.Bytes input,
-            @NonNull final Consumer<org.apache.tuweni.bytes.Bytes> outputAssertions) {
+            @NonNull final Consumer<org.apache.tuweni.bytes.Bytes> outputAssertions,
+            @Nullable final String context) {
         runHtsCallAndExpect(requiresDelegatePermission, sender, input, resultOnlyAssertion(result -> {
-            assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+            assertEquals(
+                    MessageFrame.State.COMPLETED_SUCCESS,
+                    result.getState(),
+                    Optional.ofNullable(context).orElse("An unspecified operation") + " should have succeeded");
             outputAssertions.accept(result.getOutput());
         }));
     }
@@ -142,8 +149,27 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
             @NonNull final org.apache.tuweni.bytes.Bytes input,
             @NonNull final ResponseCodeEnum status) {
+        internalRunHtsCallAndExpectRevert(sender, input, status, null);
+    }
+
+    protected void runHtsCallAndExpectRevert(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final ResponseCodeEnum status,
+            @NonNull final String context) {
+        internalRunHtsCallAndExpectRevert(sender, input, status, context);
+    }
+
+    private void internalRunHtsCallAndExpectRevert(
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final org.apache.tuweni.bytes.Bytes input,
+            @NonNull final ResponseCodeEnum status,
+            @Nullable final String context) {
         runHtsCallAndExpect(false, sender, input, resultOnlyAssertion(result -> {
-            assertEquals(MessageFrame.State.REVERT, result.getState());
+            assertEquals(
+                    MessageFrame.State.REVERT,
+                    result.getState(),
+                    Optional.ofNullable(context).orElse("An unspecified operation") + " should have reverted");
             final var actualReason =
                     ResponseCodeEnum.fromString(new String(result.getOutput().toArrayUnsafe()));
             assertEquals(status, actualReason);
@@ -221,7 +247,6 @@ public abstract class AbstractContractXTest extends AbstractXTest {
                 expectedResult,
                 response.contractCallLocalOrThrow().functionResultOrThrow().contractCallResult());
     }
-
 
     private Consumer<HtsCall.PricedResult> resultOnlyAssertion(
             @NonNull final Consumer<PrecompiledContract.PrecompileContractResult> resultAssertion) {

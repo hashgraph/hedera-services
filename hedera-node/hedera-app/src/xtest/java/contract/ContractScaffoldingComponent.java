@@ -63,5 +63,6 @@ public interface ContractScaffoldingComponent extends BaseScaffoldingComponent {
     interface Factory {
         ContractScaffoldingComponent create(@BindsInstance Metrics metrics);
     }
+
     List<HtsCallTranslator> callTranslators();
 }

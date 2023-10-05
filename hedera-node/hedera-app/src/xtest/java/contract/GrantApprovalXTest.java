@@ -96,7 +96,8 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                         ERC_20_TRANSFER_FROM.encodeCallWithArgs(
                                 OWNER_HEADLONG_ADDRESS, RECEIVER_HEADLONG_ADDRESS, BigInteger.valueOf(100L)),
                         ERC20_TOKEN_ID),
-                SPENDER_DOES_NOT_HAVE_ALLOWANCE);
+                SPENDER_DOES_NOT_HAVE_ALLOWANCE,
+                "Unauthorized spending of fungible units");
         // APPROVE
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
@@ -104,7 +105,8 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(
                                 ERC20_TOKEN_ADDRESS, UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(100L))
                         .array()),
-                assertSuccess());
+                assertSuccess(),
+                "Owner granting approval of 100 fungible units");
         // TRY TRANSFER AND EXPECT SUCCESS
         runHtsCallAndExpectOnSuccess(
                 UNAUTHORIZED_SPENDER_BESU_ADDRESS,
@@ -113,7 +115,8 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                                 OWNER_HEADLONG_ADDRESS, RECEIVER_HEADLONG_ADDRESS, BigInteger.valueOf(50L)),
                         ERC20_TOKEN_ID),
                 output -> assertEquals(
-                        asBytesResult(ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true)), output));
+                        asBytesResult(ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true)), output),
+                "Owner transferring 50 of its own units");
         // TRY TRANSFER AND EXPECT FAIL
         runHtsCallAndExpectRevert(
                 UNAUTHORIZED_SPENDER_BESU_ADDRESS,
@@ -121,7 +124,8 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                         ERC_20_TRANSFER_FROM.encodeCallWithArgs(
                                 OWNER_HEADLONG_ADDRESS, RECEIVER_HEADLONG_ADDRESS, BigInteger.valueOf(100L)),
                         ERC20_TOKEN_ID),
-                AMOUNT_EXCEEDS_ALLOWANCE);
+                AMOUNT_EXCEEDS_ALLOWANCE,
+                "Excessive spending (100 units vs 50 approved)");
         // TRY APPROVE NFT WITH INVALID SERIAL
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
@@ -132,7 +136,8 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                 output -> assertEquals(
                         Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_NFT_SERIAL_NUMBER)
                                 .array()),
-                        output));
+                        output),
+                "Owner granting approval on missing SN#9");
         // APPROVE NFT
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
@@ -142,7 +147,8 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                                 UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS,
                                 BigInteger.valueOf(SN_1234.serialNumber()))
                         .array()),
-                assertSuccess());
+                assertSuccess(),
+                "Owner granting approval on present SN#1234");
         // TRANSFER NFT
         runHtsCallAndExpectOnSuccess(
                 UNAUTHORIZED_SPENDER_BESU_ADDRESS,
@@ -153,7 +159,8 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 SN_1234.serialNumber())
                         .array()),
-                assertSuccess());
+                assertSuccess(),
+                "Owner transferring SN#1234");
         // ERC APPROVE FUNGIBLE
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
@@ -165,16 +172,18 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                         asBytesResult(GrantApprovalTranslator.ERC_GRANT_APPROVAL
                                 .getOutputs()
                                 .encodeElements(true)),
-                        output));
+                        output),
+                "Owner granting approval on fungible units via ERC call");
         // TRY TRANSFER AND EXPECT SUCCESS
         runHtsCallAndExpectOnSuccess(
-                UNAUTHORIZED_SPENDER_BESU_ADDRESS,
+                OWNER_BESU_ADDRESS,
                 bytesForRedirect(
                         ERC_20_TRANSFER_FROM.encodeCallWithArgs(
                                 OWNER_HEADLONG_ADDRESS, RECEIVER_HEADLONG_ADDRESS, BigInteger.valueOf(100L)),
                         ERC20_TOKEN_ID),
                 output -> assertEquals(
-                        asBytesResult(ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true)), output));
+                        asBytesResult(ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true)), output),
+                "Owner transferring 100 of its own units via ERC call");
         // ERC APPROVE NFT
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
@@ -186,7 +195,8 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                         asBytesResult(GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
                                 .getOutputs()
                                 .encodeElements()),
-                        output));
+                        output),
+                "Owner granting approval on SN#2345");
         // TRANSFER NFT
         runHtsCallAndExpectOnSuccess(
                 UNAUTHORIZED_SPENDER_BESU_ADDRESS,
@@ -197,7 +207,8 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 SN_2345.serialNumber())
                         .array()),
-                assertSuccess());
+                assertSuccess(),
+                "Spender transferring SN#2345 via classic transfer");
     }
 
     @Override

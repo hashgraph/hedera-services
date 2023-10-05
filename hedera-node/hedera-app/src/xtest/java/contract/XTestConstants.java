@@ -35,7 +35,6 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-
 import java.util.Map;
 import java.util.function.Consumer;
 import org.hyperledger.besu.datatypes.Address;
@@ -130,5 +129,9 @@ class XTestConstants {
 
     public static Consumer<org.apache.tuweni.bytes.Bytes> assertSuccess() {
         return output -> assertEquals(SUCCESS_AS_BYTES, output);
+    }
+
+    public static Consumer<org.apache.tuweni.bytes.Bytes> assertSuccess(String failureMessage) {
+        return output -> assertEquals(SUCCESS_AS_BYTES, output, failureMessage);
     }
 }

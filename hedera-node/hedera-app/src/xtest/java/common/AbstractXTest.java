@@ -1,4 +1,23 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package common;
+
+import static common.CommonXTestConstants.SET_OF_TRADITIONAL_RATES;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
@@ -42,11 +61,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import contract.AbstractContractXTest;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayDeque;
@@ -55,27 +69,28 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-
-import static common.CommonXTestConstants.SET_OF_TRADITIONAL_RATES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public abstract class AbstractXTest {
-    private static final AccountID[] SOME_NUMERIC_ACCOUNT_IDS = new AccountID[]{
-            AccountID.newBuilder().accountNum(242424L).build(),
-            AccountID.newBuilder().accountNum(252525L).build(),
-            AccountID.newBuilder().accountNum(262626L).build(),
-            AccountID.newBuilder().accountNum(313131L).build(),
-            AccountID.newBuilder().accountNum(343434L).build(),
-            AccountID.newBuilder().accountNum(373737L).build(),
+    private static final AccountID[] SOME_NUMERIC_ACCOUNT_IDS = new AccountID[] {
+        AccountID.newBuilder().accountNum(242424L).build(),
+        AccountID.newBuilder().accountNum(252525L).build(),
+        AccountID.newBuilder().accountNum(262626L).build(),
+        AccountID.newBuilder().accountNum(313131L).build(),
+        AccountID.newBuilder().accountNum(343434L).build(),
+        AccountID.newBuilder().accountNum(373737L).build(),
     };
     private int numNamedAccounts = 0;
     protected final Map<String, AccountID> namedAccountIds = new HashMap<>();
 
-    private static final TokenID[] SOME_NUMERIC_TOKEN_IDS = new TokenID[]{
-            TokenID.newBuilder().tokenNum(777777L).build(),
-            TokenID.newBuilder().tokenNum(888888L).build(),
-            TokenID.newBuilder().tokenNum(999999L).build(),
+    private static final TokenID[] SOME_NUMERIC_TOKEN_IDS = new TokenID[] {
+        TokenID.newBuilder().tokenNum(777777L).build(),
+        TokenID.newBuilder().tokenNum(888888L).build(),
+        TokenID.newBuilder().tokenNum(999999L).build(),
     };
     private int numNamedTokens = 0;
     protected final Map<String, TokenID> namedTokenIds = new HashMap<>();
@@ -113,9 +128,8 @@ public abstract class AbstractXTest {
     }
 
     protected void handleAndCommitSingleTransaction(
-            @NonNull final TransactionHandler handler,
-            @NonNull final TransactionBody txn) {
-        handleAndCommitSingleTransaction(handler, txn, ResponseCodeEnum.SUCCESS);
+            @NonNull final TransactionHandler handler, @NonNull final TransactionBody txn) {
+        handleAndCommitSingleTransaction(handler, txn, ResponseCodeEnum.OK);
     }
 
     protected void handleAndCommitSingleTransaction(
@@ -129,9 +143,7 @@ public abstract class AbstractXTest {
         assertEquals(expectedStatus, recordBuilder.status());
     }
 
-    protected void addNamedAccount(
-            @NonNull final String name,
-            @NonNull final Map<AccountID, Account> accounts) {
+    protected void addNamedAccount(@NonNull final String name, @NonNull final Map<AccountID, Account> accounts) {
         addNamedAccount(name, b -> {}, accounts);
     }
 
@@ -170,11 +182,7 @@ public abstract class AbstractXTest {
             @NonNull final Consumer<TokenRelation.Builder> spec,
             @NonNull final Map<EntityIDPair, TokenRelation> tokenRels) {
         final Consumer<TokenRelation.Builder> defaultSpec = b -> b.kycGranted(true);
-        addNewRelation(
-                idOfNamedAccount(account),
-                idOfNamedToken(token),
-                defaultSpec.andThen(spec),
-                tokenRels);
+        addNewRelation(idOfNamedAccount(account), idOfNamedToken(token), defaultSpec.andThen(spec), tokenRels);
     }
 
     protected void addNewRelation(
@@ -182,9 +190,7 @@ public abstract class AbstractXTest {
             @NonNull final TokenID tokenID,
             @NonNull final Consumer<TokenRelation.Builder> spec,
             @NonNull final Map<EntityIDPair, TokenRelation> tokenRels) {
-        final var builder = TokenRelation.newBuilder()
-                .accountId(accountID)
-                .tokenId(tokenID);
+        final var builder = TokenRelation.newBuilder().accountId(accountID).tokenId(tokenID);
         spec.accept(builder);
         tokenRels.put(new EntityIDPair(accountID, tokenID), builder.build());
     }
@@ -250,23 +256,19 @@ public abstract class AbstractXTest {
 
     protected void assertExpectedStorage(
             @NonNull ReadableKVState<SlotKey, SlotValue> storage,
-            @NonNull ReadableKVState<AccountID, Account> accounts) {
-    }
+            @NonNull ReadableKVState<AccountID, Account> accounts) {}
 
-    protected void assertExpectedNfts(@NonNull ReadableKVState<NftID, Nft> nfts) {
-    }
+    protected void assertExpectedNfts(@NonNull ReadableKVState<NftID, Nft> nfts) {}
 
-    protected void assertExpectedAliases(@NonNull ReadableKVState<ProtoBytes, AccountID> aliases) {
-    }
+    protected void assertExpectedAliases(@NonNull ReadableKVState<ProtoBytes, AccountID> aliases) {}
 
-    protected void assertExpectedTokenRelations(@NonNull ReadableKVState<EntityIDPair, TokenRelation> tokenRels) {
-    }
+    protected void assertExpectedTokenRelations(@NonNull ReadableKVState<EntityIDPair, TokenRelation> tokenRels) {}
 
-    protected void assertExpectedAccounts(@NonNull ReadableKVState<AccountID, Account> accounts) {
-    }
+    protected void assertExpectedAccounts(@NonNull ReadableKVState<AccountID, Account> accounts) {}
 
-    protected void assertExpectedBytecodes(@NonNull ReadableKVState<EntityNumber, Bytecode> bytecodes) {
-    }
+    protected void assertExpectedBytecodes(@NonNull ReadableKVState<EntityNumber, Bytecode> bytecodes) {}
+
+    protected void assertExpectedTokens(@NonNull ReadableKVState<TokenID, Token> tokens) {}
 
     private ReadableKVState<NftID, Nft> finalNfts() {
         return component()
@@ -326,8 +328,8 @@ public abstract class AbstractXTest {
     }
 
     private void setupExchangeManager() {
-        final var state = Objects.requireNonNull(
-                component().workingStateAccessor().getHederaState());
+        final var state =
+                Objects.requireNonNull(component().workingStateAccessor().getHederaState());
         final var midnightRates = state.createReadableStates(FeeService.NAME)
                 .<ExchangeRateSet>getSingleton("MIDNIGHT_RATES")
                 .get();

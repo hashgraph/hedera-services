@@ -248,7 +248,7 @@ public class FileUpdateSuite extends HapiSuite {
                 .then(getFileContents(specialFile).hasContents(ignore -> specialFileContents.toByteArray()));
     }
 
-    //It is not implemented yet in SystemFileUpdateFacility line number 127
+    // It is not implemented yet in SystemFileUpdateFacility line number 127
     private HapiSpec apiPermissionsChangeDynamically() {
         final var civilian = CIVILIAN;
         return defaultHapiSpec("ApiPermissionsChangeDynamically")
@@ -371,7 +371,7 @@ public class FileUpdateSuite extends HapiSuite {
                         .has(resultWith().gasUsed(26_451)));
     }
 
-    //It is not implemented yet in contracts
+    // It is not implemented yet in contracts
     private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
         return propertyPreservingHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .preserving(CONS_MAX_GAS_PROP)
@@ -386,7 +386,7 @@ public class FileUpdateSuite extends HapiSuite {
                         .hasCostAnswerPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY));
     }
 
-    //It is not implemented yet in contracts
+    // It is not implemented yet in contracts
     private HapiSpec kvLimitsEnforced() {
         final var contract = "User";
         final var gasToOffer = 1_000_000;
@@ -560,7 +560,8 @@ public class FileUpdateSuite extends HapiSuite {
                                 "topics.maxNumber", "0")))
                 .when(
                         cryptoCreate(notToBe).hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
-//                        contractCreate("Multipurpose").hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
+                        //
+                        // contractCreate("Multipurpose").hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
                         fileCreate(notToBe)
                                 .contents("NOPE")
                                 .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
@@ -571,7 +572,7 @@ public class FileUpdateSuite extends HapiSuite {
                 .then();
     }
 
-    //It is not implemented yet in contracts
+    // It is not implemented yet in contracts
     private HapiSpec rentItemizedAsExpectedWithOverridePriceTiers() {
         final var slotUser = "SlotUser";
         final var creation = "creation";
