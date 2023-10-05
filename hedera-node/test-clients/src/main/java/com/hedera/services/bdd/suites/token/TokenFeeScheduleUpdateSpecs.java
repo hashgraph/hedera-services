@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -43,6 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
@@ -52,7 +52,7 @@ import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// @HapiTestSuite
+@HapiTestSuite
 public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenFeeScheduleUpdateSpecs.class);
@@ -77,7 +77,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiSuite {
         final var feeScheduleKey = "feeSchedule";
         final var expectedBasePriceUsd = 0.001;
 
-        return onlyDefaultHapiSpec("BaseOperationIsChargedExpectedFee")
+        return defaultHapiSpec("BaseOperationIsChargedExpectedFee")
                 .given(
                         newKeyNamed(feeScheduleKey),
                         cryptoCreate("civilian").key(feeScheduleKey),
