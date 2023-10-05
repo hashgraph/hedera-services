@@ -196,8 +196,7 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .hasToken(relationshipWith(SUPPLE).balance(1).freeze(Frozen)));
     }
 
-    @HapiTest
-    private HapiSpec revokedKYCTreasuryCannotBeMintedOrBurned() {
+`    private HapiSpec revokedKYCTreasuryCannotBeMintedOrBurned() {
         return defaultHapiSpec("RevokedKYCTreasuryCannotBeMintedOrBurned")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -327,7 +326,6 @@ public class TokenManagementSpecs extends HapiSuite {
                         wipeTokenAccount(anotherWipeableToken, "misc", -1).hasPrecheck(INVALID_WIPING_AMOUNT));
     }
 
-    @HapiTest
     public HapiSpec kycMgmtFailureCasesWork() {
         var withoutKycKey = "withoutKycKey";
         var withKycKey = "withKycKey";

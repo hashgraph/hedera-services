@@ -92,7 +92,7 @@ public class CryptoTransferValidator {
                 validateTruePreCheck(acctAmount.hasAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
                 uniqueTokenAcctIds.add(acctAmount.accountIDOrThrow());
                 netTokenBalance += acctAmount.amount();
-                if (!nonZeroFungibleValueFound && acctAmount.amount() >= 0) {
+                if (!nonZeroFungibleValueFound && acctAmount.amount() != 0) {
                     nonZeroFungibleValueFound = true;
                 }
             }
@@ -116,12 +116,6 @@ public class CryptoTransferValidator {
             validateFalsePreCheck(
                     uniqueTokenAcctIds.isEmpty() && nftIds.isEmpty(), EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
             validateFalsePreCheck(nonZeroFungibleValueFound && !nftIds.isEmpty(), INVALID_ACCOUNT_AMOUNTS);
-
-            // Verify that if there is only one fungible transfer and no non-fungible transfers,
-            // the fungible transfer should not be empty
-            if (fungibleTransfers.size() == 1 && nftIds.isEmpty()) {
-                validateFalsePreCheck(nonZeroFungibleValueFound, EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
-            }
         }
     }
 
