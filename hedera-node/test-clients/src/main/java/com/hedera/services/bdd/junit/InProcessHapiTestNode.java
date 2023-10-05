@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit;
 
+import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.PlatformBuilder.DEFAULT_SETTINGS_FILE_NAME;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -148,8 +150,6 @@ public class InProcessHapiTestNode implements HapiTestNode {
                     new NodeId(nodeId));
 
             final ConfigurationBuilder configBuilder = ConfigurationBuilder.create()
-                    .withValue("paths.configPath", path("config.txt"))
-                    .withValue("paths.settingsPath", path("settings.txt"))
                     .withValue("paths.settingsUsedDir", path("."))
                     .withValue("paths.keysDirPath", path("data/keys"))
                     .withValue("paths.appsDirPath", path("data/apps"))
@@ -160,8 +160,8 @@ public class InProcessHapiTestNode implements HapiTestNode {
                     .withValue("grpc.port", Integer.toString(grpcPort));
 
             builder.withConfigurationBuilder(configBuilder)
-                    .withSettingsPath(Path.of(path("settings.txt")))
-                    .withConfigPath(Path.of(path("config.txt")));
+                    .withSettingsPath(Path.of(path(DEFAULT_SETTINGS_FILE_NAME)))
+                    .withConfigPath(Path.of(path(DEFAULT_CONFIG_FILE_NAME)));
 
             final Platform platform = builder.build();
             hedera.init(platform, new NodeId(nodeId));

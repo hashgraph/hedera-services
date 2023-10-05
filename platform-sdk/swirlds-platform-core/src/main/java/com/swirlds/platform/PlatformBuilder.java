@@ -61,15 +61,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Builds a {@link SwirldsPlatform} instance.
  */
 public final class PlatformBuilder {
-
-    private static final Logger logger = LogManager.getLogger(PlatformBuilder.class);
 
     private final String appName;
     private final SoftwareVersion softwareVersion;
@@ -81,15 +77,18 @@ public final class PlatformBuilder {
 
     private static final String SWIRLDS_PACKAGE = "com.swirlds";
 
-    /**
-     * The path to config.txt.
-     */
-    private Path configPath = getAbsolutePath("config.txt");
+    public static final String DEFAULT_CONFIG_FILE_NAME = "config.txt";
+    public static final String DEFAULT_SETTINGS_FILE_NAME = "settings.txt";
 
     /**
-     * The path to settings.txt.
+     * The path to the configuration file (i.e. the file with the address book).
      */
-    private Path settingsPath = getAbsolutePath("settings.txt");
+    private Path configPath = getAbsolutePath(DEFAULT_CONFIG_FILE_NAME);
+
+    /**
+     * The path to the settings file (i.e. the path used to instantiate {@link Configuration}).
+     */
+    private Path settingsPath = getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME);
 
     /**
      * Create a new platform builder.
@@ -128,13 +127,13 @@ public final class PlatformBuilder {
     }
 
     /**
-     * The path to the settings file. Default is "./settings.txt" where "./" is the current working directory of the
-     * JVM.
+     * Set the path to the settings file (i.e. the file used to instantiate {@link Configuration}). Traditionally named
+     * {@link #DEFAULT_SETTINGS_FILE_NAME}.
      *
-     * @param path the path to settings.txt
+     * @param path the path to the settings file
      * @return this
-     * @throws IllegalArgumentException if the path does not exist
      */
+    @NonNull
     public PlatformBuilder withSettingsPath(@NonNull final Path path) {
         Objects.requireNonNull(path);
         this.settingsPath = getAbsolutePath(path);
@@ -142,12 +141,13 @@ public final class PlatformBuilder {
     }
 
     /**
-     * The path to the config file. Default is "./config.txt" where "./" is the current working directory of the JVM.
+     * The path to the config file (i.e. the file with the address book. Traditionally named
+     * {@link #DEFAULT_CONFIG_FILE_NAME}.
      *
-     * @param path the path to config.txt
+     * @param path the path the config file
      * @return this
-     * @throws IllegalArgumentException if the path does not exist
      */
+    @NonNull
     public PlatformBuilder withConfigPath(@NonNull final Path path) {
         Objects.requireNonNull(path);
         this.configPath = getAbsolutePath(path);
@@ -179,6 +179,7 @@ public final class PlatformBuilder {
      *
      * @return the address book
      */
+    @NonNull
     private AddressBook loadConfigAddressBook() {
         final LegacyConfigProperties legacyConfig = LegacyConfigPropertiesLoader.loadConfigFile(configPath);
         legacyConfig.appConfig().ifPresent(c -> ParameterProvider.getInstance().setParameters(c.params()));
@@ -190,6 +191,7 @@ public final class PlatformBuilder {
      *
      * @return a new platform instance
      */
+    @NonNull
     public Platform build() {
         final Configuration configuration = buildConfiguration();
 

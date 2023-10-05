@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
@@ -146,7 +147,7 @@ public class Browser {
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final ApplicationDefinition appDefinition =
-                ApplicationDefinitionLoader.loadDefault(getAbsolutePath("config.txt"));
+                ApplicationDefinitionLoader.loadDefault(getAbsolutePath(DEFAULT_CONFIG_FILE_NAME));
 
         // Determine which nodes to run locally
         final List<NodeId> nodesToRun =
