@@ -61,7 +61,9 @@ public class ConsensusHashManager {
     /**
      * The address book of this network.
      */
-    final AddressBook addressBook;
+    private final AddressBook addressBook;
+    /** The current epoch hash */
+    private final Hash currentEpochHash;
 
     /**
      * Prevent log messages about a lack of signatures from spamming the logs.
@@ -85,16 +87,20 @@ public class ConsensusHashManager {
     /**
      * Create an object that tracks reported hashes and detects ISS events.
      *
+     * @param time            provides the current wall clock time
      * @param dispatchBuilder responsible for building dispatchers
      * @param addressBook     the address book for the network
      * @param consensusConfig consensus configuration
+     * @param stateConfig     state configuration
+     * @param currentEpochHash the current epoch hash
      */
     public ConsensusHashManager(
             final Time time,
             final DispatchBuilder dispatchBuilder,
             final AddressBook addressBook,
             final ConsensusConfig consensusConfig,
-            final StateConfig stateConfig) {
+            final StateConfig stateConfig,
+            final Hash currentEpochHash) {
 
         final Duration timeBetweenIssLogs = Duration.ofSeconds(stateConfig.secondsBetweenIssLogs());
         lackingSignaturesRateLimiter = new RateLimiter(time, timeBetweenIssLogs);
@@ -109,6 +115,7 @@ public class ConsensusHashManager {
                 ConsensusHashManager.class, StateHashValidityTrigger.class, "round ISS status known")::dispatch;
 
         this.addressBook = addressBook;
+        this.currentEpochHash = currentEpochHash;
 
         this.roundData = new ConcurrentSequenceMap<>(
                 -consensusConfig.roundsNonAncient(), consensusConfig.roundsNonAncient(), x -> x);
@@ -186,6 +193,11 @@ public class ConsensusHashManager {
 
         Objects.requireNonNull(signerId);
         Objects.requireNonNull(signatureTransaction);
+
+        if (!Objects.equals(signatureTransaction.getEpochHash(), currentEpochHash)) {
+            // this is a signature from a different epoch, ignore it
+            return;
+        }
 
         final long nodeWeight = addressBook.getAddress(signerId).getWeight();
 
