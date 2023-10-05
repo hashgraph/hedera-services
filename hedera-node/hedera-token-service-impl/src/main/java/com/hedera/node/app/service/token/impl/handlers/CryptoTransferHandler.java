@@ -452,9 +452,9 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var involvedTokens = new ArrayList<TokenID>();
         final var customFeeAssessor = new CustomFeeAssessmentStep(op);
         List<AssessedCustomFee> assessedCustomFees;
-        try{
+        try {
             assessedCustomFees = customFeeAssessor.assessNumberOfCustomFees(feeContext);
-        } catch (HandleException ignore){
+        } catch (HandleException ignore) {
             assessedCustomFees = new ArrayList<>();
         }
         totalXfers += assessedCustomFees.size();
