@@ -27,8 +27,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.StartUpEventFrozenManager;
-import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.tipset.rules.AggregateTipsetEventCreationRules;
 import com.swirlds.platform.event.tipset.rules.ReconnectStateSavedRule;
 import com.swirlds.platform.event.tipset.rules.TipsetBackpressureRule;
@@ -40,7 +39,6 @@ import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Supplier;
@@ -66,12 +64,11 @@ public final class TipsetEventCreationManagerFactory {
      * @param eventIntakeQueue          the queue to which new events should be added
      * @param eventObserverDispatcher   wires together event intake logic
      * @param platformStatusSupplier    provides the current platform status
-     * @param startUpEventFrozenManager manages the start-up event frozen state
      * @param latestReconnectRound      provides the latest reconnect round
      * @param latestSavedStateRound     provides the latest saved state round
-     * @return a new tipset event creation manager, or null if tipset event creation is disabled
+     * @return a new tipset event creation manager
      */
-    @Nullable
+    @NonNull
     public static AsyncTipsetEventCreationManager buildTipsetEventCreationManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
@@ -81,10 +78,9 @@ public final class TipsetEventCreationManagerFactory {
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final TransactionPool transactionPool,
-            @NonNull final QueueThread<EventIntakeTask> eventIntakeQueue,
+            @NonNull final QueueThread<GossipEvent> eventIntakeQueue,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
-            @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final Supplier<Long> latestReconnectRound,
             @NonNull final Supplier<Long> latestSavedStateRound) {
 
@@ -99,18 +95,8 @@ public final class TipsetEventCreationManagerFactory {
         Objects.requireNonNull(eventIntakeQueue);
         Objects.requireNonNull(eventObserverDispatcher);
         Objects.requireNonNull(platformStatusSupplier);
-        Objects.requireNonNull(startUpEventFrozenManager);
         Objects.requireNonNull(latestReconnectRound);
         Objects.requireNonNull(latestSavedStateRound);
-
-        final boolean useTipsetAlgorithm = platformContext
-                .getConfiguration()
-                .getConfigData(EventCreationConfig.class)
-                .useTipsetAlgorithm();
-
-        if (!useTipsetAlgorithm) {
-            return null;
-        }
 
         final TipsetEventCreator eventCreator = new TipsetEventCreatorImpl(
                 platformContext,
@@ -125,7 +111,7 @@ public final class TipsetEventCreationManagerFactory {
         final TipsetEventCreationRule eventCreationRules = AggregateTipsetEventCreationRules.of(
                 new TipsetMaximumRateRule(platformContext, time),
                 new TipsetBackpressureRule(platformContext, eventIntakeQueue::size),
-                new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool, startUpEventFrozenManager),
+                new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool),
                 new ReconnectStateSavedRule(latestReconnectRound, latestSavedStateRound));
 
         final SyncTipsetEventCreationManager syncEventCreationManager =
