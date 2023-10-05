@@ -251,7 +251,9 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                         .delegatingSpender(delegatingSpenderId)
                         .build()));
 
-        assertThatNoException().isThrownBy(() -> subject.validate(handleContext, account, readableAccountStore));
+        assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL));
     }
 
     @Test
