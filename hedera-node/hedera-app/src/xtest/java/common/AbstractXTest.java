@@ -16,6 +16,7 @@
 
 package common;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static common.CommonXTestConstants.SET_OF_TRADITIONAL_RATES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -53,9 +54,9 @@ import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
@@ -129,7 +130,7 @@ public abstract class AbstractXTest {
 
     protected void handleAndCommitSingleTransaction(
             @NonNull final TransactionHandler handler, @NonNull final TransactionBody txn) {
-        handleAndCommitSingleTransaction(handler, txn, ResponseCodeEnum.OK);
+        handleAndCommitSingleTransaction(handler, txn, OK);
     }
 
     protected void handleAndCommitSingleTransaction(
@@ -137,10 +138,15 @@ public abstract class AbstractXTest {
             @NonNull final TransactionBody txn,
             @NonNull final ResponseCodeEnum expectedStatus) {
         final var context = component().txnContextFactory().apply(txn);
-        handler.handle(context);
-        ((SavepointStackImpl) context.savepointStack()).commitFullStack();
-        final var recordBuilder = context.recordBuilder(SingleTransactionRecordBuilder.class);
-        assertEquals(expectedStatus, recordBuilder.status());
+        var impliedStatus = OK;
+        try {
+            handler.handle(context);
+            ((SavepointStackImpl) context.savepointStack()).commitFullStack();
+        } catch (HandleException e) {
+            impliedStatus = e.getStatus();
+            ((SavepointStackImpl) context.savepointStack()).rollbackFullStack();
+        }
+        assertEquals(expectedStatus, impliedStatus);
     }
 
     protected void addNamedAccount(@NonNull final String name, @NonNull final Map<AccountID, Account> accounts) {
@@ -228,6 +234,10 @@ public abstract class AbstractXTest {
     }
 
     protected Map<FileID, File> initialFiles() {
+        return new HashMap<>();
+    }
+
+    protected Map<EntityNumber, Bytecode> initialBytecodes() {
         return new HashMap<>();
     }
 
@@ -367,8 +377,10 @@ public abstract class AbstractXTest {
         fakeHederaState.addService(
                 ContractServiceImpl.NAME,
                 Map.of(
-                        ContractSchema.BYTECODE_KEY, new HashMap<EntityNumber, Bytecode>(),
-                        ContractSchema.STORAGE_KEY, new HashMap<SlotKey, SlotValue>()));
+                        ContractSchema.BYTECODE_KEY,
+                        initialBytecodes(),
+                        ContractSchema.STORAGE_KEY,
+                        new HashMap<SlotKey, SlotValue>()));
 
         component().workingStateAccessor().setHederaState(fakeHederaState);
     }

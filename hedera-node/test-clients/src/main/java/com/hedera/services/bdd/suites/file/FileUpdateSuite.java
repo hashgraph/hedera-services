@@ -560,8 +560,7 @@ public class FileUpdateSuite extends HapiSuite {
                                 "topics.maxNumber", "0")))
                 .when(
                         cryptoCreate(notToBe).hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
-                        //
-                        // contractCreate("Multipurpose").hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
+                        contractCreate("Multipurpose").hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
                         fileCreate(notToBe)
                                 .contents("NOPE")
                                 .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),

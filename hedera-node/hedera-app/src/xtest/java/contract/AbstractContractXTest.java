@@ -45,8 +45,11 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import common.AbstractXTest;
 import common.BaseScaffoldingComponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -90,9 +93,15 @@ public abstract class AbstractContractXTest extends AbstractXTest {
 
     @BeforeEach
     void setUp() {
-        component = DaggerContractScaffoldingComponent.factory().create(metrics);
+        component = DaggerContractScaffoldingComponent.factory().create(metrics, configuration());
         callAttemptFactory = new HtsCallFactory(
                 LIVE_SYNTHETIC_IDS, addressChecks, LIVE_VERIFICATION_STRATEGIES, component.callTranslators());
+    }
+
+    protected Configuration configuration() {
+        return HederaTestConfigBuilder.create()
+                .withValue("contracts.chainId", "298")
+                .getOrCreateConfig();
     }
 
     @Override
@@ -196,7 +205,10 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             @NonNull final Consumer<HtsCall.PricedResult> resultAssertions) {
         final var context = component.txnContextFactory().apply(PLACEHOLDER_CALL_BODY);
         final var enhancement = new HederaWorldUpdater.Enhancement(
-                new HandleHederaOperations(component.config().getConfigData(LedgerConfig.class), context),
+                new HandleHederaOperations(
+                        component.config().getConfigData(LedgerConfig.class),
+                        component.config().getConfigData(ContractsConfig.class),
+                        context),
                 new HandleHederaNativeOperations(context),
                 new HandleSystemContractOperations(context));
         given(proxyUpdater.enhancement()).willReturn(enhancement);

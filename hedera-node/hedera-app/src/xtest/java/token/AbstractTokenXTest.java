@@ -29,7 +29,9 @@ import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import common.AbstractXTest;
 import common.BaseScaffoldingComponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -46,7 +48,11 @@ public abstract class AbstractTokenXTest extends AbstractXTest {
 
     @BeforeEach
     void setUp() {
-        component = DaggerTokenScaffoldingComponent.factory().create(metrics);
+        component = DaggerTokenScaffoldingComponent.factory().create(metrics, configuration());
+    }
+
+    protected Configuration configuration() {
+        return HederaTestConfigBuilder.create().getOrCreateConfig();
     }
 
     @Override

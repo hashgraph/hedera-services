@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
@@ -31,6 +32,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
+import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
@@ -310,6 +312,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     public EvmAccount createAccount(@NonNull final Address address, final long nonce, @NonNull final Wei balance) {
         if (pendingCreation == null) {
             throw new IllegalStateException(CANNOT_CREATE + address + " without a pending creation");
+        }
+        if (evmFrameState.numBytecodesInState() + 1 > enhancement.operations().contractCreationLimit()) {
+            throw new ResourceExhaustedException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
         final var number = getValidatedCreationNumber(address, balance, pendingCreation);
         if (pendingCreation.isHapiCreation()) {

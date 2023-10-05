@@ -71,7 +71,6 @@ import com.hedera.node.app.workflows.query.QueryContextImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.HederaConfig;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.stream.Signer;
@@ -169,14 +168,6 @@ public interface BaseScaffoldingModule {
     @Singleton
     static BlockRecordFormat provideBlockRecordFormat() {
         return BlockRecordFormatV6.INSTANCE;
-    }
-
-    @Provides
-    @Singleton
-    static Configuration provideConfiguration() {
-        return HederaTestConfigBuilder.create()
-                .withValue("contracts.chainId", "298")
-                .getOrCreateConfig();
     }
 
     @Provides
