@@ -43,7 +43,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SignedTransactionBytesRecordsSuite.class);
     private static final String FAILED_CRYPTO_TRANSACTION = "failedCryptoTransaction";
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
         new SignedTransactionBytesRecordsSuite().runSuiteSync();
     }
 
@@ -86,6 +86,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
                         getTxnRecord("failedContractTransaction").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
+    @HapiTest
     private HapiSpec transactionsWithSignedTxnBytesAndSigMap() {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndSigMap")
                 .given()
@@ -93,9 +94,12 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
                         .via("failedConsensusTransaction")
                         .asTxnWithSignedTxnBytesAndSigMap()
                         .hasPrecheck(INVALID_TRANSACTION))
-                .then(getTxnRecord("failedConsensusTransaction").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
+                .then(getTxnRecord("failedConsensusTransaction")
+                        .hasCostAnswerPrecheck(RECORD_NOT_FOUND)
+                        .hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
+    @HapiTest
     private HapiSpec transactionsWithSignedTxnBytesAndBodyBytes() {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndBodyBytes")
                 .given()
@@ -103,7 +107,9 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
                         .via(FAILED_CRYPTO_TRANSACTION)
                         .asTxnWithSignedTxnBytesAndBodyBytes()
                         .hasPrecheck(INVALID_TRANSACTION))
-                .then(getTxnRecord(FAILED_CRYPTO_TRANSACTION).hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
+                .then(getTxnRecord(FAILED_CRYPTO_TRANSACTION)
+                        .hasCostAnswerPrecheck(RECORD_NOT_FOUND)
+                        .hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
     @Override
