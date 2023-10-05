@@ -115,7 +115,7 @@ public class CryptoCreateValidator {
         validateTrue(op.alias().length() == EVM_ADDRESS_SIZE, INVALID_ALIAS_KEY);
         validateFalse(isMirror(op.alias()), INVALID_ALIAS_KEY);
 
-        //find account by alias and check if it was deleted
+        // find account by alias and check if it was deleted
         var accountId = readableAccountStore.getAccountIDByAlias(op.alias());
         var account = accountId != null ? readableAccountStore.getAccountById(accountId) : null;
         var isDeleted = account == null || account.deleted();

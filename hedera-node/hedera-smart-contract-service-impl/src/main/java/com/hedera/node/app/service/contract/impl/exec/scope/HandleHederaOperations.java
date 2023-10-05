@@ -209,8 +209,8 @@ public class HandleHederaOperations implements HederaOperations {
                 number,
                 synthAccountCreationFromHapi(
                         ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation),
-                //TODO: ask why it was null
-                //Check HandleHederaOperationsTest.java
+                // TODO: ask why it was null
+                // Check HandleHederaOperationsTest.java
                 parent.autoRenewAccountId());
     }
 
