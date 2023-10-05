@@ -32,6 +32,7 @@
             "ContractGetInfo",
             "ContractGetBytecode",
             "ContractGetRecords",
+            "GetAccountDetails",
             "ContractCallLocal",
             "TransactionGetRecord",
             "GetVersionInfo",
