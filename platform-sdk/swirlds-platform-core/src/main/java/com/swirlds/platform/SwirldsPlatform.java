@@ -209,7 +209,7 @@ public class SwirldsPlatform implements Platform, Startable {
     private final EventLinker eventLinker;
 
     /**
-     * Validates events, and passes valid events further down the pipeline.
+     * Validates events and passes valid events further down the pipeline.
      */
     private final EventValidator eventValidator;
 

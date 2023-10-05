@@ -55,7 +55,7 @@ public final class PreconsensusEventReplayWorkflow {
      * @param threadManager                      the thread manager for this node
      * @param preconsensusEventFileManager       manages the preconsensus event files on disk
      * @param preconsensusEventWriter            writes preconsensus events to disk
-     * @param eventValidator                     validates events, and passes valid events further down the pipeline
+     * @param eventValidator                     validates events and passes valid events further down the pipeline
      * @param intakeQueue                        the queue thread for the event intake component
      * @param consensusRoundHandler              the object responsible for applying transactions to consensus rounds
      * @param stateHashSignQueue                 the queue thread for hashing and signing states

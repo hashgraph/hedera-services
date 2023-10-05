@@ -115,7 +115,7 @@ public class ChatterGossip extends AbstractGossip {
      * @param intakeQueue                   the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param stateManagementComponent      manages the lifecycle of the state
-     * @param eventValidator                validates events, and passes valid events along the intake pipeline
+     * @param eventValidator                validates events and passes valid events along the intake pipeline
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
