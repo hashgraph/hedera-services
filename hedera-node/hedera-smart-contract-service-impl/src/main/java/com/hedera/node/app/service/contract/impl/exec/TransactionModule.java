@@ -42,6 +42,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.HederaConfig;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -64,10 +65,11 @@ public interface TransactionModule {
     static HydratedEthTxData maybeProvideHydratedEthTxData(
             @NonNull final HandleContext context,
             @NonNull final EthereumCallDataHydration hydration,
+            @NonNull final HederaConfig hederaConfig,
             @NonNull @InitialState final ReadableFileStore fileStore) {
         final var body = context.body();
         return body.hasEthereumTransaction()
-                ? hydration.tryToHydrate(body.ethereumTransactionOrThrow(), fileStore)
+                ? hydration.tryToHydrate(body.ethereumTransactionOrThrow(), fileStore, hederaConfig.firstUserEntity())
                 : null;
     }
 

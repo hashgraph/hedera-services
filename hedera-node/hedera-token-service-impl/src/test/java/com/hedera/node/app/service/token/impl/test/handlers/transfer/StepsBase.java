@@ -126,6 +126,8 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected static final byte[] ecdsaKeyBytes =
             Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
     protected static final ProtoBytes ecKeyAlias = new ProtoBytes(Bytes.wrap(ecdsaKeyBytes));
+    protected static final ProtoBytes ecEvmAlias =
+            new ProtoBytes(Bytes.fromHex("a94f5374fce5edbc8e2a8697c15331677e6ebf0b"));
 
     protected static final byte[] evmAddress = unhex("0000000000000000000000000000000000000003");
     protected static final byte[] create2Address = unhex("0111111111111111111111111111111111defbbb");
@@ -213,11 +215,11 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(syntheticPayer)))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .alias(ecKeyAlias.value())
+                            .alias(ecEvmAlias.value())
                             .accountId(AccountID.newBuilder().accountNum(hbarReceiver))
                             .build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {

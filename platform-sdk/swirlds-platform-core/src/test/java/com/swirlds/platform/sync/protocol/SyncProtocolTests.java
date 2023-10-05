@@ -27,12 +27,12 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.threading.SyncPermitProvider;
-import com.swirlds.common.threading.locks.locked.MaybeLocked;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.gossip.FallenBehindManager;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
+import com.swirlds.platform.gossip.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
@@ -69,7 +69,7 @@ class SyncProtocolTests {
         peerId = new NodeId(1);
         shadowGraphSynchronizer = mock(ShadowGraphSynchronizer.class);
         fallenBehindManager = mock(FallenBehindManager.class);
-        permitProvider = new SyncPermitProvider(2);
+        permitProvider = new SyncPermitProvider(2, mock(IntakeEventCounter.class));
         criticalQuorum = mock(CriticalQuorum.class);
         sleepAfterSync = Duration.ofMillis(0);
         syncMetrics = mock(SyncMetrics.class);
@@ -165,11 +165,9 @@ class SyncProtocolTests {
                 time);
 
         assertEquals(2, permitProvider.getNumAvailable());
-        // obtain the only existing permit, so it isn't available to the protocol
-        final MaybeLocked wastedPermit1 = permitProvider.tryAcquire();
-        final MaybeLocked wastedPermit2 = permitProvider.tryAcquire();
-        assertTrue(wastedPermit1.isLockAcquired());
-        assertTrue(wastedPermit2.isLockAcquired());
+        // obtain the only existing permits, so none are available to the protocol
+        assertTrue(permitProvider.tryAcquire(peerId));
+        assertTrue(permitProvider.tryAcquire(peerId));
         assertEquals(0, permitProvider.getNumAvailable());
 
         assertFalse(protocol.shouldInitiate());
@@ -269,9 +267,8 @@ class SyncProtocolTests {
     @DisplayName("Protocol should accept connection")
     void shouldAccept() {
         assertEquals(2, permitProvider.getNumAvailable());
-        // obtain the 1 of the permits, but 1 will still be available to accept
-        final MaybeLocked wastedPermit = permitProvider.tryAcquire();
-        assertTrue(wastedPermit.isLockAcquired());
+        // obtain 1 of the permits, but 1 will still be available to accept
+        assertTrue(permitProvider.tryAcquire(peerId));
         assertEquals(1, permitProvider.getNumAvailable());
 
         final SyncProtocol protocol = new SyncProtocol(
@@ -336,10 +333,8 @@ class SyncProtocolTests {
         assertEquals(2, permitProvider.getNumAvailable());
 
         // waste both available permits
-        final MaybeLocked wastedPermit1 = permitProvider.tryAcquire();
-        assertTrue(wastedPermit1.isLockAcquired());
-        final MaybeLocked wastedPermit2 = permitProvider.tryAcquire();
-        assertTrue(wastedPermit2.isLockAcquired());
+        assertTrue(permitProvider.tryAcquire(peerId));
+        assertTrue(permitProvider.tryAcquire(peerId));
 
         assertEquals(0, permitProvider.getNumAvailable());
 
@@ -489,24 +484,6 @@ class SyncProtocolTests {
         assertEquals(1, permitProvider.getNumAvailable());
         assertDoesNotThrow(() -> protocol.runProtocol(mock(Connection.class)));
         assertEquals(2, permitProvider.getNumAvailable());
-    }
-
-    @Test
-    @DisplayName("Protocol doesn't run without first obtaining a permit")
-    void noPermit() {
-        final SyncProtocol protocol = new SyncProtocol(
-                platformContext,
-                peerId,
-                shadowGraphSynchronizer,
-                fallenBehindManager,
-                permitProvider,
-                criticalQuorum,
-                peerAgnosticSyncChecks,
-                sleepAfterSync,
-                syncMetrics,
-                time);
-
-        assertThrows(NetworkProtocolException.class, () -> protocol.runProtocol(mock(Connection.class)));
     }
 
     @Test
