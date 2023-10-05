@@ -25,6 +25,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.HashSigner;
@@ -162,6 +163,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param fatalErrorConsumer                 consumer to invoke when a fatal error has occurred
      * @param platformStatusGetter               gets the current platform status
      * @param statusActionSubmitter              enables submitting platform status actions
+     * @param currentEpochHash                   the current epoch hash, or null if there is none
      */
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,
@@ -181,7 +183,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final PlatformStatusGetter platformStatusGetter,
-            @NonNull final StatusActionSubmitter statusActionSubmitter) {
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
+            @Nullable final Hash currentEpochHash) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -261,7 +264,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 dispatchBuilder,
                 addressBook,
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                stateConfig);
+                stateConfig,
+                currentEpochHash);
 
         final IssHandler issHandler = new IssHandler(
                 Time.getCurrent(),
