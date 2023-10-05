@@ -1,5 +1,22 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.common.wiring.components;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -7,13 +24,15 @@ import java.util.function.Consumer;
  * A quick and dirty simulation of gossip :-). It will generate events like crazy.
  */
 public class Gossip {
+    private final Executor executor;
     private final EventPool eventPool;
     private final Consumer<Event> toEventVerifier;
     private final AtomicLong eventNumber = new AtomicLong();
     private volatile boolean stopped = false;
     private volatile long checkSum;
 
-    public Gossip(EventPool eventPool, Consumer<Event> toEventVerifier) {
+    public Gossip(Executor executor, EventPool eventPool, Consumer<Event> toEventVerifier) {
+        this.executor = executor;
         this.toEventVerifier = toEventVerifier;
         this.eventPool = eventPool;
     }
@@ -21,7 +40,7 @@ public class Gossip {
     public void start() {
         eventNumber.set(0);
         checkSum = 0;
-        new Thread(this::generateEvents).start();
+        executor.execute(this::generateEvents);
     }
 
     private void generateEvents() {
