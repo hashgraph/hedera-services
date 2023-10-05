@@ -35,7 +35,6 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
@@ -98,11 +97,8 @@ public final class StartupStateUtils {
         logger.info(
                 STARTUP.getMarker(),
                 "Entering new epoch, cleaning up file system in preparation for emergency recovery. "
-                        + "The preconsensus event stream will be cleared and any states with a round number "
-                        + "higher than {} will recycled.",
+                        + "Any states with a round number higher than {} will be recycled.",
                 initialStateRound);
-
-        PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
 
         final List<SavedStateInfo> savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
         for (final SavedStateInfo stateInfo : savedStateFiles) {
