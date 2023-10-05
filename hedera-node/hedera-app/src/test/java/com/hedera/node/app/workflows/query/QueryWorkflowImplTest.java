@@ -657,7 +657,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .thenReturn(4000L);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, 12345L))
                 .when(queryChecker)
-                .validateAccountBalances(any(), eq(transactionInfo), eq(ALICE.account()), eq(4321L), eq(0L));
+                .validateAccountBalances(any(), eq(transactionInfo), eq(ALICE.account()),
+                        eq(321L), eq(4000L));
         final var responseBuffer = newEmptyBuffer();
 
         // when
