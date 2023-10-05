@@ -46,13 +46,14 @@ public enum CallResultsSnapshot {
         STATIC_CALL_RESULTS.clear();
     }
 
+    @SuppressWarnings("unchecked")
     public void load() {
         CALL_RESULTS.clear();
         STATIC_CALL_RESULTS.clear();
         final var reader = new ObjectMapper().reader();
         final Map<String, Map<String, Map<String, Map<String, Object>>>> snapshot;
         try {
-            snapshot = reader.readValue(Files.newInputStream(Paths.get(SNAPSHOT_LOC)));
+            snapshot = reader.readValue(Files.newInputStream(Paths.get(SNAPSHOT_LOC)), Map.class);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

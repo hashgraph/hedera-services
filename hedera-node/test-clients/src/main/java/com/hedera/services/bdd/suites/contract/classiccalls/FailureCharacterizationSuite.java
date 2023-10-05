@@ -164,12 +164,12 @@ public class FailureCharacterizationSuite extends HapiSuite {
                         new UpdateTokenKeysFailableCall(),
                         new UpdateTokenInfoFailableCall(),
                         new UpdateTokenExpiryInfoFailableCall()),
-                CharacterizationMode.RECORD_SNAPSHOT));
+                CharacterizationMode.ASSERT_MATCHES_SNAPSHOT));
     }
 
     enum CharacterizationMode {
         RECORD_SNAPSHOT,
-        ASSERT_AGAINST_SNAPSHOT
+        ASSERT_MATCHES_SNAPSHOT
     }
 
     // assertions in production code, repeated string literals
@@ -224,7 +224,6 @@ public class FailureCharacterizationSuite extends HapiSuite {
                                                                     .hasAnswerOnlyPrecheckFrom(
                                                                             OK, CONTRACT_REVERT_EXECUTED)
                                                                     .exposingFullResultTo((status, result) -> {
-                                                                        System.out.println(result);
                                                                         final var actualResult =
                                                                                 call.asStaticCallResult(status, result);
                                                                         if (characterizationMode
