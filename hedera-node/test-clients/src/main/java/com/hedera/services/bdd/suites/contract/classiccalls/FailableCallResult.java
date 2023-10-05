@@ -23,5 +23,4 @@ public record FailableCallResult(
         ResponseCodeEnum topLevelStatus,
         String topLevelErrorMessage,
         @Nullable ResponseCodeEnum childStatus,
-        @Nullable String childErrorMessage) {
-}
+        @Nullable String childErrorMessage) {}

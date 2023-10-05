@@ -122,7 +122,8 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
         return this;
     }
 
-    public HapiContractCallLocal exposingFullResultTo(final BiConsumer<ResponseCodeEnum, ContractFunctionResult> fullResultsObs) {
+    public HapiContractCallLocal exposingFullResultTo(
+            final BiConsumer<ResponseCodeEnum, ContractFunctionResult> fullResultsObs) {
         this.fullResultsObs = fullResultsObs;
         return this;
     }

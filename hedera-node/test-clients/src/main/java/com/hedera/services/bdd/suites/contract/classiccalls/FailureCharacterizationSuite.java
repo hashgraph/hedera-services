@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -48,32 +49,62 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.contract.classiccalls.views.FreezeFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.ApproveFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.ApproveNftFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.AssociateTokenFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.AssociateTokensFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.BurnTokenFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.CreateFungibleTokenFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.CreateFungibleTokenWithCustomFeesFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.CreateNonFungibleTokenFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.CreateNonFungibleTokenWithCustomFeesFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.CryptoTransferFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.DeleteTokenFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.DissociateTokenFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.DissociateTokensFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.FreezeFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.MintTokenFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.PauseTokenFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.RedirectForTokenMutationFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.RevokeKycFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.SetApprovalForAllFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.TransferFromNftFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.TransferNftFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.TransferNftsFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.TransferTokensFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.TransferUnitsFromFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.UnfreezeFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.UnpauseTokenFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.UpdateTokenExpiryInfoFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.UpdateTokenInfoFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.UpdateTokenKeysFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.WipeNftFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.mutations.WipeUnitsFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.views.GetAllowanceFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.views.GetApprovedFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.views.GetFungibleTokenInfoFailableCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.views.GetNonFungibleTokenInfoFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.views.GetTokenDefaultFreezeStatusFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.views.GetTokenDefaultKycStatusFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.views.GetTokenInfoFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.views.GetTokenKeyFailableCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.views.GetTokenTypeFailableCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.views.GrantKycFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.views.IsApprovedForAllFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.views.IsFrozenFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.views.IsKycFailableCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.views.IsTokenFailableCall;
-import com.hedera.services.bdd.suites.contract.classiccalls.views.PauseTokenFailableCall;
-import com.hedera.services.bdd.suites.contract.classiccalls.views.RevokeKycFailableCall;
-import com.hedera.services.bdd.suites.contract.classiccalls.views.UnfreezeFailableCall;
-import com.hedera.services.bdd.suites.contract.classiccalls.views.UnpauseTokenFailableCall;
-import com.hedera.services.bdd.suites.contract.classiccalls.views.UpdateTokenExpiryInfoFailableCall;
-import com.hedera.services.bdd.suites.contract.classiccalls.views.UpdateTokenInfoFailableCall;
-import com.hedera.services.bdd.suites.contract.classiccalls.views.UpdateTokenKeysFailableCall;
-import com.hedera.services.bdd.suites.contract.classiccalls.views.WipeNftFailableCall;
-import com.hedera.services.bdd.suites.contract.classiccalls.views.WipeUnitsFailableCall;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -88,17 +119,48 @@ public class FailureCharacterizationSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(characterizeClassicFailureModes(
                 List.of(
+                        new IsKycFailableCall(),
                         new IsTokenFailableCall(),
+                        new IsFrozenFailableCall(),
+                        new IsApprovedForAllFailableCall(),
+                        new GetApprovedFailableCall(),
+                        new GetTokenKeyFailableCall(),
+                        new GetTokenInfoFailableCall(),
+                        new GetTokenTypeFailableCall(),
+                        new GetFungibleTokenInfoFailableCall(),
+                        new GetTokenDefaultKycStatusFailableCall(),
+                        new GetTokenDefaultFreezeStatusFailableCall(),
                         new GetNonFungibleTokenInfoFailableCall(),
                         new FreezeFailableCall(),
+                        new MintTokenFailableCall(),
+                        new BurnTokenFailableCall(),
+                        new AssociateTokenFailableCall(),
+                        new AssociateTokensFailableCall(),
+                        new DissociateTokenFailableCall(),
+                        new DissociateTokensFailableCall(),
                         new UnfreezeFailableCall(),
+                        new ApproveFailableCall(),
+                        new TransferNftsFailableCall(),
+                        new TransferNftFailableCall(),
+                        new CryptoTransferFailableCall(),
+                        new CreateFungibleTokenFailableCall(),
+                        new CreateNonFungibleTokenFailableCall(),
+                        new CreateFungibleTokenWithCustomFeesFailableCall(),
+                        new CreateNonFungibleTokenWithCustomFeesFailableCall(),
+                        new RedirectForTokenMutationFailableCall(),
+                        new TransferTokensFailableCall(),
                         new WipeNftFailableCall(),
                         new WipeUnitsFailableCall(),
                         new GrantKycFailableCall(),
                         new RevokeKycFailableCall(),
                         new PauseTokenFailableCall(),
+                        new DeleteTokenFailableCall(),
+                        new ApproveNftFailableCall(),
+                        new GetAllowanceFailableCall(),
+                        new SetApprovalForAllFailableCall(),
+                        new TransferUnitsFromFailableCall(),
+                        new TransferFromNftFailableCall(),
                         new UnpauseTokenFailableCall(),
-                        new GetTokenTypeFailableCall(),
                         new UpdateTokenKeysFailableCall(),
                         new UpdateTokenInfoFailableCall(),
                         new UpdateTokenExpiryInfoFailableCall()),
@@ -106,15 +168,14 @@ public class FailureCharacterizationSuite extends HapiSuite {
     }
 
     enum CharacterizationMode {
-        RECORD_SNAPSHOT, ASSERT_AGAINST_SNAPSHOT
+        RECORD_SNAPSHOT,
+        ASSERT_AGAINST_SNAPSHOT
     }
-
 
     // assertions in production code, repeated string literals
     @SuppressWarnings({"java:S5960", "java:S1192"})
     private HapiSpec characterizeClassicFailureModes(
-            @NonNull final List<FailableClassicCall> calls,
-            @NonNull final CharacterizationMode characterizationMode) {
+            @NonNull final List<FailableClassicCall> calls, @NonNull final CharacterizationMode characterizationMode) {
         if (characterizationMode == CharacterizationMode.RECORD_SNAPSHOT) {
             CALL_RESULTS_SNAPSHOT.begin();
         } else {
@@ -133,47 +194,56 @@ public class FailureCharacterizationSuite extends HapiSuite {
                                             final var nonStaticCall = blockingOrder(
                                                     contractCall(FAILABLE_CALLS_CONTRACT, "makeClassicCall", params)
                                                             .via(nonStaticTxnId)
+                                                            .gas(1_000_000L)
                                                             .hasKnownStatusFrom(SUCCESS, CONTRACT_REVERT_EXECUTED),
-                                                    getTxnRecord(nonStaticTxnId)
-                                                            .exposingAllTo(records -> {
-                                                                final var actualResult = call.asCallResult(records);
-                                                                if (characterizationMode == CharacterizationMode.RECORD_SNAPSHOT) {
-                                                                    CALL_RESULTS_SNAPSHOT.recordResult(
-                                                                            call.name(),
-                                                                            mode,
-                                                                            actualResult);
-                                                                } else {
-                                                                    final var expectedResult = CALL_RESULTS_SNAPSHOT.expectedResultOf(call.name(), mode);
-                                                                    assertEquals(
-                                                                            expectedResult,
-                                                                            actualResult,
-                                                                            "Wrong result for " + call.name() + " for failure mode " + mode.name());
-                                                                }
-                                                            }));
+                                                    getTxnRecord(nonStaticTxnId).exposingAllTo(records -> {
+                                                        final var actualResult = call.asCallResult(records);
+                                                        if (characterizationMode
+                                                                == CharacterizationMode.RECORD_SNAPSHOT) {
+                                                            CALL_RESULTS_SNAPSHOT.recordResult(
+                                                                    call.name(), mode, actualResult);
+                                                        } else {
+                                                            final var expectedResult =
+                                                                    CALL_RESULTS_SNAPSHOT.expectedResultOf(
+                                                                            call.name(), mode);
+                                                            assertEquals(
+                                                                    expectedResult,
+                                                                    actualResult,
+                                                                    "Wrong result for " + call.name()
+                                                                            + " for failure mode " + mode.name());
+                                                        }
+                                                    }));
                                             return !call.staticCallOk()
                                                     ? nonStaticCall
                                                     : blockingOrder(
-                                                    nonStaticCall,
-                                                    contractCallLocal(
-                                                            FAILABLE_CALLS_CONTRACT,
-                                                            "makeClassicCall",
-                                                            params)
-                                                            .hasAnswerOnlyPrecheckFrom(
-                                                                    OK, CONTRACT_REVERT_EXECUTED)
-                                                            .exposingFullResultTo(
-                                                                    (status, result) -> {
-                                                                        final var actualResult = call.asStaticCallResult(status, result);
-                                                                        if (characterizationMode == CharacterizationMode.RECORD_SNAPSHOT) {
+                                                            nonStaticCall,
+                                                            contractCallLocal(
+                                                                            FAILABLE_CALLS_CONTRACT,
+                                                                            "makeClassicCall",
+                                                                            params)
+                                                                    .hasAnswerOnlyPrecheckFrom(
+                                                                            OK, CONTRACT_REVERT_EXECUTED)
+                                                                    .exposingFullResultTo((status, result) -> {
+                                                                        System.out.println(result);
+                                                                        final var actualResult =
+                                                                                call.asStaticCallResult(status, result);
+                                                                        if (characterizationMode
+                                                                                == CharacterizationMode
+                                                                                        .RECORD_SNAPSHOT) {
                                                                             CALL_RESULTS_SNAPSHOT.recordStaticResult(
-                                                                                    call.name(),
-                                                                                    mode,
-                                                                                    actualResult);
+                                                                                    call.name(), mode, actualResult);
                                                                         } else {
-                                                                            final var expectedResult = CALL_RESULTS_SNAPSHOT.expectedStaticCallResultOf(call.name(), mode);
+                                                                            final var expectedResult =
+                                                                                    CALL_RESULTS_SNAPSHOT
+                                                                                            .expectedStaticCallResultOf(
+                                                                                                    call.name(), mode);
                                                                             assertEquals(
                                                                                     expectedResult,
                                                                                     actualResult,
-                                                                                    "Wrong static call result for " + call.name() + " for failure mode " + mode.name());
+                                                                                    "Wrong static call result for "
+                                                                                            + call.name()
+                                                                                            + " for failure mode "
+                                                                                            + mode.name());
                                                                         }
                                                                     }));
                                         })))
@@ -182,8 +252,7 @@ public class FailureCharacterizationSuite extends HapiSuite {
                             if (characterizationMode == CharacterizationMode.RECORD_SNAPSHOT) {
                                 CALL_RESULTS_SNAPSHOT.commit();
                             }
-                        })
-                );
+                        }));
     }
 
     private HapiSpecOperation classicInventoryIsAvailable() {
@@ -203,25 +272,30 @@ public class FailureCharacterizationSuite extends HapiSuite {
                                         .supplyKey(FAILABLE_CONTROL_KEY)
                                         .wipeKey(FAILABLE_CONTROL_KEY)
                                         .pauseKey(FAILABLE_CONTROL_KEY)
+                                        .freezeKey(FAILABLE_CONTROL_KEY)
                                         .kycKey(FAILABLE_CONTROL_KEY)
                                         .feeScheduleKey(FAILABLE_CONTROL_KEY)
                                         .signedBy(DEFAULT_PAYER, CRYPTO_KEY))
                                 .toArray(HapiSpecOperation[]::new)),
                         inParallel(Arrays.stream(VALID_NON_FUNGIBLE_TOKEN_IDS)
-                                .map(name -> tokenCreate(name)
-                                        .tokenType(NON_FUNGIBLE_UNIQUE)
-                                        .initialSupply(0)
-                                        .adminKey(FAILABLE_CONTROL_KEY)
-                                        .supplyKey(FAILABLE_CONTROL_KEY)
-                                        .wipeKey(FAILABLE_CONTROL_KEY)
-                                        .pauseKey(FAILABLE_CONTROL_KEY)
-                                        .kycKey(FAILABLE_CONTROL_KEY)
-                                        .feeScheduleKey(FAILABLE_CONTROL_KEY)
-                                        .signedBy(DEFAULT_PAYER, CRYPTO_KEY))
+                                .map(name -> blockingOrder(
+                                        tokenCreate(name)
+                                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                                .initialSupply(0)
+                                                .adminKey(FAILABLE_CONTROL_KEY)
+                                                .supplyKey(FAILABLE_CONTROL_KEY)
+                                                .wipeKey(FAILABLE_CONTROL_KEY)
+                                                .pauseKey(FAILABLE_CONTROL_KEY)
+                                                .freezeKey(FAILABLE_CONTROL_KEY)
+                                                .kycKey(FAILABLE_CONTROL_KEY)
+                                                .feeScheduleKey(FAILABLE_CONTROL_KEY)
+                                                .signedBy(DEFAULT_PAYER, CRYPTO_KEY),
+                                        mintToken(name, List.of(ByteString.copyFromUtf8(name + "#1")))
+                                                .signedBy(DEFAULT_PAYER, CRYPTO_KEY)))
                                 .toArray(HapiSpecOperation[]::new))),
-                inParallel(inParallel(ClassicInventory.VALID_ASSOCIATIONS.stream()
+                inParallel(ClassicInventory.VALID_ASSOCIATIONS.stream()
                         .map(association -> tokenAssociate(association.left(), association.right()))
-                        .toArray(HapiSpecOperation[]::new))));
+                        .toArray(HapiSpecOperation[]::new)));
     }
 
     private void saveClassicContractControlledKey(@NonNull final HapiSpec spec) {

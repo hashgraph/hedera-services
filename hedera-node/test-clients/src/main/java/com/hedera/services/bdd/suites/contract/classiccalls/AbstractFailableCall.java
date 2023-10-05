@@ -16,15 +16,10 @@
 
 package com.hedera.services.bdd.suites.contract.classiccalls;
 
-import com.hedera.services.bdd.suites.contract.classiccalls.ClassicFailureMode;
-import com.hedera.services.bdd.suites.contract.classiccalls.FailableCallResult;
-import com.hedera.services.bdd.suites.contract.classiccalls.FailableClassicCall;
-import com.hedera.services.bdd.suites.contract.classiccalls.FailableStaticCallResult;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
