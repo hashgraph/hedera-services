@@ -48,6 +48,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -451,7 +452,12 @@ public class CryptoTransferHandler implements TransactionHandler {
         var customFeeTokenTransfers = 0;
         final var involvedTokens = new ArrayList<TokenID>();
         final var customFeeAssessor = new CustomFeeAssessmentStep(op);
-        final var assessedCustomFees = customFeeAssessor.assessNumberOfCustomFees(feeContext);
+        List<AssessedCustomFee> assessedCustomFees;
+        try {
+            assessedCustomFees = customFeeAssessor.assessNumberOfCustomFees(feeContext);
+        } catch (HandleException ignore) {
+            assessedCustomFees = new ArrayList<>();
+        }
         totalXfers += assessedCustomFees.size();
         for (final var fee : assessedCustomFees) {
             if (!fee.hasTokenId()) {
