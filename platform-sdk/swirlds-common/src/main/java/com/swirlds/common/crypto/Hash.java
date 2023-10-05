@@ -19,8 +19,9 @@ package com.swirlds.common.crypto;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.Mnemonics.generateMnemonic;
 
-import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.common.io.exceptions.BadIOException;
+import com.swirlds.common.io.streams.AugmentedDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
@@ -31,7 +32,7 @@ import java.util.Arrays;
 /**
  * A cryptographic hash of some data.
  */
-public class Hash implements Comparable<Hash>, SelfSerializable, Serializable {
+public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Serializable {
     private static final int SHORT_STRING_BYTES = 4;
     public static final long CLASS_ID = 0xf422da83a251741eL;
     private static final int CLASS_VERSION = 1;
@@ -184,6 +185,11 @@ public class Hash implements Comparable<Hash>, SelfSerializable, Serializable {
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeInt(digestType.id());
         out.writeByteArray(value);
+    }
+
+    @Override
+    public int getSerializedLength() {
+        return Integer.BYTES + AugmentedDataOutputStream.getArraySerializedLength(value);
     }
 
     /**
