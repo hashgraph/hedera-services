@@ -261,7 +261,7 @@ class QueryCheckerTest extends AppTestBase {
                     .checkSolvency(txInfo, ALICE_ACCOUNT, new Fees(amount, 0, 0));
 
             // then
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount, 0))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, 0, amount))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(INSUFFICIENT_PAYER_BALANCE))
                     .has(estimatedFee(amount));
@@ -304,7 +304,7 @@ class QueryCheckerTest extends AppTestBase {
                     ERIN.account().copyBuilder().tinybarBalance(amount - 1).build());
 
             // then
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount, 0))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, 0, amount))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(INSUFFICIENT_PAYER_BALANCE))
                     .has(estimatedFee(amount));
@@ -363,7 +363,7 @@ class QueryCheckerTest extends AppTestBase {
                     ERIN.account().copyBuilder().tinybarBalance(amount / 4).build());
 
             // then
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount, 0))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, 0, amount))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(INSUFFICIENT_PAYER_BALANCE))
                     .has(estimatedFee(amount));
