@@ -34,12 +34,17 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.processors.CustomContractCreationProcessor;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Small test verifying behavior of the {@link CustomContractCreationProcessor} when the number of
+ * bytecodes in state already equals the configured limit.
+ */
 public class ContractLimitsXTest extends AbstractContractXTest {
     static final long GAS = 300_000L;
     static final long NEXT_ENTITY_NUM = 1234L;

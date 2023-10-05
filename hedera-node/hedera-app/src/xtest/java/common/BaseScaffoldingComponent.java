@@ -29,6 +29,9 @@ import com.swirlds.config.api.Configuration;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+/**
+ * The common provision methods needed for practically any kind of x-test, no matter the target service.
+ */
 public interface BaseScaffoldingComponent {
     HederaState hederaState();
 
