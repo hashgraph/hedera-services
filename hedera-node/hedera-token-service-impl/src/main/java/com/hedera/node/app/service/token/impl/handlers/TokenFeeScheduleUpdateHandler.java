@@ -158,7 +158,22 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var op = body.tokenFeeScheduleUpdateOrThrow();
         final var token = feeContext.readableStore(ReadableTokenStore.class).get(op.tokenIdOrThrow());
         final var tokenOpsUsage = new TokenOpsUsage();
-        final var newFees = op.customFeesOrElse(Collections.emptyList());
+        var newFees = op.customFeesOrElse(Collections.emptyList());
+
+        // Ensure no null values for denominatingTokenId
+        newFees = newFees.stream()
+                .map(fee -> {
+                    if (fee.hasFixedFee() && fee.fixedFee().denominatingTokenId() == null) {
+                        return fee.copyBuilder()
+                                .fixedFee(fee.fixedFee()
+                                        .copyBuilder()
+                                        .denominatingTokenId(TokenID.DEFAULT)
+                                        .build())
+                                .build();
+                    }
+                    return fee;
+                })
+                .toList();
 
         final var newReprBytes = tokenOpsUsage.bytesNeededToRepr(
                 newFees.stream().map(PbjConverter::fromPbj).toList());

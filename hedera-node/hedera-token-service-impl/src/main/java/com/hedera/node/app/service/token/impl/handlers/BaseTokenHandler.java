@@ -66,7 +66,7 @@ public class BaseTokenHandler {
      * @param tokenStore the token store
      * @param tokenRelationStore the token relation store
      */
-    protected void mintFungible(
+    protected long mintFungible(
             @NonNull final Token token,
             @NonNull final TokenRelation treasuryRel,
             final long amount,
@@ -84,7 +84,7 @@ public class BaseTokenHandler {
         if (!isMintOnTokenCreation) {
             validateTrue(token.supplyKey() != null, TOKEN_HAS_NO_SUPPLY_KEY);
         }
-        changeSupply(
+        return changeSupply(
                 token, treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT, accountStore, tokenStore, tokenRelationStore);
     }
 
@@ -103,7 +103,7 @@ public class BaseTokenHandler {
      * @param tokenStore the token store
      * @param tokenRelationStore the token relation store
      */
-    protected void changeSupply(
+    protected long changeSupply(
             @NonNull final Token token,
             @NonNull final TokenRelation treasuryRel,
             final long amount,
@@ -164,6 +164,8 @@ public class BaseTokenHandler {
         accountStore.put(copyTreasuryAccount.build());
         tokenStore.put(copyToken.build());
         tokenRelationStore.put(copyTreasuryRel.build());
+
+        return newTotalSupply;
     }
 
     /**

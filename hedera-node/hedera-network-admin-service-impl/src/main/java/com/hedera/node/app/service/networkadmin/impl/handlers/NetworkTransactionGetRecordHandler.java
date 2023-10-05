@@ -86,7 +86,7 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
 
         final var recordCache = context.recordCache();
         final var receipt = recordCache.getReceipt(txnId);
-        mustExist(receipt, INVALID_TRANSACTION_ID);
+        mustExist(receipt, RECORD_NOT_FOUND);
     }
 
     @Override
@@ -125,12 +125,14 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         return Response.newBuilder().transactionGetRecord(responseBuilder).build();
     }
 
-    private List<TransactionRecord> transformedChildrenOf(TransactionID transactionID, RecordCache recordCache) {
+    private List<TransactionRecord> transformedChildrenOf(
+            final TransactionID transactionID, final RecordCache recordCache) {
         final List<TransactionRecord> children = new ArrayList<>();
         // In a transaction id if nonce is 0 it is a parent and if we have any other number it is a child
         for (int nonce = 1; ; nonce++) {
-            var childTransactionId = transactionID.copyBuilder().nonce(nonce).build();
-            var maybeChildRecord = recordCache.getRecord(childTransactionId);
+            final var childTransactionId =
+                    transactionID.copyBuilder().nonce(nonce).build();
+            final var maybeChildRecord = recordCache.getRecord(childTransactionId);
             if (maybeChildRecord == null) {
                 break;
             } else {

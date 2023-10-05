@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 
-public interface MintCall extends HtsCall {}
+public interface BurnCall extends HtsCall {}
