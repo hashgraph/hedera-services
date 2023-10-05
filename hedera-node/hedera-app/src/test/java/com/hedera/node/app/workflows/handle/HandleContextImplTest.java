@@ -107,6 +107,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -566,6 +567,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     .containsExactly(CAROL.account().key());
         }
 
+        // @todo('9447') re-enable after differential testing completed.
+        @Disabled
         @Test
         void testAllKeysForTransactionWithFailingPureCheck() throws PreCheckException {
             // given

@@ -539,6 +539,12 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl scheduleRef(@NonNull final ScheduleID scheduleRef) {
         requireNonNull(scheduleRef, "scheduleRef must not be null");
         transactionRecordBuilder.scheduleRef(scheduleRef);
+        // Scheduled child transactions must match parent consensus timestamp.
+        // Some unit test scenarios have null here, but real execution should never be null...
+        if (parentConsensusTimestamp() != null) {
+            Timestamp parentConsensus = HapiUtils.asTimestamp(parentConsensusTimestamp());
+            transactionRecordBuilder.consensusTimestamp(parentConsensus);
+        }
         return this;
     }
 

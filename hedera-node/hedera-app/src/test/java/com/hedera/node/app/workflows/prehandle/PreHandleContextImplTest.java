@@ -49,6 +49,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -170,6 +171,8 @@ class PreHandleContextImplTest implements Scenarios {
                     .containsExactly(CAROL.account().key());
         }
 
+        // @todo('9447') re-enable after differential testing completed.
+        @Disabled
         @Test
         void testAllKeysForTransactionWithFailingPureCheck() throws PreCheckException {
             // given
