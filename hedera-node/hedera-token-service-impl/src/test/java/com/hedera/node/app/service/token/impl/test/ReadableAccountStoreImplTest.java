@@ -17,12 +17,15 @@
 package com.hedera.node.app.service.token.impl.test;
 
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -157,6 +160,64 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         readableStore = subject;
 
         final var result = subject.getAccountById(id);
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void retriesEcdsaKeyAliasAsEvmAddressWhenMissing() {
+        final var aSecp256K1Key = Key.newBuilder()
+                .ecdsaSecp256k1(Bytes.fromHex("030101010101010101010101010101010101010101010101010101010101010101"))
+                .build();
+        final var evmAddress = EthSigsUtils.recoverAddressFromPubKey(
+                aSecp256K1Key.ecdsaSecp256k1OrThrow().toByteArray());
+
+        readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAliases = emptyReadableAliasStateBuilder()
+                .value(new ProtoBytes(Bytes.wrap(evmAddress)), asAccount(accountNum))
+                .build();
+        given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
+
+        subject = new ReadableAccountStoreImpl(readableStates);
+
+        final var protoKeyId = AccountID.newBuilder()
+                .alias(Key.PROTOBUF.toBytes(aSecp256K1Key))
+                .build();
+        final var result = subject.getAccountById(protoKeyId);
+        assertThat(result).isNotNull();
+    }
+
+    @Test
+    void ignoresInvalidEcdsaKey() {
+        final var aSecp256K1Key = Key.newBuilder()
+                .ecdsaSecp256k1(Bytes.fromHex("990101010101010101010101010101010101010101010101010101010101010101"))
+                .build();
+        final var protoKeyId = AccountID.newBuilder()
+                .alias(Key.PROTOBUF.toBytes(aSecp256K1Key))
+                .build();
+        final var result = subject.getAccountById(protoKeyId);
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void doesNotRetryNonEcdsaKeyAlias() {
+        final var aEd25519Key = Key.newBuilder()
+                .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
+                .build();
+
+        final var protoKeyId =
+                AccountID.newBuilder().alias(Key.PROTOBUF.toBytes(aEd25519Key)).build();
+        final var result = subject.getAccountById(protoKeyId);
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void ignoresNonsenseAlias() {
+        subject = new ReadableAccountStoreImpl(readableStates);
+        final var nonsenseId = AccountID.newBuilder()
+                .alias(Bytes.wrap("Not an alias of any sort"))
+                .build();
+        final var result = subject.getAccountById(nonsenseId);
         assertThat(result).isNull();
     }
 
