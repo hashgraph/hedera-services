@@ -40,7 +40,6 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiSuite;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
