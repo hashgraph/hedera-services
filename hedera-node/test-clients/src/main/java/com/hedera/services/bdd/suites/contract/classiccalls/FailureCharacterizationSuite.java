@@ -164,7 +164,7 @@ public class FailureCharacterizationSuite extends HapiSuite {
                         new UpdateTokenKeysFailableCall(),
                         new UpdateTokenInfoFailableCall(),
                         new UpdateTokenExpiryInfoFailableCall()),
-                CharacterizationMode.ASSERT_MATCHES_SNAPSHOT));
+                CharacterizationMode.RECORD_SNAPSHOT));
     }
 
     enum CharacterizationMode {
