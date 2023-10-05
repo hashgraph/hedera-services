@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
@@ -67,6 +68,7 @@ import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -78,6 +80,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -107,6 +110,7 @@ public class TestHelpers {
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     public static final LedgerConfig DEFAULT_LEDGER_CONFIG = DEFAULT_CONFIG.getConfigData(LedgerConfig.class);
     public static final StakingConfig DEFAULT_STAKING_CONFIG = DEFAULT_CONFIG.getConfigData(StakingConfig.class);
+    public static final HederaConfig DEFAULT_HEDERA_CONFIG = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
     public static final ContractsConfig DEFAULT_CONTRACTS_CONFIG = DEFAULT_CONFIG.getConfigData(ContractsConfig.class);
     public static final Configuration AUTO_ASSOCIATING_CONFIG = HederaTestConfigBuilder.create()
             .withValue("contracts.allowAutoAssociations", true)
@@ -205,6 +209,11 @@ public class TestHelpers {
             .build();
 
     public static final long NFT_SERIAL_NO = 666L;
+
+    public static final long[] NFT_SERIAL_NUMBERS = {41L, 42L, 43L};
+
+    public static final List<Long> NFT_SERIAL_NUMBERS_LIST =
+            Arrays.stream(NFT_SERIAL_NUMBERS).boxed().toList();
 
     public static final AccountID NON_SYSTEM_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
@@ -342,7 +351,7 @@ public class TestHelpers {
             null,
             null,
             Bytes.EMPTY,
-            "I prefer not to",
+            INVALID_SIGNATURE,
             null,
             Collections.emptyList(),
             null);
@@ -588,5 +597,11 @@ public class TestHelpers {
 
     public static org.apache.tuweni.bytes.Bytes asBytesResult(final ByteBuffer encoded) {
         return org.apache.tuweni.bytes.Bytes.wrap(encoded.array());
+    }
+
+    public static ContractID asNumericContractId(@NonNull final AccountID accountId) {
+        return ContractID.newBuilder()
+                .contractNum(accountId.accountNumOrThrow())
+                .build();
     }
 }

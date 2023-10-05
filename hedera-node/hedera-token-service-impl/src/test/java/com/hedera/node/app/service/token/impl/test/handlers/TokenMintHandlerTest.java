@@ -134,8 +134,8 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
         // number of owned NFTs should increase
         assertThat(writableAccountStore.get(treasuryId).numberOwnedNfts()).isEqualTo(4);
-        // treasury relation supply will not increase since its not fungible token change
-        assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1000L);
+        // token total supply should be increased
+        assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1002L);
         assertThat(recordBuilder.build().transactionRecord().receipt().serialNumbers())
                 .isEqualTo(List.of(3L, 4L));
     }
@@ -150,7 +150,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void failsOnDeletedToken() {
-        final var deletedToken = givenValidFungibleToken(payerId, true, false, false, false);
+        final var deletedToken = givenValidFungibleToken(payerId, true, false, false, false, true);
         writableTokenStore.put(deletedToken);
         givenMintTxn(fungibleTokenId, List.of(metadata1, metadata2), null);
 
@@ -161,7 +161,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void failsOnPausedToken() {
-        final var pausedToken = givenValidFungibleToken(payerId, false, true, false, false);
+        final var pausedToken = givenValidFungibleToken(payerId, false, true, false, false, true);
         writableTokenStore.put(pausedToken);
         givenMintTxn(fungibleTokenId, List.of(metadata1, metadata2), null);
 

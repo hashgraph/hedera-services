@@ -30,6 +30,8 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -139,14 +141,14 @@ public class AllowanceValidator {
     public static Account getEffectiveOwner(
             @Nullable final AccountID owner,
             @NonNull final Account payer,
-            @NonNull final ReadableAccountStore accountStore) {
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ExpiryValidator expiryValidator) {
         if (owner == null || owner.accountNumOrElse(0L) == 0L || owner.equals(payer.accountId())) {
             return payer;
         } else {
             // If owner is in modifications get the modified account from state
-            final var ownerAccount = accountStore.getAccountById(owner);
-            validateTrue(ownerAccount != null, INVALID_ALLOWANCE_OWNER_ID);
-            return ownerAccount;
+            return TokenHandlerHelper.getIfUsable(
+                    owner, accountStore, expiryValidator, INVALID_ALLOWANCE_OWNER_ID, INVALID_ALLOWANCE_OWNER_ID);
         }
     }
 }

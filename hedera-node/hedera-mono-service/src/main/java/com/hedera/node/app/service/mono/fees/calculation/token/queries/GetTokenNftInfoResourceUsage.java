@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.mono.fees.calculation.token.queries;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.queries.token.GetTokenNftInfoAnswer.NFT_INFO_CTX_KEY;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.putIfNotNull;
 
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.hapi.fees.usage.token.TokenGetNftInfoUsage;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
@@ -53,6 +55,23 @@ public final class GetTokenNftInfoResourceUsage implements QueryResourceUsageEst
             putIfNotNull(queryCtx, NFT_INFO_CTX_KEY, info);
             final var estimate =
                     factory.apply(query).givenMetadata(info.getMetadata().toString());
+            return estimate.get();
+        } else {
+            return FeeData.getDefaultInstance();
+        }
+    }
+
+    /**
+     * This method is used to calculate the fee for the {@code GetNftInfo}
+     * only in modularized code, until new fee logic is implemented.
+     * @param query query to be processed
+     * @param nft nft whose info to be retrieved
+     * @return fee data
+     */
+    public FeeData usageGiven(final com.hedera.hapi.node.transaction.Query query, final Nft nft) {
+        if (nft != null) {
+            final var estimate =
+                    factory.apply(fromPbj(query)).givenMetadata(nft.metadata().toString());
             return estimate.get();
         } else {
             return FeeData.getDefaultInstance();

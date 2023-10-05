@@ -27,10 +27,8 @@ import static com.swirlds.cli.logging.HtmlGenerator.WHITELIST_LABEL;
 import static com.swirlds.cli.logging.LogProcessingUtils.escapeString;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * A log that doesn't adhere to the standard format. Becomes part of the most recent log line.
@@ -40,20 +38,6 @@ public class NonStandardLog {
      * The original text
      */
     private String nonStandardText = "";
-
-    /**
-     * The most recent standard log line to come before this non-standard line
-     */
-    private final LogLine parentLogLine;
-
-    /**
-     * Constructor
-     *
-     * @param parentLogLine the most recent log line to come before this non-standard line
-     */
-    public NonStandardLog(@NonNull LogLine parentLogLine) {
-        this.parentLogLine = parentLogLine;
-    }
 
     public void addLogText(@NonNull final String logText) {
         if (!nonStandardText.isEmpty()) {
@@ -67,53 +51,48 @@ public class NonStandardLog {
      */
     @NonNull
     public String generateHtmlString() {
-        final List<String> dataCellTags = new ArrayList<>();
+        final StringBuilder stringBuilder = new StringBuilder();
 
         // add some empty cells for alignment purposes
-        final HtmlTagFactory nodeIdTagFactory = new HtmlTagFactory("td", "")
-                .addClasses(List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL))
-                .addAttribute(BLACKLIST_LABEL, "0")
-                .addAttribute(WHITELIST_LABEL, "0");
-        dataCellTags.add(nodeIdTagFactory.generateTag());
-        final HtmlTagFactory logStartTimeTagFactory = new HtmlTagFactory("td", "")
-                .addClasses(List.of(ELAPSED_TIME_COLUMN_LABEL, HIDEABLE_LABEL))
-                .addAttribute(BLACKLIST_LABEL, "0")
-                .addAttribute(WHITELIST_LABEL, "0");
-        dataCellTags.add(logStartTimeTagFactory.generateTag());
-        final HtmlTagFactory timestampTagFactory = new HtmlTagFactory("td", "")
-                .addClasses(List.of(TIMESTAMP_COLUMN_LABEL, HIDEABLE_LABEL))
-                .addAttribute(BLACKLIST_LABEL, "0")
-                .addAttribute(WHITELIST_LABEL, "0");
-        dataCellTags.add(timestampTagFactory.generateTag());
-        final HtmlTagFactory logNumberTagFactory = new HtmlTagFactory("td", "")
-                .addClasses(List.of(LOG_NUMBER_COLUMN_LABEL, HIDEABLE_LABEL))
-                .addAttribute(BLACKLIST_LABEL, "0")
-                .addAttribute(WHITELIST_LABEL, "0");
-        dataCellTags.add(logNumberTagFactory.generateTag());
+        stringBuilder
+                .append(new HtmlTagFactory("td", "")
+                        .addClasses(List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL))
+                        .addAttribute(BLACKLIST_LABEL, "0")
+                        .addAttribute(WHITELIST_LABEL, "0")
+                        .generateTag())
+                .append("\n");
+        stringBuilder
+                .append(new HtmlTagFactory("td", "")
+                        .addClasses(List.of(ELAPSED_TIME_COLUMN_LABEL, HIDEABLE_LABEL))
+                        .addAttribute(BLACKLIST_LABEL, "0")
+                        .addAttribute(WHITELIST_LABEL, "0")
+                        .generateTag())
+                .append("\n");
+        stringBuilder
+                .append(new HtmlTagFactory("td", "")
+                        .addClasses(List.of(TIMESTAMP_COLUMN_LABEL, HIDEABLE_LABEL))
+                        .addAttribute(BLACKLIST_LABEL, "0")
+                        .addAttribute(WHITELIST_LABEL, "0")
+                        .generateTag())
+                .append("\n");
+        stringBuilder
+                .append(new HtmlTagFactory("td", "")
+                        .addClasses(List.of(LOG_NUMBER_COLUMN_LABEL, HIDEABLE_LABEL))
+                        .addAttribute(BLACKLIST_LABEL, "0")
+                        .addAttribute(WHITELIST_LABEL, "0")
+                        .generateTag())
+                .append("\n");
 
         // add the non-standard contents
-        final HtmlTagFactory contentsFactory = new HtmlTagFactory("td", escapeString(nonStandardText))
-                .addClasses(List.of(NON_STANDARD_LABEL, HIDEABLE_LABEL))
-                .addAttribute("colspan", "5")
-                .addAttribute(BLACKLIST_LABEL, "0")
-                .addAttribute(WHITELIST_LABEL, "0");
-        dataCellTags.add(contentsFactory.generateTag());
+        stringBuilder
+                .append(new HtmlTagFactory("td", escapeString(nonStandardText))
+                        .addClasses(List.of(NON_STANDARD_LABEL, HIDEABLE_LABEL))
+                        .addAttribute("colspan", "6")
+                        .addAttribute(BLACKLIST_LABEL, "0")
+                        .addAttribute(WHITELIST_LABEL, "0")
+                        .generateTag())
+                .append("\n");
 
-        // add classes via the parent line, so that this non-standard log will be filtered with its parent
-        final List<String> rowClassNames = Stream.of(
-                        parentLogLine.getLogLevel(),
-                        parentLogLine.getMarker(),
-                        parentLogLine.getThreadName(),
-                        parentLogLine.getClassName(),
-                        parentLogLine.getNodeId() == null ? "" : "node" + parentLogLine.getNodeId(),
-                        HIDEABLE_LABEL)
-                .map(LogProcessingUtils::escapeString)
-                .toList();
-
-        return new HtmlTagFactory("tr", "\n" + String.join("\n", dataCellTags) + "\n")
-                .addClasses(rowClassNames)
-                .addAttribute(BLACKLIST_LABEL, "0")
-                .addAttribute(WHITELIST_LABEL, "0")
-                .generateTag();
+        return new HtmlTagFactory("tr", stringBuilder.toString()).generateTag();
     }
 }

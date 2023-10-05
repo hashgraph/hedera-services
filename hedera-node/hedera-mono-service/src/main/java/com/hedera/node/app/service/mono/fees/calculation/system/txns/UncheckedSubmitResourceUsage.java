@@ -42,4 +42,12 @@ public final class UncheckedSubmitResourceUsage implements TxnResourceUsageEstim
             throws InvalidTxBodyException {
         return FeeData.getDefaultInstance();
     }
+    /**
+     * This method is used to calculate the fee for the {@code NetworkUncheckedSubmit}
+     * query in modularized code only.
+     * @return the fee for the query
+     */
+    public static FeeData usageGiven() {
+        return FeeData.getDefaultInstance();
+    }
 }

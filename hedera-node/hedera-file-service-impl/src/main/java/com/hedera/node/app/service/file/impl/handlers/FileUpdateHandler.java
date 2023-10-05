@@ -28,6 +28,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
@@ -39,6 +40,7 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileUpdateResourceUsage;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -85,7 +87,9 @@ public class FileUpdateHandler implements TransactionHandler {
         preValidate(transactionFileId, fileStore, context, false);
 
         var file = fileStore.getFileLeaf(transactionFileId);
-        validateAndAddRequiredKeys(file, transactionBody.keys(), context);
+        if (wantsToMutateNonExpiryField(transactionBody)) {
+            validateAndAddRequiredKeys(file, transactionBody.keys(), context);
+        }
     }
 
     @Override
@@ -118,9 +122,11 @@ public class FileUpdateHandler implements TransactionHandler {
 
         // First validate this file is mutable; and the pending mutations are allowed
         // TODO: add or condition for privilege accounts from context
-        validateFalse(file.keys() == null, UNAUTHORIZED);
+        if (wantsToMutateNonExpiryField(fileUpdate)) {
+            validateFalse(file.keys() == null, UNAUTHORIZED);
+            validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
+        }
 
-        validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
         validateAutoRenew(fileUpdate, handleContext);
 
         // Now we apply the mutations to a builder
@@ -141,6 +147,18 @@ public class FileUpdateHandler implements TransactionHandler {
         final var file = feeContext
                 .readableStore(ReadableFileStore.class)
                 .getFileLeaf(op.fileUpdateOrThrow().fileIDOrThrow());
+
+        final AccountID payerId = op.transactionID().accountID();
+
+        final SystemPrivilege privilege =
+                feeContext.authorizer().hasPrivilegedAuthorization(payerId, HederaFunctionality.FILE_UPDATE, op);
+
+        // Even if the privilege is UNAUTHORIZED or IMPERMISSIBLE continue with a free fee
+        // The appropriate error is thrown at a later stage of the workflow
+        if (privilege != SystemPrivilege.UNNECESSARY) {
+            return Fees.FREE;
+        }
+
         return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
             return new FileUpdateResourceUsage(fileOpsUsage).usageGiven(fromPbj(op), sigValueObj, fromPbj(file));
         });
@@ -212,7 +230,7 @@ public class FileUpdateHandler implements TransactionHandler {
     }
 
     public static boolean wantsToMutateNonExpiryField(@NonNull final FileUpdateTransactionBody op) {
-        return op.hasMemo() || op.hasKeys();
+        return op.hasMemo() || op.hasKeys() || op.contents().length() > 0;
     }
 
     private void validateMaybeNewMemo(

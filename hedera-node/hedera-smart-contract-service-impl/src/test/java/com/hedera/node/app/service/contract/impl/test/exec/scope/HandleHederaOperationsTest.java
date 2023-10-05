@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OPERATOR_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_DURATION;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
@@ -243,7 +244,7 @@ class HandleHederaOperationsTest {
                 .dispatchChildTransaction(
                         eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID));
         verify(tokenServiceApi)
-                .markAsContract(AccountID.newBuilder().accountNum(666L).build());
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build(), null);
     }
 
     @Test
@@ -271,7 +272,7 @@ class HandleHederaOperationsTest {
                 .dispatchChildTransaction(
                         eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID));
         verify(tokenServiceApi)
-                .markAsContract(AccountID.newBuilder().accountNum(666L).build());
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }
 
     @Test
@@ -317,6 +318,7 @@ class HandleHederaOperationsTest {
 
     @Test
     void createdContractIdsUsesApi() {
+        given(context.payer()).willReturn(OPERATOR_ACCOUNT_ID);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(tokenServiceApi.modifiedAccountIds())
                 .willReturn(Set.of(B_NEW_ACCOUNT_ID, A_NEW_ACCOUNT_ID, NON_SYSTEM_ACCOUNT_ID));

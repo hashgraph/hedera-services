@@ -31,8 +31,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.StatusActionSubmitter;
-import com.swirlds.common.threading.SyncPermitProvider;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
@@ -55,7 +54,9 @@ import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.ProtocolConfig;
+import com.swirlds.platform.gossip.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
@@ -100,6 +101,11 @@ public class SyncGossip extends AbstractGossip {
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
 
     /**
+     * Keeps track of the number of events in the intake pipeline from each peer
+     */
+    private final IntakeEventCounter intakeEventCounter;
+
+    /**
      * Holds a list of objects that need to be cleared when {@link #clear()} is called on this object.
      */
     private final Clearable clearAllInternalPipelines;
@@ -136,9 +142,10 @@ public class SyncGossip extends AbstractGossip {
      * @param eventIntakeMetrics            metrics for event intake
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links events to their parents, buffers orphans if configured to do so
-     * @param statusActionSubmitter         enables submitting platform status actions
+     * @param platformStatusManager         the platform status manager
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
+     * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
      */
     public SyncGossip(
             @NonNull final PlatformContext platformContext,
@@ -164,9 +171,10 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
+            @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
-            @NonNull final Runnable clearAllPipelinesForReconnect) {
+            @NonNull final Runnable clearAllPipelinesForReconnect,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
         super(
                 platformContext,
                 threadManager,
@@ -184,7 +192,7 @@ public class SyncGossip extends AbstractGossip {
                 eventIntakeMetrics,
                 syncMetrics,
                 eventObserverDispatcher,
-                statusActionSubmitter,
+                platformStatusManager,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
 
@@ -192,6 +200,7 @@ public class SyncGossip extends AbstractGossip {
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
@@ -206,6 +215,7 @@ public class SyncGossip extends AbstractGossip {
                 eventTaskCreator::syncDone,
                 eventTaskCreator::addEvent,
                 syncManager,
+                intakeEventCounter,
                 shadowgraphExecutor,
                 // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
                 false,
@@ -229,7 +239,7 @@ public class SyncGossip extends AbstractGossip {
 
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
-        syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount());
+        syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount(), intakeEventCounter);
 
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
             // If we still need an emergency recovery state, we need it via emergency reconnect.
@@ -276,7 +286,7 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectMetrics,
                                             reconnectController,
                                             fallenBehindManager,
-                                            statusActionSubmitter,
+                                            platformStatusManager,
                                             platformContext.getConfiguration()),
                                     new ReconnectProtocol(
                                             threadManager,
@@ -289,9 +299,11 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectController,
                                             new DefaultSignedStateValidator(platformContext),
                                             fallenBehindManager,
+                                            platformStatusManager,
                                             platformContext.getConfiguration(),
                                             time),
                                     new SyncProtocol(
+                                            platformContext,
                                             otherId,
                                             syncShadowgraphSynchronizer,
                                             fallenBehindManager,
@@ -410,6 +422,7 @@ public class SyncGossip extends AbstractGossip {
     @Override
     public void resume() {
         throwIfNotInPhase(LifecyclePhase.STARTED);
+        intakeEventCounter.reset();
         gossipHalted.set(false);
     }
 }

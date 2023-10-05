@@ -42,12 +42,14 @@ import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.LedgerValidator;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleInjectionModule;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.DualStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
+import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
@@ -119,6 +121,8 @@ public interface HederaInjectionComponent {
 
     DualStateUpdateFacility dualStateUpdateFacility();
 
+    GenesisRecordsConsensusHook genesisRecordsConsensusHook();
+
     @Component.Builder
     interface Builder {
 
@@ -160,6 +164,12 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder throttleManager(ThrottleManager throttleManager);
+
+        @BindsInstance
+        Builder networkUtilizationManager(NetworkUtilizationManager networkUtilizationManager);
+
+        @BindsInstance
+        Builder genesisRecordsConsensusHook(GenesisRecordsConsensusHook genesisRecordsBuilder);
 
         HederaInjectionComponent build();
     }

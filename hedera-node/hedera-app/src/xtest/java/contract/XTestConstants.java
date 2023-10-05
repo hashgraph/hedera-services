@@ -80,11 +80,15 @@ class XTestConstants {
             .build();
     static final Bytes SENDER_ADDRESS =
             com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("f91e624b8b8ea7244e8159ba7c0deeea2b6be990");
+    static final com.esaulpaugh.headlong.abi.Address SENDER_HEADLONG_ADDRESS =
+            asHeadlongAddress(SENDER_ADDRESS.toByteArray());
     static final Address SENDER_BESU_ADDRESS = pbjToBesuAddress(SENDER_ADDRESS);
     static final AccountID RECEIVER_ID =
             AccountID.newBuilder().accountNum(987654321L).build();
     static final com.esaulpaugh.headlong.abi.Address RECEIVER_HEADLONG_ADDRESS =
             asHeadlongAddress(asEvmAddress(RECEIVER_ID.accountNumOrThrow()));
+    static final Address RECEIVER_BESU_ADDRESS =
+            pbjToBesuAddress(Bytes.wrap(asEvmAddress(RECEIVER_ID.accountNumOrThrow())));
     static final TokenID ERC721_TOKEN_ID = TokenID.newBuilder().tokenNum(1028L).build();
     static final NftID SN_1234 =
             NftID.newBuilder().tokenId(ERC721_TOKEN_ID).serialNumber(1234L).build();
@@ -105,6 +109,9 @@ class XTestConstants {
     static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
     static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
             asHeadlongAddress(OWNER_ADDRESS.toByteArray());
+    static final Key AN_ED25519_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
+            .build();
 
     public static void addErc721Relation(
             final Map<EntityIDPair, TokenRelation> tokenRelationships, final AccountID accountID, final long balance) {

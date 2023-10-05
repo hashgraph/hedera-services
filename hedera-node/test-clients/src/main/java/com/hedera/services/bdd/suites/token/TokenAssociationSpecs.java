@@ -20,7 +20,10 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
@@ -36,9 +39,19 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
+import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Granted;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -77,6 +90,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     public static final String CREATION = "creation";
     public static final String SIMPLE = "simple";
     public static final String FREEZE_KEY = "freezeKey";
+    public static final String KYC_KEY = "kycKey";
 
     public static void main(String... args) {
         final var spec = new TokenAssociationSpecs();
@@ -426,6 +440,8 @@ public class TokenAssociationSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
     }
 
+    // enable when TokenDissociateFromAccountHandler.tokenIsExpired is implemented
+    // @HapiTest
     public HapiSpec dissociateHasExpectedSemantics() {
         return defaultHapiSpec("DissociateHasExpectedSemantics")
                 .given(basicKeysAndTokens())
@@ -475,6 +491,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 
+    @HapiTest
     public HapiSpec treasuryAssociationIsAutomatic() {
         return defaultHapiSpec("TreasuryAssociationIsAutomatic")
                 .given(basicKeysAndTokens())
@@ -508,7 +525,7 @@ public class TokenAssociationSpecs extends HapiSuite {
 
     public static HapiSpecOperation[] basicKeysAndTokens() {
         return new HapiSpecOperation[] {
-            newKeyNamed("kycKey"),
+            newKeyNamed(KYC_KEY),
             newKeyNamed(FREEZE_KEY),
             cryptoCreate(TOKEN_TREASURY).balance(0L),
             tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
@@ -519,7 +536,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                     .treasury(TOKEN_TREASURY)
                     .freezeKey(FREEZE_KEY)
                     .freezeDefault(false),
-            tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey("kycKey"),
+            tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey(KYC_KEY),
             tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY)
         };
     }

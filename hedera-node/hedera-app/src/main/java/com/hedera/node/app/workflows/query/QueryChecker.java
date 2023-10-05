@@ -23,21 +23,28 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.fees.FeeContextImpl;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -50,6 +57,7 @@ public class QueryChecker {
     private final CryptoTransferHandler cryptoTransferHandler;
     private final SolvencyPreCheck solvencyPreCheck;
     private final ExpiryValidation expiryValidation;
+    private final FeeManager feeManager;
 
     /**
      * Constructor of {@code QueryChecker}
@@ -59,6 +67,7 @@ public class QueryChecker {
      * {@link HederaFunctionality#CRYPTO_TRANSFER}.
      * @param solvencyPreCheck the {@link SolvencyPreCheck} that checks if the payer has enough
      * @param expiryValidation the {@link ExpiryValidation} that checks if an account is expired
+     * @param feeManager the {@link FeeManager} that calculates the fees
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -66,11 +75,13 @@ public class QueryChecker {
             @NonNull final Authorizer authorizer,
             @NonNull final CryptoTransferHandler cryptoTransferHandler,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
-            @NonNull final ExpiryValidation expiryValidation) {
+            @NonNull final ExpiryValidation expiryValidation,
+            @NonNull final FeeManager feeManager) {
         this.authorizer = requireNonNull(authorizer);
         this.cryptoTransferHandler = requireNonNull(cryptoTransferHandler);
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck);
         this.expiryValidation = requireNonNull(expiryValidation);
+        this.feeManager = requireNonNull(feeManager);
     }
 
     /**
@@ -99,26 +110,23 @@ public class QueryChecker {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void validateAccountBalances(
-            @NonNull final ReadableAccountStore accountStore, @NonNull final TransactionInfo txInfo, final long fee)
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final TransactionInfo txInfo,
+            @NonNull final Account payer,
+            final long fee)
             throws PreCheckException {
         requireNonNull(accountStore);
         requireNonNull(txInfo);
+        requireNonNull(payer);
 
         final var payerID = txInfo.payerID();
         final var nodeAccountID = txInfo.txBody().nodeAccountIDOrThrow();
         final var transfers =
                 txInfo.txBody().cryptoTransferOrThrow().transfersOrThrow().accountAmountsOrThrow();
 
-        // Try to find account
-        final var payer = accountStore.getAccountById(txInfo.payerID());
-        if (payer == null) {
-            // This should never happen, because the account is checked in the pure checks
-            throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
-        }
-
         // FUTURE: Currently we check the solvency twice: once with and once without service fees (in IngestChecker)
         // https://github.com/hashgraph/hedera-services/issues/8356
-        solvencyPreCheck.checkSolvency(txInfo, payer, fee);
+        solvencyPreCheck.checkSolvency(txInfo, payer, new Fees(fee, 0, 0));
 
         if (transfers.isEmpty()) {
             throw new PreCheckException(INVALID_ACCOUNT_AMOUNTS);
@@ -179,5 +187,25 @@ public class QueryChecker {
         if (!authorizer.isAuthorized(payer, functionality)) {
             throw new PreCheckException(NOT_SUPPORTED);
         }
+    }
+
+    /**
+     * Estimates the fees for a payment (CryptoTransfer) in a query
+     *
+     * @param storeFactory the {@link ReadableStoreFactory} used to access stores
+     * @param transactionInfo the {@link TransactionInfo} of the {@link HederaFunctionality#CRYPTO_TRANSFER}
+     * @param payerKey the {@link Key} of the payer
+     * @param configuration the current {@link Configuration}
+     * @return the estimated fees
+     */
+    public long estimateTxFees(
+            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final Instant consensusTime,
+            @NonNull final TransactionInfo transactionInfo,
+            @NonNull final Key payerKey,
+            @NonNull final Configuration configuration) {
+        final var feeContext = new FeeContextImpl(
+                consensusTime, transactionInfo, payerKey, feeManager, storeFactory, configuration, authorizer);
+        return cryptoTransferHandler.calculateFees(feeContext).totalFee();
     }
 }
