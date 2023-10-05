@@ -14,15 +14,13 @@ public interface Wire<T> extends Consumer<T> {
     /**
      * Get a new wire builder.
      *
-     * @param executor the executor that the wire will use to run tasks
      * @param consumer tasks are passed to this consumer
      * @param <T>      the type of object that is passed through the wire
      * @return a new wire builder
      */
     static <T> WireBuilder<T> builder(
-            @NonNull final Executor executor,
             @NonNull final Consumer<T> consumer) {
-        return new WireBuilder<>(executor, consumer);
+        return new WireBuilder<>(consumer);
     }
 
     /**

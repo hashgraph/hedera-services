@@ -31,11 +31,11 @@ class WiringBenchmark {
 
         final TopologicalEventSorter orphanBuffer = new TopologicalEventSorter(eventPool);
         final EventVerifier verifier = new EventVerifier(
-                Wire.builder(executor, orphanBuffer)
+                Wire.builder(orphanBuffer)
                         .withConcurrency(false)
                         .build());
-        final Gossip gossip = new Gossip(eventPool,
-                Wire.builder(executor, verifier)
+        final Gossip gossip = new Gossip(executor, eventPool,
+                Wire.builder(verifier)
                         .withConcurrency(true)
                         .build());
 

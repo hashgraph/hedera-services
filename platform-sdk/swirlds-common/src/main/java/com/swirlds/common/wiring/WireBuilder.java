@@ -16,7 +16,6 @@ public class WireBuilder<T> {
 
     public static final int UNLIMITED_CAPACITY = -1;
 
-    private final Executor executor;
     private boolean concurrent = false;
     private final Consumer<T> consumer;
     private int capacity = UNLIMITED_CAPACITY; // TODO this is a place holder, not currently implemented
@@ -30,13 +29,9 @@ public class WireBuilder<T> {
     /**
      * Constructor.
      *
-     * @param executor the executor that the wire will use to run tasks
      * @param consumer tasks are passed to this consumer
      */
-    WireBuilder(
-            @NonNull final Executor executor,
-            @NonNull final Consumer<T> consumer) {
-        this.executor = Objects.requireNonNull(executor);
+    WireBuilder(@NonNull final Consumer<T> consumer) {
         this.consumer = Objects.requireNonNull(consumer);
     }
 
@@ -75,8 +70,8 @@ public class WireBuilder<T> {
     @NonNull
     public Wire<T> build() {
         if (concurrent) {
-            return new ConcurrentWire<>(executor, consumer);
+            return new ConcurrentWire<>(consumer);
         }
-        return new SequentialWire<>(executor, consumer);
+        return new SequentialWire<>(consumer);
     }
 }

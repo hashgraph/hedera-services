@@ -3,7 +3,7 @@ package com.swirlds.common.wiring.components;
 import java.util.function.Consumer;
 
 public class TopologicalEventSorter implements Consumer<Event> {
-    private static final int PRINT_FREQUENCY = 1_000_000;
+    private static final int PRINT_FREQUENCY = 10_000_000;
     private final EventPool eventPool;
     private long lastTimestamp;
     private long checkSum;

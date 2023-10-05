@@ -13,16 +13,20 @@ import java.util.function.Consumer;
  * @param <T> the type of object that is passed through the wire
  */
 public class ConcurrentWire<T> implements Wire<T> {
-    private final Executor executor;
     private final Consumer<T> consumer;
 
-    public ConcurrentWire(@NonNull final Executor executor, @NonNull final Consumer<T> consumer) {
-        this.executor = Objects.requireNonNull(executor);
+    public ConcurrentWire(@NonNull final Consumer<T> consumer) {
         this.consumer = Objects.requireNonNull(consumer);
     }
 
     @Override
     public void accept(@NonNull final T t) {
-        executor.execute(() -> consumer.accept(t));
+        new AbstractTask() {
+            @Override
+            protected boolean exec() {
+                consumer.accept(t);
+                return true;
+            }
+        }.send();
     }
 }

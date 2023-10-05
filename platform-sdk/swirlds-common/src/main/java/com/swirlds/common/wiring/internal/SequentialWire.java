@@ -13,12 +13,35 @@ import java.util.function.Consumer;
  */
 public class SequentialWire<T> implements Wire<T> {
     private final Consumer<T> consumer;
-    private final AtomicReference<Task> lastTask = new AtomicReference<>(new Task(true));
+    private final AtomicReference<SeqTask<T>> lastTask;
 
-    public SequentialWire(
-            @NonNull final Executor executor,
-            @NonNull final Consumer<T> consumer) {
+    public SequentialWire(@NonNull final Consumer<T> consumer) {
         this.consumer = consumer;
+        this.lastTask = new AtomicReference<>(new SeqTask<>(1, consumer));
+    }
+
+    static class SeqTask<V> extends AbstractTask {
+        final Consumer<V> consumer;
+        V data;
+        SeqTask<V> out;
+
+        SeqTask(int count, Consumer<V> consumer) {
+            super(count);
+            this.consumer = consumer;
+        }
+
+        void send(SeqTask<V> out, V data) {
+            this.out = out;
+            this.data = data;
+            send();
+        }
+
+        @Override
+        public boolean exec() {
+            consumer.accept(data);
+            out.send();
+            return true;
+        }
     }
 
     /**
@@ -31,11 +54,11 @@ public class SequentialWire<T> implements Wire<T> {
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
 
-        final Task nextTask = new Task();
-        Task curTask;
+        final SeqTask<T> nextTask = new SeqTask<>(2, consumer);
+        SeqTask<T> curTask;
         do {
             curTask = lastTask.get();
         } while (!lastTask.compareAndSet(curTask, nextTask));
-        curTask.send(nextTask, () -> consumer.accept(t));
+        curTask.send(nextTask, t);
     }
 }
