@@ -87,9 +87,12 @@ public class ConsensusHashManager {
     /**
      * Create an object that tracks reported hashes and detects ISS events.
      *
+     * @param time            provides the current wall clock time
      * @param dispatchBuilder responsible for building dispatchers
      * @param addressBook     the address book for the network
      * @param consensusConfig consensus configuration
+     * @param stateConfig     state configuration
+     * @param currentEpochHash the current epoch hash
      */
     public ConsensusHashManager(
             final Time time,

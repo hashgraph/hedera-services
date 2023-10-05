@@ -254,6 +254,8 @@ public class SerializableDataOutputStream extends AugmentedDataOutputStream {
      *
      * @param data
      * 		array to write, should not be null
+     * @param writeVersion
+     *      set to true if the version will be serialized
      * @param writeClassId
      * 		set to true if the classID should be written. This can be false if the class is known when
      * 		de-serializing
