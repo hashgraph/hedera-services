@@ -120,6 +120,10 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
             throws HandleException {
         // Check that the token meta exists
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
+
+        // Validate token is not paused or deleted
+        TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
+
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         validateTrue(tokenMeta != null, INVALID_TOKEN_ID);
 

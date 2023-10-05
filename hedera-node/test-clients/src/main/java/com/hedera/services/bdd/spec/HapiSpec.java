@@ -433,6 +433,7 @@ public class HapiSpec implements Runnable {
                 ops = Stream.concat(creationOps.stream(), ops.stream()).toList();
             }
         }
+        log.info("{} test suite started !", logPrefix());
 
         status = RUNNING;
         if (hapiSetup.statusDeferredResolvesDoAsync()) {
