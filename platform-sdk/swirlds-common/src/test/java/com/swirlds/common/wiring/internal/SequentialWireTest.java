@@ -390,6 +390,144 @@ class SequentialWireTest {
                 value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
     }
 
-    // TODO interruptable test
-    // TODO uninterruptable test
+    /**
+     * Test interrupts with accept() when backpressure is being applied.
+     */
+    @Test
+    void uninterruptableTest() throws InterruptedException {
+        final AtomicInteger wireValue = new AtomicInteger();
+        final CountDownLatch latch = new CountDownLatch(1);
+        final Consumer<Integer> handler = x -> {
+            try {
+                if (x == 0) {
+                    latch.await();
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            wireValue.set(hash32(wireValue.get(), x));
+        };
+
+        final Wire<Integer> wire = Wire.builder(handler)
+                .withConcurrency(false)
+                .withScheduledTaskCapacity(10)
+                .build();
+        assertEquals(0, wire.getUnprocessedTaskCount());
+
+        final AtomicInteger value = new AtomicInteger();
+
+        // We will be stuck handling 0 and we will have the capacity for 10 more, for a total of 11 tasks in flight
+        completeBeforeTimeout(
+                () -> {
+                    for (int i = 0; i < 11; i++) {
+                        wire.accept(i);
+                        value.set(hash32(value.get(), i));
+                    }
+                },
+                Duration.ofSeconds(1),
+                "unable to add tasks");
+        assertEquals(10, wire.getUnprocessedTaskCount());
+
+        // Try to enqueue work on another thread. It should get stuck and be
+        // unable to add anything until we release the latch.
+        final AtomicBoolean allWorkAdded = new AtomicBoolean(false);
+        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    for (int i = 11; i < 100; i++) {
+                        wire.accept(i);
+                        value.set(hash32(value.get(), i));
+                    }
+                    allWorkAdded.set(true);
+                })
+                .build(true);
+
+        // Interrupting the thread should have no effect.
+        thread.interrupt();
+
+        // Adding work to an unblocked wire should be very fast. If we sleep for a while, we'd expect that an unblocked
+        // wire would have processed all of the work that was added to it.
+        MILLISECONDS.sleep(50);
+        assertFalse(allWorkAdded.get());
+        assertEquals(10, wire.getUnprocessedTaskCount());
+
+        // Release the latch, all work should now be added
+        latch.countDown();
+
+        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(1), "unable to add all work");
+        assertEventuallyEquals(
+                0L,
+                wire::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "Wire unprocessed task count did not match expected value");
+        assertEventuallyEquals(
+                value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+    }
+
+    /**
+     * Test interrupts with accept() when backpressure is being applied.
+     */
+    @Test
+    void interruptableTest() throws InterruptedException {
+        final AtomicInteger wireValue = new AtomicInteger();
+        final CountDownLatch latch = new CountDownLatch(1);
+        final Consumer<Integer> handler = x -> {
+            try {
+                if (x == 0) {
+                    latch.await();
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            wireValue.set(hash32(wireValue.get(), x));
+        };
+
+        final Wire<Integer> wire = Wire.builder(handler)
+                .withConcurrency(false)
+                .withScheduledTaskCapacity(10)
+                .build();
+        assertEquals(0, wire.getUnprocessedTaskCount());
+
+        final AtomicInteger value = new AtomicInteger();
+
+        // We will be stuck handling 0 and we will have the capacity for 10 more, for a total of 11 tasks in flight
+        completeBeforeTimeout(
+                () -> {
+                    for (int i = 0; i < 11; i++) {
+                        wire.accept(i);
+                        value.set(hash32(value.get(), i));
+                    }
+                },
+                Duration.ofSeconds(1),
+                "unable to add tasks");
+        assertEquals(10, wire.getUnprocessedTaskCount());
+
+        // Try to enqueue work on another thread. It should get stuck and be
+        // unable to add anything until we release the latch.
+        final AtomicBoolean allWorkAdded = new AtomicBoolean(false);
+        final AtomicBoolean interrupted = new AtomicBoolean(false);
+        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    for (int i = 11; i < 100; i++) {
+                        try {
+                            wire.acceptInterruptably(i);
+                        } catch (final InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            interrupted.set(true);
+                            return;
+                        }
+                        value.set(hash32(value.get(), i));
+                    }
+                    allWorkAdded.set(true);
+                })
+                .build(true);
+
+        // Interrupting the thread should cause it to quickly terminate.
+        thread.interrupt();
+
+        assertEventuallyTrue(interrupted::get, Duration.ofSeconds(1), "thread was not interrupted");
+        assertFalse(allWorkAdded.get());
+        assertEventuallyTrue(() -> !thread.isAlive(), Duration.ofSeconds(1), "thread did not terminate");
+    }
 }
