@@ -144,7 +144,7 @@ public final class PlatformBuilder {
      * The path to the config file (i.e. the file with the address book. Traditionally named
      * {@link #DEFAULT_CONFIG_FILE_NAME}.
      *
-     * @param path the path the config file
+     * @param path the path to the config file
      * @return this
      */
     @NonNull
