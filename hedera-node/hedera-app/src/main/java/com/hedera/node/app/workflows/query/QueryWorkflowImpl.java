@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -174,6 +175,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             // 3. Check query throttles
             if (synchronizedThrottleAccumulator.shouldThrottle(function, query)
                     && !RESTRICTED_FUNCTIONALITIES.contains(function)) {
+                if (!responseType.equals(COST_ANSWER)) {
+                    throw new PreCheckException(NOT_SUPPORTED);
+                }
                 throw new PreCheckException(BUSY);
             }
 
