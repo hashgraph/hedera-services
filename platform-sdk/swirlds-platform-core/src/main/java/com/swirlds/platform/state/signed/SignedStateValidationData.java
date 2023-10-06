@@ -39,14 +39,10 @@ import java.time.Instant;
  */
 public record SignedStateValidationData(
         long round,
-        @NonNull
-        Instant consensusTimestamp,
-        @Nullable
-        Hash addressBookHash,
-        @NonNull
-        Hash consensusEventsRunningHash,
-        @Nullable
-        Hash epochHash) {
+        @NonNull Instant consensusTimestamp,
+        @Nullable Hash addressBookHash,
+        @NonNull Hash consensusEventsRunningHash,
+        @Nullable Hash epochHash) {
 
     public SignedStateValidationData(@NonNull final PlatformData that, @Nullable final AddressBook addressBook) {
         this(

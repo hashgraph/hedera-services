@@ -134,8 +134,7 @@ public class ConsensusTestArgs {
     static Stream<Arguments> nodeProvidesStaleOtherParents() {
         return Stream.of(
                 Arguments.of(new ConsensusTestParams(4, INCREMENTING, INCREMENTAL_NODE_WEIGHT_DESC)),
-                Arguments.of(new ConsensusTestParams(9, RANDOM_REAL_WEIGHT, RANDOM_WEIGHT_DESC))
-        );
+                Arguments.of(new ConsensusTestParams(9, RANDOM_REAL_WEIGHT, RANDOM_WEIGHT_DESC)));
     }
 
     static Stream<Arguments> quorumOfNodesGoDownTests() {
