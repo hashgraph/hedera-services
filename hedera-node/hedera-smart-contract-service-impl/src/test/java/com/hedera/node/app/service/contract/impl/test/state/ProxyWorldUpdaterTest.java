@@ -281,6 +281,14 @@ class ProxyWorldUpdaterTest {
     }
 
     @Test
+    void commitIsNoopAfterRevert() {
+        subject.revert();
+        subject.commit();
+        verify(hederaOperations).revert();
+        verify(hederaOperations, never()).commit();
+    }
+
+    @Test
     void commitDelegatesToScope() {
         subject.commit();
         verify(hederaOperations).commit();

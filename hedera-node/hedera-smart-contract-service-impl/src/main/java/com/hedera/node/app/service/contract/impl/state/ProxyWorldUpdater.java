@@ -108,6 +108,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Nullable
     protected PendingCreation pendingCreation;
 
+    protected boolean reverted = false;
+
     public ProxyWorldUpdater(
             @NonNull final Enhancement enhancement,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
@@ -348,9 +350,14 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public void revert() {
         // It might seem like we should have a call to evmFrameState.revert() here; but remember the
-        // EvmFrameState is just a convenience wrapper around the Scope to let us use Besu types, and
-        // ultimately the Scope is the one tracking and managing all changes
+        // EvmFrameState is just a convenience wrapper around the scope to let us use Besu types, and
+        // ultimately the HederaOperations is the one tracking and managing all changes
         enhancement.operations().revert();
+        // Because of the revert-then-commit pattern that Besu uses for force deletions in
+        // AbstractMessageProcessor#clearAccumulatedStateBesidesGasAndOutput(), we have
+        // to take special measures here to avoid popping the savepoint stack twice for
+        // this frame
+        reverted = true;
     }
 
     /**
@@ -360,8 +367,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @SuppressWarnings("java:S125")
     public void commit() {
         // It might seem like we should have a call to evmFrameState.commit() here; but remember the
-        // EvmFrameState is just a mutable view of the scope's state that lets us use Besu types
-        enhancement.operations().commit();
+        // EvmFrameState is just a convenience wrapper around the scope to let us use Besu types, and
+        // ultimately the HederaOperations is the one tracking and managing all changes
+        if (!reverted) {
+            enhancement.operations().commit();
+        }
     }
 
     /**

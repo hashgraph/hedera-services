@@ -114,6 +114,7 @@ class TransactionModuleTest {
 
     @Test
     void providesEnhancement() {
+        given(hederaOperations.begin()).willReturn(hederaOperations);
         assertNotNull(
                 TransactionModule.provideEnhancement(hederaOperations, nativeOperations, systemContractOperations));
     }

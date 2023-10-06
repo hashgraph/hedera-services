@@ -87,7 +87,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void commit() {
-        // Currently the savepoint stack only supports reverting savepoints; then commits all remaining at the end
+        context.savepointStack().commit();
     }
 
     /**

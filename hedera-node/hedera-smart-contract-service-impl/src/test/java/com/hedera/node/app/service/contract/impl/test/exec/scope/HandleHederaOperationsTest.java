@@ -153,7 +153,11 @@ class HandleHederaOperationsTest {
 
     @Test
     void commitIsNoopUntilSavepointExposesIt() {
-        assertDoesNotThrow(subject::commit);
+        given(context.savepointStack()).willReturn(savepointStack);
+
+        subject.commit();
+
+        verify(savepointStack).commit();
     }
 
     @Test
