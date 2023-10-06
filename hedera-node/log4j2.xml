@@ -198,9 +198,9 @@
     </Logger>
 
     <!-- Send transaction state logs to their own appender   -->
-    <AsyncLogger name="com.hedera.node.app.state.logging.TransactionStateLogger" level="trace" additivity="false">
+    <Logger name="com.hedera.node.app.state.logging.TransactionStateLogger" level="trace" additivity="false">
       <AppenderRef ref="TransactionStateLogs"/>
-    </AsyncLogger>
+    </Logger>
 
     <Logger name="com.hedera" level="info" additivity="false">
       <AppenderRef ref="Console"/>
