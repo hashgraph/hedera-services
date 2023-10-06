@@ -32,6 +32,16 @@ public class SequentialWire<T> implements Wire<T> {
     private final AtomicReference<SequentialTask<T>> lastTask;
 
     /**
+     * Constructor.
+     *
+     * @param consumer data on the wire is passed to this consumer
+     */
+    public SequentialWire(@NonNull final Consumer<T> consumer) {
+        this.consumer = Objects.requireNonNull(consumer);
+        this.lastTask = new AtomicReference<>(new SequentialTask<>(1, consumer));
+    }
+
+    /**
      * A task in a sequential wire.
      *
      * @param <T> the type of object that is passed through the wire
@@ -52,7 +62,6 @@ public class SequentialWire<T> implements Wire<T> {
          */
         SequentialTask(final int dependencyCount, @NonNull Consumer<T> consumer) {
             super(dependencyCount);
-
             this.consumer = consumer;
         }
 
@@ -87,18 +96,6 @@ public class SequentialWire<T> implements Wire<T> {
             nextTask.send();
             return true;
         }
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param consumer data on the wire is passed to this consumer
-     */
-    public SequentialWire(@NonNull final Consumer<T> consumer) {
-        this.lastTask = new AtomicReference<>(new SequentialTask<>(1, consumer));
-
-        Objects.requireNonNull(consumer);
-        this.consumer = Objects.requireNonNull(consumer);
     }
 
     /**
