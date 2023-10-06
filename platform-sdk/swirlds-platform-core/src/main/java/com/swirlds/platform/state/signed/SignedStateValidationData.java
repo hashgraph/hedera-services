@@ -19,6 +19,8 @@ package com.swirlds.platform.state.signed;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.state.PlatformData;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
@@ -36,9 +38,17 @@ import java.time.Instant;
  * 		The epoch hash from an earlier state.
  */
 public record SignedStateValidationData(
-        long round, Instant consensusTimestamp, Hash addressBookHash, Hash consensusEventsRunningHash, Hash epochHash) {
+        long round,
+        @NonNull
+        Instant consensusTimestamp,
+        @Nullable
+        Hash addressBookHash,
+        @NonNull
+        Hash consensusEventsRunningHash,
+        @Nullable
+        Hash epochHash) {
 
-    public SignedStateValidationData(final PlatformData that, final AddressBook addressBook) {
+    public SignedStateValidationData(@NonNull final PlatformData that, @Nullable final AddressBook addressBook) {
         this(
                 that.getRound(),
                 that.getConsensusTimestamp(),

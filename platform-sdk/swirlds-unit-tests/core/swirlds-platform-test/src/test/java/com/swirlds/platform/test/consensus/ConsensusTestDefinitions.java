@@ -26,6 +26,7 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
@@ -60,6 +61,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 public final class ConsensusTestDefinitions {
 
@@ -354,7 +356,16 @@ public final class ConsensusTestDefinitions {
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
         // Setup: pick one node to provide stale other-parents
-        orchestrator.configGenerators(g -> g.getSource(g.getAddressBook().getNodeId(0))
+        // The node's weight should be less than a strong minority so that we can reach consensus
+        final NodeId staleParentProvider = StreamSupport.stream(
+                        Spliterators.spliteratorUnknownSize(orchestrator.getAddressBook().iterator(), 0), false)
+                .filter(a -> !Threshold.STRONG_MINORITY.isSatisfiedBy(a.getWeight(),
+                                orchestrator.getAddressBook().getTotalWeight()))
+                .findFirst()
+                .orElseThrow()
+                .getNodeId();
+        Objects.requireNonNull(staleParentProvider, "Could not find a node with less than a strong minority of weight");
+        orchestrator.configGenerators(g -> g.getSource(staleParentProvider)
                 .setRecentEventRetentionSize(5000)
                 .setProvidedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300)));
         orchestrator.generateAllEvents();

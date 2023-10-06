@@ -16,31 +16,19 @@
 
 package com.swirlds.platform.test.gui;
 
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.gui.hashgraph.internal.FinalShadowgraphGuiSource;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileReader;
-import com.swirlds.platform.test.consensus.ConsensusUtils;
 import com.swirlds.platform.test.consensus.TestIntake;
-import com.swirlds.platform.test.fixtures.event.EventUtils;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
-import com.swirlds.test.framework.ResourceLoader;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.FlowLayout;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -134,23 +122,6 @@ public class TestGuiSource {
             intake.loadSnapshot(savedSnapshot);
         });
 
-        // load signed state
-        final JButton loadSS = new JButton("Load version 5 state");
-        loadSS.addActionListener(e -> {
-            try {
-                intake.reset();
-                ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-                final Path ssPath = ResourceLoader.getFile("version-5-state.swh.bin");
-                final SignedState state = SignedStateFileReader.readSignedStateOnly(
-                        TestPlatformContextBuilder.create().build(), ssPath);
-                EventUtils.convertEvents(state);
-                intake.loadFromSignedState(state);
-                ConsensusUtils.loadEventsIntoGenerator(state, graphGenerator, new Random());
-            } catch (final IOException | ConstructableRegistryException | URISyntaxException ex) {
-                throw new RuntimeException(ex);
-            }
-        });
-
         // create JPanel
         final JPanel controls = new JPanel(new FlowLayout());
         controls.add(nextEvent);
@@ -160,7 +131,6 @@ public class TestGuiSource {
         controls.add(printLastSnapshot);
         controls.add(saveLastSnapshot);
         controls.add(loadSavedSnapshot);
-        controls.add(loadSS);
 
         return controls;
     }

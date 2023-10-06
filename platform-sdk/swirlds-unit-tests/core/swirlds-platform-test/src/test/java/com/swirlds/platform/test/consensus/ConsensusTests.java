@@ -284,7 +284,6 @@ class ConsensusTests {
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Remove a node from the address book at restart")
-    @Disabled("address book changing is not yet supported")
     void nodeRemoveTest(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::removeNode)

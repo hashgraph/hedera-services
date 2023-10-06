@@ -745,10 +745,10 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         event.setRoundReceived(receivedRound);
         event.setConsensus(true);
 
-        final List<Instant> times = event.getRecTimes(); // list of when e1 first became ancestor of each ufw
-        // sort ascending the received times. Used to find the median now, and the extended median
-        // later.
-        Collections.sort(times);
+        // list of when e1 first became ancestor of each ufw
+        // these timestamps have been sorted beforehand
+        final List<Instant> times = event.getRecTimes();
+
         // take middle. If there are 2 middle (even length) then use the 2nd (max) of them
         event.setConsensusTimestamp(times.get(times.size() / 2));
 
