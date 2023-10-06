@@ -20,9 +20,11 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumericContractId;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.utils.KeyValueWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper;
@@ -54,10 +56,13 @@ public class CreateDecoder {
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateFungibleToken(
-            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+            @NonNull final byte[] encoded,
+            @NonNull final AccountID senderId,
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_FUNGIBLE_TOKEN.decodeCall(encoded);
         final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperFungibleWithoutFees(
-                call.get(0), true, call.get(1), call.get(2), addressIdConverter);
+                call.get(0), true, call.get(1), call.get(2), senderId, nativeOperations, addressIdConverter);
         return bodyOf(createToken(tokenCreateWrapper));
     }
 
@@ -68,10 +73,21 @@ public class CreateDecoder {
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateFungibleTokenWithCustomFees(
-            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+            @NonNull final byte[] encoded,
+            @NonNull final AccountID senderId,
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES.decodeCall(encoded);
         final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperFungibleWithCustomFees(
-                call.get(0), true, call.get(1), call.get(2), call.get(3), call.get(4), addressIdConverter);
+                call.get(0),
+                true,
+                call.get(1),
+                call.get(2),
+                call.get(3),
+                call.get(4),
+                senderId,
+                nativeOperations,
+                addressIdConverter);
         return bodyOf(createToken(tokenCreateWrapper));
     }
 
@@ -82,10 +98,13 @@ public class CreateDecoder {
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateNonFungible(
-            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+            @NonNull final byte[] encoded,
+            @NonNull final AccountID senderId,
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN.decodeCall(encoded);
-        final TokenCreateWrapper tokenCreateWrapper =
-                getTokenCreateWrapperNonFungible(call.get(0), false, call.get(1), call.get(2), addressIdConverter);
+        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperNonFungible(
+                call.get(0), false, call.get(1), call.get(2), senderId, nativeOperations, addressIdConverter);
         return bodyOf(createToken(tokenCreateWrapper));
     }
 
@@ -96,10 +115,13 @@ public class CreateDecoder {
      * @return the synthetic transaction body
      */
     public TransactionBody decodeCreateNonFungibleWithCustomFees(
-            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+            @NonNull final byte[] encoded,
+            @NonNull final AccountID senderId,
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final AddressIdConverter addressIdConverter) {
         final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.decodeCall(encoded);
         final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperNonFungibleWithCustomFees(
-                call.get(0), false, call.get(1), call.get(2), addressIdConverter);
+                call.get(0), false, call.get(1), call.get(2), senderId, nativeOperations, addressIdConverter);
         return bodyOf(createToken(tokenCreateWrapper));
     }
 
@@ -112,6 +134,8 @@ public class CreateDecoder {
             final boolean isFungible,
             final long initSupply,
             final int decimals,
+            @NonNull final AccountID senderId,
+            @NonNull final HederaNativeOperations nativeOperations,
             @NonNull final AddressIdConverter addressIdConverter) {
 
         final var tokenName = (String) tokenCreateStruct.get(0);
@@ -124,7 +148,7 @@ public class CreateDecoder {
         final var tokenKeys = decodeTokenKeys(tokenCreateStruct.get(7), addressIdConverter);
         final var tokenExpiry = decodeTokenExpiry(tokenCreateStruct.get(8), addressIdConverter);
 
-        return new TokenCreateWrapper(
+        final var tokenCreateWrapper = new TokenCreateWrapper(
                 isFungible,
                 tokenName,
                 tokenSymbol,
@@ -137,6 +161,8 @@ public class CreateDecoder {
                 isFreezeDefault,
                 tokenKeys,
                 tokenExpiry);
+        tokenCreateWrapper.setAllInheritedKeysTo(nativeOperations.getAccountKey(senderId.accountNum()));
+        return tokenCreateWrapper;
     }
 
     private static TokenCreateWrapper getTokenCreateWrapperFungibleWithCustomFees(
@@ -146,9 +172,11 @@ public class CreateDecoder {
             final int decimals,
             @NonNull final Tuple[] fixedFeesTuple,
             @NonNull final Tuple[] fractionalFeesTuple,
+            @NonNull final AccountID senderId,
+            @NonNull final HederaNativeOperations nativeOperations,
             @NonNull final AddressIdConverter addressIdConverter) {
         final var tokenCreateWrapper = getTokenCreateWrapperFungibleWithoutFees(
-                tokenCreateStruct, isFungible, initSupply, decimals, addressIdConverter);
+                tokenCreateStruct, isFungible, initSupply, decimals, senderId, nativeOperations, addressIdConverter);
         final var fixedFees = decodeFixedFees(fixedFeesTuple, addressIdConverter);
         final var fractionalFess = decodeFractionalFees(fractionalFeesTuple, addressIdConverter);
         tokenCreateWrapper.setFixedFees(fixedFees);
@@ -161,9 +189,11 @@ public class CreateDecoder {
             final boolean isFungible,
             final long initSupply,
             final int decimals,
+            @NonNull final AccountID senderId,
+            @NonNull final HederaNativeOperations nativeOperations,
             @NonNull final AddressIdConverter addressIdConverter) {
         final var tokenCreateWrapper = getTokenCreateWrapperFungibleWithoutFees(
-                tokenCreateStruct, isFungible, initSupply, decimals, addressIdConverter);
+                tokenCreateStruct, isFungible, initSupply, decimals, senderId, nativeOperations, addressIdConverter);
         return tokenCreateWrapper;
     }
 
@@ -172,11 +202,13 @@ public class CreateDecoder {
             final boolean isFungible,
             @NonNull final Tuple[] fixedFeesTuple,
             @NonNull final Tuple[] royaltyFeesTuple,
+            @NonNull final AccountID senderId,
+            @NonNull final HederaNativeOperations nativeOperations,
             @NonNull final AddressIdConverter addressIdConverter) {
         final var fixedFees = decodeFixedFees(fixedFeesTuple, addressIdConverter);
         final var royaltyFees = decodeRoyaltyFees(royaltyFeesTuple, addressIdConverter);
-        final var tokenCreateWrapper =
-                getTokenCreateWrapperFungibleWithoutFees(tokenCreateStruct, isFungible, 0L, 0, addressIdConverter);
+        final var tokenCreateWrapper = getTokenCreateWrapperFungibleWithoutFees(
+                tokenCreateStruct, isFungible, 0L, 0, senderId, nativeOperations, addressIdConverter);
         tokenCreateWrapper.setFixedFees(fixedFees);
         tokenCreateWrapper.setRoyaltyFees(royaltyFees);
         return tokenCreateWrapper;

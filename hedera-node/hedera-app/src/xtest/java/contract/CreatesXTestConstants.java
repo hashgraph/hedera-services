@@ -18,7 +18,6 @@ package contract;
 
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
-import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -33,13 +32,14 @@ public class CreatesXTestConstants {
     static final String SYMBOL = "symbol";
     static final String MEMO = "memo";
     static final long MAX_SUPPLY = 1000L;
-    static final int KEY_TYPE = 112;
     static final long SECOND = 123L;
     static final long AUTO_RENEW_PERIOD = 2592000L;
 
-    static final Tuple TOKEN_KEY = Tuple.of(
-            BigInteger.valueOf(KEY_TYPE),
-            Tuple.of(false, RECEIVER_HEADLONG_ADDRESS, new byte[] {}, new byte[] {}, asAddress("")));
+    static final Tuple TOKEN_KEY =
+            Tuple.of(BigInteger.valueOf(1), Tuple.of(true, asAddress(""), new byte[] {}, new byte[] {}, asAddress("")));
+
+    static final Tuple TOKEN_KEY_TWO = Tuple.of(
+            BigInteger.valueOf(80), Tuple.of(true, asAddress(""), new byte[] {}, new byte[] {}, asAddress("")));
 
     static final Tuple EXPIRY = Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
 
@@ -52,7 +52,7 @@ public class CreatesXTestConstants {
             MAX_SUPPLY,
             false,
             // TokenKey
-            new Tuple[] {TOKEN_KEY},
+            new Tuple[] {TOKEN_KEY, TOKEN_KEY_TWO},
             // Expiry
             EXPIRY);
 

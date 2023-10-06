@@ -91,14 +91,22 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
+        final var inputBytes = attempt.inputBytes();
+        final var senderId = attempt.senderId();
+        final var nativeOperations = attempt.nativeOperations();
+        final var addressIdConverter = attempt.addressIdConverter();
+
         if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN.selector())) {
-            return decoder.decodeCreateFungibleToken(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateFungibleToken(inputBytes, senderId, nativeOperations, addressIdConverter);
         } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES.selector())) {
-            return decoder.decodeCreateFungibleTokenWithCustomFees(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateFungibleTokenWithCustomFees(
+                    inputBytes, senderId, nativeOperations, addressIdConverter);
         } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN.selector())) {
-            return decoder.decodeCreateNonFungible(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateNonFungible(
+                    inputBytes, senderId, nativeOperations, attempt.addressIdConverter());
         } else {
-            return decoder.decodeCreateNonFungibleWithCustomFees(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateNonFungibleWithCustomFees(
+                    inputBytes, senderId, nativeOperations, attempt.addressIdConverter());
         }
     }
 }
