@@ -553,6 +553,14 @@ public class EventImpl extends EventMetadata
         return baseEvent.getHashedData().getTransactions();
     }
 
+    public int getNumTransactions() {
+        if (baseEvent.getHashedData().getTransactions() == null) {
+            return 0;
+        } else {
+            return baseEvent.getHashedData().getTransactions().length;
+        }
+    }
+
     public boolean isCreatedBy(final NodeId id) {
         return Objects.equals(getCreatorId(), id);
     }
