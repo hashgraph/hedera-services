@@ -367,13 +367,11 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             event.setWitness(true);
             if (rounds.getElectionRoundNumber() == event.getRoundCreated()) {
                 // this is a candidate witness which we are voting on, we might need to create
-                // elections for this
-                // witness, but this witness does not vote
+                // elections for this witness, but this witness does not vote
                 rounds.newWitness(event);
             } else {
                 // this is a witness for a round later than the round being voted on, so it should
-                // vote
-                // in all elections in the current round
+                // vote in all elections in the current round
                 voteInAllElections(event);
             }
         }
@@ -428,16 +426,12 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 initJudges::numMissingJudges);
         if (initJudges.allJudgesFound()) {
             // we now have the last of the missing judges, so find every known event that is an
-            // ancestor
-            // of all of them, and mark it as having consensus.  We won't handle its transactions or
-            // do
-            // anything else with it, since it had earlier achieved consensus and affected the
-            // signed state
-            // that we started from. We won't even set its consensus fields such as roundReceived,
-            // because
-            // they aren't known, will never be known, and aren't needed.  We'll just mark it as
-            // having
-            // consensus, so we don't calculate consensus for it again in the future.
+            // ancestor of all of them, and mark it as having consensus.  We won't handle its
+            // transactions or do anything else with it, since it had earlier achieved consensus
+            // and affected the signed state that we started from. We won't even set its consensus
+            // fields such as roundReceived, because they aren't known, will never be known, and
+            // aren't needed.  We'll just mark it as having consensus, so we don't calculate
+            // consensus for it again in the future.
             final List<EventImpl> ancestors =
                     search.commonAncestorsOf(initJudges.getJudges(), this::nonConsensusNonAncient);
             ancestors.forEach(e -> {
@@ -462,12 +456,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         timedStronglySeeP(event, 0);
         firstSelfWitnessS(event);
         firstWitnessS(event);
-    }
-
-    /** round(x) - round(y) */
-    @SuppressWarnings("all")
-    private long diff(@NonNull final EventImpl x, @NonNull final EventImpl y) {
-        return round(x) - round(y);
     }
 
     /**
@@ -670,8 +658,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         migrationMode = false;
         // the current round just had its fame decided.
         // Note: more witnesses may be added to this round in the future, but they'll all be
-        // instantly marked as not
-        // famous.
+        // instantly marked as not famous.
         final List<EventImpl> judges = roundElections.findAllJudges();
         final long decidedRoundNumber = rounds.getElectionRoundNumber();
 

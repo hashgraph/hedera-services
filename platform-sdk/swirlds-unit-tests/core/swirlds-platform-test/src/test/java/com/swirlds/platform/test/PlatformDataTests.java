@@ -76,7 +76,6 @@ class PlatformDataTests {
                         minGenInfo,
                         random.nextLong(),
                         randomInstant(random)));
-        // TODO store snapshot
     }
 
     @Test

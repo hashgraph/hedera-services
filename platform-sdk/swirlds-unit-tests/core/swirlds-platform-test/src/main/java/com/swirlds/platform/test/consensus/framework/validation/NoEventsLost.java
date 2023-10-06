@@ -27,9 +27,12 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
 
 @SuppressWarnings("unused") // issue tracked #6998
-public class NoEventsLost {
+public final class NoEventsLost {
     private static final ConsensusConfig CONFIG =
             new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class);
+
+    private NoEventsLost() {
+    }
 
     /**
      * Validates that all ancient events are either stale or consensus, but not both. Non-ancient events could be

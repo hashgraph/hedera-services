@@ -291,7 +291,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Get the running hash of all events that have been applied to this state since the begining of time.
+     * Get the running hash of all events that have been applied to this state since the beginning of time.
      *
      * @return a running hash of events
      */

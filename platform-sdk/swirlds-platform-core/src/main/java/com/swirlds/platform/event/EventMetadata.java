@@ -41,7 +41,7 @@ public class EventMetadata implements Clearable {
     private boolean cleared = false;
     /** is this a witness? (is round > selfParent's round, or there is no self parent?) */
     private boolean isWitness;
-    /** is this both a witness and the fame election is over? */
+    /** has this witness decided as famous? */
     private boolean isFamous;
     /** is this both a witness and the fame election is over? */
     private boolean isFameDecided;
@@ -64,7 +64,7 @@ public class EventMetadata implements Clearable {
      */
     private EventImpl firstSelfWitnessS;
     /**
-     * the first witness that's an ancestor in the the self round (memoizes function from
+     * the first witness that's an ancestor in the self round (memoizes function from
      * Swirlds-TR-2020-01)
      */
     private EventImpl firstWitnessS;
@@ -331,7 +331,7 @@ public class EventMetadata implements Clearable {
     }
 
     /**
-     * @return the first witness that's an ancestor in the the self round (memoizes function from
+     * @return the first witness that's an ancestor in the self round (memoizes function from
      *     Swirlds-TR-2020-01)
      */
     public @Nullable EventImpl getFirstWitnessS() {
@@ -339,7 +339,7 @@ public class EventMetadata implements Clearable {
     }
 
     /**
-     * @param firstWitnessS the first witness that's an ancestor in the the self round (memoizes
+     * @param firstWitnessS the first witness that's an ancestor in the self round (memoizes
      *     function from Swirlds-TR-2020-01)
      */
     public void setFirstWitnessS(@Nullable final EventImpl firstWitnessS) {

@@ -819,12 +819,11 @@ public class SwirldsPlatform implements Platform, Startable {
             shadowGraph.initFromEvents(
                     EventUtils.prepareForShadowGraph(
                             // we need to pass in a copy of the array, otherwise prepareForShadowGraph will rearrange
-                            // the
-                            // events in the signed state which will cause issues for other components that depend on it
+                            // the events in the signed state which will cause issues for other components that depend
+                            // on it
                             signedState.getEvents().clone()),
                     // we need to provide the minGen from consensus so that expiry matches after a restart/reconnect
                     consensusRef.get().getMinRoundGeneration());
-
         } else {
             shadowGraph.startFromGeneration(consensusRef.get().getMinGenerationNonAncient());
         }

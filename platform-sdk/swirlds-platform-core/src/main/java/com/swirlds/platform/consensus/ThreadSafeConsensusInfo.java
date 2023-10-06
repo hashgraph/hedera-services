@@ -53,12 +53,12 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
     private volatile long maxRoundGeneration = GraphGenerations.FIRST_GENERATION;
 
     /**
-     * maximum round number of all events stored in "rounds", or -1 if none. This is the max round
+     * maximum round number of all events stored in "storage", or -1 if none. This is the max round
      * created of all events ever added to the hashgraph.
      */
     private volatile long maxRound = ConsensusConstants.ROUND_UNDEFINED;
     /**
-     * minimum round number of all events stored in "rounds", or -1 if none. This may not be the min
+     * minimum round number of all events stored in "storage", or -1 if none. This may not be the min
      * round created of all events ever added to the hashgraph, since some of the older rounds may
      * have been decided and discarded.
      */
@@ -76,7 +76,10 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
         this.storage = storage;
     }
 
-    public @NonNull SequentialRingBuffer<MinGenInfo> getStorage() {
+    /**
+     * @return the instance that stores all round and generation information
+     */
+    protected @NonNull SequentialRingBuffer<MinGenInfo> getStorage() {
         return storage;
     }
 
@@ -85,7 +88,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
      *
      * @param fameDecidedBelow the latest round which has not had its fame decided
      */
-    public void updateRoundGenerations(final long fameDecidedBelow) {
+    protected void updateRoundGenerations(final long fameDecidedBelow) {
         this.fameDecidedBelow = fameDecidedBelow;
         this.maxRound = storage.maxIndex();
         this.minRound = storage.minIndex();
