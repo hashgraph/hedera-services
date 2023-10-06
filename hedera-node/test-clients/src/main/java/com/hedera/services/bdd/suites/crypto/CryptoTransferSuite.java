@@ -281,6 +281,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         getAccountBalance(ownerWith4AutoAssoc).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L));
     }
 
+    @HapiTest
     private HapiSpec okToRepeatSerialNumbersInBurnList() {
         return defaultHapiSpec("okToRepeatSerialNumbersInBurnList")
                 .given(
