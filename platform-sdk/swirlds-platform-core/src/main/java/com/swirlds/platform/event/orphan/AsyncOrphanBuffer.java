@@ -26,41 +26,72 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
  * An asynchronous version of {@link OrphanBuffer}.
  */
 public class AsyncOrphanBuffer implements Startable, Stoppable {
-
+    /**
+     * A synchronous orphan buffer being wrapped by this asynchronous object
+     */
     private final OrphanBuffer orphanBuffer;
 
-    private final MultiQueueThread thread;
+    /**
+     * A multi-queue thread that accepts events, flush requests, and updates to the minimum generation of
+     * non-ancient events
+     * <p>
+     * The elements added to this queue are handled in order by the wrapped orphan buffer.
+     */
+    private final MultiQueueThread queueThread;
 
+    /**
+     * An inserter for adding events to the queue thread, to be handled by the orphan buffer
+     */
     private final BlockingQueueInserter<GossipEvent> eventInserter;
 
+    /**
+     * An inserter for setting the minimum generation of non-ancient events to keep in the orphan buffer
+     */
     private final BlockingQueueInserter<Long> minimumGenerationNonAncientInserter;
 
+    /**
+     * A request to flush the elements that have been added to the queue to the orphan buffer
+     *
+     * @param future a future that will be completed when the flush is complete. used to signal the caller that the
+     *               flush is complete.
+     */
     private record FlushRequest(@NonNull StandardFuture<Void> future) {}
 
+    /**
+     * An inserter for adding a flush request to the queue thread
+     */
     private final BlockingQueueInserter<FlushRequest> flushInserter;
 
     /**
      * Constructor.
      *
-     * @param platformContext the platform context
-     * @param threadManager   the thread manager
-     * @param eventConsumer   non-ancient events are passed to this method in topological order
+     * @param platformContext    the platform context
+     * @param threadManager      the thread manager
+     * @param eventConsumer      non-ancient events are passed to this method in topological order
+     * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
      */
     public AsyncOrphanBuffer(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final Consumer<GossipEvent> eventConsumer) {
+            @NonNull final Consumer<GossipEvent> eventConsumer,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
-        orphanBuffer = new OrphanBuffer(platformContext, eventConsumer);
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(threadManager);
+        Objects.requireNonNull(eventConsumer);
 
-        thread = new MultiQueueThreadConfiguration(threadManager)
+        orphanBuffer = new OrphanBuffer(platformContext, eventConsumer, intakeEventCounter);
+
+        queueThread = new MultiQueueThreadConfiguration(threadManager)
                 .setComponent("platform")
                 .setThreadName("orphan-buffer")
                 .addHandler(GossipEvent.class, this::handleEvent)
@@ -71,13 +102,13 @@ public class AsyncOrphanBuffer implements Startable, Stoppable {
                         .enableBusyTimeMetric())
                 .build();
 
-        eventInserter = thread.getInserter(GossipEvent.class);
-        minimumGenerationNonAncientInserter = thread.getInserter(Long.class);
-        flushInserter = thread.getInserter(FlushRequest.class);
+        eventInserter = queueThread.getInserter(GossipEvent.class);
+        minimumGenerationNonAncientInserter = queueThread.getInserter(Long.class);
+        flushInserter = queueThread.getInserter(FlushRequest.class);
     }
 
     /**
-     * Add a new event.
+     * Add a new event to the queue thread.
      *
      * @param event the event to add
      */
@@ -86,16 +117,16 @@ public class AsyncOrphanBuffer implements Startable, Stoppable {
     }
 
     /**
-     * Set the minimum generation of non-ancient events to keep in the buffer.
+     * Set the minimum generation of non-ancient events to keep in the orphan buffer.
      *
-     * @param minimumGenerationNonAncient the minimum generation of non-ancient events to keep in the buffer
+     * @param minimumGenerationNonAncient the minimum generation of non-ancient events to keep in the orphan buffer
      */
     public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) throws InterruptedException {
         minimumGenerationNonAncientInserter.put(minimumGenerationNonAncient);
     }
 
     /**
-     * Flush the buffer.
+     * Flush the queue thread to the orphan buffer.
      */
     public void flush() throws InterruptedException {
         final StandardFuture<Void> future = new StandardFuture<>();
@@ -104,21 +135,27 @@ public class AsyncOrphanBuffer implements Startable, Stoppable {
     }
 
     /**
-     * Pass an event to the buffer. Called on the handle thread.
+     * Pass an event to the orphan buffer.
+     * <p>
+     * Called on the handle thread of the queue.
      */
     private void handleEvent(@NonNull final GossipEvent event) {
-        orphanBuffer.addEvent(event);
+        orphanBuffer.handleEvent(event);
     }
 
     /**
-     * Set the minimum generation of non-ancient events to keep in the buffer. Called on the handle thread.
+     * Set the minimum generation of non-ancient events to keep in the orphan buffer.
+     * <p>
+     * Called on the handle thread of the queue.
      */
     private void handleMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
         orphanBuffer.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
     }
 
     /**
-     * Signal that the queue has been flushed. Called on the handle thread.
+     * Signal that the queue has been flushed.
+     * <p>
+     * Called on the handle thread of the queue.
      */
     private void handleFlushRequest(@NonNull final FlushRequest flushRequest) {
         flushRequest.future.complete(null);
@@ -129,7 +166,7 @@ public class AsyncOrphanBuffer implements Startable, Stoppable {
      */
     @Override
     public void start() {
-        thread.start();
+        queueThread.start();
     }
 
     /**
@@ -137,6 +174,6 @@ public class AsyncOrphanBuffer implements Startable, Stoppable {
      */
     @Override
     public void stop() {
-        thread.stop();
+        queueThread.stop();
     }
 }
