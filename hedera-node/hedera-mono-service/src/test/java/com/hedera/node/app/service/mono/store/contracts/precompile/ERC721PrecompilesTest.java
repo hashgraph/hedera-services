@@ -66,7 +66,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.hyperledger.besu.datatypes.Address.RIPEMD160;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -319,11 +318,13 @@ class ERC721PrecompilesTest {
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
+    private static final Address ADDRESS_2 = Address.fromHexString("0x2");
+    private static final Address ADDRESS_3 = Address.fromHexString("0x3");
 
     private enum WithHapiBlockLimit {
         LOW,
         HIGH
-    };
+    }
 
     private static final Map<WithHapiBlockLimit, Consumer<GlobalDynamicProperties>> setHapiBlockLimitGivens = Map.of(
             WithHapiBlockLimit.LOW,
@@ -383,8 +384,8 @@ class ERC721PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(token)).thenReturn(tokenAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
-        entityIdUtils.when(() -> EntityIdUtils.asEvmAddress(3)).thenReturn(RIPEMD160.toArray());
-        entityIdUtils.when(() -> EntityIdUtils.asEvmAddress(2)).thenReturn(RIPEMD160.toArray());
+        entityIdUtils.when(() -> EntityIdUtils.asEvmAddress(3)).thenReturn(ADDRESS_3.toArray());
+        entityIdUtils.when(() -> EntityIdUtils.asEvmAddress(2)).thenReturn(ADDRESS_2.toArray());
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         isApprovedForAllPrecompile = Mockito.mockStatic(IsApprovedForAllPrecompile.class);
@@ -1106,7 +1107,7 @@ class ERC721PrecompilesTest {
         given(wrappedLedgers.nfts()).willReturn(nfts);
         final var nftId = NftId.fromGrpc(token, GET_APPROVED_WRAPPER.serialNo());
         given(nfts.contains(nftId)).willReturn(true);
-        given(nfts.get(nftId, NftProperty.SPENDER)).willReturn(EntityId.fromAddress(RIPEMD160));
+        given(nfts.get(nftId, NftProperty.SPENDER)).willReturn(EntityId.fromAddress(ADDRESS_3));
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -1119,11 +1120,11 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.networkFee()).willReturn(1L);
         given(mockFeeObject.serviceFee()).willReturn(1L);
 
-        given(evmEncoder.encodeGetApproved(RIPEMD160)).willReturn(successResult);
+        given(evmEncoder.encodeGetApproved(ADDRESS_3)).willReturn(successResult);
         getApprovedPrecompile
                 .when(() -> GetApprovedPrecompile.decodeGetApproved(any(), any()))
                 .thenReturn(GET_APPROVED_WRAPPER);
-        given(wrappedLedgers.canonicalAddress(any())).willReturn(RIPEMD160);
+        given(wrappedLedgers.canonicalAddress(any())).willReturn(ADDRESS_3);
 
         // when:
         subject.prepareFields(frame);
@@ -1150,7 +1151,7 @@ class ERC721PrecompilesTest {
         given(wrappedLedgers.nfts()).willReturn(nfts);
         final var nftId = NftId.fromGrpc(token, GET_APPROVED_WRAPPER.serialNo());
         given(nfts.contains(nftId)).willReturn(true);
-        given(nfts.get(nftId, NftProperty.SPENDER)).willReturn(EntityId.fromAddress(RIPEMD160));
+        given(nfts.get(nftId, NftProperty.SPENDER)).willReturn(EntityId.fromAddress(ADDRESS_3));
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -1163,11 +1164,11 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.networkFee()).willReturn(1L);
         given(mockFeeObject.serviceFee()).willReturn(1L);
 
-        given(encoder.encodeGetApproved(SUCCESS.getNumber(), RIPEMD160)).willReturn(successResult);
+        given(encoder.encodeGetApproved(SUCCESS.getNumber(), ADDRESS_3)).willReturn(successResult);
         getApprovedPrecompile
                 .when(() -> GetApprovedPrecompile.decodeGetApproved(pretendArguments, null))
                 .thenReturn(GET_APPROVED_WRAPPER);
-        given(wrappedLedgers.canonicalAddress(any())).willReturn(RIPEMD160);
+        given(wrappedLedgers.canonicalAddress(any())).willReturn(ADDRESS_3);
 
         // when:
         subject.prepareFields(frame);
@@ -1561,7 +1562,8 @@ class ERC721PrecompilesTest {
     public static final IsApproveForAllWrapper<TokenID, AccountID, AccountID> IS_APPROVE_FOR_ALL_WRAPPER =
             new IsApproveForAllWrapper<>(token, sender, receiver);
 
-    public static final GetApprovedWrapper GET_APPROVED_WRAPPER = new GetApprovedWrapper(token, token.getTokenNum());
+    public static final GetApprovedWrapper<?> GET_APPROVED_WRAPPER =
+            new GetApprovedWrapper<>(token, token.getTokenNum());
 
     public static final SetApprovalForAllWrapper SET_APPROVAL_FOR_ALL_WRAPPER =
             new SetApprovalForAllWrapper(token, receiver, true);
