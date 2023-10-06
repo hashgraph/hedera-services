@@ -18,15 +18,17 @@ package com.swirlds.platform.test.sync;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -52,11 +54,11 @@ import java.util.function.Predicate;
  */
 public class SyncNode {
 
-    private final BlockingQueue<EventIntakeTask> receivedEventQueue;
+    private final BlockingQueue<GossipEvent> receivedEventQueue;
     private final List<IndexedEvent> generatedEvents;
     private final List<IndexedEvent> discardedEvents;
 
-    private final List<EventIntakeTask> receivedEvents;
+    private final List<GossipEvent> receivedEvents;
 
     private final NodeId nodeId;
 
@@ -128,8 +130,7 @@ public class SyncNode {
      * setup such that it only generates events that can be added to the {@link ShadowGraph} (i.e. no events with
      * an other parent that is unknown to this node). Failure to do so may result in invalid test results.
      *
-     * @param numEvents
-     * 		the number of events to generate and add to the {@link ShadowGraph}
+     * @param numEvents the number of events to generate and add to the {@link ShadowGraph}
      * @return an immutable list of the events added to the {@link ShadowGraph}
      */
     public List<IndexedEvent> generateAndAdd(final int numEvents) {
@@ -147,8 +148,7 @@ public class SyncNode {
      * {@link ShadowGraph} (i.e. no events with an other parent that is unknown to this node). Failure to do so
      * may result in invalid test results.</p>
      *
-     * @param numEvents
-     * 		the number of events to generate and add to the {@link ShadowGraph}
+     * @param numEvents the number of events to generate and add to the {@link ShadowGraph}
      * @return an immutable list of the events added to the {@link ShadowGraph}
      */
     public List<IndexedEvent> generateAndAdd(final int numEvents, final Predicate<IndexedEvent> shouldAddToGraph) {
@@ -198,7 +198,7 @@ public class SyncNode {
      * Creates a new instance of {@link ShadowGraphSynchronizer} with the current {@link SyncNode} settings and
      * returns it.
      */
-    public ShadowGraphSynchronizer getSynchronizer() {
+    public ShadowGraphSynchronizer getSynchronizer() throws InterruptedException {
         final Consumer<GossipEvent> eventHandler = event -> {
             if (event.getHashedData().getHash() == null) {
                 throw new IllegalStateException("expected event to be hashed on the gossip thread");
@@ -214,6 +214,16 @@ public class SyncNode {
             receivedEventQueue.add(event);
         };
 
+        final QueueThread<GossipEvent> intakeQueueThread = mock(QueueThread.class);
+
+        doAnswer((invocation) -> {
+                    final GossipEvent event = invocation.getArgument(0);
+                    eventHandler.accept(event);
+                    return null;
+                })
+                .when(intakeQueueThread)
+                .put(any());
+
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
@@ -224,8 +234,7 @@ public class SyncNode {
                 numNodes,
                 mock(SyncMetrics.class),
                 this::getConsensus,
-                r -> {},
-                eventHandler,
+                intakeQueueThread,
                 syncManager,
                 mock(IntakeEventCounter.class),
                 executor,
@@ -267,16 +276,12 @@ public class SyncNode {
         return syncManager;
     }
 
-    public List<EventIntakeTask> getReceivedEvents() {
+    public List<GossipEvent> getReceivedEvents() {
         return receivedEvents;
     }
 
     public List<IndexedEvent> getGeneratedEvents() {
         return generatedEvents;
-    }
-
-    public List<IndexedEvent> getDiscardedEvents() {
-        return discardedEvents;
     }
 
     public void setSaveGeneratedEvents(final boolean saveGeneratedEvents) {

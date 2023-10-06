@@ -73,7 +73,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
 
         final var replacedOp = getReplacedOp();
-        subject = new CustomFeeAssessmentStep(replacedOp, transferContext);
+        subject = new CustomFeeAssessmentStep(replacedOp);
     }
 
     @Test
@@ -435,7 +435,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         System.out.println("Before " + handleContext.payer());
 
         final var replacedOp = getReplacedOp();
-        subject = new CustomFeeAssessmentStep(replacedOp, transferContext);
+        subject = new CustomFeeAssessmentStep(replacedOp);
     }
 
     private void assertThatTransferListContains(

@@ -24,7 +24,6 @@ import java.time.Duration;
 /**
  * Configuration for event creation.
  *
- * @param useTipsetAlgorithm             if true, use the tipset event creation algorithm
  * @param maxCreationRate                the maximum rate (in hz) that a node can create new events. The maximum rate
  *                                       for the entire network is equal to this value times the number of nodes. A
  *                                       value of 0 means that there is no limit to the number of events that can be
@@ -45,7 +44,6 @@ import java.time.Duration;
  */
 @ConfigData("event.creation")
 public record EventCreationConfig(
-        @ConfigProperty(defaultValue = "true") boolean useTipsetAlgorithm,
         @ConfigProperty(defaultValue = "20") double maxCreationRate,
         @ConfigProperty(defaultValue = "10") double antiSelfishnessFactor,
         @ConfigProperty(defaultValue = "10") int tipsetSnapshotHistorySize,

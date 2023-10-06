@@ -69,11 +69,7 @@ public class HapiTestEnv {
                 final var workingDir = Path.of("./build/hapi-test/" + testName + "/node" + nodeId)
                         .normalize();
                 setupWorkingDirectory(workingDir, configText);
-                if (nodeId == 0) {
-                    nodes.add(new InProcessHapiTestNode(workingDir, 0, FIRST_GRPC_PORT));
-                } else {
-                    nodes.add(new SubProcessHapiTestNode(workingDir, nodeId, FIRST_GRPC_PORT + (nodeId * 2)));
-                }
+                nodes.add(new SubProcessHapiTestNode(workingDir, nodeId, FIRST_GRPC_PORT + (nodeId * 2)));
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -134,31 +130,31 @@ public class HapiTestEnv {
                     .replace(
                             "</Appenders>\n" + "  <Loggers>",
                             """
-                    <RollingFile name="TestClientRollingFile" fileName="output/test-clients.log"
-                      filePattern="output/test-clients-%d{yyyy-MM-dd}-%i.log.gz">
-                      <PatternLayout>
-                        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
-                      </PatternLayout>
-                      <Policies>
-                        <TimeBasedTriggeringPolicy/>
-                        <SizeBasedTriggeringPolicy size="100 MB"/>
-                      </Policies>
-                      <DefaultRolloverStrategy max="10">
-                        <Delete basePath="output" maxDepth="3">
-                          <IfFileName glob="test-clients-*.log.gz">
-                            <IfLastModified age="P3D"/>
-                          </IfFileName>
-                        </Delete>
-                      </DefaultRolloverStrategy>
-                    </RollingFile>
-                  </Appenders>
-                  <Loggers>
+                                      <RollingFile name="TestClientRollingFile" fileName="output/test-clients.log"
+                                        filePattern="output/test-clients-%d{yyyy-MM-dd}-%i.log.gz">
+                                        <PatternLayout>
+                                          <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
+                                        </PatternLayout>
+                                        <Policies>
+                                          <TimeBasedTriggeringPolicy/>
+                                          <SizeBasedTriggeringPolicy size="100 MB"/>
+                                        </Policies>
+                                        <DefaultRolloverStrategy max="10">
+                                          <Delete basePath="output" maxDepth="3">
+                                            <IfFileName glob="test-clients-*.log.gz">
+                                              <IfLastModified age="P3D"/>
+                                            </IfFileName>
+                                          </Delete>
+                                        </DefaultRolloverStrategy>
+                                      </RollingFile>
+                                    </Appenders>
+                                    <Loggers>
 
-                    <Logger name="com.hedera.services.bdd" level="info" additivity="false">
-                      <AppenderRef ref="Console"/>
-                      <AppenderRef ref="TestClientRollingFile"/>
-                    </Logger>
-                    """)
+                                      <Logger name="com.hedera.services.bdd" level="info" additivity="false">
+                                        <AppenderRef ref="Console"/>
+                                        <AppenderRef ref="TestClientRollingFile"/>
+                                      </Logger>
+                                      """)
                     .replace(
                             "output/",
                             workingDir.resolve("output").toAbsolutePath().normalize() + "/");
