@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_A
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OPERATOR_ACCOUNT_ID;
@@ -91,7 +92,7 @@ class HandleHederaOperationsTest {
 
     @BeforeEach
     void setUp() {
-        subject = new HandleHederaOperations(DEFAULT_LEDGER_CONFIG, context);
+        subject = new HandleHederaOperations(DEFAULT_LEDGER_CONFIG, DEFAULT_CONTRACTS_CONFIG, context);
     }
 
     @Test
@@ -99,6 +100,11 @@ class HandleHederaOperationsTest {
         given(context.writableStore(WritableContractStateStore.class)).willReturn(stateStore);
 
         assertSame(stateStore, subject.getStore());
+    }
+
+    @Test
+    void usesExpectedLimit() {
+        assertEquals(DEFAULT_CONTRACTS_CONFIG.maxNumber(), subject.contractCreationLimit());
     }
 
     @Test
@@ -148,7 +154,11 @@ class HandleHederaOperationsTest {
 
     @Test
     void commitIsNoopUntilSavepointExposesIt() {
-        assertDoesNotThrow(subject::commit);
+        given(context.savepointStack()).willReturn(savepointStack);
+
+        subject.commit();
+
+        verify(savepointStack).commit();
     }
 
     @Test

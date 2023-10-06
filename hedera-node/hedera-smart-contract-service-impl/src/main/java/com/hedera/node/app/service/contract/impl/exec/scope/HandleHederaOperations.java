@@ -35,6 +35,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,11 +60,16 @@ public class HandleHederaOperations implements HederaOperations {
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
     private final LedgerConfig ledgerConfig;
+    private final ContractsConfig contractsConfig;
     private final HandleContext context;
 
     @Inject
-    public HandleHederaOperations(@NonNull final LedgerConfig ledgerConfig, @NonNull final HandleContext context) {
+    public HandleHederaOperations(
+            @NonNull final LedgerConfig ledgerConfig,
+            @NonNull final ContractsConfig contractsConfig,
+            @NonNull final HandleContext context) {
         this.ledgerConfig = requireNonNull(ledgerConfig);
+        this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
     }
 
@@ -81,7 +87,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void commit() {
-        // Currently the savepoint stack only supports reverting savepoints; then commits all remaining at the end
+        context.savepointStack().commit();
     }
 
     /**
@@ -114,6 +120,11 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public long useNextEntityNumber() {
         return context.newEntityNum();
+    }
+
+    @Override
+    public long contractCreationLimit() {
+        return contractsConfig.maxNumber();
     }
 
     /**
