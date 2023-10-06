@@ -38,6 +38,7 @@ import com.hedera.node.config.data.AccountsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -100,7 +101,11 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
      * @param writableStore The store to write to for updated values
      */
     public void adjustStakedToMeForAccountStakees(@NonNull final WritableAccountStore writableStore) {
-        final var modifiedAccounts = writableStore.modifiedAccountsInState();
+        // If there is a FROM_ACCOUNT_ or _TO_ACCOUNT stake change scenario, the set of modified
+        // accounts in the writable store can change inside the body of the for loop below; so we
+        // create a new ArrayList to iterate through just the accounts modified by the initial
+        // transaction
+        final var modifiedAccounts = new ArrayList<>(writableStore.modifiedAccountsInState());
 
         for (final var id : modifiedAccounts) {
             final var originalAccount = writableStore.getOriginalValue(id);

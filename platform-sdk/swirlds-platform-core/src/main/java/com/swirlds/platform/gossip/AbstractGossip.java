@@ -39,18 +39,12 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
-import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.PlatformConstructor;
-import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.CriticalQuorum;
-import com.swirlds.platform.components.EventCreationRules;
-import com.swirlds.platform.components.EventMapper;
-import com.swirlds.platform.components.EventTaskCreator;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.config.ThreadConfig;
-import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
-import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
@@ -74,7 +68,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
@@ -96,7 +89,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected final CriticalQuorum criticalQuorum;
     protected final NetworkMetrics networkMetrics;
     protected final SyncMetrics syncMetrics;
-    protected final EventTaskCreator eventTaskCreator;
     protected final ReconnectHelper reconnectHelper;
     protected final StaticConnectionManagers connectionManagers;
     protected final FallenBehindManagerImpl fallenBehindManager;
@@ -127,14 +119,10 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
      * @param intakeQueue                   the event intake queue
-     * @param freezeManager                 handles freezes
-     * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
      * @param stateManagementComponent      manages the lifecycle of the state queue
-     * @param eventObserverDispatcher       the object used to wire event intake
-     * @param eventMapper                   a data structure used to track the most recent event from each node
-     * @param eventIntakeMetrics            metrics for event intake
      * @param syncMetrics                   metrics for sync
+     * @param eventObserverDispatcher       the object used to wire event intake
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
@@ -147,18 +135,15 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final QueueThread<EventIntakeTask> intakeQueue,
-            @NonNull final FreezeManager freezeManager,
-            @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final EventMapper eventMapper,
-            @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
+
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
@@ -216,22 +201,10 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 intakeQueue,
                 topology.getConnectionGraph(),
                 selfId,
-                new EventCreationRules(
-                        List.of(swirldStateManager.getTransactionPool(), startUpEventFrozenManager, freezeManager)),
                 criticalQuorum,
                 addressBook,
                 fallenBehindManager,
                 platformContext.getConfiguration().getConfigData(EventConfig.class));
-
-        eventTaskCreator = new EventTaskCreator(
-                eventMapper,
-                addressBook,
-                selfId,
-                eventIntakeMetrics,
-                intakeQueue,
-                platformContext.getConfiguration().getConfigData(EventConfig.class),
-                syncManager,
-                ThreadLocalRandom::current);
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);

@@ -152,7 +152,9 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             final var info = AccountInfo.newBuilder();
             info.ledgerId(ledgerConfig.id());
             if (!isEmpty(account.key())) info.key(account.key());
-            info.accountID(accountID);
+            // Set this field with the account's id since that's guaranteed to be a numeric 0.0.X id;
+            // the request might have been made using a 0.0.<alias> id
+            info.accountID(account.accountIdOrThrow());
             info.receiverSigRequired(account.receiverSigRequired());
             info.deleted(account.deleted());
             info.memo(account.memo());

@@ -193,6 +193,13 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             if (treasury.accountId().equals(collector.accountId())) {
                 continue;
             }
+
+            // Ensure no duplicate relations are created
+            final var existingTokenRel = tokenRelStore.get(collector.accountId(), newToken.tokenId());
+            if (existingTokenRel != null) {
+                continue;
+            }
+
             // Validate if token relation can be created between collector and new token
             // If this succeeds, create and link token relation.
             tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);

@@ -63,7 +63,6 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
-import java.util.function.BooleanSupplier;
 
 /**
  * Used to construct platform components that use DI
@@ -170,7 +169,6 @@ public final class PlatformConstructor {
             @NonNull final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager,
             @NonNull final ConsensusSystemTransactionManager consensusSystemTransactionManager,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @NonNull final BooleanSupplier inFreezeChecker,
             @NonNull final State initialState,
             @NonNull final SoftwareVersion softwareVersion) {
 
@@ -180,7 +178,6 @@ public final class PlatformConstructor {
         Objects.requireNonNull(preconsensusSystemTransactionManager);
         Objects.requireNonNull(consensusSystemTransactionManager);
         Objects.requireNonNull(statusActionSubmitter);
-        Objects.requireNonNull(inFreezeChecker);
         Objects.requireNonNull(initialState);
         Objects.requireNonNull(softwareVersion);
 
@@ -192,7 +189,6 @@ public final class PlatformConstructor {
                 consensusSystemTransactionManager,
                 new SwirldStateMetrics(platformContext.getMetrics()),
                 statusActionSubmitter,
-                inFreezeChecker,
                 initialState,
                 softwareVersion);
     }
@@ -207,7 +203,6 @@ public final class PlatformConstructor {
      * @param eventStreamManager          the instance that streams consensus events to disk
      * @param stateHashSignQueue          the queue for signed states that need signatures collected
      * @param waitForEventDurability      a method that blocks until an event becomes durable.
-     * @param enterFreezePeriod           a runnable executed when a freeze is entered
      * @param statusActionSubmitter       enables submitting platform status actions
      * @param roundAppliedToStateConsumer the consumer to invoke when a round has just been applied to the state
      * @param softwareVersion             the software version of the application
@@ -222,7 +217,6 @@ public final class PlatformConstructor {
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
-            @NonNull final Runnable enterFreezePeriod,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
@@ -236,7 +230,6 @@ public final class PlatformConstructor {
                 eventStreamManager,
                 stateHashSignQueue,
                 waitForEventDurability,
-                enterFreezePeriod,
                 statusActionSubmitter,
                 roundAppliedToStateConsumer,
                 softwareVersion);
