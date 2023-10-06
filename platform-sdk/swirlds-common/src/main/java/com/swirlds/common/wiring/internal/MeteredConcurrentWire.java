@@ -29,19 +29,34 @@ import java.util.function.Consumer;
 public class MeteredConcurrentWire<T> implements Wire<T> {
     private final Consumer<T> consumer;
     private final AbstractObjectCounter counter;
+    private final String name;
 
     // TODO write unit tests for this class
 
     /**
      * Constructor.
      *
+     * @param name     the name of the wire
      * @param consumer data on the wire is passed to this consumer
      * @param counter  an object counter that is incremented when data is added to the wire and decremented when
      *                 handling begins
      */
-    public MeteredConcurrentWire(@NonNull final Consumer<T> consumer, @NonNull final AbstractObjectCounter counter) {
+    public MeteredConcurrentWire(
+            @NonNull final String name,
+            @NonNull final Consumer<T> consumer,
+            @NonNull final AbstractObjectCounter counter) {
+        this.name = Objects.requireNonNull(name);
         this.consumer = Objects.requireNonNull(consumer);
         this.counter = Objects.requireNonNull(counter);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public String getName() {
+        return name;
     }
 
     /**

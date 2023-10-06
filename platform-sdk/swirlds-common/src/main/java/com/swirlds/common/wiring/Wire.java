@@ -52,6 +52,14 @@ public interface Wire<T> extends Consumer<T> {
     }
 
     /**
+     * Get the name of the wire.
+     *
+     * @return the name of the wire
+     */
+    @NonNull
+    String getName();
+
+    /**
      * Add a task to the wire. Similar to {@link #acceptInterruptably(Object)} except that it cannot be interrupted and
      * can block forever if backpressure is enabled.
      *

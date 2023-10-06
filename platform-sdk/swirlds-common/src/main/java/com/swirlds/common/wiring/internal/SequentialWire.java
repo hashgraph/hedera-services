@@ -29,14 +29,17 @@ import java.util.function.Consumer;
  */
 public class SequentialWire<T> implements Wire<T> {
     private final Consumer<T> consumer;
+    private final String name;
     private final AtomicReference<SequentialTask<T>> lastTask;
 
     /**
      * Constructor.
      *
+     * @param name     the name of the wire
      * @param consumer data on the wire is passed to this consumer
      */
-    public SequentialWire(@NonNull final Consumer<T> consumer) {
+    public SequentialWire(@NonNull final String name, @NonNull final Consumer<T> consumer) {
+        this.name = Objects.requireNonNull(name);
         this.consumer = Objects.requireNonNull(consumer);
         this.lastTask = new AtomicReference<>(new SequentialTask<>(1, consumer));
     }
@@ -96,6 +99,15 @@ public class SequentialWire<T> implements Wire<T> {
             nextTask.send();
             return true;
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public String getName() {
+        return name;
     }
 
     /**

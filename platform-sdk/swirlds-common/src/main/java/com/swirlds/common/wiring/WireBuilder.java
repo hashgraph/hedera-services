@@ -139,15 +139,15 @@ public class WireBuilder<T> {
 
         if (concurrent) {
             if (scheduledTaskCounter == null) {
-                return new ConcurrentWire<>(consumer);
+                return new ConcurrentWire<>(name, consumer);
             } else {
-                return new MeteredConcurrentWire<>(consumer, scheduledTaskCounter);
+                return new MeteredConcurrentWire<>(name, consumer, scheduledTaskCounter);
             }
         } else {
             if (scheduledTaskCounter == null) {
-                return new SequentialWire<>(consumer);
+                return new SequentialWire<>(name, consumer);
             } else {
-                return new MeteredSequentialWire<>(consumer, scheduledTaskCounter);
+                return new MeteredSequentialWire<>(name, consumer, scheduledTaskCounter);
             }
         }
     }

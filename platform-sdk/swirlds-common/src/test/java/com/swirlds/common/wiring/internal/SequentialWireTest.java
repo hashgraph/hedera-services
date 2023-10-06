@@ -54,6 +54,7 @@ class SequentialWireTest {
         final Wire<Integer> wire =
                 Wire.builder("test", handler).withConcurrency(false).build();
         assertEquals(-1, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
@@ -88,6 +89,7 @@ class SequentialWireTest {
         final Wire<Integer> wire =
                 Wire.builder("test", handler).withConcurrency(false).build();
         assertEquals(-1, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
@@ -116,6 +118,7 @@ class SequentialWireTest {
         final Wire<Integer> wire =
                 Wire.builder("test", handler).withConcurrency(false).build();
         assertEquals(-1, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
 
         final int operationsPerWorker = 1_000;
         final int workers = 10;
@@ -174,6 +177,7 @@ class SequentialWireTest {
         final Wire<Integer> wire =
                 Wire.builder("test", handler).withConcurrency(false).build();
         assertEquals(-1, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
 
         final int operationsPerWorker = 1_000;
         final int workers = 10;
@@ -239,6 +243,7 @@ class SequentialWireTest {
         final Wire<Integer> wire =
                 Wire.builder("test", handler).withConcurrency(false).build();
         assertEquals(-1, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
 
         // The wire will stop processing at 50, but this should not block the calling thread.
         final AtomicInteger value = new AtomicInteger();
@@ -289,6 +294,7 @@ class SequentialWireTest {
                 .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics()).withScheduledTaskCountMetricEnabled(true))
                 .build();
         assertEquals(0, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
@@ -349,6 +355,7 @@ class SequentialWireTest {
                 .withScheduledTaskCapacity(10)
                 .build();
         assertEquals(0, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
 
         final AtomicInteger value = new AtomicInteger();
 
@@ -420,6 +427,7 @@ class SequentialWireTest {
                 .withScheduledTaskCapacity(10)
                 .build();
         assertEquals(0, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
 
         final AtomicInteger value = new AtomicInteger();
 
@@ -494,6 +502,7 @@ class SequentialWireTest {
                 .withScheduledTaskCapacity(10)
                 .build();
         assertEquals(0, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
 
         final AtomicInteger value = new AtomicInteger();
 

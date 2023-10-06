@@ -28,16 +28,28 @@ import java.util.function.Consumer;
  */
 public class ConcurrentWire<T> implements Wire<T> {
     private final Consumer<T> consumer;
+    private final String name;
 
     // TODO write unit tests for this class
 
     /**
      * Constructor.
      *
+     * @param name    the name of the wire
      * @param consumer data on the wire is passed to this consumer
      */
-    public ConcurrentWire(@NonNull final Consumer<T> consumer) {
+    public ConcurrentWire(@NonNull final String name, @NonNull final Consumer<T> consumer) {
+        this.name = Objects.requireNonNull(name);
         this.consumer = Objects.requireNonNull(consumer);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public String getName() {
+        return name;
     }
 
     /**
