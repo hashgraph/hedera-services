@@ -26,6 +26,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -39,6 +41,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class KeyExport extends HapiSuite {
     private static final Logger log = LogManager.getLogger(KeyExport.class);
 
@@ -58,6 +61,7 @@ public class KeyExport extends HapiSuite {
         });
     }
 
+    @HapiTest
     private HapiSpec updateTreasuryKey() {
         return customHapiSpec("UpdateTreasuryKey")
                 .withProperties(Map.of("nodes", "34.74.191.8"))
