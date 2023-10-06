@@ -21,17 +21,16 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.MerkleDb.MAX_TABLES;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
-import static java.util.Objects.requireNonNullElseGet;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.threading.queue.UniqueValueBlockingQueue;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import java.io.IOException;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -148,52 +147,58 @@ public class MerkleDbCompactionCoordinator {
             return;
         }
 
-        if (compactionFuturesByName.containsKey(task.id)) {
-            logger.debug(MERKLE_DB.getMarker(), "Compaction for {} is already in progress", task.id);
-        }
+        ExecutorService executor = createOrGetCompactingExecutor();
 
-        compactionFuturesByName.computeIfAbsent(task.id, v -> {
-            ExecutorService executor = createOrGetCompactingExecutor();
+        synchronized (executor) {
+            if (compactionFuturesByName.containsKey(task.id)) {
+                CompletableFuture<?> completableFuture = compactionFuturesByName.get(task.id).asCompletableFuture();
+                if (completableFuture.isDone()) {
+                    compactionFuturesByName.remove(task.id);
+                } else {
+                    logger.debug(MERKLE_DB.getMarker(), "Compaction for {} is already in progress", task.id);
+                    return;
+                }
+            }
+
             InterruptibleCompletableFuture<Boolean> future = InterruptibleCompletableFuture.runAsyncInterruptibly(task, executor);
             future.asCompletableFuture()
                     .thenAccept(result -> {
-                        if(result) {
+                        if (result) {
                             statisticsUpdater.updateStoreFileStats();
                             statisticsUpdater.updateOffHeapStats();
                             logger.info("Finished compaction for " + task.id);
                         }
-                    })
-                    .exceptionally(ex -> {
-                        // this code relies on the fact that the executor uses UniqueValueBlockingQueue
-                        // if the task with the given id is already in the queue, the execution will be immediately
-                        // rejected
-                        if (ex instanceof RejectedExecutionException) {
-                            logger.debug(MERKLE_DB.getMarker(), "Compaction for {} is already scheduled", task.id);
-                        }
-                        return null;
-                    })
-                    // TODO: test for RejectedExecutionException
-                    .whenComplete((result, ex) -> compactionFuturesByName.remove(task.id));
-            return future;
-        });
+                    });
+            compactionFuturesByName.put(task.id, future);
+        }
     }
 
     ExecutorService createOrGetCompactingExecutor() {
-        return compactionExecutorServiceRef.updateAndGet(v -> requireNonNullElseGet(
-                v,
-                () -> new ThreadPoolExecutor(
-                        config.compactionThreads(),
-                        config.compactionThreads(),
-                        0L,
-                        TimeUnit.MILLISECONDS,
-                        new UniqueValueBlockingQueue<>(MAX_TABLES),
-                        new ThreadConfiguration(getStaticThreadManager())
-                                .setThreadGroup(new ThreadGroup("Compaction"))
-                                .setComponent(MERKLEDB_COMPONENT)
-                                .setThreadName("Compacting")
-                                .setExceptionHandler((t, ex) ->
-                                        logger.error(EXCEPTION.getMarker(), "Uncaught exception during merging", ex))
-                                .buildFactory())));
+        ExecutorService executorService = compactionExecutorServiceRef.get();
+        if(executorService == null) {
+            executorService = new ThreadPoolExecutor(
+                    config.compactionThreads(),
+                    config.compactionThreads(),
+                    0L,
+                    TimeUnit.MILLISECONDS,
+                    new ArrayBlockingQueue<>(MAX_TABLES),
+                    new ThreadConfiguration(getStaticThreadManager())
+                            .setThreadGroup(new ThreadGroup("Compaction"))
+                            .setComponent(MERKLEDB_COMPONENT)
+                            .setThreadName("Compacting")
+                            .setExceptionHandler((t, ex) ->
+                                    logger.error(EXCEPTION.getMarker(), "Uncaught exception during merging", ex))
+                            .buildFactory());
+            if(!compactionExecutorServiceRef.compareAndSet(null, executorService)) {
+                try {
+                    executorService.shutdown();
+                } catch (Exception e) {
+                    logger.error(EXCEPTION.getMarker(), "Failed to shutdown compaction executor service", e);
+                }
+            }
+        }
+
+        return compactionExecutorServiceRef.get();
     }
 
     boolean isCompactionEnabled() {
