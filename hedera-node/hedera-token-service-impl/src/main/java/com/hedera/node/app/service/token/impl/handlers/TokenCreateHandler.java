@@ -168,7 +168,6 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         recordBuilder.tokenID(newTokenId);
 
         logger.info("TOKEN CREATE ({})", tokenStore);
-
     }
 
     /**

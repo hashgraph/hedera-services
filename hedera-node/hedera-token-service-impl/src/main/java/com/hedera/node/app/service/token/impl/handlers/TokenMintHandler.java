@@ -286,7 +286,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             logger.info("TOKEN NOT FOUND IN MINT ({})", readableTokenStore);
         }
 
-        final var tokenType = TokenHandlerHelper.getIfUsable(op.tokenOrThrow(), readableTokenStore).tokenType();
+        final var tokenType = TokenHandlerHelper.getIfUsable(op.tokenOrThrow(), readableTokenStore)
+                .tokenType();
         final var subType = tokenType == TokenType.FUNGIBLE_COMMON
                 ? SubType.TOKEN_FUNGIBLE_COMMON
                 : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
