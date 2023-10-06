@@ -20,6 +20,7 @@ import static java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFacto
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.wiring.components.EventPool;
 import com.swirlds.common.wiring.components.EventVerifier;
 import com.swirlds.common.wiring.components.Gossip;
@@ -45,17 +46,18 @@ class WiringBenchmark {
         final EventPool eventPool = new EventPool();
 
         final TopologicalEventSorter orphanBuffer = new TopologicalEventSorter(eventPool);
-        final EventVerifier verifier = new EventVerifier(Wire.builder(orphanBuffer)
+        final EventVerifier verifier = new EventVerifier(Wire.builder("orphanBuffer", orphanBuffer)
                 .withConcurrency(false)
-                .withScheduledTaskCountMetricEnabled(false)
+                .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics()).withScheduledTaskCountMetricEnabled(false))
                 .withScheduledTaskCapacity(WireBuilder.UNLIMITED_CAPACITY)
                 .build());
         final Gossip gossip = new Gossip(
                 executor,
                 eventPool,
-                Wire.builder(verifier)
+                Wire.builder("verification", verifier)
                         .withConcurrency(true)
-                        .withScheduledTaskCountMetricEnabled(false)
+                        .withMetricsBuilder(
+                                Wire.metricsBuilder(new NoOpMetrics()).withScheduledTaskCountMetricEnabled(false))
                         .withScheduledTaskCapacity(WireBuilder.UNLIMITED_CAPACITY)
                         .build());
 

@@ -60,6 +60,7 @@ public class SequentialWire<T> implements Wire<T> {
                 @NonNull Consumer<T> consumer,
                 @Nullable final AbstractObjectCounter counter) {
             super(dependencyCount);
+
             this.consumer = consumer;
             this.counter = counter;
         }
@@ -108,7 +109,6 @@ public class SequentialWire<T> implements Wire<T> {
      *                 has been processed, ignored if null
      */
     public SequentialWire(@NonNull final Consumer<T> consumer, @Nullable final AbstractObjectCounter counter) {
-
         this.lastTask = new AtomicReference<>(new SequentialTask<>(1, consumer, counter));
         this.counter = counter;
 

@@ -38,25 +38,33 @@ public class WireBuilder<T> {
 
     private boolean concurrent = false;
     private final Consumer<T> consumer;
-
+    private final String name;
+    private WireMetricsBuilder metricsBuilder;
     private long scheduledTaskCapacity = UNLIMITED_CAPACITY;
-    private boolean scheduledTaskCountMetricEnabled = false;
 
     private Duration backpressureSleepDuration = Duration.ofNanos(100);
 
     // Future parameters:
-    //  - if we should automatically create metrics for the wire
-    //  - name of the wire
     //  - uncaught exception handler
     //  - max concurrency (or would this be implemented by limiting the thread pool size?)
 
     /**
      * Constructor.
      *
+     * @param name     the name of the wire. Used for metrics and debugging. Must be unique (not enforced by framework).
+     *                 Must only contain alphanumeric characters, underscores, and hyphens (enforced by framework).
      * @param consumer tasks are passed to this consumer
      */
-    WireBuilder(@NonNull final Consumer<T> consumer) {
+    WireBuilder(@NonNull final String name, @NonNull final Consumer<T> consumer) {
         this.consumer = Objects.requireNonNull(consumer);
+
+        // The reason why wire names have a restricted character set is because downstream consumers of metrics
+        // are very fussy about what characters are allowed in metric names.
+        if (!name.matches("^[a-zA-Z0-9_-]*$")) {
+            throw new IllegalArgumentException(
+                    "Wire name must only contain alphanumeric characters, underscores, " + "and hyphens");
+        }
+        this.name = name;
     }
 
     /**
@@ -84,18 +92,6 @@ public class WireBuilder<T> {
     }
 
     /**
-     * Set whether the scheduled task count metric should be enabled. Default false.
-     *
-     * @param enabled true if the scheduled task count metric should be enabled, false otherwise
-     * @return this
-     */
-    @NonNull
-    public WireBuilder<T> withScheduledTaskCountMetricEnabled(final boolean enabled) {
-        this.scheduledTaskCountMetricEnabled = enabled;
-        return this;
-    }
-
-    /**
      * If backpressure is enabled via {@link #withScheduledTaskCapacity(long)}, then sleep this length of time whenever
      * backpressure needs to be applied. If null then do not sleep (i.e. busy wait). Default 100 nanoseconds.
      *
@@ -109,6 +105,17 @@ public class WireBuilder<T> {
     }
 
     /**
+     * Provide a builder for metrics. If none is provided then no metrics will be enabled.
+     *
+     * @param metricsBuilder the metrics builder
+     * @return this
+     */
+    public WireBuilder<T> withMetricsBuilder(@NonNull final WireMetricsBuilder metricsBuilder) {
+        this.metricsBuilder = Objects.requireNonNull(metricsBuilder);
+        return this;
+    }
+
+    /**
      * Build the wire.
      *
      * @return the wire
@@ -118,15 +125,14 @@ public class WireBuilder<T> {
         final AbstractObjectCounter scheduledTaskCounter;
         if (scheduledTaskCapacity > UNLIMITED_CAPACITY) {
             scheduledTaskCounter = new BackpressureObjectCounter(scheduledTaskCapacity, backpressureSleepDuration);
-        } else if (scheduledTaskCountMetricEnabled) {
+        } else if (metricsBuilder != null && metricsBuilder.areScheduledTaskCountMetricEnabled()) {
             scheduledTaskCounter = new ObjectCounter();
         } else {
             scheduledTaskCounter = null;
         }
 
-        if (scheduledTaskCountMetricEnabled) {
-            // TODO register metrics
-            //  we can set up a metric that polls scheduledTaskCounter.getCount() every 3 seconds
+        if (metricsBuilder != null) {
+            metricsBuilder.registerMetrics(name, scheduledTaskCounter);
         }
 
         if (concurrent) {

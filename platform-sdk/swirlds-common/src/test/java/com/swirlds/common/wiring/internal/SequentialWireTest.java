@@ -27,6 +27,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.Wire;
 import java.time.Duration;
@@ -50,7 +51,8 @@ class SequentialWireTest {
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final Wire<Integer> wire = Wire.builder(handler).withConcurrency(false).build();
+        final Wire<Integer> wire =
+                Wire.builder("test", handler).withConcurrency(false).build();
         assertEquals(-1, wire.getUnprocessedTaskCount());
 
         int value = 0;
@@ -83,7 +85,8 @@ class SequentialWireTest {
             }
         };
 
-        final Wire<Integer> wire = Wire.builder(handler).withConcurrency(false).build();
+        final Wire<Integer> wire =
+                Wire.builder("test", handler).withConcurrency(false).build();
         assertEquals(-1, wire.getUnprocessedTaskCount());
 
         int value = 0;
@@ -110,7 +113,8 @@ class SequentialWireTest {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final Wire<Integer> wire = Wire.builder(handler).withConcurrency(false).build();
+        final Wire<Integer> wire =
+                Wire.builder("test", handler).withConcurrency(false).build();
         assertEquals(-1, wire.getUnprocessedTaskCount());
 
         final int operationsPerWorker = 1_000;
@@ -167,7 +171,8 @@ class SequentialWireTest {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final Wire<Integer> wire = Wire.builder(handler).withConcurrency(false).build();
+        final Wire<Integer> wire =
+                Wire.builder("test", handler).withConcurrency(false).build();
         assertEquals(-1, wire.getUnprocessedTaskCount());
 
         final int operationsPerWorker = 1_000;
@@ -231,7 +236,8 @@ class SequentialWireTest {
             }
         };
 
-        final Wire<Integer> wire = Wire.builder(handler).withConcurrency(false).build();
+        final Wire<Integer> wire =
+                Wire.builder("test", handler).withConcurrency(false).build();
         assertEquals(-1, wire.getUnprocessedTaskCount());
 
         // The wire will stop processing at 50, but this should not block the calling thread.
@@ -278,9 +284,9 @@ class SequentialWireTest {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire<Integer> wire = Wire.builder(handler)
+        final Wire<Integer> wire = Wire.builder("test", handler)
                 .withConcurrency(false)
-                .withScheduledTaskCountMetricEnabled(true)
+                .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics()).withScheduledTaskCountMetricEnabled(true))
                 .build();
         assertEquals(0, wire.getUnprocessedTaskCount());
 
@@ -338,7 +344,7 @@ class SequentialWireTest {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire<Integer> wire = Wire.builder(handler)
+        final Wire<Integer> wire = Wire.builder("test", handler)
                 .withConcurrency(false)
                 .withScheduledTaskCapacity(10)
                 .build();
@@ -409,7 +415,7 @@ class SequentialWireTest {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire<Integer> wire = Wire.builder(handler)
+        final Wire<Integer> wire = Wire.builder("test", handler)
                 .withConcurrency(false)
                 .withScheduledTaskCapacity(10)
                 .build();
@@ -483,7 +489,7 @@ class SequentialWireTest {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire<Integer> wire = Wire.builder(handler)
+        final Wire<Integer> wire = Wire.builder("test", handler)
                 .withConcurrency(false)
                 .withScheduledTaskCapacity(10)
                 .build();

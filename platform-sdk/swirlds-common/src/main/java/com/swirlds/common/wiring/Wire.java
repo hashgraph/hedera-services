@@ -16,6 +16,7 @@
 
 package com.swirlds.common.wiring;
 
+import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 
@@ -29,12 +30,25 @@ public interface Wire<T> extends Consumer<T> {
     /**
      * Get a new wire builder.
      *
+     * @param name     the name of the wire. Used for metrics and debugging. Must be unique (not enforced by framework).
+     *                 Must only contain alphanumeric characters, underscores, and hyphens (enforced by framework).
      * @param consumer tasks are passed to this consumer
      * @param <T>      the type of object that is passed through the wire
      * @return a new wire builder
      */
-    static <T> WireBuilder<T> builder(@NonNull final Consumer<T> consumer) {
-        return new WireBuilder<>(consumer);
+    static <T> WireBuilder<T> builder(@NonNull final String name, @NonNull final Consumer<T> consumer) {
+        return new WireBuilder<>(name, consumer);
+    }
+
+    /**
+     * Get a new wire metrics builder. Can be passed to {@link WireBuilder#withMetricsBuilder(WireMetricsBuilder)} to
+     * add metrics to the wire.
+     *
+     * @param metrics the metrics framework
+     * @return a new wire metrics builder
+     */
+    static WireMetricsBuilder metricsBuilder(@NonNull final Metrics metrics) {
+        return new WireMetricsBuilder(metrics);
     }
 
     /**
@@ -57,8 +71,8 @@ public interface Wire<T> extends Consumer<T> {
     /**
      * Get the number of unprocessed tasks. Returns -1 if this wire is not monitoring the number of unprocessed tasks.
      * Wires do not track the number of unprocessed tasks by default. To enable tracking, enable
-     * {@link WireBuilder#withScheduledTaskCountMetricEnabled(boolean)} or set a capacity that is not unlimited via
-     * {@link WireBuilder#withScheduledTaskCapacity(long)}.
+     * {@link WireMetricsBuilder#withScheduledTaskCountMetricEnabled(boolean)} or set a capacity that is not unlimited
+     * via {@link WireBuilder#withScheduledTaskCapacity(long)}.
      */
     long getUnprocessedTaskCount();
 }
