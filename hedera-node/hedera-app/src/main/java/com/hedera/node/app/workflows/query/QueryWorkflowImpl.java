@@ -23,8 +23,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
+import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
