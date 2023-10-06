@@ -120,6 +120,7 @@ class QueryHederaOperationsTest {
 
     @Test
     void creatingAndDeletingContractsNotSupported() {
+        assertThrows(UnsupportedOperationException.class, subject::contractCreationLimit);
         assertThrows(UnsupportedOperationException.class, () -> subject.createContract(1L, 2L, null));
         assertThrows(
                 UnsupportedOperationException.class,

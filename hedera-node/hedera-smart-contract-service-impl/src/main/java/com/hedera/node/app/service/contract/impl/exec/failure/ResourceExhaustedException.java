@@ -23,9 +23,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@link HandleException} specialization that indicates that a resource limit
- * has been exceeded. Unlike a "normal" {@link HandleException}, this generally
- * means the entire transaction needs to be reverted.
+ * A {@link HandleException} specialization that indicates that a resource limit has been exceeded.
  */
 public class ResourceExhaustedException extends HandleException {
     public ResourceExhaustedException(@NonNull final ResponseCodeEnum status) {

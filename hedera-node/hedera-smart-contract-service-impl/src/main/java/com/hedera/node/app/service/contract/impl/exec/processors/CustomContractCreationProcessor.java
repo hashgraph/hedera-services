@@ -20,6 +20,8 @@ import static com.hedera.node.app.service.contract.impl.exec.processors.Processo
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
+import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -45,6 +47,8 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
     // By convention, the halt reason should be INSUFFICIENT_GAS when the contract already exists
     private static final Optional<ExceptionalHaltReason> COLLISION_HALT_REASON =
             Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS);
+    private static final Optional<ExceptionalHaltReason> FAILED_CREATION_HALT_REASON =
+            Optional.of(CustomExceptionalHaltReason.CONTRACT_ENTITY_LIMIT_REACHED);
 
     public CustomContractCreationProcessor(
             @NonNull final EVM evm,
@@ -63,8 +67,14 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
     @Override
     public void start(@NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
         final var addressToCreate = frame.getContractAddress();
-        final var contract =
-                frame.getWorldUpdater().getOrCreate(addressToCreate).getMutable();
+        final MutableAccount contract;
+        try {
+            contract = frame.getWorldUpdater().getOrCreate(addressToCreate).getMutable();
+        } catch (ResourceExhaustedException ignore) {
+            halt(frame, FAILED_CREATION_HALT_REASON);
+            tracer.traceAccountCreationResult(frame, FAILED_CREATION_HALT_REASON);
+            return;
+        }
 
         if (alreadyCreated(contract)) {
             halt(frame, COLLISION_HALT_REASON);

@@ -23,6 +23,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
+import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomContractCreationProcessor;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.util.List;
@@ -93,6 +95,21 @@ class CustomContractCreationProcessorTest {
         verify(worldUpdater).tryTransfer(NON_SYSTEM_LONG_ZERO_ADDRESS, EIP_1014_ADDRESS, WEI_VALUE.toLong(), false);
         verify(mutableContract).setNonce(INITIAL_CONTRACT_NONCE);
         verify(frame).setState(MessageFrame.State.CODE_EXECUTING);
+    }
+
+    @Test
+    void haltsOnFailedCreation() {
+        given(frame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getOrCreate(EIP_1014_ADDRESS)).willThrow(ResourceExhaustedException.class);
+        final Optional<ExceptionalHaltReason> expectedHaltReason =
+                Optional.of(CustomExceptionalHaltReason.CONTRACT_ENTITY_LIMIT_REACHED);
+
+        subject.start(frame, tracer);
+
+        verify(frame).setExceptionalHaltReason(expectedHaltReason);
+        verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
+        verify(tracer).traceAccountCreationResult(frame, expectedHaltReason);
     }
 
     @Test

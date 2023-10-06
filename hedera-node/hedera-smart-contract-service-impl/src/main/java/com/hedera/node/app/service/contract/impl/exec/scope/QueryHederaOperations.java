@@ -100,6 +100,11 @@ public class QueryHederaOperations implements HederaOperations {
         throw new UnsupportedOperationException("Queries cannot use entity numbers");
     }
 
+    @Override
+    public long contractCreationLimit() {
+        throw new UnsupportedOperationException("Queries should not be considering creations");
+    }
+
     /**
      * {@inheritDoc}
      */

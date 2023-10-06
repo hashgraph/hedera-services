@@ -81,6 +81,13 @@ public interface HederaOperations {
     long useNextEntityNumber();
 
     /**
+     * Returns the maximum number of contracts that we should allow in this operation scope.
+     *
+     * @return the maximum number of contracts
+     */
+    long contractCreationLimit();
+
+    /**
      * Returns the entropy available in this scope. See <a href="https://hips.hedera.com/hip/hip-351">HIP-351</a>
      * for details on how the Hedera node implements this.
      *
