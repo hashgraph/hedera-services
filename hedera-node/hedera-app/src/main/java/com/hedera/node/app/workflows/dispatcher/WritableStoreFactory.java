@@ -84,6 +84,7 @@ public class WritableStoreFactory {
                 new StoreEntry(ContractService.NAME, WritableContractStateStore::new));
         // EntityIdService
         newMap.put(WritableEntityIdStore.class, new StoreEntry(EntityIdService.NAME, WritableEntityIdStore::new));
+        // Schedule Service
         newMap.put(WritableScheduleStore.class, new StoreEntry(ScheduleService.NAME, WritableScheduleStoreImpl::new));
         return Collections.unmodifiableMap(newMap);
     }

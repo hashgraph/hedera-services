@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.context.PlatformContext;
@@ -61,20 +62,30 @@ import org.apache.logging.log4j.Logger;
 public class ShadowGraphSynchronizer {
     private static final Logger logger = LogManager.getLogger(ShadowGraphSynchronizer.class);
 
-    /** The shadow graph manager to use for this sync */
+    /**
+     * The shadow graph manager to use for this sync
+     */
     private final ShadowGraph shadowGraph;
-    /** Number of member nodes in the network for this sync */
+    /**
+     * Number of member nodes in the network for this sync
+     */
     private final int numberOfNodes;
-    /** All sync stats */
+    /**
+     * All sync stats
+     */
     private final SyncMetrics syncMetrics;
     /**
      * provides the current consensus instance, a supplier is used because this instance will change after a reconnect,
      * so we have to make sure we always get the latest one
      */
     private final Supplier<GraphGenerations> generationsSupplier;
-    /** consumes events received by the peer */
+    /**
+     * consumes events received by the peer
+     */
     private final Consumer<GossipEvent> eventHandler;
-    /** manages sync related decisions */
+    /**
+     * manages sync related decisions
+     */
     private final FallenBehindManager fallenBehindManager;
 
     /**
@@ -83,11 +94,17 @@ public class ShadowGraphSynchronizer {
      */
     private final IntakeEventCounter intakeEventCounter;
 
-    /** executes tasks in parallel */
+    /**
+     * executes tasks in parallel
+     */
     private final ParallelExecutor executor;
-    /** if set to true, send and receive initial negotiation bytes at the start of the sync */
+    /**
+     * if set to true, send and receive initial negotiation bytes at the start of the sync
+     */
     private final boolean sendRecInitBytes;
-    /** executed before fetching the tips from the shadowgraph for the second time in phase 3 */
+    /**
+     * executed before fetching the tips from the shadowgraph for the second time in phase 3
+     */
     private final InterruptableRunnable executePreFetchTips;
 
     public ShadowGraphSynchronizer(
@@ -121,6 +138,9 @@ public class ShadowGraphSynchronizer {
     /**
      * Construct the event handler for new events. If configured to do so, this handler will also hash events before
      * passing them down the pipeline.
+     *
+     * @param platformContext the platform context
+     * @param intakeQueue     the event intake queue
      */
     private Consumer<GossipEvent> buildEventHandler(
             @NonNull final PlatformContext platformContext, @NonNull final QueueThread<GossipEvent> intakeQueue) {
@@ -130,16 +150,28 @@ public class ShadowGraphSynchronizer {
                 .getConfigData(SyncConfig.class)
                 .hashOnGossipThreads();
 
+        final Consumer<GossipEvent> wrappedPut = event -> {
+            try {
+                intakeQueue.put(event);
+            } catch (final InterruptedException e) {
+                // should never happen, and we don't have a simple way of recovering from it
+                logger.error(
+                        EXCEPTION.getMarker(), "CRITICAL ERROR, adding intakeTask to the event intake queue failed", e);
+                Thread.currentThread().interrupt();
+            }
+        };
+
         if (hashOnGossipThreads) {
             final Cryptography cryptography = platformContext.getCryptography();
             return event -> {
                 cryptography.digestSync(event.getHashedData());
                 event.buildDescriptor();
-                intakeQueue.add(event);
-            };
-        }
 
-        return intakeQueue::add;
+                wrappedPut.accept(event);
+            };
+        } else {
+            return wrappedPut;
+        }
     }
 
     private static List<Boolean> getMyBooleans(final List<ShadowEvent> theirTipShadows) {
