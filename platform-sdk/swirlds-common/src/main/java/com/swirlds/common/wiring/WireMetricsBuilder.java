@@ -16,8 +16,11 @@
 
 package com.swirlds.common.wiring;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.extensions.FractionalTimer;
+import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
 import com.swirlds.common.wiring.internal.AbstractObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -29,15 +32,20 @@ import java.util.Objects;
 public class WireMetricsBuilder {
 
     private final Metrics metrics;
+    private final Time time;
     private boolean scheduledTaskCountMetricEnabled = false;
+    private boolean busyFractionMetricEnabled = false;
+    private StandardFractionalTimer busyFractionTimer;
 
     /**
      * Constructor.
      *
      * @param metrics the metrics object to configure
+     * @param time    the time object to use for metrics
      */
-    WireMetricsBuilder(@NonNull final Metrics metrics) {
+    WireMetricsBuilder(@NonNull final Metrics metrics, @NonNull final Time time) {
         this.metrics = Objects.requireNonNull(metrics);
+        this.time = Objects.requireNonNull(time);
     }
 
     /**
@@ -53,12 +61,50 @@ public class WireMetricsBuilder {
     }
 
     /**
+     * Set whether the busy fraction metric should be enabled. Default false.
+     * <p>
+     * Note: this metric is currently only compatible with non-concurrent wire implementations. At a future time this
+     * metric will be updated to work with concurrent wire implementations.
+     *
+     * @param enabled true if the busy fraction metric should be enabled, false otherwise
+     * @return this
+     */
+    public WireMetricsBuilder withBusyFractionMetricsEnabled(final boolean enabled) {
+        this.busyFractionMetricEnabled = enabled;
+        return this;
+    }
+
+    /**
      * Check if the scheduled task count metric is enabled.
      *
      * @return true if the scheduled task count metric is enabled, false otherwise
      */
-    boolean areScheduledTaskCountMetricEnabled() {
+    boolean isScheduledTaskCountMetricEnabled() {
         return scheduledTaskCountMetricEnabled;
+    }
+
+    /**
+     * Check if the busy fraction metric is enabled.
+     *
+     * @return true if the busy fraction metric is enabled, false otherwise
+     */
+    boolean isBusyFractionMetricEnabled() {
+        return busyFractionMetricEnabled;
+    }
+
+    /**
+     * Build a fractional timer (if enabled)
+     *
+     * @return the fractional timer
+     */
+    @Nullable
+    FractionalTimer buildBusyTimer() {
+        if (busyFractionMetricEnabled) {
+            busyFractionTimer = new StandardFractionalTimer(time);
+            return busyFractionTimer;
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -67,15 +113,22 @@ public class WireMetricsBuilder {
      * @param scheduledTaskCounter the counter that is used to track the number of scheduled tasks
      */
     void registerMetrics(@NonNull final String wireName, @Nullable final AbstractObjectCounter scheduledTaskCounter) {
+
         if (scheduledTaskCountMetricEnabled) {
             Objects.requireNonNull(scheduledTaskCounter);
 
             final FunctionGauge.Config<Long> config = new FunctionGauge.Config<>(
-                    wireName + "_scheduled_task_count",
-                    "The number of scheduled tasks for the wire " + wireName,
-                    Long.class,
-                    scheduledTaskCounter::getCount);
+                            "platform", wireName + "_scheduled_task_count", Long.class, scheduledTaskCounter::getCount)
+                    .withDescription("The number of scheduled tasks for the wire " + wireName);
             metrics.getOrCreate(config);
+        }
+
+        if (busyFractionMetricEnabled) {
+            busyFractionTimer.registerMetric(
+                    metrics,
+                    "platform",
+                    wireName + "_busy_fraction",
+                    "Fraction (out of 1.0) of time spent processing tasks for the wire " + wireName);
         }
     }
 }

@@ -16,6 +16,7 @@
 
 package com.swirlds.common.wiring;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -60,10 +61,11 @@ public interface Wire<T> {
      * add metrics to the wire.
      *
      * @param metrics the metrics framework
+     * @param time    provides wall clock time
      * @return a new wire metrics builder
      */
-    static WireMetricsBuilder metricsBuilder(@NonNull final Metrics metrics) {
-        return new WireMetricsBuilder(metrics);
+    static WireMetricsBuilder metricsBuilder(@NonNull final Metrics metrics, @NonNull final Time time) {
+        return new WireMetricsBuilder(metrics, time);
     }
 
     /**

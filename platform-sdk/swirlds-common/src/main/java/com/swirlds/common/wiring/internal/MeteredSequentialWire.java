@@ -16,8 +16,11 @@
 
 package com.swirlds.common.wiring.internal;
 
+import com.swirlds.common.metrics.extensions.FractionalTimer;
+import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.wiring.Wire;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -29,20 +32,18 @@ import java.util.function.Consumer;
  */
 public class MeteredSequentialWire<T> implements Wire<T> {
     private Consumer<T> consumer;
-    private final AtomicReference<SequentialTask<T>> lastTask;
+    private final AtomicReference<SequentialTask> lastTask;
     private final AbstractObjectCounter counter;
+    private final FractionalTimer busyTimer;
     private final String name;
 
     /**
      * A task in a sequential wire.
      *
-     * @param <T> the type of object that is passed through the wire
      */
-    private static class SequentialTask<T> extends AbstractTask {
-        private final Consumer<T> consumer;
-        private final AbstractObjectCounter counter;
+    private class SequentialTask extends AbstractTask {
         private T data;
-        private SequentialTask<T> nextTask;
+        private SequentialTask nextTask;
 
         /**
          * Constructor.
@@ -51,18 +52,9 @@ public class MeteredSequentialWire<T> implements Wire<T> {
          *                        execution. The first task in a sequence has a dependency count of 1 (data must be
          *                        provided), and subsequent tasks have a dependency count of 2 (the previous task must
          *                        be executed and data must be provided).
-         * @param consumer        data on the wire is passed to this consumer
-         * @param counter         an object counter that is incremented when data is added to the wire and decremented
-         *                        when data has been processed
          */
-        SequentialTask(
-                final int dependencyCount,
-                @NonNull Consumer<T> consumer,
-                @NonNull final AbstractObjectCounter counter) {
+        SequentialTask(final int dependencyCount) {
             super(dependencyCount);
-
-            this.consumer = consumer;
-            this.counter = counter;
         }
 
         /**
@@ -71,7 +63,7 @@ public class MeteredSequentialWire<T> implements Wire<T> {
          * @param nextTask the task that will execute after this task
          * @param data     the data to be passed to the consumer for this task
          */
-        void send(@NonNull final SequentialTask<T> nextTask, @NonNull final T data) {
+        void send(@NonNull final SequentialTask nextTask, @NonNull final T data) {
             this.nextTask = nextTask;
             this.data = data;
 
@@ -90,11 +82,16 @@ public class MeteredSequentialWire<T> implements Wire<T> {
         @Override
         public boolean exec() {
             counter.offRamp();
-            consumer.accept(data);
+            busyTimer.activate();
+            try {
+                consumer.accept(data);
+            } finally {
+                busyTimer.deactivate();
 
-            // Reduce the dependency count of the next task. If the next task already has its data, then this
-            // method will cause the next task to be immediately eligible for execution.
-            nextTask.send();
+                // Reduce the dependency count of the next task. If the next task already has its data, then this
+                // method will cause the next task to be immediately eligible for execution.
+                nextTask.send();
+            }
             return true;
         }
     }
@@ -102,13 +99,18 @@ public class MeteredSequentialWire<T> implements Wire<T> {
     /**
      * Constructor.
      *
-     * @param name    the name of the wire
-     * @param counter an object counter that is incremented when data is added to the wire and decremented when data has
-     *                been processed
+     * @param name      the name of the wire
+     * @param counter   an object counter that is incremented when data is added to the wire and decremented when data
+     *                  has been processed, ignored if null
+     * @param busyTimer a timer that tracks the amount of time the wire is busy, ignored if null
      */
-    public MeteredSequentialWire(@NonNull final String name, @NonNull final AbstractObjectCounter counter) {
+    public MeteredSequentialWire(
+            @NonNull final String name,
+            @Nullable final AbstractObjectCounter counter,
+            @Nullable final FractionalTimer busyTimer) {
         this.name = Objects.requireNonNull(name);
-        this.counter = Objects.requireNonNull(counter);
+        this.counter = counter == null ? new NoOpCounter() : counter;
+        this.busyTimer = busyTimer == null ? new NoOpFractionalTimer() : busyTimer;
         this.lastTask = new AtomicReference<>();
     }
 
@@ -121,7 +123,7 @@ public class MeteredSequentialWire<T> implements Wire<T> {
             throw new IllegalStateException("Consumer has already been set");
         }
         this.consumer = Objects.requireNonNull(consumer);
-        this.lastTask.set(new SequentialTask<>(1, consumer, counter));
+        this.lastTask.set(new SequentialTask(1));
     }
 
     /**
@@ -144,8 +146,8 @@ public class MeteredSequentialWire<T> implements Wire<T> {
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
 
-        final SequentialTask<T> nextTask = new SequentialTask<>(2, consumer, counter);
-        SequentialTask<T> currentTask;
+        final SequentialTask nextTask = new SequentialTask(2);
+        SequentialTask currentTask;
         do {
             currentTask = lastTask.get();
         } while (!lastTask.compareAndSet(currentTask, nextTask));
@@ -163,8 +165,8 @@ public class MeteredSequentialWire<T> implements Wire<T> {
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
 
-        final SequentialTask<T> nextTask = new SequentialTask<>(2, consumer, counter);
-        SequentialTask<T> currentTask;
+        final SequentialTask nextTask = new SequentialTask(2);
+        SequentialTask currentTask;
         do {
             currentTask = lastTask.get();
         } while (!lastTask.compareAndSet(currentTask, nextTask));
@@ -185,8 +187,8 @@ public class MeteredSequentialWire<T> implements Wire<T> {
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
 
-        final SequentialTask<T> nextTask = new SequentialTask<>(2, consumer, counter);
-        SequentialTask<T> currentTask;
+        final SequentialTask nextTask = new SequentialTask(2);
+        SequentialTask currentTask;
         do {
             currentTask = lastTask.get();
         } while (!lastTask.compareAndSet(currentTask, nextTask));

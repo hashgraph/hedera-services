@@ -16,6 +16,7 @@
 
 package com.swirlds.common.wiring;
 
+import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.wiring.internal.AbstractObjectCounter;
 import com.swirlds.common.wiring.internal.BackpressureObjectCounter;
 import com.swirlds.common.wiring.internal.ConcurrentWire;
@@ -131,6 +132,23 @@ public class WireBuilder<T> {
     }
 
     /**
+     * Utility function for checking if we should use a metered wire.
+     *
+     * @return true if metrics are enabled, false otherwise
+     */
+    private boolean useMeteredWire() {
+        if (scheduledTaskCapacity != UNLIMITED_CAPACITY) {
+            return true;
+        }
+
+        if (metricsBuilder == null) {
+            return false;
+        }
+
+        return metricsBuilder.isScheduledTaskCountMetricEnabled() || metricsBuilder.isBusyFractionMetricEnabled();
+    }
+
+    /**
      * Build the wire.
      *
      * @return the wire
@@ -140,10 +158,17 @@ public class WireBuilder<T> {
         final AbstractObjectCounter scheduledTaskCounter;
         if (scheduledTaskCapacity > UNLIMITED_CAPACITY) {
             scheduledTaskCounter = new BackpressureObjectCounter(scheduledTaskCapacity, backpressureSleepDuration);
-        } else if (metricsBuilder != null && metricsBuilder.areScheduledTaskCountMetricEnabled()) {
+        } else if (metricsBuilder != null && metricsBuilder.isScheduledTaskCountMetricEnabled()) {
             scheduledTaskCounter = new ObjectCounter();
         } else {
             scheduledTaskCounter = null;
+        }
+
+        final FractionalTimer busyFraction;
+        if (metricsBuilder == null || !metricsBuilder.isBusyFractionMetricEnabled()) {
+            busyFraction = null;
+        } else {
+            busyFraction = metricsBuilder.buildBusyTimer();
         }
 
         if (metricsBuilder != null) {
@@ -152,16 +177,16 @@ public class WireBuilder<T> {
 
         final Wire<T> wire;
         if (concurrent) {
-            if (scheduledTaskCounter == null) {
-                wire = new ConcurrentWire<>(name);
-            } else {
+            if (useMeteredWire()) {
                 wire = new MeteredConcurrentWire<>(name, scheduledTaskCounter);
+            } else {
+                wire = new ConcurrentWire<>(name);
             }
         } else {
-            if (scheduledTaskCounter == null) {
-                wire = new SequentialWire<>(name);
+            if (useMeteredWire()) {
+                wire = new MeteredSequentialWire<>(name, scheduledTaskCounter, busyFraction);
             } else {
-                wire = new MeteredSequentialWire<>(name, scheduledTaskCounter);
+                wire = new SequentialWire<>(name);
             }
         }
 

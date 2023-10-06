@@ -102,11 +102,14 @@ public class SequentialWire<T> implements Wire<T> {
          */
         @Override
         public boolean exec() {
-            consumer.accept(data);
+            try {
+                consumer.accept(data);
+            } finally {
+                // Reduce the dependency count of the next task. If the next task already has its data, then this
+                // method will cause the next task to be immediately eligible for execution.
+                nextTask.send();
+            }
 
-            // Reduce the dependency count of the next task. If the next task already has its data, then this
-            // method will cause the next task to be immediately eligible for execution.
-            nextTask.send();
             return true;
         }
     }

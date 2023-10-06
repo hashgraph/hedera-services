@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.internal;
 
 import com.swirlds.common.wiring.Wire;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -36,13 +37,13 @@ public class MeteredConcurrentWire<T> implements Wire<T> {
     /**
      * Constructor.
      *
-     * @param name     the name of the wire
-     * @param counter  an object counter that is incremented when data is added to the wire and decremented when
-     *                 handling begins
+     * @param name    the name of the wire
+     * @param counter an object counter that is incremented when data is added to the wire and decremented when handling
+     *                begins, ignored if null
      */
-    public MeteredConcurrentWire(@NonNull final String name, @NonNull final AbstractObjectCounter counter) {
+    public MeteredConcurrentWire(@NonNull final String name, @Nullable final AbstractObjectCounter counter) {
         this.name = Objects.requireNonNull(name);
-        this.counter = Objects.requireNonNull(counter);
+        this.counter = counter == null ? new NoOpCounter() : counter;
     }
 
     /**

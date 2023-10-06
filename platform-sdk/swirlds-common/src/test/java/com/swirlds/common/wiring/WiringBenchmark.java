@@ -20,6 +20,7 @@ import static java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFacto
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.wiring.components.Event;
 import com.swirlds.common.wiring.components.EventPool;
@@ -50,7 +51,9 @@ class WiringBenchmark {
         final EventVerifier verifier = new EventVerifier(Wire.builder("orphanBuffer", Event.class)
                 .withConsumer(orphanBuffer)
                 .withConcurrency(false)
-                .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics()).withScheduledTaskCountMetricEnabled(false))
+                .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics(), Time.getCurrent())
+                        .withScheduledTaskCountMetricEnabled(false)
+                        .withBusyFractionMetricsEnabled(false))
                 .withScheduledTaskCapacity(WireBuilder.UNLIMITED_CAPACITY)
                 .build()::put);
         final Gossip gossip = new Gossip(
@@ -59,8 +62,9 @@ class WiringBenchmark {
                 Wire.builder("verification", Event.class)
                         .withConsumer(verifier)
                         .withConcurrency(true)
-                        .withMetricsBuilder(
-                                Wire.metricsBuilder(new NoOpMetrics()).withScheduledTaskCountMetricEnabled(false))
+                        .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics(), Time.getCurrent())
+                                .withScheduledTaskCountMetricEnabled(false)
+                                .withBusyFractionMetricsEnabled(false))
                         .withScheduledTaskCapacity(WireBuilder.UNLIMITED_CAPACITY)
                         .build()::put);
 

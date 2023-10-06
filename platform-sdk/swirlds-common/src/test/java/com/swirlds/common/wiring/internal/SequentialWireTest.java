@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.Wire;
@@ -325,7 +326,8 @@ class SequentialWireTest {
         final Wire<Integer> wire = Wire.builder("test", Integer.class)
                 .withConsumer(handler)
                 .withConcurrency(false)
-                .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics()).withScheduledTaskCountMetricEnabled(true))
+                .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics(), Time.getCurrent())
+                        .withScheduledTaskCountMetricEnabled(true))
                 .build();
         assertEquals(0, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
