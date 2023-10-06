@@ -39,7 +39,7 @@ public class WireBuilder<T> {
     public static final long UNLIMITED_CAPACITY = -1;
 
     private boolean concurrent = false;
-    private final Consumer<T> consumer;
+    private Consumer<T> consumer;
     private final String name;
     private WireMetricsBuilder metricsBuilder;
     private long scheduledTaskCapacity = UNLIMITED_CAPACITY;
@@ -53,13 +53,10 @@ public class WireBuilder<T> {
     /**
      * Constructor.
      *
-     * @param name     the name of the wire. Used for metrics and debugging. Must be unique (not enforced by framework).
-     *                 Must only contain alphanumeric characters and underscores (enforced by framework).
-     * @param consumer tasks are passed to this consumer
+     * @param name the name of the wire. Used for metrics and debugging. Must be unique (not enforced by framework).
+     *             Must only contain alphanumeric characters and underscores (enforced by framework).
      */
-    WireBuilder(@NonNull final String name, @NonNull final Consumer<T> consumer) {
-        this.consumer = Objects.requireNonNull(consumer);
-
+    WireBuilder(@NonNull final String name) {
         // The reason why wire names have a restricted character set is because downstream consumers of metrics
         // are very fussy about what characters are allowed in metric names.
         if (!name.matches("^[a-zA-Z0-9_]*$")) {
@@ -70,6 +67,19 @@ public class WireBuilder<T> {
             throw new IllegalArgumentException("Wire name must not be empty");
         }
         this.name = name;
+    }
+
+    /**
+     * Set the consumer that will receive data from the wire. It is legal to wait to set the consumer until after the
+     * wire is built by using {@link Wire#setConsumer(Consumer)}, but the consumer must only be set once per wire. If
+     * the consumer is not set prior to data being passed into the wire, then behavior is undefined.
+     *
+     * @param consumer the consumer that will receive data from the wire
+     * @return this
+     */
+    public WireBuilder<T> withConsumer(@NonNull final Consumer<T> consumer) {
+        this.consumer = Objects.requireNonNull(consumer);
+        return this;
     }
 
     /**
@@ -140,18 +150,25 @@ public class WireBuilder<T> {
             metricsBuilder.registerMetrics(name, scheduledTaskCounter);
         }
 
+        final Wire<T> wire;
         if (concurrent) {
             if (scheduledTaskCounter == null) {
-                return new ConcurrentWire<>(name, consumer);
+                wire = new ConcurrentWire<>(name);
             } else {
-                return new MeteredConcurrentWire<>(name, consumer, scheduledTaskCounter);
+                wire = new MeteredConcurrentWire<>(name, scheduledTaskCounter);
             }
         } else {
             if (scheduledTaskCounter == null) {
-                return new SequentialWire<>(name, consumer);
+                wire = new SequentialWire<>(name);
             } else {
-                return new MeteredSequentialWire<>(name, consumer, scheduledTaskCounter);
+                wire = new MeteredSequentialWire<>(name, scheduledTaskCounter);
             }
         }
+
+        if (consumer != null) {
+            wire.setConsumer(consumer);
+        }
+
+        return wire;
     }
 }

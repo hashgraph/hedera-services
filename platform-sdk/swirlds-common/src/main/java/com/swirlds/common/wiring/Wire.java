@@ -18,6 +18,7 @@ package com.swirlds.common.wiring;
 
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -30,14 +31,28 @@ public interface Wire<T> {
     /**
      * Get a new wire builder.
      *
-     * @param name     the name of the wire. Used for metrics and debugging. Must be unique (not enforced by framework).
-     *                 Must only contain alphanumeric characters, underscores, and hyphens (enforced by framework).
-     * @param consumer tasks are passed to this consumer
-     * @param <T>      the type of object that is passed through the wire
+     * @param name the name of the wire. Used for metrics and debugging. Must be unique (not enforced by framework).
+     *             Must only contain alphanumeric characters, underscores, and hyphens (enforced by framework).
+     * @param <T>  the type of object that is passed through the wire
      * @return a new wire builder
      */
-    static <T> WireBuilder<T> builder(@NonNull final String name, @NonNull final Consumer<T> consumer) {
-        return new WireBuilder<>(name, consumer);
+    static <T> WireBuilder<T> builder(@NonNull final String name) {
+        return new WireBuilder<>(name);
+    }
+
+    /**
+     * Get a new wire builder. This method variant exists for convenience for situations where the compiler gets
+     * confused.
+     *
+     * @param name  the name of the wire. Used for metrics and debugging. Must be unique (not enforced by framework).
+     *              Must only contain alphanumeric characters, underscores, and hyphens (enforced by framework).
+     * @param clazz the class of the object that is passed through the wire.
+     * @param <T>   the type of object that is passed through the wire
+     * @return a new wire builder
+     */
+    static <T> WireBuilder<T> builder(@NonNull final String name, @NonNull final Class<T> clazz) {
+        Objects.requireNonNull(clazz);
+        return new WireBuilder<>(name);
     }
 
     /**
@@ -50,6 +65,15 @@ public interface Wire<T> {
     static WireMetricsBuilder metricsBuilder(@NonNull final Metrics metrics) {
         return new WireMetricsBuilder(metrics);
     }
+
+    /**
+     * Provide the consumer where data on the wire is passed. This can be set in the builder via
+     * {@link WireBuilder#withConsumer(Consumer)} or by this method, but it can only be set once. If data is passed into
+     * the wire prior to the consumer being set, then behavior is undefined.
+     *
+     * @param consumer the consumer where data on the wire is passed
+     */
+    void setConsumer(@NonNull final Consumer<T> consumer);
 
     /**
      * Get the name of the wire.

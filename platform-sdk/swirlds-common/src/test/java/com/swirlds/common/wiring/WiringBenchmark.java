@@ -21,6 +21,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.wiring.components.Event;
 import com.swirlds.common.wiring.components.EventPool;
 import com.swirlds.common.wiring.components.EventVerifier;
 import com.swirlds.common.wiring.components.Gossip;
@@ -46,7 +47,8 @@ class WiringBenchmark {
         final EventPool eventPool = new EventPool();
 
         final TopologicalEventSorter orphanBuffer = new TopologicalEventSorter(eventPool);
-        final EventVerifier verifier = new EventVerifier(Wire.builder("orphanBuffer", orphanBuffer)
+        final EventVerifier verifier = new EventVerifier(Wire.builder("orphanBuffer", Event.class)
+                .withConsumer(orphanBuffer)
                 .withConcurrency(false)
                 .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics()).withScheduledTaskCountMetricEnabled(false))
                 .withScheduledTaskCapacity(WireBuilder.UNLIMITED_CAPACITY)
@@ -54,7 +56,8 @@ class WiringBenchmark {
         final Gossip gossip = new Gossip(
                 executor,
                 eventPool,
-                Wire.builder("verification", verifier)
+                Wire.builder("verification", Event.class)
+                        .withConsumer(verifier)
                         .withConcurrency(true)
                         .withMetricsBuilder(
                                 Wire.metricsBuilder(new NoOpMetrics()).withScheduledTaskCountMetricEnabled(false))

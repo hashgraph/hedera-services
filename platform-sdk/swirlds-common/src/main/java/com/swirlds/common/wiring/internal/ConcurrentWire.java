@@ -27,7 +27,7 @@ import java.util.function.Consumer;
  * @param <T> the type of object that is passed through the wire
  */
 public class ConcurrentWire<T> implements Wire<T> {
-    private final Consumer<T> consumer;
+    private Consumer<T> consumer;
     private final String name;
 
     // TODO write unit tests for this class
@@ -36,10 +36,19 @@ public class ConcurrentWire<T> implements Wire<T> {
      * Constructor.
      *
      * @param name    the name of the wire
-     * @param consumer data on the wire is passed to this consumer
      */
-    public ConcurrentWire(@NonNull final String name, @NonNull final Consumer<T> consumer) {
+    public ConcurrentWire(@NonNull final String name) {
         this.name = Objects.requireNonNull(name);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setConsumer(@NonNull Consumer<T> consumer) {
+        if (this.consumer != null) {
+            throw new IllegalStateException("Consumer has already been set");
+        }
         this.consumer = Objects.requireNonNull(consumer);
     }
 

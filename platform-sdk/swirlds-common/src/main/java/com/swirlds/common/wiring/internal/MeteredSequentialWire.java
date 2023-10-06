@@ -28,7 +28,7 @@ import java.util.function.Consumer;
  * @param <T> the type of object that is passed through the wire
  */
 public class MeteredSequentialWire<T> implements Wire<T> {
-    private final Consumer<T> consumer;
+    private Consumer<T> consumer;
     private final AtomicReference<SequentialTask<T>> lastTask;
     private final AbstractObjectCounter counter;
     private final String name;
@@ -103,19 +103,25 @@ public class MeteredSequentialWire<T> implements Wire<T> {
      * Constructor.
      *
      * @param name    the name of the wire
-     * @param consumer data on the wire is passed to this consumer
-     * @param counter  an object counter that is incremented when data is added to the wire and decremented when data
-     *                 has been processed
+     * @param counter an object counter that is incremented when data is added to the wire and decremented when data has
+     *                been processed
      */
-    public MeteredSequentialWire(
-            @NonNull final String name,
-            @NonNull final Consumer<T> consumer,
-            @NonNull final AbstractObjectCounter counter) {
+    public MeteredSequentialWire(@NonNull final String name, @NonNull final AbstractObjectCounter counter) {
         this.name = Objects.requireNonNull(name);
         this.counter = Objects.requireNonNull(counter);
-        this.lastTask = new AtomicReference<>(new SequentialTask<>(1, consumer, counter));
+        this.lastTask = new AtomicReference<>();
+    }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setConsumer(@NonNull final Consumer<T> consumer) {
+        if (this.consumer != null) {
+            throw new IllegalStateException("Consumer has already been set");
+        }
         this.consumer = Objects.requireNonNull(consumer);
+        this.lastTask.set(new SequentialTask<>(1, consumer, counter));
     }
 
     /**
