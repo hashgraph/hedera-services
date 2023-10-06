@@ -96,9 +96,8 @@ public class FileGetInfoHandler extends FileQueryBase {
         final var fileId = op.fileIDOrThrow();
         final File file = fileStore.getFileLeaf(fileId);
 
-        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> {
-            return new GetFileInfoResourceUsage(fileOpsUsage).usageGiven(fromPbj(query), file);
-        });
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetFileInfoResourceUsage(fileOpsUsage)
+                .usageGiven(fromPbj(query), file));
     }
 
     @Override
