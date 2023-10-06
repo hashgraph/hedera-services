@@ -237,7 +237,7 @@ class HederaEvmTxProcessorTest {
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(fundingAccount);
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
 
-        final var MutableAccount = mock(MutableAccount.class);
+        final var mutableAccount = mock(MutableAccount.class);
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
@@ -245,9 +245,9 @@ class HederaEvmTxProcessorTest {
         given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
         given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
 
-        given(stackedUpdater.getSenderAccount(any())).willReturn(MutableAccount);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(mutableAccount);
         given(stackedUpdater.getSenderAccount(any())).willReturn(senderMutableAccount);
-        given(stackedUpdater.getOrCreate(any())).willReturn(MutableAccount);
+        given(stackedUpdater.getOrCreate(any())).willReturn(mutableAccount);
         given(stackedUpdater.getOrCreate(any())).willReturn(senderMutableAccount);
 
         givenInvalidMock();
@@ -326,15 +326,15 @@ class HederaEvmTxProcessorTest {
         given(updater.updater()).willReturn(stackedUpdater);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(fundingAccount);
 
-        final var MutableAccount = mock(MutableAccount.class);
+        final var mutableAccount = mock(MutableAccount.class);
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(intrinsicGasCost);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
-        given(stackedUpdater.getSenderAccount(any())).willReturn(MutableAccount);
-        given(stackedUpdater.getOrCreate(any())).willReturn(MutableAccount);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(mutableAccount);
+        given(stackedUpdater.getOrCreate(any())).willReturn(mutableAccount);
 
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
     }
