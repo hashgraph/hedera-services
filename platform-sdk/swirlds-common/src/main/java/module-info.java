@@ -158,7 +158,6 @@ module com.swirlds.common {
             com.swirlds.platform.test,
             com.swirlds.platform.gui;
     exports com.swirlds.common.startup;
-    exports com.swirlds.common.threading.queue;
 
     requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.databind;
