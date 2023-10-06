@@ -29,8 +29,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import javax.inject.Inject;
@@ -67,11 +65,7 @@ public class CustomRoyaltyFeeAssessor {
             @NonNull final CustomFeeMeta feeMeta,
             @NonNull final AccountID sender,
             @NonNull final AccountID receiver,
-            @NonNull final AssessmentResult result,
-            @NonNull final HandleContext handleContext) {
-        // FUTURE: remove the @SuppressWarnings("java:S1854") when this variable is in use
-        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-
+            @NonNull final AssessmentResult result) {
         final var tokenId = feeMeta.tokenId();
         // In a given CryptoTransfer, we only charge royalties to an account once per token type; so
         // even if 0.0.A is sending multiple NFTs of type 0.0.T in a single transfer, we only deduct

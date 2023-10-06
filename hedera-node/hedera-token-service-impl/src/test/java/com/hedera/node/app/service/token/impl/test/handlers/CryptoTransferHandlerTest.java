@@ -240,7 +240,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
@@ -271,7 +271,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
@@ -302,7 +302,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNotNull();
-        assertThat(writableAliases.get(ecKeyAlias)).isEqualTo(hbarReceiverId);
+        assertThat(writableAliases.get(ecEvmAlias)).isEqualTo(hbarReceiverId);
         assertThat(writableAliases.get(edKeyAlias)).isEqualTo(tokenReceiverId);
 
         final var endSenderBalance = writableAccountStore.get(ownerId).tinybarBalance();
@@ -347,7 +347,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
@@ -393,7 +393,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {

@@ -1484,6 +1484,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         cryptoTransfer(moving(1, tokenB).between(TREASURY, firstUser)));
     }
 
+    @HapiTest
     private HapiSpec baseCryptoTransferFeeChargedAsExpected() {
         final var expectedHbarXferPriceUsd = 0.0001;
         final var expectedHtsXferPriceUsd = 0.001;
@@ -1585,6 +1586,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
+    @HapiTest
     private HapiSpec tokenTransferFeesScaleAsExpected() {
         return defaultHapiSpec("TokenTransferFeesScaleAsExpected")
                 .given(
