@@ -61,6 +61,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -68,6 +70,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenCreateHandler extends BaseTokenHandler implements TransactionHandler {
+
+    private static final Logger logger = LogManager.getLogger(TokenMintHandler.class);
+
     private final CustomFeesValidator customFeesValidator;
     private final TokenCreateValidator tokenCreateValidator;
 
@@ -161,6 +166,9 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         // Update record with newly created token id
         final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
         recordBuilder.tokenID(newTokenId);
+
+        logger.info("TOKEN CREATE ({})", tokenStore);
+
     }
 
     /**

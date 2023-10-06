@@ -74,6 +74,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -81,6 +83,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenMintHandler extends BaseTokenHandler implements TransactionHandler {
+
+    private static final Logger logger = LogManager.getLogger(TokenMintHandler.class);
+
     private final TokenSupplyChangeOpsValidator validator;
 
     @Inject
@@ -276,6 +281,11 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var op = feeContext.body().tokenMintOrThrow();
         final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
+
+        if (readableTokenStore.get(op.tokenOrThrow()) == null) {
+            logger.info("TOKEN NOT FOUND IN MINT ({})", readableTokenStore);
+        }
+
         final var tokenType = TokenHandlerHelper.getIfUsable(op.tokenOrThrow(), readableTokenStore).tokenType();
         final var subType = tokenType == TokenType.FUNGIBLE_COMMON
                 ? SubType.TOKEN_FUNGIBLE_COMMON

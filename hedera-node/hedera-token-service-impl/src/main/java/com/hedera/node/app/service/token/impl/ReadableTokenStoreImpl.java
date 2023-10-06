@@ -107,4 +107,14 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
         final var token = tokenState.get(tokenId);
         return Optional.ofNullable(token);
     }
+
+    @Override
+    public String toString() {
+        final var sb = new StringBuilder("ReadableTokenStoreImpl{");
+        for (final var it = tokenState.keys(); it.hasNext(); ) {
+            sb.append(it.next()).append(',');
+        }
+        sb.append('}');
+        return sb.toString();
+    }
 }
