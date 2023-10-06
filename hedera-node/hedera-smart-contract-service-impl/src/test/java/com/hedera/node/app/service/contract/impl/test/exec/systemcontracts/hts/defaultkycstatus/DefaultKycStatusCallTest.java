@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultfreezestatus.DefaultFreezeStatusCall;
@@ -34,7 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class DefaultKycStatusCallTest extends HtsCallTestBase {
     @Test
     void returnsDefaultKycStatusForPresentToken() {
-        final var subject = new DefaultFreezeStatusCall(mockEnhancement(), FUNGIBLE_TOKEN);
+        final var subject = new DefaultFreezeStatusCall(mockEnhancement(), false, FUNGIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 
@@ -49,7 +50,7 @@ class DefaultKycStatusCallTest extends HtsCallTestBase {
 
     @Test
     void returnsDefaultKycStatusForMissingToken() {
-        final var subject = new DefaultFreezeStatusCall(mockEnhancement(), null);
+        final var subject = new DefaultFreezeStatusCall(mockEnhancement(), false, null);
 
         final var result = subject.execute().fullResult().result();
 
@@ -60,5 +61,15 @@ class DefaultKycStatusCallTest extends HtsCallTestBase {
                         .encodeElements(INVALID_TOKEN_ID.protoOrdinal(), false)
                         .array()),
                 result.getOutput());
+    }
+
+    @Test
+    void returnsDefaultKycStatusForMissingTokenStaticCall() {
+        final var subject = new DefaultFreezeStatusCall(mockEnhancement(), true, null);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.REVERT, result.getState());
+        assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
     }
 }

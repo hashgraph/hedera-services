@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.iskyc
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.iskyc.IsKycTranslator.IS_KYC;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
@@ -35,13 +36,16 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class IsKycCall extends AbstractNonRevertibleTokenViewCall {
     private final Address account;
+    private final boolean isStaticCall;
 
     public IsKycCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            final boolean isStaticCall,
             @Nullable final Token token,
             @NonNull final Address account) {
         super(enhancement, token);
         this.account = requireNonNull(account);
+        this.isStaticCall = isStaticCall;
     }
 
     /**
@@ -70,6 +74,10 @@ public class IsKycCall extends AbstractNonRevertibleTokenViewCall {
 
     private @NonNull FullResult fullResultsFor(
             @NonNull final ResponseCodeEnum status, final long gasRequirement, final boolean isKyc) {
+        // @Future remove to revert #9064 after modularization is completed
+        if (isStaticCall && status != SUCCESS) {
+            return revertResult(status, 0);
+        }
         return successResult(IS_KYC.getOutputs().encodeElements(status.protoOrdinal(), isKyc), gasRequirement);
     }
 }

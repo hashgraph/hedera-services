@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.TokenTypeCall;
@@ -34,7 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenTypeCallTest extends HtsCallTestBase {
     @Test
     void returnsTokenTypeForPresentToken() {
-        final var subject = new TokenTypeCall(mockEnhancement(), FUNGIBLE_TOKEN);
+        final var subject = new TokenTypeCall(mockEnhancement(), false, FUNGIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 
@@ -49,7 +50,7 @@ class TokenTypeCallTest extends HtsCallTestBase {
 
     @Test
     void returnsTokenTypeForMissingToken() {
-        final var subject = new TokenTypeCall(mockEnhancement(), null);
+        final var subject = new TokenTypeCall(mockEnhancement(), false, null);
 
         final var result = subject.execute().fullResult().result();
 
@@ -60,5 +61,15 @@ class TokenTypeCallTest extends HtsCallTestBase {
                         .encodeElements(INVALID_TOKEN_ID.protoOrdinal(), 0)
                         .array()),
                 result.getOutput());
+    }
+
+    @Test
+    void returnsTokenTypeForMissingTokenStaticCall() {
+        final var subject = new TokenTypeCall(mockEnhancement(), true, null);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.REVERT, result.getState());
+        assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
     }
 }

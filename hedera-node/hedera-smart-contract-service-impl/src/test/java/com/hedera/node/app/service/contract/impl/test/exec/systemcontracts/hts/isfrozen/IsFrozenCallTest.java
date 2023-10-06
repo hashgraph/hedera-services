@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
@@ -40,7 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class IsFrozenCallTest extends HtsCallTestBase {
     @Test
     void returnsIsFrozenForPresentToken() {
-        final var subject = new IsFrozenCall(mockEnhancement(), FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject = new IsFrozenCall(mockEnhancement(), false, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
@@ -61,7 +62,7 @@ class IsFrozenCallTest extends HtsCallTestBase {
 
     @Test
     void returnsIsFrozenForMissingToken() {
-        final var subject = new IsFrozenCall(mockEnhancement(), null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject = new IsFrozenCall(mockEnhancement(), false, null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
@@ -82,7 +83,7 @@ class IsFrozenCallTest extends HtsCallTestBase {
 
     @Test
     void returnsIsFrozenForMissingAccount() {
-        final var subject = new IsFrozenCall(mockEnhancement(), FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject = new IsFrozenCall(mockEnhancement(), false, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
@@ -99,5 +100,37 @@ class IsFrozenCallTest extends HtsCallTestBase {
                         .encodeElements(INVALID_ACCOUNT_ID.protoOrdinal(), false)
                         .array()),
                 result.getOutput());
+    }
+
+    @Test
+    void returnsIsFrozenForMissingTokenStaticCall() {
+        final var subject = new IsFrozenCall(mockEnhancement(), true, null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+
+        final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
+        conversionUtilsMockStatic
+                .when(() -> ConversionUtils.accountNumberForEvmReference(any(), any()))
+                .thenReturn(1L);
+
+        final var result = subject.execute().fullResult().result();
+        conversionUtilsMockStatic.close();
+
+        assertEquals(MessageFrame.State.REVERT, result.getState());
+        assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
+    }
+
+    @Test
+    void returnsIsFrozenForMissingAccountStaticCall() {
+        final var subject = new IsFrozenCall(mockEnhancement(), true, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+
+        final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
+        conversionUtilsMockStatic
+                .when(() -> ConversionUtils.accountNumberForEvmReference(any(), any()))
+                .thenReturn(-1L);
+
+        final var result = subject.execute().fullResult().result();
+        conversionUtilsMockStatic.close();
+
+        assertEquals(MessageFrame.State.REVERT, result.getState());
+        assertEquals(revertOutputFor(INVALID_ACCOUNT_ID), result.getOutput());
     }
 }

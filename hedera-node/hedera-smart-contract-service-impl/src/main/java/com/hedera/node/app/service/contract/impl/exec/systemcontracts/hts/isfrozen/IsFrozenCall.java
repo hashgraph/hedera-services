@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isfro
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultfreezestatus.DefaultFreezeStatusTranslator.DEFAULT_FREEZE_STATUS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
@@ -35,13 +36,16 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class IsFrozenCall extends AbstractNonRevertibleTokenViewCall {
     private final Address account;
+    private final boolean isStaticCall;
 
     public IsFrozenCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            final boolean isStaticCall,
             @Nullable final Token token,
             @NonNull final Address account) {
         super(enhancement, token);
         this.account = requireNonNull(account);
+        this.isStaticCall = isStaticCall;
     }
 
     /**
@@ -70,6 +74,10 @@ public class IsFrozenCall extends AbstractNonRevertibleTokenViewCall {
 
     private @NonNull FullResult fullResultsFor(
             @NonNull final ResponseCodeEnum status, final long gasRequirement, final boolean isFrozen) {
+        // @Future remove to revert #9063 after modularization is completed
+        if (isStaticCall && status != SUCCESS) {
+            return revertResult(status, 0);
+        }
         return successResult(
                 DEFAULT_FREEZE_STATUS.getOutputs().encodeElements(status.protoOrdinal(), isFrozen), gasRequirement);
     }

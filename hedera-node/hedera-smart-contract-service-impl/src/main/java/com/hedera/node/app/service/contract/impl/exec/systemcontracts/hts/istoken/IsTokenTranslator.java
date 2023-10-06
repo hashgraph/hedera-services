@@ -51,6 +51,6 @@ public class IsTokenTranslator extends AbstractHtsCallTranslator {
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var args = IS_TOKEN.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
-        return new IsTokenCall(attempt.enhancement(), token);
+        return new IsTokenCall(attempt.enhancement(), attempt.isStaticCall(), token);
     }
 }

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.TokenTypeTranslator.TOKEN_TYPE;
 import static java.util.Objects.requireNonNull;
@@ -31,8 +32,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class TokenTypeCall extends AbstractNonRevertibleTokenViewCall {
-    public TokenTypeCall(@NonNull final HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token) {
+    private final boolean isStaticCall;
+
+    public TokenTypeCall(
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            final boolean isStaticCall,
+            @Nullable final Token token) {
         super(enhancement, token);
+        this.isStaticCall = isStaticCall;
     }
 
     /**
@@ -54,6 +61,10 @@ public class TokenTypeCall extends AbstractNonRevertibleTokenViewCall {
 
     private @NonNull FullResult fullResultsFor(
             @NonNull final ResponseCodeEnum status, final long gasRequirement, final int tokenType) {
+        // @Future remove to revert #9066 after modularization is completed
+        if (isStaticCall && status != SUCCESS) {
+            return revertResult(status, 0);
+        }
         return successResult(TOKEN_TYPE.getOutputs().encodeElements(status.protoOrdinal(), tokenType), gasRequirement);
     }
 }
