@@ -58,8 +58,20 @@ public class CreatesXTestConstants {
 
     static final Tuple FIXED_FEE = Tuple.of(100L, ERC20_TOKEN_ADDRESS, false, false, OWNER_HEADLONG_ADDRESS);
     static final Tuple FRACTIONAL_FEE = Tuple.of(100L, 100L, 100L, 100L, true, OWNER_HEADLONG_ADDRESS);
-
     static final Tuple ROYALTY_FEE = Tuple.of(10L, 10L, 1L, ERC20_TOKEN_ADDRESS, false, OWNER_HEADLONG_ADDRESS);
+
+    static final Tuple hederaTokenFactory(
+            String name,
+            String symbol,
+            com.esaulpaugh.headlong.abi.Address treasury,
+            String memo,
+            boolean tokenSupplyType,
+            long maxSupply,
+            boolean freezeDefault,
+            Tuple[] tokenKeys,
+            Tuple expiry) {
+        return Tuple.of(name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault, tokenKeys, expiry);
+    }
 
     // casts Address to null
     public static Address asAddress(String address) {
