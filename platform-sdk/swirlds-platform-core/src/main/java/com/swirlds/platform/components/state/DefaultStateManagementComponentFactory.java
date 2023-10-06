@@ -189,12 +189,6 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
         if (newLatestCompleteStateConsumer == null) {
             addLine(errors, "newLatestCompleteStateConsumer must not be null");
         }
-        if (stateLacksSignaturesEventConsumer == null) {
-            addLine(errors, "stateLacksSignaturesEventConsumer must not be null");
-        }
-        if (stateHasEnoughSignaturesConsumer == null) {
-            addLine(errors, "newCompleteStateConsumer must not be null");
-        }
         if (issConsumer == null) {
             addLine(errors, "issConsumer must not be null");
         }

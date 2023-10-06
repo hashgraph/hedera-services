@@ -66,9 +66,6 @@ import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
-import com.swirlds.platform.config.legacy.ConfigPropertiesSource;
-import com.swirlds.platform.config.legacy.LegacyConfigProperties;
-import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.tipset.EventCreationConfig;
@@ -137,29 +134,20 @@ public final class BootstrapUtils {
      * Load the configuration for the platform.
      *
      * @param configurationBuilder the configuration builder to setup
-     * @param configPath           the path to the config.txt file
      * @param settingsPath         the path to the settings.txt file
      * @throws IOException if there is a problem reading the configuration files
      */
     public static void setupConfigBuilder(
-            @NonNull final ConfigurationBuilder configurationBuilder,
-            @NonNull final Path configPath,
-            @NonNull final Path settingsPath)
+            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath)
             throws IOException {
-
-        // The properties from the config.txt
-        final LegacyConfigProperties configurationProperties = LegacyConfigPropertiesLoader.loadConfigFile(configPath);
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
-
-        final ConfigSource configPropertiesConfigSource = new ConfigPropertiesSource(configurationProperties);
         final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
 
         // Load Configuration Definitions
         configurationBuilder
                 .withSource(mappedSettingsConfigSource)
-                .withSource(configPropertiesConfigSource)
                 .withSource(threadCountPropertyConfigSource)
                 .withConfigDataType(BasicConfig.class)
                 .withConfigDataType(StateConfig.class)

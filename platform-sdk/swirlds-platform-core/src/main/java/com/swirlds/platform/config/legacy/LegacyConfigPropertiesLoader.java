@@ -54,7 +54,6 @@ public final class LegacyConfigPropertiesLoader {
     private static final String NEXT_NODE_ID_PROPERTY_NAME = "nextNodeId";
     private static final String NEXT_NODE_ID_PROPERTY_NAME_LOWERCASE = "nextnodeid";
     private static final String SWIRLD_PROPERTY_NAME = "swirld";
-    private static final String GENESIS_FREEZE_TIME_PROPERTY_NAME = "genesisfreezetime";
 
     public static final String ERROR_CONFIG_TXT_NOT_FOUND_BUT_EXISTS =
             "Config.txt file was not found but File#exists() claimed the file does exist";
@@ -118,9 +117,6 @@ public final class LegacyConfigPropertiesLoader {
                                 onError(ERROR_ADDRESS_NOT_ENOUGH_PARAMETERS);
                             }
                         }
-                        case GENESIS_FREEZE_TIME_PROPERTY_NAME -> {
-                            setGenesisFreezeTime(configurationProperties, lineParameters.length, pars[1]);
-                        }
                         case NEXT_NODE_ID_PROPERTY_NAME_LOWERCASE -> {
                             try {
                                 if (!parsOriginalCase[0].equals(AddressBookUtils.NEXT_NODE_ID_KEYWORD)) {
@@ -178,14 +174,6 @@ public final class LegacyConfigPropertiesLoader {
     private static void setSwirldName(
             final LegacyConfigProperties configurationProperties, final int paramLength, final String value) {
         handleParam(SWIRLD_PROPERTY_NAME, paramLength, () -> configurationProperties.setSwirldName(value));
-    }
-
-    private static void setGenesisFreezeTime(
-            final LegacyConfigProperties configProperties, final int paramLength, final String value) {
-        handleParam(
-                GENESIS_FREEZE_TIME_PROPERTY_NAME,
-                paramLength,
-                () -> configProperties.setGenesisFreezeTime(Long.parseLong(value)));
     }
 
     private static void onError(String message) {

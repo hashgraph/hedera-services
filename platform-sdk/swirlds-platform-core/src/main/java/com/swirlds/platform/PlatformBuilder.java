@@ -166,7 +166,7 @@ public final class PlatformBuilder {
         }
 
         ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(SWIRLDS_PACKAGE));
-        rethrowIO(() -> BootstrapUtils.setupConfigBuilder(configurationBuilder, configPath, settingsPath));
+        rethrowIO(() -> BootstrapUtils.setupConfigBuilder(configurationBuilder, settingsPath));
 
         final Configuration configuration = configurationBuilder.build();
         PlatformConfigUtils.checkConfiguration(configuration);
