@@ -627,7 +627,7 @@ class SequentialWireTest {
      * A -------> B
      * ^          |
      * |          |
-     * |          |
+     * |          V
      * D <------- C
      * </pre>
      */
