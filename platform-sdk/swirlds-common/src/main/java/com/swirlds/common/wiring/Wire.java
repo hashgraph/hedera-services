@@ -53,4 +53,12 @@ public interface Wire<T> extends Consumer<T> {
      * @throws InterruptedException if the thread is interrupted while waiting for capacity to become available
      */
     void acceptInterruptably(@NonNull T data) throws InterruptedException;
+
+    /**
+     * Get the number of unprocessed tasks. Returns -1 if this wire is not monitoring the number of unprocessed tasks.
+     * Wires do not track the number of unprocessed tasks by default. To enable tracking, enable
+     * {@link WireBuilder#withScheduledTaskCountMetricEnabled(boolean)} or set a capacity that is not unlimited via
+     * {@link WireBuilder#withScheduledTaskCapacity(long)}.
+     */
+    long getUnprocessedTaskCount();
 }

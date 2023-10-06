@@ -29,6 +29,8 @@ import java.util.function.LongUnaryOperator;
  */
 public class BackpressureObjectCounter extends AbstractObjectCounter {
 
+    // TODO write unit tests for this class
+
     private final AtomicLong count = new AtomicLong(0);
     private final LongUnaryOperator increment;
     private final long sleepNanos;

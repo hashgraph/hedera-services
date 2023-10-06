@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ObjectCounter extends AbstractObjectCounter {
 
+    // TODO write unit tests for this class
+
     private final AtomicLong count = new AtomicLong(0);
 
     /**
@@ -30,6 +32,7 @@ public class ObjectCounter extends AbstractObjectCounter {
      */
     @Override
     public void onRamp() {
+        System.out.println("    onRamp");
         count.incrementAndGet();
     }
 
@@ -38,6 +41,7 @@ public class ObjectCounter extends AbstractObjectCounter {
      */
     @Override
     public void interruptableOnRamp() {
+        System.out.println("    onRamp");
         count.incrementAndGet();
     }
 
@@ -46,6 +50,7 @@ public class ObjectCounter extends AbstractObjectCounter {
      */
     @Override
     public void offRamp() {
+        System.out.println("    >>> offRamp");
         count.decrementAndGet();
     }
 

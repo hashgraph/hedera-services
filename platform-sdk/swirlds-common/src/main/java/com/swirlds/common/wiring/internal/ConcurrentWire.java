@@ -31,6 +31,8 @@ public class ConcurrentWire<T> implements Wire<T> {
     private final Consumer<T> consumer;
     private final AbstractObjectCounter counter;
 
+    // TODO write unit tests for this class
+
     /**
      * Constructor.
      *
@@ -85,5 +87,13 @@ public class ConcurrentWire<T> implements Wire<T> {
                 return true;
             }
         }.send();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getUnprocessedTaskCount() {
+        return counter == null ? -1 : counter.getCount();
     }
 }
