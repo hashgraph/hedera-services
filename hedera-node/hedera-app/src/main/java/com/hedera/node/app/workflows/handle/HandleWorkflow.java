@@ -434,8 +434,6 @@ public class HandleWorkflow {
                         }
                     }
 
-                    networkUtilizationManager.saveTo(state);
-
                     // Notify responsible facility if system-file was uploaded
                     systemFileUpdateFacility.handleTxBody(stack, txBody, recordBuilder);
 
@@ -463,6 +461,7 @@ public class HandleWorkflow {
             }
         }
 
+        networkUtilizationManager.saveTo(state);
         transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext);
 
         // Commit all state changes
