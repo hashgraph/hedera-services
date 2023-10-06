@@ -891,7 +891,7 @@ class StartupStateUtilsTests {
             epochRound = targetState.getRound();
         }
 
-        // Write a file into the PCES directory. This file will be deleted if the PCES is cleared.
+        // Write a file into the PCES directory. This file will should be deleted
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
@@ -916,12 +916,11 @@ class StartupStateUtilsTests {
         final Path signedStateDirectory = getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
 
-        // The +1 is from the marker file in the PCES directory
-        assertEquals(statesToDelete + 1, recycleCount.get());
+        assertEquals(statesToDelete, recycleCount.get());
 
         assertEquals(
                 stateCount - statesToDelete, Files.list(signedStateDirectory).count());
 
-        assertFalse(Files.exists(markerFile));
+        assertTrue(Files.exists(markerFile));
     }
 }
