@@ -68,9 +68,6 @@ import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
-import com.swirlds.platform.config.legacy.ConfigPropertiesSource;
-import com.swirlds.platform.config.legacy.LegacyConfigProperties;
-import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.tipset.EventCreationConfig;
@@ -192,20 +189,14 @@ public final class BootstrapUtils {
             throws IOException {
         Objects.requireNonNull(pathsConfig, "pathsConfig must not be null");
 
-        // The properties from the config.txt
-        final LegacyConfigProperties configurationProperties =
-                LegacyConfigPropertiesLoader.loadConfigFile(pathsConfig.getConfigPath());
-
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
-        final ConfigSource configPropertiesConfigSource = new ConfigPropertiesSource(configurationProperties);
         final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
 
         // Load Configuration Definitions
         configurationBuilder
                 .withSource(mappedSettingsConfigSource)
-                .withSource(configPropertiesConfigSource)
                 .withSource(threadCountPropertyConfigSource)
                 .withConfigDataType(BasicConfig.class)
                 .withConfigDataType(StateConfig.class)
