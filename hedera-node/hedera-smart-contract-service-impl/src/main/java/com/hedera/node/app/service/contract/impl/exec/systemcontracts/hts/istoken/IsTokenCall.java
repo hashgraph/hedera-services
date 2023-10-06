@@ -62,7 +62,7 @@ public class IsTokenCall extends AbstractNonRevertibleTokenViewCall {
     private @NonNull FullResult fullResultsFor(
             @NonNull final ResponseCodeEnum status, final long gasRequirement, final boolean isToken) {
         // @Future remove to revert #9065 after modularization is completed
-        if (!isStaticCall && status != SUCCESS) {
+        if (isStaticCall && status != SUCCESS) {
             return revertResult(status, 0);
         }
         return successResult(IS_TOKEN.getOutputs().encodeElements(status.protoOrdinal(), isToken), gasRequirement);
