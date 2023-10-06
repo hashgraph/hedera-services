@@ -27,9 +27,10 @@ import java.util.function.Consumer;
  *
  * @param <T> the type of object that is passed through the wire
  */
-public class SequentialWire<T> implements Wire<T> {
+public class MeteredSequentialWire<T> implements Wire<T> {
     private final Consumer<T> consumer;
     private final AtomicReference<SequentialTask<T>> lastTask;
+    private final AbstractObjectCounter counter;
 
     /**
      * A task in a sequential wire.
@@ -38,6 +39,7 @@ public class SequentialWire<T> implements Wire<T> {
      */
     private static class SequentialTask<T> extends AbstractTask {
         private final Consumer<T> consumer;
+        private final AbstractObjectCounter counter;
         private T data;
         private SequentialTask<T> nextTask;
 
@@ -49,11 +51,17 @@ public class SequentialWire<T> implements Wire<T> {
          *                        provided), and subsequent tasks have a dependency count of 2 (the previous task must
          *                        be executed and data must be provided).
          * @param consumer        data on the wire is passed to this consumer
+         * @param counter         an object counter that is incremented when data is added to the wire and decremented
+         *                        when data has been processed
          */
-        SequentialTask(final int dependencyCount, @NonNull Consumer<T> consumer) {
+        SequentialTask(
+                final int dependencyCount,
+                @NonNull Consumer<T> consumer,
+                @NonNull final AbstractObjectCounter counter) {
             super(dependencyCount);
 
             this.consumer = consumer;
+            this.counter = counter;
         }
 
         /**
@@ -80,6 +88,7 @@ public class SequentialWire<T> implements Wire<T> {
          */
         @Override
         public boolean exec() {
+            counter.offRamp();
             consumer.accept(data);
 
             // Reduce the dependency count of the next task. If the next task already has its data, then this
@@ -93,11 +102,13 @@ public class SequentialWire<T> implements Wire<T> {
      * Constructor.
      *
      * @param consumer data on the wire is passed to this consumer
+     * @param counter  an object counter that is incremented when data is added to the wire and decremented when data
+     *                 has been processed
      */
-    public SequentialWire(@NonNull final Consumer<T> consumer) {
-        this.lastTask = new AtomicReference<>(new SequentialTask<>(1, consumer));
+    public MeteredSequentialWire(@NonNull final Consumer<T> consumer, @NonNull final AbstractObjectCounter counter) {
+        this.counter = Objects.requireNonNull(counter);
+        this.lastTask = new AtomicReference<>(new SequentialTask<>(1, consumer, counter));
 
-        Objects.requireNonNull(consumer);
         this.consumer = Objects.requireNonNull(consumer);
     }
 
@@ -106,11 +117,13 @@ public class SequentialWire<T> implements Wire<T> {
      */
     @Override
     public void accept(@NonNull final T data) {
+        counter.onRamp();
+
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
 
-        final SequentialTask<T> nextTask = new SequentialTask<>(2, consumer);
+        final SequentialTask<T> nextTask = new SequentialTask<>(2, consumer, counter);
         SequentialTask<T> currentTask;
         do {
             currentTask = lastTask.get();
@@ -123,11 +136,13 @@ public class SequentialWire<T> implements Wire<T> {
      */
     @Override
     public void acceptInterruptably(@NonNull T data) throws InterruptedException {
+        counter.interruptableOnRamp();
+
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
 
-        final SequentialTask<T> nextTask = new SequentialTask<>(2, consumer);
+        final SequentialTask<T> nextTask = new SequentialTask<>(2, consumer, counter);
         SequentialTask<T> currentTask;
         do {
             currentTask = lastTask.get();
@@ -140,6 +155,6 @@ public class SequentialWire<T> implements Wire<T> {
      */
     @Override
     public long getUnprocessedTaskCount() {
-        return -1;
+        return counter.getCount();
     }
 }

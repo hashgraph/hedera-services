@@ -19,6 +19,8 @@ package com.swirlds.common.wiring;
 import com.swirlds.common.wiring.internal.AbstractObjectCounter;
 import com.swirlds.common.wiring.internal.BackpressureObjectCounter;
 import com.swirlds.common.wiring.internal.ConcurrentWire;
+import com.swirlds.common.wiring.internal.MeteredConcurrentWire;
+import com.swirlds.common.wiring.internal.MeteredSequentialWire;
 import com.swirlds.common.wiring.internal.ObjectCounter;
 import com.swirlds.common.wiring.internal.SequentialWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -136,9 +138,17 @@ public class WireBuilder<T> {
         }
 
         if (concurrent) {
-            return new ConcurrentWire<>(consumer, scheduledTaskCounter);
+            if (scheduledTaskCounter == null) {
+                return new ConcurrentWire<>(consumer);
+            } else {
+                return new MeteredConcurrentWire<>(consumer, scheduledTaskCounter);
+            }
         } else {
-            return new SequentialWire<>(consumer, scheduledTaskCounter);
+            if (scheduledTaskCounter == null) {
+                return new SequentialWire<>(consumer);
+            } else {
+                return new MeteredSequentialWire<>(consumer, scheduledTaskCounter);
+            }
         }
     }
 }
