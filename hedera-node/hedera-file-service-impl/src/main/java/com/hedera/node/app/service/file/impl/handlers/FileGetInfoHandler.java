@@ -27,7 +27,6 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.file.FileGetInfoQuery;
 import com.hedera.hapi.node.file.FileGetInfoResponse;
@@ -89,16 +88,16 @@ public class FileGetInfoHandler extends FileQueryBase {
         }
     }
 
-    public Fees computeFees(@NonNull QueryContext queryContext) {
+    @Override
+    public @NonNull Fees computeFees(@NonNull QueryContext queryContext) {
         final var query = queryContext.query();
         final var fileStore = queryContext.createStore(ReadableFileStore.class);
         final var op = query.fileGetInfoOrThrow();
         final var fileId = op.fileIDOrThrow();
         final File file = fileStore.getFileLeaf(fileId);
 
-        return queryContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            return new GetFileInfoResourceUsage(fileOpsUsage).usageGiven(fromPbj(query), file);
-        });
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetFileInfoResourceUsage(fileOpsUsage)
+                .usageGiven(fromPbj(query), file));
     }
 
     @Override

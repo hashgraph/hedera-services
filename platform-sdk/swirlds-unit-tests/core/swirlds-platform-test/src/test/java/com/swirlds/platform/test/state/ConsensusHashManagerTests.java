@@ -62,6 +62,8 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("ConsensusHashManager Tests")
 class ConsensusHashManagerTests {
+    /** the default epoch hash to use */
+    private static final Hash DEFAULT_EPOCH_HASH = null;
 
     private StateConfig stateConfig;
     private ConsensusConfig consensusConfig;
@@ -85,8 +87,8 @@ class ConsensusHashManagerTests {
                 .build();
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager =
-                new ConsensusHashManager(Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+        final ConsensusHashManager manager = new ConsensusHashManager(
+                Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig, DEFAULT_EPOCH_HASH);
 
         final AtomicBoolean fail = new AtomicBoolean(false);
         dispatchBuilder.registerObserver(this, SelfIssTrigger.class, (a, b, c) -> fail.set(true));
@@ -184,8 +186,8 @@ class ConsensusHashManagerTests {
         }
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager =
-                new ConsensusHashManager(Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+        final ConsensusHashManager manager = new ConsensusHashManager(
+                Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig, DEFAULT_EPOCH_HASH);
 
         final AtomicBoolean fail = new AtomicBoolean(false);
         final AtomicInteger issCount = new AtomicInteger(0);
@@ -327,8 +329,8 @@ class ConsensusHashManagerTests {
         final NodeId selfId = addressBook.getNodeId(0);
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager =
-                new ConsensusHashManager(Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+        final ConsensusHashManager manager = new ConsensusHashManager(
+                Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig, DEFAULT_EPOCH_HASH);
 
         dispatchBuilder.registerObserver(
                 this, CatastrophicIssTrigger.class, (a, b) -> fail("did not expect catastrophic ISS"));
@@ -394,8 +396,8 @@ class ConsensusHashManagerTests {
         final NodeId selfId = addressBook.getNodeId(0);
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager =
-                new ConsensusHashManager(Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+        final ConsensusHashManager manager = new ConsensusHashManager(
+                Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig, DEFAULT_EPOCH_HASH);
 
         dispatchBuilder.registerObserver(
                 this, CatastrophicIssTrigger.class, (a, b) -> fail("did not expect catastrophic ISS"));
@@ -445,8 +447,8 @@ class ConsensusHashManagerTests {
         final NodeId selfId = addressBook.getNodeId(0);
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager =
-                new ConsensusHashManager(Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+        final ConsensusHashManager manager = new ConsensusHashManager(
+                Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig, DEFAULT_EPOCH_HASH);
 
         final AtomicInteger issCount = new AtomicInteger();
         dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());
@@ -536,8 +538,8 @@ class ConsensusHashManagerTests {
         final NodeId selfId = addressBook.getNodeId(0);
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager =
-                new ConsensusHashManager(Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+        final ConsensusHashManager manager = new ConsensusHashManager(
+                Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig, DEFAULT_EPOCH_HASH);
 
         final AtomicInteger issCount = new AtomicInteger();
         dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());
@@ -600,8 +602,8 @@ class ConsensusHashManagerTests {
         final NodeId selfId = addressBook.getNodeId(0);
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager =
-                new ConsensusHashManager(Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+        final ConsensusHashManager manager = new ConsensusHashManager(
+                Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig, DEFAULT_EPOCH_HASH);
 
         final AtomicInteger issCount = new AtomicInteger();
         dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());

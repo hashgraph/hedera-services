@@ -90,7 +90,7 @@ public class SolvencyPreCheck {
         final var account = accountStore.getAccountById(accountID);
 
         if (account == null) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
+            throw new PreCheckException(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND);
         }
 
         if (account.deleted()) {
@@ -98,7 +98,7 @@ public class SolvencyPreCheck {
         }
 
         if (account.smartContract()) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
+            throw new PreCheckException(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND);
         }
 
         return account;
@@ -189,6 +189,9 @@ public class SolvencyPreCheck {
     private long estimatedGasPriceInTinybars(
             @NonNull final HederaFunctionality functionality, @NonNull final Instant consensusTime) {
         final var feeData = feeManager.getFeeData(functionality, consensusTime, SubType.DEFAULT);
+        if (feeData == null) {
+            throw new IllegalStateException("No fee data found for transaction type " + functionality);
+        }
         final long priceInTinyCents = feeData.servicedataOrThrow().gas() / FEE_DIVISOR_FACTOR;
         final long priceInTinyBars = exchangeRateManager.getTinybarsFromTinyCents(priceInTinyCents, consensusTime);
         return Math.max(priceInTinyBars, 1L);

@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
+import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -30,6 +33,7 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeAssessor;
@@ -37,9 +41,10 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.Custo
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFractionalFeeAssessor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomRoyaltyFeeAssessor;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,20 +70,33 @@ public class CustomFeeAssessmentStep {
     private final CryptoTransferTransactionBody op;
     private final CustomFeeAssessor customFeeAssessor;
     private int levelNum = 0;
-    private final HandleContext context;
     private int totalBalanceChanges = 0;
     private static final int MAX_PLAUSIBLE_LEVEL_NUM = 10;
     private static final Logger log = LogManager.getLogger(CustomFeeAssessmentStep.class);
 
-    public CustomFeeAssessmentStep(
-            @NonNull final CryptoTransferTransactionBody op, final TransferContextImpl transferContext) {
+    public CustomFeeAssessmentStep(@NonNull final CryptoTransferTransactionBody op) {
         this.op = op;
-        this.context = transferContext.getHandleContext();
         final var fixedFeeAssessor = new CustomFixedFeeAssessor();
         final var fractionalFeeAssessor = new CustomFractionalFeeAssessor(fixedFeeAssessor);
         final var royaltyFeeAssessor = new CustomRoyaltyFeeAssessor(fixedFeeAssessor);
         customFeeAssessor = new CustomFeeAssessor(fixedFeeAssessor, fractionalFeeAssessor, royaltyFeeAssessor);
         customFeeAssessor.calculateAndSetInitialNftChanges(op);
+    }
+
+    /**
+     * Given a transaction body, assess custom fees for the crypto transfer operation.
+     * This is called in Ingest and handle to fetch fees for CryptoTransfer transaction.
+     * @param feeContext - fee context
+     * @return - list of assessed custom fees
+     */
+    public List<AssessedCustomFee> assessNumberOfCustomFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+
+        final var tokenStore = feeContext.readableStore(ReadableTokenStore.class);
+        final var tokenRelStore = feeContext.readableStore(ReadableTokenRelationStore.class);
+        final var config = feeContext.configuration();
+        final var result = assessFees(tokenStore, tokenRelStore, config);
+        return result.assessedCustomFees();
     }
 
     /**
@@ -96,11 +114,37 @@ public class CustomFeeAssessmentStep {
 
         final var handleContext = transferContext.getHandleContext();
         final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
-        final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
-        final var tokensConfig = handleContext.configuration().getConfigData(TokensConfig.class);
+        final var tokenRelStore = handleContext.readableStore(ReadableTokenRelationStore.class);
+        final var config = handleContext.configuration();
+        final var recordBuilder = handleContext.recordBuilder(CryptoTransferRecordBuilder.class);
+        final var result = assessFees(tokenStore, tokenRelStore, config);
+
+        recordBuilder.assessedCustomFees(result.assessedCustomFees());
+        customFeeAssessor.resetInitialNftChanges();
+        return result.assessedTxns();
+    }
+
+    /**
+     * Given a transaction body, assess custom fees for the crypto transfer operation.
+     * It iterates through the token transfer list and assesses custom fees for each token transfer
+     * It creates 2 new hashmaps with assessed hbar fees and assessed token fees.
+     * It is possible the assessed token custom fees could trigger custom fee again.
+     * So, we repeat the process for the assessed custom fees one more time.
+     * This will be run once in handle and once in ingest to get fees for CryptoTransfer transaction.
+     * @param tokenStore - token store
+     * @param tokenRelStore - token relation store
+     * @param config - configuration
+     * @return - transaction body with assessed custom fees
+     */
+    public CustomFeeAssessmentResult assessFees(
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final ReadableTokenRelationStore tokenRelStore,
+            @NonNull final Configuration config) {
+        final var ledgerConfig = config.getConfigData(LedgerConfig.class);
+        final var tokensConfig = config.getConfigData(TokensConfig.class);
         final var maxTransfersAllowed = ledgerConfig.xferBalanceChangesMaxLen();
         final var maxCustomFeeDepth = tokensConfig.maxCustomFeeDepth();
-        final var recordBuilder = handleContext.recordBuilder(CryptoTransferRecordBuilder.class);
+
         // list of total assessed custom fees to be added to the record
         final List<AssessedCustomFee> customFeesAssessed = new ArrayList<>();
         // the transaction to be assessed
@@ -115,7 +159,8 @@ public class CustomFeeAssessmentStep {
         do {
             validateTrue(levelNum <= maxCustomFeeDepth, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
             // The result after each assessment
-            final var result = assessCustomFeesFrom(hbarTransfers, tokenTransfers, tokenStore, maxTransfersAllowed);
+            final var result =
+                    assessCustomFeesFrom(hbarTransfers, tokenTransfers, tokenStore, tokenRelStore, maxTransfersAllowed);
 
             // when there are adjustments made to given transaction, need to re-build the transaction
             final var modifiedInputBody = changedInputTxn(txnToAssess, result);
@@ -141,11 +186,16 @@ public class CustomFeeAssessmentStep {
         if (!hbarTransfers.isEmpty()) {
             assessedTxns.add(txnToAssess);
         }
-
-        recordBuilder.assessedCustomFees(customFeesAssessed);
-        customFeeAssessor.resetInitialNftChanges();
-        return assessedTxns;
+        return new CustomFeeAssessmentResult(assessedTxns, customFeesAssessed);
     }
+
+    /**
+     * Record to hold the result of custom fee assessment.
+     * @param assessedTxns - list of assessed cryptoTransfer transactions
+     * @param assessedCustomFees - list of assessed custom fees
+     */
+    private record CustomFeeAssessmentResult(
+            List<CryptoTransferTransactionBody> assessedTxns, List<AssessedCustomFee> assessedCustomFees) {}
 
     private void validateTotalAdjustments(final CryptoTransferTransactionBody op, final int maxTransfersDepth) {
         final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT)
@@ -251,6 +301,7 @@ public class CustomFeeAssessmentStep {
             @NonNull final List<AccountAmount> hbarTransfers,
             @NonNull final List<TokenTransferList> tokenTransfers,
             @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final ReadableTokenRelationStore tokenRelStore,
             final int maxTransfersSize) {
         final var result = new AssessmentResult(tokenTransfers, hbarTransfers);
 
@@ -267,6 +318,11 @@ public class CustomFeeAssessmentStep {
 
             for (final var aa : ftTransfers) {
                 final var adjustment = aa.amount();
+
+                final boolean isFungible = token.tokenType().equals(FUNGIBLE_COMMON);
+                validateFalse(
+                        !isFungible && adjustment != 0, ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
+
                 if (adjustment < 0) {
                     final var sender = aa.accountID();
                     // If sender for this adjustment is same as treasury for token
@@ -274,7 +330,7 @@ public class CustomFeeAssessmentStep {
                     if (feeMeta.treasuryId().equals(sender)) {
                         continue;
                     }
-                    customFeeAssessor.assess(sender, feeMeta, maxTransfersSize, null, result, context);
+                    customFeeAssessor.assess(sender, feeMeta, maxTransfersSize, null, result, tokenRelStore);
                 }
             }
 
@@ -288,7 +344,7 @@ public class CustomFeeAssessmentStep {
                         maxTransfersSize,
                         nftTransfer.receiverAccountID(),
                         result,
-                        context);
+                        tokenRelStore);
             }
         }
         return result;
