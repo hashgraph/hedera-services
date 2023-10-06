@@ -172,7 +172,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 3. Check query throttles
-            if (synchronizedThrottleAccumulator.shouldThrottle(function, query)) {
+            if (synchronizedThrottleAccumulator.shouldThrottle(function, query)
+                    && !RESTRICTED_FUNCTIONALITIES.contains(function)) {
                 throw new PreCheckException(BUSY);
             }
 
