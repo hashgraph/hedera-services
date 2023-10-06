@@ -32,6 +32,7 @@ import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -40,7 +41,6 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -267,39 +267,23 @@ public class HandleHederaOperations implements HederaOperations {
         return Collections.emptyList();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public List<ContractID> createdContractIds() {
+    public ContractChangeSummary summarizeContractChanges() {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        // TODO - add a newContractIds() method to TokenServiceApi instead
-        return tokenServiceApi.modifiedAccountIds().stream()
-                .map(accountId -> ContractID.newBuilder()
-                        .contractNum(accountId.accountNumOrThrow())
-                        .build())
-                .sorted(CONTRACT_ID_NUM_COMPARATOR)
-                .toList();
+        final var contractChangeSummary = tokenServiceApi.summarizeContractChanges();
+        contractChangeSummary.newContractIds().sort(CONTRACT_ID_NUM_COMPARATOR);
+        contractChangeSummary.updatedContractNonces().sort(NONCE_INFO_CONTRACT_ID_COMPARATOR);
+        return contractChangeSummary;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public List<ContractNonceInfo> updatedContractNonces() {
+    public long getOriginalSlotsUsed(final long contractNumber) {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        final var updatedNonces = new ArrayList<>(tokenServiceApi.updatedContractNonces());
-        updatedNonces.sort(NONCE_INFO_CONTRACT_ID_COMPARATOR);
-        return updatedNonces;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getOriginalSlotsUsed(final long contractNumber) {
-        // TODO - extend API and use getOriginalValue() from writable store
-        return 0;
+        return tokenServiceApi.originalKvUsageFor(
+                AccountID.newBuilder().accountNum(contractNumber).build());
     }
 
     private void dispatchAndMarkCreation(

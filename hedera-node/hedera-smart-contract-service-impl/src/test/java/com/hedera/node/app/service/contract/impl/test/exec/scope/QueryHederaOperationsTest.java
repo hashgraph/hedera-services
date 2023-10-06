@@ -135,17 +135,12 @@ class QueryHederaOperationsTest {
     }
 
     @Test
-    void neverAnyCreatedContractIds() {
-        assertSame(Collections.emptyList(), subject.createdContractIds());
-    }
-
-    @Test
-    void neverAnyUpdatedNonces() {
-        assertSame(Collections.emptyList(), subject.updatedContractNonces());
-    }
-
-    @Test
     void getOriginalSlotsUsedNotSupported() {
         assertThrows(UnsupportedOperationException.class, () -> subject.getOriginalSlotsUsed(1234L));
+    }
+
+    @Test
+    void summarizingContractChangesNotSupported() {
+        assertThrows(UnsupportedOperationException.class, subject::summarizeContractChanges);
     }
 }

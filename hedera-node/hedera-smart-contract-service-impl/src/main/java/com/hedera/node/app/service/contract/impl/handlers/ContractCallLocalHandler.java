@@ -17,8 +17,11 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -36,6 +39,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -72,6 +76,11 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         requireNonNull(context);
         final var query = context.query();
         final ContractCallLocalQuery op = query.contractCallLocalOrThrow();
+        final var requestedGas = op.gas();
+        validateTruePreCheck(requestedGas >= 0, CONTRACT_NEGATIVE_GAS);
+        final var maxGasLimit =
+                context.configuration().getConfigData(ContractsConfig.class).maxGasPerSec();
+        validateTruePreCheck(requestedGas <= maxGasLimit, MAX_GAS_LIMIT_EXCEEDED);
         final var contractID = op.contractID();
         mustExist(contractID, INVALID_CONTRACT_ID);
         // A contract or token contract corresponding to that contract ID must exist in state (otherwise we have nothing
@@ -84,7 +93,6 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         } else {
             final var tokenID =
                     TokenID.newBuilder().tokenNum(contractID.contractNum()).build();
-
             final var tokenContract =
                     context.createStore(ReadableTokenStore.class).get(tokenID);
             mustExist(tokenContract, INVALID_CONTRACT_ID);

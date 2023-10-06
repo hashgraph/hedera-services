@@ -357,7 +357,7 @@ public class FileUpdateSuite extends HapiSuite {
                         .has(resultWith().gasUsed(285000L)));
     }
 
-    @HapiTest
+    // C.f. https://github.com/hashgraph/hedera-services/pull/8908
     private HapiSpec allUnusedGasIsRefundedIfSoConfigured() {
         return propertyPreservingHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
                 .preserving(MAX_REFUND_GAS_PROP)
@@ -371,7 +371,7 @@ public class FileUpdateSuite extends HapiSuite {
                         .has(resultWith().gasUsed(26_451)));
     }
 
-    // It is not implemented yet in contracts
+    @HapiTest
     private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
         return propertyPreservingHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .preserving(CONS_MAX_GAS_PROP)
@@ -386,7 +386,7 @@ public class FileUpdateSuite extends HapiSuite {
                         .hasCostAnswerPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY));
     }
 
-    // It is not implemented yet in contracts
+    @HapiTest
     private HapiSpec kvLimitsEnforced() {
         final var contract = "User";
         final var gasToOffer = 1_000_000;
@@ -400,7 +400,7 @@ public class FileUpdateSuite extends HapiSuite {
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(
-                                        Map.of(INDIVIDUAL_KV_LIMIT_PROP, "10", CONS_MAX_GAS_PROP, "100_000_000")))
+                                        Map.of(INDIVIDUAL_KV_LIMIT_PROP, "10", CONS_MAX_GAS_PROP, "100000000")))
                 .when(
                         /* The first call to insert adds 5 mappings */
                         contractCall(contract, INSERT_ABI, BigInteger.ONE, BigInteger.ONE)
@@ -421,7 +421,7 @@ public class FileUpdateSuite extends HapiSuite {
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of(
-                                        INDIVIDUAL_KV_LIMIT_PROP, "1_000_000_000",
+                                        INDIVIDUAL_KV_LIMIT_PROP, "1000000000",
                                         AGGREGATE_KV_LIMIT_PROP, "1")),
                         contractCall(contract, INSERT_ABI, BigInteger.valueOf(3), BigInteger.valueOf(9))
                                 .payingWith(GENESIS)

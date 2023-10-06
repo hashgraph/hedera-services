@@ -57,6 +57,8 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
@@ -128,12 +130,13 @@ public abstract class AbstractXTest {
         assertions.accept(handler.findResponse(context, ResponseHeader.DEFAULT));
     }
 
-    protected void handleAndCommitSingleTransaction(
+    protected SingleTransactionRecordBuilderImpl handleAndCommitSingleTransaction(
             @NonNull final TransactionHandler handler, @NonNull final TransactionBody txn) {
-        handleAndCommitSingleTransaction(handler, txn, OK);
+        return handleAndCommitSingleTransaction(handler, txn, OK);
     }
 
-    protected void handleAndCommitSingleTransaction(
+    @SuppressWarnings("unchecked")
+    protected SingleTransactionRecordBuilderImpl handleAndCommitSingleTransaction(
             @NonNull final TransactionHandler handler,
             @NonNull final TransactionBody txn,
             @NonNull final ResponseCodeEnum expectedStatus) {
@@ -147,6 +150,7 @@ public abstract class AbstractXTest {
             ((SavepointStackImpl) context.savepointStack()).rollbackFullStack();
         }
         assertEquals(expectedStatus, impliedStatus);
+        return (SingleTransactionRecordBuilderImpl) context.recordBuilder(SingleTransactionRecordBuilder.class);
     }
 
     protected void addNamedAccount(@NonNull final String name, @NonNull final Map<AccountID, Account> accounts) {
@@ -308,7 +312,7 @@ public abstract class AbstractXTest {
                 .get(ContractSchema.BYTECODE_KEY);
     }
 
-    private ReadableKVState<AccountID, Account> finalAccounts() {
+    protected ReadableKVState<AccountID, Account> finalAccounts() {
         return component()
                 .hederaState()
                 .createReadableStates(TokenServiceImpl.NAME)

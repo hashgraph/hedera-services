@@ -90,7 +90,10 @@ public interface TransactionModule {
     @TransactionScope
     static Supplier<HederaWorldUpdater> provideFeesOnlyUpdater(
             @NonNull final HederaWorldUpdater.Enhancement enhancement, @NonNull final EvmFrameStateFactory factory) {
-        return () -> new ProxyWorldUpdater(enhancement, requireNonNull(factory), null);
+        return () -> {
+            enhancement.operations().begin();
+            return new ProxyWorldUpdater(enhancement, requireNonNull(factory), null);
+        };
     }
 
     @Provides

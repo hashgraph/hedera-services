@@ -19,11 +19,10 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
+import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -232,20 +231,9 @@ public class QueryHederaOperations implements HederaOperations {
         return Collections.emptyList();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public List<ContractID> createdContractIds() {
-        return Collections.emptyList();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<ContractNonceInfo> updatedContractNonces() {
-        return Collections.emptyList();
+    public ContractChangeSummary summarizeContractChanges() {
+        throw new UnsupportedOperationException("Queries cannot summarize contract changes");
     }
 
     /**
@@ -254,7 +242,7 @@ public class QueryHederaOperations implements HederaOperations {
      * @throws UnsupportedOperationException always
      */
     @Override
-    public int getOriginalSlotsUsed(final long contractNumber) {
+    public long getOriginalSlotsUsed(final long contractNumber) {
         throw new UnsupportedOperationException("Queries cannot get original slot usage");
     }
 }

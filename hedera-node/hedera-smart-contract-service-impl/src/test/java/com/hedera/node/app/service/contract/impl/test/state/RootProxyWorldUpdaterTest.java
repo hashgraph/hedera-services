@@ -36,6 +36,7 @@ import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
+import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -122,8 +123,8 @@ class RootProxyWorldUpdaterTest {
         given(hederaOperations.getStore()).willReturn(store);
         final var createdIds = List.of(CALLED_CONTRACT_ID);
         final var updatedNonces = List.of(new ContractNonceInfo(CALLED_CONTRACT_ID, 1L));
-        given(hederaOperations.createdContractIds()).willReturn(createdIds);
-        given(hederaOperations.updatedContractNonces()).willReturn(updatedNonces);
+        given(hederaOperations.summarizeContractChanges())
+                .willReturn(new ContractChangeSummary(createdIds, updatedNonces));
 
         subject.commit();
 

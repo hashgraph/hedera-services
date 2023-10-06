@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
@@ -94,6 +95,7 @@ class TransactionModuleTest {
         assertInstanceOf(
                 ProxyWorldUpdater.class,
                 TransactionModule.provideFeesOnlyUpdater(enhancement, factory).get());
+        verify(hederaOperations).begin();
     }
 
     @Test

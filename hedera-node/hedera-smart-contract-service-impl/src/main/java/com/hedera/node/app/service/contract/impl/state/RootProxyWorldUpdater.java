@@ -92,8 +92,9 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
 
         // We now have an apparently valid change set, and want to capture some summary
         // information for the Hedera record
-        createdContractIds = enhancement.operations().createdContractIds();
-        updatedContractNonces = enhancement.operations().updatedContractNonces();
+        final var contractChangeSummary = enhancement.operations().summarizeContractChanges();
+        createdContractIds = contractChangeSummary.newContractIds();
+        updatedContractNonces = contractChangeSummary.updatedContractNonces();
         super.commit();
         // Be sure not to externalize contract ids or nonces without a successful commit
         committed = true;

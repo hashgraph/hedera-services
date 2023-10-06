@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
@@ -42,7 +41,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
@@ -55,8 +53,6 @@ import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;
-import java.util.List;
-import java.util.Set;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -326,47 +322,9 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void createdContractIdsUsesApi() {
+    void getOriginalSlotsUsedDelegatesToApi() {
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        given(tokenServiceApi.modifiedAccountIds())
-                .willReturn(Set.of(B_NEW_ACCOUNT_ID, A_NEW_ACCOUNT_ID, NON_SYSTEM_ACCOUNT_ID));
-        final var expectedContractIds = List.of(
-                ContractID.newBuilder()
-                        .contractNum(A_NEW_ACCOUNT_ID.accountNumOrThrow())
-                        .build(),
-                ContractID.newBuilder()
-                        .contractNum(B_NEW_ACCOUNT_ID.accountNumOrThrow())
-                        .build(),
-                ContractID.newBuilder()
-                        .contractNum(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow())
-                        .build());
-        assertEquals(expectedContractIds, subject.createdContractIds());
-    }
-
-    @Test
-    void updatedContractNoncesUsesApi() {
-        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        final var aNonceInfo = new ContractNonceInfo(
-                ContractID.newBuilder()
-                        .contractNum(A_NEW_ACCOUNT_ID.accountNumOrThrow())
-                        .build(),
-                1L);
-        final var bNonceInfo = new ContractNonceInfo(
-                ContractID.newBuilder()
-                        .contractNum(B_NEW_ACCOUNT_ID.accountNumOrThrow())
-                        .build(),
-                2L);
-        final var nNonceInfo = new ContractNonceInfo(
-                ContractID.newBuilder()
-                        .contractNum(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow())
-                        .build(),
-                3L);
-        given(tokenServiceApi.updatedContractNonces()).willReturn(List.of(bNonceInfo, nNonceInfo, aNonceInfo));
-        assertEquals(List.of(aNonceInfo, bNonceInfo, nNonceInfo), subject.updatedContractNonces());
-    }
-
-    @Test
-    void getOriginalSlotsUsedAlwaysReturnsZero() {
-        assertEquals(0, subject.getOriginalSlotsUsed(1L));
+        given(tokenServiceApi.originalKvUsageFor(A_NEW_ACCOUNT_ID)).willReturn(123L);
+        assertEquals(123L, subject.getOriginalSlotsUsed(A_NEW_ACCOUNT_ID.accountNumOrThrow()));
     }
 }

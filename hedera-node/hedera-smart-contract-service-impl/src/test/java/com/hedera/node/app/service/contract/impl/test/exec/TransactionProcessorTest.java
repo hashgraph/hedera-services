@@ -483,6 +483,7 @@ class TransactionProcessorTest {
 
         assertResourceExhaustion(INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES, result);
         verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, feesOnlyUpdater, transaction);
+        verify(worldUpdater).revert();
         verify(feesOnlyUpdater).commit();
     }
 
