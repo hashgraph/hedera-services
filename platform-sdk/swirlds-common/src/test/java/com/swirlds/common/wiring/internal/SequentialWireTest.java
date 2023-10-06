@@ -26,6 +26,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -42,6 +43,27 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
 class SequentialWireTest {
+
+    @Test
+    void illegalNamesTest() {
+        assertThrows(NullPointerException.class, () -> Wire.builder(null, x -> {}));
+        assertThrows(IllegalArgumentException.class, () -> Wire.builder("", x -> {}));
+        assertThrows(IllegalArgumentException.class, () -> Wire.builder(" ", x -> {}));
+        assertThrows(IllegalArgumentException.class, () -> Wire.builder("foo bar", x -> {}));
+        assertThrows(IllegalArgumentException.class, () -> Wire.builder("foo?bar", x -> {}));
+        assertThrows(IllegalArgumentException.class, () -> Wire.builder("foo:bar", x -> {}));
+        assertThrows(IllegalArgumentException.class, () -> Wire.builder("foo*bar", x -> {}));
+        assertThrows(IllegalArgumentException.class, () -> Wire.builder("foo/bar", x -> {}));
+        assertThrows(IllegalArgumentException.class, () -> Wire.builder("foo\\bar", x -> {}));
+        assertThrows(IllegalArgumentException.class, () -> Wire.builder("foo-bar", x -> {}));
+
+        // legal names that should not throw
+        Wire.builder("x", x -> {});
+        Wire.builder("fooBar", x -> {});
+        Wire.builder("foo_bar", x -> {});
+        Wire.builder("foo_bar123", x -> {});
+        Wire.builder("123", x -> {});
+    }
 
     /**
      * Add values to the wire, ensure that each value was processed in the correct order.

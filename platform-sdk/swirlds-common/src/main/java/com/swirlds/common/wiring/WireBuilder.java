@@ -54,7 +54,7 @@ public class WireBuilder<T> {
      * Constructor.
      *
      * @param name     the name of the wire. Used for metrics and debugging. Must be unique (not enforced by framework).
-     *                 Must only contain alphanumeric characters, underscores, and hyphens (enforced by framework).
+     *                 Must only contain alphanumeric characters and underscores (enforced by framework).
      * @param consumer tasks are passed to this consumer
      */
     WireBuilder(@NonNull final String name, @NonNull final Consumer<T> consumer) {
@@ -62,9 +62,12 @@ public class WireBuilder<T> {
 
         // The reason why wire names have a restricted character set is because downstream consumers of metrics
         // are very fussy about what characters are allowed in metric names.
-        if (!name.matches("^[a-zA-Z0-9_-]*$")) {
+        if (!name.matches("^[a-zA-Z0-9_]*$")) {
             throw new IllegalArgumentException(
-                    "Wire name must only contain alphanumeric characters, underscores, " + "and hyphens");
+                    "Wire name must only contain alphanumeric characters, underscores, and hyphens");
+        }
+        if (name.isEmpty()) {
+            throw new IllegalArgumentException("Wire name must not be empty");
         }
         this.name = name;
     }
