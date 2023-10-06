@@ -36,6 +36,7 @@ import com.hedera.node.app.info.CurrentPlatformStatus;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
@@ -73,6 +74,7 @@ public final class IngestChecker {
     private final TransactionDispatcher dispatcher;
     private final FeeManager feeManager;
     private final AccountID nodeAccount;
+    private final Authorizer authorizer;
 
     /**
      * Constructor of the {@code IngestChecker}
@@ -99,7 +101,8 @@ public final class IngestChecker {
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final DeduplicationCache deduplicationCache,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final FeeManager feeManager) {
+            @NonNull final FeeManager feeManager,
+            @NonNull final Authorizer authorizer) {
         this.nodeAccount = requireNonNull(nodeAccount, "nodeAccount must not be null");
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus, "currentPlatformStatus must not be null");
         this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
@@ -110,6 +113,7 @@ public final class IngestChecker {
         this.deduplicationCache = requireNonNull(deduplicationCache, "deduplicationCache must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
+        this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
     }
 
     /**
@@ -179,14 +183,14 @@ public final class IngestChecker {
             throw new PreCheckException(UNAUTHORIZED);
         }
 
-        // 6. Check account balance
-        final FeeContext feeContext =
-                new FeeContextImpl(consensusTime, txInfo, payerKey, feeManager, storeFactory, configuration);
-        final var fees = dispatcher.dispatchComputeFees(feeContext);
-        solvencyPreCheck.checkSolvency(txInfo, payer, fees.totalWithoutServiceFee());
-
-        // 7. Verify payer's signatures
+        // 6. Verify payer's signatures
         verifyPayerSignature(txInfo, payerKey);
+
+        // 7. Check payer solvency
+        final FeeContext feeContext = new FeeContextImpl(
+                consensusTime, txInfo, payerKey, feeManager, storeFactory, configuration, authorizer);
+        final var fees = dispatcher.dispatchComputeFees(feeContext);
+        solvencyPreCheck.checkSolvency(txInfo, payer, fees);
 
         return txInfo;
     }

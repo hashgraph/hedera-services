@@ -17,9 +17,7 @@
 package com.swirlds.platform.gossip;
 
 import com.swirlds.base.state.Lifecycle;
-import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,13 +33,6 @@ public interface Gossip extends Clearable, ConnectionTracker, Lifecycle {
      * @param signedState the signed state to load from
      */
     void loadFromSignedState(@NonNull final SignedState signedState);
-
-    /**
-     * Get the function that submits events to the event intake queue. Needed because chatter wants to
-     * wrap this function.
-     */
-    @NonNull
-    InterruptableConsumer<EventIntakeTask> getEventIntakeLambda();
 
     /**
      * This method is called when the node has finished a reconnect.

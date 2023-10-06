@@ -22,13 +22,11 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
-import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
-import com.swirlds.platform.test.NoOpIntakeCycleStats;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
@@ -45,7 +43,6 @@ import java.util.Random;
 public abstract class ConsensusUtils {
 
     public static final ConsensusMetrics NOOP_CONSENSUS_METRICS = new NoOpConsensusMetrics();
-    public static final IntakeCycleStats NOOP_INTAKE_CYCLE_STATS = new NoOpIntakeCycleStats();
 
     public static List<ConsensusRound> applyEventsToConsensus(
             final EventEmitter<?> emitter, final Consensus consensus, final long numberOfEvents) {

@@ -46,6 +46,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.FixedFee;
@@ -54,8 +55,10 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
+import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -1501,7 +1504,9 @@ public final class PbjConverter {
         var builder = com.hederahashgraph.api.proto.java.FixedFee.newBuilder();
         if (fixedFee != null) {
             builder.setAmount(fixedFee.amount());
-            builder.setDenominatingTokenId(fromPbj(fixedFee.denominatingTokenId()));
+            if (fixedFee.hasDenominatingTokenId()) {
+                builder.setDenominatingTokenId(fromPbj(fixedFee.denominatingTokenId()));
+            }
         }
         return builder.build();
     }
@@ -1510,9 +1515,10 @@ public final class PbjConverter {
     public static com.hederahashgraph.api.proto.java.File fromPbj(@Nullable File file) {
         var builder = com.hederahashgraph.api.proto.java.File.newBuilder();
         if (file != null) {
-            builder.setFileId(fromPbj(file.fileId()));
+            builder.setFileId(fromPbj(file.fileIdOrThrow()));
             builder.setExpirationSecond(file.expirationSecond());
-            builder.setKeys(pbjToProto(file.keys(), KeyList.class, com.hederahashgraph.api.proto.java.KeyList.class));
+            builder.setKeys(pbjToProto(
+                    file.keysOrElse(KeyList.DEFAULT), KeyList.class, com.hederahashgraph.api.proto.java.KeyList.class));
             builder.setContents(ByteString.copyFrom(file.contents().toByteArray()));
             builder.setMemo(file.memo());
             builder.setDeleted(file.deleted());
@@ -1539,5 +1545,23 @@ public final class PbjConverter {
     public static NetworkGetExecutionTimeQuery toPbj(
             com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery query) {
         return protoToPbj(query, NetworkGetExecutionTimeQuery.class);
+    }
+
+    public static DeterministicThrottle.UsageSnapshot fromPbj(ThrottleUsageSnapshot snapshot) {
+        final var lastDecisionTime = snapshot.lastDecisionTime();
+        if (lastDecisionTime == null) {
+            return new DeterministicThrottle.UsageSnapshot(snapshot.used(), null);
+        } else {
+            return new DeterministicThrottle.UsageSnapshot(snapshot.used(), HapiUtils.asInstant(lastDecisionTime));
+        }
+    }
+
+    public static ThrottleUsageSnapshot toPbj(DeterministicThrottle.UsageSnapshot snapshot) {
+        final var lastDecisionTime = snapshot.lastDecisionTime();
+        if (lastDecisionTime == null) {
+            return new ThrottleUsageSnapshot(snapshot.used(), null);
+        } else {
+            return new ThrottleUsageSnapshot(snapshot.used(), HapiUtils.asTimestamp(lastDecisionTime));
+        }
     }
 }

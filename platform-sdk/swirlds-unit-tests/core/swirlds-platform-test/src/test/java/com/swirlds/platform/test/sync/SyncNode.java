@@ -18,16 +18,19 @@ package com.swirlds.platform.test.sync;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphInsertionException;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
@@ -51,11 +54,11 @@ import java.util.function.Predicate;
  */
 public class SyncNode {
 
-    private final BlockingQueue<EventIntakeTask> receivedEventQueue;
+    private final BlockingQueue<GossipEvent> receivedEventQueue;
     private final List<IndexedEvent> generatedEvents;
     private final List<IndexedEvent> discardedEvents;
 
-    private final List<EventIntakeTask> receivedEvents;
+    private final List<GossipEvent> receivedEvents;
 
     private final NodeId nodeId;
 
@@ -213,6 +216,12 @@ public class SyncNode {
             receivedEventQueue.add(event);
         };
 
+        final QueueThread<GossipEvent> intakeQueueThread = mock(QueueThread.class);
+        when(intakeQueueThread.add(any())).thenAnswer(invocation -> {
+            eventHandler.accept(invocation.getArgument(0));
+            return true;
+        });
+
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
@@ -223,9 +232,9 @@ public class SyncNode {
                 numNodes,
                 mock(SyncMetrics.class),
                 this::getConsensus,
-                r -> {},
-                eventHandler,
+                intakeQueueThread,
                 syncManager,
+                mock(IntakeEventCounter.class),
                 executor,
                 sendRecInitBytes,
                 () -> {});
@@ -265,16 +274,12 @@ public class SyncNode {
         return syncManager;
     }
 
-    public List<EventIntakeTask> getReceivedEvents() {
+    public List<GossipEvent> getReceivedEvents() {
         return receivedEvents;
     }
 
     public List<IndexedEvent> getGeneratedEvents() {
         return generatedEvents;
-    }
-
-    public List<IndexedEvent> getDiscardedEvents() {
-        return discardedEvents;
     }
 
     public void setSaveGeneratedEvents(final boolean saveGeneratedEvents) {

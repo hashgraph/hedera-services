@@ -35,8 +35,11 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.authorization.Authorizer.SystemPrivilege;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import com.hedera.node.app.spi.workflows.InsufficientNetworkFeeException;
+import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
+import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -87,7 +90,7 @@ public class SolvencyPreCheck {
         final var account = accountStore.getAccountById(accountID);
 
         if (account == null) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
+            throw new PreCheckException(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND);
         }
 
         if (account.deleted()) {
@@ -95,7 +98,7 @@ public class SolvencyPreCheck {
         }
 
         if (account.smartContract()) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
+            throw new PreCheckException(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND);
         }
 
         return account;
@@ -106,21 +109,32 @@ public class SolvencyPreCheck {
      *
      * @param txInfo the {@link TransactionInfo} to use during the check
      * @param account the {@link Account} with the balance to check
-     * @param totalFees the fees to use for the check
+     * @param fees the fees to use for the check
      * @throws InsufficientBalanceException if the payer account cannot afford the fees. The exception will have a
      * status of {@code INSUFFICIENT_TX_FEE} and the fee amount that would have satisfied the check.
      */
     public void checkSolvency(
-            @NonNull final TransactionInfo txInfo, @NonNull final Account account, final long totalFees)
+            @NonNull final TransactionInfo txInfo, @NonNull final Account account, @NonNull final Fees fees)
             throws PreCheckException {
-        // Skip solvency check for privileged transactions
-        if (authorizer.hasPrivilegedAuthorization(txInfo.payerID(), txInfo.functionality(), txInfo.txBody())
-                == SystemPrivilege.AUTHORIZED) {
+        // Skip solvency check for privileged transactions or superusers
+        if (authorizer.hasWaivedFees(txInfo.payerID(), txInfo.functionality(), txInfo.txBody())) {
             return;
         }
 
-        if (txInfo.txBody().transactionFee() < totalFees) {
-            throw new InsufficientBalanceException(INSUFFICIENT_TX_FEE, totalFees);
+        final var totalFee = fees.totalFee();
+        final var availableBalance = account.tinybarBalance();
+        final var offeredFee = txInfo.txBody().transactionFee();
+        if (offeredFee < fees.networkFee()) {
+            throw new InsufficientNetworkFeeException(INSUFFICIENT_TX_FEE, totalFee);
+        }
+        if (availableBalance < fees.networkFee()) {
+            throw new InsufficientNetworkFeeException(INSUFFICIENT_PAYER_BALANCE, totalFee);
+        }
+        if (offeredFee < totalFee) {
+            throw new InsufficientServiceFeeException(INSUFFICIENT_TX_FEE, totalFee);
+        }
+        if (availableBalance < totalFee) {
+            throw new InsufficientServiceFeeException(INSUFFICIENT_PAYER_BALANCE, totalFee);
         }
 
         final long additionalCosts;
@@ -129,13 +143,13 @@ public class SolvencyPreCheck {
             additionalCosts = Math.max(0, estimateAdditionalCosts(txInfo, HapiUtils.asInstant(now)));
         } catch (NullPointerException ex) {
             // One of the required fields was not present
-            throw new InsufficientBalanceException(INVALID_TRANSACTION_BODY, totalFees);
+            throw new InsufficientBalanceException(INVALID_TRANSACTION_BODY, totalFee);
         }
 
-        if (account.tinybarBalance() < totalFees + additionalCosts) {
+        if (availableBalance < totalFee + additionalCosts) {
             // FUTURE: This should be checked earlier
             expiryValidation.checkAccountExpiry(account);
-            throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, totalFees);
+            throw new InsufficientNonFeeDebitsException(INSUFFICIENT_PAYER_BALANCE, totalFee);
         }
     }
 
@@ -175,6 +189,9 @@ public class SolvencyPreCheck {
     private long estimatedGasPriceInTinybars(
             @NonNull final HederaFunctionality functionality, @NonNull final Instant consensusTime) {
         final var feeData = feeManager.getFeeData(functionality, consensusTime, SubType.DEFAULT);
+        if (feeData == null) {
+            throw new IllegalStateException("No fee data found for transaction type " + functionality);
+        }
         final long priceInTinyCents = feeData.servicedataOrThrow().gas() / FEE_DIVISOR_FACTOR;
         final long priceInTinyBars = exchangeRateManager.getTinybarsFromTinyCents(priceInTinyCents, consensusTime);
         return Math.max(priceInTinyBars, 1L);

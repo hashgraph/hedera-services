@@ -141,7 +141,7 @@ public class NetworkAdminHandlerTestBase {
     private DeduplicationCache dedupeCache;
 
     @Mock
-    WorkingStateAccessor wsa;
+    private WorkingStateAccessor wsa;
 
     @Mock
     private ConfigProvider props;
