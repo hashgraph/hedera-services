@@ -25,7 +25,7 @@ import java.util.function.Consumer;
  *
  * @param <T> the type of object that is passed through the wire
  */
-public interface Wire<T> extends Consumer<T> {
+public interface Wire<T> {
 
     /**
      * Get a new wire builder.
@@ -60,21 +60,30 @@ public interface Wire<T> extends Consumer<T> {
     String getName();
 
     /**
-     * Add a task to the wire. Similar to {@link #acceptInterruptably(Object)} except that it cannot be interrupted and
-     * can block forever if backpressure is enabled.
+     * Add a task to the wire. May block if back pressure is enabled. Similar to {@link #interruptablePut(Object)}
+     * except that it cannot be interrupted and can block forever if backpressure is enabled.
      *
      * @param data the data to be processed by the wire
      */
-    @Override
-    void accept(@NonNull T data);
+    void put(@NonNull T data);
 
     /**
-     * Add a task to the wire. If backpressure is enabled and being applied, this method can be interrupted.
+     * Add a task to the wire. May block if back pressure is enabled. If backpressure is enabled and being applied, this
+     * method can be interrupted.
      *
      * @param data the data to be processed by the wire
      * @throws InterruptedException if the thread is interrupted while waiting for capacity to become available
      */
-    void acceptInterruptably(@NonNull T data) throws InterruptedException;
+    void interruptablePut(@NonNull T data) throws InterruptedException;
+
+    /**
+     * Add a task to the wire. If backpressure is enabled and there is not immediately capacity available, this method
+     * will not accept the data.
+     *
+     * @param data the data to be processed by the wire
+     * @return true if the data was accepted, false otherwise
+     */
+    boolean offer(@NonNull T data);
 
     /**
      * Get the number of unprocessed tasks. Returns -1 if this wire is not monitoring the number of unprocessed tasks.

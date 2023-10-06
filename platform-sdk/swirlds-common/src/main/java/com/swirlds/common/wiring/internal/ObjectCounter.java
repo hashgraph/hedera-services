@@ -32,7 +32,6 @@ public class ObjectCounter extends AbstractObjectCounter {
      */
     @Override
     public void onRamp() {
-        System.out.println("    onRamp");
         count.incrementAndGet();
     }
 
@@ -41,7 +40,6 @@ public class ObjectCounter extends AbstractObjectCounter {
      */
     @Override
     public void interruptableOnRamp() {
-        System.out.println("    onRamp");
         count.incrementAndGet();
     }
 
@@ -49,8 +47,16 @@ public class ObjectCounter extends AbstractObjectCounter {
      * {@inheritDoc}
      */
     @Override
+    public boolean attemptOnRamp() {
+        count.getAndIncrement();
+        return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void offRamp() {
-        System.out.println("    >>> offRamp");
         count.decrementAndGet();
     }
 

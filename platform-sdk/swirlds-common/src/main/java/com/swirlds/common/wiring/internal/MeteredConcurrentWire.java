@@ -61,11 +61,9 @@ public class MeteredConcurrentWire<T> implements Wire<T> {
 
     /**
      * {@inheritDoc}
-     *
-     * @param data the input argument
      */
     @Override
-    public void accept(@NonNull final T data) {
+    public void put(@NonNull final T data) {
         counter.onRamp();
         new AbstractTask() {
             @Override
@@ -79,11 +77,9 @@ public class MeteredConcurrentWire<T> implements Wire<T> {
 
     /**
      * {@inheritDoc}
-     *
-     * @param data the input argument
      */
     @Override
-    public void acceptInterruptably(@NonNull T data) throws InterruptedException {
+    public void interruptablePut(@NonNull T data) throws InterruptedException {
         counter.interruptableOnRamp();
         new AbstractTask() {
             @Override
@@ -93,6 +89,26 @@ public class MeteredConcurrentWire<T> implements Wire<T> {
                 return true;
             }
         }.send();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean offer(@NonNull T data) {
+        boolean accepted = counter.attemptOnRamp();
+        if (!accepted) {
+            return false;
+        }
+        new AbstractTask() {
+            @Override
+            protected boolean exec() {
+                counter.offRamp();
+                consumer.accept(data);
+                return true;
+            }
+        }.send();
+        return true;
     }
 
     /**

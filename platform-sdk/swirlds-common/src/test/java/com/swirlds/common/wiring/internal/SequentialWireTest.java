@@ -27,6 +27,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -80,7 +81,7 @@ class SequentialWireTest {
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
-            wire.accept(i);
+            wire.put(i);
             value = hash32(value, i);
         }
 
@@ -115,7 +116,7 @@ class SequentialWireTest {
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
-            wire.accept(i);
+            wire.put(i);
             value = hash32(value, i);
         }
 
@@ -150,7 +151,7 @@ class SequentialWireTest {
             new ThreadConfiguration(getStaticThreadManager())
                     .setRunnable(() -> {
                         for (int j = 0; j < operationsPerWorker; j++) {
-                            wire.accept(workerNumber * j);
+                            wire.put(workerNumber * j);
                         }
                     })
                     .build(true);
@@ -216,7 +217,7 @@ class SequentialWireTest {
                                     throw new RuntimeException(e);
                                 }
                             }
-                            wire.accept(workerNumber * j);
+                            wire.put(workerNumber * j);
                         }
                     })
                     .build(true);
@@ -272,7 +273,7 @@ class SequentialWireTest {
         completeBeforeTimeout(
                 () -> {
                     for (int i = 0; i < 100; i++) {
-                        wire.accept(i);
+                        wire.put(i);
                         value.set(hash32(value.get(), i));
                     }
                 },
@@ -320,7 +321,7 @@ class SequentialWireTest {
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
-            wire.accept(i);
+            wire.put(i);
             value = hash32(value, i);
         }
 
@@ -385,7 +386,7 @@ class SequentialWireTest {
         completeBeforeTimeout(
                 () -> {
                     for (int i = 0; i < 11; i++) {
-                        wire.accept(i);
+                        wire.put(i);
                         value.set(hash32(value.get(), i));
                     }
                 },
@@ -399,7 +400,7 @@ class SequentialWireTest {
         new ThreadConfiguration(getStaticThreadManager())
                 .setRunnable(() -> {
                     for (int i = 11; i < 100; i++) {
-                        wire.accept(i);
+                        wire.put(i);
                         value.set(hash32(value.get(), i));
                     }
                     allWorkAdded.set(true);
@@ -411,6 +412,16 @@ class SequentialWireTest {
         MILLISECONDS.sleep(50);
         assertFalse(allWorkAdded.get());
         assertEquals(10, wire.getUnprocessedTaskCount());
+
+        // Even if the wire has no capacity, offer() should not block.
+        completeBeforeTimeout(
+                () -> {
+                    assertFalse(wire.offer(1234));
+                    assertFalse(wire.offer(4321));
+                    assertFalse(wire.offer(-1));
+                },
+                Duration.ofSeconds(1),
+                "unable to offer tasks");
 
         // Release the latch, all work should now be added
         latch.countDown();
@@ -457,7 +468,7 @@ class SequentialWireTest {
         completeBeforeTimeout(
                 () -> {
                     for (int i = 0; i < 11; i++) {
-                        wire.accept(i);
+                        wire.put(i);
                         value.set(hash32(value.get(), i));
                     }
                 },
@@ -471,7 +482,7 @@ class SequentialWireTest {
         final Thread thread = new ThreadConfiguration(getStaticThreadManager())
                 .setRunnable(() -> {
                     for (int i = 11; i < 100; i++) {
-                        wire.accept(i);
+                        wire.put(i);
                         value.set(hash32(value.get(), i));
                     }
                     allWorkAdded.set(true);
@@ -532,7 +543,7 @@ class SequentialWireTest {
         completeBeforeTimeout(
                 () -> {
                     for (int i = 0; i < 11; i++) {
-                        wire.accept(i);
+                        wire.put(i);
                         value.set(hash32(value.get(), i));
                     }
                 },
@@ -548,7 +559,7 @@ class SequentialWireTest {
                 .setRunnable(() -> {
                     for (int i = 11; i < 100; i++) {
                         try {
-                            wire.acceptInterruptably(i);
+                            wire.interruptablePut(i);
                         } catch (final InterruptedException e) {
                             Thread.currentThread().interrupt();
                             interrupted.set(true);
@@ -566,5 +577,27 @@ class SequentialWireTest {
         assertEventuallyTrue(interrupted::get, Duration.ofSeconds(1), "thread was not interrupted");
         assertFalse(allWorkAdded.get());
         assertEventuallyTrue(() -> !thread.isAlive(), Duration.ofSeconds(1), "thread did not terminate");
+    }
+
+    /**
+     * Offering tasks is equivalent to calling accept() if there is no backpressure.
+     */
+    @Test
+    void offerNoBackpressureTest() {
+        final AtomicInteger wireValue = new AtomicInteger();
+        final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
+
+        final Wire<Integer> wire =
+                Wire.builder("test", handler).withConcurrency(false).build();
+        assertEquals(-1, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
+
+        int value = 0;
+        for (int i = 0; i < 100; i++) {
+            assertTrue(wire.offer(i));
+            value = hash32(value, i);
+        }
+
+        assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
     }
 }

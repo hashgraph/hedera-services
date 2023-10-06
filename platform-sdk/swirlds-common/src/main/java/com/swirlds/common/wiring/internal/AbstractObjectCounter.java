@@ -35,6 +35,14 @@ public abstract class AbstractObjectCounter {
     public abstract void interruptableOnRamp() throws InterruptedException;
 
     /**
+     * Signal that an object is entering the part of the system that this object is being used to monitor. Object is not
+     * "on ramped" if it is not immediately possible to do so without violating capacity constraints.
+     *
+     * @return true if there was available capacity to on ramp the object, false otherwise
+     */
+    public abstract boolean attemptOnRamp();
+
+    /**
      * Signal that an object is leaving the part of the system that this object is being used to monitor.
      */
     public abstract void offRamp();

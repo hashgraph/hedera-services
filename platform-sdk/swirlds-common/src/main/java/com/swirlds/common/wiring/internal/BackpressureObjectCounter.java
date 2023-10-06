@@ -112,6 +112,19 @@ public class BackpressureObjectCounter extends AbstractObjectCounter {
      * {@inheritDoc}
      */
     @Override
+    public boolean attemptOnRamp() {
+        try {
+            count.updateAndGet(increment);
+            return true;
+        } catch (final NoCapacityException e) {
+            return false;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void offRamp() {
         count.decrementAndGet();
     }

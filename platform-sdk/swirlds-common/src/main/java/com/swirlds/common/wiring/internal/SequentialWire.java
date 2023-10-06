@@ -114,7 +114,7 @@ public class SequentialWire<T> implements Wire<T> {
      * {@inheritDoc}
      */
     @Override
-    public void accept(@NonNull final T data) {
+    public void put(@NonNull final T data) {
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
@@ -131,7 +131,7 @@ public class SequentialWire<T> implements Wire<T> {
      * {@inheritDoc}
      */
     @Override
-    public void acceptInterruptably(@NonNull T data) throws InterruptedException {
+    public void interruptablePut(@NonNull T data) throws InterruptedException {
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
@@ -142,6 +142,25 @@ public class SequentialWire<T> implements Wire<T> {
             currentTask = lastTask.get();
         } while (!lastTask.compareAndSet(currentTask, nextTask));
         currentTask.send(nextTask, Objects.requireNonNull(data));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean offer(@NonNull T data) {
+        // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
+        // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
+        // from task to task, such that each task depends on the previous task.
+
+        final SequentialTask<T> nextTask = new SequentialTask<>(2, consumer);
+        SequentialTask<T> currentTask;
+        do {
+            currentTask = lastTask.get();
+        } while (!lastTask.compareAndSet(currentTask, nextTask));
+        currentTask.send(nextTask, Objects.requireNonNull(data));
+
+        return true;
     }
 
     /**

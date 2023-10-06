@@ -54,11 +54,9 @@ public class ConcurrentWire<T> implements Wire<T> {
 
     /**
      * {@inheritDoc}
-     *
-     * @param data the input argument
      */
     @Override
-    public void accept(@NonNull final T data) {
+    public void put(@NonNull final T data) {
         new AbstractTask() {
             @Override
             protected boolean exec() {
@@ -70,11 +68,9 @@ public class ConcurrentWire<T> implements Wire<T> {
 
     /**
      * {@inheritDoc}
-     *
-     * @param data the input argument
      */
     @Override
-    public void acceptInterruptably(@NonNull T data) {
+    public void interruptablePut(@NonNull T data) {
         new AbstractTask() {
             @Override
             protected boolean exec() {
@@ -82,6 +78,21 @@ public class ConcurrentWire<T> implements Wire<T> {
                 return true;
             }
         }.send();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean offer(@NonNull T data) {
+        new AbstractTask() {
+            @Override
+            protected boolean exec() {
+                consumer.accept(data);
+                return true;
+            }
+        }.send();
+        return true;
     }
 
     /**

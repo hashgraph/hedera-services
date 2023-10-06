@@ -50,7 +50,7 @@ class WiringBenchmark {
                 .withConcurrency(false)
                 .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics()).withScheduledTaskCountMetricEnabled(false))
                 .withScheduledTaskCapacity(WireBuilder.UNLIMITED_CAPACITY)
-                .build());
+                .build()::put);
         final Gossip gossip = new Gossip(
                 executor,
                 eventPool,
@@ -59,7 +59,7 @@ class WiringBenchmark {
                         .withMetricsBuilder(
                                 Wire.metricsBuilder(new NoOpMetrics()).withScheduledTaskCountMetricEnabled(false))
                         .withScheduledTaskCapacity(WireBuilder.UNLIMITED_CAPACITY)
-                        .build());
+                        .build()::put);
 
         // Create a user thread for running "gossip". It will continue to generate events until explicitly stopped.
         System.out.println("Starting gossip");
