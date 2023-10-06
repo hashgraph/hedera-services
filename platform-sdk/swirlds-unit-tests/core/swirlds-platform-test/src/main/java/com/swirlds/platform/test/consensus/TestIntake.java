@@ -94,8 +94,7 @@ public class TestIntake implements LoadableFromSignedState {
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
 
-        linker = new OrphanBufferingLinker(
-                consensusConfig, parentFinder, 100000, mock(IntakeEventCounter.class));
+        linker = new OrphanBufferingLinker(consensusConfig, parentFinder, 100000, mock(IntakeEventCounter.class));
 
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), output);
