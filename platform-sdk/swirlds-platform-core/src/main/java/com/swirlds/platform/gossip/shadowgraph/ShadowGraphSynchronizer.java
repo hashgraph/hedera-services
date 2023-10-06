@@ -16,10 +16,12 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -60,22 +62,30 @@ import org.apache.logging.log4j.Logger;
 public class ShadowGraphSynchronizer {
     private static final Logger logger = LogManager.getLogger(ShadowGraphSynchronizer.class);
 
-    /** The shadow graph manager to use for this sync */
+    /**
+     * The shadow graph manager to use for this sync
+     */
     private final ShadowGraph shadowGraph;
-    /** Number of member nodes in the network for this sync */
+    /**
+     * Number of member nodes in the network for this sync
+     */
     private final int numberOfNodes;
-    /** All sync stats */
+    /**
+     * All sync stats
+     */
     private final SyncMetrics syncMetrics;
     /**
      * provides the current consensus instance, a supplier is used because this instance will change after a reconnect,
      * so we have to make sure we always get the latest one
      */
     private final Supplier<GraphGenerations> generationsSupplier;
-    /** called to provide the sync result when the sync is done */
-    private final Consumer<SyncResult> syncDone;
-    /** consumes events received by the peer */
+    /**
+     * consumes events received by the peer
+     */
     private final Consumer<GossipEvent> eventHandler;
-    /** manages sync related decisions */
+    /**
+     * manages sync related decisions
+     */
     private final FallenBehindManager fallenBehindManager;
 
     /**
@@ -84,11 +94,17 @@ public class ShadowGraphSynchronizer {
      */
     private final IntakeEventCounter intakeEventCounter;
 
-    /** executes tasks in parallel */
+    /**
+     * executes tasks in parallel
+     */
     private final ParallelExecutor executor;
-    /** if set to true, send and receive initial negotiation bytes at the start of the sync */
+    /**
+     * if set to true, send and receive initial negotiation bytes at the start of the sync
+     */
     private final boolean sendRecInitBytes;
-    /** executed before fetching the tips from the shadowgraph for the second time in phase 3 */
+    /**
+     * executed before fetching the tips from the shadowgraph for the second time in phase 3
+     */
     private final InterruptableRunnable executePreFetchTips;
 
     public ShadowGraphSynchronizer(
@@ -97,49 +113,65 @@ public class ShadowGraphSynchronizer {
             final int numberOfNodes,
             final SyncMetrics syncMetrics,
             final Supplier<GraphGenerations> generationsSupplier,
-            final Consumer<SyncResult> syncDone,
-            final Consumer<GossipEvent> eventHandler,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             final FallenBehindManager fallenBehindManager,
             @NonNull final IntakeEventCounter intakeEventCounter,
             final ParallelExecutor executor,
             final boolean sendRecInitBytes,
             final InterruptableRunnable executePreFetchTips) {
 
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(intakeQueue);
+
         this.shadowGraph = shadowGraph;
         this.numberOfNodes = numberOfNodes;
         this.syncMetrics = syncMetrics;
         this.generationsSupplier = generationsSupplier;
-        this.syncDone = syncDone;
         this.fallenBehindManager = fallenBehindManager;
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.executor = executor;
         this.sendRecInitBytes = sendRecInitBytes;
         this.executePreFetchTips = executePreFetchTips;
-        this.eventHandler = buildEventHandler(platformContext, eventHandler);
+        this.eventHandler = buildEventHandler(platformContext, intakeQueue);
     }
 
     /**
      * Construct the event handler for new events. If configured to do so, this handler will also hash events before
      * passing them down the pipeline.
+     *
+     * @param platformContext the platform context
+     * @param intakeQueue     the event intake queue
      */
     private Consumer<GossipEvent> buildEventHandler(
-            @NonNull final PlatformContext platformContext, @NonNull final Consumer<GossipEvent> rawEventHandler) {
+            @NonNull final PlatformContext platformContext, @NonNull final QueueThread<GossipEvent> intakeQueue) {
 
         final boolean hashOnGossipThreads = platformContext
                 .getConfiguration()
                 .getConfigData(SyncConfig.class)
                 .hashOnGossipThreads();
 
+        final Consumer<GossipEvent> wrappedPut = event -> {
+            try {
+                intakeQueue.put(event);
+            } catch (final InterruptedException e) {
+                // should never happen, and we don't have a simple way of recovering from it
+                logger.error(
+                        EXCEPTION.getMarker(), "CRITICAL ERROR, adding intakeTask to the event intake queue failed", e);
+                Thread.currentThread().interrupt();
+            }
+        };
+
         if (hashOnGossipThreads) {
             final Cryptography cryptography = platformContext.getCryptography();
             return event -> {
                 cryptography.digestSync(event.getHashedData());
                 event.buildDescriptor();
-                rawEventHandler.accept(event);
-            };
-        }
 
-        return rawEventHandler;
+                wrappedPut.accept(event);
+            };
+        } else {
+            return wrappedPut;
+        }
     }
 
     private static List<Boolean> getMyBooleans(final List<ShadowEvent> theirTipShadows) {
@@ -353,7 +385,7 @@ public class ShadowGraphSynchronizer {
                 SYNC_INFO.getMarker(), "{} writing events done, wrote {} events", conn::getDescription, sendList::size);
         logger.info(SYNC_INFO.getMarker(), "{} reading events done, read {} events", conn.getDescription(), eventsRead);
 
-        syncDone(new SyncResult(conn.isOutbound(), conn.getOtherId(), eventsRead, sendList.size()));
+        syncMetrics.syncDone(new SyncResult(conn.isOutbound(), conn.getOtherId(), eventsRead, sendList.size()));
 
         timing.setTimePoint(5);
         syncMetrics.recordSyncTiming(timing, conn);
@@ -380,11 +412,6 @@ public class ShadowGraphSynchronizer {
             final Callable<T> readTask, final Callable<Void> writeTask, final Connection connection)
             throws ParallelExecutionException {
         return executor.doParallel(readTask, writeTask, connection::disconnect);
-    }
-
-    private void syncDone(final SyncResult info) {
-        syncDone.accept(info);
-        syncMetrics.syncDone(info);
     }
 
     /**

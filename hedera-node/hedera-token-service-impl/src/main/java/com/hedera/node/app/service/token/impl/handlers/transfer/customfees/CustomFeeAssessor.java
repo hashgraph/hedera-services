@@ -27,7 +27,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -67,10 +66,8 @@ public class CustomFeeAssessor {
             final int maxTransfersSize,
             final AccountID receiver,
             final AssessmentResult result,
-            final HandleContext ctx) {
+            final ReadableTokenRelationStore tokenRelStore) {
         fixedFeeAssessor.assessFixedFees(feeMeta, sender, result);
-
-        final var tokenRelStore = ctx.readableStore(ReadableTokenRelationStore.class);
 
         validateBalanceChanges(result, maxTransfersSize, tokenRelStore);
 
@@ -80,7 +77,7 @@ public class CustomFeeAssessor {
         if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
             fractionalFeeAssessor.assessFractionalFees(feeMeta, sender, result);
         } else {
-            royaltyFeeAssessor.assessRoyaltyFees(feeMeta, sender, receiver, result, ctx);
+            royaltyFeeAssessor.assessRoyaltyFees(feeMeta, sender, receiver, result);
         }
         validateBalanceChanges(result, maxTransfersSize, tokenRelStore);
     }

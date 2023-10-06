@@ -147,6 +147,10 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         return new Timestamp(valueToConvert.getEpochSecond(), valueToConvert.getNano());
     }
 
+    protected Timestamp timestampFrom(final long secondsToConvert) {
+        return new Timestamp(secondsToConvert, 0);
+    }
+
     @SuppressWarnings("unchecked")
     private void setUpContext() {
         given(mockContext.configuration()).willReturn(testConfig);
