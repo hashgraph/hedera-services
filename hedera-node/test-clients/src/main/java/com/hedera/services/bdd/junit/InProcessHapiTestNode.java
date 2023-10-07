@@ -41,6 +41,11 @@ import java.nio.file.Path;
  * isolation, discovers all the classloaders (including the system classloader), and chooses its own rank order for what
  * order to look classes up in. That makes it impossible to do classloader isolation. We need to fix that. Until then,
  * in process nodes simply will not work well when stopped.
+ *
+ * <p>NOTE!! This class will not work generally, There are several problems that must be fixed. We must have a clean
+ * way to shut things down, which we don't have today. We also need a way to specify the config properties to use
+ * with the Hedera config (which is DIFFERENT from the platform config). Right now that involves setting an environment
+ * variable, which we cannot do when running in process. See ConfigProviderBase.
  */
 public class InProcessHapiTestNode implements HapiTestNode {
     /** The thread in which the Hedera node will run */

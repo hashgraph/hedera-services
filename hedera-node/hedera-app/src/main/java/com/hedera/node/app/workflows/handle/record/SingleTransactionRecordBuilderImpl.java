@@ -149,6 +149,9 @@ public class SingleTransactionRecordBuilderImpl
     private long transactionFee;
     private ContractFunctionResult contractFunctionResult;
 
+    // Used for some child records builders.
+    private final boolean removable;
+
     /**
      * Creates new transaction record builder.
      *
@@ -156,6 +159,18 @@ public class SingleTransactionRecordBuilderImpl
      */
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
+        this.removable = false;
+    }
+
+    /**
+     * Creates new transaction record builder.
+     *
+     * @param consensusNow the consensus timestamp for the transaction
+     * @param removable    whether the record is removable (see {@link RecordListBuilder}
+     */
+    public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow, final boolean removable) {
+        this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
+        this.removable = removable;
     }
 
     /**
@@ -219,6 +234,10 @@ public class SingleTransactionRecordBuilderImpl
         logEndTransactionRecord(transactionID, transactionRecord);
 
         return new SingleTransactionRecord(transaction, transactionRecord, transactionSidecarRecords);
+    }
+
+    public boolean removable() {
+        return removable;
     }
 
     // ------------------------------------------------------------------------------------------------------------------------

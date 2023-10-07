@@ -77,6 +77,7 @@ import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.verifier.BaseHandleContextVerifier;
@@ -244,8 +245,9 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-        // Get the consensus timestamp
-        final Instant consensusNow = platformTxn.getConsensusTimestamp();
+        // Get the consensus timestamp. FUTURE We want this to exactly match the consensus timestamp from the hashgraph,
+        // but for compatibility with the current implementation, we adjust it as follows.
+        final Instant consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 + 3L);
 
         // handle user transaction
         handleUserTransaction(consensusNow, state, dualState, platformEvent, creator, platformTxn);
@@ -260,8 +262,8 @@ public class HandleWorkflow {
             @NonNull final ConsensusTransaction platformTxn) {
         // Setup record builder list
         blockRecordManager.startUserTransaction(consensusNow, state);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
-        final var recordListBuilder = new RecordListBuilder(recordBuilder);
+        final var recordListBuilder = new RecordListBuilder(consensusNow);
+        final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
 
         // Setup helpers
         final var configuration = configProvider.getConfiguration();
@@ -468,13 +470,44 @@ public class HandleWorkflow {
         stack.commitFullStack();
 
         // store all records at once, build() records end of transaction to log
-        final var recordListResult = recordListBuilder.build();
+        /* This error occurred during a test
+2023-10-07 19:11:03.819 ERROR 452  HandleWorkflow - An unexpected exception was thrown during handle
+java.nio.BufferUnderflowException: null
+	at com.hedera.pbj.runtime.io.buffer.RandomAccessSequenceAdapter.readBytes(RandomAccessSequenceAdapter.java:162) ~[pbj-runtime-0.7.4.jar:?]
+	at com.hedera.pbj.runtime.ProtoParserTools.readBytes(ProtoParserTools.java:234) ~[pbj-runtime-0.7.4.jar:?]
+	at com.hedera.hapi.node.base.codec.KeyProtoCodec.parseInternal(KeyProtoCodec.java:210) ~[hapi-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.hapi.node.base.codec.KeyProtoCodec.parseStrict(KeyProtoCodec.java:61) ~[hapi-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.hapi.node.base.codec.KeyProtoCodec.parseStrict(KeyProtoCodec.java:26) ~[hapi-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl.unaliasWithEvmAddressConversionIfNeeded(ReadableAccountStoreImpl.java:150) ~[app-service-token-impl-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl.getAccountLeaf(ReadableAccountStoreImpl.java:121) ~[app-service-token-impl-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl.getAccountById(ReadableAccountStoreImpl.java:91) ~[app-service-token-impl-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler.checkFungibleTokenTransfers(CryptoTransferHandler.java:267) ~[app-service-token-impl-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler.preHandle(CryptoTransferHandler.java:113) ~[app-service-token-impl-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.node.app.workflows.dispatcher.TransactionDispatcher.dispatchPreHandle(TransactionDispatcher.java:90) ~[app-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.node.app.workflows.prehandle.PreHandleWorkflowImpl.expandAndVerifySignatures(PreHandleWorkflowImpl.java:240) ~[app-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.node.app.workflows.prehandle.PreHandleWorkflowImpl.preHandleTransaction(PreHandleWorkflowImpl.java:186) ~[app-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.node.app.workflows.handle.HandleWorkflow.getCurrentPreHandleResult(HandleWorkflow.java:644) ~[app-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.node.app.workflows.handle.HandleWorkflow.handleUserTransaction(HandleWorkflow.java:292) ~[app-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.node.app.workflows.handle.HandleWorkflow.handlePlatformTransaction(HandleWorkflow.java:252) ~[app-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.node.app.workflows.handle.HandleWorkflow.handleRound(HandleWorkflow.java:222) ~[app-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.node.app.Hedera.onHandleConsensusRound(Hedera.java:612) ~[app-0.42.0-SNAPSHOT.jar:?]
+	at com.hedera.node.app.state.merkle.MerkleHederaState.handleConsensusRound(MerkleHederaState.java:312) ~[app-0.42.0-SNAPSHOT.jar:?]
+	at com.swirlds.platform.state.TransactionHandler.handleRound(TransactionHandler.java:84) ~[swirlds-platform-core-0.42.0-SNAPSHOT.jar:?]
+	at com.swirlds.platform.state.SwirldStateManagerImpl.handleConsensusRound(SwirldStateManagerImpl.java:206) ~[swirlds-platform-core-0.42.0-SNAPSHOT.jar:?]
+	at com.swirlds.platform.eventhandling.ConsensusRoundHandler.applyConsensusRoundToState(ConsensusRoundHandler.java:405) ~[swirlds-platform-core-0.42.0-SNAPSHOT.jar:?]
+	at com.swirlds.common.threading.framework.internal.QueueThreadImpl.doWork(QueueThreadImpl.java:253) ~[swirlds-common-0.42.0-SNAPSHOT.jar:?]
+	at com.swirlds.common.threading.framework.internal.StoppableThreadImpl.doWork(StoppableThreadImpl.java:614) ~[swirlds-common-0.42.0-SNAPSHOT.jar:?]
+	at com.swirlds.common.threading.framework.internal.StoppableThreadImpl.run(StoppableThreadImpl.java:215) ~[swirlds-common-0.42.0-SNAPSHOT.jar:?]
+	at java.lang.Thread.run(Thread.java:833) ~[?:?]         */
+        final var recordListResult = recordListBuilder.build(); // TODO Sometimes at this point there IS NO USER TRANSACTION due to an error.
         recordCache.add(
                 creator.nodeId(),
                 payer,
-                recordListResult.userTransactionRecord().transactionRecord(),
-                consensusNow);
-        blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
+                recordListResult.records().stream()
+                        .map(SingleTransactionRecord::transactionRecord)
+                        .toList());
+
+        blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
     }
 
     @NonNull
@@ -599,7 +632,7 @@ public class HandleWorkflow {
         stack.rollbackFullStack();
         final var userTransactionRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
         userTransactionRecordBuilder.status(status);
-        recordListBuilder.revertChildRecordBuilders(userTransactionRecordBuilder);
+        recordListBuilder.revertChildrenOf(userTransactionRecordBuilder);
     }
 
     /*

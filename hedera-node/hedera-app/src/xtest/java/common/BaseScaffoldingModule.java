@@ -63,7 +63,6 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.verifier.BaseHandleContextVerifier;
 import com.hedera.node.app.workflows.prehandle.DummyPreHandleDispatcher;
@@ -216,7 +215,8 @@ public interface BaseScaffoldingModule {
             @NonNull final FeeManager feeManager,
             @NonNull final Authorizer authorizer) {
         final var consensusTime = Instant.now();
-        final var parentRecordBuilder = new SingleTransactionRecordBuilderImpl(consensusTime);
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        final var parentRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
         return body -> {
             // TODO: Temporary solution, better to simplify HandleContextImpl
             final HederaFunctionality function;
@@ -237,7 +237,7 @@ public interface BaseScaffoldingModule {
                     new SavepointStackImpl(state),
                     configuration,
                     new BaseHandleContextVerifier(configuration.getConfigData(HederaConfig.class), Map.of()),
-                    new RecordListBuilder(parentRecordBuilder),
+                    recordListBuilder,
                     new TransactionChecker(6192, AccountID.DEFAULT, configProvider, metrics),
                     dispatcher,
                     scopeLookup,

@@ -66,7 +66,7 @@ public class HapiTestEnv {
             final var configText = sb.toString();
 
             for (int nodeId = 0; nodeId < numNodes; nodeId++) {
-                final var workingDir = Path.of("./build/hapi-test/" + testName + "/node" + nodeId)
+                final var workingDir = Path.of("./build/hapi-test/node" + nodeId)
                         .normalize();
                 setupWorkingDirectory(workingDir, configText);
                 nodes.add(new SubProcessHapiTestNode(workingDir, nodeId, FIRST_GRPC_PORT + (nodeId * 2)));

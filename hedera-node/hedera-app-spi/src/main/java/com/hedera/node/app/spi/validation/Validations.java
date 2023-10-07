@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
 /**
  * A utility class, similar in concept {@link java.util.Objects#requireNonNull(Object)}, to validate or throw
@@ -49,6 +50,12 @@ public final class Validations {
         }
 
         return subject;
+    }
+
+    public static void mustNotBeEmpty(@Nullable final List<?>list, @NonNull final ResponseCodeEnum code) throws PreCheckException {
+        if (list == null || list.isEmpty()) {
+            throw new PreCheckException(code);
+        }
     }
 
     /**
