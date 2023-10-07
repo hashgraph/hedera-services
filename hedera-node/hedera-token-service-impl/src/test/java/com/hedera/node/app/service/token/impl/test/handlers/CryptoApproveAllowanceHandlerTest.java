@@ -376,8 +376,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(existingOwner.tokenAllowances()).hasSize(1);
         assertThat(existingOwner.approveForAllNftAllowances()).hasSize(1);
 
-        final var preHandleContext = new FakePreHandleContext(readableAccountStore, txn);
-        assertThatThrownBy(() -> subject.preHandle(preHandleContext))
+        assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(EMPTY_ALLOWANCES));
 

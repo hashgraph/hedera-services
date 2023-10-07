@@ -83,6 +83,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     private final Configuration configuration;
 
     private final TransactionDispatcher dispatcher;
+    private final boolean isUserTx;
 
     public PreHandleContextImpl(
             @NonNull final ReadableStoreFactory storeFactory,
@@ -95,10 +96,10 @@ public class PreHandleContextImpl implements PreHandleContext {
                 txn,
                 txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
                 configuration,
-                dispatcher);
+                dispatcher,
+                true);
     }
 
-    /** Create a new instance */
     public PreHandleContextImpl(
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final TransactionBody txn,
@@ -106,11 +107,24 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull final Configuration configuration,
             @NonNull final TransactionDispatcher dispatcher)
             throws PreCheckException {
+        this(storeFactory, txn, payer, configuration, dispatcher, false);
+    }
+
+    /** Create a new instance */
+    private PreHandleContextImpl(
+            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final TransactionBody txn,
+            @NonNull final AccountID payer,
+            @NonNull final Configuration configuration,
+            @NonNull final TransactionDispatcher dispatcher,
+            final boolean isUserTx)
+            throws PreCheckException {
         this.storeFactory = requireNonNull(storeFactory, "storeFactory must not be null.");
         this.txn = requireNonNull(txn, "txn must not be null!");
         this.payer = requireNonNull(payer, "payer msut not be null!");
         this.configuration = requireNonNull(configuration, "configuration must not be null!");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null!");
+        this.isUserTx = isUserTx;
 
         this.accountStore = storeFactory.getStore(ReadableAccountStore.class);
 
@@ -145,6 +159,11 @@ public class PreHandleContextImpl implements PreHandleContext {
     @NonNull
     public Configuration configuration() {
         return configuration;
+    }
+
+    @Override
+    public boolean isUserTransaction() {
+        return isUserTx;
     }
 
     @NonNull
