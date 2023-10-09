@@ -59,8 +59,6 @@ public final class ConfigMappings {
             new ConfigMapping("prometheus.endpointEnabled", "prometheusEndpointEnabled"),
             new ConfigMapping("prometheus.endpointPortNumber", "prometheusEndpointPortNumber"),
             new ConfigMapping("prometheus.endpointMaxBacklogAllowed", "prometheusEndpointMaxBacklogAllowed"),
-            new ConfigMapping("paths.configPath", "configPath"),
-            new ConfigMapping("paths.settingsPath", "settingsPath"),
             new ConfigMapping("paths.settingsUsedDir", "settingsUsedDir"),
             new ConfigMapping("paths.keysDirPath", "keysDirPath"),
             new ConfigMapping("paths.appsDirPath", "appsDirPath"),

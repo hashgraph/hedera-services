@@ -16,23 +16,29 @@
 
 package com.swirlds.common.config.sources;
 
+import static com.swirlds.common.config.sources.ConfigSourceOrdinalConstants.PROGRAMMATIC_VALUES_ORDINAL;
+
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * A {@link com.swirlds.config.api.source.ConfigSource} implementation that can be used to provide values of
- * properties programmatically by calling {@link #withValue(String, Long)} (String, String)}.
+ * A {@link com.swirlds.config.api.source.ConfigSource} implementation that can be used to provide values of properties
+ * programmatically by calling {@link #withValue(String, Long)} (String, String)}.
  */
 public final class SimpleConfigSource extends AbstractConfigSource {
 
     private final Map<String, String> internalProperties;
+
+    private int oridinal = PROGRAMMATIC_VALUES_ORDINAL;
 
     /**
      * Creates an instance without any config properties
@@ -42,12 +48,18 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
+     * Creates an instance without any config properties
+     */
+    public SimpleConfigSource(@NonNull final Map<String, String> properties) {
+        // defensive copy
+        this.internalProperties = new HashMap<>(Objects.requireNonNull(properties));
+    }
+
+    /**
      * Creates an instance and directly adds the given config property
      *
-     * @param propertyName
-     * 		name of the config property
-     * @param value
-     * 		value of the config property
+     * @param propertyName name of the config property
+     * @param value        value of the config property
      */
     public SimpleConfigSource(final String propertyName, final String value) {
         this();
@@ -57,10 +69,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Creates an instance and directly adds the given config property
      *
-     * @param propertyName
-     * 		name of the config property
-     * @param value
-     * 		value of the config property
+     * @param propertyName name of the config property
+     * @param value        value of the config property
      */
     public SimpleConfigSource(final String propertyName, final Integer value) {
         this();
@@ -70,10 +80,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Creates an instance and directly adds the given config property
      *
-     * @param propertyName
-     * 		name of the config property
-     * @param value
-     * 		value of the config property
+     * @param propertyName name of the config property
+     * @param value        value of the config property
      */
     public SimpleConfigSource(final String propertyName, final Long value) {
         this();
@@ -83,10 +91,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Creates an instance and directly adds the given config property
      *
-     * @param propertyName
-     * 		name of the config property
-     * @param value
-     * 		value of the config property
+     * @param propertyName name of the config property
+     * @param value        value of the config property
      */
     public SimpleConfigSource(final String propertyName, final Double value) {
         this();
@@ -96,10 +102,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Creates an instance and directly adds the given config property
      *
-     * @param propertyName
-     * 		name of the config property
-     * @param value
-     * 		value of the config property
+     * @param propertyName name of the config property
+     * @param value        value of the config property
      */
     public SimpleConfigSource(final String propertyName, final Float value) {
         this();
@@ -109,10 +113,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Creates an instance and directly adds the given config property
      *
-     * @param propertyName
-     * 		name of the config property
-     * @param value
-     * 		value of the config property
+     * @param propertyName name of the config property
+     * @param value        value of the config property
      */
     public SimpleConfigSource(final String propertyName, final Boolean value) {
         this();
@@ -122,10 +124,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Adds a string value to this source
      *
-     * @param propertyName
-     * 		name of the property
-     * @param value
-     * 		default value
+     * @param propertyName name of the property
+     * @param value        default value
      */
     public SimpleConfigSource withValue(final String propertyName, final String value) {
         setValue(propertyName, value, v -> v);
@@ -135,10 +135,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Adds an int value to this source
      *
-     * @param propertyName
-     * 		name of the peoprty
-     * @param value
-     * 		default value
+     * @param propertyName name of the peoprty
+     * @param value        default value
      */
     public SimpleConfigSource withValue(final String propertyName, final Integer value) {
         setValue(propertyName, value, v -> Integer.toString(v));
@@ -148,10 +146,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Adds a double value to this source
      *
-     * @param propertyName
-     * 		name of the peoprty
-     * @param value
-     * 		default value
+     * @param propertyName name of the peoprty
+     * @param value        default value
      */
     public SimpleConfigSource withValue(final String propertyName, final Double value) {
         setValue(propertyName, value, v -> Double.toString(v));
@@ -161,10 +157,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Adds a float value to this source
      *
-     * @param propertyName
-     * 		name of the peoprty
-     * @param value
-     * 		default value
+     * @param propertyName name of the peoprty
+     * @param value        default value
      */
     public SimpleConfigSource withValue(final String propertyName, final Float value) {
         setValue(propertyName, value, v -> Float.toString(v));
@@ -174,10 +168,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Adds a long value to this source
      *
-     * @param propertyName
-     * 		name of the peoprty
-     * @param value
-     * 		default value
+     * @param propertyName name of the peoprty
+     * @param value        default value
      */
     public SimpleConfigSource withValue(final String propertyName, final Long value) {
         setValue(propertyName, value, v -> Long.toString(v));
@@ -187,10 +179,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Adds a boolean value to this source
      *
-     * @param propertyName
-     * 		name of the peoprty
-     * @param value
-     * 		default value
+     * @param propertyName name of the peoprty
+     * @param value        default value
      */
     public SimpleConfigSource withValue(final String propertyName, final Boolean value) {
         setValue(propertyName, value, v -> Boolean.toString(v));
@@ -207,10 +197,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Adds a list value to this source
      *
-     * @param propertyName
-     * 		name of the property
-     * @param values
-     * 		default values list
+     * @param propertyName name of the property
+     * @param values       default values list
      */
     public SimpleConfigSource withBooleanValues(final String propertyName, final List<Boolean> values) {
         setValues(propertyName, values, v -> Boolean.toString(v));
@@ -220,10 +208,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Adds a list value to this source
      *
-     * @param propertyName
-     * 		name of the property
-     * @param values
-     * 		default values list
+     * @param propertyName name of the property
+     * @param values       default values list
      */
     public SimpleConfigSource withIntegerValues(final String propertyName, final List<Integer> values) {
         setValues(propertyName, values, v -> Integer.toString(v));
@@ -233,10 +219,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Adds a list value to this source
      *
-     * @param propertyName
-     * 		name of the property
-     * @param values
-     * 		default values list
+     * @param propertyName name of the property
+     * @param values       default values list
      */
     public SimpleConfigSource withLongValues(final String propertyName, final List<Long> values) {
         setValues(propertyName, values, v -> Long.toString(v));
@@ -246,10 +230,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Adds a list value to this source
      *
-     * @param propertyName
-     * 		name of the property
-     * @param values
-     * 		default values list
+     * @param propertyName name of the property
+     * @param values       default values list
      */
     public SimpleConfigSource withDoubleValues(final String propertyName, final List<Double> values) {
         setValues(propertyName, values, v -> Double.toString(v));
@@ -259,10 +241,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     /**
      * Adds a list value to this source
      *
-     * @param propertyName
-     * 		name of the property
-     * @param values
-     * 		default values list
+     * @param propertyName name of the property
+     * @param values       default values list
      */
     public SimpleConfigSource withStringValues(final String propertyName, final List<String> values) {
         setValues(propertyName, values, v -> v);
@@ -280,6 +260,17 @@ public final class SimpleConfigSource extends AbstractConfigSource {
             String rawValues = values.stream().map(converter::apply).collect(Collectors.joining(","));
             internalProperties.put(propertyName, rawValues);
         }
+    }
+
+    /**
+     * Specify the ordinal of this source. Default is {@link ConfigSourceOrdinalConstants#PROGRAMMATIC_VALUES_ORDINAL}.
+     *
+     * @param ordinal the ordinal
+     * @return this
+     */
+    public SimpleConfigSource withOrdinal(final int ordinal) {
+        this.oridinal = ordinal;
+        return this;
     }
 
     /**
@@ -302,6 +293,6 @@ public final class SimpleConfigSource extends AbstractConfigSource {
      */
     @Override
     public int getOrdinal() {
-        return ConfigSourceOrdinalConstants.PROGRAMMATIC_VALUES_ORDINAL;
+        return oridinal;
     }
 }
