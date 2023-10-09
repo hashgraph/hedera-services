@@ -64,6 +64,7 @@ public class HtsCallAttempt {
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategies verificationStrategies;
     private final List<HtsCallTranslator> callTranslators;
+    private final boolean isStaticCall;
 
     public HtsCallAttempt(
             @NonNull final Bytes input,
@@ -73,7 +74,8 @@ public class HtsCallAttempt {
             @NonNull final Configuration configuration,
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategies verificationStrategies,
-            @NonNull final List<HtsCallTranslator> callTranslators) {
+            @NonNull final List<HtsCallTranslator> callTranslators,
+            final boolean isStaticCall) {
         requireNonNull(input);
         this.callTranslators = requireNonNull(callTranslators);
         this.senderAddress = requireNonNull(senderAddress);
@@ -107,6 +109,7 @@ public class HtsCallAttempt {
         }
         this.selector = this.input.slice(0, 4).toArrayUnsafe();
         this.senderId = addressIdConverter.convertSender(senderAddress);
+        this.isStaticCall = isStaticCall;
     }
 
     /**
@@ -352,6 +355,13 @@ public class HtsCallAttempt {
             // No point in looking up a token that can't exist
             return null;
         }
+    }
+
+    /**
+     * @return whether the current call attempt is a static call
+     */
+    public boolean isStaticCall() {
+        return isStaticCall;
     }
 
     private boolean isRedirect(final byte[] input) {
