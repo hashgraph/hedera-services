@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -31,7 +31,7 @@ import java.util.Arrays;
 /**
  * Implements the token redirect {@code name()} call of the HTS system contract.
  */
-public class NameCall extends AbstractTokenViewCall {
+public class NameCall extends AbstractRevertibleTokenViewCall {
 
     public NameCall(@NonNull final HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token) {
         super(enhancement, token);
