@@ -277,9 +277,4 @@ public class WireBuilder<T> {
 
         return wire;
     }
-
-    // TODO
-    //  - create a new benchmark that uses the new backpressure mechanism
-    //  - data multiplexing API
-
 }

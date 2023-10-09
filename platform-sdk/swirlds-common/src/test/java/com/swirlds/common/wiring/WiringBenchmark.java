@@ -64,7 +64,6 @@ class WiringBenchmark {
         // Step 2: construct components
 
         final TopologicalEventSorter orphanBuffer = new TopologicalEventSorter(eventPool);
-
         final EventVerifier verifier = new EventVerifier(toOrphanBuffer::put);
         final Gossip gossip = new Gossip(executor, eventPool, toVerifier::put);
 
