@@ -17,23 +17,24 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Implementation support for view calls that require an extant token.
+ * Classic view function calls are generally non-revertible.
  */
-public abstract class AbstractTokenViewCall extends AbstractHtsCall {
+public abstract class AbstractNonRevertibleTokenViewCall extends AbstractHtsCall {
     @Nullable
     private final Token token;
 
-    protected AbstractTokenViewCall(
+    protected AbstractNonRevertibleTokenViewCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token) {
         super(enhancement);
         this.token = token;
@@ -43,7 +44,7 @@ public abstract class AbstractTokenViewCall extends AbstractHtsCall {
     public @NonNull PricedResult execute() {
         // TODO - gas calculation
         if (token == null) {
-            return gasOnly(revertResult(INVALID_TOKEN_ID, 0L));
+            return gasOnly(viewCallResultWith(INVALID_TOKEN_ID, 0L));
         } else {
             return gasOnly(resultOfViewingToken(token));
         }
@@ -56,5 +57,15 @@ public abstract class AbstractTokenViewCall extends AbstractHtsCall {
      * @return the result of viewing the given {@code token}
      */
     @NonNull
-    protected abstract HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token);
+    protected abstract FullResult resultOfViewingToken(@NonNull Token token);
+
+    /**
+     * Returns the result of viewing the given {@code token} given the {@code status}.
+     * Currently, the only usage for this method is to return an INVALID_TOKEN_ID status
+     * if the token is null.
+     * @param status - ResponseCodeEnum status
+     * @return the results to return to the caller
+     */
+    @NonNull
+    protected abstract FullResult viewCallResultWith(ResponseCodeEnum status, long gasRequirement);
 }
