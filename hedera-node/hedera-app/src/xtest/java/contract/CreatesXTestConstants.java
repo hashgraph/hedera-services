@@ -17,9 +17,8 @@
 package contract;
 
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
+import static contract.XTestConstants.INVALID_ACCOUNT_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
-import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
-
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import java.math.BigInteger;
@@ -36,37 +35,45 @@ public class CreatesXTestConstants {
     static final String SYMBOL = "symbol";
     static final String MEMO = "memo";
     static final long MAX_SUPPLY = 1000L;
-    static final int KEY_TYPE = 112;
     static final long SECOND = 123L;
     static final long AUTO_RENEW_PERIOD = 2592000L;
 
     static final Tuple TOKEN_KEY = Tuple.of(
             BigInteger.valueOf(KEY_TYPE),
             Tuple.of(false, RECEIVER_HEADLONG_ADDRESS, new byte[] {}, new byte[] {}, asAddress("")));
+    static final Tuple TOKEN_KEY =
+            Tuple.of(BigInteger.valueOf(1), Tuple.of(true, asAddress(""), new byte[] {}, new byte[] {}, asAddress("")));
 
+    static final Tuple TOKEN_KEY_TWO = Tuple.of(
+            BigInteger.valueOf(80), Tuple.of(true, asAddress(""), new byte[] {}, new byte[] {}, asAddress("")));
+
+    static final Tuple TOKEN_INVALID_KEY = Tuple.of(
+            BigInteger.valueOf(1),
+            Tuple.of(false, INVALID_ACCOUNT_ADDRESS, new byte[] {}, new byte[] {}, asAddress("")));
+
+    //@TODO is there any difference?
     static final Tuple EXPIRY = Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
     static final Tuple EXPIRY_V2 = Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
 
-    static final Tuple HEDERA_TOKEN_STRUCT = Tuple.of(
-            NAME,
-            SYMBOL,
-            OWNER_HEADLONG_ADDRESS,
-            MEMO,
-            true,
-            MAX_SUPPLY,
-            false,
-            // TokenKey
-            new Tuple[] {TOKEN_KEY},
-            // Expiry
-            EXPIRY);
-
     static final Tuple FIXED_FEE = Tuple.of(100L, ERC20_TOKEN_ADDRESS, false, false, OWNER_HEADLONG_ADDRESS);
     static final Tuple FRACTIONAL_FEE = Tuple.of(100L, 100L, 100L, 100L, true, OWNER_HEADLONG_ADDRESS);
-
     static final Tuple ROYALTY_FEE = Tuple.of(10L, 10L, 1L, ERC20_TOKEN_ADDRESS, false, OWNER_HEADLONG_ADDRESS);
 
+    static final Tuple hederaTokenFactory(
+            String name,
+            String symbol,
+            com.esaulpaugh.headlong.abi.Address treasury,
+            String memo,
+            boolean tokenSupplyType,
+            long maxSupply,
+            boolean freezeDefault,
+            Tuple[] tokenKeys,
+            Tuple expiry) {
+        return Tuple.of(name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault, tokenKeys, expiry);
+    }
+
     // casts Address to null
-    private static Address asAddress(String address) {
+    public static Address asAddress(String address) {
         final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
         final var addressAsInteger = addressBytes.toUnsignedBigInteger();
         return Address.wrap(Address.toChecksumAddress(addressAsInteger));

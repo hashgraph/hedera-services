@@ -157,6 +157,11 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
+        final var inputBytes = attempt.inputBytes();
+        final var senderId = attempt.senderId();
+        final var nativeOperations = attempt.nativeOperations();
+        final var addressIdConverter = attempt.addressIdConverter();
+
         if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1.selector())) {
             return decoder.decodeCreateFungibleTokenV1(attempt.inputBytes(), attempt.addressIdConverter());
         } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2.selector())) {
@@ -187,5 +192,4 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
         } else {
             return decoder.decodeCreateNonFungibleWithCustomFeesV3(attempt.inputBytes(), attempt.addressIdConverter());
         }
-    }
 }

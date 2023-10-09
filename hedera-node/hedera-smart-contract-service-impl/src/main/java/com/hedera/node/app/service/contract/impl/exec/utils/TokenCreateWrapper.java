@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Fraction;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
@@ -148,6 +149,14 @@ public class TokenCreateWrapper {
 
     public void setRoyaltyFees(final List<RoyaltyFeeWrapper> royaltyFees) {
         this.royaltyFees = royaltyFees;
+    }
+
+    public void setAllInheritedKeysTo(final Key senderKey) {
+        for (final var tokenKey : tokenKeys) {
+            if (tokenKey.key().isShouldInheritAccountKeySet()) {
+                tokenKey.key().setInheritedKey(senderKey);
+            }
+        }
     }
 
     public static final class FixedFeeWrapper {

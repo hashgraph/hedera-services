@@ -59,7 +59,6 @@ import com.swirlds.config.api.ConfigProperty;
  * @param asyncPrehandle                    if true then prehandle transactions asynchronously in a thread pool, if
  *                                          false then prehandle happens on the intake thread
  * @param prehandlePoolSize                 the size of the thread pool used for prehandling transactions, if enabled
- * @param forceUseOfOrphanBuffer            if true then orphan buffer is used even if chatter is not enabled
  */
 @ConfigData("event")
 public record EventConfig(
@@ -74,5 +73,4 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "./eventstreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "true") boolean asyncPrehandle,
-        @ConfigProperty(defaultValue = "8") int prehandlePoolSize,
-        @ConfigProperty(defaultValue = "true") boolean forceUseOfOrphanBuffer) {}
+        @ConfigProperty(defaultValue = "8") int prehandlePoolSize) {}
