@@ -16,27 +16,23 @@
 
 package com.swirlds.common.wiring.components;
 
-import java.util.concurrent.ArrayBlockingQueue;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public final class EventPool {
-    private static final int CAPACITY = 10000;
-    private final BlockingQueue<Event> pool = new ArrayBlockingQueue<>(CAPACITY);
+    private final BlockingQueue<Event> pool = new LinkedBlockingQueue<>();
 
-    public EventPool() {
-        for (int i = 0; i < CAPACITY; i++) {
-            pool.add(new Event());
-        }
-    }
+    public EventPool() {}
 
+    @NonNull
     public Event checkout(long number) {
-        try {
-            Event event = pool.take(); // TODO
-            event.reset(number);
-            return event;
-        } catch (InterruptedException iex) {
-            throw new RuntimeException(iex);
+        Event event = pool.poll();
+        if (event == null) {
+            event = new Event();
         }
+        event.reset(number);
+        return event;
     }
 
     public void checkin(Event event) {

@@ -20,13 +20,13 @@ import static java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFacto
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.base.time.Time;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.wiring.components.Event;
 import com.swirlds.common.wiring.components.EventPool;
 import com.swirlds.common.wiring.components.EventVerifier;
 import com.swirlds.common.wiring.components.Gossip;
 import com.swirlds.common.wiring.components.TopologicalEventSorter;
+import com.swirlds.common.wiring.counters.AbstractObjectCounter;
+import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.Test;
 
@@ -45,28 +45,35 @@ class WiringBenchmark {
                 },
                 true);
 
+        // Step 1: construct wires
+
+        // Ensures that we have no more than 10,000 events in the pipeline at any given time
+        final AbstractObjectCounter backpressure = new BackpressureObjectCounter(10_000, null);
+
+        final Wire<Event> toVerifier = Wire.builder("verification", Event.class)
+                .withConcurrency(true)
+                .withOnRamp(backpressure)
+                .build();
+
+        final Wire<Event> toOrphanBuffer = Wire.builder("orphanBuffer", Event.class)
+                .withConcurrency(false)
+                .withOffRamp(backpressure)
+                .build();
         final EventPool eventPool = new EventPool();
 
+        // Step 2: construct components
+
         final TopologicalEventSorter orphanBuffer = new TopologicalEventSorter(eventPool);
-        final EventVerifier verifier = new EventVerifier(Wire.builder("orphanBuffer", Event.class)
-                .withConsumer(orphanBuffer)
-                .withConcurrency(false)
-                .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics(), Time.getCurrent())
-                        .withScheduledTaskCountMetricEnabled(false)
-                        .withBusyFractionMetricsEnabled(false))
-                .withScheduledTaskCapacity(WireBuilder.UNLIMITED_CAPACITY)
-                .build()::put);
-        final Gossip gossip = new Gossip(
-                executor,
-                eventPool,
-                Wire.builder("verification", Event.class)
-                        .withConsumer(verifier)
-                        .withConcurrency(true)
-                        .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics(), Time.getCurrent())
-                                .withScheduledTaskCountMetricEnabled(false)
-                                .withBusyFractionMetricsEnabled(false))
-                        .withScheduledTaskCapacity(WireBuilder.UNLIMITED_CAPACITY)
-                        .build()::put);
+
+        final EventVerifier verifier = new EventVerifier(toOrphanBuffer::put);
+        final Gossip gossip = new Gossip(executor, eventPool, toVerifier::put);
+
+        // Step 3: hook wires into components
+
+        toOrphanBuffer.setConsumer(orphanBuffer);
+        toVerifier.setConsumer(verifier);
+
+        // Step 4: run
 
         // Create a user thread for running "gossip". It will continue to generate events until explicitly stopped.
         System.out.println("Starting gossip");
