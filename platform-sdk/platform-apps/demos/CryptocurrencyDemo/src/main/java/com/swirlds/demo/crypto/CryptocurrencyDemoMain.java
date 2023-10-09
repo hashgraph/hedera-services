@@ -41,6 +41,7 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.gui.model.GuiModel;
 import com.swirlds.platform.Browser;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.Random;
@@ -181,6 +182,7 @@ public class CryptocurrencyDemoMain implements SwirldMain {
     }
 
     @Override
+    @NonNull
     public SwirldState newState() {
         return new CryptocurrencyDemoState();
     }

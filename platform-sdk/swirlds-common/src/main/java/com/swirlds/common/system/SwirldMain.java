@@ -16,67 +16,56 @@
 
 package com.swirlds.common.system;
 
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
- * To implement a swirld, create a class that implements SwirldMain. Its constructor should have no
- * parameters, and its run() method should run until the user quits the swirld.
+ * To implement a swirld, create a class that implements SwirldMain. Its constructor should have no parameters, and its
+ * run() method should run until the user quits the swirld.
  */
 public interface SwirldMain extends Runnable {
 
     /**
-     * Pass in a copy of the configuration.
+     * Get configuration types to be registered.
      *
-     * @param configuration
-     * 		configuration for this node
+     * @return a list of configuration types
      */
-    default void setConfiguration(@NonNull final Configuration configuration) {
+    @NonNull
+    default List<Class<? extends Record>> getConfigDataTypes() {
         // override if needed
-    }
-
-    /**
-     * Update the configuration builder with any additional configuration that is required by this swirld.
-     *
-     * @param configurationBuilder
-     * 		the configuration builder to update
-     */
-    default void updateConfigurationBuilder(@NonNull final ConfigurationBuilder configurationBuilder) {
-        // override if needed
+        return List.of();
     }
 
     /**
      * <p>
-     * This should only be called by the Platform. It is passed a reference to the platform, so the
-     * SwirldMain will know who to call. (This is dependency injection).
+     * This should only be called by the Platform. It is passed a reference to the platform, so the SwirldMain will know
+     * who to call. (This is dependency injection).
      * </p>
      *
      * <p>
-     * Any changes necessary to initialize {@link SwirldState} should be made
-     * in {@link SwirldState#init(Platform, SwirldDualState, InitTrigger, SoftwareVersion)}
+     * Any changes necessary to initialize {@link SwirldState} should be made in
+     * {@link SwirldState#init(Platform, SwirldDualState, InitTrigger, SoftwareVersion)}
      * </p>
      *
-     * @param platform
-     * 		the Platform that instantiated this SwirldMain
-     * @param selfId
-     * 		the ID number for this member (myself)
+     * @param platform the Platform that instantiated this SwirldMain
+     * @param selfId   the ID number for this member (myself)
      */
     void init(@NonNull final Platform platform, @NonNull final NodeId selfId);
 
     /**
-     * This is where the app manages the screen and I/O, and creates transactions as needed. It should
-     * return when the user quits the app, but may also return earlier.
+     * This is where the app manages the screen and I/O, and creates transactions as needed. It should return when the
+     * user quits the app, but may also return earlier.
      */
     @Override
     void run();
 
     /**
-     * Instantiate and return a SwirldState object that corresponds to this SwirldMain object. Typically, if
-     * class ExampleMain implements SwirldMain, then newState will return an object of class ExampleMain.
+     * Instantiate and return a SwirldState object that corresponds to this SwirldMain object. Typically, if class
+     * ExampleMain implements SwirldMain, then newState will return an object of class ExampleMain.
      *
      * @return the newly instantiated SwirldState object
      */
+    @NonNull
     SwirldState newState();
 
     /**
@@ -99,5 +88,6 @@ public interface SwirldMain extends Runnable {
      *
      * @return the current version
      */
+    @NonNull
     SoftwareVersion getSoftwareVersion();
 }
