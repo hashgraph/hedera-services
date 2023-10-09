@@ -14,41 +14,48 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Implements the token redirect {@code decimals()} call of the HTS system contract.
+ * Implementation support for view calls that require an extant token.
+ * ERC view function calls are generally revertible.
  */
-public class DecimalsCall extends AbstractRevertibleTokenViewCall {
-    private static final int MAX_REPORTABLE_DECIMALS = 0xFF;
+public abstract class AbstractRevertibleTokenViewCall extends AbstractHtsCall {
+    @Nullable
+    private final Token token;
 
-    public DecimalsCall(@NonNull HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token) {
-        super(enhancement, token);
+    protected AbstractRevertibleTokenViewCall(
+            @NonNull final HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token) {
+        super(enhancement);
+        this.token = token;
+    }
+
+    @Override
+    public @NonNull PricedResult execute() {
+        // TODO - gas calculation
+        if (token == null) {
+            return gasOnly(revertResult(INVALID_TOKEN_ID, 0L));
+        } else {
+            return gasOnly(resultOfViewingToken(token));
+        }
     }
 
     /**
-     * {@inheritDoc}
+     * Returns the result of viewing the given {@code token}.
+     *
+     * @param token the token to view
+     * @return the result of viewing the given {@code token}
      */
-    @Override
-    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
-        // TODO - gas calculation
-        if (token.tokenType() != TokenType.FUNGIBLE_COMMON) {
-            return revertResult(INVALID_TOKEN_ID, 0L);
-        } else {
-            final var decimals = Math.min(MAX_REPORTABLE_DECIMALS, token.decimals());
-            return successResult(DecimalsTranslator.DECIMALS.getOutputs().encodeElements(decimals), 0L);
-        }
-    }
+    @NonNull
+    protected abstract HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token);
 }
