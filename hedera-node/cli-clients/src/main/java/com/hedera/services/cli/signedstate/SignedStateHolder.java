@@ -19,6 +19,7 @@ package com.hedera.services.cli.signedstate;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
@@ -265,6 +266,17 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         final var fileStore = servicesState.storage();
         assertSignedStateComponentExists(fileStore, "fileStore");
         return fileStore;
+    }
+
+    /** Returns the special files store from the state
+     *
+     * The special files store contains, among other things, the system upgrade files.
+     */
+    @NonNull
+    public MerkleSpecialFiles getSpecialFileStore() {
+        final var specialFiles = servicesState.specialFiles();
+        assertSignedStateComponentExists(specialFiles, "specialFiles");
+        return specialFiles;
     }
 
     @NonNull

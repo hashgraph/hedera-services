@@ -19,6 +19,7 @@ package com.hedera.node.app.service.evm.utils;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.SECP256K1_EC_UNCOMPRESSED;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.sun.jna.ptr.LongByReference; // NOSONAR
 import java.nio.ByteBuffer;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
@@ -36,6 +37,10 @@ public final class EthSigsUtils {
         } else {
             return new byte[0];
         }
+    }
+
+    public static Bytes recoverAddressFromPubKey(Bytes pubKeyBytes) {
+        return Bytes.wrap(recoverAddressFromPubKey(pubKeyBytes.toByteArray()));
     }
 
     public static byte[] recoverAddressFromPubKey(LibSecp256k1.secp256k1_pubkey pubKey) {

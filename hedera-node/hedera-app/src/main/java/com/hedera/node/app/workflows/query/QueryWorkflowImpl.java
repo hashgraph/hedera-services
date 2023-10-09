@@ -223,10 +223,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                     final var queryFees = handler.computeFees(context).totalFee();
                     final var txFees = queryChecker.estimateTxFees(
                             storeFactory, consensusTime, transactionInfo, payer.keyOrThrow(), configuration);
-                    final var totalFees = Math.addExact(queryFees, txFees);
 
                     // 4.v Check account balances
-                    queryChecker.validateAccountBalances(accountStore, transactionInfo, payer, totalFees);
+                    queryChecker.validateAccountBalances(accountStore, transactionInfo, payer, queryFees, txFees);
 
                     // 4.vi Submit payment to platform
                     final var txBytes = Transaction.PROTOBUF.toBytes(allegedPayment);

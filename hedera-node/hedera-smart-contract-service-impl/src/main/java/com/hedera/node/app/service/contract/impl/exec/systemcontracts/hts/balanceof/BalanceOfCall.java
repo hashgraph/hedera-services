@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNull;
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -34,7 +34,7 @@ import java.math.BigInteger;
 /**
  * Implements the token redirect {@code balanceOf()} call of the HTS system contract.
  */
-public class BalanceOfCall extends AbstractTokenViewCall {
+public class BalanceOfCall extends AbstractRevertibleTokenViewCall {
     private final Address owner;
 
     public BalanceOfCall(
