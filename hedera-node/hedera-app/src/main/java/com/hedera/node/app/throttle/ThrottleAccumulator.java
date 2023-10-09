@@ -155,6 +155,28 @@ public class ThrottleAccumulator {
     }
 
     /*
+     * Updates the throttle requirements for given number of transactions of same functionality and returns whether they should be throttled.
+     *
+     * @param n the number of transactions to consider
+     * @param function the functionality type of the transactions
+     * @param consensusTime the consensus time of the transaction
+     * @return whether the transaction should be throttled
+     */
+    public boolean shouldThrottleNOfUnscaled(
+            final int n, @NonNull final HederaFunctionality function, @NonNull final Instant consensusTime) {
+        resetLastAllowedUse();
+        ThrottleReqsManager manager;
+        if ((manager = functionReqs.get(function)) == null) {
+            return true;
+        }
+        if (!manager.allReqsMetAt(consensusTime, n, ONE_TO_ONE)) {
+            reclaimLastAllowedUse();
+            return true;
+        }
+        return false;
+    }
+
+    /*
      * Leaks the gas amount previously reserved for the given transaction.
      *
      * @param txnInfo the transaction to leak the gas for
@@ -234,8 +256,7 @@ public class ThrottleAccumulator {
 
         // TODO: in mono we pass: () -> getSpanMapAccessor().getEthTxDataMeta(this) as 3rd param to
         // getGasLimitForContractTx as third param, should we do something similar here?
-        final var txGasLimit = getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality());
-        if (isGasExhausted(function, now, txGasLimit, configuration)) {
+        if (isGasExhausted(txnInfo, now, configuration)) {
             lastTxnWasGasThrottled = true;
             return true;
         }
@@ -296,15 +317,16 @@ public class ThrottleAccumulator {
     }
 
     private boolean isGasExhausted(
-            @NonNull final HederaFunctionality function,
+            @NonNull final TransactionInfo txnInfo,
             @NonNull final Instant now,
-            final long txGasLimit,
             @NonNull final Configuration configuration) {
         final var shouldThrottleByGas =
                 configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
         return shouldThrottleByGas
-                && isGasThrottled(function)
-                && (gasThrottle == null || !gasThrottle.allow(now, txGasLimit));
+                && isGasThrottled(txnInfo.functionality())
+                && (gasThrottle == null
+                        || !gasThrottle.allow(
+                                now, getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality())));
     }
 
     private boolean shouldThrottleMint(
@@ -539,7 +561,7 @@ public class ThrottleAccumulator {
     }
 
     private void logResolvedDefinitions(final int capacitySplit) {
-        var sb = new StringBuilder("Resolved handle throttles (after splitting capacity ")
+        var sb = new StringBuilder("Resolved throttles (after splitting capacity ")
                 .append(capacitySplit)
                 .append(" ways) - \n");
         functionReqs.entrySet().stream()
