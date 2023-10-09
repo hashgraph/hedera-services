@@ -33,7 +33,7 @@ import java.util.Objects;
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
+public class GossipEvent implements BaseEvent, ChatterEvent {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
 
     private static final long ROUND_CREATED_UNDEFINED = -1;
