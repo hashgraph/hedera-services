@@ -31,7 +31,7 @@ public final class EventPool {
 
     public Event checkout(long number) {
         try {
-            Event event = pool.take();
+            Event event = pool.take(); // TODO
             event.reset(number);
             return event;
         } catch (InterruptedException iex) {

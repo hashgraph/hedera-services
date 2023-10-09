@@ -21,7 +21,7 @@ import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
-import com.swirlds.common.wiring.internal.AbstractObjectCounter;
+import com.swirlds.common.wiring.counters.AbstractObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;

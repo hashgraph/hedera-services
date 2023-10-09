@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
-class SequentialWireTest {
+class SequentialWireTests {
 
     @Test
     void illegalNamesTest() {
@@ -720,4 +720,6 @@ class SequentialWireTest {
         assertEventuallyEquals(
                 expectedCountD, countD::get, Duration.ofSeconds(1), "Wire D sum did not match expected value");
     }
+
+    // TODO test with different onRamp and offRamp counters
 }

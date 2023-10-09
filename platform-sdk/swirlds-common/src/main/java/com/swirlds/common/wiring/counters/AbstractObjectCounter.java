@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.internal;
+package com.swirlds.common.wiring.counters;
 
 /**
  * A class that counts the number of objects in a various part of the pipeline.

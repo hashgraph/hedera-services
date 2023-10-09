@@ -111,6 +111,8 @@ public interface Wire<T> {
      */
     boolean offer(@NonNull T data);
 
+    // TODO this currently samples the on ramp counter...
+    //  we may want to consider if this is acceptable API, and we certainly need to document this behavior better
     /**
      * Get the number of unprocessed tasks. Returns -1 if this wire is not monitoring the number of unprocessed tasks.
      * Wires do not track the number of unprocessed tasks by default. To enable tracking, enable

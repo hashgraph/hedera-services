@@ -16,10 +16,28 @@
 
 package com.swirlds.common.wiring.internal;
 
+import com.swirlds.common.wiring.counters.AbstractObjectCounter;
+
 /**
  * A counter that doesn't actually count. Saves us from having to do a (counter == null) check in the standard case.
  */
 public class NoOpCounter extends AbstractObjectCounter {
+
+    private static final NoOpCounter INSTANCE = new NoOpCounter();
+
+    /**
+     * Get the singleton instance.
+     *
+     * @return the singleton instance
+     */
+    public static NoOpCounter getInstance() {
+        return INSTANCE;
+    }
+
+    /**
+     * Constructor.
+     */
+    private NoOpCounter() {}
 
     /**
      * {@inheritDoc}

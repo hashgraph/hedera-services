@@ -19,6 +19,7 @@ package com.swirlds.common.wiring.internal;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.counters.AbstractObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -33,13 +34,15 @@ import java.util.function.Consumer;
 public class MeteredSequentialWire<T> implements Wire<T> {
     private Consumer<T> consumer;
     private final AtomicReference<SequentialTask> lastTask;
-    private final AbstractObjectCounter counter;
+
+    private final AbstractObjectCounter onRamp;
+    private final AbstractObjectCounter offRamp;
+
     private final FractionalTimer busyTimer;
     private final String name;
 
     /**
      * A task in a sequential wire.
-     *
      */
     private class SequentialTask extends AbstractTask {
         private T data;
@@ -81,7 +84,7 @@ public class MeteredSequentialWire<T> implements Wire<T> {
          */
         @Override
         public boolean exec() {
-            counter.offRamp();
+            offRamp.offRamp();
             busyTimer.activate();
             try {
                 consumer.accept(data);
@@ -100,16 +103,21 @@ public class MeteredSequentialWire<T> implements Wire<T> {
      * Constructor.
      *
      * @param name      the name of the wire
-     * @param counter   an object counter that is incremented when data is added to the wire and decremented when data
-     *                  has been processed, ignored if null
+     * @param onRamp    an object counter that is incremented when data is added to the wire, ignored if null
+     * @param offRamp   an object counter that is decremented when data is removed from the wire, ignored if null
      * @param busyTimer a timer that tracks the amount of time the wire is busy, ignored if null
      */
     public MeteredSequentialWire(
             @NonNull final String name,
-            @Nullable final AbstractObjectCounter counter,
+            @Nullable final AbstractObjectCounter onRamp,
+            @Nullable final AbstractObjectCounter offRamp,
             @Nullable final FractionalTimer busyTimer) {
+
         this.name = Objects.requireNonNull(name);
-        this.counter = counter == null ? new NoOpCounter() : counter;
+
+        this.onRamp = onRamp == null ? NoOpCounter.getInstance() : onRamp;
+        this.offRamp = offRamp == null ? NoOpCounter.getInstance() : offRamp;
+
         this.busyTimer = busyTimer == null ? new NoOpFractionalTimer() : busyTimer;
         this.lastTask = new AtomicReference<>();
     }
@@ -140,7 +148,7 @@ public class MeteredSequentialWire<T> implements Wire<T> {
      */
     @Override
     public void put(@NonNull final T data) {
-        counter.onRamp();
+        onRamp.onRamp();
 
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
@@ -159,7 +167,7 @@ public class MeteredSequentialWire<T> implements Wire<T> {
      */
     @Override
     public void interruptablePut(@NonNull T data) throws InterruptedException {
-        counter.interruptableOnRamp();
+        onRamp.interruptableOnRamp();
 
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
@@ -178,7 +186,7 @@ public class MeteredSequentialWire<T> implements Wire<T> {
      */
     @Override
     public boolean offer(@NonNull T data) {
-        final boolean accepted = counter.attemptOnRamp();
+        final boolean accepted = onRamp.attemptOnRamp();
         if (!accepted) {
             return false;
         }
@@ -202,6 +210,6 @@ public class MeteredSequentialWire<T> implements Wire<T> {
      */
     @Override
     public long getUnprocessedTaskCount() {
-        return counter.getCount();
+        return onRamp.getCount();
     }
 }

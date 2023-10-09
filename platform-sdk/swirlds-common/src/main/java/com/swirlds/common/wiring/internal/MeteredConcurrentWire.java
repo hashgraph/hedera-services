@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring.internal;
 
 import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.counters.AbstractObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -29,7 +30,8 @@ import java.util.function.Consumer;
  */
 public class MeteredConcurrentWire<T> implements Wire<T> {
     private Consumer<T> consumer;
-    private final AbstractObjectCounter counter;
+    private final AbstractObjectCounter onRamp;
+    private final AbstractObjectCounter offRamp;
     private final String name;
 
     // TODO write unit tests for this class
@@ -38,12 +40,16 @@ public class MeteredConcurrentWire<T> implements Wire<T> {
      * Constructor.
      *
      * @param name    the name of the wire
-     * @param counter an object counter that is incremented when data is added to the wire and decremented when handling
-     *                begins, ignored if null
+     * @param onRamp  an object counter that is incremented when data is added to the wire, ignored if null
+     * @param offRamp an object counter that is decremented when data is removed from the wire, ignored if null
      */
-    public MeteredConcurrentWire(@NonNull final String name, @Nullable final AbstractObjectCounter counter) {
+    public MeteredConcurrentWire(
+            @NonNull final String name,
+            @Nullable final AbstractObjectCounter onRamp,
+            @Nullable final AbstractObjectCounter offRamp) {
         this.name = Objects.requireNonNull(name);
-        this.counter = counter == null ? new NoOpCounter() : counter;
+        this.onRamp = onRamp == null ? NoOpCounter.getInstance() : onRamp;
+        this.offRamp = offRamp == null ? NoOpCounter.getInstance() : offRamp;
     }
 
     /**
@@ -71,11 +77,11 @@ public class MeteredConcurrentWire<T> implements Wire<T> {
      */
     @Override
     public void put(@NonNull final T data) {
-        counter.onRamp();
+        onRamp.onRamp();
         new AbstractTask() {
             @Override
             protected boolean exec() {
-                counter.offRamp();
+                offRamp.offRamp();
                 consumer.accept(data);
                 return true;
             }
@@ -87,11 +93,11 @@ public class MeteredConcurrentWire<T> implements Wire<T> {
      */
     @Override
     public void interruptablePut(@NonNull T data) throws InterruptedException {
-        counter.interruptableOnRamp();
+        onRamp.interruptableOnRamp();
         new AbstractTask() {
             @Override
             protected boolean exec() {
-                counter.offRamp();
+                offRamp.offRamp();
                 consumer.accept(data);
                 return true;
             }
@@ -103,14 +109,14 @@ public class MeteredConcurrentWire<T> implements Wire<T> {
      */
     @Override
     public boolean offer(@NonNull T data) {
-        boolean accepted = counter.attemptOnRamp();
+        boolean accepted = onRamp.attemptOnRamp();
         if (!accepted) {
             return false;
         }
         new AbstractTask() {
             @Override
             protected boolean exec() {
-                counter.offRamp();
+                offRamp.offRamp();
                 consumer.accept(data);
                 return true;
             }
@@ -123,6 +129,6 @@ public class MeteredConcurrentWire<T> implements Wire<T> {
      */
     @Override
     public long getUnprocessedTaskCount() {
-        return counter == null ? -1 : counter.getCount();
+        return onRamp.getCount();
     }
 }

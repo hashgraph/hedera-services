@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.internal;
+package com.swirlds.common.wiring.counters;
 
 import java.util.concurrent.atomic.AtomicLong;
 
