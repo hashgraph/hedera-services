@@ -49,12 +49,14 @@ public class CreateTranslatorTest {
         final var matches = subject.matches(attempt);
         assertThat(matches).isTrue();
     }
+
     @Test
     void matchesCreateFungibleTokenV2() {
         given(attempt.selector()).willReturn(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2.selector());
         final var matches = subject.matches(attempt);
         assertThat(matches).isTrue();
     }
+
     @Test
     void matchesCreateFungibleTokenV3() {
         given(attempt.selector()).willReturn(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3.selector());

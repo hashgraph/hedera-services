@@ -19,6 +19,7 @@ package contract;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.INVALID_ACCOUNT_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
+
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import java.math.BigInteger;
@@ -38,9 +39,6 @@ public class CreatesXTestConstants {
     static final long SECOND = 123L;
     static final long AUTO_RENEW_PERIOD = 2592000L;
 
-    static final Tuple TOKEN_KEY = Tuple.of(
-            BigInteger.valueOf(KEY_TYPE),
-            Tuple.of(false, RECEIVER_HEADLONG_ADDRESS, new byte[] {}, new byte[] {}, asAddress("")));
     static final Tuple TOKEN_KEY =
             Tuple.of(BigInteger.valueOf(1), Tuple.of(true, asAddress(""), new byte[] {}, new byte[] {}, asAddress("")));
 
@@ -51,9 +49,7 @@ public class CreatesXTestConstants {
             BigInteger.valueOf(1),
             Tuple.of(false, INVALID_ACCOUNT_ADDRESS, new byte[] {}, new byte[] {}, asAddress("")));
 
-    //@TODO is there any difference?
     static final Tuple EXPIRY = Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
-    static final Tuple EXPIRY_V2 = Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
 
     static final Tuple FIXED_FEE = Tuple.of(100L, ERC20_TOKEN_ADDRESS, false, false, OWNER_HEADLONG_ADDRESS);
     static final Tuple FRACTIONAL_FEE = Tuple.of(100L, 100L, 100L, 100L, true, OWNER_HEADLONG_ADDRESS);

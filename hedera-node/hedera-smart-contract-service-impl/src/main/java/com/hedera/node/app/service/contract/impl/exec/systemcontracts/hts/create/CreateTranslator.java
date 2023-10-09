@@ -163,33 +163,37 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
         final var addressIdConverter = attempt.addressIdConverter();
 
         if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1.selector())) {
-            return decoder.decodeCreateFungibleTokenV1(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateFungibleTokenV1(inputBytes, senderId, nativeOperations, addressIdConverter);
         } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2.selector())) {
-            return decoder.decodeCreateFungibleTokenV2(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateFungibleTokenV2(inputBytes, senderId, nativeOperations, addressIdConverter);
         } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3.selector())) {
-            return decoder.decodeCreateFungibleTokenV3(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateFungibleTokenV3(inputBytes, senderId, nativeOperations, addressIdConverter);
         } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1.selector())) {
             return decoder.decodeCreateFungibleTokenWithCustomFeesV1(
-                    attempt.inputBytes(), attempt.addressIdConverter());
+                    inputBytes, senderId, nativeOperations, addressIdConverter);
         } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2.selector())) {
             return decoder.decodeCreateFungibleTokenWithCustomFeesV2(
-                    attempt.inputBytes(), attempt.addressIdConverter());
+                    inputBytes, senderId, nativeOperations, addressIdConverter);
         } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3.selector())) {
             return decoder.decodeCreateFungibleTokenWithCustomFeesV3(
-                    attempt.inputBytes(), attempt.addressIdConverter());
+                    inputBytes, senderId, nativeOperations, addressIdConverter);
         } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1.selector())) {
-            return decoder.decodeCreateNonFungibleV1(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateNonFungibleV1(inputBytes, senderId, nativeOperations, addressIdConverter);
         } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2.selector())) {
-            return decoder.decodeCreateNonFungibleV2(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateNonFungibleV2(inputBytes, senderId, nativeOperations, addressIdConverter);
         } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3.selector())) {
-            return decoder.decodeCreateNonFungibleV3(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateNonFungibleV3(inputBytes, senderId, nativeOperations, addressIdConverter);
         } else if (Arrays.equals(
                 attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1.selector())) {
-            return decoder.decodeCreateNonFungibleWithCustomFeesV1(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateNonFungibleWithCustomFeesV1(
+                    inputBytes, senderId, nativeOperations, addressIdConverter);
         } else if (Arrays.equals(
                 attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2.selector())) {
-            return decoder.decodeCreateNonFungibleWithCustomFeesV2(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateNonFungibleWithCustomFeesV2(
+                    inputBytes, senderId, nativeOperations, addressIdConverter);
         } else {
-            return decoder.decodeCreateNonFungibleWithCustomFeesV3(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateNonFungibleWithCustomFeesV3(
+                    inputBytes, senderId, nativeOperations, addressIdConverter);
         }
+    }
 }
