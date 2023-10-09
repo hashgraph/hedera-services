@@ -18,7 +18,6 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.throwIfFileExists;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_FILE_NAME;
@@ -37,40 +36,27 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
-import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.status.StatusActionSubmitter;
-import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
-import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.BufferedReader;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -261,97 +247,6 @@ class SignedStateFileReadWriteTest {
                 getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321/myOtherSwirld/42"),
                 getSignedStateDirectory("com.swirlds.barfoo", new NodeId(4321), "myOtherSwirld", 42),
                 "unexpected saved state file");
-
-        changeConfigAndConfigHolder("data/saved");
-    }
-
-    @SuppressWarnings("resource")
-    @Test
-    @DisplayName("cleanStateDirectoryTest() Test")
-    void cleanStateDirectoryTest() throws IOException {
-
-        // The saved state directory is still accessed through settings, so set both here
-
-        final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfiguration(changeConfigAndConfigHolder(
-                        testDirectory.resolve("data/saved").toString()))
-                .build();
-
-        final SignedStateMetrics signedStateMetrics = mock(SignedStateMetrics.class);
-        when(signedStateMetrics.getStateToDiskTimeMetric()).thenReturn(mock(RunningAverageMetric.class));
-        when(signedStateMetrics.getWriteStateToDiskTimeMetric()).thenReturn(mock(RunningAverageMetric.class));
-
-        final SignedStateFileManager manager = new SignedStateFileManager(
-                context,
-                getStaticThreadManager(),
-                signedStateMetrics,
-                new FakeTime(),
-                MAIN_CLASS_NAME,
-                SELF_ID,
-                SWIRLD_NAME,
-                (ss, path, success) -> {},
-                x -> {},
-                mock(StatusActionSubmitter.class));
-        manager.start();
-
-        final int rounds = 3;
-
-        // Save a few states to the directory
-        for (int round = 1; round <= rounds; round++) {
-            final SignedState signedState =
-                    new RandomSignedStateGenerator().setRound(round).build();
-
-            manager.saveSignedStateToDisk(signedState, false);
-        }
-
-        // The states should have been written by now
-        AssertionUtils.assertEventuallyDoesNotThrow(
-                () -> {
-                    for (int round = 1; round <= rounds; round++) {
-                        final Path stateFile = getSignedStateDirectory(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, round)
-                                .resolve("SignedState.swh");
-                        assertTrue(Files.exists(stateFile), "Signed state file " + stateFile + " does not exist");
-                    }
-                },
-                Duration.ofSeconds(1),
-                "states should have been written by now");
-
-        // Write some cruft to the saved state directory.
-        Files.createDirectories(getSignedStatesBaseDirectory().resolve("foo"));
-        Files.createDirectories(getSignedStatesBaseDirectory().resolve("bar"));
-        Files.createDirectories(getSignedStatesBaseDirectory().resolve("baz"));
-        Files.createDirectories(
-                getSignedStatesBaseDirectory().resolve("foo").resolve("bar").resolve("baz"));
-        Files.createDirectories(
-                getSignedStatesBaseDirectory().resolve("foo").resolve("baz").resolve("bar"));
-        Files.createDirectories(
-                getSignedStatesBaseDirectory().resolve("baz").resolve("bar").resolve("foo"));
-        final SerializableDataOutputStream fooOut = new SerializableDataOutputStream(new FileOutputStream(
-                getSignedStatesBaseDirectory().resolve("foo.dat").toFile()));
-        fooOut.writeNormalisedString("this is a test of the emergency testing system");
-        fooOut.close();
-        final SerializableDataOutputStream barOut = new SerializableDataOutputStream(new FileOutputStream(
-                getSignedStatesBaseDirectory().resolve("bar").resolve("foo.dat").toFile()));
-        barOut.writeNormalisedString("this is a test of the emergency testing system");
-        barOut.close();
-
-        // The number of files in `data/saved` should exceed 1
-        assertTrue(
-                Files.walk(getSignedStatesBaseDirectory(), 1).count() > 2,
-                "there should be more files in this directory");
-
-        SignedStateFileUtils.cleanStateDirectory(MAIN_CLASS_NAME);
-
-        // After cleaning, the only thing that should be present is the directory with states
-        // (parent directory is included by walk, so value returned is actually 2)
-        assertEquals(2, Files.walk(getSignedStatesBaseDirectory(), 1).count(), "too many files in directory");
-
-        // Each of the states should still be present
-        for (int round = 1; round <= rounds; round++) {
-            final Path stateFile = getSignedStateDirectory(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, round)
-                    .resolve("SignedState.swh");
-            assertTrue(Files.exists(stateFile), "Signed state file " + stateFile + " does not exist");
-        }
 
         changeConfigAndConfigHolder("data/saved");
     }

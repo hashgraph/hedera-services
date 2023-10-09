@@ -127,11 +127,12 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             @NonNull final HandleContext handleContext) {
         final var account = getIfUsable(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
+        final var config = handleContext.configuration();
 
         if (tokenRel == null && account.maxAutoAssociations() > 0) {
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
-            final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, handleContext);
+            final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
             return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
         } else {
             validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
