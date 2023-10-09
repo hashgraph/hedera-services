@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 public class SequentialWire<T> implements Wire<T> {
     private Consumer<T> consumer;
     private final String name;
-    private final AtomicReference<SequentialTask<T>> lastTask;
+    private final AtomicReference<SequentialTask> lastTask;
 
     /**
      * Constructor.
@@ -51,18 +51,15 @@ public class SequentialWire<T> implements Wire<T> {
             throw new IllegalStateException("Consumer has already been set");
         }
         this.consumer = Objects.requireNonNull(consumer);
-        this.lastTask.set(new SequentialTask<>(1, consumer));
+        this.lastTask.set(new SequentialTask(1));
     }
 
     /**
      * A task in a sequential wire.
-     *
-     * @param <T> the type of object that is passed through the wire
      */
-    private static class SequentialTask<T> extends AbstractTask {
-        private final Consumer<T> consumer;
+    private class SequentialTask extends AbstractTask {
         private T data;
-        private SequentialTask<T> nextTask;
+        private SequentialTask nextTask;
 
         /**
          * Constructor.
@@ -71,11 +68,9 @@ public class SequentialWire<T> implements Wire<T> {
          *                        execution. The first task in a sequence has a dependency count of 1 (data must be
          *                        provided), and subsequent tasks have a dependency count of 2 (the previous task must
          *                        be executed and data must be provided).
-         * @param consumer        data on the wire is passed to this consumer
          */
-        SequentialTask(final int dependencyCount, @NonNull Consumer<T> consumer) {
+        SequentialTask(final int dependencyCount) {
             super(dependencyCount);
-            this.consumer = consumer;
         }
 
         /**
@@ -84,7 +79,7 @@ public class SequentialWire<T> implements Wire<T> {
          * @param nextTask the task that will execute after this task
          * @param data     the data to be passed to the consumer for this task
          */
-        void send(@NonNull final SequentialTask<T> nextTask, @NonNull final T data) {
+        void send(@NonNull final SequentialTask nextTask, @NonNull final T data) {
             this.nextTask = nextTask;
             this.data = data;
 
@@ -132,8 +127,8 @@ public class SequentialWire<T> implements Wire<T> {
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
 
-        final SequentialTask<T> nextTask = new SequentialTask<>(2, consumer);
-        SequentialTask<T> currentTask;
+        final SequentialTask nextTask = new SequentialTask(2);
+        SequentialTask currentTask;
         do {
             currentTask = lastTask.get();
         } while (!lastTask.compareAndSet(currentTask, nextTask));
@@ -144,13 +139,13 @@ public class SequentialWire<T> implements Wire<T> {
      * {@inheritDoc}
      */
     @Override
-    public void interruptablePut(@NonNull T data) throws InterruptedException {
+    public void interruptablePut(@NonNull final T data)  {
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
 
-        final SequentialTask<T> nextTask = new SequentialTask<>(2, consumer);
-        SequentialTask<T> currentTask;
+        final SequentialTask nextTask = new SequentialTask(2);
+        SequentialTask currentTask;
         do {
             currentTask = lastTask.get();
         } while (!lastTask.compareAndSet(currentTask, nextTask));
@@ -161,13 +156,13 @@ public class SequentialWire<T> implements Wire<T> {
      * {@inheritDoc}
      */
     @Override
-    public boolean offer(@NonNull T data) {
+    public boolean offer(@NonNull final T data) {
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
 
-        final SequentialTask<T> nextTask = new SequentialTask<>(2, consumer);
-        SequentialTask<T> currentTask;
+        final SequentialTask nextTask = new SequentialTask(2);
+        SequentialTask currentTask;
         do {
             currentTask = lastTask.get();
         } while (!lastTask.compareAndSet(currentTask, nextTask));

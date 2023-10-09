@@ -166,7 +166,7 @@ public class MeteredSequentialWire<T> implements Wire<T> {
      * {@inheritDoc}
      */
     @Override
-    public void interruptablePut(@NonNull T data) throws InterruptedException {
+    public void interruptablePut(@NonNull final T data) throws InterruptedException {
         onRamp.interruptableOnRamp();
 
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
@@ -185,7 +185,7 @@ public class MeteredSequentialWire<T> implements Wire<T> {
      * {@inheritDoc}
      */
     @Override
-    public boolean offer(@NonNull T data) {
+    public boolean offer(@NonNull final T data) {
         final boolean accepted = onRamp.attemptOnRamp();
         if (!accepted) {
             return false;
