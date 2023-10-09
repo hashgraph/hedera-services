@@ -53,8 +53,7 @@ public class TokenUpdateResourceUsage extends AbstractTokenResourceUsage impleme
     }
 
     @Override
-    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final StateView view)
-            throws InvalidTxBodyException {
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final StateView view) {
         final var op = txn.getTokenUpdate();
         final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         final var optionalInfo = view.infoForToken(op.getToken());
@@ -91,8 +90,7 @@ public class TokenUpdateResourceUsage extends AbstractTokenResourceUsage impleme
      * @return fee data
      * @throws InvalidTxBodyException
      */
-    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final Token token)
-            throws InvalidTxBodyException {
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final Token token) {
         final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         if (token != null) {
             final var estimate = factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS))

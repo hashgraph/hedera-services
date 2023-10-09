@@ -31,7 +31,7 @@ class SmartContractFeeBuilderTest {
     private final SmartContractFeeBuilder smartContractFeeBuilder = new SmartContractFeeBuilder();
 
     @Test
-    void assertGetFileContentQueryFeeMatrices() throws InvalidTxBodyException {
+    void assertGetFileContentQueryFeeMatrices() {
         var transactionBody = transactionBodyBuilder
                 .setEthereumTransaction(EthereumTransactionBody.newBuilder())
                 .build();

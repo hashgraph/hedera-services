@@ -346,7 +346,7 @@ class UsageBasedFeeCalculatorTest {
     }
 
     @Test
-    void failsWithIseGivenApplicableButUnusableCalculator() throws InvalidTxBodyException {
+    void failsWithIseGivenApplicableButUnusableCalculator() {
         // setup:
         final SigValueObj expectedSigUsage =
                 new SigValueObj(FeeBuilder.getSignatureCount(signedTxn), 9, FeeBuilder.getSignatureSize(signedTxn));

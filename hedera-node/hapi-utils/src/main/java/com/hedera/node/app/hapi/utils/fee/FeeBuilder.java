@@ -189,10 +189,7 @@ public class FeeBuilder {
      * @return long representing transaction size
      * @throws InvalidTxBodyException when transaction body is invalid
      */
-    public static long getCommonTransactionBodyBytes(final TransactionBody txBody) throws InvalidTxBodyException {
-        if (txBody == null) {
-            throw new InvalidTxBodyException("Transaction Body not available for Fee Calculation");
-        }
+    public static long getCommonTransactionBodyBytes(final TransactionBody txBody) {
         int memoSize = 0;
         if (txBody.getMemo() != null) {
             memoSize = txBody.getMemoBytes().size();

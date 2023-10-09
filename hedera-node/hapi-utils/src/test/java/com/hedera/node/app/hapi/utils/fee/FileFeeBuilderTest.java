@@ -43,7 +43,7 @@ class FileFeeBuilderTest {
     }
 
     @Test
-    void assertGetSystemDeleteFileTxFeeMatrices() throws InvalidTxBodyException {
+    void assertGetSystemDeleteFileTxFeeMatrices() {
         var transactionBody = transactionBodyBuilder
                 .setSystemDelete(SystemDeleteTransactionBody.newBuilder().build())
                 .build();
@@ -68,7 +68,7 @@ class FileFeeBuilderTest {
     }
 
     @Test
-    void assertGetSystemUnDeleteFileTxFeeMatrices() throws InvalidTxBodyException {
+    void assertGetSystemUnDeleteFileTxFeeMatrices() {
         var transactionBody = transactionBodyBuilder
                 .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().build())
                 .build();
@@ -85,7 +85,7 @@ class FileFeeBuilderTest {
     }
 
     @Test
-    void assertGetSystemUnDeleteFileTxFeeMatricesThrowsException() throws InvalidTxBodyException {
+    void assertGetSystemUnDeleteFileTxFeeMatricesThrowsException() {
         var transactionBody = transactionBodyBuilder.build();
         assertThrows(InvalidTxBodyException.class, () -> {
             fileFeeBuilder.getSystemUnDeleteFileTxFeeMatrices(transactionBody, signValueObj);
@@ -93,7 +93,7 @@ class FileFeeBuilderTest {
     }
 
     @Test
-    void assertGetFileDeleteTxFeeMatrices() throws InvalidTxBodyException {
+    void assertGetFileDeleteTxFeeMatrices() {
         var transactionBody = transactionBodyBuilder
                 .setFileDelete(FileDeleteTransactionBody.newBuilder().build())
                 .build();
@@ -111,7 +111,7 @@ class FileFeeBuilderTest {
     }
 
     @Test
-    void assertGetFileDeleteTxFeeMatricesThrowsException() throws InvalidTxBodyException {
+    void assertGetFileDeleteTxFeeMatricesThrowsException() {
         var transactionBody = transactionBodyBuilder.build();
         assertThrows(InvalidTxBodyException.class, () -> {
             fileFeeBuilder.getFileDeleteTxFeeMatrices(transactionBody, signValueObj);

@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
@@ -37,7 +36,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenCreateResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -51,7 +49,6 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -371,14 +368,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         return feeContext
                 .feeCalculator(
                         tokenSubTypeFrom(type, !op.customFeesOrElse(emptyList()).isEmpty()))
-                .legacyCalculate(sigValueObj -> {
-                    try {
-                        return new TokenCreateResourceUsage(txnEstimateFactory)
-                                .usageGiven(fromPbj(body), sigValueObj, null);
-                    } catch (InvalidTxBodyException e) {
-                        throw new HandleException(INVALID_TRANSACTION_BODY);
-                    }
-                });
+                .legacyCalculate(sigValueObj ->
+                        new TokenCreateResourceUsage(txnEstimateFactory).usageGiven(fromPbj(body), sigValueObj, null));
     }
 
     public static SubType tokenSubTypeFrom(final TokenType tokenType, boolean hasCustomFees) {

@@ -54,7 +54,7 @@ class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    void feeDataAsExpected() throws InvalidTxBodyException {
+    void feeDataAsExpected() {
         final var txBody = makeTransactionBody(topicId);
 
         final var feeData = subject.usageGiven(txBody, sigValueObj, view);

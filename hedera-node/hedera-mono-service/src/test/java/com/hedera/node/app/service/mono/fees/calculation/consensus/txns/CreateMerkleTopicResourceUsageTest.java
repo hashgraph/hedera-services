@@ -91,8 +91,7 @@ class CreateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
             @ConvertWith(AccountIDConverter.class) final AccountID autoRenewAccountId,
             @ConvertWith(DurationConverter.class) final Duration autoRenewPeriod,
             final int expectedExtraBpt,
-            final int expectedExtraServicesRbh)
-            throws InvalidTxBodyException {
+            final int expectedExtraServicesRbh) {
         final var txBody = makeTransactionBody(memo, adminJKey, submitJKey, autoRenewAccountId, autoRenewPeriod);
 
         final var feeData = subject.usageGiven(txBody, sigValueObj, view);

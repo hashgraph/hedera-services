@@ -46,7 +46,7 @@ class CryptoFeeBuilderTest {
     }
 
     @Test
-    void getsCorrectCryptoCreateTxFeeMatrices() throws InvalidTxBodyException {
+    void getsCorrectCryptoCreateTxFeeMatrices() {
         final var sigValueObj = new SigValueObj(2, 1, 10);
         final var networkFee = feeBuilder().setBpt(154L).setVpt(2L).setRbh(3L).build();
         final var nodeFee =
@@ -79,7 +79,7 @@ class CryptoFeeBuilderTest {
     }
 
     @Test
-    void getsCorrectCryptoDeleteTxFeeMatrices() throws InvalidTxBodyException {
+    void getsCorrectCryptoDeleteTxFeeMatrices() {
         final var sigValueObj = new SigValueObj(5, 3, 20);
         final var networkFee = feeBuilder().setBpt(144L).setVpt(5L).setRbh(1L).build();
         final var nodeFee =

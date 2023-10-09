@@ -75,7 +75,7 @@ class ConsensusServiceFeeBuilderTest {
     }
 
     @Test
-    void getConsensusCreateTopicFeeHappyPath() throws InvalidTxBodyException {
+    void getConsensusCreateTopicFeeHappyPath() {
         final var txnBodyA = TransactionBody.newBuilder()
                 .setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder()
                         .setAdminKey(A_KEY)
@@ -104,7 +104,7 @@ class ConsensusServiceFeeBuilderTest {
     }
 
     @Test
-    void getConsensusUpdateTopicFeeHappyPath() throws InvalidTxBodyException {
+    void getConsensusUpdateTopicFeeHappyPath() {
         final var txnBodyA = TransactionBody.newBuilder()
                 .setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.newBuilder()
                         .setMemo(StringValue.of(MEMO))
@@ -162,7 +162,7 @@ class ConsensusServiceFeeBuilderTest {
     }
 
     @Test
-    void getConsensusDeleteTopicFeeHappyPath() throws InvalidTxBodyException {
+    void getConsensusDeleteTopicFeeHappyPath() {
         final var topicId = TopicID.newBuilder()
                 .setTopicNum(5L)
                 .setRealmNum(0L)

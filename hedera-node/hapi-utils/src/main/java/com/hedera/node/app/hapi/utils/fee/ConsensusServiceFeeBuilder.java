@@ -40,13 +40,8 @@ public final class ConsensusServiceFeeBuilder extends FeeBuilder {
      * @param txBody transaction body
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
-    public static FeeData getConsensusCreateTopicFee(final TransactionBody txBody, final SigValueObj sigValObj)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasConsensusCreateTopic()) {
-            throw new InvalidTxBodyException("consensusCreateTopic field not available for Fee Calculation");
-        }
+    public static FeeData getConsensusCreateTopicFee(final TransactionBody txBody, final SigValueObj sigValObj) {
         final var createTopicTxBody = txBody.getConsensusCreateTopic();
         final var variableSize = computeVariableSizedFieldsUsage(
                 createTopicTxBody.getAdminKey(),
@@ -76,11 +71,7 @@ public final class ConsensusServiceFeeBuilder extends FeeBuilder {
      * @throws InvalidTxBodyException when transaction body is invalid
      */
     public static FeeData getConsensusUpdateTopicFee(
-            final TransactionBody txBody, final long rbsIncrease, final SigValueObj sigValObj)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasConsensusUpdateTopic()) {
-            throw new InvalidTxBodyException("consensusUpdateTopic field not available for Fee Calculation");
-        }
+            final TransactionBody txBody, final long rbsIncrease, final SigValueObj sigValObj) {
         final var updateTopicTxBody = txBody.getConsensusUpdateTopic();
         final var variableSize = computeVariableSizedFieldsUsage(
                 updateTopicTxBody.getAdminKey(),
@@ -193,13 +184,8 @@ public final class ConsensusServiceFeeBuilder extends FeeBuilder {
      * @param txBody transaction body
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
-    public static FeeData getConsensusDeleteTopicFee(final TransactionBody txBody, final SigValueObj sigValObj)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasConsensusDeleteTopic()) {
-            throw new InvalidTxBodyException("consensusDeleteTopic field not available for Fee Calculation");
-        }
+    public static FeeData getConsensusDeleteTopicFee(final TransactionBody txBody, final SigValueObj sigValObj) {
         return getTxFeeMatrices(txBody, sigValObj, BASIC_ENTITY_ID_SIZE, 0, 0);
     }
 
@@ -214,8 +200,7 @@ public final class ConsensusServiceFeeBuilder extends FeeBuilder {
             final SigValueObj sigValObj,
             final int txBodyDataSize,
             final long extraRbsServices,
-            final long extraRbsNetwork)
-            throws InvalidTxBodyException {
+            final long extraRbsNetwork) {
         final var feeComponentsBuilder = FeeComponents.newBuilder()
                 .setVpt(sigValObj.getTotalSigCount())
                 .setSbh(0)
