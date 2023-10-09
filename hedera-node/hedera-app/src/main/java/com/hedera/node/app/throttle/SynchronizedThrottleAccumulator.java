@@ -33,11 +33,11 @@ import javax.inject.Inject;
  */
 public class SynchronizedThrottleAccumulator {
 
-    private final ThrottleAccumulator throttleAccumulator;
+    private final ThrottleAccumulator frontendThrottle;
 
     @Inject
-    public SynchronizedThrottleAccumulator(ThrottleAccumulator throttleAccumulator) {
-        this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
+    public SynchronizedThrottleAccumulator(ThrottleAccumulator frontendThrottle) {
+        this.frontendThrottle = requireNonNull(frontendThrottle, "frontendThrottle must not be null");
     }
 
     /*
@@ -49,7 +49,7 @@ public class SynchronizedThrottleAccumulator {
      * @return whether the transaction should be throttled
      */
     public synchronized boolean shouldThrottle(@NonNull TransactionInfo txnInfo, HederaState state) {
-        return throttleAccumulator.shouldThrottle(txnInfo, Instant.now(), state);
+        return frontendThrottle.shouldThrottle(txnInfo, Instant.now(), state);
     }
 
     /*
@@ -61,6 +61,6 @@ public class SynchronizedThrottleAccumulator {
      * @return whether the query should be throttled
      */
     public synchronized boolean shouldThrottle(HederaFunctionality queryFunction, Query query) {
-        return throttleAccumulator.shouldThrottle(queryFunction, Instant.now(), query);
+        return frontendThrottle.shouldThrottle(queryFunction, Instant.now(), query);
     }
 }

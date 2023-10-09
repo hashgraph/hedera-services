@@ -49,8 +49,8 @@ public class SystemFileUpdateFacility {
     private final ThrottleManager throttleManager;
     private final ExchangeRateManager exchangeRateManager;
     private final MonoMultiplierSources monoMultiplierSources;
-    private final ThrottleAccumulator throttleAccumulator;
-    private final ThrottleAccumulator synchronizedThrottleAccumulator;
+    private final ThrottleAccumulator backendThrottle;
+    private final ThrottleAccumulator frontendThrottle;
 
     /**
      * Creates a new instance of this class.
@@ -62,15 +62,14 @@ public class SystemFileUpdateFacility {
             @NonNull final ThrottleManager throttleManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final MonoMultiplierSources monoMultiplierSources,
-            @NonNull final ThrottleAccumulator throttleAccumulator,
-            @NonNull final ThrottleAccumulator synchronizedThrottleAccumulator) {
+            @NonNull final ThrottleAccumulator backendThrottle,
+            @NonNull final ThrottleAccumulator frontendThrottle) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.throttleManager = requireNonNull(throttleManager, " throttleManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.monoMultiplierSources = requireNonNull(monoMultiplierSources, "multiplierSources must not be null");
-        this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
-        this.synchronizedThrottleAccumulator =
-                requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
+        this.backendThrottle = requireNonNull(backendThrottle, "backendThrottle must not be null");
+        this.frontendThrottle = requireNonNull(frontendThrottle, "frontendThrottle must not be null");
     }
 
     /**
@@ -121,8 +120,8 @@ public class SystemFileUpdateFacility {
                 exchangeRateManager.update(FileUtilities.getFileContent(state, fileID), payer);
             } else if (fileNum == config.networkProperties()) {
                 configProvider.update(FileUtilities.getFileContent(state, fileID));
-                throttleAccumulator.applyGasConfig();
-                synchronizedThrottleAccumulator.applyGasConfig();
+                backendThrottle.applyGasConfig();
+                frontendThrottle.applyGasConfig();
 
                 // Updating the multiplier source to use the new gas throttle
                 // values that are coming from the network properties
@@ -131,8 +130,8 @@ public class SystemFileUpdateFacility {
                 logger.error("Update of HAPI permissions not implemented");
             } else if (fileNum == config.throttleDefinitions()) {
                 throttleManager.update(FileUtilities.getFileContent(state, fileID));
-                throttleAccumulator.rebuildFor(throttleManager.throttleDefinitions());
-                synchronizedThrottleAccumulator.rebuildFor(throttleManager.throttleDefinitions());
+                backendThrottle.rebuildFor(throttleManager.throttleDefinitions());
+                frontendThrottle.rebuildFor(throttleManager.throttleDefinitions());
 
                 // Updating the multiplier source to use the new throttle definitions
                 monoMultiplierSources.resetExpectations();
