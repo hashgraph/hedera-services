@@ -45,6 +45,7 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleInfo;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.transaction.CustomFee;
@@ -157,6 +158,26 @@ public final class PbjConverter {
         try {
             final var bytes = asBytes(Key.PROTOBUF, keyValue);
             return com.hederahashgraph.api.proto.java.Key.parseFrom(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.KeyList fromPbj(@NonNull KeyList keyValue) {
+        requireNonNull(keyValue);
+        try {
+            final var bytes = asBytes(KeyList.PROTOBUF, keyValue);
+            return com.hederahashgraph.api.proto.java.KeyList.parseFrom(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.ScheduleInfo fromPbj(@NonNull ScheduleInfo pbjValue) {
+        requireNonNull(pbjValue);
+        try {
+            final var bytes = asBytes(ScheduleInfo.PROTOBUF, pbjValue);
+            return com.hederahashgraph.api.proto.java.ScheduleInfo.parseFrom(bytes);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

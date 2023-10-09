@@ -62,7 +62,7 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiSuite {
                                 .sleepingBetweenRetriesFor(5),
                         // the target node is back online, but may enter reconnect session soon,
                         // add some delay to wait for it to finish
-                        sleepFor(Duration.ofSeconds(30).toMillis()),
+                        sleepFor(Duration.ofSeconds(60).toMillis()),
                         cryptoCreate("repeatedTransaction")
                                 .txnId(transactionId)
                                 .hasPrecheck(DUPLICATE_TRANSACTION)
