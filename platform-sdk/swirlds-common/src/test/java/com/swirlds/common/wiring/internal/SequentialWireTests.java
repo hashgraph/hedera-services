@@ -33,6 +33,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.WireInserter;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Random;
@@ -75,16 +76,15 @@ class SequentialWireTests {
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final Wire<Integer> wire = Wire.builder("test", Integer.class)
-                .withConsumer(handler)
-                .withConcurrency(false)
-                .build();
+        final Wire wire = Wire.builder("test").withConcurrency(false).build();
+        final WireInserter<Integer> inserter =
+                wire.createInserter(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
-            wire.put(i);
+            inserter.put(i);
             value = hash32(value, i);
         }
 
@@ -112,16 +112,15 @@ class SequentialWireTests {
             }
         };
 
-        final Wire<Integer> wire = Wire.builder("test", Integer.class)
-                .withConsumer(handler)
-                .withConcurrency(false)
-                .build();
+        final Wire wire = Wire.builder("test").withConcurrency(false).build();
+        final WireInserter<Integer> inserter =
+                wire.createInserter(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
-            wire.put(i);
+            inserter.put(i);
             value = hash32(value, i);
         }
 
@@ -143,10 +142,9 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final Wire<Integer> wire = Wire.builder("test", Integer.class)
-                .withConsumer(handler)
-                .withConcurrency(false)
-                .build();
+        final Wire wire = Wire.builder("test").withConcurrency(false).build();
+        final WireInserter<Integer> inserter =
+                wire.createInserter(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -158,7 +156,7 @@ class SequentialWireTests {
             new ThreadConfiguration(getStaticThreadManager())
                     .setRunnable(() -> {
                         for (int j = 0; j < operationsPerWorker; j++) {
-                            wire.put(workerNumber * j);
+                            inserter.put(workerNumber * j);
                         }
                     })
                     .build(true);
@@ -204,10 +202,9 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final Wire<Integer> wire = Wire.builder("test", Integer.class)
-                .withConsumer(handler)
-                .withConcurrency(false)
-                .build();
+        final Wire wire = Wire.builder("test").withConcurrency(false).build();
+        final WireInserter<Integer> inserter =
+                wire.createInserter(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -226,7 +223,7 @@ class SequentialWireTests {
                                     throw new RuntimeException(e);
                                 }
                             }
-                            wire.put(workerNumber * j);
+                            inserter.put(workerNumber * j);
                         }
                     })
                     .build(true);
@@ -272,10 +269,9 @@ class SequentialWireTests {
             }
         };
 
-        final Wire<Integer> wire = Wire.builder("test", Integer.class)
-                .withConsumer(handler)
-                .withConcurrency(false)
-                .build();
+        final Wire wire = Wire.builder("test").withConcurrency(false).build();
+        final WireInserter<Integer> inserter =
+                wire.createInserter(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -284,7 +280,7 @@ class SequentialWireTests {
         completeBeforeTimeout(
                 () -> {
                     for (int i = 0; i < 100; i++) {
-                        wire.put(i);
+                        inserter.put(i);
                         value.set(hash32(value.get(), i));
                     }
                 },
@@ -323,18 +319,19 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire<Integer> wire = Wire.builder("test", Integer.class)
-                .withConsumer(handler)
+        final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
                 .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics(), Time.getCurrent())
                         .withScheduledTaskCountMetricEnabled(true))
                 .build();
+        final WireInserter<Integer> inserter =
+                wire.createInserter(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
-            wire.put(i);
+            inserter.put(i);
             value = hash32(value, i);
         }
 
@@ -386,11 +383,12 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire<Integer> wire = Wire.builder("test", Integer.class)
-                .withConsumer(handler)
+        final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
                 .withScheduledTaskCapacity(10)
                 .build();
+        final WireInserter<Integer> inserter =
+                wire.createInserter(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -400,7 +398,7 @@ class SequentialWireTests {
         completeBeforeTimeout(
                 () -> {
                     for (int i = 0; i < 11; i++) {
-                        wire.put(i);
+                        inserter.put(i);
                         value.set(hash32(value.get(), i));
                     }
                 },
@@ -414,7 +412,7 @@ class SequentialWireTests {
         new ThreadConfiguration(getStaticThreadManager())
                 .setRunnable(() -> {
                     for (int i = 11; i < 100; i++) {
-                        wire.put(i);
+                        inserter.put(i);
                         value.set(hash32(value.get(), i));
                     }
                     allWorkAdded.set(true);
@@ -430,9 +428,9 @@ class SequentialWireTests {
         // Even if the wire has no capacity, offer() should not block.
         completeBeforeTimeout(
                 () -> {
-                    assertFalse(wire.offer(1234));
-                    assertFalse(wire.offer(4321));
-                    assertFalse(wire.offer(-1));
+                    assertFalse(inserter.offer(1234));
+                    assertFalse(inserter.offer(4321));
+                    assertFalse(inserter.offer(-1));
                 },
                 Duration.ofSeconds(1),
                 "unable to offer tasks");
@@ -469,11 +467,12 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire<Integer> wire = Wire.builder("test", Integer.class)
-                .withConsumer(handler)
+        final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
                 .withScheduledTaskCapacity(10)
                 .build();
+        final WireInserter<Integer> inserter =
+                wire.createInserter(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -483,7 +482,7 @@ class SequentialWireTests {
         completeBeforeTimeout(
                 () -> {
                     for (int i = 0; i < 11; i++) {
-                        wire.put(i);
+                        inserter.put(i);
                         value.set(hash32(value.get(), i));
                     }
                 },
@@ -497,7 +496,7 @@ class SequentialWireTests {
         final Thread thread = new ThreadConfiguration(getStaticThreadManager())
                 .setRunnable(() -> {
                     for (int i = 11; i < 100; i++) {
-                        wire.put(i);
+                        inserter.put(i);
                         value.set(hash32(value.get(), i));
                     }
                     allWorkAdded.set(true);
@@ -545,11 +544,12 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire<Integer> wire = Wire.builder("test", Integer.class)
-                .withConsumer(handler)
+        final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
                 .withScheduledTaskCapacity(10)
                 .build();
+        final WireInserter<Integer> inserter =
+                wire.createInserter(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -559,7 +559,7 @@ class SequentialWireTests {
         completeBeforeTimeout(
                 () -> {
                     for (int i = 0; i < 11; i++) {
-                        wire.put(i);
+                        inserter.put(i);
                         value.set(hash32(value.get(), i));
                     }
                 },
@@ -575,7 +575,7 @@ class SequentialWireTests {
                 .setRunnable(() -> {
                     for (int i = 11; i < 100; i++) {
                         try {
-                            wire.interruptablePut(i);
+                            inserter.interruptablePut(i);
                         } catch (final InterruptedException e) {
                             Thread.currentThread().interrupt();
                             interrupted.set(true);
@@ -603,16 +603,15 @@ class SequentialWireTests {
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final Wire<Integer> wire = Wire.builder("test", Integer.class)
-                .withConsumer(handler)
-                .withConcurrency(false)
-                .build();
+        final Wire wire = Wire.builder("test").withConcurrency(false).build();
+        final WireInserter<Integer> inserter =
+                wire.createInserter(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
-            assertTrue(wire.offer(i));
+            assertTrue(inserter.offer(i));
             value = hash32(value, i);
         }
 
@@ -643,15 +642,20 @@ class SequentialWireTests {
         final AtomicInteger countC = new AtomicInteger();
         final AtomicInteger countD = new AtomicInteger();
 
-        final Wire<Integer> wireToA = Wire.builder("wireToA", Integer.class).build();
-        final Wire<Integer> wireToB = Wire.builder("wireToB", Integer.class).build();
-        final Wire<Integer> wireToC = Wire.builder("wireToC", Integer.class).build();
-        final Wire<Integer> wireToD = Wire.builder("wireToD", Integer.class).build();
+        final Wire wireToA = Wire.builder("wireToA").build();
+        final Wire wireToB = Wire.builder("wireToB").build();
+        final Wire wireToC = Wire.builder("wireToC").build();
+        final Wire wireToD = Wire.builder("wireToD").build();
+
+        final WireInserter<Integer> inserterToA = wireToA.createInserter(Integer.class);
+        final WireInserter<Integer> inserterToB = wireToB.createInserter(Integer.class);
+        final WireInserter<Integer> inserterToC = wireToC.createInserter(Integer.class);
+        final WireInserter<Integer> inserterToD = wireToD.createInserter(Integer.class);
 
         final Consumer<Integer> handlerA = x -> {
             if (x > 0) {
                 countA.set(hash32(x, countA.get()));
-                wireToB.put(x);
+                inserterToB.put(x);
             } else {
                 negativeCountA.set(hash32(x, negativeCountA.get()));
                 // negative values are values that have been passed around the loop
@@ -661,25 +665,25 @@ class SequentialWireTests {
 
         final Consumer<Integer> handlerB = x -> {
             countB.set(hash32(x, countB.get()));
-            wireToC.put(x);
+            inserterToC.put(x);
         };
 
         final Consumer<Integer> handlerC = x -> {
             countC.set(hash32(x, countC.get()));
-            wireToD.put(x);
+            inserterToD.put(x);
         };
 
         final Consumer<Integer> handlerD = x -> {
             countD.set(hash32(x, countD.get()));
             if (x % 7 == 0) {
-                wireToA.put(-x);
+                inserterToA.put(-x);
             }
         };
 
-        wireToA.setConsumer(handlerA);
-        wireToB.setConsumer(handlerB);
-        wireToC.setConsumer(handlerC);
-        wireToD.setConsumer(handlerD);
+        inserterToA.bind(handlerA);
+        inserterToB.bind(handlerB);
+        inserterToC.bind(handlerC);
+        inserterToD.bind(handlerD);
 
         int expectedCountA = 0;
         int expectedNegativeCountA = 0;
@@ -688,7 +692,7 @@ class SequentialWireTests {
         int expectedCountD = 0;
 
         for (int i = 1; i < 1000; i++) {
-            wireToA.put(i);
+            inserterToA.put(i);
 
             expectedCountA = hash32(i, expectedCountA);
             expectedCountB = hash32(i, expectedCountB);
@@ -707,7 +711,7 @@ class SequentialWireTests {
         }
 
         assertEventuallyEquals(
-                expectedCountA, countA::get, Duration.ofSeconds(0), "Wire A sum did not match expected value");
+                expectedCountA, countA::get, Duration.ofSeconds(1), "Wire A sum did not match expected value");
         assertEventuallyEquals(
                 expectedNegativeCountA,
                 negativeCountA::get,
@@ -721,5 +725,15 @@ class SequentialWireTests {
                 expectedCountD, countD::get, Duration.ofSeconds(1), "Wire D sum did not match expected value");
     }
 
-    // TODO test with different onRamp and offRamp counters
+    void countingOverMultipleWiresTest() {
+        // TODO
+    }
+
+    void backpressureOverMultipleWiresTest() {
+        // TODO
+    }
+
+    void multipleInsertionTypesTest() {
+        // TODO
+    }
 }

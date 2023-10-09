@@ -23,11 +23,8 @@ import java.util.function.Consumer;
 
 /**
  * A {@link Wire} that permits parallel execution of tasks.
- *
- * @param <T> the type of object that is passed through the wire
  */
-public class ConcurrentWire<T> extends Wire<T> {
-    private Consumer<T> consumer;
+public class ConcurrentWire extends Wire {
     private final String name;
 
     // TODO write unit tests for this class
@@ -44,17 +41,6 @@ public class ConcurrentWire<T> extends Wire<T> {
     /**
      * {@inheritDoc}
      */
-    @Override
-    public void setConsumer(@NonNull Consumer<T> consumer) {
-        if (this.consumer != null) {
-            throw new IllegalStateException("Consumer has already been set");
-        }
-        this.consumer = Objects.requireNonNull(consumer);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
     public String getName() {
@@ -65,11 +51,11 @@ public class ConcurrentWire<T> extends Wire<T> {
      * {@inheritDoc}
      */
     @Override
-    public void put(@NonNull final T data) {
+    protected void put(@NonNull Consumer<Object> handler, @NonNull Object data) {
         new AbstractTask() {
             @Override
             protected boolean exec() {
-                consumer.accept(data);
+                handler.accept(data);
                 return true;
             }
         }.send();
@@ -79,11 +65,11 @@ public class ConcurrentWire<T> extends Wire<T> {
      * {@inheritDoc}
      */
     @Override
-    public void interruptablePut(@NonNull T data) {
+    protected void interruptablePut(@NonNull Consumer<Object> handler, @NonNull Object data) {
         new AbstractTask() {
             @Override
             protected boolean exec() {
-                consumer.accept(data);
+                handler.accept(data);
                 return true;
             }
         }.send();
@@ -93,11 +79,11 @@ public class ConcurrentWire<T> extends Wire<T> {
      * {@inheritDoc}
      */
     @Override
-    public boolean offer(@NonNull T data) {
+    protected boolean offer(@NonNull Consumer<Object> handler, @NonNull Object data) {
         new AbstractTask() {
             @Override
             protected boolean exec() {
-                consumer.accept(data);
+                handler.accept(data);
                 return true;
             }
         }.send();

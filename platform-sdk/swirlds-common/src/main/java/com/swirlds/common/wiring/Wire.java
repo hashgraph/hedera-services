@@ -18,46 +18,23 @@ package com.swirlds.common.wiring;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.wiring.internal.ConcurrentWire;
-import com.swirlds.common.wiring.internal.MeteredConcurrentWire;
-import com.swirlds.common.wiring.internal.MeteredSequentialWire;
-import com.swirlds.common.wiring.internal.SequentialWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * Wires two components together.
- *
- * @param <T> the type of object that is passed through the wire
+ * Wires two or more components together.
  */
-public abstract class Wire<T> {
+public abstract class Wire {
 
     /**
      * Get a new wire builder.
      *
      * @param name the name of the wire. Used for metrics and debugging. Must be unique (not enforced by framework).
      *             Must only contain alphanumeric characters, underscores, and hyphens (enforced by framework).
-     * @param <T>  the type of object that is passed through the wire
      * @return a new wire builder
      */
-    public static <T> WireBuilder<T> builder(@NonNull final String name) {
-        return new WireBuilder<>(name);
-    }
-
-    /**
-     * Get a new wire builder. This method variant exists for convenience for situations where the compiler gets
-     * confused.
-     *
-     * @param name  the name of the wire. Used for metrics and debugging. Must be unique (not enforced by framework).
-     *              Must only contain alphanumeric characters, underscores, and hyphens (enforced by framework).
-     * @param clazz the class of the object that is passed through the wire.
-     * @param <T>   the type of object that is passed through the wire
-     * @return a new wire builder
-     */
-    public static <T> WireBuilder<T> builder(@NonNull final String name, @NonNull final Class<T> clazz) {
-        Objects.requireNonNull(clazz);
-        return new WireBuilder<>(name);
+    public static WireBuilder builder(@NonNull final String name) {
+        return new WireBuilder(name);
     }
 
     /**
@@ -73,15 +50,6 @@ public abstract class Wire<T> {
     }
 
     /**
-     * Provide the consumer where data on the wire is passed. This can be set in the builder via
-     * {@link WireBuilder#withConsumer(Consumer)} or by this method, but it can only be set once. If data is passed into
-     * the wire prior to the consumer being set, then behavior is undefined.
-     *
-     * @param consumer the consumer where data on the wire is passed
-     */
-    public abstract void setConsumer(@NonNull final Consumer<T> consumer);
-
-    /**
      * Get the name of the wire.
      *
      * @return the name of the wire
@@ -89,13 +57,52 @@ public abstract class Wire<T> {
     @NonNull
     public abstract String getName();
 
+    // TODO this currently samples the on ramp counter...
+    //  we may want to consider if this is acceptable API, and we certainly need to document this behavior better
+
     /**
-     * Add a task to the wire. May block if back pressure is enabled. Similar to {@link #interruptablePut(Object)}
-     * except that it cannot be interrupted and can block forever if backpressure is enabled.
-     *
-     * @param data the data to be processed by the wire
+     * Get the number of unprocessed tasks. Returns -1 if this wire is not monitoring the number of unprocessed tasks.
+     * Wires do not track the number of unprocessed tasks by default. To enable tracking, enable
+     * {@link WireMetricsBuilder#withScheduledTaskCountMetricEnabled(boolean)} or set a capacity that is not unlimited
+     * via {@link WireBuilder#withScheduledTaskCapacity(long)}.
      */
-    public abstract void put(@NonNull T data);
+    public abstract long getUnprocessedTaskCount();
+
+    /**
+     * Get a wire inserter for this wire. In order to use this inserter, a handler must be bound via
+     * {@link WireInserter#bind(Consumer)}.
+     *
+     * @param <T> the type of data handled by the handler
+     * @return the inserter
+     */
+    @NonNull
+    public final <T> WireInserter<T> createInserter() {
+        return new WireInserter<>(this);
+    }
+
+    /**
+     * Get a wire inserter for this wire. In order to use this inserter, a handler must be bound via
+     * {@link WireInserter#bind(Consumer)}.
+     *
+     * @param clazz the type of data handled by the handler, convenience argument for scenarios where the compiler can't
+     *              figure out generic types
+     * @param <T>   the type of data handled by the handler
+     * @return the inserter
+     */
+    @NonNull
+    public final <T> WireInserter<T> createInserter(@NonNull final Class<T> clazz) {
+        return new WireInserter<>(this);
+    }
+
+    /**
+     * Add a task to the wire. May block if back pressure is enabled. Similar to
+     * {@link #interruptablePut(Consumer, Object)} except that it cannot be interrupted and can block forever if
+     * backpressure is enabled.
+     *
+     * @param handler handles the provided data
+     * @param data    the data to be processed by the wire
+     */
+    protected abstract void put(@NonNull Consumer<Object> handler, @NonNull Object data);
 
     /**
      * Add a task to the wire. May block if back pressure is enabled. If backpressure is enabled and being applied, this
@@ -104,7 +111,8 @@ public abstract class Wire<T> {
      * @param data the data to be processed by the wire
      * @throws InterruptedException if the thread is interrupted while waiting for capacity to become available
      */
-    public abstract void interruptablePut(@NonNull T data) throws InterruptedException;
+    protected abstract void interruptablePut(@NonNull Consumer<Object> handler, @NonNull Object data)
+            throws InterruptedException;
 
     /**
      * Add a task to the wire. If backpressure is enabled and there is not immediately capacity available, this method
@@ -113,15 +121,5 @@ public abstract class Wire<T> {
      * @param data the data to be processed by the wire
      * @return true if the data was accepted, false otherwise
      */
-    public abstract boolean offer(@NonNull T data);
-
-    // TODO this currently samples the on ramp counter...
-    //  we may want to consider if this is acceptable API, and we certainly need to document this behavior better
-    /**
-     * Get the number of unprocessed tasks. Returns -1 if this wire is not monitoring the number of unprocessed tasks.
-     * Wires do not track the number of unprocessed tasks by default. To enable tracking, enable
-     * {@link WireMetricsBuilder#withScheduledTaskCountMetricEnabled(boolean)} or set a capacity that is not unlimited
-     * via {@link WireBuilder#withScheduledTaskCapacity(long)}.
-     */
-    public abstract long getUnprocessedTaskCount();
+    protected abstract boolean offer(@NonNull Consumer<Object> handler, @NonNull Object data);
 }

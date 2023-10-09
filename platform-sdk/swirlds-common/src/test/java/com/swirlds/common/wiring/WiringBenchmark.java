@@ -25,8 +25,8 @@ import com.swirlds.common.wiring.components.EventPool;
 import com.swirlds.common.wiring.components.EventVerifier;
 import com.swirlds.common.wiring.components.Gossip;
 import com.swirlds.common.wiring.components.TopologicalEventSorter;
-import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.Test;
 
@@ -50,27 +50,30 @@ class WiringBenchmark {
         // Ensures that we have no more than 10,000 events in the pipeline at any given time
         final ObjectCounter backpressure = new BackpressureObjectCounter(10_000, null);
 
-        final Wire<Event> toVerifier = Wire.builder("verification", Event.class)
+        final Wire toVerifier = Wire.builder("verification")
                 .withConcurrency(true)
                 .withOnRamp(backpressure)
                 .build();
 
-        final Wire<Event> toOrphanBuffer = Wire.builder("orphanBuffer", Event.class)
+        final Wire toOrphanBuffer = Wire.builder("orphanBuffer")
                 .withConcurrency(false)
                 .withOffRamp(backpressure)
                 .build();
         final EventPool eventPool = new EventPool();
 
+        final WireInserter<Event> toOrphanBufferInserter = toOrphanBuffer.createInserter();
+        final WireInserter<Event> toVerifierInserter = toVerifier.createInserter();
+
         // Step 2: construct components
 
         final TopologicalEventSorter orphanBuffer = new TopologicalEventSorter(eventPool);
-        final EventVerifier verifier = new EventVerifier(toOrphanBuffer::put);
-        final Gossip gossip = new Gossip(executor, eventPool, toVerifier::put);
+        final EventVerifier verifier = new EventVerifier(toOrphanBufferInserter::put);
+        final Gossip gossip = new Gossip(executor, eventPool, toVerifierInserter::put);
 
         // Step 3: hook wires into components
 
-        toOrphanBuffer.setConsumer(orphanBuffer);
-        toVerifier.setConsumer(verifier);
+        toOrphanBufferInserter.bind(orphanBuffer);
+        toVerifierInserter.bind(verifier);
 
         // Step 4: run
 

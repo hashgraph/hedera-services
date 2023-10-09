@@ -29,11 +29,8 @@ import java.util.function.Consumer;
 
 /**
  * A {@link Wire} that guarantees that tasks are executed sequentially in the order they are received.
- *
- * @param <T> the type of object that is passed through the wire
  */
-public class MeteredSequentialWire<T> extends Wire<T> {
-    private Consumer<T> consumer;
+public class MeteredSequentialWire extends Wire {
     private final AtomicReference<SequentialTask> lastTask;
 
     private final ObjectCounter onRamp;
@@ -46,7 +43,8 @@ public class MeteredSequentialWire<T> extends Wire<T> {
      * A task in a sequential wire.
      */
     private class SequentialTask extends AbstractTask {
-        private T data;
+        private Consumer<Object> handler;
+        private Object data;
         private SequentialTask nextTask;
 
         /**
@@ -65,10 +63,15 @@ public class MeteredSequentialWire<T> extends Wire<T> {
          * Provide a reference to the next task and the data that will be processed during the handling of this task.
          *
          * @param nextTask the task that will execute after this task
+         * @param handler  the method that will be called when this task is executed
          * @param data     the data to be passed to the consumer for this task
          */
-        void send(@NonNull final SequentialTask nextTask, @NonNull final T data) {
+        void send(
+                @NonNull final SequentialTask nextTask,
+                @NonNull final Consumer<Object> handler,
+                @NonNull final Object data) {
             this.nextTask = nextTask;
+            this.handler = handler;
             this.data = data;
 
             // This method provides us with the data we intend to send to the consumer
@@ -88,7 +91,7 @@ public class MeteredSequentialWire<T> extends Wire<T> {
             offRamp.offRamp();
             busyTimer.activate();
             try {
-                consumer.accept(data);
+                handler.accept(data);
             } finally {
                 busyTimer.deactivate();
 
@@ -120,19 +123,7 @@ public class MeteredSequentialWire<T> extends Wire<T> {
         this.offRamp = offRamp == null ? NoOpCounter.getInstance() : offRamp;
 
         this.busyTimer = busyTimer == null ? new NoOpFractionalTimer() : busyTimer;
-        this.lastTask = new AtomicReference<>();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setConsumer(@NonNull final Consumer<T> consumer) {
-        if (this.consumer != null) {
-            throw new IllegalStateException("Consumer has already been set");
-        }
-        this.consumer = Objects.requireNonNull(consumer);
-        this.lastTask.set(new SequentialTask(1));
+        this.lastTask = new AtomicReference<>(new SequentialTask(1));
     }
 
     /**
@@ -148,7 +139,7 @@ public class MeteredSequentialWire<T> extends Wire<T> {
      * {@inheritDoc}
      */
     @Override
-    public void put(@NonNull final T data) {
+    protected void put(@NonNull Consumer<Object> handler, @NonNull Object data) {
         onRamp.onRamp();
 
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
@@ -160,14 +151,15 @@ public class MeteredSequentialWire<T> extends Wire<T> {
         do {
             currentTask = lastTask.get();
         } while (!lastTask.compareAndSet(currentTask, nextTask));
-        currentTask.send(nextTask, Objects.requireNonNull(data));
+        currentTask.send(nextTask, handler, data);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void interruptablePut(@NonNull final T data) throws InterruptedException {
+    protected void interruptablePut(@NonNull Consumer<Object> handler, @NonNull Object data)
+            throws InterruptedException {
         onRamp.interruptableOnRamp();
 
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
@@ -179,14 +171,14 @@ public class MeteredSequentialWire<T> extends Wire<T> {
         do {
             currentTask = lastTask.get();
         } while (!lastTask.compareAndSet(currentTask, nextTask));
-        currentTask.send(nextTask, Objects.requireNonNull(data));
+        currentTask.send(nextTask, handler, data);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean offer(@NonNull final T data) {
+    protected boolean offer(@NonNull Consumer<Object> handler, @NonNull Object data) {
         final boolean accepted = onRamp.attemptOnRamp();
         if (!accepted) {
             return false;
@@ -201,7 +193,7 @@ public class MeteredSequentialWire<T> extends Wire<T> {
         do {
             currentTask = lastTask.get();
         } while (!lastTask.compareAndSet(currentTask, nextTask));
-        currentTask.send(nextTask, Objects.requireNonNull(data));
+        currentTask.send(nextTask, handler, data);
 
         return true;
     }

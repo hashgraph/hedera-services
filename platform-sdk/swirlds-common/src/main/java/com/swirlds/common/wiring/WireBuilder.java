@@ -17,8 +17,8 @@
 package com.swirlds.common.wiring;
 
 import com.swirlds.common.metrics.extensions.FractionalTimer;
-import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import com.swirlds.common.wiring.internal.ConcurrentWire;
 import com.swirlds.common.wiring.internal.MeteredConcurrentWire;
@@ -28,19 +28,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * A builder for wires.
  *
- * @param <T> the type of object that is passed through the wire
  */
-public class WireBuilder<T> {
+public class WireBuilder {
 
     public static final long UNLIMITED_CAPACITY = -1;
 
     private boolean concurrent = false;
-    private Consumer<T> consumer;
     private final String name;
     private WireMetricsBuilder metricsBuilder;
     private long scheduledTaskCapacity = UNLIMITED_CAPACITY;
@@ -73,26 +70,13 @@ public class WireBuilder<T> {
     }
 
     /**
-     * Set the consumer that will receive data from the wire. It is legal to wait to set the consumer until after the
-     * wire is built by using {@link Wire#setConsumer(Consumer)}, but the consumer must only be set once per wire. If
-     * the consumer is not set prior to data being passed into the wire, then behavior is undefined.
-     *
-     * @param consumer the consumer that will receive data from the wire
-     * @return this
-     */
-    public WireBuilder<T> withConsumer(@NonNull final Consumer<T> consumer) {
-        this.consumer = Objects.requireNonNull(consumer);
-        return this;
-    }
-
-    /**
      * Set whether the wire should be concurrent or not. Default false.
      *
      * @param concurrent true if the wire should be concurrent, false otherwise
      * @return this
      */
     @NonNull
-    public WireBuilder<T> withConcurrency(boolean concurrent) {
+    public WireBuilder withConcurrency(boolean concurrent) {
         this.concurrent = concurrent;
         return this;
     }
@@ -104,7 +88,7 @@ public class WireBuilder<T> {
      * @return this
      */
     @NonNull
-    public WireBuilder<T> withScheduledTaskCapacity(final long scheduledTaskCapacity) {
+    public WireBuilder withScheduledTaskCapacity(final long scheduledTaskCapacity) {
         this.scheduledTaskCapacity = scheduledTaskCapacity;
         return this;
     }
@@ -122,7 +106,7 @@ public class WireBuilder<T> {
      * @param onRamp the object counter that should be notified when data is added to the wire
      * @return this
      */
-    public WireBuilder<T> withOnRamp(@NonNull final ObjectCounter onRamp) {
+    public WireBuilder withOnRamp(@NonNull final ObjectCounter onRamp) {
         this.onRamp = Objects.requireNonNull(onRamp);
         return this;
     }
@@ -140,7 +124,7 @@ public class WireBuilder<T> {
      * @param offRamp the object counter that should be notified when data is removed from the wire
      * @return this
      */
-    public WireBuilder<T> withOffRamp(@NonNull final ObjectCounter offRamp) {
+    public WireBuilder withOffRamp(@NonNull final ObjectCounter offRamp) {
         this.offRamp = Objects.requireNonNull(offRamp);
         return this;
     }
@@ -153,7 +137,7 @@ public class WireBuilder<T> {
      * @return this
      */
     @NonNull
-    public WireBuilder<T> withBackpressureSleepDuration(@Nullable final Duration backpressureSleepDuration) {
+    public WireBuilder withBackpressureSleepDuration(@Nullable final Duration backpressureSleepDuration) {
         this.backpressureSleepDuration = backpressureSleepDuration;
         return this;
     }
@@ -164,7 +148,7 @@ public class WireBuilder<T> {
      * @param metricsBuilder the metrics builder
      * @return this
      */
-    public WireBuilder<T> withMetricsBuilder(@NonNull final WireMetricsBuilder metricsBuilder) {
+    public WireBuilder withMetricsBuilder(@NonNull final WireMetricsBuilder metricsBuilder) {
         this.metricsBuilder = Objects.requireNonNull(metricsBuilder);
         return this;
     }
@@ -252,27 +236,23 @@ public class WireBuilder<T> {
      * @return the wire
      */
     @NonNull
-    public Wire<T> build() {
+    public Wire build() {
         final Counters counters = buildCounters();
         final FractionalTimer busyTimer = buildBusyTimer();
 
-        final Wire<T> wire;
+        final Wire wire;
         if (concurrent) {
             if (counters.hasNonNullCounters()) {
-                wire = new MeteredConcurrentWire<>(name, counters.onRamp(), counters.offRamp);
+                wire = new MeteredConcurrentWire(name, counters.onRamp(), counters.offRamp);
             } else {
-                wire = new ConcurrentWire<>(name);
+                wire = new ConcurrentWire(name);
             }
         } else {
             if (counters.hasNonNullCounters() || busyTimer != null) {
-                wire = new MeteredSequentialWire<>(name, counters.onRamp(), counters.offRamp(), busyTimer);
+                wire = new MeteredSequentialWire(name, counters.onRamp(), counters.offRamp(), busyTimer);
             } else {
-                wire = new SequentialWire<>(name);
+                wire = new SequentialWire(name);
             }
-        }
-
-        if (consumer != null) {
-            wire.setConsumer(consumer);
         }
 
         return wire;

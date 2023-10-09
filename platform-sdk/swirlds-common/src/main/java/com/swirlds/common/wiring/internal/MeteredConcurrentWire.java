@@ -26,11 +26,8 @@ import java.util.function.Consumer;
 
 /**
  * A {@link Wire} that permits parallel execution of tasks. Similar to {@link ConcurrentWire} but with extra metering.
- *
- * @param <T> the type of object that is passed through the wire
  */
-public class MeteredConcurrentWire<T> extends Wire<T> {
-    private Consumer<T> consumer;
+public class MeteredConcurrentWire extends Wire {
     private final ObjectCounter onRamp;
     private final ObjectCounter offRamp;
     private final String name;
@@ -45,23 +42,10 @@ public class MeteredConcurrentWire<T> extends Wire<T> {
      * @param offRamp an object counter that is decremented when data is removed from the wire, ignored if null
      */
     public MeteredConcurrentWire(
-            @NonNull final String name,
-            @Nullable final ObjectCounter onRamp,
-            @Nullable final ObjectCounter offRamp) {
+            @NonNull final String name, @Nullable final ObjectCounter onRamp, @Nullable final ObjectCounter offRamp) {
         this.name = Objects.requireNonNull(name);
         this.onRamp = onRamp == null ? NoOpCounter.getInstance() : onRamp;
         this.offRamp = offRamp == null ? NoOpCounter.getInstance() : offRamp;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setConsumer(@NonNull Consumer<T> consumer) {
-        if (this.consumer != null) {
-            throw new IllegalStateException("Consumer has already been set");
-        }
-        this.consumer = Objects.requireNonNull(consumer);
     }
 
     /**
@@ -77,13 +61,13 @@ public class MeteredConcurrentWire<T> extends Wire<T> {
      * {@inheritDoc}
      */
     @Override
-    public void put(@NonNull final T data) {
+    protected void put(@NonNull Consumer<Object> handler, @NonNull Object data) {
         onRamp.onRamp();
         new AbstractTask() {
             @Override
             protected boolean exec() {
                 offRamp.offRamp();
-                consumer.accept(data);
+                handler.accept(data);
                 return true;
             }
         }.send();
@@ -93,13 +77,14 @@ public class MeteredConcurrentWire<T> extends Wire<T> {
      * {@inheritDoc}
      */
     @Override
-    public void interruptablePut(@NonNull T data) throws InterruptedException {
+    protected void interruptablePut(@NonNull Consumer<Object> handler, @NonNull Object data)
+            throws InterruptedException {
         onRamp.interruptableOnRamp();
         new AbstractTask() {
             @Override
             protected boolean exec() {
                 offRamp.offRamp();
-                consumer.accept(data);
+                handler.accept(data);
                 return true;
             }
         }.send();
@@ -109,7 +94,7 @@ public class MeteredConcurrentWire<T> extends Wire<T> {
      * {@inheritDoc}
      */
     @Override
-    public boolean offer(@NonNull T data) {
+    protected boolean offer(@NonNull Consumer<Object> handler, @NonNull Object data) {
         boolean accepted = onRamp.attemptOnRamp();
         if (!accepted) {
             return false;
@@ -118,7 +103,7 @@ public class MeteredConcurrentWire<T> extends Wire<T> {
             @Override
             protected boolean exec() {
                 offRamp.offRamp();
-                consumer.accept(data);
+                handler.accept(data);
                 return true;
             }
         }.send();
