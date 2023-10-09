@@ -61,7 +61,37 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
     private ClassicCreatesCall subject;
 
     @Test
-    void createFungibleTokenHappyPath() {
+    void createFungibleTokenHappyPathV1() {
+        commonGivens();
+        given(recordBuilder.status()).willReturn(SUCCESS);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                        .getOutputs()
+                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                result.getOutput());
+    }
+
+    @Test
+    void createFungibleTokenHappyPathV2() {
+        commonGivens();
+        given(recordBuilder.status()).willReturn(SUCCESS);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
+                        .getOutputs()
+                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                result.getOutput());
+    }
+
+    @Test
+    void createFungibleTokenHappyPathV3() {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
@@ -76,7 +106,37 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
     }
 
     @Test
-    void createFungibleTokenWithCustomFeesHappyPath() {
+    void createFungibleTokenWithCustomFeesHappyPathV1() {
+        commonGivens();
+        given(recordBuilder.status()).willReturn(SUCCESS);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
+                        .getOutputs()
+                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                result.getOutput());
+    }
+
+    @Test
+    void createFungibleTokenWithCustomFeesHappyPathV2() {
+        commonGivens();
+        given(recordBuilder.status()).willReturn(SUCCESS);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2
+                        .getOutputs()
+                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                result.getOutput());
+    }
+
+    @Test
+    void createFungibleTokenWithCustomFeesHappyPathV3() {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
@@ -91,7 +151,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
     }
 
     @Test
-    void createNonFungibleTokenHappyPath() {
+    void createNonFungibleTokenHappyPathV1() {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
@@ -106,7 +166,37 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
     }
 
     @Test
-    void createNonFungibleTokenWithCustomFeesHappyPath() {
+    void createNonFungibleTokenHappyPathV2() {
+        commonGivens();
+        given(recordBuilder.status()).willReturn(SUCCESS);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
+                        .getOutputs()
+                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                result.getOutput());
+    }
+
+    @Test
+    void createNonFungibleTokenHappyPathV3() {
+        commonGivens();
+        given(recordBuilder.status()).willReturn(SUCCESS);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
+                        .getOutputs()
+                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                result.getOutput());
+    }
+
+    @Test
+    void createNonFungibleTokenWithCustomFeesHappyPathV1() {
         commonGivens();
         given(recordBuilder.status()).willReturn(SUCCESS);
 
@@ -115,6 +205,36 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
                 asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
+                        .getOutputs()
+                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                result.getOutput());
+    }
+
+    @Test
+    void createNonFungibleTokenWithCustomFeesHappyPathV2() {
+        commonGivens();
+        given(recordBuilder.status()).willReturn(SUCCESS);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
+                        .getOutputs()
+                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                result.getOutput());
+    }
+
+    @Test
+    void createNonFungibleTokenWithCustomFeesHappyPathV3() {
+        commonGivens();
+        given(recordBuilder.status()).willReturn(SUCCESS);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
+        assertEquals(
+                asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
                 result.getOutput());
