@@ -18,6 +18,7 @@ package com.hedera.node.app;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.swirlds.common.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
 import static com.swirlds.common.system.InitTrigger.RESTART;
@@ -99,19 +100,19 @@ import org.apache.logging.log4j.Logger;
 
 /*
  ****************        ****************************************************************************************
- **********                    **********                                                                       *
- *******                          *******                                                                       *
- *****                              *****                                                                       *
+ ************                ************                                                                       *
+ *********                      *********                                                                       *
+ ******                            ******                                                                       *
  ****                                ****      ___           ___           ___           ___           ___      *
- **         HHHH          HHHH         **     /\  \         /\  \         /\  \         /\  \         /\  \     *
- **         HHHH          HHHH         **    /::\  \       /::\  \       /::\  \       /::\  \       /::\  \    *
- *          HHHHHHHHHHHHHHHHHH          *   /:/\:\  \     /:/\:\  \     /:/\:\  \     /:/\:\  \     /:/\:\  \   *
-            HHHHHHHHHHHHHHHHHH             /::\~\:\  \   /:/  \:\__\   /::\~\:\  \   /::\~\:\  \   /::\~\:\  \  *
-            HHHH          HHHH            /:/\:\ \:\__\ /:/__/ \:|__| /:/\:\ \:\__\ /:/\:\ \:\__\ /:/\:\ \:\__\ *
-            HHHHHHHHHHHHHHHHHH            \:\~\:\ \/__/ \:\  \ /:/  / \:\~\:\ \/__/ \/_|::\/:/  / \/__\:\/:/  / *
- *          HHHHHHHHHHHHHHHHHH          *  \:\ \:\__\    \:\  /:/  /   \:\ \:\__\      |:|::/  /       \::/  /  *
- **         HHHH          HHHH         **   \:\ \/__/     \:\/:/  /     \:\ \/__/      |:|\/__/        /:/  /   *
- ***        HHHH          HHHH        ***    \:\__\        \::/__/       \:\__\        |:|  |         /:/  /    *
+ ***        ĦĦĦĦ          ĦĦĦĦ        ***     /\  \         /\  \         /\  \         /\  \         /\  \     *
+ **         ĦĦĦĦ          ĦĦĦĦ         **    /::\  \       /::\  \       /::\  \       /::\  \       /::\  \    *
+ *          ĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦ          *   /:/\:\  \     /:/\:\  \     /:/\:\  \     /:/\:\  \     /:/\:\  \   *
+            ĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦ             /::\~\:\  \   /:/  \:\__\   /::\~\:\  \   /::\~\:\  \   /::\~\:\  \  *
+            ĦĦĦĦ          ĦĦĦĦ            /:/\:\ \:\__\ /:/__/ \:|__| /:/\:\ \:\__\ /:/\:\ \:\__\ /:/\:\ \:\__\ *
+            ĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦ            \:\~\:\ \/__/ \:\  \ /:/  / \:\~\:\ \/__/ \/_|::\/:/  / \/__\:\/:/  / *
+ *          ĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦĦ          *  \:\ \:\__\    \:\  /:/  /   \:\ \:\__\      |:|::/  /       \::/  /  *
+ **         ĦĦĦĦ          ĦĦĦĦ         **   \:\ \/__/     \:\/:/  /     \:\ \/__/      |:|\/__/        /:/  /   *
+ ***        ĦĦĦĦ          ĦĦĦĦ        ***    \:\__\        \::/__/       \:\__\        |:|  |         /:/  /    *
  ****                                ****     \/__/         ~~            \/__/         \|__|         \/__/     *
  ******                            ******                                                                       *
  *********                      *********                                                                       *
@@ -192,22 +193,9 @@ public final class Hedera implements SwirldMain {
 
         // Print welcome message
         logger.info(
-                """
-
-                                ---------------
-                            -----------------------
-                          ---------##-----##---------
-                        -----------##-----##-----------            _   _              _                      \s
-                        -----------#########-----------           | | | |   ___    __| |   ___   _ __    __ _\s
-                        -----------##-----##-----------           | |_| |  / _ \\  / _` |  / _ \\ | '__|  / _` |
-                        -----------#########-----------           |  _  | |  __/ | (_| | |  __/ | |    | (_| |
-                        -----------##-----##-----------           |_| |_|  \\___|  \\__,_|  \\___| |_|     \\__,_|
-                          ---------##-----##---------                                                        \s
-                            -----------------------
-                                ---------------
-                        """);
-        logger.info("Welcome to Hedera! Developed with ❤\uFE0F by the Open Source Community. "
-                + "https://github.com/hashgraph/hedera-services");
+                "\n{}\n\nWelcome to Hedera! Developed with ❤\uFE0F by the Open Source Community. "
+                        + "https://github.com/hashgraph/hedera-services\n",
+                HEDERA);
 
         // Load the bootstrap configuration. These config values are NOT stored in state, so we don't need to have
         // state up and running for getting their values. We use this bootstrap config only in this constructor.
@@ -392,9 +380,9 @@ public final class Hedera implements SwirldMain {
     }
 
     /**
-     * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be
-     * newer than the current software version. If it is prior to the current version, then each migration between
-     * the {@code deserializedVersion} and the current version, including the current version, will be executed, thus
+     * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be newer
+     * than the current software version. If it is prior to the current version, then each migration between the
+     * {@code deserializedVersion} and the current version, including the current version, will be executed, thus
      * bringing the state up to date.
      *
      * <p>If the {@code deserializedVersion} is {@code null}, then this is the first time the node has been started,
@@ -451,11 +439,11 @@ public final class Hedera implements SwirldMain {
         if (!isUTF8(defaultCharset)) {
             logger.error(
                     """
-                    Fatal precondition violation in HederaNode#{}: default charset is {} and not UTF-8
-                    LC_ALL={}
-                    LANG={}
-                    file.encoding={}
-                    """,
+                            Fatal precondition violation in HederaNode#{}: default charset is {} and not UTF-8
+                            LC_ALL={}
+                            LANG={}
+                            file.encoding={}
+                            """,
                     daggerApp.nodeId(),
                     defaultCharset,
                     System.getenv("LC_ALL"),
