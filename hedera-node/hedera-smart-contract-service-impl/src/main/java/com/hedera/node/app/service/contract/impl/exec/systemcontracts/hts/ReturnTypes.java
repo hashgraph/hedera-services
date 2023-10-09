@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
@@ -29,6 +31,22 @@ public class ReturnTypes {
         throw new UnsupportedOperationException("Utility class");
     }
 
+    // When no value is set for AccountID or ContractID the return value is set to 0.
+    public static final AccountID ZERO_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(0).build();
+    public static final ContractID ZERO_CONTRACT_ID =
+            ContractID.newBuilder().contractNum(0).build();
+
+    /*
+     ** The following private strings define components of tuples results.
+     */
+    private static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
+    // Defined by struct Expiry { unint32 second; address autoRenewAccount; uint32 autoRenewPeriod; }
+    private static final String EXPIRY = "(uint32,address,uint32)";
+    // Defined by struct KeyValue { bool inheritAccountKey; address contractId; bytes ed25519; bytes ECDSA_secp256k1;
+    // address delegatableContractId; }
+    private static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
+
     public static final String INT = "(int)";
     public static final String INT_64 = "(int64)";
     public static final String BYTE = "(uint8)";
@@ -39,6 +57,8 @@ public class ReturnTypes {
     public static final String RESPONSE_CODE_INT32 = "(int32,int32)";
     public static final String RESPONSE_CODE_UINT256 = "(int64,uint256)";
     public static final String UINT256 = "(uint256)";
+    public static final String RESPONSE_CODE_EXPIRY = RESPONSE_STATUS_AT_BEGINNING + EXPIRY + ")";
+    public static final String RESPONSE_CODE_TOKEN_KEY = RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE + ")";
 
     private static final TupleType RC_ENCODER = TupleType.parse(INT_64);
 
