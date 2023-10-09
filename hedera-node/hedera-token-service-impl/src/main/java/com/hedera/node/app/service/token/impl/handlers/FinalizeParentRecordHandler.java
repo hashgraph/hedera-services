@@ -93,7 +93,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         final ArrayList<TokenTransferList> tokenTransferLists;
 
         // ---------- fungible token transfers
-        final var fungibleChanges = fungibleChangesFrom(writableTokenRelStore);
+        final var fungibleChanges = fungibleChangesFrom(writableTokenRelStore, tokenStore);
         // any fungible token changes listed in child records should not be considered while building
         // parent record, so don't deduct them.
         final var fungibleTokenTransferLists = asTokenTransferListFrom(fungibleChanges);
