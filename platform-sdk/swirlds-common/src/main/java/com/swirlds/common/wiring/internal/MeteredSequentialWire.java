@@ -19,7 +19,8 @@ package com.swirlds.common.wiring.internal;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.wiring.Wire;
-import com.swirlds.common.wiring.counters.AbstractObjectCounter;
+import com.swirlds.common.wiring.counters.NoOpCounter;
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -31,12 +32,12 @@ import java.util.function.Consumer;
  *
  * @param <T> the type of object that is passed through the wire
  */
-public class MeteredSequentialWire<T> implements Wire<T> {
+public class MeteredSequentialWire<T> extends Wire<T> {
     private Consumer<T> consumer;
     private final AtomicReference<SequentialTask> lastTask;
 
-    private final AbstractObjectCounter onRamp;
-    private final AbstractObjectCounter offRamp;
+    private final ObjectCounter onRamp;
+    private final ObjectCounter offRamp;
 
     private final FractionalTimer busyTimer;
     private final String name;
@@ -109,8 +110,8 @@ public class MeteredSequentialWire<T> implements Wire<T> {
      */
     public MeteredSequentialWire(
             @NonNull final String name,
-            @Nullable final AbstractObjectCounter onRamp,
-            @Nullable final AbstractObjectCounter offRamp,
+            @Nullable final ObjectCounter onRamp,
+            @Nullable final ObjectCounter offRamp,
             @Nullable final FractionalTimer busyTimer) {
 
         this.name = Objects.requireNonNull(name);

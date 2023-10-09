@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.internal;
-
-import com.swirlds.common.wiring.counters.AbstractObjectCounter;
+package com.swirlds.common.wiring.counters;
 
 /**
  * A counter that doesn't actually count. Saves us from having to do a (counter == null) check in the standard case.
  */
-public class NoOpCounter extends AbstractObjectCounter {
+public class NoOpCounter extends ObjectCounter {
 
     private static final NoOpCounter INSTANCE = new NoOpCounter();
 

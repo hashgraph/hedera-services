@@ -27,7 +27,7 @@ import java.util.function.Consumer;
  *
  * @param <T> the type of object that is passed through the wire
  */
-public class SequentialWire<T> implements Wire<T> {
+public class SequentialWire<T> extends Wire<T> {
     private Consumer<T> consumer;
     private final String name;
     private final AtomicReference<SequentialTask> lastTask;

@@ -27,7 +27,7 @@ import java.util.function.LongUnaryOperator;
  * A utility for counting the number of objects in a various part of the pipeline. Will apply backpressure if the number
  * of objects exceeds a specified capacity.
  */
-public class BackpressureObjectCounter extends AbstractObjectCounter {
+public class BackpressureObjectCounter extends ObjectCounter {
 
     // TODO write unit tests for this class
 

@@ -21,7 +21,7 @@ import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
-import com.swirlds.common.wiring.counters.AbstractObjectCounter;
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -112,7 +112,7 @@ public class WireMetricsBuilder {
      *
      * @param scheduledTaskCounter the counter that is used to track the number of scheduled tasks
      */
-    void registerMetrics(@NonNull final String wireName, @Nullable final AbstractObjectCounter scheduledTaskCounter) {
+    void registerMetrics(@NonNull final String wireName, @Nullable final ObjectCounter scheduledTaskCounter) {
 
         if (scheduledTaskCountMetricEnabled) {
             Objects.requireNonNull(scheduledTaskCounter);

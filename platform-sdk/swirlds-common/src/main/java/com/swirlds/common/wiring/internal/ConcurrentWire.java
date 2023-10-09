@@ -26,7 +26,7 @@ import java.util.function.Consumer;
  *
  * @param <T> the type of object that is passed through the wire
  */
-public class ConcurrentWire<T> implements Wire<T> {
+public class ConcurrentWire<T> extends Wire<T> {
     private Consumer<T> consumer;
     private final String name;
 

@@ -17,9 +17,9 @@
 package com.swirlds.common.wiring;
 
 import com.swirlds.common.metrics.extensions.FractionalTimer;
-import com.swirlds.common.wiring.counters.AbstractObjectCounter;
-import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
+import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import com.swirlds.common.wiring.internal.ConcurrentWire;
 import com.swirlds.common.wiring.internal.MeteredConcurrentWire;
 import com.swirlds.common.wiring.internal.MeteredSequentialWire;
@@ -44,8 +44,8 @@ public class WireBuilder<T> {
     private final String name;
     private WireMetricsBuilder metricsBuilder;
     private long scheduledTaskCapacity = UNLIMITED_CAPACITY;
-    private AbstractObjectCounter onRamp;
-    private AbstractObjectCounter offRamp;
+    private ObjectCounter onRamp;
+    private ObjectCounter offRamp;
 
     private Duration backpressureSleepDuration = Duration.ofNanos(100);
 
@@ -122,7 +122,7 @@ public class WireBuilder<T> {
      * @param onRamp the object counter that should be notified when data is added to the wire
      * @return this
      */
-    public WireBuilder<T> withOnRamp(@NonNull final AbstractObjectCounter onRamp) {
+    public WireBuilder<T> withOnRamp(@NonNull final ObjectCounter onRamp) {
         this.onRamp = Objects.requireNonNull(onRamp);
         return this;
     }
@@ -140,7 +140,7 @@ public class WireBuilder<T> {
      * @param offRamp the object counter that should be notified when data is removed from the wire
      * @return this
      */
-    public WireBuilder<T> withOffRamp(@NonNull final AbstractObjectCounter offRamp) {
+    public WireBuilder<T> withOffRamp(@NonNull final ObjectCounter offRamp) {
         this.offRamp = Objects.requireNonNull(offRamp);
         return this;
     }
@@ -192,7 +192,7 @@ public class WireBuilder<T> {
      * @param onRamp  the on ramp counter
      * @param offRamp the off ramp counter
      */
-    private record Counters(@Nullable AbstractObjectCounter onRamp, @Nullable AbstractObjectCounter offRamp) {
+    private record Counters(@Nullable ObjectCounter onRamp, @Nullable ObjectCounter offRamp) {
         /**
          * Check if this wire has any counters that are not null.
          */
@@ -213,7 +213,7 @@ public class WireBuilder<T> {
             if (offRamp != null) {
                 throw new IllegalStateException("Cannot specify both an off ramp and a scheduled task capacity");
             }
-            final AbstractObjectCounter counter =
+            final ObjectCounter counter =
                     new BackpressureObjectCounter(scheduledTaskCapacity, backpressureSleepDuration);
             return new Counters(counter, counter);
         }
@@ -225,7 +225,7 @@ public class WireBuilder<T> {
             if (offRamp != null) {
                 throw new IllegalStateException("Cannot specify both an off ramp and a scheduled task metric");
             }
-            final AbstractObjectCounter counter = new ObjectCounter();
+            final ObjectCounter counter = new StandardObjectCounter();
             return new Counters(counter, counter);
         }
 

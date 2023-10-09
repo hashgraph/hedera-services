@@ -17,7 +17,8 @@
 package com.swirlds.common.wiring.internal;
 
 import com.swirlds.common.wiring.Wire;
-import com.swirlds.common.wiring.counters.AbstractObjectCounter;
+import com.swirlds.common.wiring.counters.NoOpCounter;
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -28,10 +29,10 @@ import java.util.function.Consumer;
  *
  * @param <T> the type of object that is passed through the wire
  */
-public class MeteredConcurrentWire<T> implements Wire<T> {
+public class MeteredConcurrentWire<T> extends Wire<T> {
     private Consumer<T> consumer;
-    private final AbstractObjectCounter onRamp;
-    private final AbstractObjectCounter offRamp;
+    private final ObjectCounter onRamp;
+    private final ObjectCounter offRamp;
     private final String name;
 
     // TODO write unit tests for this class
@@ -45,8 +46,8 @@ public class MeteredConcurrentWire<T> implements Wire<T> {
      */
     public MeteredConcurrentWire(
             @NonNull final String name,
-            @Nullable final AbstractObjectCounter onRamp,
-            @Nullable final AbstractObjectCounter offRamp) {
+            @Nullable final ObjectCounter onRamp,
+            @Nullable final ObjectCounter offRamp) {
         this.name = Objects.requireNonNull(name);
         this.onRamp = onRamp == null ? NoOpCounter.getInstance() : onRamp;
         this.offRamp = offRamp == null ? NoOpCounter.getInstance() : offRamp;

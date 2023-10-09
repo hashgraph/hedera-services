@@ -16,55 +16,39 @@
 
 package com.swirlds.common.wiring.counters;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
- * A utility for counting the number of objects in a various part of the pipeline.
+ * A class that counts the number of objects in a various part of the pipeline.
  */
-public class ObjectCounter extends AbstractObjectCounter {
-
-    // TODO write unit tests for this class
-
-    private final AtomicLong count = new AtomicLong(0);
+public abstract class ObjectCounter {
 
     /**
-     * {@inheritDoc}
+     * Signal that an object is entering the part of the system that this object is being used to monitor.
      */
-    @Override
-    public void onRamp() {
-        count.incrementAndGet();
-    }
+    public abstract void onRamp();
 
     /**
-     * {@inheritDoc}
+     * Signal that an object is entering the part of the system that this object is being used to monitor. Similar to
+     * {@link #onRamp()}, but if the implementation is blocking this version can be interrupted.
+     *
+     * @throws InterruptedException if the thread is interrupted while waiting
      */
-    @Override
-    public void interruptableOnRamp() {
-        count.incrementAndGet();
-    }
+    public abstract void interruptableOnRamp() throws InterruptedException;
 
     /**
-     * {@inheritDoc}
+     * Signal that an object is entering the part of the system that this object is being used to monitor. Object is not
+     * "on ramped" if it is not immediately possible to do so without violating capacity constraints.
+     *
+     * @return true if there was available capacity to on ramp the object, false otherwise
      */
-    @Override
-    public boolean attemptOnRamp() {
-        count.getAndIncrement();
-        return true;
-    }
+    public abstract boolean attemptOnRamp();
 
     /**
-     * {@inheritDoc}
+     * Signal that an object is leaving the part of the system that this object is being used to monitor.
      */
-    @Override
-    public void offRamp() {
-        count.decrementAndGet();
-    }
+    public abstract void offRamp();
 
     /**
-     * {@inheritDoc}
+     * Get the number of objects in the part of the system that this object is being used to monitor.
      */
-    @Override
-    public long getCount() {
-        return count.get();
-    }
+    public abstract long getCount();
 }
