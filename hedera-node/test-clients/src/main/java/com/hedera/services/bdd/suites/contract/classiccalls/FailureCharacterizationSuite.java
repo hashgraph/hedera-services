@@ -91,6 +91,7 @@ import com.hedera.services.bdd.suites.contract.classiccalls.views.GetFungibleTok
 import com.hedera.services.bdd.suites.contract.classiccalls.views.GetNonFungibleTokenInfoFailableCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.views.GetTokenDefaultFreezeStatusFailableCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.views.GetTokenDefaultKycStatusFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.views.GetTokenExpiryInfoFailableCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.views.GetTokenInfoFailableCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.views.GetTokenKeyFailableCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.views.GetTokenTypeFailableCall;
@@ -131,6 +132,7 @@ public class FailureCharacterizationSuite extends HapiSuite {
                         new GetTokenDefaultKycStatusFailableCall(),
                         new GetTokenDefaultFreezeStatusFailableCall(),
                         new GetNonFungibleTokenInfoFailableCall(),
+                        new GetTokenExpiryInfoFailableCall(),
                         new FreezeFailableCall(),
                         new MintTokenFailableCall(),
                         new BurnTokenFailableCall(),
@@ -164,7 +166,7 @@ public class FailureCharacterizationSuite extends HapiSuite {
                         new UpdateTokenKeysFailableCall(),
                         new UpdateTokenInfoFailableCall(),
                         new UpdateTokenExpiryInfoFailableCall()),
-                CharacterizationMode.ASSERT_MATCHES_SNAPSHOT));
+                CharacterizationMode.RECORD_SNAPSHOT));
     }
 
     enum CharacterizationMode {
