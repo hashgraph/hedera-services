@@ -17,10 +17,13 @@
 package contract;
 
 import static contract.CreatesXTestConstants.DECIMALS;
+import static contract.CreatesXTestConstants.DECIMALS_BIG_INT;
+import static contract.CreatesXTestConstants.DECIMALS_LONG;
 import static contract.CreatesXTestConstants.FIXED_FEE;
 import static contract.CreatesXTestConstants.FRACTIONAL_FEE;
 import static contract.CreatesXTestConstants.HEDERA_TOKEN_STRUCT;
 import static contract.CreatesXTestConstants.INITIAL_TOTAL_SUPPLY;
+import static contract.CreatesXTestConstants.INITIAL_TOTAL_SUPPLY_BIG_INT;
 import static contract.CreatesXTestConstants.NEXT_ENTITY_NUM;
 import static contract.CreatesXTestConstants.ROYALTY_FEE;
 import static contract.XTestConstants.AN_ED25519_KEY;
@@ -55,7 +58,23 @@ public class CreatesXTest extends AbstractContractXTest {
         // should successfully create fungible token
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                        .encodeCallWithArgs(HEDERA_TOKEN_STRUCT, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_BIG_INT)
+                        .array()),
+                assertSuccess());
+
+        // should successfully create fungible token
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
+                        .encodeCallWithArgs(HEDERA_TOKEN_STRUCT, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_LONG)
+                        .array()),
+                assertSuccess());
+
+        // should successfully create fungible token
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
                         .encodeCallWithArgs(HEDERA_TOKEN_STRUCT, INITIAL_TOTAL_SUPPLY, DECIMALS)
                         .array()),
                 assertSuccess());
@@ -69,7 +88,37 @@ public class CreatesXTest extends AbstractContractXTest {
         // should successfully create fungible token with custom fees
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
+                        .encodeCallWithArgs(
+                                HEDERA_TOKEN_STRUCT,
+                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+                                DECIMALS_BIG_INT,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
+                        .array()),
+                assertSuccess());
+
+        // should successfully create fungible token with custom fees
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2
+                        .encodeCallWithArgs(
+                                HEDERA_TOKEN_STRUCT,
+                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+                                DECIMALS_LONG,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
+                        .array()),
+                assertSuccess());
+
+        // should successfully create fungible token with custom fees
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3
                         .encodeCallWithArgs(
                                 HEDERA_TOKEN_STRUCT,
                                 INITIAL_TOTAL_SUPPLY,
@@ -84,8 +133,24 @@ public class CreatesXTest extends AbstractContractXTest {
         // should successfully create non fungible token without custom fees
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN
-                        .encodeCallWithArgs(HEDERA_TOKEN_STRUCT, 0L, 0)
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+                        .encodeCallWithArgs(HEDERA_TOKEN_STRUCT)
+                        .array()),
+                assertSuccess());
+
+        // should successfully create non fungible token without custom fees
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
+                        .encodeCallWithArgs(HEDERA_TOKEN_STRUCT)
+                        .array()),
+                assertSuccess());
+
+        // should successfully create non fungible token without custom fees
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
+                        .encodeCallWithArgs(HEDERA_TOKEN_STRUCT)
                         .array()),
                 assertSuccess());
 
@@ -94,7 +159,27 @@ public class CreatesXTest extends AbstractContractXTest {
         // should successfully create fungible token with custom fees
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
+                        .encodeCallWithArgs(HEDERA_TOKEN_STRUCT, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                assertSuccess());
+
+        // should revert when token has no supplyKey
+
+        // should successfully create fungible token with custom fees
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
+                        .encodeCallWithArgs(HEDERA_TOKEN_STRUCT, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                assertSuccess());
+
+        // should revert when token has no supplyKey
+
+        // should successfully create fungible token with custom fees
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
                         .encodeCallWithArgs(HEDERA_TOKEN_STRUCT, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
                         .array()),
                 assertSuccess());

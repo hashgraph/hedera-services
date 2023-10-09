@@ -18,10 +18,14 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.creat
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FIXED_FEE;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FIXED_FEE_V2;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FRACTIONAL_FEE;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FRACTIONAL_FEE_V2;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_V1;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_V2;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.HEDERA_TOKEN_V3;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE_V2;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -34,13 +38,16 @@ import javax.inject.Inject;
 
 public class CreateTranslator extends AbstractHtsCallTranslator {
 
-    public static final Function CREATE_FUNGIBLE_TOKEN =
-            new Function("createFungibleToken(" + HEDERA_TOKEN + ",int64,int32)", ReturnTypes.INT);
-
-    public static final Function CREATE_FUNGIBLE_WITH_CUSTOM_FEES = new Function(
+    public static final Function CREATE_FUNGIBLE_TOKEN_V1 =
+            new Function("createFungibleToken(" + HEDERA_TOKEN_V1 + ",uint,uint)", ReturnTypes.INT);
+    public static final Function CREATE_FUNGIBLE_TOKEN_V2 =
+            new Function("createFungibleToken(" + HEDERA_TOKEN_V2 + ",uint64,uint32)", ReturnTypes.INT);
+    public static final Function CREATE_FUNGIBLE_TOKEN_V3 =
+            new Function("createFungibleToken(" + HEDERA_TOKEN_V3 + ",int64,int32)", ReturnTypes.INT);
+    public static final Function CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1 = new Function(
             "createFungibleTokenWithCustomFees("
-                    + HEDERA_TOKEN
-                    + ",int64,int32,"
+                    + HEDERA_TOKEN_V1
+                    + ",uint,uint,"
                     + FIXED_FEE
                     + ARRAY_BRACKETS
                     + ","
@@ -48,17 +55,66 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
                     + ARRAY_BRACKETS
                     + ")",
             ReturnTypes.INT);
+    public static final Function CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2 = new Function(
+            "createFungibleTokenWithCustomFees("
+                    + HEDERA_TOKEN_V2
+                    + ",uint64,uint32,"
+                    + FIXED_FEE
+                    + ARRAY_BRACKETS
+                    + ","
+                    + FRACTIONAL_FEE
+                    + ARRAY_BRACKETS
+                    + ")",
+            ReturnTypes.INT);
+    public static final Function CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3 = new Function(
+            "createFungibleTokenWithCustomFees("
+                    + HEDERA_TOKEN_V3
+                    + ",int64,int32,"
+                    + FIXED_FEE_V2
+                    + ARRAY_BRACKETS
+                    + ","
+                    + FRACTIONAL_FEE_V2
+                    + ARRAY_BRACKETS
+                    + ")",
+            ReturnTypes.INT);
 
-    public static final Function CREATE_NON_FUNGIBLE_TOKEN =
-            new Function("createNonFungibleToken(" + HEDERA_TOKEN_STRUCT + ",int64,int32)", ReturnTypes.INT);
+    public static final Function CREATE_NON_FUNGIBLE_TOKEN_V1 =
+            new Function("createNonFungibleToken(" + HEDERA_TOKEN_V1 + ")", ReturnTypes.INT);
+    public static final Function CREATE_NON_FUNGIBLE_TOKEN_V2 =
+            new Function("createNonFungibleToken(" + HEDERA_TOKEN_V2 + ")", ReturnTypes.INT);
+    public static final Function CREATE_NON_FUNGIBLE_TOKEN_V3 =
+            new Function("createNonFungibleToken(" + HEDERA_TOKEN_V3 + ")", ReturnTypes.INT);
 
-    public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES = new Function(
-            "createNonFungibleTokenWithCustomFees(" + HEDERA_TOKEN_STRUCT
+    public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1 = new Function(
+            "createNonFungibleTokenWithCustomFees("
+                    + HEDERA_TOKEN_V1
                     + ","
                     + FIXED_FEE
                     + ARRAY_BRACKETS
                     + ","
                     + ROYALTY_FEE
+                    + ARRAY_BRACKETS
+                    + ")",
+            ReturnTypes.INT);
+    public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2 = new Function(
+            "createNonFungibleTokenWithCustomFees("
+                    + HEDERA_TOKEN_V2
+                    + ","
+                    + FIXED_FEE
+                    + ARRAY_BRACKETS
+                    + ","
+                    + ROYALTY_FEE
+                    + ARRAY_BRACKETS
+                    + ")",
+            ReturnTypes.INT);
+    public static final Function CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3 = new Function(
+            "createNonFungibleTokenWithCustomFees("
+                    + HEDERA_TOKEN_V3
+                    + ","
+                    + FIXED_FEE_V2
+                    + ARRAY_BRACKETS
+                    + ","
+                    + ROYALTY_FEE_V2
                     + ARRAY_BRACKETS
                     + ")",
             ReturnTypes.INT);
@@ -73,11 +129,21 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN.selector())
-                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES.selector())
-                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN.selector())
+        return Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1.selector())
+                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2.selector())
+                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3.selector())
+                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1.selector())
+                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2.selector())
+                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3.selector())
+                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1.selector())
+                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2.selector())
+                || Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3.selector())
                 || Arrays.equals(
-                        attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.selector());
+                        attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1.selector())
+                || Arrays.equals(
+                        attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2.selector())
+                || Arrays.equals(
+                        attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3.selector());
     }
 
     @Override
@@ -91,14 +157,35 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
     }
 
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
-        if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN.selector())) {
-            return decoder.decodeCreateFungibleToken(attempt.inputBytes(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES.selector())) {
-            return decoder.decodeCreateFungibleTokenWithCustomFees(attempt.inputBytes(), attempt.addressIdConverter());
-        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN.selector())) {
-            return decoder.decodeCreateNonFungible(attempt.inputBytes(), attempt.addressIdConverter());
+        if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1.selector())) {
+            return decoder.decodeCreateFungibleTokenV1(attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2.selector())) {
+            return decoder.decodeCreateFungibleTokenV2(attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3.selector())) {
+            return decoder.decodeCreateFungibleTokenV3(attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1.selector())) {
+            return decoder.decodeCreateFungibleTokenWithCustomFeesV1(
+                    attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2.selector())) {
+            return decoder.decodeCreateFungibleTokenWithCustomFeesV2(
+                    attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3.selector())) {
+            return decoder.decodeCreateFungibleTokenWithCustomFeesV3(
+                    attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1.selector())) {
+            return decoder.decodeCreateNonFungibleV1(attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2.selector())) {
+            return decoder.decodeCreateNonFungibleV2(attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3.selector())) {
+            return decoder.decodeCreateNonFungibleV3(attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(
+                attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1.selector())) {
+            return decoder.decodeCreateNonFungibleWithCustomFeesV1(attempt.inputBytes(), attempt.addressIdConverter());
+        } else if (Arrays.equals(
+                attempt.selector(), CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2.selector())) {
+            return decoder.decodeCreateNonFungibleWithCustomFeesV2(attempt.inputBytes(), attempt.addressIdConverter());
         } else {
-            return decoder.decodeCreateNonFungibleWithCustomFees(attempt.inputBytes(), attempt.addressIdConverter());
+            return decoder.decodeCreateNonFungibleWithCustomFeesV3(attempt.inputBytes(), attempt.addressIdConverter());
         }
     }
 }

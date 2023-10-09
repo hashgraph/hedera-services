@@ -69,7 +69,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_FUNGIBLE_TOKEN
+                asBytesResult(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
                 result.getOutput());
@@ -84,7 +84,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES
+                asBytesResult(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
                 result.getOutput());
@@ -99,7 +99,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN
+                asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
                 result.getOutput());
@@ -114,7 +114,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
-                asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES
+                asBytesResult(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
                 result.getOutput());

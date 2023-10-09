@@ -20,13 +20,18 @@ import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import java.math.BigInteger;
+import org.apache.tuweni.bytes.Bytes;
 
 public class CreatesXTestConstants {
     static final long NEXT_ENTITY_NUM = 1004L;
     static final long INITIAL_TOTAL_SUPPLY = 10L;
+    static final BigInteger INITIAL_TOTAL_SUPPLY_BIG_INT = BigInteger.valueOf(10L);
     static final int DECIMALS = 8;
+    static final long DECIMALS_LONG = 8L;
+    static final BigInteger DECIMALS_BIG_INT = BigInteger.valueOf(8L);
     static final String NAME = "name";
     static final String SYMBOL = "symbol";
     static final String MEMO = "memo";
@@ -37,9 +42,10 @@ public class CreatesXTestConstants {
 
     static final Tuple TOKEN_KEY = Tuple.of(
             BigInteger.valueOf(KEY_TYPE),
-            Tuple.of(false, RECEIVER_HEADLONG_ADDRESS, new byte[] {}, new byte[] {}, RECEIVER_HEADLONG_ADDRESS));
+            Tuple.of(false, RECEIVER_HEADLONG_ADDRESS, new byte[] {}, new byte[] {}, asAddress("")));
 
     static final Tuple EXPIRY = Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
+    static final Tuple EXPIRY_V2 = Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
 
     static final Tuple HEDERA_TOKEN_STRUCT = Tuple.of(
             NAME,
@@ -58,4 +64,11 @@ public class CreatesXTestConstants {
     static final Tuple FRACTIONAL_FEE = Tuple.of(100L, 100L, 100L, 100L, true, OWNER_HEADLONG_ADDRESS);
 
     static final Tuple ROYALTY_FEE = Tuple.of(10L, 10L, 1L, ERC20_TOKEN_ADDRESS, false, OWNER_HEADLONG_ADDRESS);
+
+    // casts Address to null
+    private static Address asAddress(String address) {
+        final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
+    }
 }

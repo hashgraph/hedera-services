@@ -48,58 +48,175 @@ public class CreateDecoder {
     }
 
     /**
-     * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V1} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeCreateFungibleToken(
+    public TransactionBody decodeCreateFungibleTokenV1(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = CreateTranslator.CREATE_FUNGIBLE_TOKEN.decodeCall(encoded);
-        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperFungibleWithoutFees(
-                call.get(0), true, call.get(1), call.get(2), addressIdConverter);
-        return bodyOf(createToken(tokenCreateWrapper));
-    }
-
-    /**
-     * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES} into a synthetic {@link TransactionBody}.
-     *
-     * @param encoded the encoded call
-     * @return the synthetic transaction body
-     */
-    public TransactionBody decodeCreateFungibleTokenWithCustomFees(
-            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES.decodeCall(encoded);
-        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperFungibleWithCustomFees(
-                call.get(0), true, call.get(1), call.get(2), call.get(3), call.get(4), addressIdConverter);
-        return bodyOf(createToken(tokenCreateWrapper));
-    }
-
-    /**
-     * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN} into a synthetic {@link TransactionBody}.
-     *
-     * @param encoded the encoded call
-     * @return the synthetic transaction body
-     */
-    public TransactionBody decodeCreateNonFungible(
-            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN.decodeCall(encoded);
+        final var call = CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1.decodeCall(encoded);
+        final var initSupply = ((BigInteger) call.get(1)).longValue();
+        final var decimals = ((BigInteger) call.get(2)).intValue();
         final TokenCreateWrapper tokenCreateWrapper =
-                getTokenCreateWrapperNonFungible(call.get(0), false, call.get(1), call.get(2), addressIdConverter);
+                getTokenCreateWrapper(call.get(0), true, initSupply, decimals, addressIdConverter);
         return bodyOf(createToken(tokenCreateWrapper));
     }
 
     /**
-     * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES} into a synthetic {@link TransactionBody}.
+     * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V2} into a synthetic {@link TransactionBody}.
      *
      * @param encoded the encoded call
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeCreateNonFungibleWithCustomFees(
+    public TransactionBody decodeCreateFungibleTokenV2(
             @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
-        final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.decodeCall(encoded);
+        final var call = CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2.decodeCall(encoded);
+        final var initSupply = ((BigInteger) call.get(1)).longValue();
+        final var decimals = ((Long) call.get(2)).intValue();
+        final TokenCreateWrapper tokenCreateWrapper =
+                getTokenCreateWrapper(call.get(0), true, initSupply, decimals, addressIdConverter);
+        return bodyOf(createToken(tokenCreateWrapper));
+    }
+
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_TOKEN_V3} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeCreateFungibleTokenV3(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3.decodeCall(encoded);
+        final TokenCreateWrapper tokenCreateWrapper =
+                getTokenCreateWrapper(call.get(0), true, call.get(1), call.get(2), addressIdConverter);
+        return bodyOf(createToken(tokenCreateWrapper));
+    }
+
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeCreateFungibleTokenWithCustomFeesV1(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1.decodeCall(encoded);
+        final var initSupply = ((BigInteger) call.get(1)).longValue();
+        final var decimals = ((BigInteger) call.get(2)).intValue();
+        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperFungibleWithCustomFees(
+                call.get(0), initSupply, decimals, call.get(3), call.get(4), addressIdConverter);
+        return bodyOf(createToken(tokenCreateWrapper));
+    }
+
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeCreateFungibleTokenWithCustomFeesV2(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2.decodeCall(encoded);
+        final var initSupply = ((BigInteger) call.get(1)).longValue();
+        final var decimals = ((Long) call.get(2)).intValue();
+        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperFungibleWithCustomFees(
+                call.get(0), initSupply, decimals, call.get(3), call.get(4), addressIdConverter);
+        return bodyOf(createToken(tokenCreateWrapper));
+    }
+
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeCreateFungibleTokenWithCustomFeesV3(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3.decodeCall(encoded);
+        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperFungibleWithCustomFees(
+                call.get(0), call.get(1), call.get(2), call.get(3), call.get(4), addressIdConverter);
+        return bodyOf(createToken(tokenCreateWrapper));
+    }
+
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V1} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeCreateNonFungibleV1(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1.decodeCall(encoded);
+        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperNonFungible(call.get(0), addressIdConverter);
+        return bodyOf(createToken(tokenCreateWrapper));
+    }
+
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V2} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeCreateNonFungibleV2(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2.decodeCall(encoded);
+        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperNonFungible(call.get(0), addressIdConverter);
+        return bodyOf(createToken(tokenCreateWrapper));
+    }
+
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_V3} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeCreateNonFungibleV3(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3.decodeCall(encoded);
+        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperNonFungible(call.get(0), addressIdConverter);
+        return bodyOf(createToken(tokenCreateWrapper));
+    }
+
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeCreateNonFungibleWithCustomFeesV1(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1.decodeCall(encoded);
         final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperNonFungibleWithCustomFees(
-                call.get(0), false, call.get(1), call.get(2), addressIdConverter);
+                call.get(0), call.get(1), call.get(2), addressIdConverter);
+        return bodyOf(createToken(tokenCreateWrapper));
+    }
+
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeCreateNonFungibleWithCustomFeesV2(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2.decodeCall(encoded);
+        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperNonFungibleWithCustomFees(
+                call.get(0), call.get(1), call.get(2), addressIdConverter);
+        return bodyOf(createToken(tokenCreateWrapper));
+    }
+
+    /**
+     * Decodes a call to {@link CreateTranslator#CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3} into a synthetic {@link TransactionBody}.
+     *
+     * @param encoded the encoded call
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeCreateNonFungibleWithCustomFeesV3(
+            @NonNull final byte[] encoded, @NonNull final AddressIdConverter addressIdConverter) {
+        final var call = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3.decodeCall(encoded);
+        final TokenCreateWrapper tokenCreateWrapper = getTokenCreateWrapperNonFungibleWithCustomFees(
+                call.get(0), call.get(1), call.get(2), addressIdConverter);
         return bodyOf(createToken(tokenCreateWrapper));
     }
 
@@ -107,7 +224,7 @@ public class CreateDecoder {
         return TransactionBody.newBuilder().tokenCreation(tokenCreate).build();
     }
 
-    private static TokenCreateWrapper getTokenCreateWrapperFungibleWithoutFees(
+    private static TokenCreateWrapper getTokenCreateWrapper(
             @NonNull final Tuple tokenCreateStruct,
             final boolean isFungible,
             final long initSupply,
@@ -141,14 +258,13 @@ public class CreateDecoder {
 
     private static TokenCreateWrapper getTokenCreateWrapperFungibleWithCustomFees(
             @NonNull final Tuple tokenCreateStruct,
-            final boolean isFungible,
             final long initSupply,
             final int decimals,
             @NonNull final Tuple[] fixedFeesTuple,
             @NonNull final Tuple[] fractionalFeesTuple,
             @NonNull final AddressIdConverter addressIdConverter) {
-        final var tokenCreateWrapper = getTokenCreateWrapperFungibleWithoutFees(
-                tokenCreateStruct, isFungible, initSupply, decimals, addressIdConverter);
+        final var tokenCreateWrapper =
+                getTokenCreateWrapper(tokenCreateStruct, true, initSupply, decimals, addressIdConverter);
         final var fixedFees = decodeFixedFees(fixedFeesTuple, addressIdConverter);
         final var fractionalFess = decodeFractionalFees(fractionalFeesTuple, addressIdConverter);
         tokenCreateWrapper.setFixedFees(fixedFees);
@@ -157,26 +273,19 @@ public class CreateDecoder {
     }
 
     private static TokenCreateWrapper getTokenCreateWrapperNonFungible(
-            @NonNull final Tuple tokenCreateStruct,
-            final boolean isFungible,
-            final long initSupply,
-            final int decimals,
-            @NonNull final AddressIdConverter addressIdConverter) {
-        final var tokenCreateWrapper = getTokenCreateWrapperFungibleWithoutFees(
-                tokenCreateStruct, isFungible, initSupply, decimals, addressIdConverter);
+            @NonNull final Tuple tokenCreateStruct, @NonNull final AddressIdConverter addressIdConverter) {
+        final var tokenCreateWrapper = getTokenCreateWrapper(tokenCreateStruct, false, 0L, 0, addressIdConverter);
         return tokenCreateWrapper;
     }
 
     private static TokenCreateWrapper getTokenCreateWrapperNonFungibleWithCustomFees(
             @NonNull final Tuple tokenCreateStruct,
-            final boolean isFungible,
             @NonNull final Tuple[] fixedFeesTuple,
             @NonNull final Tuple[] royaltyFeesTuple,
             @NonNull final AddressIdConverter addressIdConverter) {
         final var fixedFees = decodeFixedFees(fixedFeesTuple, addressIdConverter);
         final var royaltyFees = decodeRoyaltyFees(royaltyFeesTuple, addressIdConverter);
-        final var tokenCreateWrapper =
-                getTokenCreateWrapperFungibleWithoutFees(tokenCreateStruct, isFungible, 0L, 0, addressIdConverter);
+        final var tokenCreateWrapper = getTokenCreateWrapper(tokenCreateStruct, false, 0L, 0, addressIdConverter);
         tokenCreateWrapper.setFixedFees(fixedFees);
         tokenCreateWrapper.setRoyaltyFees(royaltyFees);
         return tokenCreateWrapper;

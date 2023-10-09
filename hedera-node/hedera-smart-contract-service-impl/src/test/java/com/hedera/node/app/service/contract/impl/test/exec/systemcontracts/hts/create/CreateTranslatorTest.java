@@ -45,28 +45,28 @@ public class CreateTranslatorTest {
 
     @Test
     void matchesCreateFungibleToken() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_FUNGIBLE_TOKEN.selector());
+        given(attempt.selector()).willReturn(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3.selector());
         final var matches = subject.matches(attempt);
         assertThat(matches).isTrue();
     }
 
     @Test
     void matchesCreateFungibleTokenWithCustomFees() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES.selector());
+        given(attempt.selector()).willReturn(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3.selector());
         final var matches = subject.matches(attempt);
         assertThat(matches).isTrue();
     }
 
     @Test
     void matchesCreateNonFungibleToken() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN.selector());
+        given(attempt.selector()).willReturn(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1.selector());
         final var matches = subject.matches(attempt);
         assertThat(matches).isTrue();
     }
 
     @Test
     void matchesCreateNonFungibleTokenWithCustomFees() {
-        given(attempt.selector()).willReturn(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.selector());
+        given(attempt.selector()).willReturn(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1.selector());
         final var matches = subject.matches(attempt);
         assertThat(matches).isTrue();
     }

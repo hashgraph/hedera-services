@@ -73,19 +73,19 @@ public class ClassicCreatesCall extends AbstractHtsCall {
             ByteBuffer encodedOutput;
 
             if (isFungible && customFees.size() == 0) {
-                encodedOutput = CreateTranslator.CREATE_FUNGIBLE_TOKEN
+                encodedOutput = CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
             } else if (isFungible && customFees.size() > 0) {
-                encodedOutput = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES
+                encodedOutput = CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
             } else if (customFees.size() == 0) {
-                encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN
+                encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
             } else {
-                encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES
+                encodedOutput = CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
             }
