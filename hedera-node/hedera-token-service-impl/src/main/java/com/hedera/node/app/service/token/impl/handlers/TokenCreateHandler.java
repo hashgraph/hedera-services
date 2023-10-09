@@ -71,7 +71,7 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class TokenCreateHandler extends BaseTokenHandler implements TransactionHandler {
 
-    private static final Logger logger = LogManager.getLogger(TokenMintHandler.class);
+    private static final Logger logger = LogManager.getLogger(TokenCreateHandler.class);
 
     private final CustomFeesValidator customFeesValidator;
     private final TokenCreateValidator tokenCreateValidator;

@@ -282,9 +282,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var op = feeContext.body().tokenMintOrThrow();
         final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
 
-        if (readableTokenStore.get(op.tokenOrThrow()) == null) {
-            logger.info("TOKEN NOT FOUND IN MINT ({})", readableTokenStore);
-        }
+        logger.info("TOKEN MINT ({})", readableTokenStore);
 
         final var tokenType = TokenHandlerHelper.getIfUsable(op.tokenOrThrow(), readableTokenStore)
                 .tokenType();
