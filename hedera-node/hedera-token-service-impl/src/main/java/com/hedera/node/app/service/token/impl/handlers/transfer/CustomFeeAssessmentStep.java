@@ -161,7 +161,6 @@ public class CustomFeeAssessmentStep {
             // The result after each assessment
             final var result =
                     assessCustomFeesFrom(hbarTransfers, tokenTransfers, tokenStore, tokenRelStore, maxTransfersAllowed);
-
             // when there are adjustments made to given transaction, need to re-build the transaction
             final var modifiedInputBody = changedInputTxn(txnToAssess, result);
             assessedTxns.add(modifiedInputBody);
@@ -336,7 +335,7 @@ public class CustomFeeAssessmentStep {
 
             for (final var nftTransfer : nftTransfers) {
                 if (feeMeta.treasuryId().equals(nftTransfer.senderAccountID())) {
-                    break;
+                    continue;
                 }
                 customFeeAssessor.assess(
                         nftTransfer.senderAccountID(),
