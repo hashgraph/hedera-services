@@ -131,7 +131,7 @@ class XTestConstants {
         return output -> assertEquals(SUCCESS_AS_BYTES, output);
     }
 
-    public static Consumer<org.apache.tuweni.bytes.Bytes> assertSuccess(String failureMessage) {
-        return output -> assertEquals(SUCCESS_AS_BYTES, output, failureMessage);
+    public static Consumer<org.apache.tuweni.bytes.Bytes> assertSuccess(String orElseMessage) {
+        return output -> assertEquals(SUCCESS_AS_BYTES, output, orElseMessage);
     }
 }

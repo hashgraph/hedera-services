@@ -58,6 +58,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -77,6 +78,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * A base class for "x-tests" that follow the general pattern of:
+ * <ol>
+ *     <li>Initializing the {@link HederaState} with well-known entities----accounts, tokens, files, and so on---
+ *     by overriding methods like {@link AbstractXTest#initialAccounts()} to return {@link Map}s.</li>
+ *     <li>Overriding {@link AbstractXTest#doScenarioOperations()} to run a test scenario that dispatches transactions
+ *     to {@link TransactionHandler} implementations, committing their results to state on an
+ *     {@link ResponseCodeEnum#OK} status.</li>
+ *     <li>Validating the final state is as expected by overriding methods like
+ *     {@link AbstractXTest#assertExpectedAccounts(ReadableKVState)}.</li>
+ * </ol>
+ */
 @ExtendWith(MockitoExtension.class)
 public abstract class AbstractXTest {
     private static final AccountID[] SOME_NUMERIC_ACCOUNT_IDS = new AccountID[] {

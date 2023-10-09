@@ -202,8 +202,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     void handleRefusesToExceedCreationLimit() throws HandleException, PreCheckException {
         final Set<HederaFunctionality> configuredWhitelist =
                 scheduleConfig.whitelist().functionalitySet();
-        // make sure we have at least four items in the whitelist to test.
-        assertThat(configuredWhitelist.size()).isGreaterThan(4);
+        assertThat(configuredWhitelist).hasSizeGreaterThan(4);
 
         final WritableScheduleStore fullStore = mock(WritableScheduleStore.class);
         given(fullStore.numSchedulesInState()).willReturn(scheduleConfig.maxNumber() + 1);

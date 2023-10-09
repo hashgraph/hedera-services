@@ -213,7 +213,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var accountConfig = context.configuration().getConfigData(AccountsConfig.class);
 
-        if (accountStore.getNumberOfAccounts() >= accountConfig.maxNumber()) {
+        if (accountStore.getNumberOfAccounts() + 1 > accountConfig.maxNumber()) {
             throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
 

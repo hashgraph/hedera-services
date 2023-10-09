@@ -17,12 +17,16 @@
 package token;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
 public class RoyaltyCollectorAutoAssociationXTest extends AbstractTokenXTest {
@@ -45,6 +49,17 @@ public class RoyaltyCollectorAutoAssociationXTest extends AbstractTokenXTest {
                         movingNft(NON_FUNGIBLE_UNIQUE, PARTY, COUNTERPARTY, 1),
                         movingFungibleUnits(FIRST_FUNGIBLE, COUNTERPARTY, PARTY, EXCHANGE_AMOUNT),
                         movingFungibleUnits(SECOND_FUNGIBLE, COUNTERPARTY, PARTY, EXCHANGE_AMOUNT)));
+    }
+
+    @Override
+    protected void assertExpectedNfts(@NonNull ReadableKVState<NftID, Nft> nfts) {
+        // Here is where we can e.g. assert the NFT has been transferred to the counterparty
+    }
+
+    @Override
+    protected void assertExpectedTokenRelations(@NonNull ReadableKVState<EntityIDPair, TokenRelation> tokenRels) {
+        // Here is where we can e.g. assert the expected royalties have been collected from the
+        // fungible value exchanged for the NFT
     }
 
     @Override

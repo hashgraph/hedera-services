@@ -25,7 +25,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
@@ -42,7 +41,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -52,10 +50,6 @@ import javax.inject.Inject;
  */
 @TransactionScope
 public class HandleHederaOperations implements HederaOperations {
-    private static final Comparator<ContractID> CONTRACT_ID_NUM_COMPARATOR =
-            Comparator.comparingLong(ContractID::contractNumOrThrow);
-    private static final Comparator<ContractNonceInfo> NONCE_INFO_CONTRACT_ID_COMPARATOR =
-            Comparator.comparing(ContractNonceInfo::contractIdOrThrow, CONTRACT_ID_NUM_COMPARATOR);
     public static final Bytes ZERO_ENTROPY = Bytes.fromHex(
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
@@ -270,10 +264,7 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public ContractChangeSummary summarizeContractChanges() {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        final var contractChangeSummary = tokenServiceApi.summarizeContractChanges();
-        contractChangeSummary.newContractIds().sort(CONTRACT_ID_NUM_COMPARATOR);
-        contractChangeSummary.updatedContractNonces().sort(NONCE_INFO_CONTRACT_ID_COMPARATOR);
-        return contractChangeSummary;
+        return tokenServiceApi.summarizeContractChanges();
     }
 
     /**
