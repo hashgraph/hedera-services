@@ -63,7 +63,7 @@ public class CreateTranslatorTest {
     }
 
     @Test
-    void matchesCreateFungibleTokenWithCustomFees() {
+    void matchesCreateFungibleTokenWithCustomFeesV1() {
         given(attempt.selector()).willReturn(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1.selector());
         final var matches = subject.matches(attempt);
         assertThat(matches).isTrue();
