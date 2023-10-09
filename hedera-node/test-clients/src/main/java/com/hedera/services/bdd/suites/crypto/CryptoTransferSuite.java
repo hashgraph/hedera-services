@@ -1262,6 +1262,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                                         .balance(5)))));
     }
 
+    @HapiTest
     private HapiSpec royaltyCollectorsCanUseAutoAssociation() {
         final var uniqueWithRoyalty = "uniqueWithRoyalty";
         final var firstFungible = "firstFungible";
