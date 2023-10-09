@@ -32,7 +32,7 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,7 +42,7 @@ import java.util.Optional;
 /**
  * Implements the token redirect {@code isApprovedForAll()} call of the HTS system contract.
  */
-public class IsApprovedForAllCall extends AbstractTokenViewCall {
+public class IsApprovedForAllCall extends AbstractRevertibleTokenViewCall {
     public static final Function IS_APPROVED_FOR_ALL =
             new Function("isApprovedForAll(address,address)", ReturnTypes.BOOL);
 
