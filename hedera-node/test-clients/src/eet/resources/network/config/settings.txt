@@ -5,7 +5,6 @@ loadKeysFromPfxFiles,                          0
 doUpnp,                                        false
 maxOutgoingSyncs,                              1
 reconnect.active,                              1
-reconnect.asyncStreamTimeoutMilliseconds,      60000
 reconnect.reconnectWindowSeconds,              -1
 showInternalStats,                             1
 state.saveStatePeriod,                         300
