@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.Connection;
@@ -142,8 +141,8 @@ public class SyncValidator {
                 e -> e.getGeneration() < caller.getConsensus().getMinGenerationNonAncient());
 
         // Get the events each received from the other in the sync
-        final List<EventIntakeTask> callerReceivedEvents = caller.getReceivedEvents();
-        final List<EventIntakeTask> listenerReceivedEvents = listener.getReceivedEvents();
+        final List<GossipEvent> callerReceivedEvents = caller.getReceivedEvents();
+        final List<GossipEvent> listenerReceivedEvents = listener.getReceivedEvents();
 
         if (enableLogging) {
             printEvents("Caller's last added events", caller.getGeneratedEvents());
@@ -168,7 +167,7 @@ public class SyncValidator {
             final SyncNode receiver,
             final boolean strictCompare) {
 
-        Collection<EventIntakeTask> actualList = receiver.getReceivedEvents();
+        Collection<GossipEvent> actualList = receiver.getReceivedEvents();
 
         if (expectedList == null && actualList == null) {
             return;
@@ -190,18 +189,14 @@ public class SyncValidator {
         for (final IndexedEvent expected : expectedList) {
             boolean foundMatch = false;
 
-            for (final EventIntakeTask actual : actualList) {
-                if (actual instanceof GossipEvent) {
+            for (final GossipEvent actual : actualList) {
+                final BaseEventHashedData actualHashedData = actual.getHashedData();
+                final BaseEventUnhashedData actualUnhashedData = actual.getUnhashedData();
 
-                    final GossipEvent actualEvent = (GossipEvent) actual;
-                    final BaseEventHashedData actualHashedData = actualEvent.getHashedData();
-                    final BaseEventUnhashedData actualUnhashedData = actualEvent.getUnhashedData();
-
-                    if (expected.getBaseEventHashedData().equals(actualHashedData)
-                            && expected.getBaseEventUnhashedData().equals(actualUnhashedData)) {
-                        foundMatch = true;
-                        break;
-                    }
+                if (expected.getBaseEventHashedData().equals(actualHashedData)
+                        && expected.getBaseEventUnhashedData().equals(actualUnhashedData)) {
+                    foundMatch = true;
+                    break;
                 }
             }
 

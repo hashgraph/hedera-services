@@ -37,7 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-public class SwirldStateManagerImplTests {
+class SwirldStateManagerImplTests {
 
     private SwirldStateManagerImpl swirldStateManagerImpl;
     private State initialState;
@@ -59,7 +59,6 @@ public class SwirldStateManagerImplTests {
                 mock(ConsensusSystemTransactionManager.class),
                 mock(SwirldStateMetrics.class),
                 mock(StatusActionSubmitter.class),
-                () -> false,
                 initialState,
                 new BasicSoftwareVersion(1));
     }
