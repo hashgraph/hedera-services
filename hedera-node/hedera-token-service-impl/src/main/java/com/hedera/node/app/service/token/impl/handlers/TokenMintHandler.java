@@ -284,12 +284,10 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         logger.info("TOKEN MINT ({})", readableTokenStore);
 
-        final var tokenType = TokenHandlerHelper.getIfUsable(op.tokenOrThrow(), readableTokenStore)
-                .tokenType();
+        final var tokenType = readableTokenStore.get(op.tokenOrThrow()).tokenType();
         final var subType = tokenType == TokenType.FUNGIBLE_COMMON
                 ? SubType.TOKEN_FUNGIBLE_COMMON
                 : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-
         final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
         final var payerId = feeContext.body().transactionIDOrThrow().accountIDOrThrow();
         final var payerKey = readableAccountStore.getAccountById(payerId).keyOrThrow();
