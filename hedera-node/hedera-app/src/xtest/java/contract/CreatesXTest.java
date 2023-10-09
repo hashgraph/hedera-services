@@ -163,7 +163,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 ResponseCodeEnum.INVALID_RENEWAL_PERIOD);
 
-        // should successfully create fungible token with custom fees
+        // should successfully create fungible token with custom fees v1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
@@ -208,7 +208,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
-        // should successfully create non fungible token without custom fees
+        // should successfully create non-fungible token without custom fees v1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
@@ -216,7 +216,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
-        // should successfully create non fungible token without custom fees v2
+        // should successfully create non-fungible token without custom fees v2
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
@@ -224,7 +224,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
-        // should successfully create non fungible token without custom fees v3
+        // should successfully create non-fungible token without custom fees v3
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
@@ -234,7 +234,7 @@ public class CreatesXTest extends AbstractContractXTest {
 
         // should revert when token has no supplyKey
 
-        // should successfully create fungible token with custom fees
+        // should successfully create non-fungible token with custom fees v1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
@@ -242,7 +242,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
-        // should successfully create fungible token with custom fees v2
+        // should successfully create non-fungible token with custom fees v2
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
@@ -250,7 +250,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
-        // should successfully create fungible token with custom fees v3
+        // should successfully create non-fungible token with custom fees v3
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
