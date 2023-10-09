@@ -147,10 +147,7 @@ public final class IngestChecker {
         final var txBody = txInfo.txBody();
         final var functionality = txInfo.functionality();
 
-        // 1a. Run pure checks
-        dispatcher.dispatchPureChecks(txBody);
-
-        // 1b. Verify the transaction has been sent to *this* node
+        // 1a. Verify the transaction has been sent to *this* node
         if (!nodeAccount.equals(txBody.nodeAccountID())) {
             throw new PreCheckException(INVALID_NODE_ACCOUNT);
         }
