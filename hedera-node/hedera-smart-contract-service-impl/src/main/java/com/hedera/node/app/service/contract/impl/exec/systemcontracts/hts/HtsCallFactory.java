@@ -71,7 +71,8 @@ public class HtsCallFactory {
                 configOf(frame),
                 syntheticIds.converterFor(enhancement.nativeOperations()),
                 verificationStrategies,
-                callTranslators);
+                callTranslators,
+                frame.isStatic());
         return requireNonNull(attempt.asExecutableCall());
     }
 }
