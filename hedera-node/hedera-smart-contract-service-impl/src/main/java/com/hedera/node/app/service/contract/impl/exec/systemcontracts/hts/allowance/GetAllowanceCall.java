@@ -25,7 +25,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -37,7 +37,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class GetAllowanceCall extends AbstractTokenViewCall {
+public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
 
     private final Address owner;
     private final Address spender;

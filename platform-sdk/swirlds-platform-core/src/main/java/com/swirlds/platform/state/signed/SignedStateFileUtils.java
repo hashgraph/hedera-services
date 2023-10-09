@@ -17,16 +17,11 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.system.NodeId;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -193,43 +188,5 @@ public final class SignedStateFileUtils {
 
         return getSignedStatesDirectoryForSwirld(mainClassName, selfId, swirldName)
                 .resolve(Long.toString(round));
-    }
-
-    /**
-     * Clean out all files in {@link #getSignedStatesBaseDirectory()} except for
-     * the signed state files of a particular app.
-     *
-     * @param mainClassName
-     * 		the name of the app whose state files should NOT be deleted
-     */
-    public static void cleanStateDirectory(final String mainClassName) {
-
-        final Path baseDirectory = getSignedStatesBaseDirectory();
-        final Path excludedDirectory = getSignedStatesDirectoryForApp(mainClassName);
-
-        logger.info(
-                STATE_TO_DISK.getMarker(),
-                "Cleaning up saved state directory, "
-                        + "all files and directories in {} (with the exception of {}) will be deleted.",
-                baseDirectory,
-                excludedDirectory);
-
-        try (final Stream<Path> childPaths = Files.walk(baseDirectory, 1)) {
-            childPaths.forEach(path -> {
-                if (!path.equals(excludedDirectory) && !path.equals(baseDirectory)) {
-                    try {
-                        FileUtils.deleteDirectoryAndLog(path);
-                    } catch (final IOException e) {
-                        // Intentionally ignored, deleteDirectoryAndLog() will take care of logging an exception
-                    }
-                }
-            });
-        } catch (final IOException e) {
-            logger.warn(
-                    STATE_TO_DISK.getMarker(),
-                    "encountered problem while attempting to clean state directory {}",
-                    baseDirectory,
-                    e);
-        }
     }
 }

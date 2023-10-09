@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.cli;
 
+import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.PlatformBuilder.DEFAULT_SETTINGS_FILE_NAME;
+
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
@@ -66,7 +69,7 @@ public final class CleanCommand extends AbstractCommand {
         Objects.requireNonNull(sdkPath);
 
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(
-                List.of(sdkPath.resolve("config.txt"), sdkPath.resolve("settings.txt")));
+                sdkPath.resolve(DEFAULT_SETTINGS_FILE_NAME), List.of(sdkPath.resolve(DEFAULT_CONFIG_FILE_NAME)));
 
         // delete all logs
         FileUtils.deleteFiles(sdkPath, ".log");
