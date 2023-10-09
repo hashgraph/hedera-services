@@ -94,9 +94,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
                         .via("failedConsensusTransaction")
                         .asTxnWithSignedTxnBytesAndSigMap()
                         .hasPrecheck(INVALID_TRANSACTION))
-                .then(getTxnRecord("failedConsensusTransaction")
-                        .hasCostAnswerPrecheck(RECORD_NOT_FOUND)
-                        .hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
+                .then(getTxnRecord("failedConsensusTransaction").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
     @HapiTest
@@ -107,9 +105,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
                         .via(FAILED_CRYPTO_TRANSACTION)
                         .asTxnWithSignedTxnBytesAndBodyBytes()
                         .hasPrecheck(INVALID_TRANSACTION))
-                .then(getTxnRecord(FAILED_CRYPTO_TRANSACTION)
-                        .hasCostAnswerPrecheck(RECORD_NOT_FOUND)
-                        .hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
+                .then(getTxnRecord(FAILED_CRYPTO_TRANSACTION).hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
     @Override

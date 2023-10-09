@@ -83,10 +83,6 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         if (accountID == null || accountID.equals(AccountID.DEFAULT)) {
             throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
-
-        final var recordCache = context.recordCache();
-        final var receipt = recordCache.getReceipt(txnId);
-        mustExist(receipt, RECORD_NOT_FOUND);
     }
 
     @Override
