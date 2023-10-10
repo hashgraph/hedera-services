@@ -38,7 +38,6 @@ import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
-import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Checks whether an account is authorized to perform a system transaction that requires
