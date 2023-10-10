@@ -41,6 +41,7 @@ import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -145,5 +146,11 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
         final var contractId = context.query().contractGetInfoOrThrow().contractIDOrElse(ContractID.DEFAULT);
         final var contract = accountsStore.getContractById(contractId);
         return (contract == null || !contract.smartContract()) ? null : contract;
+    }
+
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext context) {
+        return context.feeCalculator().calculate();
     }
 }

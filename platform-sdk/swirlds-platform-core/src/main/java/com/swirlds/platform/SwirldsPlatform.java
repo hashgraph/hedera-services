@@ -167,7 +167,7 @@ import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SwirldsPlatform implements Platform, Startable {
+public class SwirldsPlatform implements Platform {
 
     public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
@@ -364,7 +364,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         registerAddressBookMetrics(metrics, currentAddressBook, selfId);
 
-        this.recycleBin = Objects.requireNonNull(recycleBin);
+        this.recycleBin = components.add(Objects.requireNonNull(recycleBin));
 
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
 
@@ -1000,6 +1000,8 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     @Override
     public void start() {
+        logger.info(STARTUP.getMarker(), "Starting platform {}", selfId);
+
         components.start();
 
         metrics.start();
