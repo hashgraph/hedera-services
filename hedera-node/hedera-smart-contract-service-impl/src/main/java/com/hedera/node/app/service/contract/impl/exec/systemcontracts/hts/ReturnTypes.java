@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY_V2;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.KEY_VALUE;
 
 import com.esaulpaugh.headlong.abi.TupleType;
@@ -53,7 +53,7 @@ public class ReturnTypes {
     public static final String RESPONSE_CODE_INT32 = "(int32,int32)";
     public static final String RESPONSE_CODE_UINT256 = "(int64,uint256)";
     public static final String UINT256 = "(uint256)";
-    public static final String RESPONSE_CODE_EXPIRY = RESPONSE_STATUS_AT_BEGINNING + EXPIRY + ")";
+    public static final String RESPONSE_CODE_EXPIRY = RESPONSE_STATUS_AT_BEGINNING + EXPIRY_V2 + ")";
     public static final String RESPONSE_CODE_TOKEN_KEY = RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE + ")";
 
     private static final TupleType RC_ENCODER = TupleType.parse(INT_64);
