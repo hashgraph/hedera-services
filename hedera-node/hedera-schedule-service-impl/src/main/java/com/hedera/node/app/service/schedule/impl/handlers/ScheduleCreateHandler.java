@@ -27,6 +27,7 @@ import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -151,6 +152,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                     finalSchedule = HandlerUtility.markExecuted(finalSchedule, currentConsensusTime);
                 }
                 scheduleStore.put(finalSchedule);
+                final ScheduleRecordBuilder scheduleRecords = context.recordBuilder(ScheduleRecordBuilder.class);
+                scheduleRecords.scheduleID(finalSchedule.scheduleId());
             } else {
                 throw new HandleException(validationResult);
             }
