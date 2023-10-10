@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.KEY_VALUE;
+
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -37,15 +40,8 @@ public class ReturnTypes {
     public static final ContractID ZERO_CONTRACT_ID =
             ContractID.newBuilder().contractNum(0).build();
 
-    /*
-     ** The following private strings define components of tuples results.
-     */
     private static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
     // Defined by struct Expiry { unint32 second; address autoRenewAccount; uint32 autoRenewPeriod; }
-    private static final String EXPIRY = "(uint32,address,uint32)";
-    // Defined by struct KeyValue { bool inheritAccountKey; address contractId; bytes ed25519; bytes ECDSA_secp256k1;
-    // address delegatableContractId; }
-    private static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
 
     public static final String INT = "(int)";
     public static final String INT_64 = "(int64)";
