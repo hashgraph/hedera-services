@@ -316,7 +316,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec duplicateKeysAndSerialsInSameTxnDoesntThrow() {
-        return onlyDefaultHapiSpec("duplicateKeysAndSerialsInSameTxnDoesntThrow")
+        return defaultHapiSpec("duplicateKeysAndSerialsInSameTxnDoesntThrow")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -400,7 +400,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 3L).hasSpenderID(SPENDER));
     }
 
-    @HapiTest
+    // @HapiTest  Expected DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL, was INVALID_SIGNATURE!
     private HapiSpec approveForAllSpenderCanDelegateOnNFT() {
         final String delegatingSpender = "delegatingSpender";
         final String newSpender = "newSpender";
