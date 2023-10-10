@@ -42,7 +42,6 @@ import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
-import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
@@ -115,11 +114,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     private final HashLogger hashLogger;
 
     /**
-     * Builds dispatches for communication internal to this component
-     */
-    private final DispatchBuilder dispatchBuilder;
-
-    /**
      * Used to track signed state leaks, if enabled
      */
     private final SignedStateSentinel signedStateSentinel;
@@ -134,6 +128,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     /**
      * @param platformContext                    the platform context
      * @param threadManager                      manages platform thread resources
+     * @param dispatchBuilder                    builds dispatchers. This is deprecated, do not wire new things together
+     *                                           with this.
      * @param addressBook                        the initial address book
      * @param signer                             an object capable of signing with the platform's private key
      * @param mainClassName                      the name of the app class inheriting from SwirldMain
@@ -154,6 +150,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
+            @NonNull final DispatchBuilder dispatchBuilder,
             @NonNull final AddressBook addressBook,
             @NonNull final PlatformSigner signer,
             @NonNull final String mainClassName,
@@ -197,9 +194,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
-
-        dispatchBuilder =
-                new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
 
         hashLogger = new HashLogger(threadManager, stateConfig);
 
@@ -411,7 +405,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     public void start() {
         signedStateGarbageCollector.start();
         signedStateFileManager.start();
-        dispatchBuilder.start();
         signedStateSentinel.start();
     }
 

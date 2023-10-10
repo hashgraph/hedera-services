@@ -40,6 +40,7 @@ import com.swirlds.platform.components.state.DefaultStateManagementComponentFact
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponentFactory;
 import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.metrics.WiringMetrics;
@@ -77,14 +78,20 @@ public class ManualWiring {
     /** A queue thread that asynchronously invokes NewLatestCompleteStateConsumers */
     private final QueueThread<Runnable> asyncLatestCompleteStateQueue;
 
+    private final DispatchBuilder dispatchBuilder;
+
     public ManualWiring(
-            final PlatformContext platformContext, final ThreadManager threadManager, final AddressBook addressBook) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final DispatchBuilder dispatchBuilder,
+            @NonNull final AddressBook addressBook) {
 
         this.platformContext = platformContext;
         this.threadManager = threadManager;
         this.addressBook = addressBook;
         this.wiringMetrics = new WiringMetrics(platformContext.getMetrics());
         this.shutdown = new Shutdown();
+        this.dispatchBuilder = Objects.requireNonNull(dispatchBuilder);
 
         final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
         asyncLatestCompleteStateQueue = new QueueThreadConfiguration<Runnable>(threadManager)
@@ -151,6 +158,7 @@ public class ManualWiring {
                 new DefaultStateManagementComponentFactory(
                         platformContext,
                         threadManager,
+                        dispatchBuilder,
                         addressBook,
                         platformSigner,
                         mainClassName,

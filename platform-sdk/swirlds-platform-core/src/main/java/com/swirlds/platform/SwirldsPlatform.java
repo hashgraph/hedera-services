@@ -377,7 +377,7 @@ public class SwirldsPlatform implements Platform {
         EventCounter.registerEventCounterMetrics(metrics);
 
         // Manually wire components for now.
-        final ManualWiring wiring = new ManualWiring(platformContext, threadManager, getAddressBook());
+        final ManualWiring wiring = new ManualWiring(platformContext, threadManager, dispatchBuilder, getAddressBook());
         metrics.addUpdater(wiring::updateMetrics);
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);

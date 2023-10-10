@@ -43,6 +43,7 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistrib
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -514,6 +515,7 @@ class StateManagementComponentTests {
         return new DefaultStateManagementComponent(
                 platformContext,
                 AdHocThreadManager.getStaticThreadManager(),
+                mock(DispatchBuilder.class),
                 addressBook,
                 signer,
                 MAIN,
