@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.recovery;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
@@ -44,6 +45,7 @@ import com.swirlds.common.system.state.notifications.NewRecoveredStateNotificati
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.ApplicationDefinitionLoader;
+import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.event.GossipEvent;
@@ -68,6 +70,8 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
 
 /**
  * Handles the event stream recovery workflow.
@@ -122,10 +126,9 @@ public final class EventRecoveryWorkflow {
         setupConstructableRegistry();
 
         // parameters if the app needs them
-        final ApplicationDefinition appDefinition = ApplicationDefinitionLoader.loadDefault(platformContext
-                .getConfiguration()
-                .getConfigData(PathsConfig.class)
-                .getConfigPath());
+        final ApplicationDefinition appDefinition = ApplicationDefinitionLoader.loadDefault(
+                getAbsolutePath(DEFAULT_CONFIG_FILE_NAME)
+        );
         ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
 
         final SwirldMain appMain = loadAppMain(mainClassName);
