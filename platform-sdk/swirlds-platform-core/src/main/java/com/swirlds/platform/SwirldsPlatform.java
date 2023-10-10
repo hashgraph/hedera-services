@@ -411,8 +411,7 @@ public class SwirldsPlatform implements Platform {
                 stateConfig,
                 epochHash));
 
-        // TODO can this be moved into the consensus hash manager?
-        final IssHandler issHandler = components.add(new IssHandler(
+        components.add(new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
@@ -422,7 +421,7 @@ public class SwirldsPlatform implements Platform {
                 wiring::handleFatalError,
                 appCommunicationComponent));
 
-        final IssMetrics issMetrics = components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
+        components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
 
         stateManagementComponent = wiring.wireStateManagementComponent(
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
