@@ -158,7 +158,7 @@ public class TokenCreateSpecs extends HapiSuite {
      * It also verifies that these auto-associations don't "count" against the max
      * automatic associations limit defined by https://hips.hedera.com/hip/hip-23.
      */
-    @HapiTest
+
     private HapiSpec validateNewTokenAssociations() {
         final String notToBeToken = "notToBeToken";
         final String hbarCollector = "hbarCollector";
@@ -201,8 +201,6 @@ public class TokenCreateSpecs extends HapiSuite {
                                         selfDenominatedFixedCollector,
                                         otherSelfDenominatedFixedCollector)
                                 .via(creationTxn),
-                        // TODO: Here it throws that we expect INVALID_TREASURY_ACCOUNT_FOR_TOKEN but it was OK.
-                        // When I change it to expect OK it now returns PLATFORM_NOT_ACTIVE
                         tokenCreate(notToBeToken)
                                 .treasury(tbd)
                                 .hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
@@ -275,6 +273,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         tokenCreate("neverToBe").expiry(okExpiry));
     }
 
+    @HapiTest
     public HapiSpec autoRenewValidationWorks() {
         final var deletingAccount = "deletingAccount";
         return defaultHapiSpec("AutoRenewValidationWorks")
@@ -290,9 +289,6 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .signedBy(GENESIS)
                                 .autoRenewAccount("1.2.3")
                                 .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
-                        // TODO: for some reason setting the autoRenewPeriod does not change the value. We always get
-                        // the default value(7776000). Not sure why
-                        // Other then that the validation itself seems to be in place.
                         tokenCreate(PRIMARY)
                                 .autoRenewAccount(AUTO_RENEW)
                                 .autoRenewPeriod(Long.MAX_VALUE)

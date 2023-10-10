@@ -121,6 +121,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var tokenStore = context.writableStore(WritableTokenStore.class);
         final var tokenRelationStore = context.writableStore(WritableTokenRelationStore.class);
 
+        final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
+
         /* Validate if the current token can be created */
         validateTrue(
                 tokenStore.sizeOfState() + 1 <= tokensConfig.maxNumber(),
@@ -142,7 +144,13 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         tokenStore.put(newToken);
         // associate token with treasury and collector ids of custom fees whose token denomination
         // is set to sentinel value
-        associateAccounts(context, newToken, accountStore, tokenRelationStore, feesSetNeedingCollectorAutoAssociation);
+        associateAccounts(
+                context,
+                newToken,
+                accountStore,
+                tokenRelationStore,
+                feesSetNeedingCollectorAutoAssociation,
+                recordBuilder);
 
         // Since we have associated treasury and needed fee collector accounts in the previous step,
         // this relation must exist
@@ -159,24 +167,26 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 .build());
 
         // Update record with newly created token id
-        final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
         recordBuilder.tokenID(newTokenId);
     }
 
     /**
      * Associate treasury account and the collector accounts of custom fees whose token denomination
      * is set to sentinel value, to use denomination as newly created token.
-     * @param newToken newly created token
-     * @param accountStore account store
-     * @param tokenRelStore token relation store
+     *
+     * @param newToken                        newly created token
+     * @param accountStore                    account store
+     * @param tokenRelStore                   token relation store
      * @param requireCollectorAutoAssociation set of custom fees whose token denomination is set to sentinel value
+     * @param recordBuilder
      */
     private void associateAccounts(
             final HandleContext context,
             final Token newToken,
             final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            final List<CustomFee> requireCollectorAutoAssociation) {
+            final List<CustomFee> requireCollectorAutoAssociation,
+            final TokenCreateRecordBuilder recordBuilder) {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 
@@ -205,7 +215,6 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
             createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
         }
-        final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
         final var newRelation = tokenRelStore.get(newToken.treasuryAccountId(), newToken.tokenId());
         recordBuilder.addAutomaticTokenAssociation(asTokenAssociation(newRelation.tokenId(), newRelation.accountId()));
     }
