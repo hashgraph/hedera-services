@@ -313,7 +313,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 .then();
     }
 
-    //    @HapiTest INSUFFICIENT_TX_FEE, expecting OK
+    @HapiTest
     private HapiSpec duplicateKeysAndSerialsInSameTxnDoesntThrow() {
         return defaultHapiSpec("duplicateKeysAndSerialsInSameTxnDoesntThrow")
                 .given(
@@ -399,7 +399,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 3L).hasSpenderID(SPENDER));
     }
 
-    // @HapiTest  Expected DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL, was INVALID_SIGNATURE!
+    //     @HapiTest  //Expected DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL, was INVALID_SIGNATURE!
     private HapiSpec approveForAllSpenderCanDelegateOnNFT() {
         final String delegatingSpender = "delegatingSpender";
         final String newSpender = "newSpender";
@@ -1593,7 +1593,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged());
     }
 
-    //        @HapiTest HapiScheduleCreate not working yet
+    @HapiTest
     private HapiSpec scheduledCryptoApproveAllowanceWorks() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWorks")
                 .given(
