@@ -84,7 +84,7 @@ public class ThrottleAccumulator {
     private static final Logger log = LogManager.getLogger(ThrottleAccumulator.class);
     private static final Set<HederaFunctionality> GAS_THROTTLED_FUNCTIONS =
             EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
-    private int capacitySplit;
+    private final IntSupplier capacitySplitSource;
     private final ConfigProvider configProvider;
     private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
     private static final int UNKNOWN_NUM_IMPLICIT_CREATIONS = -1;
@@ -95,7 +95,7 @@ public class ThrottleAccumulator {
     public ThrottleAccumulator(
             @NonNull final IntSupplier capacitySplitSource, @NonNull final ConfigProvider configProvider) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
-        this.capacitySplit = capacitySplitSource.getAsInt();
+        this.capacitySplitSource = capacitySplitSource;
     }
 
     /*
@@ -491,7 +491,7 @@ public class ThrottleAccumulator {
                         bucket.throttleGroups().stream()
                                 .map(this::hapiGroupFromPbj)
                                 .toList());
-                var mapping = utilThrottleBucket.asThrottleMapping(capacitySplit);
+                var mapping = utilThrottleBucket.asThrottleMapping(capacitySplitSource.getAsInt());
                 var throttle = mapping.getLeft();
                 var reqs = mapping.getRight();
                 for (var req : reqs) {
@@ -509,7 +509,7 @@ public class ThrottleAccumulator {
         functionReqs = newFunctionReqs;
         activeThrottles = newActiveThrottles;
 
-        logResolvedDefinitions(capacitySplit);
+        logResolvedDefinitions(capacitySplitSource.getAsInt());
     }
 
     /*
