@@ -613,6 +613,11 @@ public class SignedState implements SignedStateInfo {
             return false;
         }
 
+        if (!addressBook.contains(nodeId)) {
+            // we can ignore signatures from nodes no longer in the address book
+            return false;
+        }
+
         final Address address = addressBook.getAddress(nodeId);
         if (!isSignatureValid(address, signature)) {
             return false;

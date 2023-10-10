@@ -199,6 +199,11 @@ public class ConsensusHashManager {
             return;
         }
 
+        if (!addressBook.contains(signerId)) {
+            // we don't care about nodes not in the address book
+            return;
+        }
+
         final long nodeWeight = addressBook.getAddress(signerId).getWeight();
 
         final RoundHashValidator roundValidator = roundData.get(signatureTransaction.getRound());
