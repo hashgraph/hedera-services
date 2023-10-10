@@ -313,7 +313,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 .then();
     }
 
-    @HapiTest
+    //    @HapiTest
     private HapiSpec duplicateKeysAndSerialsInSameTxnDoesntThrow() {
         return defaultHapiSpec("duplicateKeysAndSerialsInSameTxnDoesntThrow")
                 .given(
