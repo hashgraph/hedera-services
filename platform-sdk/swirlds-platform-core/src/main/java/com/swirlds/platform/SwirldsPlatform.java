@@ -130,6 +130,7 @@ import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
+import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
@@ -140,6 +141,7 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
+import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
@@ -315,7 +317,7 @@ public class SwirldsPlatform implements Platform {
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final boolean softwareUpgrade,
+            final boolean softwareUpgrade,
             @NonNull final SignedState initialState,
             @Nullable final AddressBook previousAddressBook,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
@@ -401,6 +403,27 @@ public class SwirldsPlatform implements Platform {
 
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
+        final ConsensusHashManager consensusHashManager = components.add(new ConsensusHashManager(
+                Time.getCurrent(),
+                dispatchBuilder,
+                currentAddressBook,
+                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                stateConfig,
+                epochHash));
+
+        // TODO can this be moved into the consensus hash manager?
+        final IssHandler issHandler = components.add(new IssHandler(
+                Time.getCurrent(),
+                dispatchBuilder,
+                stateConfig,
+                selfId,
+                platformStatusManager,
+                this::haltRequested,
+                wiring::handleFatalError,
+                appCommunicationComponent));
+
+        final IssMetrics issMetrics = components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
+
         stateManagementComponent = wiring.wireStateManagementComponent(
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
                 actualMainClassName,
@@ -411,12 +434,10 @@ public class SwirldsPlatform implements Platform {
                 appCommunicationComponent,
                 preconsensusEventWriter,
                 platformStatusManager::getCurrentStatus,
-                platformStatusManager::submitStatusAction,
-                epochHash);
+                platformStatusManager::submitStatusAction);
         wiring.registerComponents(components);
 
         final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
-        final ConsensusHashManager consensusHashManager = stateManagementComponent.getConsensusHashManager();
 
         final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager =
                 new PreconsensusSystemTransactionManager();
@@ -489,7 +510,7 @@ public class SwirldsPlatform implements Platform {
                 stateHashSignQueue,
                 preconsensusEventWriter::waitUntilDurable,
                 platformStatusManager,
-                stateManagementComponent::roundAppliedToState,
+                consensusHashManager::roundCompleted,
                 appVersion));
 
         final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);

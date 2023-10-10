@@ -22,10 +22,8 @@ import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.HashSigner;
@@ -52,7 +50,6 @@ import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.SignatureTransmitter;
-import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -93,11 +90,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     private final SignatureTransmitter signatureTransmitter;
 
     /**
-     * Various metrics about signed states
-     */
-    private final SignedStateMetrics signedStateMetrics;
-
-    /**
      * Signed states are deleted on this background thread.
      */
     private final SignedStateGarbageCollector signedStateGarbageCollector;
@@ -116,11 +108,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * Manages the pipeline of signed states to be written to disk
      */
     private final SignedStateFileManager signedStateFileManager;
-
-    /**
-     * Tracks the state hashes reported by peers and detects ISSes.
-     */
-    private final ConsensusHashManager consensusHashManager;
 
     /**
      * A logger for hash stream data
@@ -163,7 +150,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param fatalErrorConsumer                 consumer to invoke when a fatal error has occurred
      * @param platformStatusGetter               gets the current platform status
      * @param statusActionSubmitter              enables submitting platform status actions
-     * @param currentEpochHash                   the current epoch hash, or null if there is none
      */
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,
@@ -183,8 +169,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final PlatformStatusGetter platformStatusGetter,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @Nullable final Hash currentEpochHash) {
+            @NonNull final StatusActionSubmitter statusActionSubmitter) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -205,7 +190,10 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
         this.signer = signer;
         this.signatureTransmitter = new SignatureTransmitter(prioritySystemTransactionSubmitter, platformStatusGetter);
-        this.signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
+        /**
+         * Various metrics about signed states
+         */
+        SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
@@ -267,14 +255,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 combinedStateHasEnoughSignaturesConsumer,
                 combinedStateLacksSignaturesConsumer);
 
-        consensusHashManager = new ConsensusHashManager(
-                Time.getCurrent(),
-                dispatchBuilder,
-                addressBook,
-                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                stateConfig,
-                currentEpochHash);
-
         final IssHandler issHandler = new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
@@ -289,7 +269,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
         dispatchBuilder
                 .registerObservers(issHandler)
-                .registerObservers(consensusHashManager)
                 .registerObservers(issMetrics)
                 .registerObservers(this);
 
@@ -429,14 +408,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * {@inheritDoc}
      */
     @Override
-    public void roundAppliedToState(final long round) {
-        consensusHashManager.roundCompleted(round);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void start() {
         signedStateGarbageCollector.start();
         signedStateFileManager.start();
@@ -565,14 +536,5 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     @Override
     public SignedStateManager getSignedStateManager() {
         return signedStateManager;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public ConsensusHashManager getConsensusHashManager() {
-        return consensusHashManager;
     }
 }

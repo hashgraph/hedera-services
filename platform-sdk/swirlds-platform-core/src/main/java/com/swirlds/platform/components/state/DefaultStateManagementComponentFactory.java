@@ -19,7 +19,6 @@ package com.swirlds.platform.components.state;
 import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;
@@ -36,7 +35,6 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
@@ -60,7 +58,6 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     private HaltRequestedConsumer haltRequestedConsumer;
     private FatalErrorConsumer fatalErrorConsumer;
     private PreconsensusEventWriter preconsensusEventWriter;
-    private final Hash currentEpochHash;
 
     /**
      * Gets the current platform status
@@ -81,8 +78,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
             @NonNull final NodeId selfId,
             @NonNull final String swirldName,
             @NonNull final PlatformStatusGetter platformStatusGetter,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @Nullable final Hash currentEpochHash) {
+            @NonNull final StatusActionSubmitter statusActionSubmitter) {
 
         this.context = Objects.requireNonNull(context);
         this.threadManager = Objects.requireNonNull(threadManager);
@@ -93,7 +89,6 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
         this.swirldName = Objects.requireNonNull(swirldName);
         this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
-        this.currentEpochHash = currentEpochHash;
     }
 
     @Override
@@ -174,8 +169,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
                 fatalErrorConsumer,
                 preconsensusEventWriter,
                 platformStatusGetter,
-                statusActionSubmitter,
-                currentEpochHash);
+                statusActionSubmitter);
     }
 
     private void verifyInputs() {

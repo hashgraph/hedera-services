@@ -21,7 +21,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SystemExitCode;
@@ -123,7 +122,6 @@ public class ManualWiring {
      * @param preconsensusEventWriter            writes preconsensus events to disk
      * @param platformStatusGetter               gets the current platform status
      * @param statusActionSubmitter              enables submitting platform status actions
-     * @param currentEpochHash                   the current epoch hash
      * @return a fully wired {@link StateManagementComponent}
      */
     public @NonNull StateManagementComponent wireStateManagementComponent(
@@ -136,8 +134,7 @@ public class ManualWiring {
             @NonNull final AppCommunicationComponent appCommunicationComponent,
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final PlatformStatusGetter platformStatusGetter,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @Nullable final Hash currentEpochHash) {
+            @NonNull final StatusActionSubmitter statusActionSubmitter) {
 
         Objects.requireNonNull(platformSigner, "platformSigner");
         Objects.requireNonNull(mainClassName, "mainClassName");
@@ -160,8 +157,7 @@ public class ManualWiring {
                         selfId,
                         swirldName,
                         platformStatusGetter,
-                        statusActionSubmitter,
-                        currentEpochHash);
+                        statusActionSubmitter);
 
         stateManagementComponentFactory.newLatestCompleteStateConsumer(ss -> {
             final ReservedSignedState reservedSignedState = ss.reserve("ManualWiring newLatestCompleteStateConsumer");
@@ -199,7 +195,7 @@ public class ManualWiring {
     /**
      * Inform all components that a fatal error has occurred, log the error, and shutdown the JVM.
      */
-    private void handleFatalError(
+    public void handleFatalError(
             @Nullable final String msg, @Nullable final Throwable throwable, @NonNull final SystemExitCode exitCode) {
 
         // Log this fatal error first, to make sure it ends up in the logs, no matter what else happens
