@@ -40,12 +40,15 @@ public class WireInserter<T> {
     }
 
     /**
-     * Bind this inserter to a handler. A handler must be bound to this inserter prior to
+     * Bind this inserter to a handler. A handler must be bound to this inserter prior to inserting data via any
+     * method.
      *
      * @param handler the handler to bind to this inserter
      * @return this
+     * @throws IllegalStateException if a handler is already bound and this method is called a second time
      */
     @SuppressWarnings("unchecked")
+    @NonNull
     public WireInserter<T> bind(@NonNull final Consumer<T> handler) {
         if (this.handler != null) {
             throw new IllegalStateException("Handler already bound");
@@ -61,7 +64,7 @@ public class WireInserter<T> {
      *
      * @param data the data to be processed by the wire
      */
-    public void put(@NonNull T data) {
+    public void put(@NonNull final T data) {
         wire.put(handler, data);
     }
 
@@ -72,7 +75,7 @@ public class WireInserter<T> {
      * @param data the data to be processed by the wire
      * @throws InterruptedException if the thread is interrupted while waiting for capacity to become available
      */
-    public void interruptablePut(@NonNull T data) throws InterruptedException {
+    public void interruptablePut(@NonNull final T data) throws InterruptedException {
         wire.interruptablePut(handler, data);
     }
 
@@ -83,7 +86,7 @@ public class WireInserter<T> {
      * @param data the data to be processed by the wire
      * @return true if the data was accepted, false otherwise
      */
-    public boolean offer(@NonNull T data) {
+    public boolean offer(@NonNull final T data) {
         return wire.offer(handler, data);
     }
 
@@ -94,7 +97,7 @@ public class WireInserter<T> {
      *
      * @param data the data to be processed by the wire
      */
-    public void inject(@NonNull T data) {
+    public void inject(@NonNull final T data) {
         wire.inject(handler, data);
     }
 }

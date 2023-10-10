@@ -34,6 +34,8 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.Wire;
 import com.swirlds.common.wiring.WireInserter;
+import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Random;
@@ -425,12 +427,14 @@ class SequentialWireTests {
         assertFalse(allWorkAdded.get());
         assertEquals(10, wire.getUnprocessedTaskCount());
 
-        // Even if the wire has no capacity, offer() should not block.
+        // Even if the wire has no capacity, neither offer() nor inject() should not block.
         completeBeforeTimeout(
                 () -> {
                     assertFalse(inserter.offer(1234));
                     assertFalse(inserter.offer(4321));
                     assertFalse(inserter.offer(-1));
+                    inserter.inject(42);
+                    value.set(hash32(value.get(), 42));
                 },
                 Duration.ofSeconds(1),
                 "unable to offer tasks");
@@ -725,21 +729,249 @@ class SequentialWireTests {
                 expectedCountD, countD::get, Duration.ofSeconds(1), "Wire D sum did not match expected value");
     }
 
-    // TODO if we keep both variations of the wire then make sure we have coverage for both for all scenarios
-
-    void injectTest() {
-        // TODO
-    }
-
-    void countingOverMultipleWiresTest() {
-        // TODO
-    }
-
-    void backpressureOverMultipleWiresTest() {
-        // TODO
-    }
-
+    /**
+     * Validate the behavior when there are multiple inserters.
+     */
+    @Test
     void multipleInsertionTypesTest() {
-        // TODO
+        final AtomicInteger wireValue = new AtomicInteger();
+        final Consumer<Integer> integerHandler = x -> wireValue.set(hash32(wireValue.get(), x));
+        final Consumer<Boolean> booleanHandler = x -> wireValue.set((x ? -1 : 1) * wireValue.get());
+        final Consumer<String> stringHandler = x -> wireValue.set(hash32(wireValue.get(), x.hashCode()));
+
+        final Wire wire = Wire.builder("test").withConcurrency(false).build();
+
+        final WireInserter<Integer> integerInserter =
+                wire.createInserter(Integer.class).bind(integerHandler);
+        final WireInserter<Boolean> booleanInserter =
+                wire.createInserter(Boolean.class).bind(booleanHandler);
+        final WireInserter<String> stringInserter =
+                wire.createInserter(String.class).bind(stringHandler);
+
+        assertEquals(-1, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
+
+        int value = 0;
+        for (int i = 0; i < 100; i++) {
+            integerInserter.put(i);
+            value = hash32(value, i);
+
+            boolean invert = i % 2 == 0;
+            booleanInserter.put(invert);
+            value = (invert ? -1 : 1) * value;
+
+            final String string = String.valueOf(i);
+            stringInserter.put(string);
+            value = hash32(value, string.hashCode());
+        }
+
+        assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire value did not match expected value");
     }
+
+    /**
+     * Make sure backpressure works when there are multiple inserters.
+     */
+    @Test
+    void multipleInserterBackpressureTest() throws InterruptedException {
+        final AtomicInteger wireValue = new AtomicInteger();
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        final Consumer<Integer> handler1 = x -> {
+            try {
+                if (x == 0) {
+                    latch.await();
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            wireValue.set(hash32(wireValue.get(), x));
+        };
+
+        final Consumer<Integer> handler2 = x -> wireValue.set(hash32(wireValue.get(), -x));
+
+        final Wire wire = Wire.builder("test")
+                .withConcurrency(false)
+                .withScheduledTaskCapacity(10)
+                .build();
+
+        final WireInserter<Integer> inserter1 =
+                wire.createInserter(Integer.class).bind(handler1);
+        final WireInserter<Integer> inserter2 =
+                wire.createInserter(Integer.class).bind(handler2);
+
+        assertEquals(0, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
+
+        final AtomicInteger value = new AtomicInteger();
+
+        // We will be stuck handling 0 and we will have the capacity for 10 more, for a total of 11 tasks in flight
+        completeBeforeTimeout(
+                () -> {
+                    for (int i = 0; i < 11; i++) {
+                        inserter1.put(i);
+                        value.set(hash32(value.get(), i));
+                    }
+                },
+                Duration.ofSeconds(1),
+                "unable to add tasks");
+        assertEquals(10, wire.getUnprocessedTaskCount());
+
+        // Try to enqueue work on another thread. It should get stuck and be
+        // unable to add anything until we release the latch.
+        final AtomicBoolean allWorkAdded = new AtomicBoolean(false);
+        new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    for (int i = 11; i < 100; i++) {
+                        inserter2.put(i);
+                        value.set(hash32(value.get(), -i));
+                    }
+                    allWorkAdded.set(true);
+                })
+                .build(true);
+
+        // Adding work to an unblocked wire should be very fast. If we sleep for a while, we'd expect that an unblocked
+        // wire would have processed all of the work that was added to it.
+        MILLISECONDS.sleep(50);
+        assertFalse(allWorkAdded.get());
+        assertEquals(10, wire.getUnprocessedTaskCount());
+
+        // Even if the wire has no capacity, neither offer() nor inject() should not block.
+        completeBeforeTimeout(
+                () -> {
+                    assertFalse(inserter1.offer(1234));
+                    assertFalse(inserter1.offer(4321));
+                    assertFalse(inserter1.offer(-1));
+                    inserter1.inject(42);
+                    value.set(hash32(value.get(), 42));
+                },
+                Duration.ofSeconds(1),
+                "unable to offer tasks");
+
+        // Release the latch, all work should now be added
+        latch.countDown();
+
+        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(1), "unable to add all work");
+        assertEventuallyEquals(
+                0L,
+                wire::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "Wire unprocessed task count did not match expected value");
+        assertEventuallyEquals(
+                value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+    }
+
+    /**
+     * Make sure backpressure works when a single counter spans multiple wires.
+     */
+    @Test
+    void backpressureOverMultipleWiresTest() throws InterruptedException {
+        final AtomicInteger wireValueA = new AtomicInteger();
+        final AtomicInteger wireValueB = new AtomicInteger();
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        final ObjectCounter backpressure = new BackpressureObjectCounter(10, null);
+
+        final Wire wireA = Wire.builder("testA")
+                .withConcurrency(false)
+                .withOnRamp(backpressure)
+                .build();
+
+        final Wire wireB = Wire.builder("testB")
+                .withConcurrency(false)
+                .withOffRamp(backpressure)
+                .build();
+
+        final WireInserter<Integer> inserterA = wireA.createInserter();
+        final WireInserter<Integer> inserterB = wireB.createInserter();
+
+        final Consumer<Integer> handlerA = x -> {
+            wireValueA.set(hash32(wireValueA.get(), -x));
+            inserterB.put(x);
+        };
+
+        final Consumer<Integer> handlerB = x -> {
+            try {
+                if (x == 0) {
+                    latch.await();
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            wireValueB.set(hash32(wireValueB.get(), x));
+        };
+
+        inserterA.bind(handlerA);
+        inserterB.bind(handlerB);
+
+        assertEquals(0, backpressure.getCount());
+        assertEquals("testA", wireA.getName());
+        assertEquals("testB", wireB.getName());
+
+        final AtomicInteger valueA = new AtomicInteger();
+        final AtomicInteger valueB = new AtomicInteger();
+
+        // We will be stuck handling 0 and we will have the capacity for 10 more, for a total of 11 tasks in flight
+        completeBeforeTimeout(
+                () -> {
+                    for (int i = 0; i < 11; i++) {
+                        inserterA.put(i);
+                        valueA.set(hash32(valueA.get(), -i));
+                        valueB.set(hash32(valueB.get(), i));
+                    }
+                },
+                Duration.ofSeconds(1),
+                "unable to add tasks");
+        assertEquals(10, backpressure.getCount());
+
+        // Try to enqueue work on another thread. It should get stuck and be
+        // unable to add anything until we release the latch.
+        final AtomicBoolean allWorkAdded = new AtomicBoolean(false);
+        new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    for (int i = 11; i < 100; i++) {
+                        inserterA.put(i);
+                        valueA.set(hash32(valueA.get(), -i));
+                        valueB.set(hash32(valueB.get(), i));
+                    }
+                    allWorkAdded.set(true);
+                })
+                .build(true);
+
+        // Adding work to an unblocked wire should be very fast. If we sleep for a while, we'd expect that an unblocked
+        // wire would have processed all of the work that was added to it.
+        MILLISECONDS.sleep(50);
+        assertFalse(allWorkAdded.get());
+        assertEquals(10, backpressure.getCount());
+
+        // Even if the wire has no capacity, neither offer() nor inject() should not block.
+        completeBeforeTimeout(
+                () -> {
+                    assertFalse(inserterA.offer(1234));
+                    assertFalse(inserterA.offer(4321));
+                    assertFalse(inserterA.offer(-1));
+                    inserterA.inject(42);
+                    valueA.set(hash32(valueA.get(), -42));
+                    valueB.set(hash32(valueB.get(), 42));
+                },
+                Duration.ofSeconds(1),
+                "unable to offer tasks");
+
+        // Release the latch, all work should now be added
+        latch.countDown();
+
+        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(1), "unable to add all work");
+        assertEventuallyEquals(
+                0L,
+                backpressure::getCount,
+                Duration.ofSeconds(1),
+                "Wire unprocessed task count did not match expected value");
+        assertEventuallyEquals(
+                valueA.get(), wireValueA::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEventuallyEquals(
+                valueB.get(), wireValueB::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+    }
+
+    // TODO if we keep both variations of the wire then make sure we have coverage for both for all scenarios
 }
