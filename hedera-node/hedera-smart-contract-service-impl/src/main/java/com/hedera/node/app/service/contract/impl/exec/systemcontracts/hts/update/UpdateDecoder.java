@@ -79,6 +79,30 @@ public class UpdateDecoder {
         return decodeTokenUpdate(call, attempt.addressIdConverter());
     }
 
+    /**
+     * Decodes a call to {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V1} into a synthetic {@link TransactionBody}.
+     *
+     * @param attempt the attempt
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeTokenUpdateExpiryV1(@NonNull final HtsCallAttempt attempt) {
+        final var call = UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V1.decodeCall(
+                attempt.input().toArrayUnsafe());
+        return decodeTokenUpdateExpiry(call, attempt.addressIdConverter());
+    }
+
+    /**
+     * Decodes a call to {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V2} into a synthetic {@link TransactionBody}.
+     *
+     * @param attempt the attempt
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeTokenUpdateExpiryV2(@NonNull final HtsCallAttempt attempt) {
+        final var call = UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V2.decodeCall(
+                attempt.input().toArrayUnsafe());
+        return decodeTokenUpdateExpiry(call, attempt.addressIdConverter());
+    }
+
     private TransactionBody decodeTokenUpdate(
             @NonNull final Tuple call, @NonNull final AddressIdConverter addressIdConverter) {
         final var tokenId = ConversionUtils.asTokenId(call.get(0));
@@ -150,6 +174,28 @@ public class UpdateDecoder {
         });
 
         return TransactionBody.newBuilder().tokenUpdate(builder).build();
+    }
+
+    private TransactionBody decodeTokenUpdateExpiry(
+            @NonNull final Tuple call, @NonNull final AddressIdConverter addressIdConverter) {
+        final var txnBodyBuilder = TokenUpdateTransactionBody.newBuilder();
+        txnBodyBuilder.token(ConversionUtils.asTokenId(call.get(0)));
+
+        final var tokenExpiry = decodeTokenExpiry(call.get(1), addressIdConverter);
+
+        if (tokenExpiry.second() != 0) {
+            txnBodyBuilder.expiry(
+                    Timestamp.newBuilder().seconds(tokenExpiry.second()).build());
+        }
+        if (tokenExpiry.autoRenewAccount() != null) {
+            txnBodyBuilder.autoRenewAccount(tokenExpiry.autoRenewAccount());
+        }
+        if (tokenExpiry.autoRenewPeriod() != null
+                && tokenExpiry.autoRenewPeriod().seconds() != 0) {
+            txnBodyBuilder.autoRenewPeriod(tokenExpiry.autoRenewPeriod());
+        }
+
+        return TransactionBody.newBuilder().tokenUpdate(txnBodyBuilder).build();
     }
 
     private static List<TokenKeyWrapper> decodeTokenKeys(
