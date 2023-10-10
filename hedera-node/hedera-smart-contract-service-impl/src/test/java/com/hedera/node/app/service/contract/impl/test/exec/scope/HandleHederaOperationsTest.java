@@ -44,6 +44,7 @@ import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
@@ -86,11 +87,14 @@ class HandleHederaOperationsTest {
     @Mock
     private CryptoCreateRecordBuilder cryptoCreateRecordBuilder;
 
+    @Mock
+    private TinybarValues tinybarValues;
+
     private HandleHederaOperations subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HandleHederaOperations(DEFAULT_LEDGER_CONFIG, context);
+        subject = new HandleHederaOperations(DEFAULT_LEDGER_CONFIG, context, tinybarValues);
     }
 
     @Test
@@ -156,13 +160,15 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void gasPriceInTinybarsHardcoded() {
-        assertEquals(1L, subject.gasPriceInTinybars());
+    void gasPriceInTinybarsDelegates() {
+        given(tinybarValues.serviceGasPrice()).willReturn(1234L);
+        assertEquals(1234L, subject.gasPriceInTinybars());
     }
 
     @Test
-    void valueInTinybarsUsesOneToOneExchange() {
-        assertEquals(1L, subject.valueInTinybars(1L));
+    void valueInTinybarsDelegates() {
+        given(tinybarValues.asTinybars(1L)).willReturn(2L);
+        assertEquals(2L, subject.valueInTinybars(1L));
     }
 
     @Test

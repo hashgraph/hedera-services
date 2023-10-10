@@ -27,6 +27,7 @@ import com.hedera.node.app.service.contract.impl.annotations.ServicesVersionKey;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule;
 import com.hedera.node.app.service.contract.impl.exec.v030.V030Module;
 import com.hedera.node.app.service.contract.impl.exec.v034.V034Module;
@@ -49,6 +50,10 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
         includes = {V030Module.class, V034Module.class, V038Module.class, ProcessorModule.class},
         subcomponents = {TransactionComponent.class, QueryComponent.class})
 public interface ContractServiceModule {
+    @Binds
+    @Singleton
+    GasCalculator bindGasCalculator(@NonNull final CustomGasCalculator gasCalculator);
+
     @Binds
     @IntoMap
     @Singleton

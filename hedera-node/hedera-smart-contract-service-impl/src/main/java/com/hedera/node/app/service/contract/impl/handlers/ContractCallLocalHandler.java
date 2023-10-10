@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL_LOCAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
@@ -96,7 +97,7 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
 
-        var component = provider.get().create(context, Instant.now());
+        var component = provider.get().create(context, Instant.now(), CONTRACT_CALL_LOCAL);
         final var outcome = component.contextQueryProcessor().call();
 
         final var responseHeader = outcome.isSuccess()

@@ -16,17 +16,30 @@
 
 package com.hedera.node.app.service.contract.impl.exec.gas;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.tinybarValuesFor;
+import static com.swirlds.common.units.UnitConstants.HOURS_TO_MINUTES;
+import static com.swirlds.common.units.UnitConstants.MINUTES_TO_SECONDS;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.node.config.data.CacheConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 
-@SuppressWarnings("java:S110") // suppress the warning that the class inheritance shouldn't be too deep
+// too many parents
+@SuppressWarnings("java:S110")
+@Singleton
 public class CustomGasCalculator extends LondonGasCalculator {
-
     private static final long TX_DATA_ZERO_COST = 4L;
     private static final long ISTANBUL_TX_DATA_NON_ZERO_COST = 16L;
     private static final long TX_BASE_COST = 21_000L;
+    private static final int LOG_CONTRACT_ID_SIZE = 24;
+    private static final int LOG_TOPIC_SIZE = 32;
+    private static final int LOG_BLOOM_SIZE = 256;
 
     @Inject
     public CustomGasCalculator() {
@@ -50,19 +63,54 @@ public class CustomGasCalculator extends LondonGasCalculator {
 
     @Override
     public long logOperationGasCost(
-            final MessageFrame frame, final long dataOffset, final long dataLength, final int numTopics) {
-        return 1L;
+            @NonNull final MessageFrame frame, final long dataOffset, final long dataLength, final int numTopics) {
+        requireNonNull(frame);
+        final var evmGasCost = super.logOperationGasCost(frame, dataOffset, dataLength, numTopics);
 
-        //        final var exchange = proxyUpdaterFor(frame).currentExchangeRate();
-        //        long getLogStorageDuration = dynamicProperties.cacheRecordsTtl();
-        //        final var gasCost = GasCalculatorHederaUtil.logOperationGasCost(
-        //                usagePrices, exchange, frame, getLogStorageDuration, dataOffset, dataLength, numTopics);
-        //
-        //        return Math.max(super.logOperationGasCost(frame, dataOffset, dataLength, numTopics), gasCost);
+        final var lifetime = configOf(frame).getConfigData(CacheConfig.class).recordsTtl();
+        final var tinybarValues = tinybarValuesFor(frame);
+        final var hevmGasCost = gasCostOfStoring(
+                logSize(numTopics, dataLength),
+                lifetime,
+                tinybarValues.serviceRbhPrice(),
+                tinybarValues.serviceGasPrice());
+
+        return Math.max(evmGasCost, hevmGasCost);
     }
 
     @Override
     public long codeDepositGasCost(final int codeSize) {
         return 0L;
+    }
+
+    /**
+     * Logically, would return the gas cost of storing the given number of bytes for the given number of seconds,
+     * given the relative prices of a byte-hour and a gas unit in tinybar.
+     *
+     * <p>But for differential testing, ignores the {@code numBytes} and returns the gas cost of storing just a
+     * single byte for the given number of seconds.
+     *
+     * @param numBytes ignored
+     * @param lifetime the number of seconds to store a single byte
+     * @param rbhPrice the price of a byte-hour in tinybar
+     * @param gasPrice the price of a gas unit in tinybar
+     * @return the gas cost of storing a single byte for the given number of seconds
+     */
+    private static long gasCostOfStoring(
+            final long numBytes, final long lifetime, final long rbhPrice, final long gasPrice) {
+        final var storagePrice = (lifetime * rbhPrice) / (HOURS_TO_MINUTES * MINUTES_TO_SECONDS);
+        return Math.round((double) storagePrice / (double) gasPrice);
+    }
+
+    /**
+     * Returns an idealized computation of the number of bytes needed to store a log with the given data size
+     * and number of topics.
+     *
+     * @param numberOfTopics the number of topics in the log
+     * @param dataSize the size of the data in the log
+     * @return an idealized computation of the number of bytes needed to store a log with the given data size
+     */
+    private static long logSize(final int numberOfTopics, final long dataSize) {
+        return LOG_CONTRACT_ID_SIZE + LOG_BLOOM_SIZE + LOG_TOPIC_SIZE * (long) numberOfTopics + dataSize;
     }
 }

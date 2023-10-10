@@ -28,9 +28,11 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
@@ -56,6 +58,7 @@ import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
@@ -85,6 +88,7 @@ import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
@@ -268,8 +272,12 @@ public abstract class AbstractContractXTest {
             @NonNull final org.apache.tuweni.bytes.Bytes input,
             @NonNull final Consumer<HtsCall.PricedResult> resultAssertions) {
         final var context = scaffoldingComponent.txnContextFactory().apply(PLACEHOLDER_CALL_BODY);
+        final var tinybarValues = new TinybarValues(
+                context.exchangeRateInfo().activeRate(Instant.now()),
+                context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT));
         final var enhancement = new HederaWorldUpdater.Enhancement(
-                new HandleHederaOperations(scaffoldingComponent.config().getConfigData(LedgerConfig.class), context),
+                new HandleHederaOperations(
+                        scaffoldingComponent.config().getConfigData(LedgerConfig.class), context, tinybarValues),
                 new HandleHederaNativeOperations(context),
                 new HandleSystemContractOperations(context));
         given(proxyUpdater.enhancement()).willReturn(enhancement);

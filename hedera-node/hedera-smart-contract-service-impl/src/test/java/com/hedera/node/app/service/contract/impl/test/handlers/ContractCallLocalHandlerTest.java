@@ -21,9 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
@@ -158,7 +160,8 @@ class ContractCallLocalHandlerTest {
 
     @Test
     void findResponsePositiveTest() {
-        given(factory.create(any(), any())).willReturn(component);
+        given(factory.create(any(), any(), eq(HederaFunctionality.CONTRACT_CALL_LOCAL)))
+                .willReturn(component);
         given(component.contextQueryProcessor()).willReturn(processor);
         final var expectedResult = SUCCESS_RESULT.asQueryResultOf();
         final var expectedOutcome = new CallOutcome(expectedResult, SUCCESS_RESULT.finalStatus());

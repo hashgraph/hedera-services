@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.utils;
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_ACTION;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
@@ -30,6 +31,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class FrameUtils {
     public static final String CONFIG_CONTEXT_VARIABLE = "contractsConfig";
     public static final String TRACKER_CONTEXT_VARIABLE = "storageAccessTracker";
+    public static final String TINYBAR_VALUES_VARIABLE = "tinybarValues";
 
     private FrameUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -62,6 +64,10 @@ public class FrameUtils {
 
     public static @NonNull ProxyWorldUpdater proxyUpdaterFor(@NonNull final MessageFrame frame) {
         return (ProxyWorldUpdater) frame.getWorldUpdater();
+    }
+
+    public static @NonNull TinybarValues tinybarValuesFor(@NonNull final MessageFrame frame) {
+        return initialFrameOf(frame).getContextVariable(TINYBAR_VALUES_VARIABLE);
     }
 
     public static boolean isDelegateCall(@NonNull final MessageFrame frame) {
