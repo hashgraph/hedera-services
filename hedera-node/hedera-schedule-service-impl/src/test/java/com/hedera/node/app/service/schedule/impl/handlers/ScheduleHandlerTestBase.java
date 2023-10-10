@@ -147,6 +147,10 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         return new Timestamp(valueToConvert.getEpochSecond(), valueToConvert.getNano());
     }
 
+    protected Timestamp timestampFrom(final long secondsToConvert) {
+        return new Timestamp(secondsToConvert, 0);
+    }
+
     @SuppressWarnings("unchecked")
     private void setUpContext() {
         given(mockContext.configuration()).willReturn(testConfig);
@@ -162,6 +166,8 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         given(mockContext.verificationFor(eq(optionKey), any())).willReturn(failedVerification(optionKey));
         given(mockContext.verificationFor(eq(otherKey), any())).willReturn(failedVerification(otherKey));
         given(mockContext.dispatchChildTransaction(any(), eq(ScheduleRecordBuilder.class), any(Predicate.class)))
+                .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
+        given(mockContext.recordBuilder(ScheduleRecordBuilder.class))
                 .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
     }
 

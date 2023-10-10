@@ -32,10 +32,6 @@ import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * @deprecated Since 0.7.0
- */
-@Deprecated
 public class Crypto {
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(Crypto.class);
