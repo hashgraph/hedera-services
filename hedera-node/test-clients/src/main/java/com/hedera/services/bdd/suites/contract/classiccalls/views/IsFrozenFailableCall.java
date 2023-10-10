@@ -26,12 +26,12 @@ import static com.hedera.services.bdd.suites.contract.classiccalls.ClassicInvent
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.contract.classiccalls.AbstractFailableNonStaticCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.AbstractFailableStaticCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.ClassicFailureMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 
-public class IsFrozenFailableCall extends AbstractFailableNonStaticCall {
+public class IsFrozenFailableCall extends AbstractFailableStaticCall {
     private static final Function SIGNATURE = new Function("isFrozen(address,address)", "(int64,bool)");
 
     public IsFrozenFailableCall() {

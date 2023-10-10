@@ -60,6 +60,8 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
@@ -76,6 +78,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+@HapiTestSuite
 public class UniqueTokenManagementSpecs extends HapiSuite {
 
     private static final org.apache.logging.log4j.Logger log = LogManager.getLogger(UniqueTokenManagementSpecs.class);
@@ -168,6 +171,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec populatingAmountForNonFungibleDoesNotWork() {
         return defaultHapiSpec("PopulatingAmountForNonFungibleDoesNotWork")
                 .given(
@@ -194,6 +198,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec finiteNftReachesMaxSupplyProperly() {
         return defaultHapiSpec("FiniteNftReachesMaxSupplyProperly")
                 .given(
@@ -253,6 +258,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec amountOnlyOnNonFungibleBurnFails() {
         return defaultHapiSpec("AmountOnlyOnNonFungibleBurnFails")
                 .given(
@@ -279,6 +285,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec burnWorksWhenAccountsAreFrozenByDefault() {
         return defaultHapiSpec("BurnWorksWhenAccountsAreFrozenByDefault")
                 .given(
@@ -298,6 +305,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
     }
 
+    @HapiTest
     private HapiSpec burnFailsOnInvalidSerialNumber() {
         return defaultHapiSpec("BurnFailsOnInvalidSerialNumber")
                 .given(
@@ -316,6 +324,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1));
     }
 
+    @HapiTest
     private HapiSpec burnRespectsBurnBatchConstraints() {
         return defaultHapiSpec("BurnRespectsBurnBatchConstraints")
                 .given(
@@ -334,6 +343,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
+    @HapiTest
     private HapiSpec burnHappyPath() {
         return defaultHapiSpec("BurnHappyPath")
                 .given(
@@ -356,6 +366,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .hasOwnedNfts(0));
     }
 
+    @HapiTest
     private HapiSpec canOnlyBurnFromTreasury() {
         final var nonTreasury = "anybodyElse";
 
@@ -384,6 +395,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1));
     }
 
+    @HapiTest
     private HapiSpec treasuryBalanceCorrectAfterBurn() {
         return defaultHapiSpec("TreasuryBalanceCorrectAfterBurn")
                 .given(
@@ -410,6 +422,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(2));
     }
 
+    @HapiTest
     private HapiSpec mintDistinguishesFeeSubTypes() {
         return defaultHapiSpec("MintDistinguishesFeeSubTypes")
                 .given(
@@ -448,6 +461,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec mintFailsWithTooLongMetadata() {
         return defaultHapiSpec("MintFailsWithTooLongMetadata")
                 .given(
@@ -463,6 +477,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                 .then(mintToken(NFT, List.of(metadataOfLength(101))).hasPrecheck(ResponseCodeEnum.METADATA_TOO_LONG));
     }
 
+    @HapiTest
     private HapiSpec mintFailsWithInvalidMetadataFromBatch() {
         return defaultHapiSpec("MintFailsWithInvalidMetadataFromBatch")
                 .given(
@@ -479,6 +494,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         .hasPrecheck(ResponseCodeEnum.METADATA_TOO_LONG));
     }
 
+    @HapiTest
     private HapiSpec mintFailsWithLargeBatchSize() {
         return defaultHapiSpec("MintFailsWithLargeBatchSize")
                 .given(
@@ -494,6 +510,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                 .then(mintToken(NFT, batchOfSize(BIGGER_THAN_LIMIT)).hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
+    @HapiTest
     private HapiSpec mintUniqueTokenHappyPath() {
         return defaultHapiSpec("MintUniqueTokenHappyPath")
                 .given(
@@ -530,6 +547,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .hasOwnedNfts(2));
     }
 
+    @HapiTest
     private HapiSpec mintTokenWorksWhenAccountsAreFrozenByDefault() {
         return defaultHapiSpec("MintTokenWorksWhenAccountsAreFrozenByDefault")
                 .given(
@@ -553,6 +571,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1));
     }
 
+    @HapiTest
     private HapiSpec mintFailsWithDeletedToken() {
         return defaultHapiSpec("MintFailsWithDeletedToken")
                 .given(
@@ -570,6 +589,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getTokenInfo(NFT).isDeleted());
     }
 
+    @HapiTest
     private HapiSpec getTokenNftInfoFailsWithNoNft() {
         return defaultHapiSpec("GetTokenNftInfoFailsWithNoNft")
                 .given(newKeyNamed(SUPPLY_KEY), cryptoCreate(TOKEN_TREASURY))
@@ -587,6 +607,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getTokenNftInfo(NFT, 2).hasCostAnswerPrecheck(INVALID_NFT_ID));
     }
 
+    @HapiTest
     private HapiSpec getTokenNftInfoWorks() {
         return defaultHapiSpec("GetTokenNftInfoWorks")
                 .given(newKeyNamed(SUPPLY_KEY), cryptoCreate(TOKEN_TREASURY))
@@ -610,6 +631,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .hasValidCreationTime());
     }
 
+    @HapiTest
     private HapiSpec mintUniqueTokenWorksWithRepeatedMetadata() {
         return defaultHapiSpec("MintUniqueTokenWorksWithRepeatedMetadata")
                 .given(
@@ -639,6 +661,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(2));
     }
 
+    @HapiTest
     private HapiSpec wipeHappyPath() {
         return onlyDefaultHapiSpec("WipeHappyPath")
                 .given(
@@ -670,6 +693,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         wipeTokenAccount(NFT, ACCOUNT, List.of(1L)).hasKnownStatus(ACCOUNT_DOES_NOT_OWN_WIPED_NFT));
     }
 
+    @HapiTest
     private HapiSpec wipeRespectsConstraints() {
         return defaultHapiSpec("WipeRespectsConstraints")
                 .given(
@@ -751,6 +775,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(A_TOKEN, 5));
     }
 
+    @HapiTest
     private HapiSpec wipeFailsWithInvalidSerialNumber() {
         return defaultHapiSpec("WipeFailsWithInvalidSerialNumber")
                 .given(
@@ -807,6 +832,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getReceipt(MINT_TRANSFER_TXN).logged());
     }
 
+    @HapiTest
     private HapiSpec tokenDissociateHappyPath() {
         return defaultHapiSpec("tokenDissociateHappyPath")
                 .given(
@@ -825,6 +851,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getAccountInfo("acc").hasNoTokenRelationship(NFT));
     }
 
+    @HapiTest
     private HapiSpec tokenDissociateFailsIfAccountOwnsUniqueTokens() {
         return defaultHapiSpec("tokenDissociateFailsIfAccountOwnsUniqueTokens")
                 .given(
