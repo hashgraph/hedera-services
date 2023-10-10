@@ -27,12 +27,17 @@ class CustomGasCalculatorTest {
 
     @Test
     void txnIntrinsicCostContractCreate() {
-        assertEquals(53000, subject.transactionIntrinsicGasCost(Bytes.EMPTY, true));
+        assertEquals(
+                21_000L + // base TX cost
+                        32_000L, // contract creation base cost
+                subject.transactionIntrinsicGasCost(Bytes.EMPTY, true));
     }
 
     @Test
     void txnIntrinsicCostNonContractCreate() {
-        assertEquals(21000, subject.transactionIntrinsicGasCost(Bytes.EMPTY, false));
+        assertEquals(
+                21_000L, // base TX cost
+                subject.transactionIntrinsicGasCost(Bytes.EMPTY, false));
     }
 
     @Test
