@@ -16,12 +16,15 @@
 
 package contract;
 
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
+import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
+import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
-import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
 import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
@@ -31,6 +34,7 @@ import static contract.XTestConstants.assertSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
@@ -40,11 +44,10 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
@@ -53,11 +56,8 @@ public class UpdatesXTest extends AbstractContractXTest {
     private static final String NEW_NAME = "New name";
     private static final String NEW_SYMBOL = "New symbol";
 
-    private static final long TIMESTAMP = Instant.now().getEpochSecond() + 1000;
-
     @Override
     protected void doScenarioOperations() {
-        // TODO: possible to pass null?
         // Successfully update token via TOKEN_UPDATE_INFO V1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
@@ -75,7 +75,7 @@ public class UpdatesXTest extends AbstractContractXTest {
                                         // TokenKey
                                         new Tuple[] {},
                                         // Expiry
-                                        Tuple.of(TIMESTAMP, asHeadlongAddress(SENDER_ADDRESS.toByteArray()), 2592000L)))
+                                        Tuple.of(0L, asAddress(""), 0L)))
                         .array()),
                 assertSuccess());
 
@@ -96,11 +96,11 @@ public class UpdatesXTest extends AbstractContractXTest {
                                         // TokenKey
                                         new Tuple[] {},
                                         // Expiry
-                                        Tuple.of(TIMESTAMP, asHeadlongAddress(SENDER_ADDRESS.toByteArray()), 2592000L)))
+                                        Tuple.of(0L, asAddress(""), 0L)))
                         .array()),
                 assertSuccess());
-        //
-        //        // Successfully update token via TOKEN_UPDATE_INFO V3
+
+        // Successfully update token via TOKEN_UPDATE_INFO V3
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V3
@@ -115,20 +115,81 @@ public class UpdatesXTest extends AbstractContractXTest {
                                         1000L,
                                         false,
                                         // TokenKey
-                                        new Tuple[] {
-                                            Tuple.of(
-                                                    BigInteger.valueOf(1L),
-                                                    Tuple.of(
-                                                            true,
-                                                            RECEIVER_HEADLONG_ADDRESS,
-                                                            new byte[] {},
-                                                            new byte[] {},
-                                                            RECEIVER_HEADLONG_ADDRESS))
-                                        },
+                                        new Tuple[] {},
                                         // Expiry
-                                        Tuple.of(TIMESTAMP, asHeadlongAddress(SENDER_ADDRESS.toByteArray()), 2592000L)))
+                                        Tuple.of(0L, asAddress(""), 0L)))
                         .array()),
                 assertSuccess());
+
+        // Fails if the treasury is invalid (owner address is not initialized)
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION
+                        .encodeCallWithArgs(
+                                ERC20_TOKEN_ADDRESS,
+                                Tuple.of(
+                                        NEW_NAME,
+                                        NEW_SYMBOL,
+                                        asHeadlongAddress(OWNER_ADDRESS.toByteArray()),
+                                        "memo",
+                                        true,
+                                        1000L,
+                                        false,
+                                        // TokenKey
+                                        new Tuple[] {},
+                                        // Expiry
+                                        Tuple.of(0L, asAddress(""), 0L)))
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TREASURY_ACCOUNT_FOR_TOKEN)
+                                .array()),
+                        output));
+
+        // Fails if the token ID is invalid (erc721 token address is not initialized)
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION
+                        .encodeCallWithArgs(
+                                ERC721_TOKEN_ADDRESS,
+                                Tuple.of(
+                                        NEW_NAME,
+                                        NEW_SYMBOL,
+                                        asHeadlongAddress(SENDER_ADDRESS.toByteArray()),
+                                        "memo",
+                                        true,
+                                        1000L,
+                                        false,
+                                        // TokenKey
+                                        new Tuple[] {},
+                                        // Expiry
+                                        Tuple.of(0L, asAddress(""), 0L)))
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
+
+        // Fails if the expiration time is invalid
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION
+                        .encodeCallWithArgs(
+                                ERC20_TOKEN_ADDRESS,
+                                Tuple.of(
+                                        NEW_NAME,
+                                        NEW_SYMBOL,
+                                        asHeadlongAddress(SENDER_ADDRESS.toByteArray()),
+                                        "memo",
+                                        true,
+                                        1000L,
+                                        false,
+                                        // TokenKey
+                                        new Tuple[] {},
+                                        // Expiry
+                                        Tuple.of(123456L, asAddress(""), 0L)))
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(
+                                ReturnTypes.encodedRc(INVALID_EXPIRATION_TIME).array()),
+                        output));
     }
 
     @Override
@@ -136,6 +197,7 @@ public class UpdatesXTest extends AbstractContractXTest {
         final var erc20Token = tokens.get(ERC20_TOKEN_ID);
         assertNotNull(erc20Token);
         assertEquals(NEW_NAME, erc20Token.name());
+        assertEquals(NEW_SYMBOL, erc20Token.symbol());
     }
 
     @Override
@@ -180,5 +242,11 @@ public class UpdatesXTest extends AbstractContractXTest {
                         .smartContract(true)
                         .build());
         return accounts;
+    }
+
+    private static Address asAddress(String address) {
+        final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
     }
 }

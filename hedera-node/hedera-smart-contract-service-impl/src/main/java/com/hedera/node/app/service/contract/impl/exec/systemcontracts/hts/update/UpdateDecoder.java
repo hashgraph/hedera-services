@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update;
 
-import static com.hedera.node.app.service.contract.impl.exec.utils.IdUtils.asContract;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumericContractId;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Duration;
@@ -24,7 +24,9 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.utils.KeyValueWrapper;
+import com.hedera.node.app.service.contract.impl.exec.utils.TokenExpiryWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenKeyWrapper;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,10 +46,40 @@ public class UpdateDecoder {
     /**
      * Decodes a call to {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION} into a synthetic {@link TransactionBody}.
      *
-     * @param call the call
+     * @param attempt the attempt
      * @return the synthetic transaction body
      */
-    public TransactionBody decodeUpdateToken(
+    public TransactionBody decodeTokenUpdateV1(@NonNull final HtsCallAttempt attempt) {
+        final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION.decodeCall(
+                attempt.input().toArrayUnsafe());
+        return decodeTokenUpdate(call, attempt.addressIdConverter());
+    }
+
+    /**
+     * Decodes a call to {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION_V2} into a synthetic {@link TransactionBody}.
+     *
+     * @param attempt the attempt
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeTokenUpdateV2(@NonNull final HtsCallAttempt attempt) {
+        final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V2.decodeCall(
+                attempt.input().toArrayUnsafe());
+        return decodeTokenUpdate(call, attempt.addressIdConverter());
+    }
+
+    /**
+     * Decodes a call to {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION_V3} into a synthetic {@link TransactionBody}.
+     *
+     * @param attempt the attempt
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeTokenUpdateV3(@NonNull final HtsCallAttempt attempt) {
+        final var call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V3.decodeCall(
+                attempt.input().toArrayUnsafe());
+        return decodeTokenUpdate(call, attempt.addressIdConverter());
+    }
+
+    private TransactionBody decodeTokenUpdate(
             @NonNull final Tuple call, @NonNull final AddressIdConverter addressIdConverter) {
         final var tokenId = ConversionUtils.asTokenId(call.get(0));
         final var hederaToken = (Tuple) call.get(1);
@@ -56,36 +88,8 @@ public class UpdateDecoder {
         final var tokenSymbol = (String) hederaToken.get(1);
         final var tokenTreasury = addressIdConverter.convert(hederaToken.get(2));
         final var memo = (String) hederaToken.get(3);
-
-        // Decode the token keys
-        final var tokenKeysTuples = (Tuple[]) hederaToken.get(7);
-        final List<TokenKeyWrapper> tokenKeys = new ArrayList<>(tokenKeysTuples.length);
-        for (final var tokenKeyTuple : tokenKeysTuples) {
-            final var keyType = ((BigInteger) tokenKeyTuple.get(0)).intValue();
-            final Tuple keyValueTuple = tokenKeyTuple.get(1);
-            final var inheritAccountKey = (Boolean) keyValueTuple.get(0);
-            final var contractId = asContract(addressIdConverter.convert(keyValueTuple.get(1)));
-            final var ed25519 = (byte[]) keyValueTuple.get(2);
-            final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3);
-            final var delegatableContractId = asContract(addressIdConverter.convert(keyValueTuple.get(4)));
-
-            tokenKeys.add(new TokenKeyWrapper(
-                    keyType,
-                    new KeyValueWrapper(
-                            inheritAccountKey,
-                            contractId.contractNum() != 0 ? contractId : null,
-                            ed25519,
-                            ecdsaSecp256K1,
-                            delegatableContractId.contractNum() != 0 ? delegatableContractId : null)));
-        }
-
-        // Decode the token expiry
-        final var tokenExpiry = (Tuple) hederaToken.get(8);
-
-        final var second = (long) tokenExpiry.get(0);
-        final var autoRenewAccount = addressIdConverter.convert(tokenExpiry.get(1));
-        final var autoRenewPeriod =
-                Duration.newBuilder().seconds(tokenExpiry.get(2)).build();
+        final List<TokenKeyWrapper> tokenKeys = decodeTokenKeys(hederaToken.get(7), addressIdConverter);
+        final var tokenExpiry = decodeTokenExpiry(hederaToken.get(8), addressIdConverter);
 
         // Build the transaction body
         final var txnBodyBuilder = TokenUpdateTransactionBody.newBuilder();
@@ -103,39 +107,83 @@ public class UpdateDecoder {
 
         txnBodyBuilder.treasury(tokenTreasury);
 
+        if (tokenExpiry.second() != 0) {
+            txnBodyBuilder.expiry(
+                    Timestamp.newBuilder().seconds(tokenExpiry.second()).build());
+        }
+        if (tokenExpiry.autoRenewAccount() != null) {
+            txnBodyBuilder.autoRenewAccount(tokenExpiry.autoRenewAccount());
+        }
+        if (tokenExpiry.autoRenewPeriod() != null
+                && tokenExpiry.autoRenewPeriod().seconds() != 0) {
+            txnBodyBuilder.autoRenewPeriod(tokenExpiry.autoRenewPeriod());
+        }
+
+        return checkTokenKeysTypeAndBuild(tokenKeys, txnBodyBuilder);
+    }
+
+    private TransactionBody checkTokenKeysTypeAndBuild(
+            final List<TokenKeyWrapper> tokenKeys, final TokenUpdateTransactionBody.Builder builder) {
         tokenKeys.forEach(tokenKeyWrapper -> {
             final var key = tokenKeyWrapper.key().asGrpc();
             if (tokenKeyWrapper.isUsedForAdminKey()) {
-                txnBodyBuilder.adminKey(key);
+                builder.adminKey(key);
             }
             if (tokenKeyWrapper.isUsedForKycKey()) {
-                txnBodyBuilder.kycKey(key);
+                builder.kycKey(key);
             }
             if (tokenKeyWrapper.isUsedForFreezeKey()) {
-                txnBodyBuilder.freezeKey(key);
+                builder.freezeKey(key);
             }
             if (tokenKeyWrapper.isUsedForWipeKey()) {
-                txnBodyBuilder.wipeKey(key);
+                builder.wipeKey(key);
             }
             if (tokenKeyWrapper.isUsedForSupplyKey()) {
-                txnBodyBuilder.supplyKey(key);
+                builder.supplyKey(key);
             }
             if (tokenKeyWrapper.isUsedForFeeScheduleKey()) {
-                txnBodyBuilder.feeScheduleKey(key);
+                builder.feeScheduleKey(key);
             }
             if (tokenKeyWrapper.isUsedForPauseKey()) {
-                txnBodyBuilder.pauseKey(key);
+                builder.pauseKey(key);
             }
         });
 
-        if (second != 0) {
-            txnBodyBuilder.expiry(Timestamp.newBuilder().seconds(second).build());
-        }
-        txnBodyBuilder.autoRenewAccount(autoRenewAccount);
-        if (autoRenewPeriod.seconds() != 0) {
-            txnBodyBuilder.autoRenewPeriod(autoRenewPeriod);
+        return TransactionBody.newBuilder().tokenUpdate(builder).build();
+    }
+
+    private static List<TokenKeyWrapper> decodeTokenKeys(
+            @NonNull final Tuple[] tokenKeysTuples, @NonNull final AddressIdConverter addressIdConverter) {
+        final List<TokenKeyWrapper> tokenKeys = new ArrayList<>(tokenKeysTuples.length);
+        for (final var tokenKeyTuple : tokenKeysTuples) {
+            final var keyType = ((BigInteger) tokenKeyTuple.get(0)).intValue();
+            final Tuple keyValueTuple = tokenKeyTuple.get(1);
+            final var inheritAccountKey = (Boolean) keyValueTuple.get(0);
+            final var contractId = asNumericContractId(addressIdConverter.convert(keyValueTuple.get(1)));
+            final var ed25519 = (byte[]) keyValueTuple.get(2);
+            final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3);
+            final var delegatableContractId = asNumericContractId(addressIdConverter.convert(keyValueTuple.get(4)));
+
+            tokenKeys.add(new TokenKeyWrapper(
+                    keyType,
+                    new KeyValueWrapper(
+                            inheritAccountKey,
+                            contractId.contractNum() != 0 ? contractId : null,
+                            ed25519,
+                            ecdsaSecp256K1,
+                            delegatableContractId.contractNum() != 0 ? delegatableContractId : null)));
         }
 
-        return TransactionBody.newBuilder().tokenUpdate(txnBodyBuilder.build()).build();
+        return tokenKeys;
+    }
+
+    private static TokenExpiryWrapper decodeTokenExpiry(
+            @NonNull final Tuple expiryTuple, @NonNull final AddressIdConverter addressIdConverter) {
+        final var second = (long) expiryTuple.get(0);
+        final var autoRenewAccount = addressIdConverter.convert(expiryTuple.get(1));
+        final var autoRenewPeriod =
+                Duration.newBuilder().seconds(expiryTuple.get(2)).build();
+        return new TokenExpiryWrapper(
+                second, autoRenewAccount.accountNum() == 0 ? null : autoRenewAccount, autoRenewPeriod);
     }
 }

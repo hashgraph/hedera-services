@@ -22,12 +22,13 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY_V
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.TOKEN_KEY;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -64,26 +65,17 @@ public class UpdateTranslator extends AbstractHtsCallTranslator {
 
     @Override
     public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
-        return new UpdateCall(
-                attempt.enhancement(),
-                nominalBodyFor(attempt),
-                attempt.defaultVerificationStrategy(),
-                attempt.senderAddress(),
-                attempt.addressIdConverter());
+        return new DispatchForResponseCodeHtsCall<>(
+                attempt, nominalBodyFor(attempt), SingleTransactionRecordBuilder.class);
     }
 
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
-        final Tuple call;
         if (Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION.selector())) {
-            call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION.decodeCall(
-                    attempt.input().toArrayUnsafe());
+            return decoder.decodeTokenUpdateV1(attempt);
         } else if (Arrays.equals(attempt.selector(), TOKEN_UPDATE_INFO_FUNCTION_V2.selector())) {
-            call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V2.decodeCall(
-                    attempt.input().toArrayUnsafe());
+            return decoder.decodeTokenUpdateV2(attempt);
         } else {
-            call = UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V3.decodeCall(
-                    attempt.input().toArrayUnsafe());
+            return decoder.decodeTokenUpdateV3(attempt);
         }
-        return decoder.decodeUpdateToken(call, attempt.addressIdConverter());
     }
 }
