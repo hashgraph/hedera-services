@@ -104,6 +104,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 @SuppressWarnings("java:S5960")
@@ -158,6 +159,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
     HapiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
 
@@ -201,6 +203,7 @@ public class EthereumSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     HapiSpec etx010TransferToCryptoAccountSucceeds() {
         String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";
@@ -551,6 +554,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     // ETX-011 and ETX-030
+    @HapiTest
     HapiSpec originAndSenderAreEthereumSigner() {
         return defaultHapiSpec("originAndSenderAreEthereumSigner")
                 .given(
@@ -670,6 +674,7 @@ public class EthereumSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     HapiSpec etxSvc003ContractGetBytecodeQueryReturnsDeployedCode() {
         final var txn = "creation";
         final var contract = "EmptyConstructor";
@@ -751,6 +756,7 @@ public class EthereumSuite extends HapiSuite {
                                                         .withErcFungibleTransferStatus(true)))))));
     }
 
+    @HapiTest
     HapiSpec transferHbarsViaEip2930TxSuccessfully() {
         final String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";

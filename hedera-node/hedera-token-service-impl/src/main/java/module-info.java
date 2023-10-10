@@ -37,4 +37,6 @@ module com.hedera.node.app.service.token.impl {
     exports com.hedera.node.app.service.token.impl.handlers.staking to
             com.hedera.node.app,
             com.hedera.node.app.service.token.impl.test;
+    exports com.hedera.node.app.service.token.impl.handlers.transfer to
+            com.hedera.node.app;
 }

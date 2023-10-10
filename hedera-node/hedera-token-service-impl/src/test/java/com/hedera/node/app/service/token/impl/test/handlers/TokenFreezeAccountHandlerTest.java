@@ -18,8 +18,11 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
@@ -55,9 +58,12 @@ import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.validation.EntityType;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -144,11 +150,15 @@ class TokenFreezeAccountHandlerTest {
         @Mock
         private WritableTokenRelationStore tokenRelStore;
 
+        @Mock
+        private ExpiryValidator expiryValidator;
+
         @BeforeEach
         void setup() {
             given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
             given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
             given(context.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
+            given(context.expiryValidator()).willReturn(expiryValidator);
         }
 
         @SuppressWarnings("DataFlowIssue")
@@ -172,6 +182,8 @@ class TokenFreezeAccountHandlerTest {
         void accountNotPresentInTxnBody() {
             final var pbjToken = toPbj(KNOWN_TOKEN_WITH_FREEZE);
             final var noAcctTxn = newFreezeTxn(pbjToken, null);
+            given(readableTokenStore.get(pbjToken))
+                    .willReturn(Token.newBuilder().tokenId(pbjToken).build());
             given(context.body()).willReturn(noAcctTxn);
             given(readableTokenStore.getTokenMeta(pbjToken)).willReturn(tokenMetaWithFreezeKey());
 
@@ -194,8 +206,38 @@ class TokenFreezeAccountHandlerTest {
         }
 
         @Test
+        void tokenPaused() throws HandleException {
+            final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
+            given(readableTokenStore.get(token))
+                    .willReturn(Token.newBuilder().tokenId(token).paused(true).build());
+            final var txn = newFreezeTxn(token);
+            given(context.body()).willReturn(txn);
+
+            AssertionsForClassTypes.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TOKEN_IS_PAUSED));
+            verifyNoPut();
+        }
+
+        @Test
+        void tokenDeleted() throws HandleException {
+            final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
+            given(readableTokenStore.get(token))
+                    .willReturn(Token.newBuilder().tokenId(token).deleted(true).build());
+            final var txn = newFreezeTxn(token);
+            given(context.body()).willReturn(txn);
+
+            AssertionsForClassTypes.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TOKEN_WAS_DELETED));
+            verifyNoPut();
+        }
+
+        @Test
         void tokenHasNoFreezeKey() {
             final var token = toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS);
+            given(readableTokenStore.get(token))
+                    .willReturn(Token.newBuilder().tokenId(token).build());
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey(null));
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
@@ -209,6 +251,11 @@ class TokenFreezeAccountHandlerTest {
         @Test
         void accountNotFound() {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
+            given(readableTokenStore.get(token))
+                    .willReturn(Token.newBuilder()
+                            .tokenId(token)
+                            .freezeKey(FIRST_TOKEN_SENDER_KT.asPbjKey())
+                            .build());
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
             given(readableAccountStore.getAccountById(ACCOUNT_13257)).willReturn(null);
             final var txn = newFreezeTxn(token);
@@ -230,6 +277,8 @@ class TokenFreezeAccountHandlerTest {
             given(readableAccountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(Account.newBuilder().accountId(ACCOUNT_13257).build());
             given(tokenRelStore.getForModify(ACCOUNT_13257, token)).willReturn(null);
+            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
+                    .willReturn(OK);
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
 
@@ -253,6 +302,8 @@ class TokenFreezeAccountHandlerTest {
                             .tokenId(token)
                             .accountId(ACCOUNT_13257)
                             .build());
+            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
+                    .willReturn(OK);
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
 

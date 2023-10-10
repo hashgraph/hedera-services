@@ -18,11 +18,10 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
-import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -38,6 +37,8 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenCreateResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -50,6 +51,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -57,7 +59,6 @@ import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -175,7 +176,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             final Token newToken,
             final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            final Set<CustomFee> requireCollectorAutoAssociation) {
+            final List<CustomFee> requireCollectorAutoAssociation) {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 
@@ -189,6 +190,16 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         for (final var customFee : requireCollectorAutoAssociation) {
             // This should exist as it is validated in validateSemantics
             final var collector = accountStore.get(customFee.feeCollectorAccountIdOrThrow());
+            if (treasury.accountId().equals(collector.accountId())) {
+                continue;
+            }
+
+            // Ensure no duplicate relations are created
+            final var existingTokenRel = tokenRelStore.get(collector.accountId(), newToken.tokenId());
+            if (existingTokenRel != null) {
+                continue;
+            }
+
             // Validate if token relation can be created between collector and new token
             // If this succeeds, create and link token relation.
             tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
@@ -247,11 +258,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             final long consensusTime,
             @NonNull final TokenCreateTransactionBody op,
             @NonNull final HandleContext context) {
-        final var maxEntityLifetime =
-                context.configuration().getConfigData(EntitiesConfig.class).maxLifetime();
-        final var impliedExpiry = op.hasAutoRenewPeriod()
-                ? consensusTime + op.autoRenewPeriod().seconds()
-                : consensusTime + maxEntityLifetime;
+        final var impliedExpiry = op.hasExpiry() ? op.expiry().seconds() : NA;
 
         return new ExpiryMeta(
                 impliedExpiry,
@@ -288,7 +295,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         // validate auto-renew account exists
         if (resolvedExpiryMeta.hasAutoRenewAccountId()) {
-            TokenHandlerHelper.getIfUsable(
+            TokenHandlerHelper.getIfUsableForAutoRenew(
                     resolvedExpiryMeta.autoRenewAccountId(),
                     accountStore,
                     context.expiryValidator(),
@@ -322,7 +329,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 addAccount(context, collector, alwaysAdd);
             } else if (customFee.hasFractionalFee()) {
                 context.requireKeyOrThrow(collector, INVALID_CUSTOM_FEE_COLLECTOR);
-            } else {
+            } else if (customFee.hasRoyaltyFee()) {
                 // TODO: Need to validate if this is actually needed
                 final var royaltyFee = customFee.royaltyFeeOrThrow();
                 var alwaysAdd = false;
@@ -356,23 +363,32 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        final var txn = feeContext.body();
-        final var op = txn.tokenCreationOrThrow();
+        requireNonNull(feeContext);
+        final var body = feeContext.body();
+        final var op = body.tokenCreationOrThrow();
         final var type = op.tokenType();
-        final var meta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(fromPbj(txn));
-        final long tokenSizes = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
-                        meta.getNumTokens(), meta.getFungibleNumTransfers(), meta.getNftsTransfers())
-                * USAGE_PROPERTIES.legacyReceiptStorageSecs();
 
-        final var calculator = feeContext
+        return feeContext
                 .feeCalculator(
-                        type.equals(TokenType.FUNGIBLE_COMMON)
-                                ? SubType.TOKEN_FUNGIBLE_COMMON
-                                : SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
-                .addBytesPerTransaction(meta.getBaseSize())
-                .addRamByteSeconds((meta.getBaseSize() + meta.getCustomFeeScheduleSize()) * meta.getLifeTime())
-                .addRamByteSeconds(tokenSizes)
-                .addNetworkRamByteSeconds(meta.getNetworkRecordRb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-        return calculator.calculate();
+                        tokenSubTypeFrom(type, !op.customFeesOrElse(emptyList()).isEmpty()))
+                .legacyCalculate(sigValueObj -> {
+                    try {
+                        return new TokenCreateResourceUsage(txnEstimateFactory)
+                                .usageGiven(fromPbj(body), sigValueObj, null);
+                    } catch (InvalidTxBodyException e) {
+                        throw new HandleException(INVALID_TRANSACTION_BODY);
+                    }
+                });
+    }
+
+    public static SubType tokenSubTypeFrom(final TokenType tokenType, boolean hasCustomFees) {
+        return switch (tokenType) {
+            case FUNGIBLE_COMMON -> hasCustomFees
+                    ? SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES
+                    : SubType.TOKEN_FUNGIBLE_COMMON;
+            case NON_FUNGIBLE_UNIQUE -> hasCustomFees
+                    ? SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
+                    : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+        };
     }
 }

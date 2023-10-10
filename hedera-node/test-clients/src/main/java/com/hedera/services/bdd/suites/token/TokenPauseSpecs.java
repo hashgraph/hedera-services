@@ -218,6 +218,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                         getAccountInfo(firstUser).logged());
     }
 
+    @HapiTest
     private HapiSpec pausedNonFungibleUniqueCannotBeUsed() {
         final String uniqueToken = "nonFungibleUnique";
         final String firstUser = FIRST_USER;
@@ -299,6 +300,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .hasToken(relationshipWith(otherToken).balance(500)));
     }
 
+    @HapiTest
     private HapiSpec pausedFungibleTokenCannotBeUsed() {
         final String token = PRIMARY;
         final String otherToken = SECONDARY;
@@ -378,6 +380,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .hasToken(relationshipWith(otherToken).balance(500)));
     }
 
+    @HapiTest
     private HapiSpec cannotChangePauseStatusIfMissingPauseKey() {
         return defaultHapiSpec("CannotChangePauseStatusIfMissingPauseKey")
                 .given(cryptoCreate(TOKEN_TREASURY))

@@ -18,7 +18,11 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.txnFrom;
 import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
@@ -50,6 +54,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenRevokeKycTransactionBody;
@@ -62,6 +67,8 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.validation.EntityType;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -180,6 +187,12 @@ class TokenRevokeKycFromAccountHandlerTest {
         @Mock
         private ReadableTokenStore readableTokenStore;
 
+        @Mock
+        private ReadableAccountStore readableAccountStore;
+
+        @Mock
+        private ExpiryValidator expiryValidator;
+
         private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
         private static final TokenID TOKEN_531 = BaseTokenHandler.asToken(531);
 
@@ -195,6 +208,8 @@ class TokenRevokeKycFromAccountHandlerTest {
         void setUp() {
             given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
             given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+            given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+            given(handleContext.expiryValidator()).willReturn(expiryValidator);
         }
 
         @Test
@@ -216,15 +231,59 @@ class TokenRevokeKycFromAccountHandlerTest {
         @Test
         @DisplayName("When getForModify returns empty, should not put or commit")
         void emptyGetForModifyShouldNotPersist() {
+            given(readableAccountStore.getAccountById(ACCOUNT_100))
+                    .willReturn(Account.newBuilder().accountId(ACCOUNT_100).build());
             given(readableTokenStore.get(TOKEN_10)).willReturn(newToken10);
-            given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(null);
+            given(tokenRelStore.get(notNull(), notNull())).willReturn(null);
+            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
+                    .willReturn(OK);
 
             final var txnBody = newTxnBody();
             given(handleContext.body()).willReturn(txnBody);
 
             assertThatThrownBy(() -> subject.handle(handleContext))
                     .isInstanceOf(HandleException.class)
-                    .has(responseCode(INVALID_TOKEN_ID));
+                    .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+
+            verify(tokenRelStore, never()).put(any(TokenRelation.class));
+        }
+
+        @Test
+        @DisplayName("When the token is paused, tokenRevokeKycOrThrow throws an exception")
+        void tokenIsPaused() {
+            given(readableAccountStore.getAccountById(ACCOUNT_100))
+                    .willReturn(Account.newBuilder().accountId(ACCOUNT_100).build());
+            given(readableTokenStore.get(TOKEN_10))
+                    .willReturn(newToken10.copyBuilder().paused(true).build());
+            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
+                    .willReturn(OK);
+
+            final var txnBody = newTxnBody();
+            given(handleContext.body()).willReturn(txnBody);
+
+            assertThatThrownBy(() -> subject.handle(handleContext))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TOKEN_IS_PAUSED));
+
+            verify(tokenRelStore, never()).put(any(TokenRelation.class));
+        }
+
+        @Test
+        @DisplayName("When the token is deleted, tokenRevokeKycOrThrow throws an exception")
+        void tokenIsDeleted() {
+            given(readableAccountStore.getAccountById(ACCOUNT_100))
+                    .willReturn(Account.newBuilder().accountId(ACCOUNT_100).build());
+            given(readableTokenStore.get(TOKEN_10))
+                    .willReturn(newToken10.copyBuilder().deleted(true).build());
+            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
+                    .willReturn(OK);
+
+            final var txnBody = newTxnBody();
+            given(handleContext.body()).willReturn(txnBody);
+
+            assertThatThrownBy(() -> subject.handle(handleContext))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TOKEN_WAS_DELETED));
 
             verify(tokenRelStore, never()).put(any(TokenRelation.class));
         }
@@ -237,8 +296,12 @@ class TokenRevokeKycFromAccountHandlerTest {
                     .accountId(ACCOUNT_100)
                     .kycGranted(true)
                     .build();
+            given(readableAccountStore.getAccountById(ACCOUNT_100))
+                    .willReturn(Account.newBuilder().accountId(ACCOUNT_100).build());
             given(readableTokenStore.get(TOKEN_10)).willReturn(newToken10);
-            given(tokenRelStore.getForModify(ACCOUNT_100, TOKEN_10)).willReturn(stateTokenRel);
+            given(tokenRelStore.get(ACCOUNT_100, TOKEN_10)).willReturn(stateTokenRel);
+            given(expiryValidator.expirationStatus(EntityType.ACCOUNT, false, 0))
+                    .willReturn(OK);
 
             final var txnBody = newTxnBody();
             given(handleContext.body()).willReturn(txnBody);

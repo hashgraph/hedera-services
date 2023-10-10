@@ -105,7 +105,7 @@ public class TokenCreateValidator {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final TokenCreateTransactionBody op,
             @NonNull final TokensConfig config) {
-        TokenHandlerHelper.getIfUsable(
+        TokenHandlerHelper.getIfUsableWithTreasury(
                 op.treasuryOrElse(AccountID.DEFAULT),
                 accountStore,
                 context.expiryValidator(),
@@ -188,6 +188,7 @@ public class TokenCreateValidator {
                 entitiesConfig.limitTokenAssociations()
                         && account.numberAssociations() + 1 > tokensConfig.maxPerAccount(),
                 TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+
         validateTrue(
                 tokenRelStore.get(account.accountId(), token.tokenId()) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
     }

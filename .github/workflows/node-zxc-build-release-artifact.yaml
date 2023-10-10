@@ -157,28 +157,28 @@ jobs:
           fi
 
       - name: Checkout Code
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
 
       - name: Setup Java
-        uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # v3.12.0
+        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
 
       - name: Gradle Update Version (As Specified)
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
 
       - name: Gradle Update Version (Branch Commit)
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
@@ -243,7 +243,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Checkout Code
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
@@ -257,13 +257,13 @@ jobs:
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
 
       - name: Setup Java
-        uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # v3.12.0
+        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
 
@@ -282,13 +282,13 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan
 
       - name: Gradle Version Summary
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: githubVersionSummary --scan
@@ -389,7 +389,7 @@ jobs:
       - build-artifact
     steps:
       - name: Checkout Code
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
 
       - name: Authenticate to Google Cloud
         id: google-auth
@@ -410,7 +410,7 @@ jobs:
          DOCKER_TAG_BASE="gcr.io/hedera-registry"
          if [[ "${{ inputs.version-policy }}" == "branch-commit" && "${{ inputs.dry-run-enabled }}" != true ]]; then
             DOCKER_TAG_BASE="us-docker.pkg.dev/swirlds-registry/local-node"
-         else
+         elif [[ "${{ inputs.dry-run-enabled }}" == true ]]; then
             DOCKER_TAG_BASE="localhost:5000"
          fi
 
@@ -517,7 +517,7 @@ jobs:
       - validate
     steps:
       - name: Checkout Code
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
 
       - name: Install GnuPG Tools
         if: ${{ inputs.dry-run-enabled != true }}
@@ -544,13 +544,13 @@ jobs:
           git_tag_gpgsign: true
 
       - name: Setup Java
-        uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # v3.12.0
+        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
 
@@ -562,7 +562,7 @@ jobs:
           key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
 
       - name: Gradle Update Version (Snapshot)
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
@@ -570,19 +570,19 @@ jobs:
 
       - name: Gradle Assemble
         id: gradle-build
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan
 
       - name: Gradle Version Summary
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: githubVersionSummary --scan
 
       - name: Gradle Maven Central Release
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
         env:
           OSSRH_USERNAME: ${{ secrets.svcs-ossrh-username }}
@@ -592,7 +592,7 @@ jobs:
           arguments: ":hedera-node:app-service-evm:releaseMavenCentral --scan -PpublishSigningEnabled=true"
 
       - name: Gradle Maven Central Snapshot
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         if: ${{ inputs.dry-run-enabled != true && inputs.version-policy != 'specified' && !cancelled() && !failure() }}
         env:
           OSSRH_USERNAME: ${{ secrets.svcs-ossrh-username }}
@@ -601,7 +601,7 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: ":hedera-node:app-service-evm:releaseMavenCentralSnapshot --scan -PpublishSigningEnabled=true"
 
-  sdk-mc-publish:
+  sdk-publish:
     name: Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GCP Registry' }}
     runs-on: [ self-hosted, Linux, large, ephemeral ]
     needs:
@@ -609,7 +609,7 @@ jobs:
     if: ${{ inputs.sdk-release-profile != 'none' }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
 
       - name: Install GnuPG Tools
         if: ${{ inputs.dry-run-enabled != true }}
@@ -646,13 +646,13 @@ jobs:
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
 
       - name: Setup Java
-        uses: actions/setup-java@cd89f46ac9d01407894225f350157564c9c7cee2 # v3.12.0
+        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
 
@@ -664,13 +664,13 @@ jobs:
           key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
 
       - name: Gradle Assemble
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan
 
       - name: Gradle Version Summary
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: githubVersionSummary --scan
@@ -748,7 +748,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Gradle Publish to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.sdk-release-profile }})
-        uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         if: ${{ inputs.dry-run-enabled != true && inputs.sdk-release-profile != 'none' && !cancelled() && !failure() }}
         env:
           OSSRH_USERNAME: ${{ secrets.sdk-ossrh-username }}
@@ -772,9 +772,26 @@ jobs:
       - validate
       - local-node-images
       - evm-mc-publish
-      - sdk-mc-publish
+      - sdk-publish
     if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
     steps:
+      - name: Determine Notification Parameters
+        id: parameters
+        run: |
+          ARTIFACT_URL="https://repo1.maven.org/maven2/com/swirlds/swirlds-platform-core/${{ needs.validate.outputs.version }}/"
+          ARTIFACT_LINK_NAME="MC Availability Check"
+          ARTIFACT_REGISTRY="Maven Central"
+
+          if [[ "${{ inputs.sdk-release-profile }}" == "PrereleaseChannel" ]]; then
+            ARTIFACT_URL="https://console.cloud.google.com/artifacts/maven/swirlds-registry/us/maven-prerelease-channel/com.swirlds:swirlds-platform-core/${{ needs.validate.outputs.version }}?project=swirlds-registry"
+            ARTIFACT_LINK_NAME="GCP Registry"
+            ARTIFACT_REGISTRY="GCP Artifact Registry"
+          fi
+
+          echo "artifact-url=${ARTIFACT_URL}" >>"${GITHUB_OUTPUT}"
+          echo "artifact-name=${ARTIFACT_LINK_NAME}" >>"${GITHUB_OUTPUT}"
+          echo "artifact-registry=${ARTIFACT_REGISTRY}" >>"${GITHUB_OUTPUT}"
+
       - name: Send Slack Notification (Maven Central)
         uses: slackapi/slack-github-action@e28cf165c92ffef168d23c5c9000cffc8a25e117 # v1.24.0
         env:
@@ -808,11 +825,11 @@ jobs:
                           },
                           {
                             "type": "mrkdwn",
-                            "text": "Maven Central"
+                            "text": ${{ steps.parameters.outputs.artifact-registry }}"
                           },
                           {
                             "type": "mrkdwn",
-                            "text": "<https://repo1.maven.org/maven2/com/swirlds/swirlds-platform-core/${{ needs.validate.outputs.version }}/|MC Availability Check>"
+                            "text": "<${{ steps.parameters.outputs.artifact-url }}|${{ steps.parameters.outputs.artifact-name }}>"
                           }
                         ]
                       },
@@ -854,7 +871,7 @@ jobs:
                           },
                           {
                             "type": "mrkdwn",
-                            "text": "<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.event.inputs.new-version }}|v${{ github.event.inputs.new-version }}>"
+                            "text": "<${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ needs.validate.outputs.version }}|v${{ needs.validate.outputs.version }}>"
                           }
                         ]
                       },

@@ -126,7 +126,6 @@ public final class ExchangeRateManager {
         } catch (final IOException e) {
             throw new HandleException(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE);
         }
-        System.out.println("proposed rates1 " + proposedRates);
 
         // Validate mandatory fields
         if (!(proposedRates.hasCurrentRate()

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -177,7 +178,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
 
         // Finally, record all the changes
         if (newAccountBalance == 0) {
-            updatedAcctBuilder.numberPositiveBalances(acct.numberPositiveBalances() - 1);
+            updatedAcctBuilder.numberPositiveBalances(Math.max(acct.numberPositiveBalances() - 1, 0));
         }
         accountStore.put(updatedAcctBuilder.build());
         tokenStore.put(token.copyBuilder().totalSupply(newTotalSupply).build());
@@ -229,6 +230,9 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         validateTrue(token.wipeKey() != null, ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY);
 
         final var accountRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
+        if (token.hasKycKey()) {
+            validateTrue(accountRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+        }
         validateFalse(
                 token.treasuryAccountId().equals(accountRel.accountId()),
                 ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);

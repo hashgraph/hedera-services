@@ -163,7 +163,7 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
                     Transaction.newBuilder().body(TransactionBody.newBuilder().cryptoCreateAccount(txnBody));
             recordBuilder.transaction(txnBuilder.build());
 
-            log.info("Queued synthetic CryptoCreate for {} account {}", recordMemo, accountId);
+            log.debug("Queued synthetic CryptoCreate for {} account {}", recordMemo, accountId);
         }
     }
 }
