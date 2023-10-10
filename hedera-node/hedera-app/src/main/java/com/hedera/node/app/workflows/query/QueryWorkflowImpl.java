@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
-import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
 import static java.util.Objects.requireNonNull;
 
@@ -172,15 +171,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 throw new PreCheckException(NOT_SUPPORTED);
             }
 
-            // 3. Check query throttles
-            if (synchronizedThrottleAccumulator.shouldThrottle(function, query)
-                    && !RESTRICTED_FUNCTIONALITIES.contains(function)) {
-                if (!responseType.equals(COST_ANSWER)) {
-                    throw new PreCheckException(NOT_SUPPORTED);
-                }
-                throw new PreCheckException(BUSY);
-            }
-
             final var state = wrappedState.get();
             final var storeFactory = new ReadableStoreFactory(state);
             final var paymentRequired = handler.requiresNodePayment(responseType);
@@ -192,7 +182,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 allegedPayment = queryHeader.paymentOrThrow();
                 final var configuration = configProvider.getConfiguration();
 
-                // 4.i Ingest checks
+                // 3.i Ingest checks
                 final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment, configuration);
                 txBody = transactionInfo.txBody();
 
@@ -211,10 +201,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 // A super-user does not have to pay for a query and has all permissions
                 if (!authorizer.isSuperUser(payerID)) {
 
-                    // 4.ii Validate CryptoTransfer
+                    // 3.ii Validate CryptoTransfer
                     queryChecker.validateCryptoTransfer(transactionInfo);
 
-                    // 4.iii Check permissions
+                    // 3.iii Check permissions
                     queryChecker.checkPermissions(payerID, function);
 
                     // Get the payer
@@ -225,15 +215,15 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                         throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
                     }
 
-                    // 4.iv Calculate costs
+                    // 3.iv Calculate costs
                     final var queryFees = handler.computeFees(context).totalFee();
                     final var txFees = queryChecker.estimateTxFees(
                             storeFactory, consensusTime, transactionInfo, payer.keyOrThrow(), configuration);
 
-                    // 4.v Check account balances
+                    // 3.v Check account balances
                     queryChecker.validateAccountBalances(accountStore, transactionInfo, payer, queryFees, txFees);
 
-                    // 4.vi Submit payment to platform
+                    // 3.vi Submit payment to platform
                     final var txBytes = Transaction.PROTOBUF.toBytes(allegedPayment);
                     submissionManager.submit(txBody, txBytes);
                 }
@@ -252,8 +242,13 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                         null);
             }
 
-            // 5. Check validity of query
+            // 4. Check validity of query
             handler.validate(context);
+
+            // 5. Check query throttles
+            if (synchronizedThrottleAccumulator.shouldThrottle(function, query)) {
+                throw new PreCheckException(BUSY);
+            }
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs
