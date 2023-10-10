@@ -111,10 +111,6 @@ module com.swirlds.platform.core {
             com.swirlds.config.impl,
             com.swirlds.common,
             com.hedera.node.test.clients;
-    exports com.swirlds.platform.event.creation to
-            com.swirlds.config.impl,
-            com.swirlds.common,
-            com.hedera.node.test.clients;
 
     opens com.swirlds.platform.cli to
             info.picocli;
