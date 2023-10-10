@@ -46,7 +46,7 @@ import org.apache.logging.log4j.Logger;
 public class TxnRecordRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(TxnRecordRegression.class);
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
         new TxnRecordRegression().runSuiteSync();
     }
 
@@ -101,6 +101,7 @@ public class TxnRecordRegression extends HapiSuite {
                 .then(getTxnRecord("").useDefaultTxnId().hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
+    @HapiTest
     private HapiSpec recordNotFoundIfNotInPayerState() {
         return defaultHapiSpec("RecordNotFoundIfNotInPayerState")
                 .given(

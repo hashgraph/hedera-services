@@ -16,6 +16,7 @@
 
 package com.swirlds.common.system;
 
+import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.stream.Signer;
@@ -23,7 +24,7 @@ import com.swirlds.common.stream.Signer;
 /**
  * An interface for Swirlds Platform.
  */
-public interface Platform extends PlatformIdentity, StateAccessor, Signer, TransactionSubmitter {
+public interface Platform extends PlatformIdentity, Startable, StateAccessor, Signer, TransactionSubmitter {
 
     /**
      * Get the platform context, which contains various utilities and services provided by the platform.

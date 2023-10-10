@@ -178,7 +178,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
 
         // Finally, record all the changes
         if (newAccountBalance == 0) {
-            updatedAcctBuilder.numberPositiveBalances(acct.numberPositiveBalances() - 1);
+            updatedAcctBuilder.numberPositiveBalances(Math.max(acct.numberPositiveBalances() - 1, 0));
         }
         accountStore.put(updatedAcctBuilder.build());
         tokenStore.put(token.copyBuilder().totalSupply(newTotalSupply).build());

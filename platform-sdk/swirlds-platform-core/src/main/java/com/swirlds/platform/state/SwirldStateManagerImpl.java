@@ -39,7 +39,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -125,7 +124,6 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
      * @param consensusSystemTransactionManager    the manager for post-consensus system transactions
      * @param swirldStateMetrics                   metrics related to SwirldState
      * @param statusActionSubmitter                enables submitting platform status actions
-     * @param inFreeze                             indicates if the system is currently in a freeze
      * @param state                                the genesis state
      * @param softwareVersion                      the current software version
      */
@@ -137,7 +135,6 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
             @NonNull final ConsensusSystemTransactionManager consensusSystemTransactionManager,
             @NonNull final SwirldStateMetrics swirldStateMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @NonNull final BooleanSupplier inFreeze,
             @NonNull final State state,
             @NonNull final SoftwareVersion softwareVersion) {
 
@@ -148,11 +145,10 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
         this.consensusSystemTransactionManager = Objects.requireNonNull(consensusSystemTransactionManager);
         this.stats = Objects.requireNonNull(swirldStateMetrics);
         Objects.requireNonNull(statusActionSubmitter);
-        Objects.requireNonNull(inFreeze);
         Objects.requireNonNull(state);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
 
-        this.transactionPool = new TransactionPool(platformContext, inFreeze);
+        this.transactionPool = new TransactionPool(platformContext);
         this.transactionHandler = new TransactionHandler(selfId, stats);
         this.uptimeTracker =
                 new UptimeTracker(platformContext, addressBook, statusActionSubmitter, selfId, Time.getCurrent());

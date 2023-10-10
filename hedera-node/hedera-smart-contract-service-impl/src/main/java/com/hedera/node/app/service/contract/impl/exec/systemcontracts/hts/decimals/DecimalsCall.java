@@ -23,7 +23,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hed
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -31,7 +31,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /**
  * Implements the token redirect {@code decimals()} call of the HTS system contract.
  */
-public class DecimalsCall extends AbstractTokenViewCall {
+public class DecimalsCall extends AbstractRevertibleTokenViewCall {
     private static final int MAX_REPORTABLE_DECIMALS = 0xFF;
 
     public DecimalsCall(@NonNull HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token) {
