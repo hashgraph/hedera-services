@@ -27,6 +27,7 @@ import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -147,6 +148,9 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                         } else {
                             scheduleStore.put(HandlerUtility.replaceSignatories(scheduleToSign, updatedSignatories));
                         }
+                        final ScheduleRecordBuilder scheduleRecords =
+                                context.recordBuilder(ScheduleRecordBuilder.class);
+                        scheduleRecords.scheduleID(idToSign);
                     } else {
                         // Note, this will never happen, but Sonar static analysis can't figure that out.
                         throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);

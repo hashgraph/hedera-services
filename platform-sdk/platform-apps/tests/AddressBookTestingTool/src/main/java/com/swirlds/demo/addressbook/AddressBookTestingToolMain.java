@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.addressbook;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.system.BasicSoftwareVersion;
@@ -24,9 +25,13 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.config.DefaultConfiguration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.security.SecureRandom;
+import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,8 +54,8 @@ public class AddressBookTestingToolMain implements SwirldMain {
     /** The logger for this class. */
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolMain.class);
 
-    /** The software version of this application.  If not configured, defaults to 0 */
-    private BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(0);
+    /** The software version of this application. */
+    private BasicSoftwareVersion softwareVersion;
 
     /** The platform. */
     private Platform platform;
@@ -62,16 +67,13 @@ public class AddressBookTestingToolMain implements SwirldMain {
         logger.info(STARTUP.getMarker(), "constructor called in Main.");
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Nullable
     @Override
-    public void updateConfigurationBuilder(@NonNull final ConfigurationBuilder configurationBuilder) {
-        configurationBuilder.withConfigDataType(AddressBookTestingToolConfig.class);
-    }
-
-    @Override
-    public void setConfiguration(@NonNull final Configuration configuration) {
-        final int softVersion =
-                configuration.getConfigData(AddressBookTestingToolConfig.class).softwareVersion();
-        this.softwareVersion = new BasicSoftwareVersion(softVersion);
+    public List<Class<? extends Record>> getConfigDataTypes() {
+        return List.of(AddressBookTestingToolConfig.class);
     }
 
     /**
@@ -99,6 +101,7 @@ public class AddressBookTestingToolMain implements SwirldMain {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public SwirldState newState() {
         return new AddressBookTestingToolState();
     }
@@ -107,7 +110,24 @@ public class AddressBookTestingToolMain implements SwirldMain {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public BasicSoftwareVersion getSoftwareVersion() {
+        if (softwareVersion != null) {
+            return softwareVersion;
+        }
+
+        // Preload configuration so that we can change the software version on the fly
+        final Configuration configuration;
+        try {
+            configuration = DefaultConfiguration.buildBasicConfiguration(getAbsolutePath("settings.txt"), List.of());
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to load settings.txt", e);
+        }
+
+        final int version =
+                configuration.getConfigData(AddressBookTestingToolConfig.class).softwareVersion();
+        this.softwareVersion = new BasicSoftwareVersion(version);
+
         logger.info(STARTUP.getMarker(), "returning software version {}", softwareVersion);
         return softwareVersion;
     }
