@@ -171,7 +171,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                                     + "possibly network connection lost.",
                             TxnUtils.toReadableString(txn));
                     if (unavailableStatusIsOk) {
-                        // If we expect the status to be unavailable treat this as a success
+                        // If we expect the status to be unavailable (because e.g. the
+                        // submitted transaction exceeds 6144 bytes and will have its
+                        // gRPC request terminated immediately), then don't throw, just
+                        // return true to signal to the HapiSpec that this operation's
+                        // lifecycle has ended
                         return true;
                     } else {
                         throw new HapiTxnCheckStateException("Unable to resolve txn status!");

@@ -50,8 +50,9 @@ public interface ReadableAccountStore {
     AccountID getAccountIDByAlias(@NonNull final Bytes alias);
 
     /**
+     * Returns the number of accounts in state.
      *
-     * @return
+     * @return the number of accounts in state
      */
     long getNumberOfAccounts();
 

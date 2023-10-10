@@ -49,6 +49,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -281,10 +282,10 @@ class TokenServiceApiImplTest {
                 .smartContract(true)
                 .build());
         final var expectedSummary = new ContractChangeSummary(
-                List.of(OTHER_CONTRACT_ID_BY_NUM),
-                List.of(
+                new ArrayList<>(List.of(OTHER_CONTRACT_ID_BY_NUM)),
+                new ArrayList<>(List.of(
                         new ContractNonceInfo(CONTRACT_ID_BY_NUM, 124L),
-                        new ContractNonceInfo(OTHER_CONTRACT_ID_BY_NUM, 1L)));
+                        new ContractNonceInfo(OTHER_CONTRACT_ID_BY_NUM, 1L))));
         final var actualSummary = subject.summarizeContractChanges();
         assertEquals(expectedSummary, actualSummary);
     }
