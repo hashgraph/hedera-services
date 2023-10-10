@@ -561,8 +561,10 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         final var existingSpenders = existingAllowances.stream()
                 .map(AccountCryptoAllowance::spenderId)
                 .collect(Collectors.toSet());
+        final var newSpenders = new HashSet<AccountID>();
         for (var key : newAllowances) {
-            if (!existingSpenders.contains(key.spender())) {
+            if (!existingSpenders.contains(key.spender()) && !newSpenders.contains(key.spender())) {
+                newSpenders.add(key.spender());
                 counter++;
             }
         }
@@ -581,8 +583,11 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         final var existingKeys = existingAllowances.stream()
                 .map(key -> Pair.of(key.tokenId(), key.spenderId()))
                 .collect(Collectors.toSet());
+        final var newKeys = new HashSet<Pair<TokenID, AccountID>>();
         for (final var key : newAllowances) {
-            if (!existingKeys.contains(Pair.of(key.tokenId(), key.spender()))) {
+            final var newKey = Pair.of(key.tokenId(), key.spender());
+            if (!existingKeys.contains(newKey) && !newKeys.contains(newKey)) {
+                newKeys.add(newKey);
                 counter++;
             }
         }
@@ -601,8 +606,11 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         final var existingKeys = existingAllowances.stream()
                 .map(key -> Pair.of(key.tokenId(), key.spenderId()))
                 .collect(Collectors.toSet());
+        final var newKeys = new HashSet<Pair<TokenID, AccountID>>();
         for (final var key : newAllowances) {
-            if (!existingKeys.contains(Pair.of(key.tokenId(), key.spender()))) {
+            final var newKey = Pair.of(key.tokenId(), key.spender());
+            if (!existingKeys.contains(newKey) && !newKeys.contains(newKey)) {
+                newKeys.add(newKey);
                 counter++;
             }
         }
