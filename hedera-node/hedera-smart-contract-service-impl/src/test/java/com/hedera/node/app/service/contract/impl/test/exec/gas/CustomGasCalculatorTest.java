@@ -26,9 +26,13 @@ class CustomGasCalculatorTest {
     private final CustomGasCalculator subject = new CustomGasCalculator();
 
     @Test
-    void txnIntrinsicCostIsZero() {
-        assertEquals(0, subject.transactionIntrinsicGasCost(Bytes.EMPTY, true));
-        assertEquals(0, subject.transactionIntrinsicGasCost(Bytes.EMPTY, false));
+    void txnIntrinsicCostContractCreate() {
+        assertEquals(53000, subject.transactionIntrinsicGasCost(Bytes.EMPTY, true));
+    }
+
+    @Test
+    void txnIntrinsicCostNonContractCreate() {
+        assertEquals(21000, subject.transactionIntrinsicGasCost(Bytes.EMPTY, false));
     }
 
     @Test
