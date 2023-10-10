@@ -43,6 +43,12 @@ public abstract class ObjectCounter {
     public abstract boolean attemptOnRamp();
 
     /**
+     * Signal that an object is entering the part of the system that this object is being used to monitor. If there is
+     * not enough capacity to on ramp the object, on ramp it anyway and ignore all capacity restrictions.
+     */
+    public abstract void forceOnRamp();
+
+    /**
      * Signal that an object is leaving the part of the system that this object is being used to monitor.
      */
     public abstract void offRamp();

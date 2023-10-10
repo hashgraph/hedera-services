@@ -51,7 +51,7 @@ public class ConcurrentWire extends Wire {
      * {@inheritDoc}
      */
     @Override
-    protected void put(@NonNull Consumer<Object> handler, @NonNull Object data) {
+    protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         new AbstractTask() {
             @Override
             protected boolean exec() {
@@ -65,7 +65,7 @@ public class ConcurrentWire extends Wire {
      * {@inheritDoc}
      */
     @Override
-    protected void interruptablePut(@NonNull Consumer<Object> handler, @NonNull Object data) {
+    protected void interruptablePut(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         new AbstractTask() {
             @Override
             protected boolean exec() {
@@ -79,7 +79,7 @@ public class ConcurrentWire extends Wire {
      * {@inheritDoc}
      */
     @Override
-    protected boolean offer(@NonNull Consumer<Object> handler, @NonNull Object data) {
+    protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         new AbstractTask() {
             @Override
             protected boolean exec() {
@@ -88,6 +88,20 @@ public class ConcurrentWire extends Wire {
             }
         }.send();
         return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        new AbstractTask() {
+            @Override
+            protected boolean exec() {
+                handler.accept(data);
+                return true;
+            }
+        }.send();
     }
 
     /**

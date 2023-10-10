@@ -56,6 +56,14 @@ public class StandardObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
+    public void forceOnRamp() {
+        count.getAndIncrement();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void offRamp() {
         count.decrementAndGet();
     }

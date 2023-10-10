@@ -113,7 +113,7 @@ public class SequentialWire extends Wire {
      * {@inheritDoc}
      */
     @Override
-    protected void put(@NonNull Consumer<Object> handler, @NonNull Object data) {
+    protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
@@ -130,7 +130,7 @@ public class SequentialWire extends Wire {
      * {@inheritDoc}
      */
     @Override
-    protected void interruptablePut(@NonNull Consumer<Object> handler, @NonNull Object data) {
+    protected void interruptablePut(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
@@ -147,7 +147,7 @@ public class SequentialWire extends Wire {
      * {@inheritDoc}
      */
     @Override
-    protected boolean offer(@NonNull Consumer<Object> handler, @NonNull Object data) {
+    protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
@@ -160,6 +160,23 @@ public class SequentialWire extends Wire {
         currentTask.send(nextTask, handler, data);
 
         return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
+        // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
+        // from task to task, such that each task depends on the previous task.
+
+        final SequentialTask nextTask = new SequentialTask(2);
+        SequentialTask currentTask;
+        do {
+            currentTask = lastTask.get();
+        } while (!lastTask.compareAndSet(currentTask, nextTask));
+        currentTask.send(nextTask, handler, data);
     }
 
     /**

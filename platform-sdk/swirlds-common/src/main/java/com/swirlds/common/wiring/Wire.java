@@ -122,4 +122,13 @@ public abstract class Wire {
      * @return true if the data was accepted, false otherwise
      */
     protected abstract boolean offer(@NonNull Consumer<Object> handler, @NonNull Object data);
+
+    /**
+     * Inject data into the wire, doing so even if it causes the number of unprocessed tasks to exceed the capacity
+     * specified by configured back pressure. If backpressure is disabled, this operation is logically equivalent to
+     * {@link #put(Consumer, Object)}.
+     *
+     * @param data the data to be processed by the wire
+     */
+    protected abstract void inject(@NonNull Consumer<Object> handler, @NonNull Object data);
 }

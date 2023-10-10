@@ -28,18 +28,7 @@ import java.util.function.Consumer;
 public class WireInserter<T> {
 
     private final Wire wire;
-    private Consumer<T> handler;
-
-    /**
-     * Constructor.
-     *
-     * @param wire    the wire to insert data into
-     * @param handler handles the data inserted by this inserter
-     */
-    WireInserter(@NonNull final Wire wire, @NonNull final Consumer<T> handler) {
-        this.wire = Objects.requireNonNull(wire);
-        this.handler = Objects.requireNonNull(handler);
-    }
+    private Consumer<Object> handler;
 
     /**
      * Constructor.
@@ -56,11 +45,12 @@ public class WireInserter<T> {
      * @param handler the handler to bind to this inserter
      * @return this
      */
+    @SuppressWarnings("unchecked")
     public WireInserter<T> bind(@NonNull final Consumer<T> handler) {
         if (this.handler != null) {
             throw new IllegalStateException("Handler already bound");
         }
-        this.handler = Objects.requireNonNull(handler);
+        this.handler = (Consumer<Object>) Objects.requireNonNull(handler);
 
         return this;
     }
@@ -71,11 +61,8 @@ public class WireInserter<T> {
      *
      * @param data the data to be processed by the wire
      */
-    @SuppressWarnings("unchecked")
     public void put(@NonNull T data) {
-        Objects.requireNonNull(handler); // TODO
-        Objects.requireNonNull(data); // TODO
-        wire.put((Consumer<Object>) handler, data);
+        wire.put(handler, data);
     }
 
     /**
@@ -85,11 +72,8 @@ public class WireInserter<T> {
      * @param data the data to be processed by the wire
      * @throws InterruptedException if the thread is interrupted while waiting for capacity to become available
      */
-    @SuppressWarnings("unchecked")
     public void interruptablePut(@NonNull T data) throws InterruptedException {
-        Objects.requireNonNull(handler); // TODO
-        Objects.requireNonNull(data); // TODO
-        wire.interruptablePut((Consumer<Object>) handler, data);
+        wire.interruptablePut(handler, data);
     }
 
     /**
@@ -99,10 +83,18 @@ public class WireInserter<T> {
      * @param data the data to be processed by the wire
      * @return true if the data was accepted, false otherwise
      */
-    @SuppressWarnings("unchecked")
     public boolean offer(@NonNull T data) {
-        Objects.requireNonNull(handler); // TODO
-        Objects.requireNonNull(data); // TODO
-        return wire.offer((Consumer<Object>) handler, data);
+        return wire.offer(handler, data);
+    }
+
+    /**
+     * Inject data into the wire, doing so even if it causes the number of unprocessed tasks to exceed the capacity
+     * specified by configured back pressure. If backpressure is disabled, this operation is logically equivalent to
+     * {@link #put(Object)}.
+     *
+     * @param data the data to be processed by the wire
+     */
+    public void inject(@NonNull T data) {
+        wire.inject(handler, data);
     }
 }

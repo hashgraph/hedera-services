@@ -61,6 +61,12 @@ public class NoOpCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
+    public void forceOnRamp() {}
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void offRamp() {}
 
     /**

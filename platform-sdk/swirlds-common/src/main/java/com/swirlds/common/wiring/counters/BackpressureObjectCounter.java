@@ -125,6 +125,14 @@ public class BackpressureObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
+    public void forceOnRamp() {
+        count.incrementAndGet();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void offRamp() {
         count.decrementAndGet();
     }

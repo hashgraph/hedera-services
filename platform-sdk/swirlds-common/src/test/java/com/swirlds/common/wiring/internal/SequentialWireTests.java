@@ -725,6 +725,12 @@ class SequentialWireTests {
                 expectedCountD, countD::get, Duration.ofSeconds(1), "Wire D sum did not match expected value");
     }
 
+    // TODO if we keep both variations of the wire then make sure we have coverage for both for all scenarios
+
+    void injectTest() {
+        // TODO
+    }
+
     void countingOverMultipleWiresTest() {
         // TODO
     }
