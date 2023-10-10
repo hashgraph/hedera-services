@@ -1643,7 +1643,8 @@ class CreatePrecompileTest {
         senderMutableAccount.setBalance(Wei.of(SENDER_INITIAL_BALANCE));
 
         given(dynamicProperties.fundingAccount()).willReturn(HTSTestsUtil.account);
-        fundingMutableAccount = new UpdateTrackingAccount<>(EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.account), null);
+        fundingMutableAccount =
+                new UpdateTrackingAccount<>(EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.account), null);
         given(worldUpdater.getAccount(
                         Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress()))
                 .willReturn(fundingMutableAccount);
