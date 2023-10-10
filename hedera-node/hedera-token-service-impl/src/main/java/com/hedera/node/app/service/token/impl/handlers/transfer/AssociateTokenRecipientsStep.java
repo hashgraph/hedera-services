@@ -68,17 +68,27 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
 
             for (final var aa : xfers.nftTransfersOrElse(emptyList())) {
                 final var receiverId = aa.receiverAccountID();
-                final var senderId = aa.senderAccountID();
+                var senderId = aa.senderAccountID();
                 // sender should be associated already. If not throw exception
                 if (senderId.hasAlias()) {
-                    validateTrue(
-                            tokenRelStore.get(accountIdFromHexedMirrorAddress(senderId.alias()), tokenId) != null,
-                            TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-                } else {
-                    validateTrue(tokenRelStore.get(senderId, tokenId) != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+                    senderId = accountIdFromHexedMirrorAddress(senderId.alias());
                 }
-                validateAndAutoAssociate(
-                        receiverId, tokenId, token, accountStore, tokenRelStore, handleContext, recordBuilder);
+                validateTrue(tokenRelStore.get(senderId, tokenId) != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+
+                final var nft = nftStore.get(tokenId, aa.serialNumber());
+                validateTrue(nft != null, INVALID_NFT_ID);
+
+                if (nft.hasOwnerId()) {
+                    validateTrue(nft.ownerId().equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+                } else {
+                    validateTrue(token.treasuryAccountId().equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+                }
+
+                final TokenAssociation newAssociation = validateAndBuildAutoAssociation(
+                        receiverId, tokenId, token, accountStore, tokenRelStore, handleContext);
+                if (newAssociation != null) {
+                    newAssociations.add(newAssociation);
+                }
             }
         }
     }
