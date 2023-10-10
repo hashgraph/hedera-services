@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_IS_TREASURY;
@@ -47,6 +48,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerifi
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -292,7 +294,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         }
 
         if (account.deleted()) {
-            return null;
+            throw new HandleException(CONTRACT_DELETED);
         }
         final var alias = account.alias();
         if (alias.length() == EVM_ADDRESS_LENGTH_AS_LONG) {
