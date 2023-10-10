@@ -222,14 +222,16 @@ public class RecordListBuilder {
 
         Stream<SingleTransactionRecord> recordStream = Stream.of(userTxnRecord);
 
+        int nextNonce = 1;
+
         if (precedingTxnRecordBuilders != null) {
-            prepareBuilders(precedingTxnRecordBuilders);
+            nextNonce = prepareBuilders(precedingTxnRecordBuilders, nextNonce);
             recordStream = Stream.concat(
                     precedingTxnRecordBuilders.stream().map(SingleTransactionRecordBuilderImpl::build), recordStream);
         }
 
         if (childRecordBuilders != null) {
-            prepareBuilders(childRecordBuilders);
+            prepareBuilders(childRecordBuilders, nextNonce);
             recordStream = Stream.concat(
                     recordStream, childRecordBuilders.stream().map(SingleTransactionRecordBuilderImpl::build));
         }
@@ -237,8 +239,7 @@ public class RecordListBuilder {
         return new Result(userTxnRecord, recordStream);
     }
 
-    private void prepareBuilders(@NonNull List<SingleTransactionRecordBuilderImpl> recordBuilders) {
-        int nextNonce = 0;
+    private int prepareBuilders(@NonNull final List<SingleTransactionRecordBuilderImpl> recordBuilders, int nextNonce) {
         for (final var recordBuilder : recordBuilders) {
             if (recordBuilder.transactionID() == null) {
                 final var transactionID = userTxnRecordBuilder
@@ -249,6 +250,7 @@ public class RecordListBuilder {
                 recordBuilder.transactionID(transactionID);
             }
         }
+        return nextNonce;
     }
 
     /*

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
@@ -24,6 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 
@@ -36,6 +40,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHand
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.DeleteAllowanceValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -51,6 +56,9 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
+    @Mock(strictness = LENIENT)
+    private ExpiryValidator expiryValidator;
+
     private CryptoDeleteAllowanceHandler subject;
 
     @BeforeEach
@@ -62,6 +70,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         given(handleContext.configuration()).willReturn(configuration);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
     }
 
     @Test
@@ -91,6 +100,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var txn = cryptoDeleteAllowanceTransaction(payerId);
         given(handleContext.body()).willReturn(txn);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
         assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
@@ -114,6 +124,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var txn = cryptoDeleteAllowanceTransaction(payerId);
         given(handleContext.body()).willReturn(txn);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
         assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
@@ -165,6 +176,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var txn = cryptoDeleteAllowanceTransaction(payerId);
         given(handleContext.body()).willReturn(txn);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
         assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
@@ -194,6 +206,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var txn = txnWithAllowance(payerId, nftAllowance);
         given(handleContext.body()).willReturn(txn);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
         assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);

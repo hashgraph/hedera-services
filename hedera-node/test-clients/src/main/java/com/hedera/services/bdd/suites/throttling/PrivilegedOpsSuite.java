@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -98,6 +99,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
             .mapToObj(i -> getTopicInfo("misc").nodePayment(100L).payingWith(payer))
             .toArray(HapiSpecOperation[]::new);
 
+    @HapiTest
     private HapiSpec freezeAdminPrivilegesAsExpected() {
         return defaultHapiSpec("freezeAdminPrivilegesAsExpected")
                 .given(
@@ -193,6 +195,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
                                 .signedBy(SYSTEM_ADMIN, GENESIS));
     }
 
+    @HapiTest
     private HapiSpec superusersAreNeverThrottledOnTransfers() {
         return defaultHapiSpec("superusersAreNeverThrottledOnTransfers")
                 .given(
@@ -213,6 +216,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
                                 .contents(defaultThrottles)));
     }
 
+    @HapiTest
     private HapiSpec superusersAreNeverThrottledOnMiscTxns() {
         return defaultHapiSpec("superusersAreNeverThrottledOnMiscTxns")
                 .given(
@@ -233,6 +237,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
                                 .contents(defaultThrottles)));
     }
 
+    @HapiTest
     private HapiSpec superusersAreNeverThrottledOnHcsTxns() {
         return defaultHapiSpec("superusersAreNeverThrottledOnHcsTxns")
                 .given(
@@ -250,6 +255,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
                                 .contents(defaultThrottles)));
     }
 
+    @HapiTest
     private HapiSpec superusersAreNeverThrottledOnMiscQueries() {
         return defaultHapiSpec("superusersAreNeverThrottledOnMiscQueries")
                 .given(
@@ -267,6 +273,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
                                 .contents(defaultThrottles)));
     }
 
+    @HapiTest
     private HapiSpec superusersAreNeverThrottledOnHcsQueries() {
         return defaultHapiSpec("superusersAreNeverThrottledOnHcsQueries")
                 .given(

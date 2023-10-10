@@ -96,7 +96,6 @@ data/threadDump = threadDumpLogDir
            true = reconnect.active
              -1 = reconnect.reconnectWindowSeconds
             0.5 = reconnect.fallenBehindThreshold
-          60000 = reconnect.asyncStreamTimeoutMilliseconds
             100 = reconnect.asyncOutputStreamFlushMilliseconds
           10000 = reconnect.asyncStreamBufferSize
            true = reconnect.asyncStreams

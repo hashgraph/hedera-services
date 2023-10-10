@@ -25,10 +25,6 @@ import java.nio.file.Path;
 
 /**
  * Configurations related to paths.
- * @param configPath
- *      path to config.txt (which might not exist)
- * @param settingsPath
- *      path to settings.txt (which might not exist)
  * @param settingsUsedDir
  *     the directory where the settings used file will be created on startup if and only if settings.txt exists
  * @param keysDirPath
@@ -40,30 +36,10 @@ import java.nio.file.Path;
  */
 @ConfigData("paths")
 public record PathsConfig(
-        @ConfigProperty(defaultValue = "config.txt") String configPath,
-        @ConfigProperty(defaultValue = "settings.txt") String settingsPath,
         @ConfigProperty(defaultValue = ".") String settingsUsedDir,
         @ConfigProperty(defaultValue = "data/keys") String keysDirPath,
         @ConfigProperty(defaultValue = "data/apps") String appsDirPath,
         @ConfigProperty(defaultValue = "log4j2.xml") String logPath) {
-
-    /**
-     * path to config.txt (which might not exist)
-     *
-     * @return absolute path to config.txt
-     */
-    public Path getConfigPath() {
-        return getAbsolutePath(configPath);
-    }
-
-    /**
-     * path to settings.txt (which might not exist)
-     *
-     * @return absolute path to settings.txt
-     */
-    public Path getSettingsPath() {
-        return getAbsolutePath(settingsPath);
-    }
 
     /**
      * the directory where the settings used file will be created on startup if and only if settings.txt exists

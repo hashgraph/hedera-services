@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRew
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -63,6 +64,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         final var writableTokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var writableNftStore = context.writableStore(WritableNftStore.class);
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
+        final var tokenStore = context.readableStore(ReadableTokenStore.class);
 
         if (stakingConfig.isEnabled()) {
             // staking rewards are triggered for any balance changes to account's that are staked to
@@ -91,14 +93,14 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         final ArrayList<TokenTransferList> tokenTransferLists;
 
         // ---------- fungible token transfers
-        final var fungibleChanges = fungibleChangesFrom(writableTokenRelStore);
+        final var fungibleChanges = fungibleChangesFrom(writableTokenRelStore, tokenStore);
         // any fungible token changes listed in child records should not be considered while building
         // parent record, so don't deduct them.
         final var fungibleTokenTransferLists = asTokenTransferListFrom(fungibleChanges);
         tokenTransferLists = new ArrayList<>(fungibleTokenTransferLists);
 
         // ---------- nft transfers
-        final var nftChanges = nftChangesFrom(writableNftStore);
+        final var nftChanges = nftChangesFrom(writableNftStore, tokenStore);
         // any nft transfers listed in child records should not be considered while building
         // parent record, so don't deduct them.
         final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);

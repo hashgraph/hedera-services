@@ -16,18 +16,19 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import static org.assertj.core.api.BDDAssertions.assertThat;
+
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.security.InvalidKeyException;
-import org.assertj.core.api.BDDAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ScheduleStoreUtilityTest extends ScheduleStoreTestBase {
+class ScheduleStoreUtilityTest extends ScheduleTestBase {
 
     @BeforeEach
     void setUp() throws PreCheckException, InvalidKeyException {
@@ -37,103 +38,106 @@ class ScheduleStoreUtilityTest extends ScheduleStoreTestBase {
     @Test
     void verifyHashCalculationNormalFunction() {
         final String hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDAssertions.assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_0_EXPIRE_SHA256);
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
+        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_0_EXPIRE_SHA256);
     }
 
     @Test
     void verifyIncludedFieldsChangeHash() {
+        Schedule.Builder testSchedule = scheduleInState.copyBuilder();
+
         String hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDAssertions.assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_0_EXPIRE_SHA256);
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
+        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_0_EXPIRE_SHA256);
 
-        BDDMockito.given(scheduleInState.providedExpirationSecond()).willReturn(0L);
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_0_EXPIRE_SHA256);
-        BDDMockito.given(scheduleInState.providedExpirationSecond()).willCallRealMethod();
+        testSchedule.providedExpirationSecond(0L);
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_0_EXPIRE_SHA256);
+        testSchedule.providedExpirationSecond(scheduleInState.providedExpirationSecond());
 
-        BDDMockito.given(scheduleInState.adminKey()).willReturn(payerKey);
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_PAYER_IS_ADMIN_SHA256);
-        BDDMockito.given(scheduleInState.adminKey()).willCallRealMethod();
+        testSchedule.adminKey(payerKey);
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_PAYER_IS_ADMIN_SHA256);
+        testSchedule.adminKey(scheduleInState.adminKey());
 
-        BDDMockito.given(scheduleInState.scheduledTransaction()).willReturn(createAlternateScheduled());
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_ALTERNATE_SCHEDULED_SHA256);
-        BDDMockito.given(scheduleInState.scheduledTransaction()).willCallRealMethod();
+        testSchedule.scheduledTransaction(createAlternateScheduled());
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_ALTERNATE_SCHEDULED_SHA256);
+        testSchedule.scheduledTransaction(scheduleInState.scheduledTransaction());
 
-        BDDMockito.given(scheduleInState.payerAccountId()).willReturn(adminAccountId);
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_ADMIN_IS_PAYER_SHA256);
-        BDDMockito.given(scheduleInState.payerAccountId()).willCallRealMethod();
+        testSchedule.payerAccountId(admin);
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_ADMIN_IS_PAYER_SHA256);
+        testSchedule.payerAccountId(scheduleInState.payerAccountId());
 
-        BDDMockito.given(scheduleInState.schedulerAccountId()).willReturn(payerAccountId);
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_PAYER_IS_SCHEDULER_SHA256);
-        BDDMockito.given(scheduleInState.schedulerAccountId()).willCallRealMethod();
+        testSchedule.schedulerAccountId(payer);
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_PAYER_IS_SCHEDULER_SHA256);
+        testSchedule.schedulerAccountId(scheduleInState.schedulerAccountId());
 
-        BDDMockito.given(scheduleInState.memo()).willReturn(ODD_MEMO);
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_ODD_MEMO_SHA256);
-        BDDMockito.given(scheduleInState.memo()).willCallRealMethod();
+        testSchedule.memo(ODD_MEMO);
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_ODD_MEMO_SHA256);
+        testSchedule.memo(scheduleInState.memo());
 
-        final boolean originalWait = scheduleInState.waitForExpiry();
-        BDDMockito.given(scheduleInState.waitForExpiry()).willReturn(!originalWait);
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_WAIT_EXPIRE_SHA256);
-        BDDMockito.given(scheduleInState.waitForExpiry()).willCallRealMethod();
+        testSchedule.waitForExpiry(!scheduleInState.waitForExpiry());
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_WAIT_EXPIRE_SHA256);
+        testSchedule.waitForExpiry(scheduleInState.waitForExpiry());
     }
 
     @Test
     void verifyExcludedAttributesHaveNoEffect() {
+        Schedule.Builder testSchedule = scheduleInState.copyBuilder();
+
         String hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
 
-        BDDMockito.given(scheduleInState.scheduleId()).willReturn(new ScheduleID(42L, 444L, 22740229L));
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDMockito.given(scheduleInState.scheduleId()).willCallRealMethod();
+        testSchedule.scheduleId(new ScheduleID(42L, 444L, 22740229L));
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
+        testSchedule.scheduleId(scheduleInState.scheduleId());
 
-        BDDMockito.given(scheduleInState.calculatedExpirationSecond()).willReturn(18640811L);
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDMockito.given(scheduleInState.calculatedExpirationSecond()).willCallRealMethod();
+        testSchedule.calculatedExpirationSecond(18640811L);
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
+        testSchedule.calculatedExpirationSecond(scheduleInState.calculatedExpirationSecond());
 
-        BDDMockito.given(scheduleInState.deleted()).willReturn(true);
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDMockito.given(scheduleInState.deleted()).willCallRealMethod();
+        testSchedule.deleted(!scheduleInState.deleted());
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
+        testSchedule.deleted(scheduleInState.deleted());
 
-        BDDMockito.given(scheduleInState.executed()).willReturn(true);
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDMockito.given(scheduleInState.executed()).willCallRealMethod();
+        testSchedule.executed(!scheduleInState.executed());
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
+        testSchedule.executed(scheduleInState.executed());
 
-        BDDMockito.given(scheduleInState.resolutionTime()).willReturn(modifiedResolutionTime);
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDMockito.given(scheduleInState.resolutionTime()).willCallRealMethod();
+        testSchedule.resolutionTime(modifiedResolutionTime);
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
+        testSchedule.resolutionTime(scheduleInState.resolutionTime());
 
-        BDDMockito.given(scheduleInState.scheduleValidStart()).willReturn(modifiedStartTime);
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDMockito.given(scheduleInState.scheduleValidStart()).willCallRealMethod();
+        testSchedule.scheduleValidStart(modifiedStartTime);
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
+        testSchedule.scheduleValidStart(scheduleInState.scheduleValidStart());
 
-        BDDMockito.given(scheduleInState.originalCreateTransaction()).willReturn(alternateCreateTransaction);
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDMockito.given(scheduleInState.originalCreateTransaction()).willCallRealMethod();
+        testSchedule.originalCreateTransaction(alternateCreateTransaction);
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
+        testSchedule.originalCreateTransaction(scheduleInState.originalCreateTransaction());
 
-        BDDMockito.given(scheduleInState.signatories()).willReturn(alternateSignatories);
-        hashValue = ScheduleStoreUtility.calculateStringHash(scheduleInState);
-        BDDAssertions.assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
-        BDDMockito.given(scheduleInState.signatories()).willCallRealMethod();
+        testSchedule.signatories(alternateSignatories);
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
+        testSchedule.signatories(scheduleInState.signatories());
     }
 }
