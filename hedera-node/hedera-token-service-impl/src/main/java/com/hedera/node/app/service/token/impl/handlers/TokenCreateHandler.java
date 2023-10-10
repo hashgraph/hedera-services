@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUN
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.token.impl.validators.CustomFeesValidator.SENTINEL_TOKEN_ID;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -137,7 +138,6 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         // validate custom fees and get back list of fees with created token denomination
         final var feesSetNeedingCollectorAutoAssociation = customFeesValidator.validateForCreation(
                 newToken, accountStore, tokenRelationStore, tokenStore, op.customFeesOrElse(emptyList()));
-
         // Put token into modifications map
         tokenStore.put(newToken);
         // associate token with treasury and collector ids of custom fees whose token denomination
@@ -245,19 +245,46 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 false,
                 op.freezeDefault(),
                 false,
-                op.customFees());
+                modifyCustomFeesWithSentinelValues(op.customFeesOrElse(emptyList()), newTokenNum));
+    }
+
+    /**
+     * Modify the custom fees with the newly created token number as the token denomination.
+     * For any custom fixed fees that has 0.0.0 as denominating tokenId, it should be changed
+     * to the newly created token number before setting it to the token.
+     * @param customFees list of custom fees
+     * @param newTokenNum newly created token number
+     * @return modified custom fees
+     */
+    private List<CustomFee> modifyCustomFeesWithSentinelValues(
+            final List<CustomFee> customFees, final long newTokenNum) {
+        return customFees.stream()
+                .map(fee -> {
+                    if (fee.hasFixedFee()
+                            && fee.fixedFeeOrThrow().hasDenominatingTokenId()
+                            && fee.fixedFeeOrThrow()
+                                    .denominatingTokenIdOrThrow()
+                                    .equals(SENTINEL_TOKEN_ID)) {
+                        final var newTokenId =
+                                TokenID.newBuilder().tokenNum(newTokenNum).build();
+                        final var modifiedFixedFee = fee.fixedFeeOrThrow()
+                                .copyBuilder()
+                                .denominatingTokenId(newTokenId)
+                                .build();
+                        // Assign the modified fee back to the original fee object
+                        return fee.copyBuilder().fixedFee(modifiedFixedFee).build();
+                    }
+                    return fee; // Return unmodified fee if conditions are not met
+                })
+                .toList();
     }
 
     /**
      * Get the expiry metadata for the token to be created from the transaction body.
-     * @param consensusTime consensus time
      * @param op token creation transaction body
      * @return given expiry metadata
      */
-    private ExpiryMeta getExpiryMeta(
-            final long consensusTime,
-            @NonNull final TokenCreateTransactionBody op,
-            @NonNull final HandleContext context) {
+    private ExpiryMeta getExpiryMeta(@NonNull final TokenCreateTransactionBody op) {
         final var impliedExpiry = op.hasExpiry() ? op.expiry().seconds() : NA;
 
         return new ExpiryMeta(
@@ -290,7 +317,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         tokenCreateValidator.validate(context, accountStore, op, config);
 
         // validate expiration and auto-renew account if present
-        final var givenExpiryMeta = getExpiryMeta(context.consensusNow().getEpochSecond(), op, context);
+        final var givenExpiryMeta = getExpiryMeta(op);
         final var resolvedExpiryMeta = context.expiryValidator().resolveCreationAttempt(false, givenExpiryMeta);
 
         // validate auto-renew account exists
