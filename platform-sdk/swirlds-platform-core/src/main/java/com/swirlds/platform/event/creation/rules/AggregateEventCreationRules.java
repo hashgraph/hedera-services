@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.tipset.rules;
+package com.swirlds.platform.event.creation.rules;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Combines multiple {@link TipsetEventCreationRule} objects into a single object. Allows event creation if all the
+ * Combines multiple {@link EventCreationRule} objects into a single object. Allows event creation if all the
  * contained limiters allow event creation.
  */
-public class AggregateTipsetEventCreationRules implements TipsetEventCreationRule {
+public class AggregateEventCreationRules implements EventCreationRule {
 
-    private final TipsetEventCreationRule[] rules;
+    private final EventCreationRule[] rules;
 
     /**
-     * Create a new {@link AggregateTipsetEventCreationRules} from the given list of rules.
+     * Create a new {@link AggregateEventCreationRules} from the given list of rules.
      *
      * @param rules the rules to combine, if no rules are provided then event creation is always permitted.
      * @return an aggregate rule that permits event creation if and only if all rules permit creation.
      */
-    public static AggregateTipsetEventCreationRules of(@Nullable final TipsetEventCreationRule... rules) {
-        return new AggregateTipsetEventCreationRules(rules);
+    public static AggregateEventCreationRules of(@Nullable final EventCreationRule... rules) {
+        return new AggregateEventCreationRules(rules);
     }
 
     /**
@@ -41,8 +41,8 @@ public class AggregateTipsetEventCreationRules implements TipsetEventCreationRul
      *
      * @param rules the limiters to combine
      */
-    private AggregateTipsetEventCreationRules(@Nullable final TipsetEventCreationRule... rules) {
-        this.rules = rules == null ? new TipsetEventCreationRule[0] : rules;
+    private AggregateEventCreationRules(@Nullable final EventCreationRule... rules) {
+        this.rules = rules == null ? new EventCreationRule[0] : rules;
     }
 
     /**
@@ -50,7 +50,7 @@ public class AggregateTipsetEventCreationRules implements TipsetEventCreationRul
      */
     @Override
     public boolean isEventCreationPermitted() {
-        for (final TipsetEventCreationRule limiter : rules) {
+        for (final EventCreationRule limiter : rules) {
             if (!limiter.isEventCreationPermitted()) {
                 return false;
             }
@@ -64,7 +64,7 @@ public class AggregateTipsetEventCreationRules implements TipsetEventCreationRul
      */
     @Override
     public void eventWasCreated() {
-        for (final TipsetEventCreationRule limiter : rules) {
+        for (final EventCreationRule limiter : rules) {
             limiter.eventWasCreated();
         }
     }

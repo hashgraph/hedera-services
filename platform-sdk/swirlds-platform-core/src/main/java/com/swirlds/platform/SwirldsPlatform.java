@@ -25,7 +25,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.event.tipset.TipsetEventCreationManagerFactory.buildTipsetEventCreationManager;
+import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildEventCreationManager;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 
 import com.swirlds.base.state.Startable;
@@ -91,6 +91,7 @@ import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.AsyncEventCreationManager;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
@@ -102,7 +103,6 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
-import com.swirlds.platform.event.tipset.AsyncTipsetEventCreationManager;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -281,9 +281,9 @@ public class SwirldsPlatform implements Platform {
     private final RecycleBin recycleBin;
 
     /**
-     * Creates new events using the tipset algorithm.
+     * Creates new events.
      */
-    private final AsyncTipsetEventCreationManager tipsetEventCreator;
+    private final AsyncEventCreationManager eventCreator;
 
     /**
      * The round of the most recent reconnect state received, or {@link com.swirlds.common.system.UptimeData#NO_ROUND}
@@ -581,7 +581,7 @@ public class SwirldsPlatform implements Platform {
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
                 .build());
 
-        tipsetEventCreator = buildTipsetEventCreationManager(
+        eventCreator = buildEventCreationManager(
                 platformContext,
                 threadManager,
                 time,
@@ -663,7 +663,7 @@ public class SwirldsPlatform implements Platform {
             });
         }
 
-        final Clearable pauseEventCreation = tipsetEventCreator::pauseEventCreation;
+        final Clearable pauseEventCreation = eventCreator::pauseEventCreation;
 
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
@@ -771,13 +771,13 @@ public class SwirldsPlatform implements Platform {
     private void loadStateIntoEventCreator(@NonNull final SignedState signedState) {
         Objects.requireNonNull(signedState);
 
-        if (tipsetEventCreator == null) {
+        if (eventCreator == null) {
             // New event creation logic is disabled via settings
             return;
         }
 
         try {
-            tipsetEventCreator.setMinimumGenerationNonAncient(
+            eventCreator.setMinimumGenerationNonAncient(
                     signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
 
             // The event creator may not be started yet. To avoid filling up queues, only register
@@ -791,7 +791,7 @@ public class SwirldsPlatform implements Platform {
             }
 
             for (final EventImpl event : latestEvents.values()) {
-                tipsetEventCreator.registerEvent(event);
+                eventCreator.registerEvent(event);
             }
 
         } catch (final InterruptedException e) {
@@ -909,7 +909,7 @@ public class SwirldsPlatform implements Platform {
         }
 
         gossip.resetFallenBehind();
-        tipsetEventCreator.resumeEventCreation();
+        eventCreator.resumeEventCreation();
         platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
     }
 
@@ -1003,7 +1003,7 @@ public class SwirldsPlatform implements Platform {
         // The event creator is intentionally started before replaying the preconsensus event stream.
         // This prevents the event creator's intake queue from filling up and blocking. Note that
         // this component won't actually create events until the platform has the appropriate status.
-        Optional.of(tipsetEventCreator).ifPresent(Startable::start);
+        Optional.of(eventCreator).ifPresent(Startable::start);
 
         replayPreconsensusEvents();
         gossip.start();
@@ -1020,7 +1020,7 @@ public class SwirldsPlatform implements Platform {
      */
     public void performPcesRecovery() {
         components.start();
-        Optional.of(tipsetEventCreator).ifPresent(Startable::start);
+        Optional.of(eventCreator).ifPresent(Startable::start);
         replayPreconsensusEvents();
         stateManagementComponent.dumpLatestImmutableState(StateToDiskReason.PCES_RECOVERY_COMPLETE, true);
     }

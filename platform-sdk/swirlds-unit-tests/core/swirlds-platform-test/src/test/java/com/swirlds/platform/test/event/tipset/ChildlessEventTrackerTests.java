@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.event.EventDescriptor;
-import com.swirlds.platform.event.tipset.ChildlessEventTracker;
+import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.tipset;
+package com.swirlds.platform.event.creation;
 
 import static com.swirlds.base.state.LifecyclePhase.NOT_STARTED;
 import static com.swirlds.base.state.LifecyclePhase.STARTED;
@@ -34,10 +34,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**
- * Manages the creation of events. Wraps a {@link SyncTipsetEventCreationManager} and provides an asynchronous
+ * Manages the creation of events. Wraps a {@link SyncEventCreationManager} and provides an asynchronous
  * interface.
  */
-public class AsyncTipsetEventCreationManager implements Lifecycle {
+public class AsyncEventCreationManager implements Lifecycle {
 
     /**
      * Tracks the lifecycle of this object.
@@ -47,7 +47,7 @@ public class AsyncTipsetEventCreationManager implements Lifecycle {
     /**
      * The core logic for creating events.
      */
-    private final SyncTipsetEventCreationManager eventCreator;
+    private final SyncEventCreationManager eventCreator;
 
     /**
      * Contains tasks that need to be run on the processing thread for this component.
@@ -84,10 +84,10 @@ public class AsyncTipsetEventCreationManager implements Lifecycle {
      * @param threadManager   manages the creation of new threads
      * @param eventCreator    creates new events
      */
-    public AsyncTipsetEventCreationManager(
+    public AsyncEventCreationManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final SyncTipsetEventCreationManager eventCreator) {
+            @NonNull final SyncEventCreationManager eventCreator) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);

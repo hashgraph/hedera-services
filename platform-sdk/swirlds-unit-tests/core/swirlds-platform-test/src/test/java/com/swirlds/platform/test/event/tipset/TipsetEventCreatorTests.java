@@ -48,12 +48,12 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.tipset.ChildlessEventTracker;
-import com.swirlds.platform.event.tipset.TipsetEventCreator;
-import com.swirlds.platform.event.tipset.TipsetEventCreatorImpl;
-import com.swirlds.platform.event.tipset.TipsetTracker;
-import com.swirlds.platform.event.tipset.TipsetUtils;
-import com.swirlds.platform.event.tipset.TipsetWeightCalculator;
+import com.swirlds.platform.event.creation.EventCreator;
+import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
+import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
+import com.swirlds.platform.event.creation.tipset.TipsetTracker;
+import com.swirlds.platform.event.creation.tipset.TipsetUtils;
+import com.swirlds.platform.event.creation.tipset.TipsetWeightCalculator;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -74,25 +74,25 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("TipsetEventCreatorImpl Tests")
-class TipsetEventCreatorImplTests {
+class TipsetEventCreatorTests {
 
     /**
      * @param nodeId                 the node ID of the simulated node
      * @param tipsetTracker          tracks tipsets of events
-     * @param tipsetEventCreator     the event creator for the simulated node
+     * @param eventCreator     the event creator for the simulated node
      * @param tipsetWeightCalculator used to sanity check event creation logic
      */
     private record SimulatedNode(
             @NonNull NodeId nodeId,
             @NonNull TipsetTracker tipsetTracker,
-            @NonNull TipsetEventCreator tipsetEventCreator,
+            @NonNull EventCreator eventCreator,
             @NonNull TipsetWeightCalculator tipsetWeightCalculator) {}
 
     /**
      * Build an event creator for a node.
      */
     @NonNull
-    private TipsetEventCreator buildEventCreator(
+    private EventCreator buildEventCreator(
             @NonNull final Random random,
             @NonNull final Time time,
             @NonNull final AddressBook addressBook,
@@ -107,7 +107,7 @@ class TipsetEventCreatorImplTests {
 
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
-        return new TipsetEventCreatorImpl(
+        return new TipsetEventCreator(
                 platformContext, time, random, signer, addressBook, nodeId, softwareVersion, transactionSupplier);
     }
 
@@ -127,7 +127,7 @@ class TipsetEventCreatorImplTests {
 
         for (final Address address : addressBook) {
 
-            final TipsetEventCreator eventCreator =
+            final EventCreator eventCreator =
                     buildEventCreator(random, time, addressBook, address.getNodeId(), transactionSupplier);
 
             final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook);
@@ -210,7 +210,7 @@ class TipsetEventCreatorImplTests {
         // We should see the expected transactions
         assertArrayEquals(expectedTransactions, newEvent.getHashedData().getTransactions());
 
-        assertDoesNotThrow(() -> simulatedNode.tipsetEventCreator.toString());
+        assertDoesNotThrow(() -> simulatedNode.eventCreator.toString());
     }
 
     /**
@@ -255,7 +255,7 @@ class TipsetEventCreatorImplTests {
             @NonNull final Map<NodeId, SimulatedNode> eventCreators, @NonNull final EventImpl eventImpl) {
 
         for (final SimulatedNode eventCreator : eventCreators.values()) {
-            eventCreator.tipsetEventCreator.registerEvent(eventImpl);
+            eventCreator.eventCreator.registerEvent(eventImpl);
             eventCreator.tipsetTracker.addEvent(
                     eventImpl.getBaseEvent().getDescriptor(), TipsetUtils.getParentDescriptors(eventImpl));
         }
@@ -311,7 +311,7 @@ class TipsetEventCreatorImplTests {
                 transactionSupplier.set(generateRandomTransactions(random));
 
                 final NodeId nodeId = address.getNodeId();
-                final TipsetEventCreator eventCreator = nodes.get(nodeId).tipsetEventCreator;
+                final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
                 final GossipEvent event = eventCreator.maybeCreateEvent();
 
@@ -368,7 +368,7 @@ class TipsetEventCreatorImplTests {
                 transactionSupplier.set(generateRandomTransactions(random));
 
                 final NodeId nodeId = address.getNodeId();
-                final TipsetEventCreator eventCreator = nodes.get(nodeId).tipsetEventCreator;
+                final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
                 final GossipEvent event = eventCreator.maybeCreateEvent();
 
@@ -427,7 +427,7 @@ class TipsetEventCreatorImplTests {
                     transactionSupplier.set(generateRandomTransactions(random));
 
                     final NodeId nodeId = address.getNodeId();
-                    final TipsetEventCreator eventCreator = nodes.get(nodeId).tipsetEventCreator;
+                    final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
                     final GossipEvent event = eventCreator.maybeCreateEvent();
 
@@ -507,7 +507,7 @@ class TipsetEventCreatorImplTests {
                 transactionSupplier.set(generateRandomTransactions(random));
 
                 final NodeId nodeId = address.getNodeId();
-                final TipsetEventCreator eventCreator = nodes.get(nodeId).tipsetEventCreator;
+                final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
                 final GossipEvent event = eventCreator.maybeCreateEvent();
 
@@ -594,7 +594,7 @@ class TipsetEventCreatorImplTests {
                 transactionSupplier.set(generateRandomTransactions(random));
 
                 final NodeId nodeId = address.getNodeId();
-                final TipsetEventCreator eventCreator = nodes.get(nodeId).tipsetEventCreator;
+                final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
                 final GossipEvent event = eventCreator.maybeCreateEvent();
 
@@ -674,7 +674,7 @@ class TipsetEventCreatorImplTests {
             transactionSupplier.set(generateRandomTransactions(random));
 
             final NodeId nodeId = address.getNodeId();
-            final TipsetEventCreator eventCreator = nodes.get(nodeId).tipsetEventCreator;
+            final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
             final GossipEvent event = eventCreator.maybeCreateEvent();
 
@@ -743,7 +743,7 @@ class TipsetEventCreatorImplTests {
         final NodeId nodeD = addressBook.getNodeId(3);
 
         // All nodes except for node 0 are fully mocked. This test is testing how node 0 behaves.
-        final TipsetEventCreator eventCreator =
+        final EventCreator eventCreator =
                 buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
 
         // Create some genesis events
@@ -813,7 +813,7 @@ class TipsetEventCreatorImplTests {
         final NodeId nodeE = new NodeId(nodeD.id() + 1);
 
         // All nodes except for node 0 are fully mocked. This test is testing how node 0 behaves.
-        final TipsetEventCreator eventCreator =
+        final EventCreator eventCreator =
                 buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
 
         // Create some genesis events
@@ -871,7 +871,7 @@ class TipsetEventCreatorImplTests {
 
         final NodeId nodeA = addressBook.getNodeId(0); // self
 
-        final TipsetEventCreator eventCreator =
+        final EventCreator eventCreator =
                 buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
 
         eventCreator.setMinimumGenerationNonAncient(100);

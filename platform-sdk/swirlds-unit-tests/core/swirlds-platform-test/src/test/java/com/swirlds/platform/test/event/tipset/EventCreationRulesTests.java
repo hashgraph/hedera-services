@@ -34,12 +34,12 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.tipset.TipsetEventCreator;
-import com.swirlds.platform.event.tipset.rules.AggregateTipsetEventCreationRules;
-import com.swirlds.platform.event.tipset.rules.ReconnectStateSavedRule;
-import com.swirlds.platform.event.tipset.rules.TipsetEventCreationRule;
-import com.swirlds.platform.event.tipset.rules.TipsetMaximumRateRule;
-import com.swirlds.platform.event.tipset.rules.TipsetPlatformStatusRule;
+import com.swirlds.platform.event.creation.EventCreator;
+import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
+import com.swirlds.platform.event.creation.rules.EventCreationRule;
+import com.swirlds.platform.event.creation.rules.MaximumRateRule;
+import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
+import com.swirlds.platform.event.creation.rules.ReconnectStateSavedRule;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -53,12 +53,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("Tipset Event Creation Rules Tests")
-class TipsetEventCreationRulesTests {
+class EventCreationRulesTests {
 
     @Test
     @DisplayName("Empty Aggregate Test")
     void emptyAggregateTest() {
-        final TipsetEventCreationRule rule = AggregateTipsetEventCreationRules.of();
+        final EventCreationRule rule = AggregateEventCreationRules.of();
         assertTrue(rule.isEventCreationPermitted());
 
         // should not throw
@@ -68,7 +68,7 @@ class TipsetEventCreationRulesTests {
     @Test
     @DisplayName("Aggregate Test")
     void aggregateTest() {
-        final TipsetEventCreationRule rule1 = mock(TipsetEventCreationRule.class);
+        final EventCreationRule rule1 = mock(EventCreationRule.class);
         when(rule1.isEventCreationPermitted()).thenAnswer(invocation -> true);
         final AtomicInteger rule1Count = new AtomicInteger(0);
         doAnswer(invocation -> {
@@ -78,7 +78,7 @@ class TipsetEventCreationRulesTests {
                 .when(rule1)
                 .eventWasCreated();
 
-        final TipsetEventCreationRule rule2 = mock(TipsetEventCreationRule.class);
+        final EventCreationRule rule2 = mock(EventCreationRule.class);
         when(rule2.isEventCreationPermitted()).thenAnswer(invocation -> true);
         final AtomicInteger rule2Count = new AtomicInteger(0);
         doAnswer(invocation -> {
@@ -88,7 +88,7 @@ class TipsetEventCreationRulesTests {
                 .when(rule2)
                 .eventWasCreated();
 
-        final TipsetEventCreationRule rule3 = mock(TipsetEventCreationRule.class);
+        final EventCreationRule rule3 = mock(EventCreationRule.class);
         when(rule3.isEventCreationPermitted()).thenAnswer(invocation -> true);
         final AtomicInteger rule3Count = new AtomicInteger(0);
         doAnswer(invocation -> {
@@ -98,7 +98,7 @@ class TipsetEventCreationRulesTests {
                 .when(rule3)
                 .eventWasCreated();
 
-        final TipsetEventCreationRule rule4 = mock(TipsetEventCreationRule.class);
+        final EventCreationRule rule4 = mock(EventCreationRule.class);
         when(rule4.isEventCreationPermitted()).thenAnswer(invocation -> true);
         final AtomicInteger rule4Count = new AtomicInteger(0);
         doAnswer(invocation -> {
@@ -108,7 +108,7 @@ class TipsetEventCreationRulesTests {
                 .when(rule4)
                 .eventWasCreated();
 
-        final TipsetEventCreationRule aggregateRule = AggregateTipsetEventCreationRules.of(rule1, rule2, rule3, rule4);
+        final EventCreationRule aggregateRule = AggregateEventCreationRules.of(rule1, rule2, rule3, rule4);
 
         assertTrue(aggregateRule.isEventCreationPermitted());
 
@@ -142,13 +142,13 @@ class TipsetEventCreationRulesTests {
                 .thenAnswer(invocation -> numSignatureTransactions.get() > 0);
 
         final AtomicInteger eventCreationCount = new AtomicInteger(0);
-        final TipsetEventCreator baseEventCreator = mock(TipsetEventCreator.class);
+        final EventCreator baseEventCreator = mock(EventCreator.class);
         when(baseEventCreator.maybeCreateEvent()).thenAnswer(invocation -> {
             eventCreationCount.incrementAndGet();
             return null;
         });
 
-        final TipsetEventCreationRule rule = new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool);
+        final EventCreationRule rule = new PlatformStatusRule(platformStatusSupplier, transactionPool);
 
         assertFalse(rule.isEventCreationPermitted());
         numSignatureTransactions.set(1);
@@ -163,13 +163,13 @@ class TipsetEventCreationRulesTests {
         final AtomicReference<PlatformStatus> status = new AtomicReference<>();
 
         final AtomicInteger eventCreationCount = new AtomicInteger(0);
-        final TipsetEventCreator baseEventCreator = mock(TipsetEventCreator.class);
+        final EventCreator baseEventCreator = mock(EventCreator.class);
         when(baseEventCreator.maybeCreateEvent()).thenAnswer(invocation -> {
             eventCreationCount.incrementAndGet();
             return null;
         });
 
-        final TipsetEventCreationRule rule = new TipsetPlatformStatusRule(status::get, transactionPool);
+        final EventCreationRule rule = new PlatformStatusRule(status::get, transactionPool);
 
         for (final PlatformStatus platformStatus : PlatformStatus.values()) {
             if (platformStatus == FREEZING) {
@@ -196,13 +196,13 @@ class TipsetEventCreationRulesTests {
         final Time time = new FakeTime();
 
         final AtomicInteger eventCreationCount = new AtomicInteger(0);
-        final TipsetEventCreator baseEventCreator = mock(TipsetEventCreator.class);
+        final EventCreator baseEventCreator = mock(EventCreator.class);
         when(baseEventCreator.maybeCreateEvent()).thenAnswer(invocation -> {
             eventCreationCount.incrementAndGet();
             return mock(GossipEvent.class);
         });
 
-        final TipsetEventCreationRule rule = new TipsetMaximumRateRule(platformContext, time);
+        final EventCreationRule rule = new MaximumRateRule(platformContext, time);
 
         // Ask for a bunch of events to be created without advancing the time.
         for (int i = 0; i < 100; i++) {
@@ -228,7 +228,7 @@ class TipsetEventCreationRulesTests {
 
         final FakeTime time = new FakeTime();
 
-        final TipsetEventCreationRule rule = new TipsetMaximumRateRule(platformContext, time);
+        final EventCreationRule rule = new MaximumRateRule(platformContext, time);
 
         int millisSinceLastEvent = (int) period.toMillis();
         for (int i = 0; i < 100; i++) {

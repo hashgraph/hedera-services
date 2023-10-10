@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.tipset;
+package com.swirlds.platform.event.creation.tipset;
 
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;

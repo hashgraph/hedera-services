@@ -14,31 +14,31 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.tipset;
+package com.swirlds.platform.event.creation;
 
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.tipset.rules.TipsetEventCreationRule;
+import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Wraps a {@link TipsetEventCreator} and provides additional functionality. Will sometimes decide not to create new
+ * Wraps an {@link EventCreator} and provides additional functionality. Will sometimes decide not to create new
  * events based on external rules or based on paused status. Forwards created events to a consumer, and retries
  * forwarding if the consumer is not immediately able to accept the event.
  */
-public class SyncTipsetEventCreationManager {
+public class SyncEventCreationManager {
 
     /**
      * Creates events.
      */
-    private final TipsetEventCreator creator;
+    private final EventCreator creator;
 
     /**
      * Rules that say if event creation is permitted.
      */
-    private final TipsetEventCreationRule eventCreationRules;
+    private final EventCreationRule eventCreationRules;
 
     /**
      * Created events are eventually passed here.
@@ -63,9 +63,9 @@ public class SyncTipsetEventCreationManager {
      * @param eventConsumer      events that are created are passed here, consumer returns true if the event was
      *                           accepted and false if it needs to be resubmitted later
      */
-    public SyncTipsetEventCreationManager(
-            @NonNull final TipsetEventCreator creator,
-            @NonNull final TipsetEventCreationRule eventCreationRules,
+    public SyncEventCreationManager(
+            @NonNull final EventCreator creator,
+            @NonNull final EventCreationRule eventCreationRules,
             @NonNull final Function<GossipEvent, Boolean> eventConsumer) {
 
         this.creator = Objects.requireNonNull(creator);

@@ -111,7 +111,7 @@ module com.swirlds.platform.core {
             com.swirlds.config.impl,
             com.swirlds.common,
             com.hedera.node.test.clients;
-    exports com.swirlds.platform.event.tipset to
+    exports com.swirlds.platform.event.creation to
             com.swirlds.config.impl,
             com.swirlds.common,
             com.hedera.node.test.clients;
@@ -128,6 +128,10 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.gossip.shadowgraph;
     exports com.swirlds.platform.recovery.emergencyfile;
     exports com.swirlds.platform.event;
+    exports com.swirlds.platform.event.creation.tipset to
+            com.hedera.node.test.clients,
+            com.swirlds.common,
+            com.swirlds.config.impl;
 
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;

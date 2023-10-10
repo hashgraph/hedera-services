@@ -14,41 +14,39 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.tipset.rules;
+package com.swirlds.platform.event.creation.rules;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.platform.event.tipset.EventCreationConfig;
+import com.swirlds.common.utility.throttle.RateLimiter;
+import com.swirlds.platform.event.creation.EventCreationConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
-import java.util.function.IntSupplier;
 
 /**
- * Prevents event creations when the system is stressed and unable to keep up with its work load.
+ * Throttles event creation rate over time.
  */
-public class TipsetBackpressureRule implements TipsetEventCreationRule {
+public class MaximumRateRule implements EventCreationRule {
 
-    /**
-     * Prevent new events from being created if the event intake queue ever meets or exceeds this size.
-     */
-    private final int eventIntakeThrottle;
-
-    private final IntSupplier eventIntakeQueueSize;
+    private final RateLimiter rateLimiter;
 
     /**
      * Constructor.
      *
-     * @param platformContext      the platform's context
-     * @param eventIntakeQueueSize provides the size of the event intake queue
+     * @param platformContext the platform context for this node
+     * @param time            provides wall clock time
      */
-    public TipsetBackpressureRule(
-            @NonNull final PlatformContext platformContext, @NonNull final IntSupplier eventIntakeQueueSize) {
+    public MaximumRateRule(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
-        eventIntakeThrottle = eventCreationConfig.eventIntakeThrottle();
-
-        this.eventIntakeQueueSize = Objects.requireNonNull(eventIntakeQueueSize);
+        final double maxCreationRate = eventCreationConfig.maxCreationRate();
+        if (maxCreationRate > 0) {
+            rateLimiter = new RateLimiter(time, maxCreationRate);
+        } else {
+            // No brakes!
+            rateLimiter = null;
+        }
     }
 
     /**
@@ -56,7 +54,10 @@ public class TipsetBackpressureRule implements TipsetEventCreationRule {
      */
     @Override
     public boolean isEventCreationPermitted() {
-        return eventIntakeQueueSize.getAsInt() < eventIntakeThrottle;
+        if (rateLimiter != null) {
+            return rateLimiter.request();
+        }
+        return true;
     }
 
     /**
@@ -64,6 +65,8 @@ public class TipsetBackpressureRule implements TipsetEventCreationRule {
      */
     @Override
     public void eventWasCreated() {
-        // no-op
+        if (rateLimiter != null) {
+            rateLimiter.trigger();
+        }
     }
 }
