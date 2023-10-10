@@ -291,6 +291,9 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
+    /** Manages emergency recovery */
+    private final EmergencyRecoveryManager emergencyRecoveryManager;
+
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
@@ -321,6 +324,7 @@ public class SwirldsPlatform implements Platform, Startable {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
+        this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
         final Time time = Time.getCurrent();
 
         final DispatchBuilder dispatchBuilder =
@@ -1035,8 +1039,11 @@ public class SwirldsPlatform implements Platform, Startable {
                 .getConfiguration()
                 .getConfigData(PreconsensusEventStreamConfig.class)
                 .enableReplay();
+        final boolean emergencyRecoveryNeeded = emergencyRecoveryManager.isEmergencyStateRequired();
 
-        if (enableReplay) {
+        // if we need to do an emergency recovery, replaying the PCES could cause issues if the
+        // minimum generation non-ancient is reversed to a smaller value, so we skip it
+        if (enableReplay && !emergencyRecoveryNeeded) {
             PreconsensusEventReplayWorkflow.replayPreconsensusEvents(
                     platformContext,
                     threadManager,
