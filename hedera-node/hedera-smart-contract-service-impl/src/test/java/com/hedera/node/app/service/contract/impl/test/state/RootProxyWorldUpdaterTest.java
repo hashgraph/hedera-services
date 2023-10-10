@@ -41,6 +41,7 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Test;
@@ -121,8 +122,8 @@ class RootProxyWorldUpdaterTest {
         given(hederaOperations.valueInTinybars(rentInTinycents)).willReturn(rentInTinybars);
 
         given(hederaOperations.getStore()).willReturn(store);
-        final var createdIds = List.of(CALLED_CONTRACT_ID);
-        final var updatedNonces = List.of(new ContractNonceInfo(CALLED_CONTRACT_ID, 1L));
+        final var createdIds = new ArrayList<>(List.of(CALLED_CONTRACT_ID));
+        final var updatedNonces = new ArrayList<>(List.of(new ContractNonceInfo(CALLED_CONTRACT_ID, 1L)));
         given(hederaOperations.summarizeContractChanges())
                 .willReturn(new ContractChangeSummary(createdIds, updatedNonces));
 
