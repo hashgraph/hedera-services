@@ -685,6 +685,7 @@ class StateManagementComponentTests {
                 (msg, t, code) -> {},
                 mock(PreconsensusEventWriter.class),
                 platformStatusGetter,
-                mock(StatusActionSubmitter.class));
+                mock(StatusActionSubmitter.class),
+                null);
     }
 }

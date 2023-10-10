@@ -33,6 +33,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -76,6 +77,11 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
         final var contractGetBytecode = ContractGetBytecodeResponse.newBuilder().header(header);
+
+        // although ResponseType enum includes an unsupported field ResponseType#ANSWER_STATE_PROOF,
+        // the response returned ONLY when both
+        // the ResponseHeader#nodeTransactionPrecheckCode is OK and the requested response type is
+        // ResponseType#ANSWER_ONLY
         if (header.nodeTransactionPrecheckCode() == OK && header.responseType() == ANSWER_ONLY) {
             final var contract = requireNonNull(contractFrom(context));
             contractGetBytecode.bytecode(bytecodeFrom(context, contract));
@@ -99,5 +105,11 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
                 EntityNumber.newBuilder().number(contractNumber).build();
         final var bytecode = store.getBytecode(contractEntityNumber);
         return bytecode.code();
+    }
+
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext context) {
+        return context.feeCalculator().calculate();
     }
 }

@@ -203,6 +203,7 @@ public class EthereumSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     HapiSpec etx010TransferToCryptoAccountSucceeds() {
         String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";
@@ -553,6 +554,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     // ETX-011 and ETX-030
+    @HapiTest
     HapiSpec originAndSenderAreEthereumSigner() {
         return defaultHapiSpec("originAndSenderAreEthereumSigner")
                 .given(
@@ -672,6 +674,7 @@ public class EthereumSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     HapiSpec etxSvc003ContractGetBytecodeQueryReturnsDeployedCode() {
         final var txn = "creation";
         final var contract = "EmptyConstructor";
@@ -753,6 +756,7 @@ public class EthereumSuite extends HapiSuite {
                                                         .withErcFungibleTransferStatus(true)))))));
     }
 
+    @HapiTest
     HapiSpec transferHbarsViaEip2930TxSuccessfully() {
         final String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";

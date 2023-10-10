@@ -51,16 +51,23 @@ public class EthereumCallDataHydration {
      *
      * @param body the {@link EthereumTransactionBody} to hydrate
      * @param fileStore the {@link ReadableFileStore} to hydrate from (if needed)
+     * @param firstUserEntityNum the first user entity number
      * @return the final {@link EthTxData}
      */
     public HydratedEthTxData tryToHydrate(
-            @NonNull final EthereumTransactionBody body, @NonNull final ReadableFileStore fileStore) {
+            @NonNull final EthereumTransactionBody body,
+            @NonNull final ReadableFileStore fileStore,
+            long firstUserEntityNum) {
         final var ethTxData = populateEthTxData(body.ethereumData().toByteArray());
         if (ethTxData == null) {
             return failureFrom(INVALID_ETHEREUM_TRANSACTION);
         }
         if (requiresHydration(body, ethTxData)) {
-            final var maybeCallDataFile = fileStore.getFileLeaf(body.callDataOrThrow());
+            final var callDataFileId = body.callDataOrThrow();
+            if (callDataFileId.fileNum() < firstUserEntityNum) {
+                return failureFrom(INVALID_FILE_ID);
+            }
+            final var maybeCallDataFile = fileStore.getFileLeaf(callDataFileId);
             if (maybeCallDataFile == null) {
                 return failureFrom(INVALID_FILE_ID);
             }
