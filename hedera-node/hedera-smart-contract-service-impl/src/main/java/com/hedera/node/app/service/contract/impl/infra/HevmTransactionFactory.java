@@ -65,6 +65,7 @@ import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -79,6 +80,7 @@ public class HevmTransactionFactory {
 
     private final NetworkInfo networkInfo;
     private final LedgerConfig ledgerConfig;
+    private final HederaConfig hederaConfig;
     private final GasCalculator gasCalculator;
     private final StakingConfig stakingConfig;
     private final ContractsConfig contractsConfig;
@@ -94,6 +96,7 @@ public class HevmTransactionFactory {
     public HevmTransactionFactory(
             @NonNull final NetworkInfo networkInfo,
             @NonNull final LedgerConfig ledgerConfig,
+            @NonNull final HederaConfig hederaConfig,
             @NonNull final GasCalculator gasCalculator,
             @NonNull final StakingConfig stakingConfig,
             @NonNull final ContractsConfig contractsConfig,
@@ -110,6 +113,7 @@ public class HevmTransactionFactory {
         this.networkInfo = requireNonNull(networkInfo);
         this.accountStore = requireNonNull(accountStore);
         this.ledgerConfig = requireNonNull(ledgerConfig);
+        this.hederaConfig = requireNonNull(hederaConfig);
         this.stakingConfig = requireNonNull(stakingConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
         this.tokenServiceApi = requireNonNull(tokenServiceApi);
@@ -241,6 +245,9 @@ public class HevmTransactionFactory {
     }
 
     private void assertValidCreation(@NonNull final ContractCreateTransactionBody body) {
+        if (body.hasFileID()) {
+            validateTrue(body.fileIDOrThrow().fileNum() >= hederaConfig.firstUserEntity(), INVALID_FILE_ID);
+        }
         final var autoRenewPeriod = body.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
         validateTrue(autoRenewPeriod >= 1, INVALID_RENEWAL_PERIOD);
         attributeValidator.validateAutoRenewPeriod(autoRenewPeriod);

@@ -370,16 +370,6 @@ public interface HandleContext {
     }
 
     /**
-     * @deprecated Use {@link #dispatchPrecedingTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    @NonNull
-    default <T> T dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass) {
-        return dispatchPrecedingTransaction(
-                txBody, recordBuilderClass, key -> verificationFor(key).passed());
-    }
-
-    /**
      * Dispatches a child transaction.
      *
      * <p>A child transaction depends on the current transaction. That means if the current transaction fails,
@@ -435,23 +425,6 @@ public interface HandleContext {
     }
 
     /**
-     * @deprecated Use {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    @NonNull
-    default <T> T dispatchChildTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @NonNull VerificationAssistant callback) {
-        throwIfMissingPayerId(txBody);
-        return dispatchChildTransaction(
-                txBody,
-                recordBuilderClass,
-                key -> callback.test(key, verificationFor(key)),
-                txBody.transactionIDOrThrow().accountIDOrThrow());
-    }
-
-    /**
      * Dispatches a removable child transaction.
      *
      * <p>A removable child transaction depends on the current transaction. It behaves in almost all aspects like a
@@ -498,19 +471,6 @@ public interface HandleContext {
                 recordBuilderClass,
                 callback,
                 txBody.transactionIDOrThrow().accountIDOrThrow());
-    }
-
-    /**
-     * @deprecated Use {@link #dispatchRemovableChildTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    @NonNull
-    default <T> T dispatchRemovableChildTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @NonNull VerificationAssistant callback) {
-        return dispatchRemovableChildTransaction(
-                txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)));
     }
 
     /**

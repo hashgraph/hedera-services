@@ -55,7 +55,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.burn.BurnTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import java.math.BigInteger;
 import java.util.HashMap;
