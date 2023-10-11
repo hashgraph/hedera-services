@@ -594,6 +594,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                                 .between(partyLiteral.get(), counterLiteral.get()))))));
     }
 
+    @HapiTest
     private HapiSpec cannotTransferFromImmutableAccounts() {
         final var contract = "PayableConstructor";
         final var multiKey = "swiss";
