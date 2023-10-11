@@ -45,6 +45,7 @@ import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.throttling.ThrottleReqsManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -78,7 +79,7 @@ import org.apache.logging.log4j.Logger;
  * Meant to be used in single-threaded context only as part of the {@link com.hedera.node.app.workflows.handle.HandleWorkflow}.
  */
 @Singleton
-public class HandleThrottleAccumulator {
+public class HandleThrottleAccumulator implements HandleThrottleParser {
     private static final Logger log = LogManager.getLogger(HandleThrottleAccumulator.class);
     private static final Set<HederaFunctionality> GAS_THROTTLED_FUNCTIONS =
             EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
