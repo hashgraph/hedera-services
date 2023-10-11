@@ -23,8 +23,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.token.impl.validators.CustomFeesValidator.SENTINEL_TOKEN_ID;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyIsNotImmutableAccount;
+import static com.hedera.node.app.service.token.impl.validators.CustomFeesValidator.SENTINEL_TOKEN_ID;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
