@@ -26,8 +26,8 @@ import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtil
 import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl.isOfEvmAddressSize;
 import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Objects.requireNonNull;
 

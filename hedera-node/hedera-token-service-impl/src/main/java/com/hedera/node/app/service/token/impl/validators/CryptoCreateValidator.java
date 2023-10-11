@@ -117,7 +117,7 @@ public class CryptoCreateValidator {
         }
         final boolean isECDSAValidAlias = op.alias().length() == EVM_ADDRESS_SIZE
                 || (op.alias().length() == ECDSA_SECP256K1_ALIAS_SIZE
-                && op.alias().toHex().startsWith(ECDSA_KEY_ALIAS_PREFIX));
+                        && op.alias().toHex().startsWith(ECDSA_KEY_ALIAS_PREFIX));
         final boolean isED25519ValidAlias = op.alias().length() == ED25519_ALIAS_SIZE;
         validateTrue(isECDSAValidAlias || isED25519ValidAlias, INVALID_ALIAS_KEY);
         validateFalse(isMirror(op.alias()), INVALID_ALIAS_KEY);
