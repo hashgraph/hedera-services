@@ -158,7 +158,7 @@ public class TokenCreateSpecs extends HapiSuite {
      * It also verifies that these auto-associations don't "count" against the max
      * automatic associations limit defined by https://hips.hedera.com/hip/hip-23.
      */
-
+    @HapiTest
     private HapiSpec validateNewTokenAssociations() {
         final String notToBeToken = "notToBeToken";
         final String hbarCollector = "hbarCollector";

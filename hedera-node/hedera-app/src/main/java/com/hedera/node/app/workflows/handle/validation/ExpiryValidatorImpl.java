@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.clampedAdd;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -69,14 +70,13 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
         // and complete (meaning either both auto-renew period and auto-renew account are
         // present; or auto-renew period is present, and the entity can self-fund)
         if (hasCompleteAutoRenewSpec(entityCanSelfFundRenewal, creationMeta)) {
-            effectiveExpiry = context.consensusNow().getEpochSecond() + creationMeta.autoRenewPeriod();
+            effectiveExpiry = clampedAdd(context.consensusNow().getEpochSecond(), creationMeta.autoRenewPeriod());
         }
-        context.attributeValidator().validateExpiry(effectiveExpiry);
-
         // Even if the effective expiry is valid, we still also require any explicit auto-renew period to be valid
         if (creationMeta.hasAutoRenewPeriod()) {
             context.attributeValidator().validateAutoRenewPeriod(creationMeta.autoRenewPeriod());
         }
+        context.attributeValidator().validateExpiry(effectiveExpiry);
         return new ExpiryMeta(effectiveExpiry, creationMeta.autoRenewPeriod(), creationMeta.autoRenewAccountId());
     }
 
