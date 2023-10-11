@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
@@ -143,7 +142,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -169,7 +168,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -177,7 +176,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -185,7 +184,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
