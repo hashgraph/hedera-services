@@ -362,6 +362,7 @@ public class CryptoTransferSuite extends HapiSuite {
                 .then(getTxnRecord(NFT_XFER).logged());
     }
 
+    @HapiTest
     private HapiSpec aliasKeysAreValidated() {
         final var validAlias = "validAlias";
         final var invalidAlias = "invalidAlias";

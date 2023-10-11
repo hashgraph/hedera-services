@@ -52,6 +52,7 @@ public class CryptoCreateValidator {
     private static final int EVM_ADDRESS_SIZE = 20;
     public static final String ECDSA_KEY_ALIAS_PREFIX = "3a21";
     public static final int ECDSA_SECP256K1_ALIAS_SIZE = 35;
+    public static final int ED25519_ALIAS_SIZE = 34;
 
     @Inject
     public CryptoCreateValidator() { // Exists for injection
@@ -114,10 +115,11 @@ public class CryptoCreateValidator {
         if (!canSkipNormalKeyValidation(op.keyOrThrow(), isInternalDispatch)) {
             validateKey(op, attributeValidator);
         }
-        final boolean isValidAlias = op.alias().length() == EVM_ADDRESS_SIZE
+        final boolean isECDSAValidAlias = op.alias().length() == EVM_ADDRESS_SIZE
                 || (op.alias().length() == ECDSA_SECP256K1_ALIAS_SIZE
                         && op.alias().toHex().startsWith(ECDSA_KEY_ALIAS_PREFIX));
-        validateTrue(isValidAlias, INVALID_ALIAS_KEY);
+        final boolean isED25519ValidAlias = op.alias().length() == ED25519_ALIAS_SIZE;
+        validateTrue(isECDSAValidAlias || isED25519ValidAlias, INVALID_ALIAS_KEY);
         validateFalse(isMirror(op.alias()), INVALID_ALIAS_KEY);
         validateTrue(readableAccountStore.getAccountIDByAlias(op.alias()) == null, ALIAS_ALREADY_ASSIGNED);
     }
