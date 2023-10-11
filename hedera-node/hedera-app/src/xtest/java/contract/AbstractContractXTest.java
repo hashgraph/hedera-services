@@ -26,12 +26,15 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
@@ -57,6 +60,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
@@ -204,11 +208,15 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             @NonNull final org.apache.tuweni.bytes.Bytes input,
             @NonNull final Consumer<HtsCall.PricedResult> resultAssertions) {
         final var context = component.txnContextFactory().apply(PLACEHOLDER_CALL_BODY);
+        final var tinybarValues = new TinybarValues(
+                context.exchangeRateInfo().activeRate(Instant.now()),
+                context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT));
         final var enhancement = new HederaWorldUpdater.Enhancement(
                 new HandleHederaOperations(
                         component.config().getConfigData(LedgerConfig.class),
                         component.config().getConfigData(ContractsConfig.class),
-                        context),
+                        context,
+                        tinybarValues),
                 new HandleHederaNativeOperations(context),
                 new HandleSystemContractOperations(context));
         given(proxyUpdater.enhancement()).willReturn(enhancement);

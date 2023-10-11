@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.utils;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_STATE_CHANGE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TINYBAR_VALUES_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -63,12 +64,12 @@ public class FrameBuilder {
     /**
      * Builds the initial {@link MessageFrame} instance for a transaction.
      *
-     * @param transaction  the transaction
+     * @param transaction the transaction
      * @param worldUpdater the world updater for the transaction
-     * @param context      the Hedera EVM context (gas price, block values, etc.)
-     * @param config       the active Hedera configuration
-     * @param from         the sender of the transaction
-     * @param to           the recipient of the transaction
+     * @param context the Hedera EVM context (gas price, block values, etc.)
+     * @param config the active Hedera configuration
+     * @param from the sender of the transaction
+     * @param to the recipient of the transaction
      * @param intrinsicGas the intrinsic gas cost, needed to calculate remaining gas
      * @return the initial frame
      */
@@ -84,7 +85,7 @@ public class FrameBuilder {
         final var value = transaction.weiValue();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var nominalCoinbase = asLongZeroAddress(ledgerConfig.fundingAccount());
-        final var contextVariables = contextVariablesFrom(config);
+        final var contextVariables = contextVariablesFrom(config, context);
         final var builder = MessageFrame.builder()
                 .maxStackSize(MAX_STACK_SIZE)
                 .worldUpdater(worldUpdater.updater())
@@ -107,12 +108,19 @@ public class FrameBuilder {
         }
     }
 
-    private Map<String, Object> contextVariablesFrom(@NonNull final Configuration config) {
+    private Map<String, Object> contextVariablesFrom(
+            @NonNull final Configuration config, @NonNull final HederaEvmContext context) {
         final var contractsConfig = config.getConfigData(ContractsConfig.class);
         final var needsStorageTracker = contractsConfig.sidecars().contains(CONTRACT_STATE_CHANGE);
         return needsStorageTracker
-                ? Map.of(CONFIG_CONTEXT_VARIABLE, config, TRACKER_CONTEXT_VARIABLE, new StorageAccessTracker())
-                : Map.of(CONFIG_CONTEXT_VARIABLE, config);
+                ? Map.of(
+                        CONFIG_CONTEXT_VARIABLE,
+                        config,
+                        TRACKER_CONTEXT_VARIABLE,
+                        new StorageAccessTracker(),
+                        TINYBAR_VALUES_VARIABLE,
+                        context.tinybarValues())
+                : Map.of(CONFIG_CONTEXT_VARIABLE, config, TINYBAR_VALUES_VARIABLE, context.tinybarValues());
     }
 
     private MessageFrame finishedAsCreate(

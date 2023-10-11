@@ -28,6 +28,7 @@ import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -53,6 +54,7 @@ public class HandleHederaOperations implements HederaOperations {
     public static final Bytes ZERO_ENTROPY = Bytes.fromHex(
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
+    private final TinybarValues tinybarValues;
     private final LedgerConfig ledgerConfig;
     private final ContractsConfig contractsConfig;
     private final HandleContext context;
@@ -61,10 +63,12 @@ public class HandleHederaOperations implements HederaOperations {
     public HandleHederaOperations(
             @NonNull final LedgerConfig ledgerConfig,
             @NonNull final ContractsConfig contractsConfig,
-            @NonNull final HandleContext context) {
+            @NonNull final HandleContext context,
+            @NonNull final TinybarValues tinybarValues) {
         this.ledgerConfig = requireNonNull(ledgerConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
+        this.tinybarValues = requireNonNull(tinybarValues);
     }
 
     /**
@@ -144,8 +148,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long gasPriceInTinybars() {
-        // TODO - implement correctly
-        return 1L;
+        return tinybarValues.serviceGasPrice();
     }
 
     /**
@@ -153,8 +156,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long valueInTinybars(final long tinycents) {
-        // TODO - implement correctly
-        return tinycents;
+        return tinybarValues.asTinybars(tinycents);
     }
 
     /**
