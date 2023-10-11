@@ -59,14 +59,14 @@ class TinybarValuesTest {
     @Test
     void computesExpectedRbhServicePrice() {
         given(resourcePrices.basePrices()).willReturn(PRICES_TO_USE);
-        final var expectedRbhPrice = RBH_FEE_SCHEDULE_RICE / (11 * 1000);
+        final var expectedRbhPrice = RBH_FEE_SCHEDULE_RICE / (7 * 1000);
         assertEquals(expectedRbhPrice, subject.serviceRbhPrice());
     }
 
     @Test
     void computesExpectedGasServicePrice() {
         given(resourcePrices.basePrices()).willReturn(PRICES_TO_USE);
-        final var expectedGasPrice = GAS_FEE_SCHEDULE_PRICE / (11 * 1000);
+        final var expectedGasPrice = GAS_FEE_SCHEDULE_PRICE / (7 * 1000);
         assertEquals(expectedGasPrice, subject.serviceGasPrice());
     }
 }
