@@ -16,14 +16,15 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.validators.CustomFeesValidator.SENTINEL_TOKEN_ID;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyIsNotImmutableAccount;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -58,6 +59,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
@@ -92,7 +94,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var tokenCreateTxnBody = txn.tokenCreationOrThrow();
         if (tokenCreateTxnBody.hasTreasury()) {
             final var treasuryId = tokenCreateTxnBody.treasuryOrThrow();
-            context.requireKeyOrThrow(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+            // Note: should throw INVALID_TREASURY_ACCOUNT_FOR_TOKEN after modularization
+            context.requireKeyOrThrow(treasuryId, INVALID_ACCOUNT_ID);
         }
         if (tokenCreateTxnBody.hasAutoRenewAccount()) {
             final var autoRenewalAccountId = tokenCreateTxnBody.autoRenewAccountOrThrow();
@@ -354,6 +357,15 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         for (final var customFee : customFeesList) {
             final var collector = customFee.feeCollectorAccountIdOrElse(AccountID.DEFAULT);
+
+            // Verify that the collector either has a non-empty alias OR a mutable key
+            final var acctStore = context.createStore(ReadableAccountStore.class);
+            final var collectorAcct = acctStore.getAccountById(collector);
+            if (collectorAcct != null
+                    && (collectorAcct.alias() == null || Bytes.EMPTY.equals(collectorAcct.alias()))
+                    && (collectorAcct.hasKey())) {
+                verifyIsNotImmutableAccount(collectorAcct.keyOrThrow(), INVALID_CUSTOM_FEE_COLLECTOR);
+            }
 
             /* A fractional fee collector and a collector for a fixed fee denominated
             in the units of the newly created token both must always sign a TokenCreate,
