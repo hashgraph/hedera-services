@@ -162,45 +162,40 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         final RecordCache recordCache = queryContext.recordCache();
         final TransactionGetRecordQuery op = queryContext.query().transactionGetRecordOrThrow();
 
-        FeeData feeData;
+        // fees are the same for all records for a given response type
+        // so we calculate them once and multiply by the number of records found
+
+        // calculate per-record fees
+        final ResponseType responseType = op.header().responseType();
+        final int stateProofSize =
+                responseType == ResponseType.ANSWER_STATE_PROOF || responseType == ResponseType.COST_ANSWER_STATE_PROOF
+                        ? STATE_PROOF_SIZE
+                        : 0;
+        final FeeComponents feeMatricesForTxNode = FeeComponents.newBuilder()
+                .setConstant(FEE_MATRICES_CONST)
+                .setBpt(BASIC_QUERY_HEADER + BASIC_TX_ID_SIZE)
+                .setBpr(BASIC_QUERY_RES_HEADER + BASIC_TX_RECORD_SIZE + stateProofSize)
+                .build();
+        final FeeData perRecordFeeData = FeeData.newBuilder()
+                .setNetworkdata(FeeComponents.getDefaultInstance())
+                .setNodedata(feeMatricesForTxNode)
+                .setServicedata(FeeComponents.getDefaultInstance())
+                .build();
+
+        int recordCount = 1; // total num of primary record + duplicate records + child records
         if (op.hasTransactionID()) {
-            int extraRecordCount = 0;
             if (op.includeDuplicates()) {
-                // count all the records for the transaction id, then subtract one for the primary record
-                extraRecordCount +=
-                        recordCache.getRecords(op.transactionIDOrThrow()).size() - 1;
+                // count all the records for the transaction id, then subtract 1 for the primary record
+                recordCount += recordCache.getRecords(op.transactionIDOrThrow()).size() - 1;
             }
             if (op.includeChildRecords()) {
-                extraRecordCount += transformedChildrenOf(op.transactionIDOrThrow(), recordCache)
+                recordCount += transformedChildrenOf(op.transactionIDOrThrow(), recordCache)
                         .size();
             }
+        } // else if no tx id found, use per record fee for one record
 
-            // calculate node fees
-            // fees are the same for each duplicate and/or child record
-            // so we calculate them once and multiply by the number of records
-            ResponseType responseType = op.header().responseType();
-            final int stateProofSize = responseType == ResponseType.ANSWER_STATE_PROOF
-                            || responseType == ResponseType.COST_ANSWER_STATE_PROOF
-                    ? STATE_PROOF_SIZE
-                    : 0;
-            final FeeComponents feeMatricesForTxNode = FeeComponents.newBuilder()
-                    .setConstant(FEE_MATRICES_CONST)
-                    .setBpt(BASIC_QUERY_HEADER + BASIC_TX_ID_SIZE)
-                    .setBpr(BASIC_QUERY_RES_HEADER + BASIC_TX_RECORD_SIZE + stateProofSize)
-                    .build();
-
-            FeeData extraUsage = FeeData.newBuilder()
-                    .setNetworkdata(FeeComponents.getDefaultInstance())
-                    .setNodedata(feeMatricesForTxNode)
-                    .setServicedata(FeeComponents.getDefaultInstance())
-                    .build();
-            // multiply node fees for each duplicate and/or child record
-            // and add to the fees for the primary record
-            feeData = FeeCalcUtils.sumOfUsages(
-                    FeeData.getDefaultInstance(), FeeCalcUtils.multiplierOfUsages(extraUsage, extraRecordCount));
-        } else { // else if no transaction id then just use default instance
-            feeData = FeeData.getDefaultInstance();
-        }
+        // multiply node fees to include duplicate and/or child records
+        final FeeData feeData = FeeCalcUtils.multiplierOfUsages(perRecordFeeData, recordCount);
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> feeData);
     }
 }
