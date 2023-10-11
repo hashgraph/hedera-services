@@ -78,8 +78,7 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
         final Wei value = Wei.wrap(frame.getStackItem(0));
 
         final Address address = frame.getRecipientAddress();
-        final MutableAccount account =
-                frame.getWorldUpdater().getAccount(address).getMutable();
+        final MutableAccount account = frame.getWorldUpdater().getAccount(address);
 
         frame.clearReturnData();
 
@@ -116,8 +115,7 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
         frame.decrementRemainingGas(cost);
 
         final Address address = frame.getRecipientAddress();
-        final MutableAccount account =
-                frame.getWorldUpdater().getAccount(address).getMutable();
+        final MutableAccount account = frame.getWorldUpdater().getAccount(address);
 
         account.incrementNonce();
 
@@ -136,7 +134,8 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
         final long childGasStipend = gasCalculator().gasAvailableForChildCreate(frame.getRemainingGas());
         frame.decrementRemainingGas(childGasStipend);
 
-        final MessageFrame childFrame = MessageFrame.builder()
+        // child frame is added to frame stack via build method
+        MessageFrame.builder()
                 .parentMessageFrame(frame)
                 .type(MessageFrame.Type.CONTRACT_CREATION)
                 .worldUpdater(frame.getWorldUpdater().updater())

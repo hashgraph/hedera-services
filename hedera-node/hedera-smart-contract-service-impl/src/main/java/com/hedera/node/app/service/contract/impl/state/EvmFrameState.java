@@ -27,7 +27,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 /**
@@ -126,7 +126,7 @@ public interface EvmFrameState {
      * @return the mutable account; or {@code null} if the account is missing, deleted, or expired
      */
     @Nullable
-    EvmAccount getMutableAccount(Address address);
+    MutableAccount getMutableAccount(Address address);
 
     @NonNull
     UInt256 getStorageValue(long number, @NonNull UInt256 key);
