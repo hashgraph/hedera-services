@@ -117,7 +117,10 @@ public interface TransactionModule {
     @TransactionScope
     static Supplier<HederaWorldUpdater> provideFeesOnlyUpdater(
             @NonNull final HederaWorldUpdater.Enhancement enhancement, @NonNull final EvmFrameStateFactory factory) {
-        return () -> new ProxyWorldUpdater(enhancement, requireNonNull(factory), null);
+        return () -> {
+            enhancement.operations().begin();
+            return new ProxyWorldUpdater(enhancement, requireNonNull(factory), null);
+        };
     }
 
     @Provides
@@ -147,7 +150,7 @@ public interface TransactionModule {
         requireNonNull(operations);
         requireNonNull(nativeOperations);
         requireNonNull(systemContractOperations);
-        return new HederaWorldUpdater.Enhancement(operations, nativeOperations, systemContractOperations);
+        return new HederaWorldUpdater.Enhancement(operations.begin(), nativeOperations, systemContractOperations);
     }
 
     @Binds

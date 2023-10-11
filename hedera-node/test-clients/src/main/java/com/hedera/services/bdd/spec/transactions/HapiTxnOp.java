@@ -92,6 +92,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     private final TupleType LONG_TUPLE = TupleType.parse("(int64)");
 
     protected boolean deferStatusResolution = false;
+    protected boolean unavailableStatusIsOk = false;
     protected boolean acceptAnyStatus = false;
     protected boolean acceptAnyPrecheck = false;
     protected boolean acceptAnyKnownStatus = false;
@@ -169,7 +170,16 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                             "{} Status resolution failed due to unrecoverable runtime exception, "
                                     + "possibly network connection lost.",
                             TxnUtils.toReadableString(txn));
-                    throw new HapiTxnCheckStateException("Unable to resolve txn status!");
+                    if (unavailableStatusIsOk) {
+                        // If we expect the status to be unavailable (because e.g. the
+                        // submitted transaction exceeds 6144 bytes and will have its
+                        // gRPC request terminated immediately), then don't throw, just
+                        // return true to signal to the HapiSpec that this operation's
+                        // lifecycle has ended
+                        return true;
+                    } else {
+                        throw new HapiTxnCheckStateException("Unable to resolve txn status!");
+                    }
                 }
             }
 
@@ -571,6 +581,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         signers = Optional.of(Stream.of(keys)
                 .<Function<HapiSpec, Key>>map(k -> spec -> spec.registry().getKey(k))
                 .collect(toList()));
+        return self();
+    }
+
+    public T orUnavailableStatus() {
+        unavailableStatusIsOk = true;
         return self();
     }
 

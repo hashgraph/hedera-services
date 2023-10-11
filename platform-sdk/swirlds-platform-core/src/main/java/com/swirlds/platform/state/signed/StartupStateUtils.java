@@ -32,10 +32,9 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
@@ -50,6 +49,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -97,11 +97,8 @@ public final class StartupStateUtils {
         logger.info(
                 STARTUP.getMarker(),
                 "Entering new epoch, cleaning up file system in preparation for emergency recovery. "
-                        + "The preconsensus event stream will be cleared and any states with a round number "
-                        + "higher than {} will recycled.",
+                        + "Any states with a round number higher than {} will be recycled.",
                 initialStateRound);
-
-        PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
 
         final List<SavedStateInfo> savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
         for (final SavedStateInfo stateInfo : savedStateFiles) {
@@ -121,7 +118,8 @@ public final class StartupStateUtils {
      *
      * @param platformContext          the platform context
      * @param recycleBin               the recycle bin
-     * @param appMain                  the app main
+     * @param softwareVersion          the software version of the app
+     * @param genesisStateBuilder      a supplier that can build a genesis state
      * @param mainClassName            the name of the app's SwirldMain class
      * @param swirldName               the name of this swirld
      * @param selfId                   the node id of this node
@@ -135,7 +133,8 @@ public final class StartupStateUtils {
     public static ReservedSignedState getInitialState(
             @NonNull final PlatformContext platformContext,
             @NonNull final RecycleBin recycleBin,
-            @NonNull final SwirldMain appMain,
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final Supplier<SwirldState> genesisStateBuilder,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
@@ -156,7 +155,7 @@ public final class StartupStateUtils {
                 selfId,
                 mainClassName,
                 swirldName,
-                appMain.getSoftwareVersion(),
+                softwareVersion,
                 emergencyRecoveryManager);
 
         try (loadedState) {
@@ -171,7 +170,7 @@ public final class StartupStateUtils {
         }
 
         final ReservedSignedState genesisState =
-                buildGenesisState(platformContext, configAddressBook, appMain.getSoftwareVersion(), appMain.newState());
+                buildGenesisState(platformContext, configAddressBook, softwareVersion, genesisStateBuilder.get());
 
         try (genesisState) {
             return copyInitialSignedState(platformContext, genesisState.get());

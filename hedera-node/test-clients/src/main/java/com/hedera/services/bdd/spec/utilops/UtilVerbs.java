@@ -229,6 +229,14 @@ public class UtilVerbs {
         return new SourcedOp(source);
     }
 
+    public static ContextualSourcedOp sourcingContextual(Function<HapiSpec, HapiSpecOperation> source) {
+        return new ContextualSourcedOp(source);
+    }
+
+    public static ContextualActionOp doingContextual(Consumer<HapiSpec> action) {
+        return new ContextualActionOp(action);
+    }
+
     public static HapiSpecSleep sleepFor(long timeMs) {
         return new HapiSpecSleep(timeMs);
     }

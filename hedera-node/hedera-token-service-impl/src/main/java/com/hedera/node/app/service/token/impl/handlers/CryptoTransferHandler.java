@@ -23,6 +23,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.SubType.DEFAULT;
+import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.LONG_ACCOUNT_AMOUNT_BYTES;
+import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
+import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.isAlias;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
@@ -36,9 +44,11 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -53,11 +63,14 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWi
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferStep;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -207,12 +220,13 @@ public class CryptoTransferHandler implements TransactionHandler {
         // auto association slots open
         steps.add(new AssociateTokenRecipientsStep(op));
         // Step 2: Charge custom fees for token transfers. yet to be implemented
-        final var customFeeStep = new CustomFeeAssessmentStep(op, transferContext);
+        final var customFeeStep = new CustomFeeAssessmentStep(op);
         // The below steps should be doe for both custom fee assessed transaction in addition to
         // original transaction
         final var customFeeAssessedOps = customFeeStep.assessCustomFees(transferContext);
 
         for (final var txn : customFeeAssessedOps) {
+            steps.add(new AssociateTokenRecipientsStep(txn));
             // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
             final var assessHbarTransfers = new AdjustHbarChangesStep(txn, topLevelPayer);
             steps.add(assessHbarTransfers);
@@ -402,5 +416,90 @@ public class CryptoTransferHandler implements TransactionHandler {
             }
         }
         return false;
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var body = feeContext.body();
+        final var op = body.cryptoTransferOrThrow();
+        final var config = feeContext.configuration();
+        final var tokenMultiplier = config.getConfigData(FeesConfig.class).tokenTransferUsageMultiplier();
+
+        /* BPT calculations shouldn't include any custom fee payment usage */
+        int totalXfers = op.transfersOrElse(TransferList.DEFAULT)
+                .accountAmountsOrElse(emptyList())
+                .size();
+
+        var totalTokensInvolved = 0;
+        var totalTokenTransfers = 0;
+        var numNftOwnershipChanges = 0;
+        for (final var tokenTransfers : op.tokenTransfersOrElse(emptyList())) {
+            totalTokensInvolved++;
+            totalTokenTransfers += tokenTransfers.transfersOrElse(emptyList()).size();
+            numNftOwnershipChanges +=
+                    tokenTransfers.nftTransfersOrElse(emptyList()).size();
+        }
+
+        int weightedTokensInvolved = tokenMultiplier * totalTokensInvolved;
+        int weightedTokenXfers = tokenMultiplier * totalTokenTransfers;
+        final var bpt = weightedTokensInvolved * LONG_BASIC_ENTITY_ID_SIZE
+                + (weightedTokenXfers + totalXfers) * LONG_ACCOUNT_AMOUNT_BYTES
+                + TOKEN_ENTITY_SIZES.bytesUsedForUniqueTokenTransfers(numNftOwnershipChanges);
+
+        /* Include custom fee payment usage in RBS calculations */
+        var customFeeHbarTransfers = 0;
+        var customFeeTokenTransfers = 0;
+        final var involvedTokens = new ArrayList<TokenID>();
+        final var customFeeAssessor = new CustomFeeAssessmentStep(op);
+        List<AssessedCustomFee> assessedCustomFees;
+        try {
+            assessedCustomFees = customFeeAssessor.assessNumberOfCustomFees(feeContext);
+        } catch (HandleException ignore) {
+            assessedCustomFees = new ArrayList<>();
+        }
+        totalXfers += assessedCustomFees.size();
+        for (final var fee : assessedCustomFees) {
+            if (!fee.hasTokenId()) {
+                customFeeHbarTransfers++;
+            } else {
+                customFeeTokenTransfers++;
+                involvedTokens.add(fee.tokenId());
+            }
+        }
+        weightedTokenXfers += tokenMultiplier * customFeeTokenTransfers;
+        weightedTokensInvolved += tokenMultiplier * involvedTokens.size();
+        long rbs = (totalXfers * LONG_ACCOUNT_AMOUNT_BYTES)
+                + TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
+                        weightedTokensInvolved, weightedTokenXfers, numNftOwnershipChanges);
+
+        /* Get subType based on the above information */
+        final var subType = getSubType(
+                numNftOwnershipChanges, totalTokenTransfers, customFeeHbarTransfers, customFeeTokenTransfers);
+        return feeContext
+                .feeCalculator(subType)
+                .addBytesPerTransaction(bpt)
+                .addRamByteSeconds(rbs * USAGE_PROPERTIES.legacyReceiptStorageSecs())
+                .calculate();
+    }
+
+    private SubType getSubType(
+            final int numNftOwnershipChanges,
+            final int numFungibleTokenTransfers,
+            final int customFeeHbarTransfers,
+            final int customFeeTokenTransfers) {
+        if (numNftOwnershipChanges != 0) {
+            if (customFeeHbarTransfers > 0 || customFeeTokenTransfers > 0) {
+                return TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+            }
+            return TOKEN_NON_FUNGIBLE_UNIQUE;
+        }
+        if (numFungibleTokenTransfers != 0) {
+            if (customFeeHbarTransfers > 0 || customFeeTokenTransfers > 0) {
+                return SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
+            }
+            return TOKEN_FUNGIBLE_COMMON;
+        }
+        return DEFAULT;
     }
 }

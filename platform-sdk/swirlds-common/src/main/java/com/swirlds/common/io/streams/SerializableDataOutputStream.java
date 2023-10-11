@@ -254,18 +254,20 @@ public class SerializableDataOutputStream extends AugmentedDataOutputStream {
      *
      * @param data
      * 		array to write, should not be null
+     * @param writeVersion
+     *      set to true if the version will be serialized
      * @param writeClassId
      * 		set to true if the classID should be written. This can be false if the class is known when
      * 		de-serializing
      */
     public static <T extends SerializableWithKnownLength> int getInstanceSerializedLength(
             final T data, final boolean writeVersion, final boolean writeClassId) {
+        if (data == null) {
+            return writeClassId ? CLASS_ID_BYTES : writeVersion ? VERSION_BYTES : 0;
+        }
         int totalByteLength = 0;
         if (writeClassId) {
             totalByteLength += CLASS_ID_BYTES;
-        }
-        if (data == null) {
-            return totalByteLength;
         }
         if (writeVersion) {
             totalByteLength += VERSION_BYTES; // version integer

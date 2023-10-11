@@ -52,8 +52,6 @@ public enum PlatformStatus implements UniqueId {
     /**
      * The platform has just started, and is observing the network. The platform is gossiping, but will not create
      * events.
-     * <p>
-     * NOTE: not creating events isn't currently enforced
      */
     OBSERVING(8),
     /**
@@ -64,14 +62,10 @@ public enum PlatformStatus implements UniqueId {
     /**
      * The platform has just finished reconnecting. The platform is gossiping, but is waiting to write a state to disk
      * before creating events or accepting app transactions.
-     * <p>
-     * NOTE: not creating events isn't currently enforced
      */
     RECONNECT_COMPLETE(10),
     /**
      * The platform has encountered a failure, and is unable to continue. The platform is idle.
-     * <p>
-     * NOTE: this status is currently unused, but will be used in the future
      */
     CATASTROPHIC_FAILURE(11);
 

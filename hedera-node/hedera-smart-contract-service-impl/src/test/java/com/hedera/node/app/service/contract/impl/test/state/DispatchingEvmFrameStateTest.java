@@ -134,6 +134,13 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
+    void dispatchesToNumBytecodes() {
+        given(contractStateStore.getNumBytecodes()).willReturn(1234L);
+
+        assertEquals(1234L, subject.numBytecodesInState());
+    }
+
+    @Test
     void extFrameScopeesToFinalizeHollowAccount() {
         subject.finalizeHollowAccount(EVM_ADDRESS);
 

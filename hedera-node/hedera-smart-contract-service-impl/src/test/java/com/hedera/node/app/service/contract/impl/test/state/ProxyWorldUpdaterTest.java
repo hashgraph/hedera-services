@@ -57,6 +57,7 @@ import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
+import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import java.util.List;
 import java.util.Optional;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -241,10 +242,20 @@ class ProxyWorldUpdaterTest {
     @Test
     void cannotCreateUnlessPendingCreationHasExpectedAddress() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(hederaOperations.contractCreationLimit()).willReturn(1234L);
 
         subject.setupInternalCreate(ALTBN128_ADD);
 
         assertThrows(IllegalStateException.class, () -> subject.createAccount(LONG_ZERO_ADDRESS, 1, Wei.ZERO));
+    }
+
+    @Test
+    void cannotCreateUnlessLimitIsHighEnough() {
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+
+        subject.setupInternalCreate(ALTBN128_ADD);
+
+        assertThrows(ResourceExhaustedException.class, () -> subject.createAccount(LONG_ZERO_ADDRESS, 1, Wei.ZERO));
     }
 
     @Test
@@ -256,6 +267,7 @@ class ProxyWorldUpdaterTest {
     @Test
     void cannotCreateUnlessPendingCreationHasExpectedNumber() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER).willReturn(NEXT_NUMBER + 1);
+        given(hederaOperations.contractCreationLimit()).willReturn(1234L);
 
         subject.setupInternalCreate(ALTBN128_ADD);
 
@@ -266,6 +278,14 @@ class ProxyWorldUpdaterTest {
     void revertDelegatesToScope() {
         subject.revert();
         verify(hederaOperations).revert();
+    }
+
+    @Test
+    void commitIsNoopAfterRevert() {
+        subject.revert();
+        subject.commit();
+        verify(hederaOperations).revert();
+        verify(hederaOperations, never()).commit();
     }
 
     @Test
@@ -280,6 +300,7 @@ class ProxyWorldUpdaterTest {
         given(evmFrameState.getMutableAccount(SOME_EVM_ADDRESS)).willReturn(mutableAccount);
         given(evmFrameState.getIdNumber(ALTBN128_ADD))
                 .willReturn(ALTBN128_ADD.toBigInteger().longValueExact());
+        given(hederaOperations.contractCreationLimit()).willReturn(1234L);
 
         subject.setupInternalAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
         subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
@@ -292,6 +313,7 @@ class ProxyWorldUpdaterTest {
     void usesAliasIfBodyCreatedWithAlias() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
         given(evmFrameState.getMutableAccount(SOME_EVM_ADDRESS)).willReturn(mutableAccount);
+        given(hederaOperations.contractCreationLimit()).willReturn(1234L);
 
         subject.setupAliasedTopLevelCreate(ContractCreateTransactionBody.DEFAULT, SOME_EVM_ADDRESS);
         subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
@@ -313,6 +335,7 @@ class ProxyWorldUpdaterTest {
     @Test
     void doesNotUseAliasIfBodyCreatedWithoutAlias() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(hederaOperations.contractCreationLimit()).willReturn(1234L);
 
         assertEquals(NEXT_LONG_ZERO_ADDRESS, subject.setupTopLevelCreate(ContractCreateTransactionBody.DEFAULT));
         subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, Wei.ZERO);
