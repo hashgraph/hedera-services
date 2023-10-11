@@ -147,7 +147,8 @@ public class Issue1765Suite extends HapiSuite {
                         .via(INVALID_UPDATE_TXN)
                         .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID))
                 .then(
-                        validateTransferListForBalances(INVALID_UPDATE_TXN, List.of(FUNDING, GENESIS, STAKING_REWARD, NODE)),
+                        validateTransferListForBalances(
+                                INVALID_UPDATE_TXN, List.of(FUNDING, GENESIS, STAKING_REWARD, NODE)),
                         getTxnRecord(INVALID_UPDATE_TXN)
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
