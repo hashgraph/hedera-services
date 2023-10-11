@@ -51,7 +51,6 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.MainnetEVMs;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -269,20 +268,13 @@ class CreateEvmTxProcessorTest {
         given(worldState.updater()).willReturn(updater);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0, 0, 1010).asEvmAddress());
 
-        var evmAccount = mock(EvmAccount.class);
+        var evmAccount = mock(MutableAccount.class);
 
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
 
-        var senderMutableAccount = mock(MutableAccount.class);
-
-        given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
-
-        given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
-        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
-        given(senderMutableAccount.getBalance()).willReturn(Wei.of(123));
+        given(evmAccount.getBalance()).willReturn(Wei.of(123));
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(100_000L);
 
@@ -297,18 +289,11 @@ class CreateEvmTxProcessorTest {
         given(worldState.updater()).willReturn(updater);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0, 0, 1010).asEvmAddress());
 
-        var evmAccount = mock(EvmAccount.class);
+        var evmAccount = mock(MutableAccount.class);
 
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
-
-        var senderMutableAccount = mock(MutableAccount.class);
-
-        given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
-        given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
-        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(100_000L);
 
@@ -323,7 +308,7 @@ class CreateEvmTxProcessorTest {
         given(worldState.updater()).willReturn(updater);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0, 0, 1010).asEvmAddress());
 
-        var evmAccount = mock(EvmAccount.class);
+        var evmAccount = mock(MutableAccount.class);
 
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
 
@@ -347,7 +332,7 @@ class CreateEvmTxProcessorTest {
         given(worldState.updater().updater()).willReturn(stackedUpdater);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0, 0, 1010).asEvmAddress());
 
-        var evmAccount = mock(EvmAccount.class);
+        var evmAccount = mock(MutableAccount.class);
 
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
         if (getOrCreateMocking) {
@@ -356,11 +341,10 @@ class CreateEvmTxProcessorTest {
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
 
-        var senderMutableAccount = mock(MutableAccount.class);
-        given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
-        given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
-        given(senderMutableAccount.getNonce()).willReturn(0L);
-        given(senderMutableAccount.getCode()).willReturn(Bytes.EMPTY);
+        given(evmAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
+        given(evmAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
+        given(evmAccount.getNonce()).willReturn(0L);
+        given(evmAccount.getCode()).willReturn(Bytes.EMPTY);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
@@ -369,11 +353,9 @@ class CreateEvmTxProcessorTest {
         given(updater.getSbhRefund()).willReturn(0L);
 
         given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
-        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
         if (amount >= 0) {
-            given(senderMutableAccount.getBalance()).willReturn(Wei.of(amount));
+            given(evmAccount.getBalance()).willReturn(Wei.of(amount));
         }
     }
 
@@ -382,7 +364,7 @@ class CreateEvmTxProcessorTest {
         given(worldState.updater().updater()).willReturn(stackedUpdater);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0, 0, 1010).asEvmAddress());
 
-        var evmAccount = mock(EvmAccount.class);
+        var evmAccount = mock(MutableAccount.class);
 
         given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
 
@@ -390,25 +372,21 @@ class CreateEvmTxProcessorTest {
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
 
-        var senderMutableAccount = mock(MutableAccount.class);
-        given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
-        given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
-        given(senderMutableAccount.getNonce()).willReturn(0L);
-        given(senderMutableAccount.getCode()).willReturn(Bytes.EMPTY);
+        given(evmAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
+        given(evmAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
+        given(evmAccount.getNonce()).willReturn(0L);
+        given(evmAccount.getCode()).willReturn(Bytes.EMPTY);
 
         given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
-        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
         given(updater.getSbhRefund()).willReturn(0L);
         given(updater.aliases()).willReturn(aliasManager);
 
         given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
-        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
-        given(senderMutableAccount.getBalance()).willReturn(Wei.of(2000L));
+        given(evmAccount.getBalance()).willReturn(Wei.of(2000L));
     }
 
     private void givenAliasMock() {
