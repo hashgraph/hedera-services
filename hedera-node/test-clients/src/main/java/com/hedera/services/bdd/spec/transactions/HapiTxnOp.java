@@ -168,7 +168,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                     log.error(
                             "{} Status resolution failed due to unrecoverable runtime exception, "
                                     + "possibly network connection lost.",
-                            TxnUtils.toReadableString(txn));
+                            TxnUtils.toReadableString(txn),
+                            e);
                     throw new HapiTxnCheckStateException("Unable to resolve txn status!");
                 }
             }
