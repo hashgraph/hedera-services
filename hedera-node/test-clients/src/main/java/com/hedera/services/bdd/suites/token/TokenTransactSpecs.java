@@ -214,6 +214,7 @@ public class TokenTransactSpecs extends HapiSuite {
                 customFeesHaveExpectedAutoCreateInteractions());
     }
 
+    @HapiTest
     private HapiSpec customFeesHaveExpectedAutoCreateInteractions() {
         final var nftWithRoyaltyNoFallback = "nftWithRoyaltyNoFallback";
         final var nftWithRoyaltyPlusHtsFallback = "nftWithRoyaltyPlusFallback";
@@ -753,6 +754,7 @@ public class TokenTransactSpecs extends HapiSuite {
                         getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1L));
     }
 
+    @HapiTest
     public HapiSpec autoAssociationWorksForContracts() {
         final var theContract = "CreateDonor";
         final String tokenA = "tokenA";
