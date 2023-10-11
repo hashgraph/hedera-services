@@ -48,5 +48,5 @@ public record BootstrapConfig(
         @ConfigProperty(value = "rates.nextExpiry", defaultValue = "4102444800") @NetworkProperty long ratesNextExpiry,
         @ConfigProperty(value = "system.entityExpiry", defaultValue = "1812637686") @NetworkProperty
                 long systemEntityExpiry,
-        @ConfigProperty(value = "throttleDefsJson.resource", defaultValue = "throttles-dev.json") @NodeProperty
+        @ConfigProperty(value = "throttleDefsJson.resource", defaultValue = "throttles.json") @NodeProperty
                 String throttleDefsJsonResource) {}
