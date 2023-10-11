@@ -250,8 +250,20 @@ public class UtilVerbs {
         return untilStartOfNextStakingPeriod(stakePeriodMins);
     }
 
-    public static HapiSpecWaitUntil waitUntilStartOfNextAdhocPeriod(final long stakePeriodMs) {
-        return untilStartOfNextAdhocPeriod(stakePeriodMs);
+    /**
+     * Returns a {@link HapiSpecOperation} that sleeps until the beginning of the next period
+     * of the given length since the UTC epoch in clock time.
+     *
+     * <p>This is not the same thing as sleeping until the next <i>consensus</i> period, of
+     * course; but since consensus time will track clock time very closely in practice, this
+     * operation can let us be almost certain we have e.g. moved into a new staking period
+     * or a new block period by the time the sleep ends.
+     *
+     * @param periodMs the length of the period in milliseconds
+     * @return the operation that sleeps until the beginning of the next period
+     */
+    public static HapiSpecWaitUntil waitUntilStartOfNextAdhocPeriod(final long periodMs) {
+        return untilStartOfNextAdhocPeriod(periodMs);
     }
 
     public static HapiSpecWaitUntil waitUntilJustBeforeNextStakingPeriod(
