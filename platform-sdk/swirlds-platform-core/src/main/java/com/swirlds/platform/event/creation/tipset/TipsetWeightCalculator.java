@@ -24,8 +24,8 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -273,13 +273,13 @@ public class TipsetWeightCalculator {
     }
 
     /**
-     * Get the selfishness score with respect to one node, i.e. how much this node is being selfish towards the specified node. A high
-     * selfishness score means that we have access to events that could go into our ancestry, but for whatever reason we have
-     * decided not to put into our ancestry.
+     * Get the selfishness score with respect to one node, i.e. how much this node is being selfish towards the
+     * specified node. A high selfishness score means that we have access to events that could go into our ancestry, but
+     * for whatever reason we have decided not to put into our ancestry.
      * <p>
-     * The selfishness score is defined as the number of times the snapshot has been advanced without updating the generation
-     * of a particular node. For nodes that do not have any events that are legal other parents, the selfishness score is
-     * defined to be 0, regardless of how many times the snapshot has been advanced.
+     * The selfishness score is defined as the number of times the snapshot has been advanced without updating the
+     * generation of a particular node. For nodes that do not have any events that are legal other parents, the
+     * selfishness score is defined to be 0, regardless of how many times the snapshot has been advanced.
      *
      * @param nodeId the node to compute the selfishness score for
      * @return the selfishness score with respect to this node

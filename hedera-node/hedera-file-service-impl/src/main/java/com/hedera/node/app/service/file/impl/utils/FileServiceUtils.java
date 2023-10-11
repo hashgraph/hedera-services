@@ -104,9 +104,8 @@ public class FileServiceUtils {
      * @param context the prehandle context for the transaction.
      */
     public static void validateAndAddRequiredKeys(
-            @Nullable final File file,
-            @Nullable final KeyList transactionKeys,
-            @NonNull final PreHandleContext context) {
+            @Nullable final File file, @Nullable final KeyList transactionKeys, @NonNull final PreHandleContext context)
+            throws PreCheckException {
         if (file != null) {
             KeyList fileKeyList = file.keys();
 
@@ -132,7 +131,7 @@ public class FileServiceUtils {
      * @param context the prehandle context for the transaction.
      */
     public static void validateAndAddRequiredKeysForDelete(
-            @Nullable final File file, @NonNull final PreHandleContext context) {
+            @Nullable final File file, @NonNull final PreHandleContext context) throws PreCheckException {
         if (file != null) {
             KeyList fileKeyList = file.keys();
 
