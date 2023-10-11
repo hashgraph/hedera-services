@@ -18,7 +18,6 @@ package com.hedera.node.app.hapi.utils.fee;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.CommonUtils;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -187,7 +186,6 @@ public class FeeBuilder {
      *
      * @param txBody transaction body
      * @return long representing transaction size
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
     public static long getCommonTransactionBodyBytes(final TransactionBody txBody) {
         int memoSize = 0;

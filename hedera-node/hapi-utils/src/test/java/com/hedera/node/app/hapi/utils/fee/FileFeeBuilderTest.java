@@ -17,9 +17,7 @@
 package com.hedera.node.app.hapi.utils.fee;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
@@ -60,14 +58,6 @@ class FileFeeBuilderTest {
     }
 
     @Test
-    void assertGetSystemDeleteFileTxFeeMatricesThrowsException() {
-        var transactionBody = transactionBodyBuilder.build();
-        assertThrows(InvalidTxBodyException.class, () -> {
-            fileFeeBuilder.getSystemDeleteFileTxFeeMatrices(transactionBody, signValueObj);
-        });
-    }
-
-    @Test
     void assertGetSystemUnDeleteFileTxFeeMatrices() {
         var transactionBody = transactionBodyBuilder
                 .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().build())
@@ -82,14 +72,6 @@ class FileFeeBuilderTest {
         assertEquals(1, result.getNetworkdata().getRbh());
         assertEquals(6, result.getServicedata().getRbh());
         assertEquals(1, result.getServicedata().getConstant());
-    }
-
-    @Test
-    void assertGetSystemUnDeleteFileTxFeeMatricesThrowsException() {
-        var transactionBody = transactionBodyBuilder.build();
-        assertThrows(InvalidTxBodyException.class, () -> {
-            fileFeeBuilder.getSystemUnDeleteFileTxFeeMatrices(transactionBody, signValueObj);
-        });
     }
 
     @Test
@@ -108,13 +90,5 @@ class FileFeeBuilderTest {
         assertEquals(1, result.getNetworkdata().getRbh());
         assertEquals(6, result.getServicedata().getRbh());
         assertEquals(1, result.getServicedata().getConstant());
-    }
-
-    @Test
-    void assertGetFileDeleteTxFeeMatricesThrowsException() {
-        var transactionBody = transactionBodyBuilder.build();
-        assertThrows(InvalidTxBodyException.class, () -> {
-            fileFeeBuilder.getFileDeleteTxFeeMatrices(transactionBody, signValueObj);
-        });
     }
 }

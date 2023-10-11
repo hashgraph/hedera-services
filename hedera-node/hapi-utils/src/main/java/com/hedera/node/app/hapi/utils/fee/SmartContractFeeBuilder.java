@@ -17,7 +17,6 @@
 package com.hedera.node.app.hapi.utils.fee;
 
 import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -50,7 +49,6 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
      * @param txBody transaction body
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
     public FeeData getContractCreateTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj) {
         long bpt = 0;
@@ -138,7 +136,6 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
      * @param contractExpiryTime contract expiration time
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
     public FeeData getContractUpdateTxFeeMatrices(
             TransactionBody txBody, Timestamp contractExpiryTime, SigValueObj sigValObj) {
@@ -189,7 +186,6 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
      * @param txBody transaction body
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
     public FeeData getContractCallTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj) {
         long bpt = 0;
@@ -483,7 +479,6 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
      * @param txBody transaction body
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
     public FeeData getEthereumTransactionFeeMatrices(TransactionBody txBody, SigValueObj sigValObj) {
         long bpt = 0;

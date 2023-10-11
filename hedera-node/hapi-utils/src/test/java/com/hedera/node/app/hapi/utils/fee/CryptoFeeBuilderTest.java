@@ -17,13 +17,10 @@
 package com.hedera.node.app.hapi.utils.fee;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -53,14 +50,6 @@ class CryptoFeeBuilderTest {
                 feeBuilder().setBpt(154L).setVpt(1L).setBpr(FeeBuilder.INT_SIZE).build();
         final var serviceFee = feeBuilder().setRbh(6L);
 
-        assertThrows(InvalidTxBodyException.class, () -> subject.getCryptoCreateTxFeeMatrices(null, sigValueObj));
-
-        final var cryptoTransfer = CryptoTransferTransactionBody.getDefaultInstance();
-        assertThrows(
-                InvalidTxBodyException.class,
-                () -> subject.getCryptoCreateTxFeeMatrices(
-                        txBuilder().setCryptoTransfer(cryptoTransfer).build(), sigValueObj));
-
         final var defaultCryptoCreate = CryptoCreateTransactionBody.getDefaultInstance();
         var feeData = subject.getCryptoCreateTxFeeMatrices(
                 txBuilder().setCryptoCreateAccount(defaultCryptoCreate).build(), sigValueObj);
@@ -85,14 +74,6 @@ class CryptoFeeBuilderTest {
         final var nodeFee =
                 feeBuilder().setBpt(144L).setVpt(3L).setBpr(FeeBuilder.INT_SIZE).build();
         final var serviceFee = feeBuilder().setRbh(6L).build();
-
-        assertThrows(InvalidTxBodyException.class, () -> subject.getCryptoDeleteTxFeeMatrices(null, sigValueObj));
-
-        final var cryptoTransfer = CryptoTransferTransactionBody.getDefaultInstance();
-        assertThrows(
-                InvalidTxBodyException.class,
-                () -> subject.getCryptoDeleteTxFeeMatrices(
-                        txBuilder().setCryptoTransfer(cryptoTransfer).build(), sigValueObj));
 
         final var defaultCryptoDelete = CryptoDeleteTransactionBody.getDefaultInstance();
         var feeData = subject.getCryptoDeleteTxFeeMatrices(

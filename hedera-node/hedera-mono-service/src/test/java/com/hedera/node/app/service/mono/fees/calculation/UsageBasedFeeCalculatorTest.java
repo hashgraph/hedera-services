@@ -55,7 +55,6 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
@@ -353,11 +352,6 @@ class UsageBasedFeeCalculatorTest {
 
         given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
         given(txnUsageEstimators.get(CryptoCreate)).willReturn(List.of(correctOpEstimator));
-        given(correctOpEstimator.usageGiven(
-                        argThat(accessor.getTxn()::equals),
-                        argThat(factory.apply(expectedSigUsage)),
-                        argThat(view::equals)))
-                .willThrow(InvalidTxBodyException.class);
 
         // when:
         assertThrows(IllegalArgumentException.class, () -> subject.computeFee(accessor, payerKey, view, consensusNow));

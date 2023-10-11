@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.hapi.utils.fee;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -44,7 +43,6 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @param txBody transaction body
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
     public static FeeData getCryptoCreateTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj) {
         final var txBodySize = getCommonTransactionBodyBytes(txBody);
@@ -76,7 +74,6 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @param txBody transaction body
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
     public FeeData getCryptoDeleteTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj) {
         final long bpr = INT_SIZE;

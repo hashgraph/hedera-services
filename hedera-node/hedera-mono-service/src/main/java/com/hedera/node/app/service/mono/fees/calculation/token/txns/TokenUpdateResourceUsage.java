@@ -25,7 +25,6 @@ import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenUpdateUsage;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;
@@ -88,7 +87,6 @@ public class TokenUpdateResourceUsage extends AbstractTokenResourceUsage impleme
      * @param svo signature value object
      * @param token token
      * @return fee data
-     * @throws InvalidTxBodyException
      */
     public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final Token token) {
         final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());

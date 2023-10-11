@@ -17,7 +17,6 @@
 package com.hedera.node.app.hapi.utils.fee;
 
 import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -68,7 +67,6 @@ public final class ConsensusServiceFeeBuilder extends FeeBuilder {
      * @param rbsIncrease rbs increase
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
     public static FeeData getConsensusUpdateTopicFee(
             final TransactionBody txBody, final long rbsIncrease, final SigValueObj sigValObj) {
@@ -192,8 +190,6 @@ public final class ConsensusServiceFeeBuilder extends FeeBuilder {
     /**
      * Given transaction specific additional rbh and bpt components, computes fee components for
      * node, network and services.
-     *
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
     private static FeeData getTxFeeMatrices(
             final TransactionBody txBody,
