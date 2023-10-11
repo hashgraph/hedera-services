@@ -143,7 +143,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             // validate resources exist for minting nft
             final var meta = op.metadata();
             validateTrue(
-                    nftStore.sizeOfState() + meta.size() < maxAllowedMints, MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
+                    nftStore.sizeOfState() + meta.size() <= maxAllowedMints, MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
             // mint nft
             final var mintedSerials = mintNonFungible(
                     token,
