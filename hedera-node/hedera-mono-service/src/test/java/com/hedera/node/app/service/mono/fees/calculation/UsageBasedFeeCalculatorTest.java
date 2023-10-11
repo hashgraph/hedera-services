@@ -354,7 +354,7 @@ class UsageBasedFeeCalculatorTest {
         given(txnUsageEstimators.get(CryptoCreate)).willReturn(List.of(correctOpEstimator));
 
         // when:
-        assertThrows(IllegalArgumentException.class, () -> subject.computeFee(accessor, payerKey, view, consensusNow));
+        assertThrows(NullPointerException.class, () -> subject.computeFee(accessor, payerKey, view, consensusNow));
     }
 
     @Test
