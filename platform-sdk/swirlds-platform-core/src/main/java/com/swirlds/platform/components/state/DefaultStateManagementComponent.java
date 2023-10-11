@@ -249,22 +249,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 combinedStateHasEnoughSignaturesConsumer,
                 combinedStateLacksSignaturesConsumer);
 
-        final IssHandler issHandler = new IssHandler(
-                Time.getCurrent(),
-                dispatchBuilder,
-                stateConfig,
-                selfId,
-                statusActionSubmitter,
-                haltRequestedConsumer,
-                fatalErrorConsumer,
-                issConsumer);
-
-        final IssMetrics issMetrics = new IssMetrics(platformContext.getMetrics(), addressBook);
-
-        dispatchBuilder
-                .registerObservers(issHandler)
-                .registerObservers(issMetrics)
-                .registerObservers(this);
+        dispatchBuilder.registerObservers(this);
 
         final RunningAverageMetric avgRoundSupermajority =
                 platformContext.getMetrics().getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
