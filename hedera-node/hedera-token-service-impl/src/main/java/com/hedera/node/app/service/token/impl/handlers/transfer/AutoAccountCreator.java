@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
@@ -25,6 +26,7 @@ import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtil
 import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl.isOfEvmAddressSize;
 import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
+import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Objects.requireNonNull;
@@ -98,6 +100,7 @@ public class AutoAccountCreator {
             memo = LAZY_MEMO;
         } else {
             final var key = asKeyFromAlias(alias);
+            validateTrue(isValid(key), INVALID_ALIAS_KEY);
             if (key.hasEcdsaSecp256k1()) {
                 evmAddress = tryAddressRecovery(key, EthSigsUtils::recoverAddressFromPubKey);
                 syntheticCreation = createAccount(Bytes.wrap(evmAddress), key, 0L, maxAutoAssociations);
