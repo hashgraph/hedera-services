@@ -54,7 +54,7 @@ public record ReconnectConfig(
         @ConfigProperty(defaultValue = "true") boolean active,
         @ConfigProperty(defaultValue = "-1") int reconnectWindowSeconds,
         @ConfigProperty(defaultValue = "0.50") double fallenBehindThreshold,
-        @ConfigProperty(defaultValue = "60s") Duration asyncStreamTimeout,
+        @ConfigProperty(defaultValue = "300s") Duration asyncStreamTimeout,
         @ConfigProperty(defaultValue = "100ms") Duration asyncOutputStreamFlush,
         @ConfigProperty(defaultValue = "10000") int asyncStreamBufferSize,
         @ConfigProperty(defaultValue = "10ms") Duration maxAckDelay,

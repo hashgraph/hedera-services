@@ -32,6 +32,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionGetRecordResponse;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -135,5 +136,11 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
             }
         }
         return children;
+    }
+
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext context) {
+        return context.feeCalculator().calculate();
     }
 }
