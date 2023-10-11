@@ -159,7 +159,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -771,11 +770,6 @@ public class SwirldsPlatform implements Platform {
     private void loadStateIntoEventCreator(@NonNull final SignedState signedState) {
         Objects.requireNonNull(signedState);
 
-        if (eventCreator == null) {
-            // New event creation logic is disabled via settings
-            return;
-        }
-
         try {
             eventCreator.setMinimumGenerationNonAncient(
                     signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
@@ -1003,7 +997,7 @@ public class SwirldsPlatform implements Platform {
         // The event creator is intentionally started before replaying the preconsensus event stream.
         // This prevents the event creator's intake queue from filling up and blocking. Note that
         // this component won't actually create events until the platform has the appropriate status.
-        Optional.of(eventCreator).ifPresent(Startable::start);
+        eventCreator.start();
 
         replayPreconsensusEvents();
         gossip.start();
@@ -1020,7 +1014,7 @@ public class SwirldsPlatform implements Platform {
      */
     public void performPcesRecovery() {
         components.start();
-        Optional.of(eventCreator).ifPresent(Startable::start);
+        eventCreator.start();
         replayPreconsensusEvents();
         stateManagementComponent.dumpLatestImmutableState(StateToDiskReason.PCES_RECOVERY_COMPLETE, true);
     }
