@@ -26,7 +26,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -35,7 +37,6 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Arrays;
@@ -77,6 +78,8 @@ public class BlockSuite extends HapiSuite {
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(
+                        // Ensure we submit these two transactions in the same block
+                        waitUntilStartOfNextAdhocPeriod(2_000),
                         ethereumCall(contract, LOG_NOW)
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -85,6 +88,7 @@ public class BlockSuite extends HapiSuite {
                                 .maxFeePerGas(50L)
                                 .gasLimit(1_000_000L)
                                 .via(firstCall)
+                                .deferStatusResolution()
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         ethereumCall(contract, LOG_NOW)
                                 .type(EthTxData.EthTransactionType.EIP1559)
@@ -94,10 +98,11 @@ public class BlockSuite extends HapiSuite {
                                 .maxFeePerGas(50L)
                                 .gasLimit(1_000_000L)
                                 .via(secondCall)
+                                .deferStatusResolution()
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS))
                 .then(withOpContext((spec, opLog) -> {
-                    final var firstBlockOp = getTxnRecord(firstCall);
-                    final var recordOp = getTxnRecord(secondCall);
+                    final var firstBlockOp = getTxnRecord(firstCall).hasRetryAnswerOnlyPrecheck(RECORD_NOT_FOUND);
+                    final var recordOp = getTxnRecord(secondCall).hasRetryAnswerOnlyPrecheck(RECORD_NOT_FOUND);
                     allRunFor(spec, firstBlockOp, recordOp);
 
                     final var firstCallRecord = firstBlockOp.getResponseRecord();
@@ -136,6 +141,7 @@ public class BlockSuite extends HapiSuite {
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(
+                        waitUntilStartOfNextAdhocPeriod(2_000L),
                         ethereumCall(contract, LOG_NOW)
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -143,10 +149,11 @@ public class BlockSuite extends HapiSuite {
                                 .nonce(0)
                                 .maxFeePerGas(50L)
                                 .gasLimit(1_000_000L)
-                                .delayBy(3_000)
                                 .via(firstBlock)
+                                .deferStatusResolution()
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
-                        cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1)),
+                        // Make sure we submit the next transaction in the next block
+                        waitUntilStartOfNextAdhocPeriod(2_000L),
                         ethereumCall(contract, LOG_NOW)
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -157,8 +164,8 @@ public class BlockSuite extends HapiSuite {
                                 .via(secondBlock)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS))
                 .then(withOpContext((spec, opLog) -> {
-                    final var firstBlockOp = getTxnRecord(firstBlock);
-                    final var recordOp = getTxnRecord(secondBlock);
+                    final var firstBlockOp = getTxnRecord(firstBlock).hasRetryAnswerOnlyPrecheck(RECORD_NOT_FOUND);
+                    final var recordOp = getTxnRecord(secondBlock).hasRetryAnswerOnlyPrecheck(RECORD_NOT_FOUND);
                     allRunFor(spec, firstBlockOp, recordOp);
 
                     // First block info
