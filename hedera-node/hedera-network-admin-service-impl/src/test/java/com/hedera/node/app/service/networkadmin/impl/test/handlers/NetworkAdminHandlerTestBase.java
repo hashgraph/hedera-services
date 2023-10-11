@@ -76,7 +76,7 @@ public class NetworkAdminHandlerTestBase {
     private static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
             new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
 
-    protected final Bytes ledgerId = Bytes.wrap(new byte[] {3});
+    protected final Bytes ledgerId = Bytes.wrap(new byte[] {0});
 
     protected final AccountID accountId = AccountID.newBuilder().accountNum(3).build();
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
