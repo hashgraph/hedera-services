@@ -370,7 +370,7 @@ public class HandleWorkflow {
                     fees,
                     platformEvent.getCreatorId().id());
 
-            networkUtilizationManager.resetFrom(state);
+            networkUtilizationManager.resetFrom(stack);
 
             if (validationResult.status() != SO_FAR_SO_GOOD) {
                 final var sigVerificationFailed = validationResult.responseCodeEnum() == INVALID_SIGNATURE;
@@ -379,7 +379,7 @@ public class HandleWorkflow {
                     // Note this is how it's implemented in mono (TopLevelTransition.java#L93), in future we may want to
                     // not trackFeePayments() only for INVALID_SIGNATURE but for any preCheckResult.status() !=
                     // SO_FAR_SO_GOOD
-                    networkUtilizationManager.trackFeePayments(payer, consensusNow, state);
+                    networkUtilizationManager.trackFeePayments(payer, consensusNow, stack);
                 }
                 recordBuilder.status(validationResult.responseCodeEnum());
                 try {
@@ -405,7 +405,7 @@ public class HandleWorkflow {
                 }
 
             } else {
-                networkUtilizationManager.trackTxn(transactionInfo, consensusNow, state);
+                networkUtilizationManager.trackTxn(transactionInfo, consensusNow, stack);
                 if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)) {
                     // privileged transactions are not charged fees
                     feeAccumulator.chargeFees(payer, creator.accountId(), fees);
@@ -434,7 +434,7 @@ public class HandleWorkflow {
                         }
                     }
 
-                    networkUtilizationManager.saveTo(state);
+                    networkUtilizationManager.saveTo(stack);
 
                     // Notify responsible facility if system-file was uploaded
                     systemFileUpdateFacility.handleTxBody(stack, txBody, recordBuilder);
