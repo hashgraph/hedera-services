@@ -31,10 +31,8 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.ModificationNotAllowedException;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
 /**
@@ -44,7 +42,7 @@ import org.hyperledger.besu.evm.account.MutableAccount;
  * Contains {@code updateAccountTracker} for immediate set of balance in the world state. Note that in practice this
  * only track the modified account values, but doesn't remind if they were modified or not.
  */
-public class UpdateTrackingAccount<A extends Account> implements MutableAccount, EvmAccount {
+public class UpdateTrackingAccount<A extends Account> implements MutableAccount {
     @Nullable
     protected final A account;
 
@@ -261,8 +259,8 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     }
 
     @Override
-    public MutableAccount getMutable() throws ModificationNotAllowedException {
-        return this;
+    public void becomeImmutable() {
+        throw new UnsupportedOperationException("Not Implemented Yet");
     }
 
     public void setEvmEntityAccess(HederaEvmEntityAccess hederaEvmEntityAccess) {

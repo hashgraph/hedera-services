@@ -134,7 +134,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -257,8 +256,8 @@ class CreatePrecompileTest {
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private HTSPrecompiledContract subject;
-    private UpdateTrackingAccount senderMutableAccount;
-    private UpdateTrackingAccount fundingMutableAccount;
+    private UpdateTrackingAccount<?> senderMutableAccount;
+    private UpdateTrackingAccount<?> fundingMutableAccount;
     private MockedStatic<TokenCreatePrecompile> tokenCreatePrecompile;
 
     private static final long TEST_SERVICE_FEE = 100L;
@@ -395,7 +394,6 @@ class CreatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(wrappedLedgers.accounts()).willReturn(accounts);
 
@@ -1640,19 +1638,16 @@ class CreatePrecompileTest {
         given(frame.getBlockValues()).willReturn(blockValuesMock);
         given(blockValuesMock.getTimestamp()).willReturn(HTSTestsUtil.timestamp.getSeconds());
 
-        final var mockSenderEvmAccount = Mockito.mock(EvmAccount.class);
-        given(worldUpdater.getAccount(HTSTestsUtil.senderAddress)).willReturn(mockSenderEvmAccount);
-        senderMutableAccount = new UpdateTrackingAccount(HTSTestsUtil.senderAddress, null);
-        given(mockSenderEvmAccount.getMutable()).willReturn(senderMutableAccount);
+        senderMutableAccount = new UpdateTrackingAccount<>(HTSTestsUtil.senderAddress, null);
+        given(worldUpdater.getAccount(HTSTestsUtil.senderAddress)).willReturn(senderMutableAccount);
         senderMutableAccount.setBalance(Wei.of(SENDER_INITIAL_BALANCE));
 
         given(dynamicProperties.fundingAccount()).willReturn(HTSTestsUtil.account);
-        final var mockFundingEvmAccount = mock(EvmAccount.class);
+        fundingMutableAccount =
+                new UpdateTrackingAccount<>(EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.account), null);
         given(worldUpdater.getAccount(
                         Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress()))
-                .willReturn(mockFundingEvmAccount);
-        fundingMutableAccount = new UpdateTrackingAccount(EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.account), null);
-        given(mockFundingEvmAccount.getMutable()).willReturn(fundingMutableAccount);
+                .willReturn(fundingMutableAccount);
         fundingMutableAccount.setBalance(Wei.of(FUNDING_ACCOUNT_INITIAL_BALANCE));
     }
 

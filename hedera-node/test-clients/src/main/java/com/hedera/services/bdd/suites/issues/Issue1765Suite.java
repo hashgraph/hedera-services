@@ -153,6 +153,7 @@ public class Issue1765Suite extends HapiSuite {
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
 
+    @HapiTest
     private static HapiSpec recordOfInvalidFileAppendSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_FILE = IMAGINARY;
