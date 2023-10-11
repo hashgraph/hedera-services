@@ -28,9 +28,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
-import org.hyperledger.besu.evm.ModificationNotAllowedException;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
 
@@ -41,7 +39,7 @@ import org.hyperledger.besu.evm.code.CodeFactory;
  * <p>It also cannot have a non-zero balance, as dispatching a {@code transferValue()} with a token
  * address as receiver will always fail.
  *
- * <p>Despite this inherent immutability, for convenience still implements {@link EvmAccount} so
+ * <p>Despite this inherent immutability, for convenience still implements {@link MutableAccount} so
  * that instances can be used anywhere the Besu EVM needs a <i>potentially</i> mutable account.
  * Mutability should always turn out to be unnecessary in these cases, however; so the mutator methods
  * on this class do throw {@code UnsupportedOperationException} .
@@ -103,8 +101,8 @@ public class TokenEvmAccount extends AbstractMutableEvmAccount {
     }
 
     @Override
-    public MutableAccount getMutable() throws ModificationNotAllowedException {
-        return this;
+    public void becomeImmutable() {
+        throw new UnsupportedOperationException("Not Implemented Yet");
     }
 
     @Override

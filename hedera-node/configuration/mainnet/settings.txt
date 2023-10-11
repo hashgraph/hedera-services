@@ -31,7 +31,6 @@ event.maxEventQueueForCons,                    1000
                                           #############################
 
 reconnect.active,                              true
-reconnect.asyncStreamTimeoutMilliseconds,      60000
 
                                           #############################
                                           #          Metrics          #

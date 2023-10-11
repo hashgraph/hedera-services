@@ -63,8 +63,7 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
     @Override
     public void start(@NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
         final var addressToCreate = frame.getContractAddress();
-        final var contract =
-                frame.getWorldUpdater().getOrCreate(addressToCreate).getMutable();
+        final var contract = frame.getWorldUpdater().getOrCreate(addressToCreate);
 
         if (alreadyCreated(contract)) {
             halt(frame, COLLISION_HALT_REASON);
