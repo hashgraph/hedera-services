@@ -23,6 +23,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -31,6 +33,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public final class ResetTokenMaxPerAccount extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ResetTokenMaxPerAccount.class);
 
@@ -43,6 +46,7 @@ public final class ResetTokenMaxPerAccount extends HapiSuite {
         return List.of(resetTokenMaxPerAccount());
     }
 
+    @HapiTest
     private HapiSpec resetTokenMaxPerAccount() {
         return defaultHapiSpec("ResetTokenMaxPerAccount")
                 .given()

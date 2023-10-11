@@ -24,6 +24,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -31,6 +33,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public final class ResetThrottleSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ResetThrottleSuite.class);
 
@@ -43,6 +46,7 @@ public final class ResetThrottleSuite extends HapiSuite {
         return List.of(resetThrottle());
     }
 
+    @HapiTest
     private HapiSpec resetThrottle() {
         final var devThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("ResetThrottle")
