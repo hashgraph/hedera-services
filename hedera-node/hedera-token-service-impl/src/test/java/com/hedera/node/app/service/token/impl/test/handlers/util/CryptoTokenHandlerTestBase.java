@@ -170,6 +170,12 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final TokenID nonFungibleTokenId = asToken(2L);
     protected final TokenID fungibleTokenIDB = asToken(6L);
     protected final TokenID fungibleTokenIDC = asToken(7L);
+    protected final int hbarReceiver = 10000000;
+    protected final AccountID hbarReceiverId =
+            AccountID.newBuilder().accountNum(hbarReceiver).build();
+    protected final int tokenReceiver = hbarReceiver + 1;
+    protected final AccountID tokenReceiverId =
+            AccountID.newBuilder().accountNum(tokenReceiver).build();
 
     protected final EntityIDPair fungiblePair = EntityIDPair.newBuilder()
             .accountId(payerId)
@@ -385,6 +391,18 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     private void setUpAllEntities() {
         accountsMap = new HashMap<>();
         accountsMap.put(payerId, account);
+        accountsMap.put(
+                hbarReceiverId,
+                Account.newBuilder()
+                        .accountId(hbarReceiverId)
+                        .tinybarBalance(Long.MAX_VALUE)
+                        .build());
+        accountsMap.put(
+                tokenReceiverId,
+                Account.newBuilder()
+                        .accountId(tokenReceiverId)
+                        .tinybarBalance(Long.MAX_VALUE)
+                        .build());
         accountsMap.put(deleteAccountId, deleteAccount);
         accountsMap.put(transferAccountId, transferAccount);
         accountsMap.put(ownerId, ownerAccount);

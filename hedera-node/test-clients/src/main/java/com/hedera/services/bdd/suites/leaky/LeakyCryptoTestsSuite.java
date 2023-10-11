@@ -1219,12 +1219,12 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                         100L,
                                         fixedHtsFeeInheritingRoyaltyCollector(666, ftWithNonNetOfTransfersFractional),
                                         otherCollector))))
-                .when(inParallel(
+                .when(
                         autoCreateWithFungible(ftWithNetOfTransfersFractional),
                         autoCreateWithFungible(ftWithNonNetOfTransfersFractional),
                         autoCreateWithNonFungible(nftWithRoyaltyNoFallback, SUCCESS),
                         autoCreateWithNonFungible(
-                                nftWithRoyaltyPlusHbarFallback, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)))
+                                nftWithRoyaltyPlusHbarFallback, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE))
                 .then(
                         newKeyNamed(finalReceiverKey),
                         cryptoTransfer(

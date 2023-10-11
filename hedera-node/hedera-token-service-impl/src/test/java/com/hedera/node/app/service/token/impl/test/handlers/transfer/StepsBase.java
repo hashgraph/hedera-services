@@ -134,12 +134,6 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected static final ProtoBytes mirrorAlias = new ProtoBytes(Bytes.wrap(evmAddress));
     protected static final ProtoBytes create2Alias = new ProtoBytes(Bytes.wrap(create2Address));
     protected static final Long mirrorNum = Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
-    protected final int hbarReceiver = 10000000;
-    protected final AccountID hbarReceiverId =
-            AccountID.newBuilder().accountNum(hbarReceiver).build();
-    protected final int tokenReceiver = hbarReceiver + 1;
-    protected final AccountID tokenReceiverId =
-            AccountID.newBuilder().accountNum(tokenReceiver).build();
 
     protected TransactionBody asTxn(final CryptoTransferTransactionBody body, final AccountID payerId) {
         return TransactionBody.newBuilder()
