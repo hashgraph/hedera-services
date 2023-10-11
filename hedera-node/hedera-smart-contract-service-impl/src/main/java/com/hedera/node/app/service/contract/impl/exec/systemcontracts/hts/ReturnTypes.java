@@ -16,13 +16,21 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY_V2;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FIXED_FEE_V2;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FRACTIONAL_FEE_V2;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.KEY_VALUE;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE_V2;
 
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.transaction.FixedFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 
@@ -34,14 +42,14 @@ public class ReturnTypes {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    // When no value is set for AccountID or ContractID the return value is set to 0.
+    // When no value is set for AccountID, ContractID or TokenId the return value is set to 0.
     public static final AccountID ZERO_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(0).build();
     public static final ContractID ZERO_CONTRACT_ID =
             ContractID.newBuilder().contractNum(0).build();
-
-    private static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
-    // Defined by struct Expiry { unint32 second; address autoRenewAccount; uint32 autoRenewPeriod; }
+    public static final TokenID ZERO_TOKEN_ID = TokenID.newBuilder().tokenNum(0).build();
+    public static final Fraction ZERO_FRACTION = new Fraction(0, 1);
+    public static final FixedFee ZERO_FIXED_FEE = new FixedFee(0, null);
 
     public static final String INT = "(int)";
     public static final String INT_64 = "(int64)";
@@ -57,6 +65,14 @@ public class ReturnTypes {
     public static final String RESPONSE_CODE_TOKEN_KEY = RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE + ")";
 
     private static final TupleType RC_ENCODER = TupleType.parse(INT_64);
+
+    public static final String RESPONSE_CODE_CUSTOM_FEES = RESPONSE_STATUS_AT_BEGINNING
+            + FIXED_FEE_V2 + ARRAY_BRACKETS
+            + ","
+            + FRACTIONAL_FEE_V2 + ARRAY_BRACKETS
+            + ","
+            + ROYALTY_FEE_V2 + ARRAY_BRACKETS
+            + ")";
 
     /**
      * Encodes the given {@code status} as a return value for a classic transfer call.
