@@ -120,6 +120,10 @@ public class CustomFeeAssessor extends BaseTokenHandler {
                     final var accountId = entryTx.getKey();
                     final var tokenRel = tokenRelStore.get(accountId, entry.getKey());
                     if (tokenRel == null) {
+                        // To match mono-service, use INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE when
+                        // an auto-created account is being debited a custom fee in the same transaction that
+                        // would have created it; and TOKEN_NOT_ASSOCIATED_TO_ACCOUNT when an existing account
+                        // is being debited a custom fee in a token type it is not associated to
                         if (autoCreationTest.test(accountId)) {
                             throw new HandleException(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
                         } else {
