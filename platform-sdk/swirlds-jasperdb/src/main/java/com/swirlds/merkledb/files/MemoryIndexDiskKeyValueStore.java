@@ -18,6 +18,7 @@ package com.swirlds.merkledb.files;
 
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 
+import com.swirlds.merkledb.Compactable;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
@@ -45,7 +46,7 @@ import org.apache.logging.log4j.Logger;
  * @param <D> type for data items
  */
 @SuppressWarnings({"DuplicatedCode"})
-public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshotable {
+public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshotable, Compactable {
     private static final Logger logger = LogManager.getLogger(MemoryIndexDiskKeyValueStore.class);
 
     /**
@@ -259,9 +260,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     }
 
     /**
-     * Get statistics for sizes of all files
-     *
-     * @return statistics for sizes of all fully written files, in bytes
+     * {@inheritDoc}
      */
     public LongSummaryStatistics getFilesSizeStatistics() {
         return fileCollection.getAllCompletedFilesSizeStatistics();

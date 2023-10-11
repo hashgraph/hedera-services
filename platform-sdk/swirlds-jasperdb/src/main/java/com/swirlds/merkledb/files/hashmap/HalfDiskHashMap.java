@@ -23,10 +23,12 @@ import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.merkledb.Compactable;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
 import com.swirlds.merkledb.collections.LongListOffHeap;
+import com.swirlds.merkledb.collections.OffHeapUser;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
@@ -64,7 +66,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
  * readers while writing is happening.</b>
  */
-public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Snapshotable {
+public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Snapshotable, Compactable, OffHeapUser {
     private static final Logger logger = LogManager.getLogger(HalfDiskHashMap.class);
 
     /** The version number for format of current data files */
@@ -258,14 +260,9 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     }
 
     /**
-     * Merge all read only files that match provided filter. Important the set of files must be
-     * contiguous in time otherwise the merged data will be invalid.
-     *
-     * @param reportDurationMetricFunction function to report how long compaction took, in ms
-     * @param reportSavedSpaceMetricFunction function to report how much space was compacted, in Mb
-     * @throws IOException if there was a problem merging
-     * @throws InterruptedException If the merge thread was interupted
+     * {@inheritDoc}
      */
+    @Override
     public boolean compact(
             @Nullable final BiConsumer<Integer, Long> reportDurationMetricFunction,
             @Nullable final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction)
@@ -321,9 +318,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     }
 
     /**
-     * Get statistics for sizes of all files
-     *
-     * @return statistics for sizes of all fully written files, in bytes
+     * {@inheritDoc}
      */
     public LongSummaryStatistics getFilesSizeStatistics() {
         return fileCollection.getAllCompletedFilesSizeStatistics();

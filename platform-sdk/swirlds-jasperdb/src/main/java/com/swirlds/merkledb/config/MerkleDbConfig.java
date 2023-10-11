@@ -113,7 +113,8 @@ public record MerkleDbConfig(
                     "minNumberOfFilesInCompaction",
                     "%d".formatted(minNumberOfFilesInCompaction),
                     true,
-                    "Cannot configure minNumberOfFilesInCompaction to " + minNumberOfFilesInCompaction + ", it must be >= 2");
+                    "Cannot configure minNumberOfFilesInCompaction to " + minNumberOfFilesInCompaction
+                            + ", it must be >= 2");
         }
         return null;
     }

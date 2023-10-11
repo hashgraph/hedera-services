@@ -20,17 +20,17 @@ import static com.swirlds.common.units.UnitConstants.BYTES_TO_MEBIBYTES;
 
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.merkledb.collections.HashList;
-import com.swirlds.merkledb.collections.HashListByteBuffer;
 import com.swirlds.merkledb.collections.LongList;
-import com.swirlds.merkledb.collections.LongListOffHeap;
+import com.swirlds.merkledb.collections.OffHeapUser;
 import com.swirlds.merkledb.files.DataFileReader;
-import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntConsumer;
 
+/**
+ * This class is responsible for updating statistics for a MerkleDb instance.
+ */
 public class MerkleDbStatisticsUpdater {
 
     /**
@@ -55,6 +55,10 @@ public class MerkleDbStatisticsUpdater {
         this.dataSource = dataSource;
     }
 
+    /**
+     * Register metrics for this instance.
+     * @param metrics the metrics to register
+     */
     public void registerMetrics(final Metrics metrics) {
         if (firstStatRegistration.compareAndSet(true, false)) {
             // register static/global statistics
@@ -65,16 +69,19 @@ public class MerkleDbStatisticsUpdater {
         statistics.registerMetrics(metrics);
     }
 
+    /** Updates statistics with leaf keys store file size. */
     void setFlushLeafKeysStoreFileSize(final DataFileReader<?> newLeafKeysFile) {
         statistics.setFlushLeafKeysStoreFileSizeMb(
                 newLeafKeysFile == null ? 0 : newLeafKeysFile.getSize() * BYTES_TO_MEBIBYTES);
     }
 
+    /** Updates statistics with leaf store file size. */
     void setFlushLeavesStoreFileSize(final DataFileReader<?> newLeafKeysFile) {
         statistics.setFlushLeavesStoreFileSizeMb(
                 newLeafKeysFile == null ? 0 : newLeafKeysFile.getSize() * BYTES_TO_MEBIBYTES);
     }
 
+    /** Updates statistics with hashes store file size. */
     void setFlushHashesStoreFileSize(final DataFileReader<?> newHashesFile) {
         statistics.setFlushHashesStoreFileSizeMb(
                 newHashesFile == null ? 0 : newHashesFile.getSize() * BYTES_TO_MEBIBYTES);
@@ -130,19 +137,23 @@ public class MerkleDbStatisticsUpdater {
         return 0;
     }
 
+    /** Calculate updates statistics for all the storages and then updates total usage */
     void updateStoreFileStats() {
         statistics.setTotalFileSizeMb(
                 updateHashesStoreFileStats() + updateLeavesStoreFileStats() + updateLeafKeysStoreFileStats());
     }
 
+    /**
+     * Updates statistics with off-heap memory consumption.
+     */
     void updateOffHeapStats() {
         int totalOffHeapMemoryConsumption = updateOffHeapStat(
                         dataSource.getPathToDiskLocationInternalNodes(), statistics::setOffHeapHashesIndexMb)
                 + updateOffHeapStat(dataSource.getPathToDiskLocationLeafNodes(), statistics::setOffHeapLeavesIndexMb)
                 + updateOffHeapStat(dataSource.getLongKeyToPath(), statistics::setOffHeapLongKeysIndexMb);
         if (dataSource.getObjectKeyToPath() != null) {
-            totalOffHeapMemoryConsumption +=
-                    updateOffHeapStat(dataSource.getObjectKeyToPath(), statistics::setOffHeapObjectKeyBucketsIndexMb);
+            totalOffHeapMemoryConsumption += updateOffHeapStat(
+                    (OffHeapUser) dataSource.getObjectKeyToPath(), statistics::setOffHeapObjectKeyBucketsIndexMb);
         }
         if (dataSource.getHashStoreRam() != null) {
             totalOffHeapMemoryConsumption +=
@@ -151,36 +162,43 @@ public class MerkleDbStatisticsUpdater {
         statistics.setOffHeapDataSourceMb(totalOffHeapMemoryConsumption);
     }
 
+    /** Updates statistics with number of leaf reads. */
     void countLeafReads() {
         statistics.countLeafReads();
     }
 
+    /** Updates statistics with number of leaf key reads. */
     void countLeafKeyReads() {
         statistics.countLeafKeyReads();
     }
 
+    /** Updates statistics with number of hash reads. */
     void countHashReads() {
         statistics.countHashReads();
     }
 
+    /** Increments count of leaves written during a flush*/
     void countFlushLeavesWritten() {
         statistics.countFlushLeavesWritten(1);
     }
 
+    /** Increments count of leaf keys written during a flush*/
     void countFlushLeafKeysWritten() {
         statistics.countFlushLeafKeysWritten(1);
     }
 
+    /** Increments count of leaves deleted during a flush*/
     void countFlushLeavesDeleted() {
         statistics.countFlushLeavesDeleted(1);
     }
 
+    /** Increments count of hashes written during a flush*/
     void countFlushHashesWritten() {
         statistics.countFlushHashesWritten(1);
     }
 
     private static int updateOffHeapStat(final LongList longList, final IntConsumer updateFunction) {
-        if (longList instanceof LongListOffHeap longListOffHeap) {
+        if (longList instanceof OffHeapUser longListOffHeap) {
             final int result = (int) (longListOffHeap.getOffHeapConsumption() * BYTES_TO_MEBIBYTES);
             updateFunction.accept(result);
             return result;
@@ -189,20 +207,10 @@ public class MerkleDbStatisticsUpdater {
         }
     }
 
-    private static int updateOffHeapStat(final HalfDiskHashMap<?> halfDiskHashMap, final IntConsumer updateFunction) {
-        final int usage = (int) (halfDiskHashMap.getOffHeapConsumption() * BYTES_TO_MEBIBYTES);
+    private static int updateOffHeapStat(final OffHeapUser offHeapUser, final IntConsumer updateFunction) {
+        final int usage = (int) (offHeapUser.getOffHeapConsumption() * BYTES_TO_MEBIBYTES);
         updateFunction.accept(usage);
         return usage;
-    }
-
-    private static int updateOffHeapStat(final HashList hashList, final IntConsumer updateFunction) {
-        if (hashList instanceof HashListByteBuffer hashListOffHeap) {
-            final int usage = (int) (hashListOffHeap.getOffHeapConsumption() * BYTES_TO_MEBIBYTES);
-            updateFunction.accept(usage);
-            return usage;
-        } else {
-            return 0;
-        }
     }
 
     void setLeafKeysStoreCompactionTimeMs(Integer compactionLevel, Long time) {

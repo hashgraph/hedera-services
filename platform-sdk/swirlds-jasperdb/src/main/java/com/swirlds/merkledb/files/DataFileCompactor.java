@@ -378,10 +378,7 @@ public class DataFileCompactor {
         final List<DataFileReader<?>> filesToCompact =
                 compactionPlan(getMinNumberOfFilesToCompact()).apply((List<DataFileReader<?>>) allCompactableFiles);
         if (filesToCompact.isEmpty()) {
-            logger.debug(
-                    MERKLE_DB.getMarker(),
-                    "[{}] No need to compact, as the compaction plan is empty",
-                    storeName);
+            logger.debug(MERKLE_DB.getMarker(), "[{}] No need to compact, as the compaction plan is empty", storeName);
             return false;
         }
 

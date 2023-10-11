@@ -81,7 +81,12 @@ class CompactionInterruptTest {
         String tableName = "mergeThenInterrupt";
         final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
                 TestType.variable_variable.dataType().createDataSource(storeDir, tableName, COUNT, 0, false, true);
-        final MerkleDbCompactionCoordinator compactor = new MerkleDbCompactionCoordinator(dataSource);
+        final MerkleDbCompactionCoordinator compactor = new MerkleDbCompactionCoordinator(
+                tableName,
+                dataSource.getStatisticsUpdater(),
+                dataSource.getObjectKeyToPath(),
+                dataSource.getHashStoreDisk(),
+                dataSource.getPathToKeyValue());
 
         try {
             // create some internal and leaf nodes in batches
@@ -126,7 +131,13 @@ class CompactionInterruptTest {
         String tableName = "mergeWhileSnapshotting";
         final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
                 TestType.variable_variable.dataType().createDataSource(storeDir, tableName, COUNT, 0, false, true);
-        final MerkleDbCompactionCoordinator compactor = new MerkleDbCompactionCoordinator(dataSource);
+        final MerkleDbCompactionCoordinator compactor = new MerkleDbCompactionCoordinator(
+                tableName,
+                dataSource.getStatisticsUpdater(),
+                dataSource.getObjectKeyToPath(),
+                dataSource.getHashStoreDisk(),
+                dataSource.getPathToKeyValue());
+
         final ExecutorService exec = Executors.newCachedThreadPool();
         try {
             // create some internal and leaf nodes in batches
@@ -168,8 +179,10 @@ class CompactionInterruptTest {
         long initCount = compactingExecutor.getCompletedTaskCount();
 
         // getting access to the guts of the compactor to check the state of the futures
-        InterruptibleCompletableFuture hashStoreDiskFuture = compactor.compactionFuturesByName.get(tableName + HASH_STORE_DISK_SUFFIX);
-        InterruptibleCompletableFuture pathToKeyValueFuture = compactor.compactionFuturesByName.get(tableName + PATH_TO_KEY_VALUE_SUFFIX);
+        InterruptibleCompletableFuture hashStoreDiskFuture =
+                compactor.compactionFuturesByName.get(tableName + HASH_STORE_DISK_SUFFIX);
+        InterruptibleCompletableFuture pathToKeyValueFuture =
+                compactor.compactionFuturesByName.get(tableName + PATH_TO_KEY_VALUE_SUFFIX);
         InterruptibleCompletableFuture objectKeyToPathFuture =
                 compactor.compactionFuturesByName.get(tableName + OBJECT_KEY_TO_PATH_SUFFIX);
 
@@ -178,9 +191,12 @@ class CompactionInterruptTest {
 
         assertFalse(compactor.isCompactionEnabled(), "compactionEnabled should be false");
 
-        assertFutureCancelled(hashStoreDiskFuture.asCompletableFuture(), "hashStoreDiskFuture should have been cancelled");
-        assertFutureCancelled(pathToKeyValueFuture.asCompletableFuture(), "pathToKeyValueFuture should have been cancelled");
-        assertFutureCancelled(objectKeyToPathFuture.asCompletableFuture(), "objectKeyToPathFuture should have been cancelled");
+        assertFutureCancelled(
+                hashStoreDiskFuture.asCompletableFuture(), "hashStoreDiskFuture should have been cancelled");
+        assertFutureCancelled(
+                pathToKeyValueFuture.asCompletableFuture(), "pathToKeyValueFuture should have been cancelled");
+        assertFutureCancelled(
+                objectKeyToPathFuture.asCompletableFuture(), "objectKeyToPathFuture should have been cancelled");
         assertTrue(compactor.compactionFuturesByName.isEmpty(), "compactionFuturesByName should be empty");
         assertEventuallyEquals(
                 0, () -> compactingExecutor.getQueue().size(), Duration.ofMillis(100), "The queue should be empty");

@@ -54,7 +54,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * </pre>
  */
 @SuppressWarnings("unused")
-public final class HashListByteBuffer implements HashList {
+public final class HashListByteBuffer implements HashList, OffHeapUser {
     /**
      * The version number for format of current data files
      */

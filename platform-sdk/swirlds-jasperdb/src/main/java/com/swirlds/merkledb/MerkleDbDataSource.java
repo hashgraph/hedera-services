@@ -32,11 +32,11 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.units.UnitConstants;
-import com.swirlds.merkledb.collections.HashList;
 import com.swirlds.merkledb.collections.HashListByteBuffer;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
 import com.swirlds.merkledb.collections.LongListOffHeap;
+import com.swirlds.merkledb.collections.OffHeapUser;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
@@ -124,7 +124,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      * will be empty. That should cause all internal node hashes to have to be computed on the first round
      * which will be expensive.
      */
-    private final HashList hashStoreRam;
+    private final HashListByteBuffer hashStoreRam;
 
     /**
      * On disk store for node hashes. Can be null if all hashes are being stored in ram by setting
@@ -356,7 +356,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 tableConfig.getHashesRamToDiskThreshold());
 
         statisticsUpdater = new MerkleDbStatisticsUpdater(this);
-        compactor = new MerkleDbCompactionCoordinator(this);
+        compactor = new MerkleDbCompactionCoordinator(
+                tableName, statisticsUpdater, objectKeyToPath, hashStoreDisk, pathToKeyValue);
 
         if (compactionEnabled) {
             enableBackgroundCompaction();
@@ -1148,16 +1149,24 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
     }
 
-    MemoryIndexDiskKeyValueStore<VirtualHashRecord> getHashStoreDisk() {
+    Compactable getHashStoreDisk() {
         return hashStoreDisk;
     }
 
-    HalfDiskHashMap<K> getObjectKeyToPath() {
+    Compactable getObjectKeyToPath() {
         return objectKeyToPath;
     }
 
-    MemoryIndexDiskKeyValueStore<VirtualLeafRecord<K, V>> getPathToKeyValue() {
+    Compactable getPathToKeyValue() {
         return pathToKeyValue;
+    }
+
+    OffHeapUser getHashStoreRam() {
+        return hashStoreRam;
+    }
+
+    LongList getLongKeyToPath() {
+        return longKeyToPath;
     }
 
     LongList getPathToDiskLocationInternalNodes() {
@@ -1166,14 +1175,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
     LongList getPathToDiskLocationLeafNodes() {
         return pathToDiskLocationLeafNodes;
-    }
-
-    HashList getHashStoreRam() {
-        return hashStoreRam;
-    }
-
-    LongList getLongKeyToPath() {
-        return longKeyToPath;
     }
 
     MerkleDbStatisticsUpdater getStatisticsUpdater() {

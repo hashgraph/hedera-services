@@ -56,16 +56,4 @@ public class CryptoBenchMerkleDb extends CryptoBench {
                 new MerkleDbDataSourceBuilder<>(tableConfig);
         return new VirtualMap<>(LABEL, dataSourceBuilder);
     }
-
-    public static void main(String[] args) throws Exception {
-        CryptoBenchMerkleDb bench = new CryptoBenchMerkleDb();
-        bench.setup();
-        bench.setupMerkleDb();
-        for (int i = 0; i < 1; i++) {
-            bench.beforeTest();
-            bench.transferPrefetch();
-            bench.afterTest();
-        }
-        bench.destroy();
-    }
 }
