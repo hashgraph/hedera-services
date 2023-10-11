@@ -67,8 +67,6 @@ import org.apache.logging.log4j.Logger;
 public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOperation {
     private static final Logger log = LogManager.getLogger(HapiQueryOp.class);
 
-    private static final int MAX_RETRY_LIMIT = 50;
-
     private String nodePaymentName;
     private boolean recordsNodePayment = false;
     private boolean stopAfterCostAnswer = false;
@@ -141,25 +139,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
     }
 
     protected abstract T self();
-
-    @Override
-    public Optional<Throwable> execFor(HapiSpec spec) {
-        Optional<Throwable> result = Optional.empty();
-        for (int retryCount = 0; retryCount < MAX_RETRY_LIMIT; retryCount++) {
-            result = super.execFor(spec);
-            if (result.isEmpty()) {
-                return result;
-            }
-            log.info("{}. retry", retryCount);
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Interrupted while waiting to retry", e);
-            }
-        }
-        return result;
-    }
 
     @Override
     protected boolean submitOp(HapiSpec spec) throws Throwable {
