@@ -112,7 +112,7 @@ public interface HtsTranslatorsModule {
     @Provides
     @Singleton
     @IntoSet
-    static HtsCallTranslator provideCrateTranslator(@NonNull final CreateTranslator translator) {
+    static HtsCallTranslator provideCreateTranslator(@NonNull final CreateTranslator translator) {
         return translator;
     }
 
