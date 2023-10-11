@@ -247,6 +247,7 @@ abstract class AbstractScheduleHandler {
                     context.dispatchChildTransaction(childTransaction, ScheduleRecordBuilder.class, assistant);
             // set the schedule ref for the child transaction
             recordBuilder.scheduleRef(scheduleToExecute.scheduleId());
+            recordBuilder.scheduledTransactionID(childTransaction.transactionID());
             // If the child failed, we fail with the same result.
             // @note the interface below should always be implemented by all record builders,
             //       but we still need to cast it.
