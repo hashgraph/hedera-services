@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.file.impl.schemas.GenesisSchema;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
@@ -33,7 +34,6 @@ import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,7 +74,7 @@ final class GenesisSchemaTest {
                 config,
                 networkInfo,
                 new GenesisRecordsConsensusHook(),
-                mock(SavepointStackImpl.class)));
+                mock(WritableEntityIdStore.class)));
 
         // Then the new state has empty bytes for files 151-158 and proper values
         final var files = newStates.<FileID, File>get(FileServiceImpl.BLOBS_KEY);
