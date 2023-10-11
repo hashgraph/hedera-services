@@ -202,10 +202,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(writableTokenStore.get(newTokenId)).isNotNull();
         final var token = writableTokenStore.get(newTokenId);
-        final var expectedCustomFees = List.of(withFixedFee(hbarFixedFee
-                .copyBuilder()
-                .denominatingTokenId(newTokenId)
-                .build()));
+        final var expectedCustomFees = List.of(withFixedFee(
+                hbarFixedFee.copyBuilder().denominatingTokenId(newTokenId).build()));
 
         assertThat(token.treasuryAccountId()).isEqualTo(treasuryId);
         assertThat(token.tokenId()).isEqualTo(newTokenId);
