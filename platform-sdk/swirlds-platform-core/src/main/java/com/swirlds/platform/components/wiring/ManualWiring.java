@@ -24,6 +24,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;
@@ -124,6 +125,7 @@ public class ManualWiring {
      * @param platformStatusGetter               gets the current platform status
      * @param statusActionSubmitter              enables submitting platform status actions
      * @param currentEpochHash                   the current epoch hash
+     * @param currentSoftwareVersion             the current software version
      * @return a fully wired {@link StateManagementComponent}
      */
     public @NonNull StateManagementComponent wireStateManagementComponent(
@@ -137,7 +139,8 @@ public class ManualWiring {
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final PlatformStatusGetter platformStatusGetter,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @Nullable final Hash currentEpochHash) {
+            @Nullable final Hash currentEpochHash,
+            @Nullable final SoftwareVersion currentSoftwareVersion) {
 
         Objects.requireNonNull(platformSigner, "platformSigner");
         Objects.requireNonNull(mainClassName, "mainClassName");
@@ -161,7 +164,8 @@ public class ManualWiring {
                         swirldName,
                         platformStatusGetter,
                         statusActionSubmitter,
-                        currentEpochHash);
+                        currentEpochHash,
+                        currentSoftwareVersion);
 
         stateManagementComponentFactory.newLatestCompleteStateConsumer(ss -> {
             final ReservedSignedState reservedSignedState = ss.reserve("ManualWiring newLatestCompleteStateConsumer");

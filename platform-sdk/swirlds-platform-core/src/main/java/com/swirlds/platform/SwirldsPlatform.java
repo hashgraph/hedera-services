@@ -416,7 +416,8 @@ public class SwirldsPlatform implements Platform {
                 preconsensusEventWriter,
                 platformStatusManager::getCurrentStatus,
                 platformStatusManager::submitStatusAction,
-                epochHash);
+                epochHash,
+                appVersion);
         wiring.registerComponents(components);
 
         final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
@@ -431,10 +432,10 @@ public class SwirldsPlatform implements Platform {
                 new ConsensusSystemTransactionManager();
         consensusSystemTransactionManager.addHandler(
                 StateSignatureTransaction.class,
-                (ignored, nodeId, txn) -> consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn));
+                (ignored, nodeId, txn, v) -> consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn, v));
         consensusSystemTransactionManager.addHandler(
                 StateSignatureTransaction.class,
-                (ignored, nodeId, txn) -> signedStateManager.handlePostconsensusSignatureTransaction(nodeId, txn));
+                (ignored, nodeId, txn, v) -> signedStateManager.handlePostconsensusSignatureTransaction(nodeId, txn));
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());

@@ -30,6 +30,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;
 import com.swirlds.common.system.status.StatusActionSubmitter;
@@ -164,6 +165,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param platformStatusGetter               gets the current platform status
      * @param statusActionSubmitter              enables submitting platform status actions
      * @param currentEpochHash                   the current epoch hash, or null if there is none
+     * @param currentSoftwareVersion             the current software version, or null if there is none
      */
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,
@@ -184,7 +186,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final PlatformStatusGetter platformStatusGetter,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @Nullable final Hash currentEpochHash) {
+            @Nullable final Hash currentEpochHash,
+            @Nullable final SoftwareVersion currentSoftwareVersion) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -273,7 +276,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 addressBook,
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 stateConfig,
-                currentEpochHash);
+                currentEpochHash,
+                currentSoftwareVersion);
 
         final IssHandler issHandler = new IssHandler(
                 Time.getCurrent(),

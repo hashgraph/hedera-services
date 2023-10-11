@@ -35,7 +35,7 @@ class ConsensusSystemTransactionManagerTests {
     @Test
     @DisplayName("tests that exceptions are handled gracefully")
     void testHandleExceptions() {
-        ConsensusSystemTransactionHandler<DummySystemTransaction> consumer = (state, dummySystemTransaction, aLong) -> {
+        ConsensusSystemTransactionHandler<DummySystemTransaction> consumer = (state, dummySystemTransaction, aLong, version) -> {
             throw new IllegalStateException("this is intentionally thrown");
         };
 
@@ -51,7 +51,7 @@ class ConsensusSystemTransactionManagerTests {
         final AtomicInteger handleCount = new AtomicInteger(0);
 
         ConsensusSystemTransactionHandler<DummySystemTransaction> consumer =
-                (state, dummySystemTransaction, aLong) -> handleCount.getAndIncrement();
+                (state, dummySystemTransaction, aLong, version) -> handleCount.getAndIncrement();
 
         final ConsensusSystemTransactionManager manager = new ConsensusSystemTransactionManager();
         manager.addHandler(DummySystemTransaction.class, consumer);

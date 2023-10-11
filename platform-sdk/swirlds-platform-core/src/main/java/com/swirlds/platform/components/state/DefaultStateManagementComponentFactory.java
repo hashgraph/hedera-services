@@ -21,6 +21,7 @@ import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;
 import com.swirlds.common.system.status.StatusActionSubmitter;
@@ -61,6 +62,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     private FatalErrorConsumer fatalErrorConsumer;
     private PreconsensusEventWriter preconsensusEventWriter;
     private final Hash currentEpochHash;
+    private final SoftwareVersion currentSoftwareVersion;
 
     /**
      * Gets the current platform status
@@ -82,7 +84,8 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
             @NonNull final String swirldName,
             @NonNull final PlatformStatusGetter platformStatusGetter,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @Nullable final Hash currentEpochHash) {
+            @Nullable final Hash currentEpochHash,
+            @Nullable final SoftwareVersion currentSoftwareVersion) {
 
         this.context = Objects.requireNonNull(context);
         this.threadManager = Objects.requireNonNull(threadManager);
@@ -94,6 +97,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
         this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.currentEpochHash = currentEpochHash;
+        this.currentSoftwareVersion = currentSoftwareVersion;
     }
 
     @Override
@@ -175,7 +179,8 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
                 preconsensusEventWriter,
                 platformStatusGetter,
                 statusActionSubmitter,
-                currentEpochHash);
+                currentEpochHash,
+                currentSoftwareVersion);
     }
 
     private void verifyInputs() {

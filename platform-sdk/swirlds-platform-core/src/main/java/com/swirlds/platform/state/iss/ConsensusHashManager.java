@@ -26,6 +26,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.utility.throttle.RateLimiter;
@@ -42,6 +43,7 @@ import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -64,6 +66,8 @@ public class ConsensusHashManager {
     private final AddressBook addressBook;
     /** The current epoch hash */
     private final Hash currentEpochHash;
+    /** The current software version */
+    private final SoftwareVersion currentSoftwareVersion;
 
     /**
      * Prevent log messages about a lack of signatures from spamming the logs.
@@ -87,12 +91,13 @@ public class ConsensusHashManager {
     /**
      * Create an object that tracks reported hashes and detects ISS events.
      *
-     * @param time            provides the current wall clock time
-     * @param dispatchBuilder responsible for building dispatchers
-     * @param addressBook     the address book for the network
-     * @param consensusConfig consensus configuration
-     * @param stateConfig     state configuration
-     * @param currentEpochHash the current epoch hash
+     * @param time                   provides the current wall clock time
+     * @param dispatchBuilder        responsible for building dispatchers
+     * @param addressBook            the address book for the network
+     * @param consensusConfig        consensus configuration
+     * @param stateConfig            state configuration
+     * @param currentEpochHash       the current epoch hash
+     * @param currentSoftwareVersion the current software version
      */
     public ConsensusHashManager(
             final Time time,
@@ -100,7 +105,8 @@ public class ConsensusHashManager {
             final AddressBook addressBook,
             final ConsensusConfig consensusConfig,
             final StateConfig stateConfig,
-            final Hash currentEpochHash) {
+            final Hash currentEpochHash,
+            final SoftwareVersion currentSoftwareVersion) {
 
         final Duration timeBetweenIssLogs = Duration.ofSeconds(stateConfig.secondsBetweenIssLogs());
         lackingSignaturesRateLimiter = new RateLimiter(time, timeBetweenIssLogs);
@@ -116,6 +122,7 @@ public class ConsensusHashManager {
 
         this.addressBook = addressBook;
         this.currentEpochHash = currentEpochHash;
+        this.currentSoftwareVersion = currentSoftwareVersion;
 
         this.roundData = new ConcurrentSequenceMap<>(
                 -consensusConfig.roundsNonAncient(), consensusConfig.roundsNonAncient(), x -> x);
@@ -176,6 +183,16 @@ public class ConsensusHashManager {
     }
 
     /**
+     * Same as {@link #handlePostconsensusSignatureTransaction(NodeId, StateSignatureTransaction, SoftwareVersion)}
+     * but with a null event version.
+     */
+    public void handlePostconsensusSignatureTransaction(
+            @NonNull final NodeId signerId,
+            @NonNull final StateSignatureTransaction signatureTransaction) {
+        handlePostconsensusSignatureTransaction(signerId, signatureTransaction, null);
+    }
+
+    /**
      * <p>
      * Observes post-consensus state signature transactions.
      * </p>
@@ -187,12 +204,20 @@ public class ConsensusHashManager {
      *
      * @param signerId             the ID of the node that signed the state
      * @param signatureTransaction the signature transaction
+     * @param eventVersion         the version of the event that contains the transaction
      */
     public void handlePostconsensusSignatureTransaction(
-            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
+            @NonNull final NodeId signerId,
+            @NonNull final StateSignatureTransaction signatureTransaction,
+            @Nullable SoftwareVersion eventVersion) {
 
         Objects.requireNonNull(signerId);
         Objects.requireNonNull(signatureTransaction);
+
+        if (!Objects.equals(currentSoftwareVersion, eventVersion)) {
+            // this is a signature from a different software version, ignore it
+            return;
+        }
 
         if (!Objects.equals(signatureTransaction.getEpochHash(), currentEpochHash)) {
             // this is a signature from a different epoch, ignore it
