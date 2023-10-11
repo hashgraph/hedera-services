@@ -47,9 +47,7 @@ import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
-import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.SignatureTransmitter;
-import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -248,8 +246,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 newLatestCompleteStateConsumer,
                 combinedStateHasEnoughSignaturesConsumer,
                 combinedStateLacksSignaturesConsumer);
-
-        dispatchBuilder.registerObservers(this);
 
         final RunningAverageMetric avgRoundSupermajority =
                 platformContext.getMetrics().getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
