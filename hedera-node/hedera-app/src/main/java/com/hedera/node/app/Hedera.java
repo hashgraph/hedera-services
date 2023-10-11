@@ -241,12 +241,11 @@ public final class Hedera implements SwirldMain {
                         new FreezeServiceImpl(),
                         new NetworkServiceImpl(),
                         new ScheduleServiceImpl(),
+                        new EntityIdService(),
                         new TokenServiceImpl(),
                         new UtilServiceImpl(),
                         new RecordCacheService(),
                         new BlockRecordService(),
-                        // todo there should be a problem with this being after token service...???
-                        new EntityIdService(),
                         new FeeService(),
                         new CongestionThrottleService())
                 .forEach(servicesRegistry::register);
