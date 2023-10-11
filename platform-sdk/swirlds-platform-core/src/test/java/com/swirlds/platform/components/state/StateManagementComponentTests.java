@@ -44,6 +44,7 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
+import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -512,10 +513,15 @@ class StateManagementComponentTests {
         final PlatformStatusGetter platformStatusGetter = mock(PlatformStatusGetter.class);
         when(platformStatusGetter.getCurrentStatus()).thenReturn(PlatformStatus.ACTIVE);
 
-        return new DefaultStateManagementComponent(
+        final DispatchConfiguration dispatchConfiguration =
+                platformContext.getConfiguration().getConfigData(DispatchConfiguration.class);
+
+        final DispatchBuilder dispatchBuilder = new DispatchBuilder(dispatchConfiguration);
+
+        final DefaultStateManagementComponent stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
                 AdHocThreadManager.getStaticThreadManager(),
-                mock(DispatchBuilder.class),
+                dispatchBuilder,
                 addressBook,
                 signer,
                 MAIN,
@@ -532,5 +538,9 @@ class StateManagementComponentTests {
                 mock(PreconsensusEventWriter.class),
                 platformStatusGetter,
                 mock(StatusActionSubmitter.class));
+
+        dispatchBuilder.start();
+
+        return stateManagementComponent;
     }
 }
