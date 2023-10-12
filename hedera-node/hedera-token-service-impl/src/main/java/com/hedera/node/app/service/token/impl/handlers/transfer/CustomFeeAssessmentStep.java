@@ -142,6 +142,7 @@ public class CustomFeeAssessmentStep {
      * @param tokenRelStore - token relation store
      * @param config - configuration
      * @param accountStore - account store
+     * @param autoCreationTest - predicate to test if account id is being auto created
      * @return - transaction body with assessed custom fees
      */
     public CustomFeeAssessmentResult assessFees(
