@@ -251,8 +251,9 @@ public final class PlatformBuilder {
                         .setPreviousAddressBook(
                                 addressBookInitializer.getPreviousAddressBook() == null
                                         ? null
-                                        : addressBookInitializer.getPreviousAddressBook().copy()
-                        );
+                                        : addressBookInitializer
+                                                .getPreviousAddressBook()
+                                                .copy());
             }
 
             final SwirldsPlatform platform = new SwirldsPlatform(

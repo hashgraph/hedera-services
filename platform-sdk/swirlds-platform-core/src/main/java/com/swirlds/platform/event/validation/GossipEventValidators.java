@@ -38,7 +38,7 @@ public class GossipEventValidators implements GossipEventValidator {
      * @param validatorName the name of the validator to replace
      * @param replacement   the new validator
      */
-    public void replaceValidator(@NonNull String validatorName, @NonNull GossipEventValidator replacement){
+    public void replaceValidator(@NonNull String validatorName, @NonNull GossipEventValidator replacement) {
         Objects.requireNonNull(validatorName);
         Objects.requireNonNull(replacement);
         for (int i = 0; i < validators.size(); i++) {

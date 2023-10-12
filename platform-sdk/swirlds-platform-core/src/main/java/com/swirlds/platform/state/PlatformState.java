@@ -135,5 +135,4 @@ public class PlatformState extends PartialBinaryMerkleInternal implements Merkle
     public void setPreviousAddressBook(final AddressBook addressBook) {
         setChild(ChildIndices.PREVIOUS_ADDRESS_BOOK, addressBook);
     }
-
 }

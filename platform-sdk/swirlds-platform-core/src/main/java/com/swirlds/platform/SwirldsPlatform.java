@@ -894,8 +894,7 @@ public class SwirldsPlatform implements Platform {
                                 signedState.getState().getPlatformState().getAddressBook(),
                                 appVersion,
                                 CryptoStatic::verifySignature,
-                                Time.getCurrent())
-                );
+                                Time.getCurrent()));
             } finally {
                 intakeQueue.resume();
             }
