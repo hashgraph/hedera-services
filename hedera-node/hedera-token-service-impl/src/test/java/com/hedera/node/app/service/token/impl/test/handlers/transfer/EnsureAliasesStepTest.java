@@ -84,8 +84,8 @@ class EnsureAliasesStepTest extends StepsBase {
 
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
-        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNull();
-        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
+        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNotNull();
         assertThat(writableAliases.get(ecEvmAlias)).isNull();
         assertThat(writableAliases.get(edKeyAlias)).isNull();
 

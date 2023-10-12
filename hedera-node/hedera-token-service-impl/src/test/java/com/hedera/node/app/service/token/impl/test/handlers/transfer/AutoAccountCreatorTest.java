@@ -83,8 +83,8 @@ class AutoAccountCreatorTest extends StepsBase {
 
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
-        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNull();
-        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
+        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNotNull();
         assertThat(writableAliases.get(ecEvmAlias)).isNull();
 
         subject.create(ecKeyAlias.value(), 0);
@@ -112,8 +112,8 @@ class AutoAccountCreatorTest extends StepsBase {
 
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
-        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNull();
-        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
+        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNotNull();
         assertThat(writableAliases.get(edKeyAlias)).isNull();
 
         subject.create(edKeyAlias.value(), 0);
@@ -142,8 +142,8 @@ class AutoAccountCreatorTest extends StepsBase {
 
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
-        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNull();
-        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
+        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNotNull();
         assertThat(writableAliases.get(address)).isNull();
 
         subject.create(address.value(), 0);
