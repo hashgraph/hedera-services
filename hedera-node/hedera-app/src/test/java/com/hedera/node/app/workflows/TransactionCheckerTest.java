@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_STA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
@@ -232,7 +233,7 @@ final class TransactionCheckerTest extends AppTestBase {
             final var transaction = checker.parse(Bytes.EMPTY);
             assertThatThrownBy(() -> checker.check(transaction))
                     .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(INVALID_TRANSACTION_BODY));
+                    .has(responseCode(NOT_SUPPORTED));
         }
 
         /**
@@ -306,7 +307,7 @@ final class TransactionCheckerTest extends AppTestBase {
             final var transaction = checker.parse(inputBuffer);
             assertThatThrownBy(() -> checker.check(transaction))
                     .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(INVALID_TRANSACTION_BODY));
+                    .has(responseCode(NOT_SUPPORTED));
 
             // And the super deprecation counter has been incremented
             assertThat(counterMetric("SuperDeprTxnsRcv").get()).isEqualTo(1);
@@ -421,7 +422,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 // When we check, then we get a PreCheckException with INVALID_TRANSACTION_BODY
                 assertThatThrownBy(() -> checker.check(localTx))
                         .isInstanceOf(PreCheckException.class)
-                        .has(responseCode(INVALID_TRANSACTION_BODY));
+                        .has(responseCode(NOT_SUPPORTED));
 
                 // And the super deprecation counter has been incremented
                 assertThat(counterMetric("SuperDeprTxnsRcv").get()).isEqualTo(1);
