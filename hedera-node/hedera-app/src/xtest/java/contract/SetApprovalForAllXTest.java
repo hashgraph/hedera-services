@@ -175,7 +175,7 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
                 assertSuccess());
 
         // @Future remove to revert #9214 after modularization is completed
-        // Those tests test that precompile matches mono behaviour
+        // Those tests ensure that the precompile matches mono behaviour
         runHtsCallAndExpectRevert(
                 OWNER_BESU_ADDRESS,
                 bytesForRedirect(
