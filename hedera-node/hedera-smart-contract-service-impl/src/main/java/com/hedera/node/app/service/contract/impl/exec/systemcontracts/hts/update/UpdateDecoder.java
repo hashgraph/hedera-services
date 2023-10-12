@@ -39,9 +39,7 @@ import javax.inject.Singleton;
 @Singleton
 public class UpdateDecoder {
     @Inject
-    public UpdateDecoder() {
-        // Dagger2
-    }
+    public UpdateDecoder() {}
 
     /**
      * Decodes a call to {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION} into a synthetic {@link TransactionBody}.
@@ -118,6 +116,20 @@ public class UpdateDecoder {
                 && tokenExpiry.autoRenewPeriod().seconds() != 0) {
             txnBodyBuilder.autoRenewPeriod(tokenExpiry.autoRenewPeriod());
         }
+
+        return checkTokenKeysTypeAndBuild(tokenKeys, txnBodyBuilder);
+    }
+
+    public TransactionBody decodeTokenUpdateKeys(@NonNull final HtsCallAttempt attempt) {
+        final var call = UpdateKeysTranslator.TOKEN_UPDATE_KEYS_FUNCTION.decodeCall(
+                attempt.input().toArrayUnsafe());
+
+        final var tokenId = ConversionUtils.asTokenId(call.get(0));
+        final var tokenKeys = decodeTokenKeys(call.get(1), attempt.addressIdConverter());
+
+        // Build the transaction body
+        final var txnBodyBuilder = TokenUpdateTransactionBody.newBuilder();
+        txnBodyBuilder.token(tokenId);
 
         return checkTokenKeysTypeAndBuild(tokenKeys, txnBodyBuilder);
     }
