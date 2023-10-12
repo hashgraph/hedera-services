@@ -31,6 +31,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
@@ -87,14 +88,16 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final TransactionBody txn,
             @NonNull final Configuration configuration,
-            @NonNull final TransactionDispatcher dispatcher)
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final TransactionCategory transactionCategory)
             throws PreCheckException {
         this(
                 storeFactory,
                 txn,
                 txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
                 configuration,
-                dispatcher);
+                dispatcher,
+                transactionCategory);
     }
 
     /** Create a new instance */
@@ -103,8 +106,8 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer,
             @NonNull final Configuration configuration,
-            @NonNull final TransactionDispatcher dispatcher)
-            throws PreCheckException {
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final TransactionCategory transactionCategory) throws PreCheckException {
         this.storeFactory = requireNonNull(storeFactory, "storeFactory must not be null.");
         this.txn = requireNonNull(txn, "txn must not be null!");
         this.payer = requireNonNull(payer, "payer msut not be null!");
@@ -113,13 +116,17 @@ public class PreHandleContextImpl implements PreHandleContext {
 
         this.accountStore = storeFactory.getStore(ReadableAccountStore.class);
 
-        // Find the account, which must exist or throw a PreCheckException with the given response code.
-        final var account = accountStore.getAccountById(payer);
-        mustExist(account, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
-        // NOTE: While it is true that the key can be null on some special accounts like
-        // account 800, those accounts cannot be the payer.
-        payerKey = account.key();
-        mustExist(payerKey, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
+        if (transactionCategory.equals(TransactionCategory.USER) || transactionCategory.equals(TransactionCategory.PRECEDING)) {
+            // Find the account, which must exist or throw a PreCheckException with the given response code.
+            final var account = accountStore.getAccountById(payer);
+            mustExist(account, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
+            // NOTE: While it is true that the key can be null on some special accounts like
+            // account 800, those accounts cannot be the payer.
+            payerKey = account.key();
+            mustExist(payerKey, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
+        } else {
+            payerKey = null;
+        }
     }
 
     @Override
@@ -380,7 +387,7 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull TransactionBody nestedTxn, @NonNull final AccountID payerForNested) throws PreCheckException {
         dispatcher.dispatchPureChecks(nestedTxn);
         final var nestedContext =
-                new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration, dispatcher);
+                new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration, dispatcher, TransactionCategory.USER);
         dispatcher.dispatchPreHandle(nestedContext);
         return nestedContext;
     }
@@ -391,7 +398,7 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
             throws PreCheckException {
         this.innerContext =
-                new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration, dispatcher);
+                new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration, dispatcher, TransactionCategory.USER);
         return this.innerContext;
     }
 

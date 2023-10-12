@@ -319,7 +319,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             throws PreCheckException {
         dispatcher.dispatchPureChecks(nestedTxn);
         final var nestedContext = new PreHandleContextImpl(
-                readableStoreFactory(), nestedTxn, payerForNested, configuration(), dispatcher);
+                readableStoreFactory(), nestedTxn, payerForNested, configuration(), dispatcher, TransactionCategory.USER);
         dispatcher.dispatchPreHandle(nestedContext);
         return nestedContext;
     }
@@ -490,6 +490,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionCategory childCategory,
             @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
             @NonNull final Predicate<Key> callback) {
+        final var readableStoreFactory = new ReadableStoreFactory(stack);
         // Initialize record builder list
         final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
         final var signedTransaction =
@@ -541,6 +542,16 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 return;
             }
         }
+
+        try {
+            final var context = new PreHandleContextImpl(readableStoreFactory, txBody, configuration, dispatcher, childCategory);
+            dispatcher.dispatchPreHandle(context);
+        } catch (PreCheckException e) {
+            childRecordBuilder.status(e.responseCode());
+            return;
+        }
+
+
         final var childContext = new HandleContextImpl(
                 txBody,
                 function,

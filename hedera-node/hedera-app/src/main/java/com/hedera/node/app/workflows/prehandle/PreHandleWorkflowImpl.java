@@ -36,6 +36,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -224,7 +225,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // implementation pair, with the implementation in `hedera-app`, then we will change the constructor,
             // so I can pass the payer account in directly, since I've already looked it up. But I don't really want
             // that as a public API in the SPI, so for now, we do a double lookup. Boo.
-            context = new PreHandleContextImpl(storeFactory, txInfo.txBody(), configuration, dispatcher);
+            context = new PreHandleContextImpl(storeFactory, txInfo.txBody(), configuration, dispatcher, TransactionCategory.USER);
         } catch (PreCheckException preCheck) {
             // This should NEVER happen. The only way an exception is thrown from the PreHandleContext constructor
             // is if the payer account doesn't exist, but by the time we reach this line of code, we already know

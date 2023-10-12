@@ -666,7 +666,7 @@ public class HandleWorkflow {
         final var signedBytes = txInfo.signedBytes();
 
         // extract keys and hollow accounts again
-        final var context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher);
+        final var context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher, TransactionCategory.USER);
         dispatcher.dispatchPreHandle(context);
 
         // re-expand keys only if any of the keys have changed
