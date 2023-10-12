@@ -76,12 +76,12 @@ public class TokenTupleUtils {
      */
     @NonNull
     public static Tuple feesTupleFor(final int responseCode, @NonNull final Token token) {
-        final var fixedFees = fixFeesTupleListFor(token);
+        final var fixedFees = fixedFeesTupleListFor(token);
         final var fractionalFees = fractionalFeesTupleListFor(token);
         final var royaltyFees = royaltyFeesTupleListFor(token);
         return Tuple.of(
                 responseCode,
-                fixFeesTupleListFor(token).toArray(new Tuple[fixedFees.size()]),
+                fixedFeesTupleListFor(token).toArray(new Tuple[fixedFees.size()]),
                 fractionalFeesTupleListFor(token).toArray(new Tuple[fractionalFees.size()]),
                 royaltyFeesTupleListFor(token).toArray(new Tuple[royaltyFees.size()]));
     }
@@ -94,7 +94,7 @@ public class TokenTupleUtils {
      */
     @SuppressWarnings("DataFlowIssue")
     @NonNull
-    private static List<Tuple> fixFeesTupleListFor(@NonNull final Token token) {
+    private static List<Tuple> fixedFeesTupleListFor(@NonNull final Token token) {
         //
         assert token.customFees() != null;
         return token.customFees().stream()

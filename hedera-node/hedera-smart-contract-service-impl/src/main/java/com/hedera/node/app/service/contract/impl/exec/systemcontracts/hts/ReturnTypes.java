@@ -66,6 +66,8 @@ public class ReturnTypes {
 
     private static final TupleType RC_ENCODER = TupleType.parse(INT_64);
 
+    // Return a response code and arrays of fixed, fractional and royalty fees
+    // (uint32,(int64,address,bool,bool,address)[],(int64,int64,int64,int64,bool,address)[],(int64,int64,int64,address,bool,address)[])
     public static final String RESPONSE_CODE_CUSTOM_FEES = RESPONSE_STATUS_AT_BEGINNING
             + FIXED_FEE_V2 + ARRAY_BRACKETS
             + ","
