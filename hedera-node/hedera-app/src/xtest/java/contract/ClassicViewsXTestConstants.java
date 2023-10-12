@@ -140,7 +140,7 @@ public class ClassicViewsXTestConstants {
             List.of(Tuple.of(1L, 100L, 2L, 4L, true, headlongAddressOf(OPERATOR_ID)));
     public static final List<Tuple> EXPECTED_ROYALTY_CUSTOM_FEES =
             List.of(Tuple.of(2L, 50L, 5L, headlongAddressOf(ERC20_TOKEN_ID), false, headlongAddressOf(OPERATOR_ID)));
-    static final ByteBuffer EXPECTED_CUSTOM_FEES_EXPIRY = TOKEN_CUSTOM_FEES
+    static final ByteBuffer EXPECTED_CUSTOM_FEES = TOKEN_CUSTOM_FEES
             .getOutputs()
             .encodeElements(
                     SUCCESS_INT,

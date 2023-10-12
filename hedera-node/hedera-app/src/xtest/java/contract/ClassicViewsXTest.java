@@ -23,7 +23,7 @@ import static contract.ClassicViewsXTestConstants.AUTORENEW_SECONDS;
 import static contract.ClassicViewsXTestConstants.CLASSIC_QUERIES_X_TEST_ID;
 import static contract.ClassicViewsXTestConstants.CLASSIC_VIEWS_INITCODE_FILE_ID;
 import static contract.ClassicViewsXTestConstants.CUSTOM_FEES;
-import static contract.ClassicViewsXTestConstants.EXPECTED_CUSTOM_FEES_EXPIRY;
+import static contract.ClassicViewsXTestConstants.EXPECTED_CUSTOM_FEES;
 import static contract.ClassicViewsXTestConstants.EXPECTED_TOKEN_EXPIRY;
 import static contract.ClassicViewsXTestConstants.EXPIRATION_SECONDS;
 import static contract.ClassicViewsXTestConstants.FEE_SCHEDULE_KEY;
@@ -171,7 +171,7 @@ public class ClassicViewsXTest extends AbstractContractXTest {
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_CUSTOM_FEES, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(EXPECTED_CUSTOM_FEES_EXPIRY));
+                assertingCallLocalResultIs(EXPECTED_CUSTOM_FEES));
     }
 
     private Query miscViewsQuery(@NonNull final Function function, @NonNull final Object... args) {
