@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
