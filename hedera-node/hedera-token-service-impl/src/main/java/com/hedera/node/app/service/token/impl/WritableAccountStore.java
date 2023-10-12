@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -173,11 +174,12 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
-     * Returns the list of contract nonces modified in existing state.
+     * Returns a summary of the changes made to contract state.
      *
-     * @return the list of contract nonces modified in existing state
+     * @return a summary of the changes made to contract state
      */
-    public @NonNull List<ContractNonceInfo> updatedContractNonces() {
+    public @NonNull ContractChangeSummary summarizeContractChanges() {
+        final List<ContractID> newContractIds = new ArrayList<>();
         final List<ContractNonceInfo> updates = new ArrayList<>();
         accountState().modifiedKeys().forEach(accountId -> {
             final var newAccount = accountState().get(accountId);
@@ -188,10 +190,13 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                             .contractNum(accountId.accountNumOrThrow())
                             .build();
                     updates.add(new ContractNonceInfo(contractId, newAccount.ethereumNonce()));
+                    if (oldAccount == null) {
+                        newContractIds.add(contractId);
+                    }
                 }
             }
         });
-        return updates;
+        return new ContractChangeSummary(newContractIds, updates);
     }
 
     /**
