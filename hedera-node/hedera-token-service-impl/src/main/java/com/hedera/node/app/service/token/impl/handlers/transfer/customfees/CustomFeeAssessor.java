@@ -117,17 +117,27 @@ public class CustomFeeAssessor extends BaseTokenHandler {
             for (final var entryTx : entryValue.entrySet()) {
                 final Long htsBalanceChange = entryTx.getValue();
                 if (htsBalanceChange < 0) {
+                    // IMPORTANT: These special cases exist only to simulate mono-service failure codes in
+                    // some of the "classic" custom fee scenarios encoded in EETs; but they have no logical
+                    // priority relative to other failure responses that would be assigned in a later step
+                    // if we didn't fail here
                     final var accountId = entryTx.getKey();
                     final var tokenRel = tokenRelStore.get(accountId, entry.getKey());
+                    final var precedingChanges =
+                            result.getImmutableInputTokenAdjustments().get(entry.getKey());
+                    final long precedingCredit =
+                            precedingChanges == null ? 0 : Math.max(0L, precedingChanges.getOrDefault(accountId, 0L));
                     if (tokenRel == null) {
-                        // To match mono-service, use INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE when
-                        // an auto-created account is being debited a custom fee in the same transaction that
-                        // would have created it; and TOKEN_NOT_ASSOCIATED_TO_ACCOUNT when an existing account
-                        // is being debited a custom fee in a token type it is not associated to
                         if (autoCreationTest.test(accountId)) {
                             throw new HandleException(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
                         } else {
-                            throw new HandleException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+                            final var currentAccount = accountStore.getAccountById(accountId);
+                            final var mayBeAutoAssociatedHere = currentAccount != null
+                                    && precedingCredit > 0
+                                    && currentAccount.maxAutoAssociations() > currentAccount.usedAutoAssociations();
+                            if (!mayBeAutoAssociatedHere) {
+                                throw new HandleException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+                            }
                         }
                     }
                     if (tokenRel != null) {

@@ -107,7 +107,11 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
 
     @BeforeEach
     public void setUp() {
-        super.setUp();
+        baseInternalSetUp(true);
+    }
+
+    protected void baseInternalSetUp(final boolean prepopulateReceiverIds) {
+        super.handlerTestBaseInternalSetUp(prepopulateReceiverIds);
         attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         expiryValidator = new StandardizedExpiryValidator(
                 System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);

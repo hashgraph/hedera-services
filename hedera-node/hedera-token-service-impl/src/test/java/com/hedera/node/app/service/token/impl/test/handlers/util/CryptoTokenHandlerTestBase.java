@@ -377,32 +377,38 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     @BeforeEach
     public void setUp() {
+        handlerTestBaseInternalSetUp(true);
+    }
+
+    protected void handlerTestBaseInternalSetUp(final boolean prepopulateReceiverIds) {
         configuration = HederaTestConfigBuilder.create().getOrCreateConfig();
         versionedConfig = new VersionedConfigImpl(configuration, 1);
         givenValidAccounts();
         givenValidTokens();
         givenValidTokenRelations();
         givenStakingInfos();
-        setUpAllEntities();
+        setUpAllEntities(prepopulateReceiverIds);
         refreshReadableStores();
         refreshWritableStores();
     }
 
-    private void setUpAllEntities() {
+    private void setUpAllEntities(final boolean prepopulateReceiverIds) {
         accountsMap = new HashMap<>();
         accountsMap.put(payerId, account);
-        accountsMap.put(
-                hbarReceiverId,
-                Account.newBuilder()
-                        .accountId(hbarReceiverId)
-                        .tinybarBalance(Long.MAX_VALUE)
-                        .build());
-        accountsMap.put(
-                tokenReceiverId,
-                Account.newBuilder()
-                        .accountId(tokenReceiverId)
-                        .tinybarBalance(Long.MAX_VALUE)
-                        .build());
+        if (prepopulateReceiverIds) {
+            accountsMap.put(
+                    hbarReceiverId,
+                    Account.newBuilder()
+                            .accountId(hbarReceiverId)
+                            .tinybarBalance(Long.MAX_VALUE)
+                            .build());
+            accountsMap.put(
+                    tokenReceiverId,
+                    Account.newBuilder()
+                            .accountId(tokenReceiverId)
+                            .tinybarBalance(Long.MAX_VALUE)
+                            .build());
+        }
         accountsMap.put(deleteAccountId, deleteAccount);
         accountsMap.put(transferAccountId, transferAccount);
         accountsMap.put(ownerId, ownerAccount);
