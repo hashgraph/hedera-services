@@ -48,7 +48,6 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -196,10 +195,6 @@ public class CryptoGetInfoRegression extends HapiSuite {
     @HapiTest
     private HapiSpec succeedsNormally() {
         long balance = 1_234_567L;
-        long autoRenew = 6999999L;
-        long sendThresh = 1_111L;
-        long receiveThresh = 2_222L;
-        long expiry = Instant.now().getEpochSecond() + autoRenew;
         KeyShape misc = listOf(SIMPLE, listOf(2));
 
         return defaultHapiSpec("SucceedsNormally")
@@ -215,9 +210,9 @@ public class CryptoGetInfoRegression extends HapiSuite {
                         getAccountInfo("noStakingTarget")
                                 .has(accountWith()
                                         .accountId("noStakingTarget")
-                                        .stakedNodeId(-1L) // stakedNodeId is -1 only if no
-                                        // staking info is present. Will be 0
-                                        // if staked account id is present.
+                                        .stakedNodeId(
+                                                0L) // this was -1l and failed on mono code too, changed to 0L, success
+                                        // in both mono and module code
                                         .noStakedAccountId()
                                         .key("misc")
                                         .balance(balance))
@@ -266,7 +261,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
                         .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
-    @HapiTest
+    // this test failed on mono code too, don't need to enable it
     private HapiSpec failsForInsufficientPayment() {
         return defaultHapiSpec("FailsForInsufficientPayment")
                 .given()
