@@ -687,9 +687,9 @@ class HederaWorldStateTest {
         final var storageValue = UInt256.valueOf(9_876);
         final var secondStorageKey = UInt256.valueOf(2);
         final var secondStorageValue = UInt256.ZERO;
-        evmAccount.getMutable().setStorageValue(storageKey, storageValue);
-        evmAccount.getMutable().setStorageValue(secondStorageKey, secondStorageValue);
-        evmAccount.getMutable().setCode(code);
+        evmAccount.setStorageValue(storageKey, storageValue);
+        evmAccount.setStorageValue(secondStorageKey, secondStorageValue);
+        evmAccount.setCode(code);
         // and:
         final var accountID =
                 EntityIdUtils.accountIdFromEvmAddress(contract.asEvmAddress().toArray());
@@ -734,7 +734,7 @@ class HederaWorldStateTest {
         final var slot = 1L;
         final var oldSlotValue = 4L;
         final var newSlotValue = 255L;
-        final var updatedAccount = mock(UpdateTrackingAccount.class);
+        final UpdateTrackingAccount<Account> updatedAccount = mock(UpdateTrackingAccount.class);
         given(updatedAccount.getAddress()).willReturn(Address.fromHexString(contractAddress));
         given(updatedAccount.getOriginalStorageValue(UInt256.valueOf(slot))).willReturn(UInt256.valueOf(oldSlotValue));
         given(updatedAccount.getUpdatedStorage())

@@ -165,6 +165,32 @@ public class ConversionUtils {
     }
 
     /**
+     * Given a {@link AccountID}, returns its address as a headlong address.
+     * @param accountID
+     * @return
+     */
+    public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final AccountID accountID) {
+        requireNonNull(accountID);
+        final var integralAddress = accountID.hasAccountNum()
+                ? asEvmAddress(accountID.accountNum())
+                : accountID.alias().toByteArray();
+        return asHeadlongAddress(integralAddress);
+    }
+
+    /**
+     * Given a {@link ContractID}, returns its address as a headlong address.
+     * @param contractId
+     * @return
+     */
+    public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final ContractID contractId) {
+        requireNonNull(contractId);
+        final var integralAddress = contractId.hasContractNum()
+                ? asEvmAddress(contractId.contractNum())
+                : contractId.evmAddress().toByteArray();
+        return asHeadlongAddress(integralAddress);
+    }
+
+    /**
      * Given an account, returns its "priority" address as a headlong address.
      *
      * @param account the account

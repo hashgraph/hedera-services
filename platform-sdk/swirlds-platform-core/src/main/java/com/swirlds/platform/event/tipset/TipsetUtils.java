@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.tipset;
 
-import com.swirlds.platform.event.EventDescriptor;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
