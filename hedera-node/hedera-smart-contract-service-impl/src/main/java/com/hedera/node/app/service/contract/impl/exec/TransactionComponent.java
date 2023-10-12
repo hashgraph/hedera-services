@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -28,7 +29,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public interface TransactionComponent {
     @Subcomponent.Factory
     interface Factory {
-        TransactionComponent create(@BindsInstance HandleContext context);
+        TransactionComponent create(
+                @BindsInstance HandleContext context, @BindsInstance HederaFunctionality functionality);
     }
 
     ContextTransactionProcessor contextTransactionProcessor();
