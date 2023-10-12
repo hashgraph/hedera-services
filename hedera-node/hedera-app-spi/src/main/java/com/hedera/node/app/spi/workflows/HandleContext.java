@@ -25,6 +25,7 @@ import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
@@ -417,6 +418,17 @@ public interface HandleContext {
             @NonNull Class<T> recordBuilderClass,
             @NonNull Predicate<Key> callback,
             @NonNull AccountID syntheticPayer);
+
+    /**
+     * Dispatches the fee calculation for a child transaction (that might then be dispatched).
+     *
+     * <p>The override payer id doesn't matter for this purpose, because there are no signatures
+     * provided or verified as part of a dispatch. So we provide only a {@link TransactionBody}.
+     *
+     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
+     * @return the calculated fees
+     */
+    Fees dispatchComputeFees(@NonNull TransactionBody txBody);
 
     /**
      * Dispatches a child transaction that already has a transaction ID.
