@@ -1149,15 +1149,15 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
     }
 
-    Compactable getHashStoreDisk() {
+    Compactible getHashStoreDisk() {
         return hashStoreDisk;
     }
 
-    Compactable getObjectKeyToPath() {
+    Compactible getObjectKeyToPath() {
         return objectKeyToPath;
     }
 
-    Compactable getPathToKeyValue() {
+    Compactible getPathToKeyValue() {
         return pathToKeyValue;
     }
 

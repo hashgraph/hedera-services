@@ -77,9 +77,9 @@ class MerkleDbCompactionCoordinator {
     final ConcurrentMap<String, InterruptibleCompletableFuture> compactionFuturesByName = new ConcurrentHashMap<>(3);
     private final MerkleDbStatisticsUpdater statisticsUpdater;
     private final String tableName;
-    private final Optional<Compactable> objectKeyToPathOpt;
-    private final Optional<Compactable> hashesStoreDiskOpt;
-    private final Compactable pathToKeyValue;
+    private final Optional<Compactible> objectKeyToPathOpt;
+    private final Optional<Compactible> hashesStoreDiskOpt;
+    private final Compactible pathToKeyValue;
 
     /**
      * Creates a new instance of {@link MerkleDbCompactionCoordinator}.
@@ -92,9 +92,9 @@ class MerkleDbCompactionCoordinator {
     public MerkleDbCompactionCoordinator(
             @NonNull String tableName,
             @NonNull MerkleDbStatisticsUpdater statisticsUpdater,
-            @Nullable Compactable objectKeyToPath,
-            @Nullable Compactable hashesStoreDisk,
-            @NonNull Compactable pathToKeyValue) {
+            @Nullable Compactible objectKeyToPath,
+            @Nullable Compactible hashesStoreDisk,
+            @NonNull Compactible pathToKeyValue) {
         this.tableName = tableName;
         this.statisticsUpdater = statisticsUpdater;
         this.objectKeyToPathOpt = Optional.ofNullable(objectKeyToPath);

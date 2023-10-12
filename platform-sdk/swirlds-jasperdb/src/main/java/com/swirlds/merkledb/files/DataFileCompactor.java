@@ -36,10 +36,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -374,7 +372,12 @@ public class DataFileCompactor {
 
         int highestExistingCompactionLevel =
                 filesToCompact.get(filesCount - 1).getMetadata().getCompactionLevel();
-        // target compaction level should  not exceed `maxCompactionLevel` config parameter
+        /*
+          The target compaction level should not exceed the maxCompactionLevel configuration parameter.
+          We need a limit on compaction levels for two reasons:
+           - To ensure a reasonably predictable frequency for full compactions, even for data that changes infrequently.
+           - We maintain metrics for each level, and there should be a cap on the number of these metrics.
+        */
         final int targetCompactionLevel = Math.min(highestExistingCompactionLevel + 1, config.maxCompactionLevel());
 
         final long start = System.currentTimeMillis();
@@ -432,10 +435,10 @@ public class DataFileCompactor {
         if (dataFileReaders.isEmpty()) {
             return dataFileReaders;
         }
-        final Map<Integer, Set<DataFileReader<?>>> readersByLevel = new HashMap<>();
+        final Map<Integer, List<DataFileReader<?>>> readersByLevel = new HashMap<>();
         int maxCompactionLevel = config.maxCompactionLevel();
         for (int i = 0; i <= maxCompactionLevel; i++) {
-            readersByLevel.put(i, new HashSet<>());
+            readersByLevel.put(i, new ArrayList<>());
         }
 
         for (DataFileReader<?> reader : dataFileReaders) {
@@ -444,7 +447,7 @@ public class DataFileCompactor {
 
         final List<DataFileReader<?>> readersToCompact = new ArrayList<>();
 
-        Set<DataFileReader<?>> nonCompactedReaders = readersByLevel.get(DEFAULT_COMPACTION_LEVEL);
+        List<DataFileReader<?>> nonCompactedReaders = readersByLevel.get(DEFAULT_COMPACTION_LEVEL);
         if (nonCompactedReaders.size() < getMinNumberOfFilesToCompact()) {
             return Collections.emptyList();
         }
@@ -453,7 +456,7 @@ public class DataFileCompactor {
         readersToCompact.addAll(nonCompactedReaders);
 
         for (int i = 1; i <= maxCompactionLevel; i++) {
-            final Set<DataFileReader<?>> readers = readersByLevel.get(i);
+            final List<DataFileReader<?>> readers = readersByLevel.get(i);
             // Presumably, one file comes from the previous level.
             // If, counting this file in, it still doesn't have enough, then it stops collecting.
             if (readers.size() < getMinNumberOfFilesToCompact() - 1) {

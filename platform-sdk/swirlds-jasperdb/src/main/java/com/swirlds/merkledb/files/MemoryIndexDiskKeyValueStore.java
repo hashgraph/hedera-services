@@ -18,7 +18,7 @@ package com.swirlds.merkledb.files;
 
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 
-import com.swirlds.merkledb.Compactable;
+import com.swirlds.merkledb.Compactible;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
@@ -46,7 +46,7 @@ import org.apache.logging.log4j.Logger;
  * @param <D> type for data items
  */
 @SuppressWarnings({"DuplicatedCode"})
-public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshotable, Compactable {
+public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshotable, Compactible {
     private static final Logger logger = LogManager.getLogger(MemoryIndexDiskKeyValueStore.class);
 
     /**

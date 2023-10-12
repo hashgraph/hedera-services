@@ -23,7 +23,7 @@ import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.merkledb.Compactable;
+import com.swirlds.merkledb.Compactible;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
@@ -66,7 +66,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
  * readers while writing is happening.</b>
  */
-public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Snapshotable, Compactable, OffHeapUser {
+public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Snapshotable, Compactible, OffHeapUser {
     private static final Logger logger = LogManager.getLogger(HalfDiskHashMap.class);
 
     /** The version number for format of current data files */

@@ -22,7 +22,8 @@ import java.util.concurrent.Executor;
 
 /**
  * A wrapper around {@link CompletableFuture} that supports interruption
- * when the CompletableFuture is canceled.
+ * when the CompletableFuture is canceled. This wrapper is necessary because {@Code CompletableFuture} doesn't
+ * interrupt executing thread on cancellation.
  *
  */
 public class InterruptibleCompletableFuture<T> {
@@ -64,7 +65,7 @@ public class InterruptibleCompletableFuture<T> {
 
     /**
      * Attempts to cancel the wrapped CompletableFuture and interrupts the
-     * executing thread if {@code mayInterruptIfRunning} is true.
+     * executing thread.
      *
      * @return {@code false} if the task could not be canceled, typically
      * because it has already completed normally; {@code true} otherwise

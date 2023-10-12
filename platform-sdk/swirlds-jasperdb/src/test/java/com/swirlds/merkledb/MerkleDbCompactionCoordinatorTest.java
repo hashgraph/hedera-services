@@ -275,7 +275,7 @@ class MerkleDbCompactionCoordinatorTest {
     }
 
     private void testCompaction(
-            Compactable compactableToTest,
+            Compactible compactibleToTest,
             Runnable methodCall,
             BiConsumer<Integer, Long> reportDurationMetricFunction,
             BiConsumer<Integer, Double> reportSavedSpaceMetricFunction,
@@ -285,7 +285,7 @@ class MerkleDbCompactionCoordinatorTest {
             throws IOException, InterruptedException {
         CountDownLatch testLatch = new CountDownLatch(1);
         CountDownLatch compactLatch = new CountDownLatch(1);
-        initCompactibleMock(compactableToTest, compactionPassed, testLatch, compactLatch);
+        initCompactibleMock(compactibleToTest, compactionPassed, testLatch, compactLatch);
 
         // run twice to make sure that the second call is discarded because one compaction is already in progress
         methodCall.run();
@@ -296,29 +296,29 @@ class MerkleDbCompactionCoordinatorTest {
         compactLatch.countDown();
 
         assertCompactable(
-                compactableToTest,
+                compactibleToTest,
                 reportDurationMetricFunction,
                 reportSavedSpaceMetricFunction,
                 expectCompactionStarted,
                 expectStatUpdate);
 
         reset(objectKeyToPath, pathToHashKeyValue, hashStoreDisk, statisticsUpdater);
-        initCompactibleMock(compactableToTest, compactionPassed, testLatch, compactLatch);
+        initCompactibleMock(compactibleToTest, compactionPassed, testLatch, compactLatch);
 
         // the second time it should succeed as well
         methodCall.run();
         assertCompactable(
-                compactableToTest,
+                compactibleToTest,
                 reportDurationMetricFunction,
                 reportSavedSpaceMetricFunction,
                 expectCompactionStarted,
                 expectStatUpdate);
     }
 
-    private void testCompactionFailed(Compactable compactableToTest, Runnable methodCall)
+    private void testCompactionFailed(Compactible compactibleToTest, Runnable methodCall)
             throws IOException, InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        when(compactableToTest.compact(ArgumentMatchers.any(), any())).thenAnswer(invocation -> {
+        when(compactibleToTest.compact(ArgumentMatchers.any(), any())).thenAnswer(invocation -> {
             latch.await();
             throw new RuntimeException("testCompactionFailed");
         });
@@ -330,7 +330,7 @@ class MerkleDbCompactionCoordinatorTest {
         assertEventuallyDoesNotThrow(
                 () -> {
                     try {
-                        verify(compactableToTest).compact(any(), any());
+                        verify(compactibleToTest).compact(any(), any());
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -342,12 +342,12 @@ class MerkleDbCompactionCoordinatorTest {
 
     @SuppressWarnings("unchecked")
     private void initCompactibleMock(
-            Compactable compactableToTest,
+            Compactible compactibleToTest,
             boolean compactionPassed,
             CountDownLatch testLatch,
             CountDownLatch compactLatch)
             throws IOException, InterruptedException {
-        when(compactableToTest.compact(ArgumentMatchers.any(), any())).thenAnswer(invocation -> {
+        when(compactibleToTest.compact(ArgumentMatchers.any(), any())).thenAnswer(invocation -> {
             testLatch.countDown();
             compactLatch.await();
             invocation.getArgument(0, BiConsumer.class).accept(compactionLevel, compactionTime);
@@ -357,7 +357,7 @@ class MerkleDbCompactionCoordinatorTest {
     }
 
     private void assertCompactable(
-            Compactable compactableToTest,
+            Compactible compactibleToTest,
             BiConsumer<Integer, Long> reportDurationMetricFunction,
             BiConsumer<Integer, Double> reportSavedSpaceMetricFunction,
             boolean expectCompactionStarted,
@@ -368,7 +368,7 @@ class MerkleDbCompactionCoordinatorTest {
                     reportSavedSpaceMetricFunction.accept(compactionLevel, savedSpace);
                     VerificationMode compactionVerificationMode = expectCompactionStarted ? times(1) : never();
                     try {
-                        verify(compactableToTest, compactionVerificationMode).compact(any(), any());
+                        verify(compactibleToTest, compactionVerificationMode).compact(any(), any());
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }

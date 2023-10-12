@@ -24,7 +24,7 @@ import java.util.function.BiConsumer;
 /**
  * This interface indicates that the data storage files in the implementing class can be compacted
  */
-public interface Compactable {
+public interface Compactible {
     /**
      * Compact the files in the implementing class
      * @param reportDurationMetricFunction a function that will be called to report the duration of the compaction
