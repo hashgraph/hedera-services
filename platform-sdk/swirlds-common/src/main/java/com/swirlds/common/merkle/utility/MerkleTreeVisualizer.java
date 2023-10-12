@@ -31,6 +31,7 @@ import com.swirlds.common.merkle.iterators.MerkleIterationOrder;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteUtils;
+import com.swirlds.common.utility.Labeled;
 import java.util.function.Predicate;
 
 /**
@@ -44,6 +45,7 @@ public class MerkleTreeVisualizer {
     private boolean useColors = false;
     private boolean useMnemonics = true;
     private boolean useHashes = false;
+    private boolean useLabels = true;
     private boolean useFullRoute = true;
     private int hashLength = -1;
     private int depth = 10;
@@ -52,8 +54,7 @@ public class MerkleTreeVisualizer {
     /**
      * Create a new merkle tree visualizer.
      *
-     * @param root
-     * 		the root of the tree (or subtree)
+     * @param root the root of the tree (or subtree)
      */
     public MerkleTreeVisualizer(final MerkleNode root) {
         this.root = root;
@@ -62,8 +63,7 @@ public class MerkleTreeVisualizer {
     /**
      * Set whether to use colors in the output.
      *
-     * @param useColors
-     * 		whether to use colors
+     * @param useColors whether to use colors
      * @return this object
      */
     public MerkleTreeVisualizer setUseColors(final boolean useColors) {
@@ -74,8 +74,7 @@ public class MerkleTreeVisualizer {
     /**
      * Set whether to use mnemonics in the output.
      *
-     * @param useMnemonics
-     * 		whether to use mnemonics
+     * @param useMnemonics whether to use mnemonics
      * @return this object
      */
     public MerkleTreeVisualizer setUseMnemonics(final boolean useMnemonics) {
@@ -86,8 +85,7 @@ public class MerkleTreeVisualizer {
     /**
      * Set whether to use hashes in the output.
      *
-     * @param useHashes
-     * 		whether to use hashes
+     * @param useHashes whether to use hashes
      * @return this object
      */
     public MerkleTreeVisualizer setUseHashes(final boolean useHashes) {
@@ -98,8 +96,7 @@ public class MerkleTreeVisualizer {
     /**
      * Set whether to use full route in the output.
      *
-     * @param useFullRoute
-     * 		whether to use full route
+     * @param useFullRoute whether to use full route
      * @return this object
      */
     public MerkleTreeVisualizer setUseFullRoute(final boolean useFullRoute) {
@@ -108,10 +105,20 @@ public class MerkleTreeVisualizer {
     }
 
     /**
+     * Set whether to use labels in the output.
+     *
+     * @param useLabels whether to use labels
+     * @return this object
+     */
+    public MerkleTreeVisualizer setUseLabels(final boolean useLabels) {
+        this.useLabels = useLabels;
+        return this;
+    }
+
+    /**
      * Set the length of the hash to display.
      *
-     * @param hashLength
-     * 		the length of the hash to display, or -1 if the full hash should be displayed
+     * @param hashLength the length of the hash to display, or -1 if the full hash should be displayed
      * @return this object
      */
     public MerkleTreeVisualizer setHashLength(final int hashLength) {
@@ -122,8 +129,7 @@ public class MerkleTreeVisualizer {
     /**
      * Set the maximum depth to print.
      *
-     * @param depth
-     * 		the maximum depth to print
+     * @param depth the maximum depth to print
      * @return this object
      */
     public MerkleTreeVisualizer setDepth(final int depth) {
@@ -134,8 +140,7 @@ public class MerkleTreeVisualizer {
     /**
      * Set whether to ignore the depth annotations on maps.
      *
-     * @param ignoreDepthAnnotations
-     * 		whether to ignore the depth annotations on maps
+     * @param ignoreDepthAnnotations whether to ignore the depth annotations on maps
      * @return this object
      */
     public MerkleTreeVisualizer setIgnoreDepthAnnotations(final boolean ignoreDepthAnnotations) {
@@ -157,8 +162,7 @@ public class MerkleTreeVisualizer {
     /**
      * Render the tree in a human-readable format.
      *
-     * @param sb
-     * 		the string builder to append to
+     * @param sb the string builder to append to
      */
     public void render(final StringBuilder sb) {
 
@@ -210,6 +214,14 @@ public class MerkleTreeVisualizer {
             final String firstColumn = indentation + formattedIndexString + " " + formattedClassName;
 
             table.addRow(firstColumn);
+
+            if (useLabels) {
+                if (node instanceof final Labeled labeled) {
+                    table.addToRow(labeled.getLabel());
+                } else {
+                    table.addToRow("");
+                }
+            }
 
             if (useFullRoute) {
                 final String routeString = MerkleRouteUtils.merkleRouteToPathFormat(route);

@@ -27,6 +27,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -75,7 +76,8 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
 
     @Test
     void delegatesToCreatedComponentAndExposesSuccess() {
-        given(factory.create(handleContext)).willReturn(component);
+        given(factory.create(handleContext, HederaFunctionality.CONTRACT_CREATE))
+                .willReturn(component);
         given(component.contextTransactionProcessor()).willReturn(processor);
         given(handleContext.recordBuilder(ContractCreateRecordBuilder.class)).willReturn(recordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
@@ -91,7 +93,8 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
 
     @Test
     void delegatesToCreatedComponentAndThrowsFailure() {
-        given(factory.create(handleContext)).willReturn(component);
+        given(factory.create(handleContext, HederaFunctionality.CONTRACT_CREATE))
+                .willReturn(component);
         given(component.contextTransactionProcessor()).willReturn(processor);
         given(handleContext.recordBuilder(ContractCreateRecordBuilder.class)).willReturn(recordBuilder);
         final var expectedResult = HALT_RESULT.asProtoResultOf(baseProxyWorldUpdater);

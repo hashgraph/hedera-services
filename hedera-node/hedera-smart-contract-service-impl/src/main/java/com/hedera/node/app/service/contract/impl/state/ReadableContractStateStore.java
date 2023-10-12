@@ -115,4 +115,9 @@ public class ReadableContractStateStore implements ContractStateStore {
     public long getNumSlots() {
         return storage.size();
     }
+
+    @Override
+    public long getNumBytecodes() {
+        return bytecode.size();
+    }
 }

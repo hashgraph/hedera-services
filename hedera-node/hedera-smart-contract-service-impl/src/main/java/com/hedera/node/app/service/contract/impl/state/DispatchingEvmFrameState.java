@@ -323,6 +323,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         nativeOperations.finalizeHollowAccountAsContract(tuweniToPbjBytes(address));
     }
 
+    @Override
+    public long numBytecodesInState() {
+        return contractStateStore.getNumBytecodes();
+    }
+
     /**
      * {@inheritDoc}
      */
