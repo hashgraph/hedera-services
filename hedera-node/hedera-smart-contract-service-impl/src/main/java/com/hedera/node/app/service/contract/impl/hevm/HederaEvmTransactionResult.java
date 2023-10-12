@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.errorMessageFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
@@ -63,6 +66,10 @@ public record HederaEvmTransactionResult(
         requireNonNull(logs);
     }
 
+    private static final Bytes MAX_STORAGE_EXCEEDED_REASON = Bytes.wrap(MAX_CONTRACT_STORAGE_EXCEEDED.name());
+    private static final Bytes MAX_TOTAL_STORAGE_EXCEEDED_REASON =
+            Bytes.wrap(MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED.name());
+
     /**
      * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
      * {@link RootProxyWorldUpdater}.
@@ -87,28 +94,28 @@ public record HederaEvmTransactionResult(
         if (haltReason != null) {
             return withMaybeEthFields(asUncommittedFailureResult(errorMessageFor(haltReason)), ethTxData);
         } else if (revertReason != null) {
-            return null;
+            // This curious presentation of the revert reason is needed for backward compatibility
+            return withMaybeEthFields(asUncommittedFailureResult(errorMessageForRevert(revertReason)), ethTxData);
         } else {
             return withMaybeEthFields(asSuccessResultForCommitted(updater), ethTxData);
         }
     }
 
     /**
-     * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
-     * {@link RootProxyWorldUpdater} and maybe {@link EthTxData}.
+     * Converts this result to a {@link ContractFunctionResult} for a query response.
      *
      * @return the result
      */
-    public ContractFunctionResult asQueryResultOf() {
+    public ContractFunctionResult asQueryResult() {
         if (haltReason != null) {
             return asUncommittedFailureResult(errorMessageFor(haltReason)).build();
         } else if (revertReason != null) {
-            throw new AssertionError("Not implemented");
+            return asUncommittedFailureResult(errorMessageForRevert(revertReason))
+                    .build();
         } else {
             return asSuccessResultForQuery();
         }
     }
-
     /**
      * Returns the final status of this transaction result.
      *
@@ -118,10 +125,12 @@ public record HederaEvmTransactionResult(
         if (haltReason != null) {
             return CustomExceptionalHaltReason.statusFor(haltReason);
         } else if (revertReason != null) {
-            if (revertReason.length() == 0) {
-                return ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+            if (revertReason.equals(MAX_STORAGE_EXCEEDED_REASON)) {
+                return MAX_CONTRACT_STORAGE_EXCEEDED;
+            } else if (revertReason.equals(MAX_TOTAL_STORAGE_EXCEEDED_REASON)) {
+                return MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
             } else {
-                throw new AssertionError("Not implemented");
+                return CONTRACT_REVERT_EXECUTED;
             }
         } else {
             return SUCCESS;
@@ -280,6 +289,11 @@ public record HederaEvmTransactionResult(
 
     private static @Nullable ContractStateChanges stateReadsFrom(@NonNull final MessageFrame frame) {
         return stateChangesFrom(frame, false);
+    }
+
+    private static String errorMessageForRevert(@NonNull final Bytes reason) {
+        requireNonNull(reason);
+        return "0x" + reason.toHex();
     }
 
     private static @Nullable ContractStateChanges stateChangesFrom(

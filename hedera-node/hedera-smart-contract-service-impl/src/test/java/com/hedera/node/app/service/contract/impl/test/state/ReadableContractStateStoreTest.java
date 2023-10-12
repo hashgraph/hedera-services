@@ -105,4 +105,11 @@ class ReadableContractStateStoreTest {
 
         assertSame(1L, subject.getNumSlots());
     }
+
+    @Test
+    void getsNumBytecodesAsExpected() {
+        given(bytecode.size()).willReturn(123L);
+
+        assertSame(123L, subject.getNumBytecodes());
+    }
 }

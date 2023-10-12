@@ -25,7 +25,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -54,7 +53,7 @@ public class UtilScalePricingCheck extends HapiSuite {
         return List.of(nftPriceScalesWithUtilization());
     }
 
-    @HapiTest
+    // Can only be run against an isolated network since it assumes the state begins with 0 NFTs minted
     private HapiSpec nftPriceScalesWithUtilization() {
         final var civilian = "civilian";
         final var maxAllowed = 100;

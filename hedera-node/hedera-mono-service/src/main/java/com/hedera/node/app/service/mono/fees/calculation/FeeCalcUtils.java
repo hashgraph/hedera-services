@@ -82,6 +82,30 @@ public final class FeeCalcUtils {
                 .build();
     }
 
+    public static FeeData multiplierOfUsages(final FeeData a, final int multiplier) {
+        return FeeData.newBuilder()
+                .setNodedata(multiplierOfScopedUsages(a.getNodedata(), multiplier))
+                .setNetworkdata(multiplierOfScopedUsages(a.getNetworkdata(), multiplier))
+                .setServicedata(multiplierOfScopedUsages(a.getServicedata(), multiplier))
+                .build();
+    }
+
+    private static FeeComponents multiplierOfScopedUsages(final FeeComponents a, final int multiplier) {
+        return FeeComponents.newBuilder()
+                .setMin(a.getMin())
+                .setMax(a.getMax())
+                .setConstant(a.getConstant() * multiplier)
+                .setBpt(a.getBpt() * multiplier)
+                .setVpt(a.getVpt() * multiplier)
+                .setRbh(a.getRbh() * multiplier)
+                .setSbh(a.getSbh() * multiplier)
+                .setGas(a.getGas() * multiplier)
+                .setTv(a.getTv() * multiplier)
+                .setBpr(a.getBpr() * multiplier)
+                .setSbpr(a.getSbpr() * multiplier)
+                .build();
+    }
+
     public static long clampedAdd(final long a, final long b) {
         try {
             return Math.addExact(a, b);
