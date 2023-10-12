@@ -166,7 +166,6 @@ class MerkleDbDataSourceSnapshotMergeTest {
             // the snapshot
             checkData(COUNT2, testType, dataSource);
             // load snapshot and check data
-            //  removeCachedDatasource(snapshotDir);
             final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> snapshotDataSource =
                     testType.dataType().getDataSource(snapshotDir, tableName, false);
             checkData(COUNT, testType, snapshotDataSource);

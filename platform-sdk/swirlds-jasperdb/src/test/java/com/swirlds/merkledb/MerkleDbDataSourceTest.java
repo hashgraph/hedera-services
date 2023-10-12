@@ -509,22 +509,6 @@ class MerkleDbDataSourceTest {
         }
     }
 
-    //    @Test
-    //    void testStartCompactionIfNecessary_firstCompaction() throws IOException {
-    //        final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
-    //                createDataSource(testDirectory, "compaction_success", variable_variable, 1);
-    //        dataSource.enableBackgroundCompaction();
-    //
-    //        MerkleDbDataSource<?, ?> mockDataSource = mock(MerkleDbDataSource.class);
-    //
-    //        dataSource.startCompactionIfNecessary(mockDataSource);
-    //
-    //        assertEventuallyDoesNotThrow(() -> {
-    //            verify(mockDataSource, times(1)).doCompaction();
-    //        }, Duration.ofSeconds(1), "Expected doCompaction to be called once");
-    //
-    //    }
-
     // =================================================================================================================
     // Helper Methods
 

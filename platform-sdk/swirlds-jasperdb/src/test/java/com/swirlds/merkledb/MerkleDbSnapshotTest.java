@@ -16,6 +16,8 @@
 
 package com.swirlds.merkledb;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -252,7 +254,7 @@ class MerkleDbSnapshotTest {
             dsBuilder.snapshot(snapshotDir, copy);
 
             final Path oldSnapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("oldSnapshot");
-            //      Assertions.assertDoesNotThrow(() -> dsBuilder.snapshot(oldSnapshotDir, original));
+            assertDoesNotThrow(() -> dsBuilder.snapshot(oldSnapshotDir, original));
         } finally {
             original.close();
             copy.close();
