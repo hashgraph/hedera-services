@@ -18,8 +18,6 @@ pluginManagement { includeBuild("../build-logic") }
 
 plugins { id("com.hedera.hashgraph.settings") }
 
-rootProject.name = "swirlds-platform"
-
 includeBuild("../hedera-dependency-versions")
 
 include(":swirlds")

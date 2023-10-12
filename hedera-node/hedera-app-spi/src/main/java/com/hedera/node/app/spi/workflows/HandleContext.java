@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -115,6 +116,20 @@ public interface HandleContext {
      */
     @Nullable
     Key payerKey();
+
+    /**
+     * Returns the Hedera resource prices (in thousandths of a tinycent) for the given {@link SubType} of
+     * the given {@link HederaFunctionality}. The contract service needs this information to determine both the
+     * gas price and the cost of storing logs (a function of the {@code rbh} price, which may itself vary by
+     * contract operation type).
+     *
+     * @param functionality the {@link HederaFunctionality} of interest
+     * @param subType the {@link SubType} of interest
+     * @return the corresponding Hedera resource prices
+     */
+    @NonNull
+    FunctionalityResourcePrices resourcePricesFor(
+            @NonNull final HederaFunctionality functionality, @NonNull final SubType subType);
 
     /**
      * Get a calculator for calculating fees for the current transaction, and its {@link SubType}. Most transactions
@@ -370,16 +385,6 @@ public interface HandleContext {
     }
 
     /**
-     * @deprecated Use {@link #dispatchPrecedingTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    @NonNull
-    default <T> T dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass) {
-        return dispatchPrecedingTransaction(
-                txBody, recordBuilderClass, key -> verificationFor(key).passed());
-    }
-
-    /**
      * Dispatches a child transaction.
      *
      * <p>A child transaction depends on the current transaction. That means if the current transaction fails,
@@ -435,23 +440,6 @@ public interface HandleContext {
     }
 
     /**
-     * @deprecated Use {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    @NonNull
-    default <T> T dispatchChildTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @NonNull VerificationAssistant callback) {
-        throwIfMissingPayerId(txBody);
-        return dispatchChildTransaction(
-                txBody,
-                recordBuilderClass,
-                key -> callback.test(key, verificationFor(key)),
-                txBody.transactionIDOrThrow().accountIDOrThrow());
-    }
-
-    /**
      * Dispatches a removable child transaction.
      *
      * <p>A removable child transaction depends on the current transaction. It behaves in almost all aspects like a
@@ -498,19 +486,6 @@ public interface HandleContext {
                 recordBuilderClass,
                 callback,
                 txBody.transactionIDOrThrow().accountIDOrThrow());
-    }
-
-    /**
-     * @deprecated Use {@link #dispatchRemovableChildTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    @NonNull
-    default <T> T dispatchRemovableChildTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @NonNull VerificationAssistant callback) {
-        return dispatchRemovableChildTransaction(
-                txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)));
     }
 
     /**

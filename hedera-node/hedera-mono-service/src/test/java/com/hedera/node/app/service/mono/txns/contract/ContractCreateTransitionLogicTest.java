@@ -1204,6 +1204,26 @@ class ContractCreateTransitionLogicTest {
     }
 
     @Test
+    void rejectsSystemFileInitcode() {
+        givenValidTxnCtx();
+        final var fileId = FileID.newBuilder().setFileNum(159).build();
+        given(accessor.getTxn())
+                .willReturn(contractCreateTxn.toBuilder()
+                        .setContractCreateInstance(contractCreateTxn.getContractCreateInstance().toBuilder()
+                                .setFileID(fileId))
+                        .build());
+        given(txnCtx.activePayer()).willReturn(ourAccount());
+        given(txnCtx.accessor()).willReturn(accessor);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+
+        // when:
+        Exception exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
+
+        // then:
+        assertEquals("INVALID_FILE_ID", exception.getMessage());
+    }
+
+    @Test
     void rejectSerializationFailed() {
         Key key = Key.getDefaultInstance();
         var op = ContractCreateTransactionBody.newBuilder()
@@ -1230,6 +1250,8 @@ class ContractCreateTransitionLogicTest {
     void throwsErrorOnInvalidBytecode() {
         given(hfs.cat(any())).willReturn(new byte[] {1, 2, 3, '\n'});
         given(transactionBody.getConstructorParameters()).willReturn(ByteString.EMPTY);
+        given(transactionBody.getFileID())
+                .willReturn(FileID.newBuilder().setFileNum(1234L).build());
         // when:
         Exception exception = assertThrows(
                 InvalidTransactionException.class, () -> subject.prepareCodeWithConstructorArguments(transactionBody));
@@ -1239,6 +1261,8 @@ class ContractCreateTransitionLogicTest {
 
     @Test
     void throwsErrorOnUnfetchableBytecode() {
+        given(transactionBody.getFileID())
+                .willReturn(FileID.newBuilder().setFileNum(1234L).build());
         given(hfs.cat(any()))
                 .willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.DELETED_FILE.toString()));
         assertFailsWith(() -> subject.prepareCodeWithConstructorArguments(transactionBody), FILE_DELETED);

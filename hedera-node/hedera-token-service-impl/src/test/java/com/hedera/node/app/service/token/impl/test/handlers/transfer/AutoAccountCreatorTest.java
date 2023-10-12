@@ -76,7 +76,7 @@ class AutoAccountCreatorTest extends StepsBase {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
@@ -85,7 +85,7 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
         assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNull();
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
-        assertThat(writableAliases.get(ecKeyAlias)).isNull();
+        assertThat(writableAliases.get(ecEvmAlias)).isNull();
 
         subject.create(ecKeyAlias.value(), 0);
 
@@ -93,7 +93,7 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(3);
         assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
-        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(hbarReceiver);
+        assertThat(writableAliases.get(ecEvmAlias).accountNum()).isEqualTo(hbarReceiver);
     }
 
     @Test

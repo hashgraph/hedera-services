@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
+import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
@@ -229,6 +230,14 @@ public class UtilVerbs {
         return new SourcedOp(source);
     }
 
+    public static ContextualSourcedOp sourcingContextual(Function<HapiSpec, HapiSpecOperation> source) {
+        return new ContextualSourcedOp(source);
+    }
+
+    public static ContextualActionOp doingContextual(Consumer<HapiSpec> action) {
+        return new ContextualActionOp(action);
+    }
+
     public static HapiSpecSleep sleepFor(long timeMs) {
         return new HapiSpecSleep(timeMs);
     }
@@ -239,6 +248,22 @@ public class UtilVerbs {
 
     public static HapiSpecWaitUntil waitUntilStartOfNextStakingPeriod(final long stakePeriodMins) {
         return untilStartOfNextStakingPeriod(stakePeriodMins);
+    }
+
+    /**
+     * Returns a {@link HapiSpecOperation} that sleeps until the beginning of the next period
+     * of the given length since the UTC epoch in clock time.
+     *
+     * <p>This is not the same thing as sleeping until the next <i>consensus</i> period, of
+     * course; but since consensus time will track clock time very closely in practice, this
+     * operation can let us be almost certain we have e.g. moved into a new staking period
+     * or a new block period by the time the sleep ends.
+     *
+     * @param periodMs the length of the period in milliseconds
+     * @return the operation that sleeps until the beginning of the next period
+     */
+    public static HapiSpecWaitUntil waitUntilStartOfNextAdhocPeriod(final long periodMs) {
+        return untilStartOfNextAdhocPeriod(periodMs);
     }
 
     public static HapiSpecWaitUntil waitUntilJustBeforeNextStakingPeriod(

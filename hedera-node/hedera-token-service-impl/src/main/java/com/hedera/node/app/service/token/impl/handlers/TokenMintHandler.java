@@ -125,12 +125,16 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
 
         // validate treasury relation exists
-        final var treasuryRel = tokenRelStore.get(token.treasuryAccountId(), tokenId);
+        final var treasuryRel = TokenHandlerHelper.getIfUsable(token.treasuryAccountId(), tokenId, tokenRelStore);
         validateTrue(treasuryRel != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
             // we need to know if treasury mint while creation to ignore supply key exist or not.
-            mintFungible(token, treasuryRel, op.amount(), false, accountStore, tokenStore, tokenRelStore);
+            long newTotalSupply =
+                    mintFungible(token, treasuryRel, op.amount(), false, accountStore, tokenStore, tokenRelStore);
+            final var recordBuilder = context.recordBuilder(TokenMintRecordBuilder.class);
+
+            recordBuilder.newTotalSupply(newTotalSupply);
         } else {
             // get the config needed for validation
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
@@ -139,7 +143,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             // validate resources exist for minting nft
             final var meta = op.metadata();
             validateTrue(
-                    nftStore.sizeOfState() + meta.size() < maxAllowedMints, MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
+                    nftStore.sizeOfState() + meta.size() <= maxAllowedMints, MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
             // mint nft
             final var mintedSerials = mintNonFungible(
                     token,
@@ -152,6 +156,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                     nftStore);
             final var recordBuilder = context.recordBuilder(TokenMintRecordBuilder.class);
 
+            recordBuilder.newTotalSupply(tokenStore.get(tokenId).totalSupply());
             recordBuilder.serialNumbers(mintedSerials);
             // TODO: Need to build transfer ownership from list to transfer NFT to treasury
             // This should probably be done in finalize method on token service which constructs the
@@ -228,6 +233,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var copyToken = modifiedToken.copyBuilder();
         final var copyTreasury = treasuryAccount.copyBuilder();
         // Update Token and treasury
+        copyToken.totalSupply(token.totalSupply() + metadataCount);
         copyToken.lastUsedSerialNumber(currentSerialNumber);
         copyTreasury.numberOwnedNfts(treasuryAccount.numberOwnedNfts() + metadataCount);
 

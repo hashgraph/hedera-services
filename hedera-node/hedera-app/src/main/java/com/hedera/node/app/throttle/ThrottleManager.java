@@ -108,7 +108,7 @@ public class ThrottleManager {
             }
         }
         if (customizedOps.isEmpty() || !expectedOps.equals(EnumSet.copyOf(customizedOps))) {
-            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION);
+            throw new HandleException(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
         }
     }
 

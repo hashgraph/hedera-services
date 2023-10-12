@@ -25,23 +25,23 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -51,20 +51,24 @@ import javax.inject.Inject;
  */
 @TransactionScope
 public class HandleHederaOperations implements HederaOperations {
-    private static final Comparator<ContractID> CONTRACT_ID_NUM_COMPARATOR =
-            Comparator.comparingLong(ContractID::contractNumOrThrow);
-    private static final Comparator<ContractNonceInfo> NONCE_INFO_CONTRACT_ID_COMPARATOR =
-            Comparator.comparing(ContractNonceInfo::contractIdOrThrow, CONTRACT_ID_NUM_COMPARATOR);
     public static final Bytes ZERO_ENTROPY = Bytes.fromHex(
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
+    private final TinybarValues tinybarValues;
     private final LedgerConfig ledgerConfig;
+    private final ContractsConfig contractsConfig;
     private final HandleContext context;
 
     @Inject
-    public HandleHederaOperations(@NonNull final LedgerConfig ledgerConfig, @NonNull final HandleContext context) {
+    public HandleHederaOperations(
+            @NonNull final LedgerConfig ledgerConfig,
+            @NonNull final ContractsConfig contractsConfig,
+            @NonNull final HandleContext context,
+            @NonNull final TinybarValues tinybarValues) {
         this.ledgerConfig = requireNonNull(ledgerConfig);
+        this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
+        this.tinybarValues = requireNonNull(tinybarValues);
     }
 
     /**
@@ -81,7 +85,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void commit() {
-        // Currently the savepoint stack only supports reverting savepoints; then commits all remaining at the end
+        context.savepointStack().commit();
     }
 
     /**
@@ -116,6 +120,11 @@ public class HandleHederaOperations implements HederaOperations {
         return context.newEntityNum();
     }
 
+    @Override
+    public long contractCreationLimit() {
+        return contractsConfig.maxNumber();
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -139,8 +148,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long gasPriceInTinybars() {
-        // TODO - implement correctly
-        return 1L;
+        return tinybarValues.serviceGasPrice();
     }
 
     /**
@@ -148,8 +156,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long valueInTinybars(final long tinycents) {
-        // TODO - implement correctly
-        return tinycents;
+        return tinybarValues.asTinybars(tinycents);
     }
 
     /**
@@ -256,39 +263,20 @@ public class HandleHederaOperations implements HederaOperations {
         return Collections.emptyList();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public List<ContractID> createdContractIds() {
+    public ContractChangeSummary summarizeContractChanges() {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        // TODO - add a newContractIds() method to TokenServiceApi instead
-        return tokenServiceApi.modifiedAccountIds().stream()
-                .map(accountId -> ContractID.newBuilder()
-                        .contractNum(accountId.accountNumOrThrow())
-                        .build())
-                .sorted(CONTRACT_ID_NUM_COMPARATOR)
-                .toList();
+        return tokenServiceApi.summarizeContractChanges();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public List<ContractNonceInfo> updatedContractNonces() {
+    public long getOriginalSlotsUsed(final long contractNumber) {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        final var updatedNonces = new ArrayList<>(tokenServiceApi.updatedContractNonces());
-        updatedNonces.sort(NONCE_INFO_CONTRACT_ID_COMPARATOR);
-        return updatedNonces;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getOriginalSlotsUsed(final long contractNumber) {
-        // TODO - extend API and use getOriginalValue() from writable store
-        return 0;
+        return tokenServiceApi.originalKvUsageFor(
+                AccountID.newBuilder().accountNum(contractNumber).build());
     }
 
     private void dispatchAndMarkCreation(

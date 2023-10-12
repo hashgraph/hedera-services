@@ -35,6 +35,7 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -78,7 +79,8 @@ class EventIntakeTest {
                 dispatcher,
                 mock(PhaseTimer.class),
                 shadowGraph,
-                e -> {});
+                e -> {},
+                mock(IntakeEventCounter.class));
 
         final GossipEvent gossipEvent = mock(GossipEvent.class);
         final EventImpl added = mock(EventImpl.class);

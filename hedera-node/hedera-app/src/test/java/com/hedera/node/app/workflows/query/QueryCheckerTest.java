@@ -230,11 +230,11 @@ class QueryCheckerTest extends AppTestBase {
                     createPaymentInfo(ALICE.accountID(), send(ALICE.accountID(), 8), receive(nodeSelfAccountId, 8));
 
             // then
-            assertThatThrownBy(() -> checker.validateAccountBalances(null, txInfo, ALICE_ACCOUNT, 8L))
+            assertThatThrownBy(() -> checker.validateAccountBalances(null, txInfo, ALICE_ACCOUNT, 8L, 0))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, null, ALICE_ACCOUNT, 8L))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, null, ALICE_ACCOUNT, 8L, 0))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, null, 8L))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, null, 8L, 0))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -246,7 +246,7 @@ class QueryCheckerTest extends AppTestBase {
                     ALICE.accountID(), send(ALICE.accountID(), amount), receive(nodeSelfAccountId, amount));
 
             // then
-            assertThatCode(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount))
+            assertThatCode(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount, 0))
                     .doesNotThrowAnyException();
         }
 
@@ -261,7 +261,7 @@ class QueryCheckerTest extends AppTestBase {
                     .checkSolvency(txInfo, ALICE_ACCOUNT, new Fees(amount, 0, 0));
 
             // then
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, 0, amount))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(INSUFFICIENT_PAYER_BALANCE))
                     .has(estimatedFee(amount));
@@ -273,7 +273,7 @@ class QueryCheckerTest extends AppTestBase {
             final var txInfo = createPaymentInfo(ALICE.accountID());
 
             // then
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, 8L))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, 8L, 0))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_ACCOUNT_AMOUNTS));
         }
@@ -289,7 +289,7 @@ class QueryCheckerTest extends AppTestBase {
                     ERIN.account().copyBuilder().tinybarBalance(amount).build());
 
             // then
-            assertThatCode(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount))
+            assertThatCode(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount, 0))
                     .doesNotThrowAnyException();
         }
 
@@ -304,7 +304,7 @@ class QueryCheckerTest extends AppTestBase {
                     ERIN.account().copyBuilder().tinybarBalance(amount - 1).build());
 
             // then
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, 0, amount))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(INSUFFICIENT_PAYER_BALANCE))
                     .has(estimatedFee(amount));
@@ -318,7 +318,7 @@ class QueryCheckerTest extends AppTestBase {
                     ALICE.accountID(), send(BOB.accountID(), amount), receive(nodeSelfAccountId, amount));
 
             // then
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount, 0))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(ACCOUNT_ID_DOES_NOT_EXIST));
         }
@@ -341,7 +341,7 @@ class QueryCheckerTest extends AppTestBase {
                     ERIN.account().copyBuilder().tinybarBalance(amount / 4).build());
 
             // then
-            assertThatCode(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount))
+            assertThatCode(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount, 0))
                     .doesNotThrowAnyException();
         }
 
@@ -363,7 +363,7 @@ class QueryCheckerTest extends AppTestBase {
                     ERIN.account().copyBuilder().tinybarBalance(amount / 4).build());
 
             // then
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, 0, amount))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(INSUFFICIENT_PAYER_BALANCE))
                     .has(estimatedFee(amount));
@@ -384,7 +384,7 @@ class QueryCheckerTest extends AppTestBase {
                     ERIN.account().copyBuilder().tinybarBalance(amount / 4).build());
 
             // then
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount, 0))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(ACCOUNT_ID_DOES_NOT_EXIST));
         }
@@ -398,7 +398,7 @@ class QueryCheckerTest extends AppTestBase {
             accountsState.put(NODE_1.nodeAccountID(), NODE_1.account());
 
             // then
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount, 0))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_RECEIVING_NODE_ACCOUNT));
         }
@@ -414,7 +414,7 @@ class QueryCheckerTest extends AppTestBase {
                     receive(nodeSelfAccountId, amount / 2));
 
             // then
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount, 0))
                     .isInstanceOf(InsufficientBalanceException.class)
                     .has(responseCode(INSUFFICIENT_TX_FEE))
                     .has(estimatedFee(amount));
@@ -433,7 +433,7 @@ class QueryCheckerTest extends AppTestBase {
                     receive(nodeSelfAccountId, amount));
 
             // then
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount, 0))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_ACCOUNT_AMOUNTS));
         }
@@ -451,7 +451,7 @@ class QueryCheckerTest extends AppTestBase {
                     receive(nodeSelfAccountId, amount));
 
             // then
-            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount))
+            assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, amount, 0))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_ACCOUNT_AMOUNTS));
         }

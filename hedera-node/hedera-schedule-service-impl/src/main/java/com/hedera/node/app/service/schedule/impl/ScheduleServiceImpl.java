@@ -33,7 +33,6 @@ import java.util.Set;
  * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
  */
 public final class ScheduleServiceImpl implements ScheduleService {
-    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
     public static final String SCHEDULES_BY_ID_KEY = "SCHEDULES_BY_ID";
     public static final String SCHEDULES_BY_EXPIRY_SEC_KEY = "SCHEDULES_BY_EXPIRY_SEC";
     public static final String SCHEDULES_BY_EQUALITY_KEY = "SCHEDULES_BY_EQUALITY";
@@ -50,7 +49,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
 
     private static final class ScheduleServiceSchema extends Schema {
         public ScheduleServiceSchema() {
-            super(GENESIS_VERSION);
+            super(SemanticVersion.DEFAULT);
         }
 
         @SuppressWarnings("rawtypes")

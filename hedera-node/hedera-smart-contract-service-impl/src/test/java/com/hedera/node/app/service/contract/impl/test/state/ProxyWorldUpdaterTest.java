@@ -57,13 +57,14 @@ import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
+import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import java.util.List;
 import java.util.Optional;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -83,6 +84,7 @@ class ProxyWorldUpdaterTest {
     static final Address SOME_EVM_ADDRESS = Address.fromHexString("0x1234123412341234123412341234123412341234");
     private static final Address OTHER_EVM_ADDRESS =
             Address.fromHexString("0x1239123912391239123912391239123912391239");
+    private static final Address ADDRESS_6 = Address.fromHexString("0x6");
 
     @Mock
     private Account anImmutableAccount;
@@ -91,7 +93,7 @@ class ProxyWorldUpdaterTest {
     private Account anotherImmutableAccount;
 
     @Mock
-    private EvmAccount mutableAccount;
+    private MutableAccount mutableAccount;
 
     @Mock
     private ProxyEvmAccount proxyEvmAccount;
@@ -136,32 +138,32 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void getsImmutableAccount() {
-        given(evmFrameState.getAccount(ALTBN128_ADD)).willReturn(anImmutableAccount);
+        given(evmFrameState.getAccount(ADDRESS_6)).willReturn(anImmutableAccount);
 
-        assertSame(anImmutableAccount, subject.get(ALTBN128_ADD));
+        assertSame(anImmutableAccount, subject.get(ADDRESS_6));
     }
 
     @Test
     void getsHederaAccountByNumber() {
-        final var num = ALTBN128_ADD.toBigInteger().longValueExact();
+        final var num = ADDRESS_6.toBigInteger().longValueExact();
         final var numericId = AccountID.newBuilder().accountNum(num).build();
-        given(evmFrameState.getAddress(num)).willReturn(ALTBN128_ADD);
-        given(evmFrameState.getAccount(ALTBN128_ADD)).willReturn(proxyEvmAccount);
+        given(evmFrameState.getAddress(num)).willReturn(ADDRESS_6);
+        given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
         assertSame(proxyEvmAccount, subject.getHederaAccount(numericId));
     }
 
     @Test
     void getsHederaContractByNumber() {
-        final var num = ALTBN128_ADD.toBigInteger().longValueExact();
+        final var num = ADDRESS_6.toBigInteger().longValueExact();
         final var numericId = ContractID.newBuilder().contractNum(num).build();
-        given(evmFrameState.getAddress(num)).willReturn(ALTBN128_ADD);
-        given(evmFrameState.getAccount(ALTBN128_ADD)).willReturn(proxyEvmAccount);
+        given(evmFrameState.getAddress(num)).willReturn(ADDRESS_6);
+        given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
         assertSame(proxyEvmAccount, subject.getHederaAccount(numericId));
     }
 
     @Test
     void returnsNullHederaAccountIfMissing() {
-        final var num = ALTBN128_ADD.toBigInteger().longValueExact();
+        final var num = ADDRESS_6.toBigInteger().longValueExact();
         final var numericId = AccountID.newBuilder().accountNum(num).build();
         doThrow(IllegalArgumentException.class).when(evmFrameState).getAddress(num);
         assertNull(subject.getHederaAccount(numericId));
@@ -169,7 +171,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void returnsNullHederaContractIfMissing() {
-        final var num = ALTBN128_ADD.toBigInteger().longValueExact();
+        final var num = ADDRESS_6.toBigInteger().longValueExact();
         final var numericId = ContractID.newBuilder().contractNum(num).build();
         doThrow(IllegalArgumentException.class).when(evmFrameState).getAddress(num);
         assertNull(subject.getHederaAccount(numericId));
@@ -179,9 +181,9 @@ class ProxyWorldUpdaterTest {
     void getsHederaAccountByAlias() {
         final var aliasId = AccountID.newBuilder()
                 .alias(tuweniToPbjBytes(
-                        asLongZeroAddress(ALTBN128_ADD.toBigInteger().longValueExact())))
+                        asLongZeroAddress(ADDRESS_6.toBigInteger().longValueExact())))
                 .build();
-        given(evmFrameState.getAccount(ALTBN128_ADD)).willReturn(proxyEvmAccount);
+        given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
         assertSame(proxyEvmAccount, subject.getHederaAccount(aliasId));
     }
 
@@ -189,24 +191,24 @@ class ProxyWorldUpdaterTest {
     void getsHederaContractByAlias() {
         final var aliasId = ContractID.newBuilder()
                 .evmAddress(tuweniToPbjBytes(
-                        asLongZeroAddress(ALTBN128_ADD.toBigInteger().longValueExact())))
+                        asLongZeroAddress(ADDRESS_6.toBigInteger().longValueExact())))
                 .build();
-        given(evmFrameState.getAccount(ALTBN128_ADD)).willReturn(proxyEvmAccount);
+        given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmAccount);
         assertSame(proxyEvmAccount, subject.getHederaAccount(aliasId));
     }
 
     @Test
     void delegatesHollowCheck() {
-        given(evmFrameState.isHollowAccount(ALTBN128_ADD)).willReturn(true);
+        given(evmFrameState.isHollowAccount(ADDRESS_6)).willReturn(true);
 
-        assertTrue(subject.isHollowAccount(ALTBN128_ADD));
+        assertTrue(subject.isHollowAccount(ADDRESS_6));
     }
 
     @Test
     void delegatesFeeCharging() {
-        given(evmFrameState.isHollowAccount(ALTBN128_ADD)).willReturn(true);
+        given(evmFrameState.isHollowAccount(ADDRESS_6)).willReturn(true);
 
-        assertTrue(subject.isHollowAccount(ALTBN128_ADD));
+        assertTrue(subject.isHollowAccount(ADDRESS_6));
     }
 
     @Test
@@ -217,14 +219,14 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void getsMutableAccount() {
-        given(evmFrameState.getMutableAccount(ALTBN128_ADD)).willReturn(mutableAccount);
+        given(evmFrameState.getMutableAccount(ADDRESS_6)).willReturn(mutableAccount);
 
-        assertSame(mutableAccount, subject.getAccount(ALTBN128_ADD));
+        assertSame(mutableAccount, subject.getAccount(ADDRESS_6));
     }
 
     @Test
     void cannotCreateAccountWithoutPendingCreation() {
-        assertThrows(IllegalStateException.class, () -> subject.createAccount(ALTBN128_ADD, 1, Wei.ZERO));
+        assertThrows(IllegalStateException.class, () -> subject.createAccount(ADDRESS_6, 1, Wei.ZERO));
     }
 
     @Test
@@ -241,10 +243,20 @@ class ProxyWorldUpdaterTest {
     @Test
     void cannotCreateUnlessPendingCreationHasExpectedAddress() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(hederaOperations.contractCreationLimit()).willReturn(1234L);
+
+        subject.setupInternalCreate(ADDRESS_6);
+
+        assertThrows(IllegalStateException.class, () -> subject.createAccount(LONG_ZERO_ADDRESS, 1, Wei.ZERO));
+    }
+
+    @Test
+    void cannotCreateUnlessLimitIsHighEnough() {
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
 
         subject.setupInternalCreate(ALTBN128_ADD);
 
-        assertThrows(IllegalStateException.class, () -> subject.createAccount(LONG_ZERO_ADDRESS, 1, Wei.ZERO));
+        assertThrows(ResourceExhaustedException.class, () -> subject.createAccount(LONG_ZERO_ADDRESS, 1, Wei.ZERO));
     }
 
     @Test
@@ -256,8 +268,9 @@ class ProxyWorldUpdaterTest {
     @Test
     void cannotCreateUnlessPendingCreationHasExpectedNumber() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER).willReturn(NEXT_NUMBER + 1);
+        given(hederaOperations.contractCreationLimit()).willReturn(1234L);
 
-        subject.setupInternalCreate(ALTBN128_ADD);
+        subject.setupInternalCreate(ADDRESS_6);
 
         assertThrows(IllegalStateException.class, () -> subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, Wei.ZERO));
     }
@@ -266,6 +279,14 @@ class ProxyWorldUpdaterTest {
     void revertDelegatesToScope() {
         subject.revert();
         verify(hederaOperations).revert();
+    }
+
+    @Test
+    void commitIsNoopAfterRevert() {
+        subject.revert();
+        subject.commit();
+        verify(hederaOperations).revert();
+        verify(hederaOperations, never()).commit();
     }
 
     @Test
@@ -278,20 +299,22 @@ class ProxyWorldUpdaterTest {
     void usesAliasIfCreate2IsSetupRecipient() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
         given(evmFrameState.getMutableAccount(SOME_EVM_ADDRESS)).willReturn(mutableAccount);
-        given(evmFrameState.getIdNumber(ALTBN128_ADD))
-                .willReturn(ALTBN128_ADD.toBigInteger().longValueExact());
+        given(evmFrameState.getIdNumber(ADDRESS_6))
+                .willReturn(ADDRESS_6.toBigInteger().longValueExact());
+        given(hederaOperations.contractCreationLimit()).willReturn(1234L);
 
-        subject.setupInternalAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
+        subject.setupInternalAliasedCreate(ADDRESS_6, SOME_EVM_ADDRESS);
         subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
 
         verify(hederaOperations)
-                .createContract(NEXT_NUMBER, ALTBN128_ADD.toBigInteger().longValueExact(), aliasFrom(SOME_EVM_ADDRESS));
+                .createContract(NEXT_NUMBER, ADDRESS_6.toBigInteger().longValueExact(), aliasFrom(SOME_EVM_ADDRESS));
     }
 
     @Test
     void usesAliasIfBodyCreatedWithAlias() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
         given(evmFrameState.getMutableAccount(SOME_EVM_ADDRESS)).willReturn(mutableAccount);
+        given(hederaOperations.contractCreationLimit()).willReturn(1234L);
 
         subject.setupAliasedTopLevelCreate(ContractCreateTransactionBody.DEFAULT, SOME_EVM_ADDRESS);
         subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
@@ -313,6 +336,7 @@ class ProxyWorldUpdaterTest {
     @Test
     void doesNotUseAliasIfBodyCreatedWithoutAlias() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(hederaOperations.contractCreationLimit()).willReturn(1234L);
 
         assertEquals(NEXT_LONG_ZERO_ADDRESS, subject.setupTopLevelCreate(ContractCreateTransactionBody.DEFAULT));
         subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, Wei.ZERO);
@@ -324,7 +348,7 @@ class ProxyWorldUpdaterTest {
     void canResolvePendingCreationHederaId() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
 
-        subject.setupInternalAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
+        subject.setupInternalAliasedCreate(ADDRESS_6, SOME_EVM_ADDRESS);
 
         final var contractId = subject.getHederaContractId(SOME_EVM_ADDRESS);
         assertEquals(ContractID.newBuilder().contractNum(NEXT_NUMBER).build(), contractId);
@@ -334,7 +358,7 @@ class ProxyWorldUpdaterTest {
     void throwsIseWithoutCorrespondingAccount() {
         given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
 
-        subject.setupInternalAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
+        subject.setupInternalAliasedCreate(ADDRESS_6, SOME_EVM_ADDRESS);
 
         assertThrows(IllegalArgumentException.class, () -> subject.getHederaContractId(OTHER_EVM_ADDRESS));
     }
@@ -349,10 +373,10 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void dispatchesDeletingLongZeroAddressByNumber() {
-        subject.deleteAccount(ALTBN128_ADD);
+        subject.deleteAccount(ADDRESS_6);
 
         verify(hederaOperations)
-                .deleteUnaliasedContract(ALTBN128_ADD.toBigInteger().longValueExact());
+                .deleteUnaliasedContract(ADDRESS_6.toBigInteger().longValueExact());
     }
 
     @Test
@@ -398,9 +422,9 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void delegatesTransfer() {
-        given(evmFrameState.tryTransfer(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true))
+        given(evmFrameState.tryTransfer(ADDRESS_6, SOME_EVM_ADDRESS, 123L, true))
                 .willReturn(Optional.of(CustomExceptionalHaltReason.INVALID_SIGNATURE));
-        final var maybeHaltReason = subject.tryTransfer(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true);
+        final var maybeHaltReason = subject.tryTransfer(ADDRESS_6, SOME_EVM_ADDRESS, 123L, true);
         assertTrue(maybeHaltReason.isPresent());
         assertEquals(CustomExceptionalHaltReason.INVALID_SIGNATURE, maybeHaltReason.get());
     }

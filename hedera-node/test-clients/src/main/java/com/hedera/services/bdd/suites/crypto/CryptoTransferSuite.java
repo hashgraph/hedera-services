@@ -362,6 +362,7 @@ public class CryptoTransferSuite extends HapiSuite {
                 .then(getTxnRecord(NFT_XFER).logged());
     }
 
+    @HapiTest
     private HapiSpec aliasKeysAreValidated() {
         final var validAlias = "validAlias";
         final var invalidAlias = "invalidAlias";
@@ -593,6 +594,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                                 .between(partyLiteral.get(), counterLiteral.get()))))));
     }
 
+    @HapiTest
     private HapiSpec cannotTransferFromImmutableAccounts() {
         final var contract = "PayableConstructor";
         final var multiKey = "swiss";
@@ -1262,6 +1264,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                                         .balance(5)))));
     }
 
+    @HapiTest
     private HapiSpec royaltyCollectorsCanUseAutoAssociation() {
         final var uniqueWithRoyalty = "uniqueWithRoyalty";
         final var firstFungible = "firstFungible";
@@ -1484,6 +1487,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         cryptoTransfer(moving(1, tokenB).between(TREASURY, firstUser)));
     }
 
+    @HapiTest
     private HapiSpec baseCryptoTransferFeeChargedAsExpected() {
         final var expectedHbarXferPriceUsd = 0.0001;
         final var expectedHtsXferPriceUsd = 0.001;
@@ -1585,6 +1589,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
+    @HapiTest
     private HapiSpec tokenTransferFeesScaleAsExpected() {
         return defaultHapiSpec("TokenTransferFeesScaleAsExpected")
                 .given(

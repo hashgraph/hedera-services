@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
+import static com.hedera.node.app.spi.workflows.FunctionalityResourcePrices.PREPAID_RESOURCE_PRICES;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.QueryHederaNativeOperations;
@@ -34,14 +37,30 @@ import com.hedera.node.app.service.contract.impl.hevm.QueryContextHevmBlocks;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
+import com.hedera.node.app.spi.workflows.QueryContext;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.function.Supplier;
 
 @Module
 public interface QueryModule {
+    @Provides
+    @QueryScope
+    static TinybarValues provideTinybarValues(@NonNull final ExchangeRate exchangeRate) {
+        // Use zeros for all resource prices, since we charge for query gas via an independent
+        // CryptoTransfer in the query header; and it is illegal to emit logs in a static call
+        return new TinybarValues(exchangeRate, PREPAID_RESOURCE_PRICES);
+    }
+
+    @Provides
+    @QueryScope
+    static ExchangeRate provideExchangeRate(@NonNull final Instant now, @NonNull final QueryContext context) {
+        return context.exchangeRateInfo().activeRate(now);
+    }
+
     @Provides
     @QueryScope
     static HederaWorldUpdater.Enhancement provideEnhancement(
@@ -74,8 +93,10 @@ public interface QueryModule {
     @Provides
     @QueryScope
     static HederaEvmContext provideHederaEvmContext(
-            @NonNull final HederaOperations extWorldScope, @NonNull final HederaEvmBlocks hederaEvmBlocks) {
-        return new HederaEvmContext(extWorldScope.gasPriceInTinybars(), true, hederaEvmBlocks);
+            @NonNull final HederaOperations hederaOperations,
+            @NonNull final HederaEvmBlocks hederaEvmBlocks,
+            @NonNull final TinybarValues tinybarValues) {
+        return new HederaEvmContext(hederaOperations.gasPriceInTinybars(), true, hederaEvmBlocks, tinybarValues);
     }
 
     @Binds

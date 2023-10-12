@@ -18,8 +18,12 @@ package com.hedera.node.app.service.contract.impl.exec;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.annotations.InitialState;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
@@ -41,7 +45,9 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.HederaConfig;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -54,8 +60,28 @@ import java.util.function.Supplier;
 public interface TransactionModule {
     @Provides
     @TransactionScope
+    static TinybarValues provideTinybarResourcePrices(
+            @NonNull final FunctionalityResourcePrices resourcePrices, @NonNull final ExchangeRate exchangeRate) {
+        return new TinybarValues(exchangeRate, resourcePrices);
+    }
+
+    @Provides
+    @TransactionScope
     static Instant provideConsensusTime(@NonNull final HandleContext context) {
         return requireNonNull(context).consensusNow();
+    }
+
+    @Provides
+    @TransactionScope
+    static FunctionalityResourcePrices provideResourcePrices(
+            @NonNull final HederaFunctionality functionality, @NonNull final HandleContext context) {
+        return context.resourcePricesFor(functionality, SubType.DEFAULT);
+    }
+
+    @Provides
+    @TransactionScope
+    static ExchangeRate provideExchangeRate(@NonNull final Instant now, @NonNull final HandleContext context) {
+        return context.exchangeRateInfo().activeRate(now);
     }
 
     @Provides
@@ -64,10 +90,11 @@ public interface TransactionModule {
     static HydratedEthTxData maybeProvideHydratedEthTxData(
             @NonNull final HandleContext context,
             @NonNull final EthereumCallDataHydration hydration,
+            @NonNull final HederaConfig hederaConfig,
             @NonNull @InitialState final ReadableFileStore fileStore) {
         final var body = context.body();
         return body.hasEthereumTransaction()
-                ? hydration.tryToHydrate(body.ethereumTransactionOrThrow(), fileStore)
+                ? hydration.tryToHydrate(body.ethereumTransactionOrThrow(), fileStore, hederaConfig.firstUserEntity())
                 : null;
     }
 
@@ -80,15 +107,20 @@ public interface TransactionModule {
     @Provides
     @TransactionScope
     static HederaEvmContext provideHederaEvmContext(
-            @NonNull final HederaOperations extWorldScope, @NonNull final HederaEvmBlocks hederaEvmBlocks) {
-        return new HederaEvmContext(extWorldScope.gasPriceInTinybars(), false, hederaEvmBlocks);
+            @NonNull final TinybarValues tinybarValues,
+            @NonNull final HederaOperations hederaOperations,
+            @NonNull final HederaEvmBlocks hederaEvmBlocks) {
+        return new HederaEvmContext(hederaOperations.gasPriceInTinybars(), false, hederaEvmBlocks, tinybarValues);
     }
 
     @Provides
     @TransactionScope
     static Supplier<HederaWorldUpdater> provideFeesOnlyUpdater(
             @NonNull final HederaWorldUpdater.Enhancement enhancement, @NonNull final EvmFrameStateFactory factory) {
-        return () -> new ProxyWorldUpdater(enhancement, requireNonNull(factory), null);
+        return () -> {
+            enhancement.operations().begin();
+            return new ProxyWorldUpdater(enhancement, requireNonNull(factory), null);
+        };
     }
 
     @Provides
@@ -118,7 +150,7 @@ public interface TransactionModule {
         requireNonNull(operations);
         requireNonNull(nativeOperations);
         requireNonNull(systemContractOperations);
-        return new HederaWorldUpdater.Enhancement(operations, nativeOperations, systemContractOperations);
+        return new HederaWorldUpdater.Enhancement(operations.begin(), nativeOperations, systemContractOperations);
     }
 
     @Binds

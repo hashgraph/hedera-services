@@ -50,7 +50,6 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.MainnetEVMs;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.BlockValues;
@@ -148,10 +147,8 @@ class CallLocalEvmTxProcessorTest {
 
     @Test
     void throwsWhenCodeCacheFailsLoading() {
-        var evmAccount = mock(EvmAccount.class);
+        var evmAccount = mock(MutableAccount.class);
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
-        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable())
-                .willReturn(mock(MutableAccount.class));
 
         given(worldState.updater()).willReturn(updater);
         given(worldState.updater().updater()).willReturn(updater);
@@ -201,25 +198,20 @@ class CallLocalEvmTxProcessorTest {
         given(worldState.updater().updater()).willReturn(stackedUpdater);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0, 0, 1010).asEvmAddress());
 
-        var evmAccount = mock(EvmAccount.class);
+        var evmAccount = mock(MutableAccount.class);
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
 
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
-        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable())
-                .willReturn(mock(MutableAccount.class));
         given(codeCache.getIfPresent(any())).willReturn(CodeV0.EMPTY_CODE);
 
-        var senderMutableAccount = mock(MutableAccount.class);
-        given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
-        given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
+        given(evmAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
+        given(evmAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
         given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
-        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
         given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
-        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
     }
 }

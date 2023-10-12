@@ -52,6 +52,7 @@ import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -243,6 +244,15 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @NonNull
     @Override
+    public FunctionalityResourcePrices resourcePricesFor(
+            @NonNull final HederaFunctionality functionality, @NonNull final SubType subType) {
+        // TODO - how do we get the active congestion multiplier?
+        return new FunctionalityResourcePrices(
+                requireNonNull(feeManager.getFeeData(functionality, userTransactionConsensusTime, subType)), 1L);
+    }
+
+    @NonNull
+    @Override
     public FeeAccumulator feeAccumulator() {
         return feeAccumulator;
     }
@@ -260,6 +270,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @NonNull
     public Configuration configuration() {
         return configuration;
+    }
+
+    @Override
+    @NonNull
+    public Authorizer authorizer() {
+        return authorizer;
     }
 
     @Override

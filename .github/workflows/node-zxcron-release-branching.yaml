@@ -41,11 +41,11 @@ jobs:
       triggered: ${{ steps.evaluate.outputs.triggered }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
 
       - name: Read Trigger Time
         id: time
-        uses: mikefarah/yq@6609ed76ecb69f9d8254345292d90ea72f641715 # v4.35.1
+        uses: mikefarah/yq@a198f72367ce9da70b564a2cc25399de8e27bf37 # v4.35.2
         with:
           cmd: yq '.release.branching.execution.time' '${{ env.WORKFLOW_CONFIG_FILE }}'
 
@@ -89,7 +89,7 @@ jobs:
     if: ${{ needs.check-trigger.outputs.triggered == 'true' && !cancelled() }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
 
       - name: Branch Creation Check
         id: branch-creation
@@ -105,7 +105,7 @@ jobs:
     if: ${{ needs.check-branch.outputs.branch-create == 'true' && !cancelled() }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_ACCESS_TOKEN }}
@@ -194,7 +194,7 @@ jobs:
     if: ${{ needs.check-branch.outputs.tag-create == 'true' && needs.create-branch.result == 'success' && !cancelled() }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
         with:
           ref: ${{ needs.check-branch.outputs.branch-name }}
           fetch-depth: 0

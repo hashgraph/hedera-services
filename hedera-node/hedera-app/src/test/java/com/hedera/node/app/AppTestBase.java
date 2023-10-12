@@ -454,5 +454,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         public boolean createTransaction(@NonNull byte[] bytes) {
             return false;
         }
+
+        @Override
+        public void start() {}
     }
 }

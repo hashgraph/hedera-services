@@ -56,7 +56,7 @@ class StorageSizeValidatorTest {
 
     @Test
     void throwsOnTooManyIndividualPairs() {
-        final var pretendMaxIndividual = 666;
+        final var pretendMaxIndividual = 666L;
         final var underLimitNumber = 123L;
         final var overLimitNumber = 321L;
         final var config = HederaTestConfigBuilder.create()

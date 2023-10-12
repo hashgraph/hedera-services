@@ -17,12 +17,14 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_CALL_DATA;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
@@ -93,6 +95,7 @@ class TransactionModuleTest {
         assertInstanceOf(
                 ProxyWorldUpdater.class,
                 TransactionModule.provideFeesOnlyUpdater(enhancement, factory).get());
+        verify(hederaOperations).begin();
     }
 
     @Test
@@ -104,12 +107,16 @@ class TransactionModuleTest {
                 TransactionBody.newBuilder().ethereumTransaction(ethTxn).build();
         given(context.body()).willReturn(body);
         final var expectedHydration = HydratedEthTxData.successFrom(ETH_DATA_WITH_CALL_DATA);
-        given(hydration.tryToHydrate(ethTxn, fileStore)).willReturn(expectedHydration);
-        assertSame(expectedHydration, TransactionModule.maybeProvideHydratedEthTxData(context, hydration, fileStore));
+        given(hydration.tryToHydrate(ethTxn, fileStore, DEFAULT_HEDERA_CONFIG.firstUserEntity()))
+                .willReturn(expectedHydration);
+        assertSame(
+                expectedHydration,
+                TransactionModule.maybeProvideHydratedEthTxData(context, hydration, DEFAULT_HEDERA_CONFIG, fileStore));
     }
 
     @Test
     void providesEnhancement() {
+        given(hederaOperations.begin()).willReturn(hederaOperations);
         assertNotNull(
                 TransactionModule.provideEnhancement(hederaOperations, nativeOperations, systemContractOperations));
     }
@@ -121,7 +128,8 @@ class TransactionModuleTest {
                 .build();
         final var body = TransactionBody.newBuilder().contractCall(callTxn).build();
         given(context.body()).willReturn(body);
-        assertNull(TransactionModule.maybeProvideHydratedEthTxData(context, hydration, fileStore));
+        assertNull(
+                TransactionModule.maybeProvideHydratedEthTxData(context, hydration, DEFAULT_HEDERA_CONFIG, fileStore));
     }
 
     @Test

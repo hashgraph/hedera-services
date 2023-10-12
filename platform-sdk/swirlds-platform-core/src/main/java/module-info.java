@@ -63,8 +63,6 @@ module com.swirlds.platform.core {
             com.swirlds.platform.core.test.fixtures,
             com.fasterxml.jackson.core,
             com.fasterxml.jackson.databind;
-    exports com.swirlds.platform.event.creation to
-            com.swirlds.platform.test;
     exports com.swirlds.platform.swirldapp to
             com.swirlds.platform.test;
     exports com.swirlds.platform.observers to
@@ -77,8 +75,6 @@ module com.swirlds.platform.core {
             com.hedera.node.test.clients;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
-            com.swirlds.platform.test;
-    exports com.swirlds.platform.event.intake to
             com.swirlds.platform.test;
     exports com.swirlds.platform.state.notifications to
             com.swirlds.platform.test;
@@ -115,10 +111,6 @@ module com.swirlds.platform.core {
             com.swirlds.config.impl,
             com.swirlds.common,
             com.hedera.node.test.clients;
-    exports com.swirlds.platform.event.tipset to
-            com.swirlds.config.impl,
-            com.swirlds.common,
-            com.hedera.node.test.clients;
 
     opens com.swirlds.platform.cli to
             info.picocli;
@@ -132,6 +124,10 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.gossip.shadowgraph;
     exports com.swirlds.platform.recovery.emergencyfile;
     exports com.swirlds.platform.event;
+    exports com.swirlds.platform.event.creation.tipset to
+            com.hedera.node.test.clients,
+            com.swirlds.common,
+            com.swirlds.config.impl;
 
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
