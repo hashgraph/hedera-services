@@ -107,7 +107,8 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull final AccountID payer,
             @NonNull final Configuration configuration,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final TransactionCategory transactionCategory) throws PreCheckException {
+            @NonNull final TransactionCategory transactionCategory)
+            throws PreCheckException {
         this.storeFactory = requireNonNull(storeFactory, "storeFactory must not be null.");
         this.txn = requireNonNull(txn, "txn must not be null!");
         this.payer = requireNonNull(payer, "payer msut not be null!");
@@ -116,7 +117,8 @@ public class PreHandleContextImpl implements PreHandleContext {
 
         this.accountStore = storeFactory.getStore(ReadableAccountStore.class);
 
-        if (transactionCategory.equals(TransactionCategory.USER) || transactionCategory.equals(TransactionCategory.PRECEDING)) {
+        if (transactionCategory.equals(TransactionCategory.USER)
+                || transactionCategory.equals(TransactionCategory.PRECEDING)) {
             // Find the account, which must exist or throw a PreCheckException with the given response code.
             final var account = accountStore.getAccountById(payer);
             mustExist(account, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
@@ -386,8 +388,8 @@ public class PreHandleContextImpl implements PreHandleContext {
     public TransactionKeys allKeysForTransaction(
             @NonNull TransactionBody nestedTxn, @NonNull final AccountID payerForNested) throws PreCheckException {
         dispatcher.dispatchPureChecks(nestedTxn);
-        final var nestedContext =
-                new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration, dispatcher, TransactionCategory.USER);
+        final var nestedContext = new PreHandleContextImpl(
+                storeFactory, nestedTxn, payerForNested, configuration, dispatcher, TransactionCategory.USER);
         dispatcher.dispatchPreHandle(nestedContext);
         return nestedContext;
     }
@@ -397,8 +399,8 @@ public class PreHandleContextImpl implements PreHandleContext {
     public PreHandleContext createNestedContext(
             @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
             throws PreCheckException {
-        this.innerContext =
-                new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration, dispatcher, TransactionCategory.USER);
+        this.innerContext = new PreHandleContextImpl(
+                storeFactory, nestedTxn, payerForNested, configuration, dispatcher, TransactionCategory.USER);
         return this.innerContext;
     }
 
