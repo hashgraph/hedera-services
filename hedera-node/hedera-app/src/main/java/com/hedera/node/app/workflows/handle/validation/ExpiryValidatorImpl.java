@@ -60,7 +60,9 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
     @NonNull
     @Override
     public ExpiryMeta resolveCreationAttempt(
-            final boolean entityCanSelfFundRenewal, @NonNull final ExpiryMeta creationMeta) {
+            final boolean entityCanSelfFundRenewal,
+            @NonNull final ExpiryMeta creationMeta,
+            final boolean isForTopicCreate) {
         if (creationMeta.hasAutoRenewAccountId()) {
             validateAutoRenewAccount(creationMeta.autoRenewAccountId());
         }
@@ -72,11 +74,23 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
         if (hasCompleteAutoRenewSpec(entityCanSelfFundRenewal, creationMeta)) {
             effectiveExpiry = clampedAdd(context.consensusNow().getEpochSecond(), creationMeta.autoRenewPeriod());
         }
-        // Even if the effective expiry is valid, we still also require any explicit auto-renew period to be valid
-        if (creationMeta.hasAutoRenewPeriod()) {
-            context.attributeValidator().validateAutoRenewPeriod(creationMeta.autoRenewPeriod());
+        // In mono-service this check is done first for topic creation.
+        // To maintain same behaviour for differential testing this condition is needed.
+        // FUTURE: This condition should be removed after differential testing is done
+        if (isForTopicCreate) {
+            context.attributeValidator().validateExpiry(effectiveExpiry);
+            // Even if the effective expiry is valid, we still also require any explicit auto-renew period to be valid
+            if (creationMeta.hasAutoRenewPeriod()) {
+                context.attributeValidator().validateAutoRenewPeriod(creationMeta.autoRenewPeriod());
+            }
+        } else {
+            // Even if the effective expiry is valid, we still also require any explicit auto-renew period to be valid
+            if (creationMeta.hasAutoRenewPeriod()) {
+                context.attributeValidator().validateAutoRenewPeriod(creationMeta.autoRenewPeriod());
+            }
+            context.attributeValidator().validateExpiry(effectiveExpiry);
         }
-        context.attributeValidator().validateExpiry(effectiveExpiry);
+
         return new ExpiryMeta(effectiveExpiry, creationMeta.autoRenewPeriod(), creationMeta.autoRenewAccountId());
     }
 
