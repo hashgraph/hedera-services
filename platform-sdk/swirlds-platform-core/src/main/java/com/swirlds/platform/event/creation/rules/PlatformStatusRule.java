@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.tipset.rules;
+package com.swirlds.platform.event.creation.rules;
 
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.platform.eventhandling.TransactionPool;
@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 /**
  * Limits the creation of new events depending on the current platform status.
  */
-public class TipsetPlatformStatusRule implements TipsetEventCreationRule {
+public class PlatformStatusRule implements EventCreationRule {
 
     private final Supplier<PlatformStatus> platformStatusSupplier;
     private final TransactionPool transactionPool;
@@ -36,7 +36,7 @@ public class TipsetPlatformStatusRule implements TipsetEventCreationRule {
      * @param platformStatusSupplier    provides the current platform status
      * @param transactionPool           provides transactions to be added to new events
      */
-    public TipsetPlatformStatusRule(
+    public PlatformStatusRule(
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final TransactionPool transactionPool) {
 

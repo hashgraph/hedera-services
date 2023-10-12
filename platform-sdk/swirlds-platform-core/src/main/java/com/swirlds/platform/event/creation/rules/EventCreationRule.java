@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.tipset.rules;
+package com.swirlds.platform.event.creation.rules;
 
 /**
  * An object used to limit or prevent the creation of new events.
  */
-public interface TipsetEventCreationRule {
+public interface EventCreationRule {
 
     /**
      * Check if event creation is currently permitted.

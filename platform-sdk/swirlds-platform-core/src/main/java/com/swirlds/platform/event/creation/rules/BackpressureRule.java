@@ -14,39 +14,41 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.tipset.rules;
+package com.swirlds.platform.event.creation.rules;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.utility.throttle.RateLimiter;
-import com.swirlds.platform.event.tipset.EventCreationConfig;
+import com.swirlds.platform.event.creation.EventCreationConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
+import java.util.function.IntSupplier;
 
 /**
- * Throttles event creation rate over time.
+ * Prevents event creations when the system is stressed and unable to keep up with its work load.
  */
-public class TipsetMaximumRateRule implements TipsetEventCreationRule {
+public class BackpressureRule implements EventCreationRule {
 
-    private final RateLimiter rateLimiter;
+    /**
+     * Prevent new events from being created if the event intake queue ever meets or exceeds this size.
+     */
+    private final int eventIntakeThrottle;
+
+    private final IntSupplier eventIntakeQueueSize;
 
     /**
      * Constructor.
      *
-     * @param platformContext the platform context for this node
-     * @param time            provides wall clock time
+     * @param platformContext      the platform's context
+     * @param eventIntakeQueueSize provides the size of the event intake queue
      */
-    public TipsetMaximumRateRule(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
+    public BackpressureRule(
+            @NonNull final PlatformContext platformContext, @NonNull final IntSupplier eventIntakeQueueSize) {
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
-        final double maxCreationRate = eventCreationConfig.maxCreationRate();
-        if (maxCreationRate > 0) {
-            rateLimiter = new RateLimiter(time, maxCreationRate);
-        } else {
-            // No brakes!
-            rateLimiter = null;
-        }
+        eventIntakeThrottle = eventCreationConfig.eventIntakeThrottle();
+
+        this.eventIntakeQueueSize = Objects.requireNonNull(eventIntakeQueueSize);
     }
 
     /**
@@ -54,10 +56,7 @@ public class TipsetMaximumRateRule implements TipsetEventCreationRule {
      */
     @Override
     public boolean isEventCreationPermitted() {
-        if (rateLimiter != null) {
-            return rateLimiter.request();
-        }
-        return true;
+        return eventIntakeQueueSize.getAsInt() < eventIntakeThrottle;
     }
 
     /**
@@ -65,8 +64,6 @@ public class TipsetMaximumRateRule implements TipsetEventCreationRule {
      */
     @Override
     public void eventWasCreated() {
-        if (rateLimiter != null) {
-            rateLimiter.trigger();
-        }
+        // no-op
     }
 }
