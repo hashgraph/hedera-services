@@ -59,7 +59,7 @@ public class HederaSStoreOperation extends AbstractOperation {
         final var key = UInt256.fromBytes(frame.popStackItem());
         final var value = UInt256.fromBytes(frame.popStackItem());
         final var addressOrAlias = frame.getRecipientAddress();
-        final var account = frame.getWorldUpdater().getAccount(addressOrAlias).getMutable();
+        final var account = frame.getWorldUpdater().getAccount(addressOrAlias);
         final Supplier<UInt256> oldValue = Suppliers.memoize(() -> account.getStorageValue(key));
         final Supplier<UInt256> originalValue = Suppliers.memoize(() -> account.getOriginalStorageValue(key));
         if (account == null) {

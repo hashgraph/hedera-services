@@ -175,6 +175,17 @@ public final class Hedera implements SwirldMain {
     private HandleThrottleAccumulator handleThrottling;
     private MonoMultiplierSources monoMultiplierSources;
 
+    /**
+     * The application name from the platform's perspective. This is currently locked in at the old main class name and
+     * requires data migration to change.
+     */
+    public static final String APP_NAME = "com.hedera.services.ServicesMain";
+
+    /**
+     * The swirld name. Currently there is only one swirld.
+     */
+    public static final String SWIRLD_NAME = "123";
+
     /*==================================================================================================================
     *
     * Hedera Object Construction.

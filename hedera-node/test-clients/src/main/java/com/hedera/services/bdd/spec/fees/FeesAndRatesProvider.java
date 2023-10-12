@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.toReadableString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
@@ -44,9 +45,11 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
+import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -78,7 +81,7 @@ public class FeesAndRatesProvider {
         this.registry = registry;
     }
 
-    public void init() throws Throwable {
+    public void init() throws IOException, ReflectiveOperationException, GeneralSecurityException {
         if (setup.useFixedFee()) {
             return;
         }
@@ -119,7 +122,7 @@ public class FeesAndRatesProvider {
         return useCurrent ? rateSet.getCurrentRate() : rateSet.getNextRate();
     }
 
-    private void readRateSet() throws Throwable {
+    private void readRateSet() throws IOException {
         File f = new File(setup.clientExchangeRatesPath());
         byte[] bytes = Files.readAllBytes(f.toPath());
         rateSet = ExchangeRateSet.parseFrom(bytes);
@@ -134,7 +137,7 @@ public class FeesAndRatesProvider {
         return rateSet != null;
     }
 
-    private void downloadRateSet() throws Throwable {
+    private void downloadRateSet() throws IOException, GeneralSecurityException, ReflectiveOperationException {
         long queryFee = lookupDownloadFee(setup.exchangeRatesId());
         FileGetContentsResponse response = downloadWith(queryFee, false, setup.exchangeRatesId());
         byte[] bytes = response.getFileContents().getContents().toByteArray();
@@ -145,7 +148,7 @@ public class FeesAndRatesProvider {
         log.info(message);
     }
 
-    private void readFeeSchedule() throws Throwable {
+    private void readFeeSchedule() throws IOException {
         File f = new File(setup.clientFeeSchedulePath());
         byte[] bytes = Files.readAllBytes(f.toPath());
         CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
@@ -156,7 +159,7 @@ public class FeesAndRatesProvider {
         log.info(message);
     }
 
-    private void downloadFeeSchedule() throws Throwable {
+    private void downloadFeeSchedule() throws IOException, GeneralSecurityException, ReflectiveOperationException {
         long queryFee = lookupDownloadFee(setup.feeScheduleId());
         FileGetContentsResponse response = downloadWith(queryFee, false, setup.feeScheduleId());
         byte[] bytes = response.getFileContents().getContents().toByteArray();
@@ -168,13 +171,15 @@ public class FeesAndRatesProvider {
         log.info(message);
     }
 
-    private long lookupDownloadFee(FileID fileId) throws Throwable {
+    private long lookupDownloadFee(FileID fileId)
+            throws IOException, GeneralSecurityException, ReflectiveOperationException {
         return downloadWith(setup.feeScheduleFetchFee(), true, fileId)
                 .getHeader()
                 .getCost();
     }
 
-    private FileGetContentsResponse downloadWith(long queryFee, boolean costOnly, FileID fid) throws Throwable {
+    private FileGetContentsResponse downloadWith(long queryFee, boolean costOnly, FileID fid)
+            throws IOException, GeneralSecurityException, ReflectiveOperationException {
         int attemptsLeft = NUM_DOWNLOAD_ATTEMPTS;
         ResponseCodeEnum status;
         FileGetContentsResponse response;
@@ -185,7 +190,7 @@ public class FeesAndRatesProvider {
                     .getFileContent(query)
                     .getFileGetContents();
             status = response.getHeader().getNodeTransactionPrecheckCode();
-            if (status == OK) {
+            if (status == OK || status == PLATFORM_NOT_ACTIVE) {
                 break;
             } else {
                 log.warn(
@@ -210,7 +215,8 @@ public class FeesAndRatesProvider {
         return Query.newBuilder().setFileGetContents(costQuery).build();
     }
 
-    private Transaction defaultPayerSponsored(long queryFee) throws Throwable {
+    private Transaction defaultPayerSponsored(long queryFee)
+            throws IOException, GeneralSecurityException, ReflectiveOperationException {
         TransferList transfers = asTransferList(tinyBarsFromTo(queryFee, setup.defaultPayer(), setup.defaultNode()));
         CryptoTransferTransactionBody opBody =
                 txns.<CryptoTransferTransactionBody, CryptoTransferTransactionBody.Builder>body(

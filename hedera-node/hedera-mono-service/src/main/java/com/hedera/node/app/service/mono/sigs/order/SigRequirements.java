@@ -572,7 +572,7 @@ public class SigRequirements {
                 operatorId = ownerId;
             }
             if (includeOwnerIfNecessary(payer, operatorId, requiredKeys, linkedRefs) != NONE) {
-                if (operatorId == ownerId) {
+                if (operatorId.equals(ownerId)) {
                     return factory.forInvalidAllowanceOwner();
                 } else {
                     return factory.forInvalidDelegatingSpender();
