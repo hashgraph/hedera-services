@@ -17,12 +17,12 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY_V2;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FIXED_FEE_V2;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FRACTIONAL_FEE_V2;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FIXED_FEE;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FRACTIONAL_FEE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.KEY_VALUE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.RESPONSE_STATUS_AT_BEGINNING;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE_V2;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE;
 
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.AccountID;
@@ -61,7 +61,7 @@ public class ReturnTypes {
     public static final String RESPONSE_CODE_INT32 = "(int32,int32)";
     public static final String RESPONSE_CODE_UINT256 = "(int64,uint256)";
     public static final String UINT256 = "(uint256)";
-    public static final String RESPONSE_CODE_EXPIRY = RESPONSE_STATUS_AT_BEGINNING + EXPIRY_V2 + ")";
+    public static final String RESPONSE_CODE_EXPIRY = RESPONSE_STATUS_AT_BEGINNING + EXPIRY + ")";
     public static final String RESPONSE_CODE_TOKEN_KEY = RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE + ")";
 
     private static final TupleType RC_ENCODER = TupleType.parse(INT_64);
@@ -69,11 +69,11 @@ public class ReturnTypes {
     // Return a response code and arrays of fixed, fractional and royalty fees
     // (uint32,(int64,address,bool,bool,address)[],(int64,int64,int64,int64,bool,address)[],(int64,int64,int64,address,bool,address)[])
     public static final String RESPONSE_CODE_CUSTOM_FEES = RESPONSE_STATUS_AT_BEGINNING
-            + FIXED_FEE_V2 + ARRAY_BRACKETS
+            + FIXED_FEE + ARRAY_BRACKETS
             + ","
-            + FRACTIONAL_FEE_V2 + ARRAY_BRACKETS
+            + FRACTIONAL_FEE + ARRAY_BRACKETS
             + ","
-            + ROYALTY_FEE_V2 + ARRAY_BRACKETS
+            + ROYALTY_FEE + ARRAY_BRACKETS
             + ")";
 
     /**
