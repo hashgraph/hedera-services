@@ -30,7 +30,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.event.EventDescriptor;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -220,17 +220,23 @@ class OrphanBufferTests {
 
         final Consumer<GossipEvent> eventConsumer = event -> {
             final BaseEventHashedData hashedData = event.getHashedData();
-            assertFalse(hashedData.getGeneration() < minimumGenerationNonAncient.get(), "Ancient events shouldn't be emitted");
-            assertTrue(eventEmittedOrAncient(
-                    hashedData.getSelfParentHash(),
-                    hashedData.getSelfParentGen(),
-                    minimumGenerationNonAncient.get(),
-                    emittedEvents), "Self parent was neither emitted nor ancient");
-            assertTrue(eventEmittedOrAncient(
-                    hashedData.getOtherParentHash(),
-                    hashedData.getOtherParentGen(),
-                    minimumGenerationNonAncient.get(),
-                    emittedEvents), "Other parent was neither emitted nor ancient");
+            assertFalse(
+                    hashedData.getGeneration() < minimumGenerationNonAncient.get(),
+                    "Ancient events shouldn't be emitted");
+            assertTrue(
+                    eventEmittedOrAncient(
+                            hashedData.getSelfParentHash(),
+                            hashedData.getSelfParentGen(),
+                            minimumGenerationNonAncient.get(),
+                            emittedEvents),
+                    "Self parent was neither emitted nor ancient");
+            assertTrue(
+                    eventEmittedOrAncient(
+                            hashedData.getOtherParentHash(),
+                            hashedData.getOtherParentGen(),
+                            minimumGenerationNonAncient.get(),
+                            emittedEvents),
+                    "Other parent was neither emitted nor ancient");
             assertTrue(emittedEvents.add(event.getDescriptor().getHash()), "Event was emitted twice");
         };
 
