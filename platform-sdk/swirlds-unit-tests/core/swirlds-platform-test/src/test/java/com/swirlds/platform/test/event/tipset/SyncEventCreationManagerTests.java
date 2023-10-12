@@ -26,9 +26,9 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.tipset.SyncTipsetEventCreationManager;
-import com.swirlds.platform.event.tipset.TipsetEventCreator;
-import com.swirlds.platform.event.tipset.rules.TipsetEventCreationRule;
+import com.swirlds.platform.event.creation.EventCreator;
+import com.swirlds.platform.event.creation.SyncEventCreationManager;
+import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,19 +40,19 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SyncTipsetEventCreationManager Tests")
-class SyncTipsetEventCreationManagerTests {
+class SyncEventCreationManagerTests {
 
     @Test
     @DisplayName("Basic Behavior Test")
     void basicBehaviorTest() {
-        final TipsetEventCreator creator = mock(TipsetEventCreator.class);
+        final EventCreator creator = mock(EventCreator.class);
         final List<GossipEvent> eventsToCreate =
                 List.of(mock(GossipEvent.class), mock(GossipEvent.class), mock(GossipEvent.class));
         when(creator.maybeCreateEvent())
                 .thenReturn(eventsToCreate.get(0), eventsToCreate.get(1), eventsToCreate.get(2));
 
         final AtomicInteger eventWasCreatedCount = new AtomicInteger(0);
-        final TipsetEventCreationRule rule = new TipsetEventCreationRule() {
+        final EventCreationRule rule = new EventCreationRule() {
             @Override
             public boolean isEventCreationPermitted() {
                 return true;
@@ -70,7 +70,7 @@ class SyncTipsetEventCreationManagerTests {
             return true;
         };
 
-        final SyncTipsetEventCreationManager manager = new SyncTipsetEventCreationManager(creator, rule, eventConsumer);
+        final SyncEventCreationManager manager = new SyncEventCreationManager(creator, rule, eventConsumer);
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());
 
@@ -92,7 +92,7 @@ class SyncTipsetEventCreationManagerTests {
     @Test
     @DisplayName("Rules Prevent Creation Test")
     void rulesPreventCreationTest() {
-        final TipsetEventCreator creator = mock(TipsetEventCreator.class);
+        final EventCreator creator = mock(EventCreator.class);
         final List<GossipEvent> eventsToCreate =
                 List.of(mock(GossipEvent.class), mock(GossipEvent.class), mock(GossipEvent.class));
         when(creator.maybeCreateEvent())
@@ -100,7 +100,7 @@ class SyncTipsetEventCreationManagerTests {
 
         final AtomicInteger eventWasCreatedCount = new AtomicInteger(0);
         final AtomicBoolean allowCreation = new AtomicBoolean(false);
-        final TipsetEventCreationRule rule = new TipsetEventCreationRule() {
+        final EventCreationRule rule = new EventCreationRule() {
             @Override
             public boolean isEventCreationPermitted() {
                 return allowCreation.get();
@@ -118,7 +118,7 @@ class SyncTipsetEventCreationManagerTests {
             return true;
         };
 
-        final SyncTipsetEventCreationManager manager = new SyncTipsetEventCreationManager(creator, rule, eventConsumer);
+        final SyncEventCreationManager manager = new SyncEventCreationManager(creator, rule, eventConsumer);
 
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());
@@ -178,14 +178,14 @@ class SyncTipsetEventCreationManagerTests {
     @Test
     @DisplayName("Buffered Event Test")
     void bufferedEventTest() {
-        final TipsetEventCreator creator = mock(TipsetEventCreator.class);
+        final EventCreator creator = mock(EventCreator.class);
         final List<GossipEvent> eventsToCreate =
                 List.of(mock(GossipEvent.class), mock(GossipEvent.class), mock(GossipEvent.class));
         when(creator.maybeCreateEvent())
                 .thenReturn(eventsToCreate.get(0), eventsToCreate.get(1), eventsToCreate.get(2));
 
         final AtomicInteger eventWasCreatedCount = new AtomicInteger(0);
-        final TipsetEventCreationRule rule = new TipsetEventCreationRule() {
+        final EventCreationRule rule = new EventCreationRule() {
             @Override
             public boolean isEventCreationPermitted() {
                 return true;
@@ -207,7 +207,7 @@ class SyncTipsetEventCreationManagerTests {
             return true;
         };
 
-        final SyncTipsetEventCreationManager manager = new SyncTipsetEventCreationManager(creator, rule, eventConsumer);
+        final SyncEventCreationManager manager = new SyncEventCreationManager(creator, rule, eventConsumer);
 
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());
@@ -250,14 +250,14 @@ class SyncTipsetEventCreationManagerTests {
     @Test
     @DisplayName("Paused Halts Creation Test")
     void pauseHaltsCreationTest() {
-        final TipsetEventCreator creator = mock(TipsetEventCreator.class);
+        final EventCreator creator = mock(EventCreator.class);
         final List<GossipEvent> eventsToCreate =
                 List.of(mock(GossipEvent.class), mock(GossipEvent.class), mock(GossipEvent.class));
         when(creator.maybeCreateEvent())
                 .thenReturn(eventsToCreate.get(0), eventsToCreate.get(1), eventsToCreate.get(2));
 
         final AtomicInteger eventWasCreatedCount = new AtomicInteger(0);
-        final TipsetEventCreationRule rule = new TipsetEventCreationRule() {
+        final EventCreationRule rule = new EventCreationRule() {
             @Override
             public boolean isEventCreationPermitted() {
                 return true;
@@ -275,7 +275,7 @@ class SyncTipsetEventCreationManagerTests {
             return true;
         };
 
-        final SyncTipsetEventCreationManager manager = new SyncTipsetEventCreationManager(creator, rule, eventConsumer);
+        final SyncEventCreationManager manager = new SyncEventCreationManager(creator, rule, eventConsumer);
 
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());
@@ -318,14 +318,14 @@ class SyncTipsetEventCreationManagerTests {
     @Test
     @DisplayName("Pause Flushes Buffer Test")
     void pauseFlushesBufferTest() throws InterruptedException {
-        final TipsetEventCreator creator = mock(TipsetEventCreator.class);
+        final EventCreator creator = mock(EventCreator.class);
         final List<GossipEvent> eventsToCreate =
                 List.of(mock(GossipEvent.class), mock(GossipEvent.class), mock(GossipEvent.class));
         when(creator.maybeCreateEvent())
                 .thenReturn(eventsToCreate.get(0), eventsToCreate.get(1), eventsToCreate.get(2));
 
         final AtomicInteger eventWasCreatedCount = new AtomicInteger(0);
-        final TipsetEventCreationRule rule = new TipsetEventCreationRule() {
+        final EventCreationRule rule = new EventCreationRule() {
             @Override
             public boolean isEventCreationPermitted() {
                 return true;
@@ -349,7 +349,7 @@ class SyncTipsetEventCreationManagerTests {
             return true;
         };
 
-        final SyncTipsetEventCreationManager manager = new SyncTipsetEventCreationManager(creator, rule, eventConsumer);
+        final SyncEventCreationManager manager = new SyncEventCreationManager(creator, rule, eventConsumer);
 
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());

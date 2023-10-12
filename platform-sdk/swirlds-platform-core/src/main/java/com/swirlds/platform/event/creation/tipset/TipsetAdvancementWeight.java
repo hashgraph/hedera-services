@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.tipset;
+package com.swirlds.platform.event.creation.tipset;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 

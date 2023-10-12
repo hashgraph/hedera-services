@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.tipset;
+package com.swirlds.platform.event.creation;
 
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
@@ -22,9 +22,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * An object that creates new events using the tipset algorithm.
+ * An object that creates new events.
  */
-public interface TipsetEventCreator {
+public interface EventCreator {
 
     /**
      * Register a new event from event intake.

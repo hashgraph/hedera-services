@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.tipset.rules;
+package com.swirlds.platform.event.creation.rules;
 
 import static com.swirlds.common.system.UptimeData.NO_ROUND;
 
@@ -27,7 +27,7 @@ import java.util.function.Supplier;
  * <p>
  * After the platform status refactor is completed, this functionality will be superseded by platform status logic.
  */
-public class ReconnectStateSavedRule implements TipsetEventCreationRule {
+public class ReconnectStateSavedRule implements EventCreationRule {
 
     private final Supplier<Long> latestReconnectRound;
     private final Supplier<Long> latestSavedStateRound;

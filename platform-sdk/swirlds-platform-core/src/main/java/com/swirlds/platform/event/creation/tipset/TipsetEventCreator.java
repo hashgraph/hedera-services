@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.tipset;
+package com.swirlds.platform.event.creation.tipset;
 
 import static com.swirlds.common.system.NodeId.UNDEFINED_NODE_ID;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
 import static com.swirlds.platform.event.EventConstants.CREATOR_ID_UNDEFINED;
 import static com.swirlds.platform.event.EventConstants.GENERATION_UNDEFINED;
-import static com.swirlds.platform.event.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
-import static com.swirlds.platform.event.tipset.TipsetUtils.buildDescriptor;
-import static com.swirlds.platform.event.tipset.TipsetUtils.getParentDescriptors;
+import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
+import static com.swirlds.platform.event.creation.tipset.TipsetUtils.buildDescriptor;
+import static com.swirlds.platform.event.creation.tipset.TipsetUtils.getParentDescriptors;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -40,6 +40,8 @@ import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.EventCreationConfig;
+import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -56,9 +58,9 @@ import org.apache.logging.log4j.Logger;
 /**
  * Responsible for creating new events using the tipset algorithm.
  */
-public class TipsetEventCreatorImpl implements TipsetEventCreator {
+public class TipsetEventCreator implements EventCreator {
 
-    private static final Logger logger = LogManager.getLogger(TipsetEventCreatorImpl.class);
+    private static final Logger logger = LogManager.getLogger(TipsetEventCreator.class);
 
     private final Cryptography cryptography;
     private final Time time;
@@ -118,7 +120,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
      * @param softwareVersion     the current software version of the application
      * @param transactionSupplier provides transactions to be included in new events
      */
-    public TipsetEventCreatorImpl(
+    public TipsetEventCreator(
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             @NonNull final Random random,
