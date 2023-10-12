@@ -16,10 +16,13 @@
 
 package com.swirlds.platform.event.creation.rules;
 
+import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMITED;
+
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.event.creation.EventCreationConfig;
+import com.swirlds.platform.event.creation.EventCreationStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -68,5 +71,14 @@ public class MaximumRateRule implements EventCreationRule {
         if (rateLimiter != null) {
             rateLimiter.trigger();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public EventCreationStatus getEventCreationStatus() {
+        return RATE_LIMITED;
     }
 }
