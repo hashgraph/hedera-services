@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.tipset;
+package com.swirlds.platform.event.creation.tipset;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.platform.event.tipset.Tipset.merge;
+import static com.swirlds.platform.event.creation.tipset.Tipset.merge;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.sequence.map.SequenceMap;
