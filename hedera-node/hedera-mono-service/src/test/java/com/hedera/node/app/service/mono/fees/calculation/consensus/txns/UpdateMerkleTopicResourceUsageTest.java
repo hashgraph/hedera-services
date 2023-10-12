@@ -16,12 +16,17 @@
 
 package com.hedera.node.app.service.mono.fees.calculation.consensus.txns;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 
 import com.google.protobuf.StringValue;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
@@ -34,6 +39,7 @@ import com.hedera.test.utils.AccountIDConverter;
 import com.hedera.test.utils.DurationConverter;
 import com.hedera.test.utils.Ed25519KeyConverter;
 import com.hedera.test.utils.EntityIdConverter;
+import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.JEd25519KeyConverter;
 import com.hedera.test.utils.RichInstantConverter;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -46,7 +52,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.InvalidKeyException;
 import java.util.Optional;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,6 +91,48 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
 
         assertTrue(subject.applicableTo(updateTopicTx));
         assertFalse(subject.applicableTo(nonUpdateTopicTx));
+    }
+
+    @Test
+    void getFeeThrowsExceptionForBadKeys() throws InvalidKeyException, IllegalArgumentException {
+        final var txnBody = makeTransactionBody(
+                topicId,
+                defaultMemo,
+                JKey.mapJKey(adminKey),
+                JKey.mapJKey(submitKey),
+                IdUtils.asAccount("0.1.2"),
+                null,
+                null);
+        final var merkleTopic =
+                new MerkleTopic(defaultMemo, adminKey, submitKey, 0, new EntityId(0, 1, 2), new RichInstant(36_000, 0));
+        given(topics.get(EntityNum.fromTopicId(topicId))).willReturn(merkleTopic);
+        final var mockedJkey = mockStatic(JKey.class);
+        mockedJkey.when(() -> JKey.mapJKey(any())).thenThrow(new InvalidKeyException());
+
+        assertDoesNotThrow(() -> subject.usageGiven(txnBody, sigValueObj, view));
+        assertThat(
+                logCaptor.warnLogs(),
+                Matchers.contains(Matchers.startsWith("Usage estimation unexpectedly failed for")));
+        mockedJkey.close();
+    }
+
+    @Test
+    void updateToMissingTopic() throws InvalidKeyException {
+        final var txBody = makeTransactionBody(
+                topicId,
+                defaultMemo,
+                JKey.mapJKey(adminKey),
+                JKey.mapJKey(submitKey),
+                IdUtils.asAccount("0.1.2"),
+                null,
+                null);
+        given(topics.get(EntityNum.fromTopicId(topicId))).willReturn(null);
+
+        final var feeData = subject.usageGiven(txBody, sigValueObj, view);
+
+        checkServicesFee(feeData, 0);
+        checkNetworkFee(feeData, 120, 0);
+        checkNodeFee(feeData, 120);
     }
 
     // Test to check fee values correctness for various kinds of update topic transactions.

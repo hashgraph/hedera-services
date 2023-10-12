@@ -82,6 +82,7 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
                         txnBody.getConsensusUpdateTopic());
             } catch (final InvalidKeyException ignore) {
                 // The key was validated before setting on MerkleTopic, so this should never happen
+                log.warn("Usage estimation unexpectedly failed for {}!", txnBody, ignore);
             }
         }
         return getConsensusUpdateTopicFee(txnBody, rbsIncrease, sigUsage);

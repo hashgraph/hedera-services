@@ -346,14 +346,11 @@ class UsageBasedFeeCalculatorTest {
 
     @Test
     void failsWithIseGivenApplicableButUnusableCalculator() {
-        // setup:
-        final SigValueObj expectedSigUsage =
-                new SigValueObj(FeeBuilder.getSignatureCount(signedTxn), 9, FeeBuilder.getSignatureSize(signedTxn));
-
+        given(correctOpEstimator.usageGiven(argThat(accessor.getTxn()::equals), any(), argThat(view::equals)))
+                .willThrow(NullPointerException.class);
         given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
         given(txnUsageEstimators.get(CryptoCreate)).willReturn(List.of(correctOpEstimator));
 
-        // when:
         assertThrows(NullPointerException.class, () -> subject.computeFee(accessor, payerKey, view, consensusNow));
     }
 
