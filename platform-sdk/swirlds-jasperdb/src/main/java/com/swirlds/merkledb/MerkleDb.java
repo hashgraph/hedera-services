@@ -87,7 +87,7 @@ public final class MerkleDb {
      * data source is opened, or when an existing data source is copied. Copies are removed
      * automatically on close
      */
-    static final int MAX_TABLES = 1024;
+    private static final int MAX_TABLES = 1024;
 
     /** Sub-folder name for shared database data. Relative to database storage dir */
     private static final String SHARED_DIRNAME = "shared";

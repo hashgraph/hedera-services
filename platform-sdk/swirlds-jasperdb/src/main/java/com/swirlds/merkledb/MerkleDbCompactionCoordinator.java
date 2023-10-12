@@ -19,7 +19,6 @@ package com.swirlds.merkledb;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
-import static com.swirlds.merkledb.MerkleDb.MAX_TABLES;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 import static java.util.Objects.requireNonNull;
 
@@ -31,12 +30,12 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.Optional;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -159,11 +158,11 @@ class MerkleDbCompactionCoordinator {
      * All subsequent calls to compacting methods will be ignored until {@link #enableBackgroundCompaction()} is called.
      */
     void stopAndDisableBackgroundCompaction() {
-        synchronized (createOrGetCompactingExecutor()) {
+        synchronized (compactionFuturesByName) {
             compactionFuturesByName.forEach((k, v) -> v.cancel());
             compactionFuturesByName.clear();
+            compactionEnabled.set(false);
         }
-        compactionEnabled.set(false);
     }
 
     /**
@@ -178,7 +177,7 @@ class MerkleDbCompactionCoordinator {
 
         ExecutorService executor = createOrGetCompactingExecutor();
 
-        synchronized (executor) {
+        synchronized (compactionFuturesByName) {
             if (compactionFuturesByName.containsKey(task.id)) {
                 CompletableFuture<?> completableFuture =
                         compactionFuturesByName.get(task.id).asCompletableFuture();
@@ -217,7 +216,7 @@ class MerkleDbCompactionCoordinator {
                     getCompactingThreadNumber(),
                     0L,
                     TimeUnit.MILLISECONDS,
-                    new ArrayBlockingQueue<>(MAX_TABLES),
+                    new LinkedBlockingDeque<>(),
                     new ThreadConfiguration(getStaticThreadManager())
                             .setThreadGroup(new ThreadGroup("Compaction"))
                             .setComponent(MERKLEDB_COMPONENT)

@@ -45,7 +45,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.UnaryOperator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -347,12 +346,12 @@ public class DataFileCompactor {
     }
 
     /**
-     * Compact (merge) all files that match the given filter.
+     * Compact data files in the collection according to the compaction algorithm.
      *
      * @param reportDurationMetricFunction   function to report how long compaction took, in ms
      * @param reportSavedSpaceMetricFunction function to report how much space was compacted, in Mb
      * @throws IOException          if there was a problem merging
-     * @throws InterruptedException if the merge thread was interupted
+     * @throws InterruptedException if the merge thread was interrupted
      * @return true if compaction was performed, false otherwise
      */
     @SuppressWarnings("unchecked")
@@ -364,19 +363,7 @@ public class DataFileCompactor {
 
         final String storeName = dataFileCollection.getStoreName();
         final List<? extends DataFileReader<?>> allCompactableFiles = dataFileCollection.getAllCompletedFiles();
-        int allFilesCount = allCompactableFiles.size();
-        if (allFilesCount < getMinNumberOfFilesToCompact()) {
-            logger.debug(
-                    MERKLE_DB.getMarker(),
-                    "[{}] No need to compact as {} is less than the minimum {} files to merge.",
-                    storeName,
-                    allFilesCount,
-                    getMinNumberOfFilesToCompact());
-            return false;
-        }
-
-        final List<DataFileReader<?>> filesToCompact =
-                compactionPlan(getMinNumberOfFilesToCompact()).apply((List<DataFileReader<?>>) allCompactableFiles);
+        final List<DataFileReader<?>> filesToCompact = compactionPlan((List<DataFileReader<?>>) allCompactableFiles);
         if (filesToCompact.isEmpty()) {
             logger.debug(MERKLE_DB.getMarker(), "[{}] No need to compact, as the compaction plan is empty", storeName);
             return false;
@@ -435,49 +422,46 @@ public class DataFileCompactor {
     }
 
     /**
-     * This function creates a compaction plan (a set of files to be compacted). The plan is organized by compaction levels
+     * This method creates a compaction plan (a set of files to be compacted). The plan is organized by compaction levels
      * in ascending order. If there are not enough files to compact, then no files are compacted and the plan will be empty.
-     * If the current level doesn't reach minminNumberOfFilesToCompact threshold,
+     * If the current level doesn't reach minNumberOfFilesToCompact threshold,
      * then this level and the levels above it are not included in the plan.
      * @return filter creating a compaction plan
      */
-    public static UnaryOperator<List<DataFileReader<?>>> compactionPlan(int minNumberOfFilesToCompact) {
+    List<DataFileReader<?>> compactionPlan(List<DataFileReader<?>> dataFileReaders) {
+        if (dataFileReaders.isEmpty()) {
+            return dataFileReaders;
+        }
+        final Map<Integer, Set<DataFileReader<?>>> readersByLevel = new HashMap<>();
+        int maxCompactionLevel = config.maxCompactionLevel();
+        for (int i = 0; i <= maxCompactionLevel; i++) {
+            readersByLevel.put(i, new HashSet<>());
+        }
 
-        return dataFileReaders -> {
-            if (dataFileReaders.isEmpty()) {
-                return dataFileReaders;
+        for (DataFileReader<?> reader : dataFileReaders) {
+            readersByLevel.get(reader.getMetadata().getCompactionLevel()).add(reader);
+        }
+
+        final List<DataFileReader<?>> readersToCompact = new ArrayList<>();
+
+        Set<DataFileReader<?>> nonCompactedReaders = readersByLevel.get(DEFAULT_COMPACTION_LEVEL);
+        if (nonCompactedReaders.size() < getMinNumberOfFilesToCompact()) {
+            return Collections.emptyList();
+        }
+
+        // we always compact files from level 0
+        readersToCompact.addAll(nonCompactedReaders);
+
+        for (int i = 1; i <= maxCompactionLevel; i++) {
+            final Set<DataFileReader<?>> readers = readersByLevel.get(i);
+            // Presumably, one file comes from the previous level.
+            // If, counting this file in, it still doesn't have enough, then it stops collecting.
+            if (readers.size() < getMinNumberOfFilesToCompact() - 1) {
+                break;
             }
-            final Map<Integer, Set<DataFileReader<?>>> readersByLevel = new HashMap<>();
-            int maxCompactionLevel = config.maxCompactionLevel();
-            for (int i = 0; i <= maxCompactionLevel; i++) {
-                readersByLevel.put(i, new HashSet<>());
-            }
+            readersToCompact.addAll(readers);
+        }
 
-            for (DataFileReader<?> reader : dataFileReaders) {
-                readersByLevel.get(reader.getMetadata().getCompactionLevel()).add(reader);
-            }
-
-            final List<DataFileReader<?>> readersToCompact = new ArrayList<>();
-
-            Set<DataFileReader<?>> nonCompactedReaders = readersByLevel.get(DEFAULT_COMPACTION_LEVEL);
-            if (nonCompactedReaders.size() < minNumberOfFilesToCompact) {
-                return Collections.emptyList();
-            }
-
-            // we always compact files from level 0
-            readersToCompact.addAll(nonCompactedReaders);
-
-            for (int i = 1; i <= maxCompactionLevel; i++) {
-                final Set<DataFileReader<?>> readers = readersByLevel.get(i);
-                // Presumably, one file comes from the previous level.
-                // If, counting this file in, it still doesn't have enough, then it stops collecting.
-                if (readers.size() < minNumberOfFilesToCompact - 1) {
-                    break;
-                }
-                readersToCompact.addAll(readers);
-            }
-
-            return readersToCompact;
-        };
+        return readersToCompact;
     }
 }

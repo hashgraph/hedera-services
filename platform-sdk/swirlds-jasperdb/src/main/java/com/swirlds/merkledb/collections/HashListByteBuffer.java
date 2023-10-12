@@ -322,6 +322,7 @@ public final class HashListByteBuffer implements HashList, OffHeapUser {
      *
      * @return Off-heap usage in bytes, if this hash list is off-heap, or zero otherwise
      */
+    @Override
     public long getOffHeapConsumption() {
         return offHeap ? (long) data.size() * numHashesPerBuffer * HASH_SIZE_BYTES : 0;
     }

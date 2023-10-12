@@ -310,6 +310,10 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public long getOffHeapConsumption() {
         if (bucketIndexToBucketLocation instanceof LongListOffHeap offheapIndex) {
             return offheapIndex.getOffHeapConsumption();

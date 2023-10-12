@@ -133,7 +133,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     }
 
     /**
-     * Compact (merge) all files that match the given filter.
+     * Compact data store files using the compaction algorithm.
      *
      * @param reportDurationMetricFunction function to report how long compaction took, in ms
      * @param reportSavedSpaceMetricFunction function to report how much space was compacted, in Mb

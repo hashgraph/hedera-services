@@ -237,10 +237,11 @@ class MerkleDbCompactionCoordinatorTest {
 
     @Test
     void testCompactionCancelled() throws IOException, InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        initCompactibleMock(objectKeyToPath, nextBoolean(), latch);
-        initCompactibleMock(pathToHashKeyValue, nextBoolean(), latch);
-        initCompactibleMock(hashStoreDisk, nextBoolean(), latch);
+        CountDownLatch compactLatch = new CountDownLatch(1);
+        CountDownLatch testLatch = new CountDownLatch(3);
+        initCompactibleMock(objectKeyToPath, nextBoolean(), testLatch, compactLatch);
+        initCompactibleMock(pathToHashKeyValue, nextBoolean(), testLatch, compactLatch);
+        initCompactibleMock(hashStoreDisk, nextBoolean(), testLatch, compactLatch);
 
         coordinator.compactDiskStoreForObjectKeyToPathAsync();
         coordinator.compactDiskStoreForHashesAsync();
@@ -282,13 +283,17 @@ class MerkleDbCompactionCoordinatorTest {
             boolean compactionPassed,
             boolean expectStatUpdate)
             throws IOException, InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        initCompactibleMock(compactableToTest, compactionPassed, latch);
+        CountDownLatch testLatch = new CountDownLatch(1);
+        CountDownLatch compactLatch = new CountDownLatch(1);
+        initCompactibleMock(compactableToTest, compactionPassed, testLatch, compactLatch);
 
         // run twice to make sure that the second call is discarded because one compaction is already in progress
         methodCall.run();
         methodCall.run();
-        latch.countDown();
+        if (expectCompactionStarted) {
+            testLatch.await();
+        }
+        compactLatch.countDown();
 
         assertCompactable(
                 compactableToTest,
@@ -298,7 +303,7 @@ class MerkleDbCompactionCoordinatorTest {
                 expectStatUpdate);
 
         reset(objectKeyToPath, pathToHashKeyValue, hashStoreDisk, statisticsUpdater);
-        initCompactibleMock(compactableToTest, compactionPassed, latch);
+        initCompactibleMock(compactableToTest, compactionPassed, testLatch, compactLatch);
 
         // the second time it should succeed as well
         methodCall.run();
@@ -336,10 +341,15 @@ class MerkleDbCompactionCoordinatorTest {
     }
 
     @SuppressWarnings("unchecked")
-    private void initCompactibleMock(Compactable compactableToTest, boolean compactionPassed, CountDownLatch latch)
+    private void initCompactibleMock(
+            Compactable compactableToTest,
+            boolean compactionPassed,
+            CountDownLatch testLatch,
+            CountDownLatch compactLatch)
             throws IOException, InterruptedException {
         when(compactableToTest.compact(ArgumentMatchers.any(), any())).thenAnswer(invocation -> {
-            latch.await();
+            testLatch.countDown();
+            compactLatch.await();
             invocation.getArgument(0, BiConsumer.class).accept(compactionLevel, compactionTime);
             invocation.getArgument(1, BiConsumer.class).accept(compactionLevel, savedSpace);
             return compactionPassed;
