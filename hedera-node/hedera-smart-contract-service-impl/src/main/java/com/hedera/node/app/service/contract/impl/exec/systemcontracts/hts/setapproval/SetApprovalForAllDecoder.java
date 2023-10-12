@@ -52,7 +52,7 @@ public class SetApprovalForAllDecoder {
         final var body = bodyOf(
                 approveAllAllowanceNFTBody(attempt.senderId(), asTokenId(call.get(0)), operatorId, call.get(2)));
 
-        // @Future remove to revert #9214 after modularization is completed
+        // @Future remove those IF statements to revert #9214 after modularization is completed
         // The DecoderResult wrapper may be removed.
         if (attempt.linkedToken(fromHeadlongAddress(call.get(0))) == null) {
             return new DecoderResult(body, ResponseCodeEnum.INVALID_ACCOUNT_ID, false);

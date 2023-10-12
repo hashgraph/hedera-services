@@ -47,7 +47,7 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
      *
      * @param attempt           the attempt to translate to a dispatching
      * @param syntheticBody     the synthetic body to dispatch
-     * @param recordBuilderType the type of3 the record builder to expect from the dispatch
+     * @param recordBuilderType the type of the record builder to expect from the dispatch
      */
     public DispatchForResponseCodeHtsCall(
             @NonNull final HtsCallAttempt attempt,
