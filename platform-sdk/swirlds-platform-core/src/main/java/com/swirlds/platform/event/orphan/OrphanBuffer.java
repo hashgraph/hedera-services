@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.orphan;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.metrics.LongGauge;
+import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.sequence.set.SequenceSet;
@@ -50,7 +50,7 @@ public class OrphanBuffer {
     /**
      * Avoid the creation of lambdas for Map.computeIfAbsent() by reusing this lambda.
      */
-    private static final Function<EventDescriptor, List<OrphanedEvent>> EMPTY_LIST = ignored -> new ArrayList<>();
+    private static final Function<EventDescriptor, Set<OrphanedEvent>> EMPTY_SET = ignored -> new HashSet<>();
 
     /**
      * Non-ancient events are passed to this method in topological order.
@@ -62,11 +62,11 @@ public class OrphanBuffer {
      */
     private long minimumGenerationNonAncient = 0;
 
-    private static final LongGauge.Config ORPHAN_BUFFER_SIZE_CONFIG = new LongGauge.Config(
+    private static final LongAccumulator.Config ORPHAN_BUFFER_SIZE_CONFIG = new LongAccumulator.Config(
                     "platform", "orphanBufferSize")
-            .withUnit("events")
-            .withDescription("The number of events in the orphan buffer");
-    private final LongGauge orphanBufferSize;
+            .withDescription("The number of events in the orphan buffer")
+            .withUnit("events");
+    private final LongAccumulator orphanBufferSize;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -84,13 +84,8 @@ public class OrphanBuffer {
      * A map where the key is the descriptor of a missing parent, and the value is a list of orphans that are missing
      * that parent.
      */
-    private final SequenceMap<EventDescriptor, List<OrphanedEvent>> missingParentMap =
+    private final SequenceMap<EventDescriptor, Set<OrphanedEvent>> missingParentMap =
             new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
-
-    /**
-     * A set containing descriptors of all events that are currently orphans.
-     */
-    private final Set<EventDescriptor> currentOrphans = new HashSet<>();
 
     /**
      * Constructor.
@@ -125,8 +120,7 @@ public class OrphanBuffer {
             return;
         }
 
-        currentOrphans.add(event.getDescriptor());
-        orphanBufferSize.set(currentOrphans.size());
+        orphanBufferSize.update(1);
 
         final Set<EventDescriptor> missingParents = getMissingParents(event);
         if (missingParents.isEmpty()) {
@@ -134,7 +128,7 @@ public class OrphanBuffer {
         } else {
             final OrphanedEvent orphanedEvent = new OrphanedEvent(event, missingParents);
             for (final EventDescriptor missingParent : missingParents) {
-                this.missingParentMap.computeIfAbsent(missingParent, EMPTY_LIST).add(orphanedEvent);
+                this.missingParentMap.computeIfAbsent(missingParent, EMPTY_SET).add(orphanedEvent);
             }
         }
     }
@@ -192,7 +186,7 @@ public class OrphanBuffer {
         final Iterator<EventDescriptor> parentIterator = new ParentIterator(event);
         while (parentIterator.hasNext()) {
             final EventDescriptor parent = parentIterator.next();
-            if (!eventsWithParents.contains(parent)) {
+            if (!eventsWithParents.contains(parent) && parent.getGeneration() >= minimumGenerationNonAncient) {
                 missingParents.add(parent);
             }
         }
@@ -215,25 +209,20 @@ public class OrphanBuffer {
             final GossipEvent nonOrphan = nonOrphanStack.pop();
             final EventDescriptor nonOrphanDescriptor = nonOrphan.getDescriptor();
 
-            if (!currentOrphans.remove(nonOrphanDescriptor)) {
-                // This event was already processed as a non-orphan.
-                continue;
-            }
-
-            orphanBufferSize.set(currentOrphans.size());
-
             if (nonOrphan.getGeneration() < minimumGenerationNonAncient) {
                 // Although it doesn't cause harm to pass along ancient events, it is unnecessary to do so.
                 intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
+                orphanBufferSize.update(-1);
                 continue;
             }
 
             eventConsumer.accept(nonOrphan);
             eventsWithParents.add(nonOrphanDescriptor);
+            orphanBufferSize.update(-1);
 
             // since this event is no longer an orphan, we need to recheck all of its children to see if any might
             // not be orphans anymore
-            final List<OrphanedEvent> children = missingParentMap.remove(nonOrphanDescriptor);
+            final Set<OrphanedEvent> children = missingParentMap.remove(nonOrphanDescriptor);
             if (children == null) {
                 continue;
             }
