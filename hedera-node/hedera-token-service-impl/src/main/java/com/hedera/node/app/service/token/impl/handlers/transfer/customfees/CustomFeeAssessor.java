@@ -104,6 +104,8 @@ public class CustomFeeAssessor extends BaseTokenHandler {
         result.getHbarAdjustments().forEach((k, v) -> {
             if (v < 0) {
                 final var currentAccount = accountStore.getAccountById(k);
+                // mono-service refuses to let an auto-created account pay a custom fee, even
+                // if technically it is receiving sufficient credits in the same transaction
                 validateTrue(currentAccount != null, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
                 final var finalBalance = currentAccount.tinybarBalance()
                         + v
@@ -129,6 +131,8 @@ public class CustomFeeAssessor extends BaseTokenHandler {
                             precedingChanges == null ? 0 : Math.max(0L, precedingChanges.getOrDefault(accountId, 0L));
                     if (tokenRel == null) {
                         if (autoCreationTest.test(accountId)) {
+                            // mono-service refuses to let an auto-created account pay a custom fee, even
+                            // if technically it is receiving sufficient credits in the same transaction
                             throw new HandleException(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
                         } else {
                             final var currentAccount = accountStore.getAccountById(accountId);
