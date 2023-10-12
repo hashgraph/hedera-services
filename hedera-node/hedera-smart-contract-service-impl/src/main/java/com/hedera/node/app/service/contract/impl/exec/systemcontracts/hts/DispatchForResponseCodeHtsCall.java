@@ -17,11 +17,13 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
@@ -36,12 +38,16 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
     private final Class<T> recordBuilderType;
     private final VerificationStrategy verificationStrategy;
 
+    // @Future remove these fields to revert #9214 after modularization is completed
+    private boolean shouldRevertOperation;
+    private ResponseCodeEnum responseCode;
+
     /**
      * Convenience overload that slightly eases construction for the most common case.
      *
-     * @param attempt the attempt to translate to a dispatching
-     * @param syntheticBody the synthetic body to dispatch
-     * @param recordBuilderType the type of the record builder to expect from the dispatch
+     * @param attempt           the attempt to translate to a dispatching
+     * @param syntheticBody     the synthetic body to dispatch
+     * @param recordBuilderType the type of3 the record builder to expect from the dispatch
      */
     public DispatchForResponseCodeHtsCall(
             @NonNull final HtsCallAttempt attempt,
@@ -55,13 +61,30 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
                 attempt.defaultVerificationStrategy());
     }
 
+    // @Future remove this Constructor to revert #9214 after modularization is completed
+    public DispatchForResponseCodeHtsCall(
+            @NonNull final HtsCallAttempt attempt,
+            @NonNull final TransactionBody syntheticBody,
+            @NonNull final Class<T> recordBuilderType,
+            @Nullable final ResponseCodeEnum responseCode,
+            final boolean shouldRevertOperation) {
+        this(
+                attempt.enhancement(),
+                attempt.addressIdConverter().convertSender(attempt.senderAddress()),
+                syntheticBody,
+                recordBuilderType,
+                attempt.defaultVerificationStrategy());
+        this.shouldRevertOperation = shouldRevertOperation;
+        this.responseCode = responseCode;
+    }
+
     /**
      * More general constructor, for cases where perhaps a custom {@link VerificationStrategy} is needed.
      *
-     * @param enhancement the enhancement to use
-     * @param spenderId the id of the spender
-     * @param syntheticBody the synthetic body to dispatch
-     * @param recordBuilderType the type of the record builder to expect from the dispatch
+     * @param enhancement          the enhancement to use
+     * @param spenderId            the id of the spender
+     * @param syntheticBody        the synthetic body to dispatch
+     * @param recordBuilderType    the type of the record builder to expect from the dispatch
      * @param verificationStrategy the verification strategy to use
      */
     public <U extends SingleTransactionRecordBuilder> DispatchForResponseCodeHtsCall(
@@ -85,6 +108,17 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
         // TODO - gas calculation
         final var recordBuilder =
                 systemContractOperations().dispatch(syntheticBody, verificationStrategy, spenderId, recordBuilderType);
+
+        // @Future remove those 2 IF statements to revert #9214 after modularization is completed
+        if(shouldRevertOperation) {
+            var responseCodeStatus = responseCode != null ? this.responseCode : recordBuilder.status();
+            return reversionWith(responseCodeStatus, 0L);
+        }
+        if(responseCode != null) {
+            completionWith(responseCode, 0L);
+        }
+        //----
+
         return completionWith(recordBuilder.status(), 0L);
     }
 }

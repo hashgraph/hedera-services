@@ -17,14 +17,15 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asTokenId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
 
-import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DecoderResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -45,10 +46,22 @@ public class SetApprovalForAllDecoder {
      * @param attempt the attempt to decode
      * @return a {@link TransactionBody}
      */
-    public TransactionBody decodeSetApprovalForAll(@NonNull final HtsCallAttempt attempt) {
+    public DecoderResult decodeSetApprovalForAll(@NonNull final HtsCallAttempt attempt) {
         final var call = SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL.decodeCall(attempt.inputBytes());
-        return bodyOf(approveAllAllowanceNFTBody(
-                attempt.addressIdConverter(), attempt.senderId(), asTokenId(call.get(0)), call.get(1), call.get(2)));
+        final var operatorId = attempt.addressIdConverter().convert(call.get(1));
+        final var body = bodyOf(
+                approveAllAllowanceNFTBody(attempt.senderId(), asTokenId(call.get(0)), operatorId, call.get(2)));
+
+        // @Future remove to revert #9214 after modularization is completed
+        // The DecoderResult wrapper may be removed.
+        if (attempt.linkedToken(fromHeadlongAddress(call.get(0))) == null) {
+            return new DecoderResult(body, ResponseCodeEnum.INVALID_ACCOUNT_ID, false);
+        }
+        if (operatorId.accountNum() == null) {
+            return new DecoderResult(body, ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, true);
+        }
+
+        return new DecoderResult(body, null, false);
     }
 
     /**
@@ -57,26 +70,33 @@ public class SetApprovalForAllDecoder {
      * @param attempt the attempt to decode
      * @return a {@link TransactionBody}
      */
-    public TransactionBody decodeSetApprovalForAllERC(@NonNull final HtsCallAttempt attempt) {
+    public DecoderResult decodeSetApprovalForAllERC(@NonNull final HtsCallAttempt attempt) {
         final var call = SetApprovalForAllTranslator.ERC721_SET_APPROVAL_FOR_ALL.decodeCall(attempt.inputBytes());
         final var tokenId = attempt.redirectTokenId();
         Objects.requireNonNull(tokenId, "Redirect Token ID is null.");
 
-        return bodyOf(approveAllAllowanceNFTBody(
-                attempt.addressIdConverter(), attempt.senderId(), tokenId, call.get(0), call.get(1)));
+        final var operatorId = attempt.addressIdConverter().convert(call.get(0));
+        final var body = bodyOf(approveAllAllowanceNFTBody(attempt.senderId(), tokenId, operatorId, call.get(1)));
+
+        // @Future remove to revert #9214 after modularization is completed
+        // The DecoderResult wrapper may be removed.
+        if (operatorId.accountNum() == null) {
+            return new DecoderResult(body, ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, true);
+        }
+
+        return new DecoderResult(body, null, false);
     }
 
     private CryptoApproveAllowanceTransactionBody approveAllAllowanceNFTBody(
-            @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final AccountID senderId,
             @NonNull final TokenID tokenID,
-            @NonNull final Address operatorAddress,
+            @NonNull final AccountID operatorId,
             final boolean approved) {
         return CryptoApproveAllowanceTransactionBody.newBuilder()
                 .nftAllowances(NftAllowance.newBuilder()
                         .tokenId(tokenID)
                         .owner(senderId)
-                        .spender(addressIdConverter.convert(operatorAddress))
+                        .spender(operatorId)
                         .approvedForAll(approved)
                         .build())
                 .build();
