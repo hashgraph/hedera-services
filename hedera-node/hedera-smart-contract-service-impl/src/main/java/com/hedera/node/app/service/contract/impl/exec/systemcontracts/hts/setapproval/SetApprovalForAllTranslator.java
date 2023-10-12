@@ -63,11 +63,7 @@ public class SetApprovalForAllTranslator extends AbstractHtsCallTranslator {
         final var result = bodyForClassic(attempt);
 
         return new DispatchForResponseCodeHtsCall<>(
-                attempt,
-                result.body(),
-                SingleTransactionRecordBuilder.class,
-                result.status(),
-                result.shouldRevert());
+                attempt, result.body(), SingleTransactionRecordBuilder.class, result.wantedStatus(), result.shouldRevert());
     }
 
     private DecoderResult bodyForClassic(@NonNull final HtsCallAttempt attempt) {

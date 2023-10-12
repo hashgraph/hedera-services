@@ -197,7 +197,9 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(INVALID_TOKEN_ADDRESS, SENDER_HEADLONG_ADDRESS, true)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(ResponseCodeEnum.INVALID_TOKEN_ID).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(ResponseCodeEnum.INVALID_TOKEN_ID)
+                                .array()),
+                        output));
     }
 
     @Override

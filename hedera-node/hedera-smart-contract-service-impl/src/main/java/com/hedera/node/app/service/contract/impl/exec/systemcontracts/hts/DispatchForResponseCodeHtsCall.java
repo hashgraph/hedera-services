@@ -110,14 +110,13 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
                 systemContractOperations().dispatch(syntheticBody, verificationStrategy, spenderId, recordBuilderType);
 
         // @Future remove those 2 IF statements to revert #9214 after modularization is completed
-        if(shouldRevertOperation) {
+        if (shouldRevertOperation) {
             var responseCodeStatus = responseCode != null ? this.responseCode : recordBuilder.status();
             return reversionWith(responseCodeStatus, 0L);
         }
-        if(responseCode != null) {
+        if (responseCode != null) {
             completionWith(responseCode, 0L);
         }
-        //----
 
         return completionWith(recordBuilder.status(), 0L);
     }

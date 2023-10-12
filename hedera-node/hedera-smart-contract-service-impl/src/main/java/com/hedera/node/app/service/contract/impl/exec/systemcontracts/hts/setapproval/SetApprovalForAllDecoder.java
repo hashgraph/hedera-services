@@ -49,8 +49,8 @@ public class SetApprovalForAllDecoder {
     public DecoderResult decodeSetApprovalForAll(@NonNull final HtsCallAttempt attempt) {
         final var call = SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL.decodeCall(attempt.inputBytes());
         final var operatorId = attempt.addressIdConverter().convert(call.get(1));
-        final var body = bodyOf(
-                approveAllAllowanceNFTBody(attempt.senderId(), asTokenId(call.get(0)), operatorId, call.get(2)));
+        final var body =
+                bodyOf(approveAllAllowanceNFTBody(attempt.senderId(), asTokenId(call.get(0)), operatorId, call.get(2)));
 
         // @Future remove those IF statements to revert #9214 after modularization is completed
         // The DecoderResult wrapper may be removed.
