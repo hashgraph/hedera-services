@@ -13,5 +13,5 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * - status: Provides the specific response status code for the transaction, if needed.
  */
 
-public record DecoderResult(@NonNull TransactionBody body, @Nullable ResponseCodeEnum status, boolean shouldRevert) {
+public record DecoderResult(@NonNull TransactionBody body, @Nullable ResponseCodeEnum wantedStatus, boolean shouldRevert) {
 }
