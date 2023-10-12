@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static org.assertj.core.api.BDDAssertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -30,6 +32,7 @@ import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody.DataOneOfType;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.ScheduledTransactionFactory;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.fixtures.Assertions;
@@ -191,6 +194,32 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
             } else {
                 throwsHandleException(
                         () -> subject.handle(mockContext), ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+            }
+        }
+    }
+
+    @Test
+    void handleRefusesToExceedCreationLimit() throws HandleException, PreCheckException {
+        final Set<HederaFunctionality> configuredWhitelist =
+                scheduleConfig.whitelist().functionalitySet();
+        assertThat(configuredWhitelist).hasSizeGreaterThan(4);
+
+        final WritableScheduleStore fullStore = mock(WritableScheduleStore.class);
+        given(fullStore.numSchedulesInState()).willReturn(scheduleConfig.maxNumber() + 1);
+        given(mockContext.writableStore(WritableScheduleStore.class)).willReturn(fullStore);
+
+        for (final Schedule next : listOfScheduledOptions) {
+            final TransactionBody createTransaction = next.originalCreateTransaction();
+            final SchedulableTransactionBody child = next.scheduledTransaction();
+            final DataOneOfType transactionType = child.data().kind();
+            final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
+            prepareContext(createTransaction, next.scheduleId().scheduleNum());
+            // all keys are "valid" with this mock setup
+            given(mockContext.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
+                    .willReturn(new SignatureVerificationImpl(nullKey, null, true));
+            if (configuredWhitelist.contains(functionType)) {
+                throwsHandleException(
+                        () -> subject.handle(mockContext), MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
             }
         }
     }
