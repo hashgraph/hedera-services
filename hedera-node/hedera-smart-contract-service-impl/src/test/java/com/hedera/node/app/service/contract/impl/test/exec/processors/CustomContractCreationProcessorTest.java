@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;
 import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
@@ -56,10 +55,7 @@ class CustomContractCreationProcessorTest {
     private GasCalculator gasCalculator;
 
     @Mock
-    private EvmAccount contract;
-
-    @Mock
-    private MutableAccount mutableContract;
+    private MutableAccount contract;
 
     @Mock
     private MessageFrame frame;
@@ -83,15 +79,14 @@ class CustomContractCreationProcessorTest {
         given(frame.getSenderAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(contract.getMutable()).willReturn(mutableContract);
-        given(mutableContract.getCode()).willReturn(Bytes.EMPTY);
+        given(contract.getCode()).willReturn(Bytes.EMPTY);
         given(worldUpdater.getOrCreate(EIP_1014_ADDRESS)).willReturn(contract);
         given(frame.getValue()).willReturn(WEI_VALUE);
 
         subject.start(frame, tracer);
 
         verify(worldUpdater).tryTransfer(NON_SYSTEM_LONG_ZERO_ADDRESS, EIP_1014_ADDRESS, WEI_VALUE.toLong(), false);
-        verify(mutableContract).setNonce(INITIAL_CONTRACT_NONCE);
+        verify(contract).setNonce(INITIAL_CONTRACT_NONCE);
         verify(frame).setState(MessageFrame.State.CODE_EXECUTING);
     }
 
@@ -100,8 +95,7 @@ class CustomContractCreationProcessorTest {
         given(frame.getSenderAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(contract.getMutable()).willReturn(mutableContract);
-        given(mutableContract.getCode()).willReturn(Bytes.EMPTY);
+        given(contract.getCode()).willReturn(Bytes.EMPTY);
         given(worldUpdater.getOrCreate(EIP_1014_ADDRESS)).willReturn(contract);
         given(frame.getValue()).willReturn(WEI_VALUE);
         final var maybeReasonToHalt = Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
@@ -119,15 +113,14 @@ class CustomContractCreationProcessorTest {
     void haltsWithInsufficientGasIfContractExistsWithNonce() {
         given(frame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(contract.getMutable()).willReturn(mutableContract);
-        given(mutableContract.getNonce()).willReturn(1L);
+        given(contract.getNonce()).willReturn(1L);
         given(worldUpdater.getOrCreate(EIP_1014_ADDRESS)).willReturn(contract);
 
         subject.start(frame, tracer);
 
         verify(worldUpdater, never())
                 .tryTransfer(NON_SYSTEM_LONG_ZERO_ADDRESS, EIP_1014_ADDRESS, WEI_VALUE.toLong(), false);
-        verify(mutableContract, never()).setNonce(INITIAL_CONTRACT_NONCE);
+        verify(contract, never()).setNonce(INITIAL_CONTRACT_NONCE);
         final var maybeReasonToHalt = Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS);
         verify(frame).setExceptionalHaltReason(maybeReasonToHalt);
         verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
@@ -138,15 +131,14 @@ class CustomContractCreationProcessorTest {
     void haltsWithInsufficientGasIfContractExistsWithNonEmptyCode() {
         given(frame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(contract.getMutable()).willReturn(mutableContract);
-        given(mutableContract.getCode()).willReturn(CONTRACT_CODE.getBytes());
+        given(contract.getCode()).willReturn(CONTRACT_CODE.getBytes());
         given(worldUpdater.getOrCreate(EIP_1014_ADDRESS)).willReturn(contract);
 
         subject.start(frame, tracer);
 
         verify(worldUpdater, never())
                 .tryTransfer(NON_SYSTEM_LONG_ZERO_ADDRESS, EIP_1014_ADDRESS, WEI_VALUE.toLong(), false);
-        verify(mutableContract, never()).setNonce(INITIAL_CONTRACT_NONCE);
+        verify(contract, never()).setNonce(INITIAL_CONTRACT_NONCE);
         final var maybeReasonToHalt = Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS);
         verify(frame).setExceptionalHaltReason(maybeReasonToHalt);
         verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);

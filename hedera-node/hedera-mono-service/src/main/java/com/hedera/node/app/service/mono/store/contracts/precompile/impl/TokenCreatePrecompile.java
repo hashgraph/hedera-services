@@ -422,9 +422,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
         validateTrue(frame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
 
-        updater.getAccount(senderAddress).getMutable().decrementBalance(Wei.of(tinybarsRequirement));
+        updater.getAccount(senderAddress).decrementBalance(Wei.of(tinybarsRequirement));
         updater.getAccount(Id.fromGrpcAccount(fundingAccount).asEvmAddress())
-                .getMutable()
                 .incrementBalance(Wei.of(tinybarsRequirement));
     }
 
