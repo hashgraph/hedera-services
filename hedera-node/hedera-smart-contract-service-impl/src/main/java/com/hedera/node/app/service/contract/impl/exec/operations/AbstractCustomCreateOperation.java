@@ -116,8 +116,7 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
             return new Operation.OperationResult(cost, INSUFFICIENT_GAS);
         }
         final var value = Wei.wrap(frame.getStackItem(0));
-        final var account =
-                frame.getWorldUpdater().getAccount(frame.getRecipientAddress()).getMutable();
+        final var account = frame.getWorldUpdater().getAccount(frame.getRecipientAddress());
         frame.clearReturnData();
         if (value.compareTo(account.getBalance()) > 0 || frame.getDepth() >= MAX_STACK_DEPTH) {
             fail(frame);
@@ -132,8 +131,7 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
         final var cost = cost(frame);
         frame.decrementRemainingGas(cost);
 
-        final var account =
-                frame.getWorldUpdater().getAccount(frame.getRecipientAddress()).getMutable();
+        final var account = frame.getWorldUpdater().getAccount(frame.getRecipientAddress());
         account.incrementNonce();
 
         final var value = Wei.wrap(frame.getStackItem(0));
@@ -149,7 +147,8 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
 
         final var childGasStipend = gasCalculator().gasAvailableForChildCreate(frame.getRemainingGas());
         frame.decrementRemainingGas(childGasStipend);
-        final var childFrame = MessageFrame.builder()
+        // child frame is added to frame stack via build method
+        MessageFrame.builder()
                 .parentMessageFrame(frame)
                 .type(MessageFrame.Type.CONTRACT_CREATION)
                 .worldUpdater(frame.getWorldUpdater().updater())
