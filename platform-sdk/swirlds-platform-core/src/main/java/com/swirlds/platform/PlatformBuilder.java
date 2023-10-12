@@ -247,6 +247,12 @@ public final class PlatformBuilder {
                 state.getPlatformState()
                         .setAddressBook(
                                 addressBookInitializer.getCurrentAddressBook().copy());
+                state.getPlatformState()
+                        .setPreviousAddressBook(
+                                addressBookInitializer.getPreviousAddressBook() == null
+                                        ? null
+                                        : addressBookInitializer.getPreviousAddressBook().copy()
+                        );
             }
 
             final SwirldsPlatform platform = new SwirldsPlatform(
@@ -259,7 +265,6 @@ public final class PlatformBuilder {
                     softwareVersion,
                     softwareUpgrade,
                     initialState.get(),
-                    addressBookInitializer.getPreviousAddressBook(),
                     emergencyRecoveryManager);
 
             if (firstTimeSetup) {
