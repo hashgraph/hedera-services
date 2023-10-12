@@ -243,7 +243,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
 
     private void sendToCoinbase(
             final Address coinbase, final long amount, final long gasPrice, final HederaWorldState.Updater updater) {
-        final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
+        final var mutableCoinbase = updater.getOrCreate(coinbase);
         mutableCoinbase.incrementBalance(Wei.of(amount * gasPrice));
     }
 
@@ -261,22 +261,20 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             @Nullable final Address relayer,
             final HederaWorldState.Updater updater) {
         final var senderAccount = updater.getOrCreateSenderAccount(sender);
-        final MutableAccount mutableSender = senderAccount.getMutable();
 
         var allowanceCharged = Wei.ZERO;
         MutableAccount mutableRelayer = null;
         if (relayer != null) {
-            final var relayerAccount = updater.getOrCreateSenderAccount(relayer);
-            mutableRelayer = relayerAccount.getMutable();
+            mutableRelayer = updater.getOrCreateSenderAccount(relayer);
         }
         if (!isStatic) {
             if (intrinsicGas > gasLimit) {
                 throw new InvalidTransactionException(INSUFFICIENT_GAS);
             }
             if (relayer == null) {
-                final var senderCanAffordGas = mutableSender.getBalance().compareTo(upfrontCost) >= 0;
+                final var senderCanAffordGas = senderAccount.getBalance().compareTo(upfrontCost) >= 0;
                 validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
-                mutableSender.decrementBalance(gasCost);
+                senderAccount.decrementBalance(gasCost);
             } else {
                 final var gasAllowance = Wei.of(maxGasAllowanceInTinybars);
                 if (userOfferedGasPrice.equals(BigInteger.ZERO)) {
@@ -293,25 +291,25 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                     final var senderFee = Wei.of(userOfferedGasPrice
                             .multiply(BigInteger.valueOf(gasLimit))
                             .divide(WEIBARS_TO_TINYBARS));
-                    validateTrue(mutableSender.getBalance().compareTo(senderFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
+                    validateTrue(senderAccount.getBalance().compareTo(senderFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
                     final var remainingFee = gasCost.subtract(senderFee);
                     validateTrue(gasAllowance.greaterOrEqualThan(remainingFee), INSUFFICIENT_TX_FEE);
                     validateTrue(mutableRelayer.getBalance().compareTo(remainingFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
-                    mutableSender.decrementBalance(senderFee);
+                    senderAccount.decrementBalance(senderFee);
                     mutableRelayer.decrementBalance(remainingFee);
                     allowanceCharged = remainingFee;
                 } else {
                     // If user gas price >= current gas price, sender pays all fees
-                    final var senderCanAffordGas = mutableSender.getBalance().compareTo(gasCost) >= 0;
+                    final var senderCanAffordGas = senderAccount.getBalance().compareTo(gasCost) >= 0;
                     validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
-                    mutableSender.decrementBalance(gasCost);
+                    senderAccount.decrementBalance(gasCost);
                 }
                 // In any case, the sender must have sufficient balance to pay for any value sent
-                final var senderCanAffordValue = mutableSender.getBalance().compareTo(Wei.of(value)) >= 0;
+                final var senderCanAffordValue = senderAccount.getBalance().compareTo(Wei.of(value)) >= 0;
                 validateTrue(senderCanAffordValue, INSUFFICIENT_PAYER_BALANCE);
             }
         }
-        return new ChargingResult(mutableSender, mutableRelayer, allowanceCharged);
+        return new ChargingResult(senderAccount, mutableRelayer, allowanceCharged);
     }
 
     private void handleResourceLimitExceeded(

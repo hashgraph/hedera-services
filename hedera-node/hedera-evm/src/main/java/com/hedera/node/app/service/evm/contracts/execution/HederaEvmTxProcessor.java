@@ -28,7 +28,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
@@ -101,7 +101,7 @@ public abstract class HederaEvmTxProcessor {
      * Executes the {@link MessageFrame} of the EVM transaction and fills execution results into a
      * field.
      *
-     * @param sender The origin {@link EvmAccount} that initiates the transaction
+     * @param sender The origin {@link MutableAccount} that initiates the transaction
      * @param receiver the priority form of the receiving {@link Address} (i.e., EIP-1014 if
      *     present); or the newly created address
      * @param gasPrice GasPrice to use for gas calculations
