@@ -42,6 +42,13 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
  * types, implementations might need to do internal caching to avoid excessive conversions.
  */
 public interface EvmFrameState {
+    /**
+     * Returns the number of bytecodes in state; we use this to enforce the contract creation
+     * limit.
+     *
+     * @return the number of bytecodes in state
+     */
+    long numBytecodesInState();
 
     /**
      * Tries to transfer the given amount from a sending contract to the recipient. The sender
