@@ -19,8 +19,8 @@ package com.swirlds.platform.gossip.chatter.protocol.peer;
 import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 
 /**

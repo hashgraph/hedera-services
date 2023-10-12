@@ -77,6 +77,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -369,7 +370,7 @@ public class HapiSpec implements Runnable {
                 ratesProvider.init();
                 feeCalculator.init();
                 return true;
-            } catch (final Throwable t) {
+            } catch (final IOException t) {
                 secsWait--;
                 if (secsWait < 0) {
                     log.error("Fees failed to initialize! Please check if server is down...", t);
@@ -381,10 +382,14 @@ public class HapiSpec implements Runnable {
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException ignored) {
-                        log.error("Error while waiting to connect to server");
+                        log.error("Interrupted while waiting to connect to server");
                         Thread.currentThread().interrupt();
                     }
                 }
+            } catch (RuntimeException | ReflectiveOperationException | GeneralSecurityException e) {
+                status = ERROR; // These are unrecoverable; save a lot of time and just fail the test.
+                log.error("Irrecoverable error in test nodes or client JVM. Unable to continue.", e);
+                return false;
             }
         }
         return false;
@@ -398,7 +403,7 @@ public class HapiSpec implements Runnable {
         if (hapiSetup.costSnapshotMode() == COMPARE) {
             try {
                 loadCostSnapshot();
-            } catch (Exception ignore) {
+            } catch (RuntimeException ignore) {
                 status = ERROR;
                 return false;
             }

@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
 import static contract.XTestConstants.SET_OF_TRADITIONAL_RATES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -86,6 +87,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
@@ -355,6 +357,15 @@ public abstract class AbstractContractXTest {
         return response -> assertEquals(
                 expectedResult,
                 response.contractCallLocalOrThrow().functionResultOrThrow().contractCallResult());
+    }
+
+    protected Consumer<Response> assertingCallLocalResultIs(@NonNull final ByteBuffer expectedResult) {
+        return response -> assertTrue(Arrays.equals(
+                expectedResult.array(),
+                response.contractCallLocalOrThrow()
+                        .functionResultOrThrow()
+                        .contractCallResult()
+                        .toByteArray()));
     }
 
     private void setupFeeManager() {

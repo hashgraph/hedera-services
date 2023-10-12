@@ -29,10 +29,9 @@ import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.evm.worldstate.WorldView;
-import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 /**
  * This class implementation help for both "base" and "stacked" {@link WorldUpdater}s.
@@ -91,7 +90,7 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
     }
 
     @Override
-    public EvmAccount createAccount(Address address, long nonce, Wei balance) {
+    public MutableAccount createAccount(Address address, long nonce, Wei balance) {
         return null;
     }
 
@@ -148,10 +147,10 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
     }
 
     @Override
-    public EvmAccount getAccount(Address address) {
+    public MutableAccount getAccount(Address address) {
         final var extantMutable = this.updatedAccounts.get(address);
         if (extantMutable != null) {
-            return new WrappedEvmAccount(extantMutable);
+            return extantMutable;
         }
 
         final var origin = getForMutation(address);
@@ -161,7 +160,7 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
         final var trackedAccount = track(new UpdateTrackingAccount<>(origin, null));
         trackedAccount.setEvmEntityAccess(hederaEvmEntityAccess);
 
-        return new WrappedEvmAccount(trackedAccount);
+        return trackedAccount;
     }
 
     public Map<Address, UpdateTrackingAccount<A>> getUpdatedAccounts() {
