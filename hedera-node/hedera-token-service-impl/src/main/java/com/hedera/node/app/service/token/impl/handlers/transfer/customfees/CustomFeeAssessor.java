@@ -136,6 +136,10 @@ public class CustomFeeAssessor extends BaseTokenHandler {
                             throw new HandleException(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
                         } else {
                             final var currentAccount = accountStore.getAccountById(accountId);
+                            // We have to be careful not to fail when an NFT sender with auto-association slots
+                            // is "paying" a royalty fee in the denomination of a fungible token that it is
+                            // receiving in return for the NFT; but was not already associated with...see for
+                            // example the royaltyCollectorsCanUseAutoAssociation() EET
                             final var mayBeAutoAssociatedHere = currentAccount != null
                                     && precedingCredit > 0
                                     && currentAccount.maxAutoAssociations() > currentAccount.usedAutoAssociations();
