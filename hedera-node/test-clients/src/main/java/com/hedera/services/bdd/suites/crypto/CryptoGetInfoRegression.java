@@ -82,6 +82,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
     }
 
     /** For Demo purpose : The limit on each account info and account balance queries is set to 5 */
+    @HapiTest
     private HapiSpec fetchesOnlyALimitedTokenAssociations() {
         final int infoLimit = 3;
         final var account = "test";
@@ -192,6 +193,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec succeedsNormally() {
         long balance = 1_234_567L;
         long autoRenew = 6999999L;
@@ -236,6 +238,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec failsForMissingAccount() {
         return defaultHapiSpec("FailsForMissingAccount")
                 .given()
@@ -251,6 +254,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
                 .then(getAccountInfo(GENESIS).signedBy("wrong").hasAnswerOnlyPrecheck(INVALID_SIGNATURE));
     }
 
+    @HapiTest
     private HapiSpec failsForUnfundablePayment() {
         long everything = 1_234L;
         return defaultHapiSpec("FailsForUnfundablePayment")
@@ -262,6 +266,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
                         .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
+    @HapiTest
     private HapiSpec failsForInsufficientPayment() {
         return defaultHapiSpec("FailsForInsufficientPayment")
                 .given()
@@ -269,6 +274,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
                 .then(getAccountInfo(GENESIS).nodePayment(1L).hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
     }
 
+    @HapiTest
     private HapiSpec failsForMissingPayment() {
         return defaultHapiSpec("FailsForMissingPayment")
                 .given()

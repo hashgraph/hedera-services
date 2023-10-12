@@ -28,7 +28,6 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.HandleThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.util.FileUtilities;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -77,13 +76,9 @@ public class SystemFileUpdateFacility {
      * @param state the current state (the updated file content needs to be committed to the state)
      * @param txBody the transaction body
      */
-    public void handleTxBody(
-            @NonNull final HederaState state,
-            @NonNull final TransactionBody txBody,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
+    public void handleTxBody(@NonNull final HederaState state, @NonNull final TransactionBody txBody) {
         requireNonNull(state, "state must not be null");
         requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(recordBuilder, "recordBuilder must not be null");
 
         // Try to extract the file ID from the transaction body, if it is FileUpdate or FileAppend.
         final FileID fileID;

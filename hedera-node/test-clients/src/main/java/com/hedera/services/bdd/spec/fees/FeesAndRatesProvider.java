@@ -23,7 +23,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.toReadableString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
@@ -190,7 +189,7 @@ public class FeesAndRatesProvider {
                     .getFileContent(query)
                     .getFileGetContents();
             status = response.getHeader().getNodeTransactionPrecheckCode();
-            if (status == OK || status == PLATFORM_NOT_ACTIVE) {
+            if (status == OK) {
                 break;
             } else {
                 log.warn(
