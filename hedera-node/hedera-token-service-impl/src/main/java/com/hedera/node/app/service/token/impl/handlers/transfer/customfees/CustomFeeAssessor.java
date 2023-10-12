@@ -147,16 +147,8 @@ public class CustomFeeAssessor extends BaseTokenHandler {
                                 throw new HandleException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
                             }
                         }
-                    }
-                    if (tokenRel != null) {
-                        // It is possible that some credit is happening to
-                        // the token relation in the same transaction
-                        final var creditInSameTxn = lookupCreditsFor(
-                                entry.getKey(),
-                                entryTx.getKey(),
-                                result.getHtsAdjustments(),
-                                result.getImmutableInputTokenAdjustments());
-                        final var finalTokenRelBalance = tokenRel.balance() + htsBalanceChange + creditInSameTxn;
+                    } else {
+                        final var finalTokenRelBalance = tokenRel.balance() + htsBalanceChange + precedingCredit;
                         validateTrue(finalTokenRelBalance >= 0, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
                     }
                 }
@@ -183,34 +175,5 @@ public class CustomFeeAssessor extends BaseTokenHandler {
 
     public void resetInitialNftChanges() {
         initialNftChanges = 0;
-    }
-
-    /**
-     * Look up credits for the given accountId and tokenId from the given htsAdjustments and
-     * input token adjustments from the current level. These are needed to calculate royalty fees from exchanged values
-     *
-     * @param tokenId the token id
-     * @param accountId the account id
-     * @param htsAdjustments the hts adjustments
-     * @param immutableInputTokenAdjustments the input token adjustments
-     * @return the total credit for the given account and token
-     */
-    private long lookupCreditsFor(
-            final TokenID tokenId,
-            final AccountID accountId,
-            final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
-            final Map<TokenID, Map<AccountID, Long>> immutableInputTokenAdjustments) {
-        final var balanceChangesForToken = htsAdjustments.get(tokenId);
-        final var balanceChangesForTokenInInput = immutableInputTokenAdjustments.get(tokenId);
-
-        long totalCredit = 0;
-        if (balanceChangesForToken != null && balanceChangesForToken.containsKey(accountId)) {
-            totalCredit += balanceChangesForToken.get(accountId) > 0 ? balanceChangesForToken.get(accountId) : 0;
-        }
-        if (balanceChangesForTokenInInput != null && balanceChangesForTokenInInput.containsKey(accountId)) {
-            totalCredit +=
-                    balanceChangesForTokenInInput.get(accountId) > 0 ? balanceChangesForTokenInInput.get(accountId) : 0;
-        }
-        return totalCredit;
     }
 }
