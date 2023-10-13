@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
@@ -1090,6 +1091,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec nftTransfersCannotRepeatSerialNos() {
         final var aParty = "aParty";
         final var bParty = "bParty";
@@ -1100,7 +1102,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var hotTxn = "hotTxn";
         final var mintTxn = "mintTxn";
 
-        return defaultHapiSpec("NftTransfersCannotRepeatSerialNos")
+        return onlyDefaultHapiSpec("NftTransfersCannotRepeatSerialNos")
                 .given(
                         newKeyNamed(multipurpose),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1209,6 +1211,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         getAccountInfo(OWNING_PARTY).has(accountWith().noChangesFromSnapshot(OWNING_PARTY)));
     }
 
+    @HapiTest
     private HapiSpec dissociatedRoyaltyCollectorsCanUseAutoAssociation() {
         final var commonWithCustomFees = "commonWithCustomFees";
         final var fractionalCollector = "fractionalCollector";

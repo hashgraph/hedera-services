@@ -79,6 +79,7 @@ public class CryptoTransferValidator {
         validateFalsePreCheck(uniqueAcctIds.size() < acctAmounts.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
         final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
+        final var nftIds = new HashSet<Long>();
         for (final TokenTransferList tokenTransfer : tokenTransfers) {
             final var tokenID = tokenTransfer.token();
             validateTruePreCheck(tokenID != null && !tokenID.equals(TokenID.DEFAULT), INVALID_TOKEN_ID);
@@ -102,12 +103,13 @@ public class CryptoTransferValidator {
 
             // Validate the nft transfers
             final var nftTransfers = tokenTransfer.nftTransfersOrElse(emptyList());
-            final var nftIds = new HashSet<Long>();
+            nftIds.clear();
             for (final NftTransfer nftTransfer : nftTransfers) {
                 validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
                 validateTruePreCheck(nftTransfer.hasSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
                 validateTruePreCheck(nftTransfer.hasReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-
+                validateFalsePreCheck(
+                        !nftIds.isEmpty() && nftIds.contains(nftTransfer.serialNumber()), INVALID_ACCOUNT_AMOUNTS);
                 nftIds.add(nftTransfer.serialNumber());
             }
             validateFalsePreCheck(nftIds.size() < nftTransfers.size(), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
@@ -115,7 +117,6 @@ public class CryptoTransferValidator {
             // Verify that one and only one of the two types of transfers (fungible or non-fungible) is present
             validateFalsePreCheck(
                     uniqueTokenAcctIds.isEmpty() && nftIds.isEmpty(), EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
-            validateFalsePreCheck(nonZeroFungibleValueFound && !nftIds.isEmpty(), INVALID_ACCOUNT_AMOUNTS);
         }
     }
 
