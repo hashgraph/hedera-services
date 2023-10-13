@@ -41,7 +41,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -66,7 +66,6 @@ public final class IngestChecker {
 
     private final CurrentPlatformStatus currentPlatformStatus;
     private final TransactionChecker transactionChecker;
-    private final ThrottleAccumulator throttleAccumulator;
     private final SolvencyPreCheck solvencyPreCheck;
     private final SignatureVerifier signatureVerifier;
     private final SignatureExpander signatureExpander;
@@ -75,6 +74,7 @@ public final class IngestChecker {
     private final FeeManager feeManager;
     private final AccountID nodeAccount;
     private final Authorizer authorizer;
+    private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     /**
      * Constructor of the {@code IngestChecker}
@@ -82,12 +82,12 @@ public final class IngestChecker {
      * @param nodeAccount the {@link AccountID} of the node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus} that contains the current status of the platform
      * @param transactionChecker the {@link TransactionChecker} that pre-processes the bytes of a transaction
-     * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param solvencyPreCheck the {@link SolvencyPreCheck} that checks payer balance
      * @param signatureExpander the {@link SignatureExpander} that expands signatures
      * @param signatureVerifier the {@link SignatureVerifier} that verifies signature data
      * @param dispatcher the {@link TransactionDispatcher} that dispatches transactions
      * @param feeManager the {@link FeeManager} that manages {@link com.hedera.node.app.spi.fees.FeeCalculator}s
+     * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -95,18 +95,17 @@ public final class IngestChecker {
             @NodeSelfId @NonNull final AccountID nodeAccount,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final TransactionChecker transactionChecker,
-            @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final SignatureExpander signatureExpander,
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final DeduplicationCache deduplicationCache,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final FeeManager feeManager,
-            @NonNull final Authorizer authorizer) {
+            @NonNull final Authorizer authorizer,
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
         this.nodeAccount = requireNonNull(nodeAccount, "nodeAccount must not be null");
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus, "currentPlatformStatus must not be null");
         this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
-        this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
         this.signatureVerifier = requireNonNull(signatureVerifier, "signatureVerifier must not be null");
         this.signatureExpander = requireNonNull(signatureExpander, "signatureExpander must not be null");
@@ -114,6 +113,7 @@ public final class IngestChecker {
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
+        this.synchronizedThrottleAccumulator = requireNonNull(synchronizedThrottleAccumulator);
     }
 
     /**
@@ -166,7 +166,7 @@ public final class IngestChecker {
         }
 
         // 4. Check throttles
-        if (throttleAccumulator.shouldThrottle(txInfo.txBody())) {
+        if (synchronizedThrottleAccumulator.shouldThrottle(txInfo, state)) {
             throw new PreCheckException(BUSY);
         }
 

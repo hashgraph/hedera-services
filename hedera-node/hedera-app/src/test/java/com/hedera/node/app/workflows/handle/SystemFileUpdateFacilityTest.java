@@ -37,7 +37,7 @@ import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
-import com.hedera.node.app.throttle.HandleThrottleAccumulator;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -83,7 +83,10 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
     private MonoMultiplierSources monoMultiplierSources;
 
     @Mock
-    private HandleThrottleAccumulator handleThrottleAccumulator;
+    private ThrottleAccumulator throttleAccumulator;
+
+    @Mock
+    private ThrottleAccumulator synchronizedThrottleAccumulator;
 
     @BeforeEach
     void setUp() {
@@ -100,7 +103,12 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         throttleManager = new ThrottleManager();
         subject = new SystemFileUpdateFacility(
-                configProvider, throttleManager, exchangeRateManager, monoMultiplierSources, handleThrottleAccumulator);
+                configProvider,
+                throttleManager,
+                exchangeRateManager,
+                monoMultiplierSources,
+                throttleAccumulator,
+                synchronizedThrottleAccumulator);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -112,19 +120,52 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         // then
         assertThatThrownBy(() -> new SystemFileUpdateFacility(
-                        null, throttleManager, exchangeRateManager, monoMultiplierSources, handleThrottleAccumulator))
+                        null,
+                        throttleManager,
+                        exchangeRateManager,
+                        monoMultiplierSources,
+                        throttleAccumulator,
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SystemFileUpdateFacility(
-                        configProvider, null, exchangeRateManager, monoMultiplierSources, handleThrottleAccumulator))
+                        configProvider,
+                        null,
+                        exchangeRateManager,
+                        monoMultiplierSources,
+                        throttleAccumulator,
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SystemFileUpdateFacility(
-                        configProvider, throttleManager, null, monoMultiplierSources, handleThrottleAccumulator))
+                        configProvider,
+                        throttleManager,
+                        null,
+                        monoMultiplierSources,
+                        throttleAccumulator,
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SystemFileUpdateFacility(
-                        configProvider, throttleManager, exchangeRateManager, null, handleThrottleAccumulator))
+                        configProvider,
+                        throttleManager,
+                        exchangeRateManager,
+                        null,
+                        throttleAccumulator,
+                        synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SystemFileUpdateFacility(
-                        configProvider, throttleManager, exchangeRateManager, monoMultiplierSources, null))
+                        configProvider,
+                        throttleManager,
+                        exchangeRateManager,
+                        monoMultiplierSources,
+                        null,
+                        synchronizedThrottleAccumulator))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new SystemFileUpdateFacility(
+                        configProvider,
+                        throttleManager,
+                        exchangeRateManager,
+                        monoMultiplierSources,
+                        throttleAccumulator,
+                        null))
                 .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> subject.handleTxBody(null, txBody)).isInstanceOf(NullPointerException.class);
@@ -197,7 +238,12 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
         throttleManager = Mockito.mock(ThrottleManager.class);
         subject = new SystemFileUpdateFacility(
-                configProvider, throttleManager, exchangeRateManager, monoMultiplierSources, handleThrottleAccumulator);
+                configProvider,
+                throttleManager,
+                exchangeRateManager,
+                monoMultiplierSources,
+                throttleAccumulator,
+                synchronizedThrottleAccumulator);
 
         // when
         subject.handleTxBody(state, txBody.build());
