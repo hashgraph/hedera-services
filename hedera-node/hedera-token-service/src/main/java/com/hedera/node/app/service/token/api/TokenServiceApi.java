@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.api;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -28,8 +27,6 @@ import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBu
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Defines mutations that can't be expressed as a {@link com.hedera.hapi.node.transaction.TransactionBody} dispatch.
@@ -124,18 +121,11 @@ public interface TokenServiceApi {
     void transferFromTo(@NonNull AccountID from, @NonNull AccountID to, long amount);
 
     /**
-     * Returns a list of all the account ids that were modified by this {@link TokenServiceApi}.
+     * Returns a summary of the changes made to contract state.
      *
-     * @return the account ids that were modified by this {@link TokenServiceApi}
+     * @return a summary of the changes made to contract state
      */
-    Set<AccountID> modifiedAccountIds();
-
-    /**
-     * Returns a list of the contract nonces updated by this {@link TokenServiceApi}.
-     *
-     * @return a list of all the account ids that were modified by this {@link TokenServiceApi}
-     */
-    List<ContractNonceInfo> updatedContractNonces();
+    ContractChangeSummary summarizeContractChanges();
 
     /**
      * Updates the storage metadata for the given contract.
@@ -177,4 +167,13 @@ public interface TokenServiceApi {
      * @param recordBuilder the record builder to record the fees in
      */
     void refundFees(@NonNull AccountID receiver, @NonNull Fees fees, @NonNull final FeeRecordBuilder recordBuilder);
+
+    /**
+     * Returns the number of storage slots used by the given account before any changes were made via
+     * this {@link TokenServiceApi}.
+     *
+     * @param id the id of the account
+     * @return the number of storage slots used by the given account before any changes were made
+     */
+    long originalKvUsageFor(@NonNull AccountID id);
 }

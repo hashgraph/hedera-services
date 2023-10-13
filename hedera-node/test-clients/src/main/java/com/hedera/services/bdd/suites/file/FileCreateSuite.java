@@ -80,7 +80,7 @@ public class FileCreateSuite extends HapiSuite {
                 exchangeRateControlAccountIsntCharged());
     }
 
-    // TODO:Exchange rate need to be fixed - assumptions are not matching the new values
+    @HapiTest
     private HapiSpec exchangeRateControlAccountIsntCharged() {
         return defaultHapiSpec("ExchangeRateControlAccountIsntCharged")
                 .given(

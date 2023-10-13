@@ -151,22 +151,15 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
         MessageFrame.builder()
                 .parentMessageFrame(frame)
                 .type(MessageFrame.Type.CONTRACT_CREATION)
-                .worldUpdater(frame.getWorldUpdater().updater())
                 .initialGas(childGasStipend)
                 .address(contractAddress)
-                .originator(frame.getOriginatorAddress())
                 .contract(contractAddress)
-                .gasPrice(frame.getGasPrice())
                 .inputData(Bytes.EMPTY)
                 .sender(frame.getRecipientAddress())
                 .value(value)
                 .apparentValue(value)
                 .code(CodeFactory.createCode(inputData, 0, false))
-                .blockValues(frame.getBlockValues())
                 .completer(child -> complete(frame, child))
-                .miningBeneficiary(frame.getMiningBeneficiary())
-                .blockHashLookup(frame.getBlockHashLookup())
-                .maxStackSize(frame.getMaxStackSize())
                 .build();
         frame.incrementRemainingGas(cost);
         frame.setState(MessageFrame.State.CODE_SUSPENDED);
