@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -115,6 +116,20 @@ public interface HandleContext {
      */
     @Nullable
     Key payerKey();
+
+    /**
+     * Returns the Hedera resource prices (in thousandths of a tinycent) for the given {@link SubType} of
+     * the given {@link HederaFunctionality}. The contract service needs this information to determine both the
+     * gas price and the cost of storing logs (a function of the {@code rbh} price, which may itself vary by
+     * contract operation type).
+     *
+     * @param functionality the {@link HederaFunctionality} of interest
+     * @param subType the {@link SubType} of interest
+     * @return the corresponding Hedera resource prices
+     */
+    @NonNull
+    FunctionalityResourcePrices resourcePricesFor(
+            @NonNull final HederaFunctionality functionality, @NonNull final SubType subType);
 
     /**
      * Get a calculator for calculating fees for the current transaction, and its {@link SubType}. Most transactions

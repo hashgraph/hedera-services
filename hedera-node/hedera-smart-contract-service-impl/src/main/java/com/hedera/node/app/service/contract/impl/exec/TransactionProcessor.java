@@ -27,7 +27,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
@@ -37,6 +36,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
+import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -149,6 +149,10 @@ public class TransactionProcessor {
         try {
             updater.commit();
         } catch (ResourceExhaustedException e) {
+            // Behind the scenes there is only one savepoint stack; so we need to revert the root updater
+            // before creating a new fees-only updater (even though from a Besu perspective, these two
+            // updaters appear independent, they are not)
+            updater.revert();
             return commitResourceExhaustion(transaction, feesOnlyUpdater.get(), context, e.getStatus(), config);
         }
         return result;

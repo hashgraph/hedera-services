@@ -120,6 +120,7 @@ class QueryHederaOperationsTest {
 
     @Test
     void creatingAndDeletingContractsNotSupported() {
+        assertThrows(UnsupportedOperationException.class, subject::contractCreationLimit);
         assertThrows(UnsupportedOperationException.class, () -> subject.createContract(1L, 2L, null));
         assertThrows(
                 UnsupportedOperationException.class,
@@ -134,17 +135,12 @@ class QueryHederaOperationsTest {
     }
 
     @Test
-    void neverAnyCreatedContractIds() {
-        assertSame(Collections.emptyList(), subject.createdContractIds());
-    }
-
-    @Test
-    void neverAnyUpdatedNonces() {
-        assertSame(Collections.emptyList(), subject.updatedContractNonces());
-    }
-
-    @Test
     void getOriginalSlotsUsedNotSupported() {
         assertThrows(UnsupportedOperationException.class, () -> subject.getOriginalSlotsUsed(1234L));
+    }
+
+    @Test
+    void summarizingContractChangesNotSupported() {
+        assertThrows(UnsupportedOperationException.class, subject::summarizeContractChanges);
     }
 }
