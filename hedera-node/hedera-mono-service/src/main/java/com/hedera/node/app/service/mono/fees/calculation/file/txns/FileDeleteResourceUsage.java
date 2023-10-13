@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.fees.calculation.file.txns;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -41,11 +40,11 @@ public class FileDeleteResourceUsage implements TxnResourceUsageEstimator {
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
+    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) {
         return usageEstimator.getFileDeleteTxFeeMatrices(txn, sigUsage);
     }
 
-    public FeeData usageGiven(final TransactionBody txn, final SigValueObj sigUsage) throws InvalidTxBodyException {
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj sigUsage) {
         return usageEstimator.getFileDeleteTxFeeMatrices(txn, sigUsage);
     }
 }
