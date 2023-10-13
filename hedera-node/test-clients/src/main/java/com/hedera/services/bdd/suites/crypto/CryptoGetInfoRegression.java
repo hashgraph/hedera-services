@@ -37,7 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
@@ -269,12 +269,14 @@ public class CryptoGetInfoRegression extends HapiSuite {
                 .then(getAccountInfo(GENESIS).nodePayment(1L).hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
     }
 
-    @HapiTest
+    @HapiTest // this test needs to be updated for both mono and module code.
     private HapiSpec failsForMissingPayment() {
         return defaultHapiSpec("FailsForMissingPayment")
                 .given()
                 .when()
-                .then(getAccountInfo(GENESIS).useEmptyTxnAsAnswerPayment().hasAnswerOnlyPrecheck(NOT_SUPPORTED));
+                .then(getAccountInfo(GENESIS)
+                        .useEmptyTxnAsAnswerPayment()
+                        .hasAnswerOnlyPrecheck(INVALID_TRANSACTION_BODY));
     }
 
     @HapiTest
