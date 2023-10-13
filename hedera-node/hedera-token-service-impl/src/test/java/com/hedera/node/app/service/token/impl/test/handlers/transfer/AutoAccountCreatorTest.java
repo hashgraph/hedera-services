@@ -45,7 +45,11 @@ class AutoAccountCreatorTest extends StepsBase {
 
     @BeforeEach
     public void setUp() {
-        super.setUp();
+        accountCreatorInternalSetup(true);
+    }
+
+    private void accountCreatorInternalSetup(final boolean prepopulateReceiverIds) {
+        super.baseInternalSetUp(prepopulateReceiverIds);
         givenTxn();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
@@ -70,6 +74,7 @@ class AutoAccountCreatorTest extends StepsBase {
     @Test
     // TODO: In end to end tests need to validate other fields set correctly on auto created accounts
     void happyPathECKeyAliasWorks() {
+        accountCreatorInternalSetup(false);
         given(handleContext.dispatchRemovableChildTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
@@ -99,6 +104,7 @@ class AutoAccountCreatorTest extends StepsBase {
     @Test
     // TODO: In end to end tests need to validate other fields set correctly on auto created accounts
     void happyPathEDKeyAliasWorks() {
+        accountCreatorInternalSetup(false);
         given(handleContext.dispatchRemovableChildTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
@@ -128,6 +134,7 @@ class AutoAccountCreatorTest extends StepsBase {
     @Test
     // TODO: In end to end tests need to validate other fields set on auto created accounts
     void happyPathWithHollowAccountAliasInHbarTransfersWorks() {
+        accountCreatorInternalSetup(false);
         final var address = new ProtoBytes(Bytes.wrap(evmAddress));
         given(handleContext.dispatchRemovableChildTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
