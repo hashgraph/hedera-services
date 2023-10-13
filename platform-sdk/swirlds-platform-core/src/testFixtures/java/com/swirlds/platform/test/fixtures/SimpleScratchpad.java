@@ -22,7 +22,6 @@ import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.scratchpad.ScratchpadType;
-import com.swirlds.common.scratchpad.StandardScratchpad;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
@@ -33,7 +32,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A pared down version of the {@link StandardScratchpad} class that does not actually write to disk. Useful for testing
+ * A pared down version of the StandardScratchpad class that does not actually write to disk. Useful for testing
  * where it is inconvenient to create files. Is not thread safe.
  *
  * @param <K> the type of scratchpad

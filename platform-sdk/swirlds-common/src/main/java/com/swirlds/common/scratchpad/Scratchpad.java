@@ -18,6 +18,7 @@ package com.swirlds.common.scratchpad;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.scratchpad.internal.StandardScratchpad;
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

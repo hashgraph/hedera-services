@@ -359,25 +359,25 @@ class ScratchpadTests {
     void illegalScratchpadIdTest() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new StandardScratchpad<>(platformContext, selfId, TestScratchpadType.class, ""));
+                () -> Scratchpad.create(platformContext, selfId, TestScratchpadType.class, ""));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new StandardScratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar/baz"));
+                () -> Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "foobar/baz"));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new StandardScratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar\\baz"));
+                () -> Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "foobar\\baz"));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new StandardScratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar\"baz"));
+                () -> Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "foobar\"baz"));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new StandardScratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar*baz"));
+                () -> Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "foobar*baz"));
 
         // should not throw
-        new StandardScratchpad<>(platformContext, selfId, TestScratchpadType.class, "foo.bar_baz-1234");
+        Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "foo.bar_baz-1234");
     }
 }

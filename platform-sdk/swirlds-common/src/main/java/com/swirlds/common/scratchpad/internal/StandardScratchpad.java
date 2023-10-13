@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.scratchpad;
+package com.swirlds.common.scratchpad.internal;
 
 import static com.swirlds.common.io.utility.TemporaryFileBuilder.buildTemporaryFile;
 import static com.swirlds.logging.LogMarker.STARTUP;
@@ -27,6 +27,8 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.scratchpad.Scratchpad;
+import com.swirlds.common.scratchpad.ScratchpadType;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
