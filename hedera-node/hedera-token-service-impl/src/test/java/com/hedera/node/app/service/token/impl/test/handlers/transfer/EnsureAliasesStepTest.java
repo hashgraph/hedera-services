@@ -55,7 +55,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class EnsureAliasesStepTest extends StepsBase {
     @BeforeEach
     public void setUp() {
-        super.setUp();
+        ensureAliasesInternalSetup(true);
+    }
+
+    private void ensureAliasesInternalSetup(final boolean prepopulateReceiverIds) {
+        super.baseInternalSetUp(prepopulateReceiverIds);
         givenTxn();
         givenStoresAndConfig(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
@@ -64,6 +68,7 @@ class EnsureAliasesStepTest extends StepsBase {
 
     @Test
     void autoCreatesAccounts() {
+        ensureAliasesInternalSetup(false);
         given(handleContext.dispatchRemovableChildTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {

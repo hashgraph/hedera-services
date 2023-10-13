@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.fees.calculation.ethereum.txns;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -41,7 +40,7 @@ public class EthereumTransactionResourceUsage implements TxnResourceUsageEstimat
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
+    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) {
         return usageEstimator.getEthereumTransactionFeeMatrices(txn, sigUsage);
     }
 }
