@@ -28,12 +28,10 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -50,7 +48,7 @@ public class OrphanBuffer {
     /**
      * Avoid the creation of lambdas for Map.computeIfAbsent() by reusing this lambda.
      */
-    private static final Function<EventDescriptor, Set<OrphanedEvent>> EMPTY_SET = ignored -> new HashSet<>();
+    private static final Function<EventDescriptor, List<OrphanedEvent>> EMPTY_LIST = ignored -> new ArrayList<>();
 
     /**
      * Non-ancient events are passed to this method in topological order.
@@ -84,11 +82,11 @@ public class OrphanBuffer {
      * A map where the key is the descriptor of a missing parent, and the value is a list of orphans that are missing
      * that parent.
      */
-    private final SequenceMap<EventDescriptor, Set<OrphanedEvent>> missingParentMap =
+    private final SequenceMap<EventDescriptor, List<OrphanedEvent>> missingParentMap =
             new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
 
     /**
-     * Constructor.
+     * Constructor
      *
      * @param platformContext    the platform context
      * @param eventConsumer      the consumer to which to emit the ordered stream of
@@ -122,13 +120,13 @@ public class OrphanBuffer {
 
         orphanBufferSize.update(1);
 
-        final Set<EventDescriptor> missingParents = getMissingParents(event);
+        final List<EventDescriptor> missingParents = getMissingParents(event);
         if (missingParents.isEmpty()) {
             eventIsNotAnOrphan(event);
         } else {
             final OrphanedEvent orphanedEvent = new OrphanedEvent(event, missingParents);
             for (final EventDescriptor missingParent : missingParents) {
-                this.missingParentMap.computeIfAbsent(missingParent, EMPTY_SET).add(orphanedEvent);
+                this.missingParentMap.computeIfAbsent(missingParent, EMPTY_LIST).add(orphanedEvent);
             }
         }
     }
@@ -177,11 +175,11 @@ public class OrphanBuffer {
      * Get the parents of an event that are currently missing.
      *
      * @param event the event whose missing parents to find
-     * @return the set of missing parents, empty if no parents are missing
+     * @return the list of missing parents, empty if no parents are missing
      */
     @NonNull
-    private Set<EventDescriptor> getMissingParents(@NonNull final GossipEvent event) {
-        final Set<EventDescriptor> missingParents = new HashSet<>();
+    private List<EventDescriptor> getMissingParents(@NonNull final GossipEvent event) {
+        final List<EventDescriptor> missingParents = new ArrayList<>();
 
         final Iterator<EventDescriptor> parentIterator = new ParentIterator(event);
         while (parentIterator.hasNext()) {
@@ -222,7 +220,7 @@ public class OrphanBuffer {
 
             // since this event is no longer an orphan, we need to recheck all of its children to see if any might
             // not be orphans anymore
-            final Set<OrphanedEvent> children = missingParentMap.remove(nonOrphanDescriptor);
+            final List<OrphanedEvent> children = missingParentMap.remove(nonOrphanDescriptor);
             if (children == null) {
                 continue;
             }

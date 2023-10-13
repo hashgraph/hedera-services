@@ -32,7 +32,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * An asynchronous version of {@link OrphanBuffer}.
+ * An asynchronous wrapper around an {@link OrphanBuffer}.
  */
 public class AsyncOrphanBuffer implements Startable, Stoppable {
     /**
@@ -72,7 +72,7 @@ public class AsyncOrphanBuffer implements Startable, Stoppable {
     private final BlockingQueueInserter<FlushRequest> flushInserter;
 
     /**
-     * Constructor.
+     * Constructor
      *
      * @param platformContext    the platform context
      * @param threadManager      the thread manager
@@ -88,6 +88,7 @@ public class AsyncOrphanBuffer implements Startable, Stoppable {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
         Objects.requireNonNull(eventConsumer);
+        Objects.requireNonNull(intakeEventCounter);
 
         orphanBuffer = new OrphanBuffer(platformContext, eventConsumer, intakeEventCounter);
 

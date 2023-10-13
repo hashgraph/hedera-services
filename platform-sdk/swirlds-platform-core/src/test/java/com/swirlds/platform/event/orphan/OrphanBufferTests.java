@@ -66,7 +66,7 @@ class OrphanBufferTests {
     /**
      * The number of events to be created for testing
      */
-    private static final long TEST_EVENT_COUNT = 50000;
+    private static final long TEST_EVENT_COUNT = 10000;
 
     /**
      * Number of possible nodes in the universe

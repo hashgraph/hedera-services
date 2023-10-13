@@ -19,12 +19,12 @@ package com.swirlds.platform.event.orphan;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
+import java.util.List;
 
 /**
  * An event that is missing one or more parents.
  *
  * @param orphan         the event that is missing one or more parents
- * @param missingParents the set of missing parents (ancient parents are not included)
+ * @param missingParents the list of missing parents (ancient parents are not included)
  */
-record OrphanedEvent(@NonNull GossipEvent orphan, @NonNull Set<EventDescriptor> missingParents) {}
+record OrphanedEvent(@NonNull GossipEvent orphan, @NonNull List<EventDescriptor> missingParents) {}
