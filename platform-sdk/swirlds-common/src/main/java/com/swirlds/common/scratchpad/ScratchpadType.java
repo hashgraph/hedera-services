@@ -17,7 +17,7 @@
 package com.swirlds.common.scratchpad;
 
 /**
- * Defines a {@link Scratchpad} type. Implementations must be enums.
+ * Defines a {@link StandardScratchpad} type. Implementations must be enums.
  */
 public interface ScratchpadType {
 

@@ -37,6 +37,7 @@ import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.StateToDiskReason;
+import com.swirlds.platform.test.fixtures.SimpleScratchpad;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
@@ -79,7 +80,8 @@ class IssHandlerTests {
                 mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                new SimpleScratchpad<>());
 
         dispatchBuilder.start();
 
@@ -127,7 +129,8 @@ class IssHandlerTests {
                 mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                new SimpleScratchpad<>());
 
         dispatchBuilder.start();
 
@@ -181,7 +184,8 @@ class IssHandlerTests {
                 mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                new SimpleScratchpad<>());
 
         dispatchBuilder.start();
 
@@ -232,7 +236,8 @@ class IssHandlerTests {
                 mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                new SimpleScratchpad<>());
 
         dispatchBuilder.start();
 
@@ -279,7 +284,8 @@ class IssHandlerTests {
                 mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                new SimpleScratchpad<>());
 
         dispatchBuilder.start();
 
@@ -334,7 +340,8 @@ class IssHandlerTests {
                 mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                new SimpleScratchpad<>());
 
         dispatchBuilder.start();
 
@@ -379,7 +386,8 @@ class IssHandlerTests {
                 mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                new SimpleScratchpad<>());
 
         dispatchBuilder.start();
 
@@ -427,7 +435,8 @@ class IssHandlerTests {
                 mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                new SimpleScratchpad<>());
 
         dispatchBuilder.start();
 
@@ -482,7 +491,8 @@ class IssHandlerTests {
                 mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                new SimpleScratchpad<>());
 
         dispatchBuilder.start();
 
@@ -534,7 +544,8 @@ class IssHandlerTests {
                 mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                new SimpleScratchpad<>());
 
         dispatchBuilder.start();
 
@@ -582,7 +593,8 @@ class IssHandlerTests {
                 mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                new SimpleScratchpad<>());
 
         dispatchBuilder.start();
 
@@ -637,7 +649,8 @@ class IssHandlerTests {
                 mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                new SimpleScratchpad<>());
 
         dispatchBuilder.start();
 
@@ -692,7 +705,8 @@ class IssHandlerTests {
                 mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                new SimpleScratchpad<>());
 
         dispatchBuilder.start();
 
@@ -735,7 +749,8 @@ class IssHandlerTests {
                 mock(StatusActionSubmitter.class),
                 (reason) -> {},
                 (msg, t, code) -> {},
-                issConsumer);
+                issConsumer,
+                new SimpleScratchpad<>());
 
         assertEquals(0, selfIssCount.get(), "incorrect self ISS count");
         assertEquals(0, otherIssCount.get(), "incorrect other ISS count");

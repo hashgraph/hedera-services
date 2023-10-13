@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.iss;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.logging.LogMarker.STATE_HASH;
 
 import com.swirlds.base.time.Time;
@@ -42,6 +43,7 @@ import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -80,6 +82,16 @@ public class ConsensusHashManager {
      */
     private final RateLimiter catastrophicIssRateLimiter;
 
+    /**
+     * If true, ignore signatures from the preconsensus event stream, otherwise validate them like normal.
+     */
+    private final boolean ignorePreconsensusSignatures;
+
+    /**
+     * Set to false once all preconsensus events have been replayed.
+     */
+    private boolean replayingPreconsensusStream = true;
+
     private final SelfIssTrigger selfIssDispatcher;
     private final CatastrophicIssTrigger catastrophicIssDispatcher;
     private final StateHashValidityTrigger stateHashValidityDispatcher;
@@ -87,20 +99,23 @@ public class ConsensusHashManager {
     /**
      * Create an object that tracks reported hashes and detects ISS events.
      *
-     * @param time            provides the current wall clock time
-     * @param dispatchBuilder responsible for building dispatchers
-     * @param addressBook     the address book for the network
-     * @param consensusConfig consensus configuration
-     * @param stateConfig     state configuration
-     * @param currentEpochHash the current epoch hash
+     * @param time                         provides the current wall clock time
+     * @param dispatchBuilder              responsible for building dispatchers
+     * @param addressBook                  the address book for the network
+     * @param consensusConfig              consensus configuration
+     * @param stateConfig                  state configuration
+     * @param currentEpochHash             the current epoch hash
+     * @param ignorePreconsensusSignatures If true, ignore signatures from the preconsensus event stream, otherwise
+     *                                     validate them like normal.
      */
     public ConsensusHashManager(
-            final Time time,
-            final DispatchBuilder dispatchBuilder,
-            final AddressBook addressBook,
-            final ConsensusConfig consensusConfig,
-            final StateConfig stateConfig,
-            final Hash currentEpochHash) {
+            @NonNull final Time time,
+            @NonNull final DispatchBuilder dispatchBuilder,
+            @NonNull final AddressBook addressBook,
+            @NonNull final ConsensusConfig consensusConfig,
+            @NonNull final StateConfig stateConfig,
+            @Nullable final Hash currentEpochHash,
+            final boolean ignorePreconsensusSignatures) {
 
         final Duration timeBetweenIssLogs = Duration.ofSeconds(stateConfig.secondsBetweenIssLogs());
         lackingSignaturesRateLimiter = new RateLimiter(time, timeBetweenIssLogs);
@@ -119,6 +134,18 @@ public class ConsensusHashManager {
 
         this.roundData = new ConcurrentSequenceMap<>(
                 -consensusConfig.roundsNonAncient(), consensusConfig.roundsNonAncient(), x -> x);
+
+        this.ignorePreconsensusSignatures = ignorePreconsensusSignatures;
+        if (ignorePreconsensusSignatures) {
+            logger.info(STARTUP.getMarker(), "State signatures from the preconsensus event stream will be ignored.");
+        }
+    }
+
+    /**
+     * This method is called once all preconsensus events have been replayed.
+     */
+    public void signalEndOfPreconsensusReplay() {
+        replayingPreconsensusStream = false;
     }
 
     /**
@@ -193,6 +220,11 @@ public class ConsensusHashManager {
 
         Objects.requireNonNull(signerId);
         Objects.requireNonNull(signatureTransaction);
+
+        if (ignorePreconsensusSignatures && replayingPreconsensusStream) {
+            // We are still replaying preconsensus events and we are configured to ignore signatures during replay
+            return;
+        }
 
         if (!Objects.equals(signatureTransaction.getEpochHash(), currentEpochHash)) {
             // this is a signature from a different epoch, ignore it

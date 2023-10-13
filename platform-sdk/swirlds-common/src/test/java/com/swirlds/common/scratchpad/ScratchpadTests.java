@@ -91,7 +91,7 @@ class ScratchpadTests {
         final Random random = getRandomPrintSeed();
 
         final Scratchpad<TestScratchpadType> scratchpad =
-                new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, "test");
+                Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "test");
         scratchpad.logContents();
 
         final Path scratchpadDirectory =
@@ -185,7 +185,7 @@ class ScratchpadTests {
 
         // Simulate a restart
         final Scratchpad<TestScratchpadType> scratcphad2 =
-                new Scratchpad(platformContext, selfId, TestScratchpadType.class, "test");
+                Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "test");
         scratchpad.logContents();
 
         assertEquals(1, scratchpadDirectory.toFile().listFiles().length);
@@ -204,7 +204,7 @@ class ScratchpadTests {
         final Random random = getRandomPrintSeed();
 
         final Scratchpad<TestScratchpadType> scratchpad =
-                new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, "test");
+                Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "test");
         scratchpad.logContents();
 
         final Path scratchpadDirectory =
@@ -239,7 +239,7 @@ class ScratchpadTests {
         Files.copy(copyPath, scratchpadFile);
 
         // Simulate a restart
-        final Scratchpad scratchpad2 = new Scratchpad(platformContext, selfId, TestScratchpadType.class, "test");
+        final Scratchpad scratchpad2 = Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "test");
 
         assertEquals(hash2, scratchpad2.get(FOO));
 
@@ -253,7 +253,7 @@ class ScratchpadTests {
         final Random random = getRandomPrintSeed();
 
         final Scratchpad<TestScratchpadType> scratchpad =
-                new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, "test");
+                Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "test");
         scratchpad.logContents();
 
         final Path scratchpadDirectory =
@@ -338,7 +338,7 @@ class ScratchpadTests {
 
         // Simulate a restart
         final Scratchpad<TestScratchpadType> scratcphad2 =
-                new Scratchpad(platformContext, selfId, TestScratchpadType.class, "test");
+                Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "test");
         scratchpad.logContents();
 
         assertEquals(1, scratchpadDirectory.toFile().listFiles().length);
@@ -359,25 +359,25 @@ class ScratchpadTests {
     void illegalScratchpadIdTest() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, ""));
+                () -> new StandardScratchpad<>(platformContext, selfId, TestScratchpadType.class, ""));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar/baz"));
+                () -> new StandardScratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar/baz"));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar\\baz"));
+                () -> new StandardScratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar\\baz"));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar\"baz"));
+                () -> new StandardScratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar\"baz"));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar*baz"));
+                () -> new StandardScratchpad<>(platformContext, selfId, TestScratchpadType.class, "foobar*baz"));
 
         // should not throw
-        new Scratchpad<>(platformContext, selfId, TestScratchpadType.class, "foo.bar_baz-1234");
+        new StandardScratchpad<>(platformContext, selfId, TestScratchpadType.class, "foo.bar_baz-1234");
     }
 }
