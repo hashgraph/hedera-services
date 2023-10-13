@@ -20,8 +20,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBL
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_BESU_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNAUTHORIZED_SPENDER_ID;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,8 +32,8 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.ClassicGrantApprovalCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.ERCGrantApprovalCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator;
@@ -115,15 +113,13 @@ class GrantApprovalTranslatorTest {
                 .toArray();
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(addressIdConverter.convert(any())).willReturn(UNAUTHORIZED_SPENDER_ID);
-        given(attempt.addressIdConverter().convertSender(any())).willReturn(OWNER_ID);
-        given(attempt.senderAddress()).willReturn(OWNER_BESU_ADDRESS);
         given(attempt.enhancement()).willReturn(enhancement);
         given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
         given(attempt.selector()).willReturn(GrantApprovalTranslator.GRANT_APPROVAL.selector());
         given(attempt.inputBytes()).willReturn(inputBytes);
 
         final var call = subject.callFrom(attempt);
-        assertInstanceOf(DispatchForResponseCodeHtsCall.class, call);
+        assertInstanceOf(ClassicGrantApprovalCall.class, call);
     }
 
     @Test
@@ -134,15 +130,13 @@ class GrantApprovalTranslatorTest {
                 .toArray();
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(addressIdConverter.convert(any())).willReturn(UNAUTHORIZED_SPENDER_ID);
-        given(attempt.addressIdConverter().convertSender(any())).willReturn(OWNER_ID);
-        given(attempt.senderAddress()).willReturn(OWNER_BESU_ADDRESS);
         given(attempt.enhancement()).willReturn(enhancement);
         given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
         given(attempt.selector()).willReturn(GrantApprovalTranslator.GRANT_APPROVAL_NFT.selector());
         given(attempt.inputBytes()).willReturn(inputBytes);
 
         final var call = subject.callFrom(attempt);
-        assertInstanceOf(DispatchForResponseCodeHtsCall.class, call);
+        assertInstanceOf(ClassicGrantApprovalCall.class, call);
     }
 
     @Test

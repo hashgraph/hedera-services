@@ -17,7 +17,10 @@
 package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER_FROM;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
@@ -36,11 +39,14 @@ import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.RECEIVER_ID;
 import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
+import static contract.XTestConstants.SENDER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.SN_1234;
 import static contract.XTestConstants.SN_1234_METADATA;
 import static contract.XTestConstants.SN_2345;
 import static contract.XTestConstants.SN_2345_METADATA;
+import static contract.XTestConstants.SN_3456;
+import static contract.XTestConstants.SN_3456_METADATA;
 import static contract.XTestConstants.addErc20Relation;
 import static contract.XTestConstants.addErc721Relation;
 import static contract.XTestConstants.assertSuccess;
@@ -57,7 +63,6 @@ import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
 import java.math.BigInteger;
@@ -127,16 +132,13 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                 AMOUNT_EXCEEDS_ALLOWANCE,
                 "Excessive spending (100 units vs 50 approved)");
         // TRY APPROVE NFT WITH INVALID SERIAL
-        runHtsCallAndExpectOnSuccess(
+        runHtsCallAndExpectRevert(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(GrantApprovalTranslator.GRANT_APPROVAL_NFT
                         .encodeCallWithArgs(
                                 ERC721_TOKEN_ADDRESS, UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(9L))
                         .array()),
-                output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_NFT_SERIAL_NUMBER)
-                                .array()),
-                        output),
+                INVALID_TOKEN_NFT_SERIAL_NUMBER,
                 "Owner granting approval on missing SN#9");
         // APPROVE NFT
         runHtsCallAndExpectOnSuccess(
@@ -149,6 +151,39 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess(),
                 "Owner granting approval on present SN#1234");
+        // TRY APPROVE NFT WITH WITH NOT OWNED SERIAL
+        runHtsCallAndExpectRevert(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(GrantApprovalTranslator.GRANT_APPROVAL_NFT
+                        .encodeCallWithArgs(
+                                ERC721_TOKEN_ADDRESS,
+                                UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS,
+                                BigInteger.valueOf(SN_3456.serialNumber()))
+                        .array()),
+                SENDER_DOES_NOT_OWN_NFT_SERIAL_NO,
+                "Owner granting approval on not owned SN#3456");
+        // TRY APPROVE NFT WITH WITH FUNGIBLE TOKEN
+        runHtsCallAndExpectRevert(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(GrantApprovalTranslator.GRANT_APPROVAL_NFT
+                        .encodeCallWithArgs(
+                                ERC20_TOKEN_ADDRESS,
+                                UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS,
+                                BigInteger.valueOf(SN_3456.serialNumber()))
+                        .array()),
+                FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES,
+                "Owner granting nft approval on erc20 token");
+        // TRY APPROVE NFT WITH WITH INVALID TOKEN ADDRESS
+        runHtsCallAndExpectRevert(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(GrantApprovalTranslator.GRANT_APPROVAL_NFT
+                        .encodeCallWithArgs(
+                                SENDER_HEADLONG_ADDRESS,
+                                UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS,
+                                BigInteger.valueOf(SN_3456.serialNumber()))
+                        .array()),
+                INVALID_TOKEN_ID,
+                "Owner granting approval on invalid id");
         // TRANSFER NFT
         runHtsCallAndExpectOnSuccess(
                 UNAUTHORIZED_SPENDER_BESU_ADDRESS,
@@ -188,7 +223,7 @@ public class GrantApprovalXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 bytesForRedirect(
-                        GrantApprovalTranslator.ERC_GRANT_APPROVAL.encodeCallWithArgs(
+                        GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT.encodeCallWithArgs(
                                 UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, BigInteger.valueOf(SN_2345.serialNumber())),
                         ERC721_TOKEN_ID),
                 output -> assertEquals(
@@ -300,6 +335,14 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                                 .ownerId(OWNER_ID)
                                 .spenderId(SENDER_ID)
                                 .metadata(SN_2345_METADATA)
+                                .build());
+                put(
+                        SN_3456,
+                        Nft.newBuilder()
+                                .nftId(SN_3456)
+                                .ownerId(SENDER_ID)
+                                .spenderId(SENDER_ID)
+                                .metadata(SN_3456_METADATA)
                                 .build());
             }
         };
