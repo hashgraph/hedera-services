@@ -50,6 +50,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Tests for {@link OrphanBuffer}
+ */
 class OrphanBufferTests {
     /**
      * Events that will be "received" from intake
