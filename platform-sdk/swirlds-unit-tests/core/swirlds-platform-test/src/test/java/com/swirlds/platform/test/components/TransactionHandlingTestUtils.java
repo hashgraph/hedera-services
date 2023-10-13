@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
@@ -75,6 +76,6 @@ public final class TransactionHandlingTestUtils {
             events.add(newDummyEvent(transactionCount));
         }
 
-        return new ConsensusRound(events, mock(EventImpl.class), mock(GraphGenerations.class));
+        return new ConsensusRound(mock(AddressBook.class), events, mock(EventImpl.class), mock(GraphGenerations.class));
     }
 }

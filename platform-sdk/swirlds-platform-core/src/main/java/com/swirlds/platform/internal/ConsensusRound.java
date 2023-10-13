@@ -18,6 +18,7 @@ package com.swirlds.platform.internal;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
@@ -60,24 +61,28 @@ public class ConsensusRound implements Round {
     private final Instant consensusTimestamp;
 
     /**
+     * The consensus roster for this round.
+     */
+    private final AddressBook consensusRoster;
+
+    /**
      * Create a new instance with the provided consensus events.
      *
+     * @param consensusRoster the consensus roster for this round
      * @param consensusEvents the events in the round, in consensus order
      * @param keystoneEvent   the event that, when added to the hashgraph, caused this round to reach consensus
      * @param generations     the consensus generations for this round
      */
     public ConsensusRound(
+            @NonNull final AddressBook consensusRoster,
             @NonNull final List<EventImpl> consensusEvents,
             @NonNull final EventImpl keystoneEvent,
             @NonNull final GraphGenerations generations) {
 
-        Objects.requireNonNull(consensusEvents, "consensusEvents must not be null");
-        Objects.requireNonNull(keystoneEvent, "keystoneEvent must not be null");
-        Objects.requireNonNull(generations, "generations must not be null");
-
-        this.consensusEvents = Collections.unmodifiableList(consensusEvents);
-        this.keystoneEvent = keystoneEvent;
-        this.generations = generations;
+        this.consensusRoster = Objects.requireNonNull(consensusRoster);
+        this.consensusEvents = Collections.unmodifiableList(Objects.requireNonNull(consensusEvents));
+        this.keystoneEvent = Objects.requireNonNull(keystoneEvent);
+        this.generations = Objects.requireNonNull(generations);
 
         for (final EventImpl e : consensusEvents) {
             numAppTransactions += e.getNumAppTransactions();
@@ -157,6 +162,15 @@ public class ConsensusRound implements Round {
     @Override
     public int getEventCount() {
         return consensusEvents.size();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public AddressBook getConsensusRoster() {
+        return consensusRoster;
     }
 
     /**

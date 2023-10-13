@@ -406,10 +406,9 @@ public class SwirldsPlatform implements Platform {
 
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
-        // TODO can this logic be encapsulated in a helper method?
-
         final Scratchpad<IssScratchpad> issScratchpad =
-                Scratchpad.create(platformContext, selfId, IssScratchpad.class, "iss");
+                Scratchpad.create(platformContext, selfId, IssScratchpad.class, "platform.iss");
+        issScratchpad.logContents();
         final SerializableLong issRound = issScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
 
         // Only validate preconsensus signature transactions if we are not recovering from an ISS.
