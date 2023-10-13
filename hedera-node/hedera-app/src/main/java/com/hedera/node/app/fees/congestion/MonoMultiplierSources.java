@@ -19,11 +19,14 @@ package com.hedera.node.app.fees.congestion;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.fees.congestion.FeeMultiplierSource;
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -45,7 +48,17 @@ public class MonoMultiplierSources {
             // only accessor.congestionExempt() is used in the mono multiplier implementation and that seems like could
             // be only set for triggered transactions
             // so using just a dummy accessor
-            accessor = SignedTxnAccessor.from(Bytes.EMPTY.toByteArray());
+            final var dummySignedTxn = SignedTransaction.newBuilder()
+                    .bodyBytes(TransactionBody.PROTOBUF.toBytes(TransactionBody.newBuilder()
+                            .cryptoTransfer(
+                                    CryptoTransferTransactionBody.newBuilder().build())
+                            .build()))
+                    .build();
+            final var dummyTxn = Transaction.newBuilder()
+                    .signedTransactionBytes(SignedTransaction.PROTOBUF.toBytes(dummySignedTxn))
+                    .build();
+            accessor = SignedTxnAccessor.from(
+                    Transaction.PROTOBUF.toBytes(dummyTxn).toByteArray());
         } catch (InvalidProtocolBufferException e) {
             // this should never happen because we use an empty byte array constant above which should be always valid
             throw new RuntimeException(e);
