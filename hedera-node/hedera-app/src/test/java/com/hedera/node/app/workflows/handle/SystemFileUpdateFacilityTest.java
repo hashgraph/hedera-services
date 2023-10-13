@@ -127,11 +127,9 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         configProvider, throttleManager, exchangeRateManager, monoMultiplierSources, null))
                 .isInstanceOf(NullPointerException.class);
 
-        assertThatThrownBy(() -> subject.handleTxBody(null, txBody, recordBuilder))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.handleTxBody(state, null, recordBuilder))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.handleTxBody(state, txBody, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(null, txBody)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.handleTxBody(state, txBody)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -143,7 +141,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
 
         // then
-        assertThatCode(() -> subject.handleTxBody(state, txBody, recordBuilder)).doesNotThrowAnyException();
+        assertThatCode(() -> subject.handleTxBody(state, txBody)).doesNotThrowAnyException();
     }
 
     @Test
@@ -158,7 +156,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
-        subject.handleTxBody(state, txBody.build(), new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW));
+        subject.handleTxBody(state, txBody.build());
 
         // then
         verify(configProvider).update(FILE_BYTES);
@@ -176,7 +174,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
-        subject.handleTxBody(state, txBody.build(), new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW));
+        subject.handleTxBody(state, txBody.build());
 
         // then
         verify(configProvider).update(FILE_BYTES);
@@ -202,7 +200,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 configProvider, throttleManager, exchangeRateManager, monoMultiplierSources, handleThrottleAccumulator);
 
         // when
-        subject.handleTxBody(state, txBody.build(), new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW));
+        subject.handleTxBody(state, txBody.build());
 
         // then
         verify(throttleManager, times(1)).update(FileUtilities.getFileContent(state, fileID));
@@ -224,7 +222,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
-        subject.handleTxBody(state, txBody.build(), new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW));
+        subject.handleTxBody(state, txBody.build());
 
         // then
         verify(exchangeRateManager, times(1))

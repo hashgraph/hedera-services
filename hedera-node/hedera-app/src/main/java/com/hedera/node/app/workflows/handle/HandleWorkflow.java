@@ -437,7 +437,7 @@ public class HandleWorkflow {
                     networkUtilizationManager.saveTo(state);
 
                     // Notify responsible facility if system-file was uploaded
-                    systemFileUpdateFacility.handleTxBody(stack, txBody, recordBuilder);
+                    systemFileUpdateFacility.handleTxBody(stack, txBody);
 
                     // Notify if dual state was updated
                     dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);
