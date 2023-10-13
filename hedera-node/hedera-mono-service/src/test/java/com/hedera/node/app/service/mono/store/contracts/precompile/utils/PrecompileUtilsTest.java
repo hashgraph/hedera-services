@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
-import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -25,11 +24,14 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 
 class PrecompileUtilsTest {
+
+    private static final Address ADDRESS_6 = Address.fromHexString("0x6");
 
     @Test
     void addsContractCallResultToRecord() {
@@ -46,7 +48,7 @@ class PrecompileUtilsTest {
                 frame,
                 true,
                 true,
-                ALTBN128_ADD);
+                ADDRESS_6);
         assertEquals("FAIL_INVALID", childRecord.getContractCallResult().getError());
         assertEquals(
                 10, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());

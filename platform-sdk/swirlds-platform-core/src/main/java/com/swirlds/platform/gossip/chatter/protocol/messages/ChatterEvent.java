@@ -17,7 +17,7 @@
 package com.swirlds.platform.gossip.chatter.protocol.messages;
 
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.platform.event.EventDescriptor;
+import com.swirlds.common.system.events.EventDescriptor;
 import java.time.Instant;
 
 /**

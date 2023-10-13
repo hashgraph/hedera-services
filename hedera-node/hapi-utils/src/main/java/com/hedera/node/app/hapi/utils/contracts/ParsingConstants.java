@@ -40,12 +40,15 @@ public final class ParsingConstants {
     public static final String UINT256 = "(uint256)";
 
     // struct types
+    // Defined by struct Expiry { unint32 second; address autoRenewAccount; uint32 autoRenewPeriod; }
     public static final String EXPIRY = "(uint32,address,uint32)";
     public static final String EXPIRY_V2 = "(int64,address,int64)";
     public static final String FIXED_FEE = "(uint32,address,bool,bool,address)";
     public static final String FIXED_FEE_V2 = "(int64,address,bool,bool,address)";
     public static final String FRACTIONAL_FEE = "(uint32,uint32,uint32,uint32,bool,address)";
     public static final String FRACTIONAL_FEE_V2 = "(int64,int64,int64,int64,bool,address)";
+    // Defined by struct KeyValue { bool inheritAccountKey; address contractId; bytes ed25519; bytes ECDSA_secp256k1;
+    // address delegatableContractId; }
     public static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
     public static final String ROYALTY_FEE = "(uint32,uint32,uint32,address,bool,address)";
     public static final String ROYALTY_FEE_V2 = "(int64,int64,int64,address,bool,address)";

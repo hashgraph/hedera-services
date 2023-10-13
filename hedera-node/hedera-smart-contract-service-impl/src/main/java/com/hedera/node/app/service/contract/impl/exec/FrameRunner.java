@@ -85,7 +85,6 @@ public class FrameRunner {
         // Now run the transaction implied by the frame
         tracer.traceOriginAction(frame);
         final var stack = frame.getMessageFrameStack();
-        stack.addFirst(frame);
         while (!stack.isEmpty()) {
             runToCompletion(stack.peekFirst(), tracer, messageCall, contractCreation);
         }

@@ -17,12 +17,11 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -79,6 +78,13 @@ public interface HederaOperations {
      * @return the reserved entity number
      */
     long useNextEntityNumber();
+
+    /**
+     * Returns the maximum number of contracts that we should allow in this operation scope.
+     *
+     * @return the maximum number of contracts
+     */
+    long contractCreationLimit();
 
     /**
      * Returns the entropy available in this scope. See <a href="https://hips.hedera.com/hip/hip-351">HIP-351</a>
@@ -207,18 +213,11 @@ public interface HederaOperations {
     List<Long> getModifiedAccountNumbers();
 
     /**
-     * Returns a list of the contract ids that have been created in this scope, in increasing id order.
+     * Returns a summary of the changes made to contract state.
      *
-     * @return the list of created contract ids
+     * @return a summary of the changes made to contract state
      */
-    List<ContractID> createdContractIds();
-
-    /**
-     * Returns the contract nonces updated in this scope, in increasing id order.
-     *
-     * @return the list of updated contract nonces, in increasing id order
-     */
-    List<ContractNonceInfo> updatedContractNonces();
+    ContractChangeSummary summarizeContractChanges();
 
     /**
      * Returns number of slots used by the contract with the given number, ignoring any uncommitted
@@ -228,5 +227,5 @@ public interface HederaOperations {
      * @param contractNumber the contract number
      * @return the number of storage slots used by the contract, ignoring any uncommitted modifications
      */
-    int getOriginalSlotsUsed(long contractNumber);
+    long getOriginalSlotsUsed(long contractNumber);
 }

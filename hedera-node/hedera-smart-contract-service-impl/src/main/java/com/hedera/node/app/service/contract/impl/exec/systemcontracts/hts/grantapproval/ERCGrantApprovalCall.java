@@ -100,7 +100,7 @@ public class ERCGrantApprovalCall extends AbstractHtsCall {
             return reversionWith(INVALID_TOKEN_ID, 0L);
         }
         final var recordBuilder = systemContractOperations()
-                .dispatch(callERCGrantApproval(), verificationStrategy, spender, SingleTransactionRecordBuilder.class);
+                .dispatch(callERCGrantApproval(), verificationStrategy, sender, SingleTransactionRecordBuilder.class);
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(recordBuilder.status(), 0L));
         } else {
