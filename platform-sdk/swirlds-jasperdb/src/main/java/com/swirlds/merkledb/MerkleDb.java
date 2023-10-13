@@ -19,11 +19,9 @@ package com.swirlds.merkledb;
 import static com.swirlds.common.io.utility.FileUtils.hardLinkTree;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
-import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
@@ -71,13 +69,6 @@ import org.apache.logging.log4j.Logger;
  * the disk.
  */
 public final class MerkleDb {
-
-    /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
-     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
-     * holder will have been configured by the time this static initializer runs.
-     */
-    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
     /** MerkleDb logger. */
     private static final Logger logger = LogManager.getLogger(MerkleDb.class);
