@@ -40,24 +40,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
- * <p>Manages all interactions with the state object required by {@link SwirldState}.</p>
- *
- * <p>Two threads interact with states in this class: pre-consensus event handler and consensus event handler.
- * Transactions are submitted by a different thread. Other threads can access the states by calling
- * {@link #getCurrentSwirldState()} and {@link #getConsensusState()}. Sync threads access state to check if there is an
- * active freeze period. Careful attention must be paid to changes in this class regarding locking and synchronization
- * in this class and its utility classes.</p>
+ * Manages all interactions with the state object required by {@link SwirldState}.
  */
 public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSignedState {
-
-    /**
-     * use this for all logging, as controlled by the optional data/log4j2.xml file
-     */
-    private static final Logger logger = LogManager.getLogger(SwirldStateManager.class);
 
     /**
      * Stats relevant to SwirldState operations.
@@ -190,25 +177,6 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
         transactionHandler.handleRound(round, state);
         consensusSystemTransactionManager.handleRound(state, round);
         updateEpoch();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public SwirldState getCurrentSwirldState() {
-        return stateRef.get().getSwirldState();
-    }
-
-    /**
-     * IMPORTANT: this method is for unit testing purposes only. The returned state may be deleted at any time while the
-     * caller is using it.
-     * <p>
-     * Returns the most recent immutable state.
-     *
-     * @return latest immutable state
-     */
-    public State getLatestImmutableState() {
-        return latestImmutableState.get();
     }
 
     /**
