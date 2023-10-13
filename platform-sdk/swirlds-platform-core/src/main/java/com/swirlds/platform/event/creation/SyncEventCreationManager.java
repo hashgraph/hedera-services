@@ -115,6 +115,7 @@ public class SyncEventCreationManager {
         tryToSubmitMostRecentEvent();
         if (mostRecentlyCreatedEvent != null) {
             // Don't create a new event until the previous one has been accepted.
+            phase.activatePhase(PIPELINE_INSERTION);
             return;
         }
 
@@ -131,6 +132,9 @@ public class SyncEventCreationManager {
             phase.activatePhase(RATE_LIMITED);
 
             tryToSubmitMostRecentEvent();
+
+            // We created an event, we won't be allowed to create another until some time has elapsed.
+            phase.activatePhase(RATE_LIMITED);
         }
     }
 
