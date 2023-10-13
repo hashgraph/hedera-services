@@ -25,9 +25,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
-import org.hyperledger.besu.evm.ModificationNotAllowedException;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -42,7 +40,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
  * <p>There is no implementation difference between mutable and immutable proxy accounts,
  * since all changes are made to the {@link EvmFrameState} and not to the proxy account.
  * So we just need one implementation, which the EVM will request from {@link WorldUpdater}s
- * as an immutable {@link Account} in read-only contexts; and as a mutable {@link EvmAccount}
+ * as an immutable {@link Account} in read-only contexts; and as a mutable {@link MutableAccount}
  * in a context where writes are allowed.
  */
 public class ProxyEvmAccount extends AbstractMutableEvmAccount {
@@ -95,11 +93,6 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
     }
 
     @Override
-    public @NonNull MutableAccount getMutable() throws ModificationNotAllowedException {
-        return this;
-    }
-
-    @Override
     public void setNonce(final long value) {
         state.setNonce(number, value);
     }
@@ -131,6 +124,11 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
     @Override
     public @NonNull ContractID hederaContractId() {
         return ContractID.newBuilder().contractNum(number).build();
+    }
+
+    @Override
+    public void becomeImmutable() {
+        throw new UnsupportedOperationException("Not Implemented Yet");
     }
 
     /**

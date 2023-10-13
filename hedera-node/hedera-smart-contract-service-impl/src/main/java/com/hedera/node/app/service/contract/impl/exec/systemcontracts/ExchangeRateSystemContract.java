@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.BigIntegerType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Optional;
@@ -63,9 +64,9 @@ public class ExchangeRateSystemContract extends AbstractFullContract implements 
             final var result =
                     switch (selector) {
                         case TO_TINYBARS_SELECTOR -> padded(
-                                fromAToB(amount, activeRate.hbarEquiv(), activeRate.centEquiv()));
+                                ConversionUtils.fromAToB(amount, activeRate.hbarEquiv(), activeRate.centEquiv()));
                         case TO_TINYCENTS_SELECTOR -> padded(
-                                fromAToB(amount, activeRate.centEquiv(), activeRate.hbarEquiv()));
+                                ConversionUtils.fromAToB(amount, activeRate.centEquiv(), activeRate.hbarEquiv()));
                         default -> null;
                     };
             requireNonNull(result);
@@ -75,12 +76,6 @@ public class ExchangeRateSystemContract extends AbstractFullContract implements 
                     PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(ExceptionalHaltReason.INVALID_OPERATION)),
                     gasRequirement);
         }
-    }
-
-    @NonNull
-    private BigInteger fromAToB(
-            @NonNull final BigInteger aAmount, @NonNull final int bEquiv, @NonNull final int aEquiv) {
-        return aAmount.multiply(BigInteger.valueOf(bEquiv)).divide(BigInteger.valueOf(aEquiv));
     }
 
     @NonNull

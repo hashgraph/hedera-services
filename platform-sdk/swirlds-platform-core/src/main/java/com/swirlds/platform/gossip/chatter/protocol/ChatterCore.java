@@ -22,7 +22,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.event.EventDescriptor;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatMessage;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatSendReceive;

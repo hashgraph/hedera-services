@@ -27,6 +27,7 @@ import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -135,6 +136,9 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 if (isPresentIn(possibleDuplicates, provisionalSchedule)) {
                     throw new HandleException(ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED);
                 }
+                if (scheduleStore.numSchedulesInState() + 1 > schedulingConfig.maxNumber()) {
+                    throw new HandleException(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+                }
                 // Need to process the child transaction again, to get the *primitive* keys possibly required
                 final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(provisionalSchedule, context);
                 final Set<Key> allRequiredKeys = requiredKeysResult.remainingRequiredKeys();
@@ -151,6 +155,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                     finalSchedule = HandlerUtility.markExecuted(finalSchedule, currentConsensusTime);
                 }
                 scheduleStore.put(finalSchedule);
+                final ScheduleRecordBuilder scheduleRecords = context.recordBuilder(ScheduleRecordBuilder.class);
+                scheduleRecords.scheduleID(finalSchedule.scheduleId());
             } else {
                 throw new HandleException(validationResult);
             }

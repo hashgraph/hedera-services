@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyIsNotImmutableAccount;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
@@ -160,7 +161,10 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     @NonNull
     @Override
-    public PreHandleContext optionalKey(@NonNull final Key key) {
+    public PreHandleContext optionalKey(@NonNull final Key key) throws PreCheckException {
+        // Verify this key isn't for an immutable account
+        verifyIsNotImmutableAccount(key, ResponseCodeEnum.INVALID_ACCOUNT_ID);
+
         if (!key.equals(payerKey) && isValid(key)) {
             optionalNonPayerKeys.add(key);
         }
@@ -169,7 +173,7 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     @NonNull
     @Override
-    public PreHandleContext optionalKeys(@NonNull final Set<Key> keys) {
+    public PreHandleContext optionalKeys(@NonNull final Set<Key> keys) throws PreCheckException {
         for (final Key nextKey : keys) {
             optionalKey(nextKey);
         }
@@ -227,6 +231,10 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (!isValid(key)) {
             throw new PreCheckException(responseCode);
         }
+
+        // Verify this key isn't for an immutable account
+        verifyIsNotImmutableAccount(key, responseCode);
+
         return requireKey(key);
     }
 
@@ -253,6 +261,9 @@ public class PreHandleContextImpl implements PreHandleContext {
             throw new PreCheckException(responseCode);
         }
 
+        // Verify this key isn't for an immutable account
+        verifyIsNotImmutableAccount(key, responseCode);
+
         return requireKey(key);
     }
 
@@ -277,6 +288,9 @@ public class PreHandleContextImpl implements PreHandleContext {
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
+
+        // Verify this key isn't for an immutable account
+        verifyIsNotImmutableAccount(key, responseCode);
 
         return requireKey(key);
     }
@@ -312,6 +326,9 @@ public class PreHandleContextImpl implements PreHandleContext {
             throw new PreCheckException(responseCode);
         }
 
+        // Verify this key isn't for an immutable account
+        verifyIsNotImmutableAccount(key, responseCode);
+
         return requireKey(key);
     }
 
@@ -344,6 +361,9 @@ public class PreHandleContextImpl implements PreHandleContext {
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
+
+        // Verify this key isn't for an immutable account
+        verifyIsNotImmutableAccount(key, responseCode);
 
         return requireKey(key);
     }
