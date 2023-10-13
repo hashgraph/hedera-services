@@ -22,7 +22,7 @@ import java.util.concurrent.Executor;
 
 /**
  * A wrapper around {@link CompletableFuture} that supports interruption
- * when the CompletableFuture is canceled. This wrapper is necessary because {@Code CompletableFuture} doesn't
+ * when the CompletableFuture is canceled. This wrapper is necessary because {@link CompletableFuture} doesn't
  * interrupt executing thread on cancellation.
  *
  */
