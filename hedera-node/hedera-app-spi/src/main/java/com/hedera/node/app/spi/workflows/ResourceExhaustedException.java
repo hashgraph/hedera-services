@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.failure;
+package com.hedera.node.app.spi.workflows;
 
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@link HandleException} specialization that indicates that a resource limit
- * has been exceeded. Unlike a "normal" {@link HandleException}, this generally
- * means the entire transaction needs to be reverted.
+ * A {@link HandleException} specialization that indicates that a resource limit has been exceeded.
  */
 public class ResourceExhaustedException extends HandleException {
     public ResourceExhaustedException(@NonNull final ResponseCodeEnum status) {

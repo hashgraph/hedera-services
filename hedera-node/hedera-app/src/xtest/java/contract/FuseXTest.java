@@ -22,8 +22,10 @@ import static contract.AssortedOpsXTestConstants.SENDER_ALIAS;
 import static contract.Erc721XTestConstants.COINBASE_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -32,6 +34,7 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class FuseXTest extends AbstractContractXTest {
@@ -42,7 +45,16 @@ public class FuseXTest extends AbstractContractXTest {
 
     @Override
     protected void doScenarioOperations() {
-        handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
+        final var recordBuilder =
+                handleAndCommitSingleTransaction(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
+        // We expect 4 new contracts created in Fuse constructor
+        assertEquals(
+                List.of(
+                        ContractID.newBuilder().contractNum(NEXT_ENTITY_NUM).build(),
+                        ContractID.newBuilder().contractNum(NEXT_ENTITY_NUM + 1).build(),
+                        ContractID.newBuilder().contractNum(NEXT_ENTITY_NUM + 2).build(),
+                        ContractID.newBuilder().contractNum(NEXT_ENTITY_NUM + 3).build()),
+                recordBuilder.contractFunctionResult().createdContractIDs());
     }
 
     private TransactionBody synthCreateTxn() {

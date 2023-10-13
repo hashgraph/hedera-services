@@ -29,13 +29,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface ExpiryValidator {
     /**
      * Validates the expiry metadata for an attempt to create an entity.
-     *
      * @param entityCanSelfFundRenewal whether the entity can self-fund its own auto-renewal
      * @param creationMetadata the expiry metadata for the attempted creation
+     * @param isForTopicCreation if the expiry metadata is for topic creation.
+     *                           This is only needed until differential testing is completed to comply with
+     *                           mono-service respoinse codes.
+     *
+     * @return the expiry metadata that will result from the creation
      * @throws HandleException if the metadata is invalid
      */
     @NonNull
-    ExpiryMeta resolveCreationAttempt(boolean entityCanSelfFundRenewal, @NonNull ExpiryMeta creationMetadata);
+    ExpiryMeta resolveCreationAttempt(
+            boolean entityCanSelfFundRenewal, @NonNull ExpiryMeta creationMetadata, final boolean isForTopicCreation);
 
     /**
      * Validates the expiry metadata for an attempt to update an entity, and returns the

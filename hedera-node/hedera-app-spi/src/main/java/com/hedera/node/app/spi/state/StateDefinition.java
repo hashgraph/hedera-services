@@ -42,7 +42,7 @@ public record StateDefinition<K, V>(
         @NonNull String stateKey,
         @Nullable Codec<K> keyCodec,
         @NonNull Codec<V> valueCodec,
-        int maxKeysHint,
+        long maxKeysHint,
         boolean onDisk,
         boolean singleton,
         boolean queue) {
@@ -103,7 +103,7 @@ public record StateDefinition<K, V>(
             @NonNull final String stateKey,
             @NonNull final Codec<K> keyCodec,
             @NonNull final Codec<V> valueCodec,
-            final int maxKeysHint) {
+            final long maxKeysHint) {
         return new StateDefinition<>(stateKey, keyCodec, valueCodec, maxKeysHint, true, false, false);
     }
 

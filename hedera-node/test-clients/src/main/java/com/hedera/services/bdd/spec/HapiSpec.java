@@ -21,7 +21,13 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.COMPARE;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.TAKE;
-import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.*;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.ERROR;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.FAILED;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.FAILED_AS_EXPECTED;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED_UNEXPECTEDLY;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PENDING;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.RUNNING;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.HapiApiClients.clientsFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
@@ -29,7 +35,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.*;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
@@ -386,7 +393,7 @@ public class HapiSpec implements Runnable {
                         Thread.currentThread().interrupt();
                     }
                 }
-            } catch (RuntimeException | ReflectiveOperationException | GeneralSecurityException e) {
+            } catch (IllegalStateException | ReflectiveOperationException | GeneralSecurityException e) {
                 status = ERROR; // These are unrecoverable; save a lot of time and just fail the test.
                 log.error("Irrecoverable error in test nodes or client JVM. Unable to continue.", e);
                 return false;
@@ -405,6 +412,7 @@ public class HapiSpec implements Runnable {
                 loadCostSnapshot();
             } catch (RuntimeException ignore) {
                 status = ERROR;
+                log.warn("Failed to load cost snapshot.", ignore);
                 return false;
             }
         }
