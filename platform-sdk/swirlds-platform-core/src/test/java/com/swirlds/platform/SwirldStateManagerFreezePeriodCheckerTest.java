@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.SwirldStateManagerImpl;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -38,7 +37,7 @@ class SwirldStateManagerFreezePeriodCheckerTest {
 
     @Test
     void isInFreezePeriodTest() {
-        final SwirldStateManager swirldStateManager = spy(SwirldStateManagerImpl.class);
+        final SwirldStateManager swirldStateManager = spy(SwirldStateManager.class);
         doReturn(mockState).when(swirldStateManager).getConsensusState();
 
         when(mockState.getPlatformDualState()).thenReturn(null);
