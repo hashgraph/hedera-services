@@ -39,6 +39,12 @@ import javax.inject.Singleton;
 
 @Singleton
 public class UpdateDecoder {
+
+    // below values correspond to  tuples' indexes
+    private static final int TOKEN_ADDRESS = 0;
+    private static final int HEDERA_TOKEN = 1;
+    private static final int EXPIRY = 1;
+
     @Inject
     public UpdateDecoder() {
         // Dagger2
@@ -106,8 +112,8 @@ public class UpdateDecoder {
 
     private TransactionBody decodeTokenUpdate(
             @NonNull final Tuple call, @NonNull final AddressIdConverter addressIdConverter) {
-        final var tokenId = ConversionUtils.asTokenId(call.get(0));
-        final var hederaToken = (Tuple) call.get(1);
+        final var tokenId = ConversionUtils.asTokenId(call.get(TOKEN_ADDRESS));
+        final var hederaToken = (Tuple) call.get(HEDERA_TOKEN);
 
         final var tokenName = (String) hederaToken.get(0);
         final var tokenSymbol = (String) hederaToken.get(1);
@@ -179,8 +185,8 @@ public class UpdateDecoder {
 
     private TransactionBody decodeTokenUpdateExpiry(
             @NonNull final Tuple call, @NonNull final AddressIdConverter addressIdConverter) {
-        final var tokenId = (Address) call.get(0);
-        final var expiryTuple = (Tuple) call.get(1);
+        final var tokenId = (Address) call.get(TOKEN_ADDRESS);
+        final var expiryTuple = (Tuple) call.get(EXPIRY);
         final var txnBodyBuilder = TokenUpdateTransactionBody.newBuilder();
 
         txnBodyBuilder.token(ConversionUtils.asTokenId(tokenId));
