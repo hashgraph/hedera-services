@@ -499,14 +499,14 @@ public class SwirldsPlatform implements Platform {
                 initialState.getState(),
                 appVersion);
 
-        stateHashSignQueue = new QueueThreadConfiguration<ReservedSignedState>(threadManager)
+        stateHashSignQueue = components.add(new QueueThreadConfiguration<ReservedSignedState>(threadManager)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("state-hash-sign")
                 .setHandler(stateManagementComponent::newSignedStateFromTransactions)
                 .setCapacity(1)
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
-                .build();
+                .build());
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
