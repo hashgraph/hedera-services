@@ -16,8 +16,10 @@
 
 package com.swirlds.platform.event.orphan;
 
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.metrics.LongAccumulator;
+import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.sequence.set.SequenceSet;
@@ -60,11 +62,10 @@ public class OrphanBuffer {
      */
     private long minimumGenerationNonAncient = 0;
 
-    private static final LongAccumulator.Config ORPHAN_BUFFER_SIZE_CONFIG = new LongAccumulator.Config(
-                    "platform", "orphanBufferSize")
-            .withDescription("The number of events in the orphan buffer")
-            .withUnit("events");
-    private final LongAccumulator orphanBufferSize;
+    /**
+     * The number of orphans currently in the buffer.
+     */
+    private int currentOrphanCount;
 
     /**
      * Keeps track of the number of events in the intake pipeline from each peer
@@ -99,8 +100,15 @@ public class OrphanBuffer {
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.eventConsumer = Objects.requireNonNull(eventConsumer);
-        this.orphanBufferSize = platformContext.getMetrics().getOrCreate(ORPHAN_BUFFER_SIZE_CONFIG);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
+        this.currentOrphanCount = 0;
+
+        platformContext
+                .getMetrics()
+                .getOrCreate(new FunctionGauge.Config<>(
+                        PLATFORM_CATEGORY, "orphanBufferSize", Integer.class, this::getCurrentOrphanCount)
+                        .withDescription("number of orphaned events currently in the orphan buffer")
+                        .withUnit("events"));
     }
 
     /**
@@ -118,7 +126,7 @@ public class OrphanBuffer {
             return;
         }
 
-        orphanBufferSize.update(1);
+        currentOrphanCount++;
 
         final List<EventDescriptor> missingParents = getMissingParents(event);
         if (missingParents.isEmpty()) {
@@ -210,13 +218,13 @@ public class OrphanBuffer {
             if (nonOrphan.getGeneration() < minimumGenerationNonAncient) {
                 // Although it doesn't cause harm to pass along ancient events, it is unnecessary to do so.
                 intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
-                orphanBufferSize.update(-1);
+                currentOrphanCount--;
                 continue;
             }
 
             eventConsumer.accept(nonOrphan);
             eventsWithParents.add(nonOrphanDescriptor);
-            orphanBufferSize.update(-1);
+            currentOrphanCount--;
 
             // since this event is no longer an orphan, we need to recheck all of its children to see if any might
             // not be orphans anymore
@@ -232,5 +240,15 @@ public class OrphanBuffer {
                 }
             }
         }
+    }
+
+    /**
+     * Gets the number of orphans currently in the buffer.
+     *
+     * @return the number of orphans currently in the buffer
+     */
+    @NonNull
+    public Integer getCurrentOrphanCount() {
+        return currentOrphanCount;
     }
 }

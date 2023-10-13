@@ -271,5 +271,6 @@ class OrphanBufferTests {
         // either events exit the pipeline in the orphan buffer and are never emitted, or they are emitted and exit
         // the pipeline at a later stage
         assertEquals(TEST_EVENT_COUNT, eventsExitedIntakePipeline.get() + emittedEvents.size());
+        assertEquals(0, orphanBuffer.getCurrentOrphanCount());
     }
 }
