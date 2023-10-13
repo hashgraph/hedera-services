@@ -51,10 +51,9 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.evm.worldstate.WorldView;
-import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 /**
  * Provides implementation help for both "base" and "stacked" {@link WorldUpdater}s.
@@ -112,7 +111,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     public abstract ContractCustomizer customizerForPendingCreation();
 
     @Override
-    public EvmAccount createAccount(final Address addressOrAlias, final long nonce, final Wei balance) {
+    public MutableAccount createAccount(final Address addressOrAlias, final long nonce, final Wei balance) {
         final var curAliases = aliases();
         final var address = curAliases.resolveForEvm(addressOrAlias);
 
@@ -130,7 +129,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         newMutable.setNonce(nonce);
         newMutable.setBalance(balance);
 
-        return new WrappedEvmAccount(track(newMutable));
+        return track(newMutable);
     }
 
     @Override
@@ -156,10 +155,10 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     }
 
     @Override
-    public EvmAccount getAccount(final Address address) {
+    public MutableAccount getAccount(final Address address) {
         final var extantMutable = updatedAccounts.get(address);
         if (extantMutable != null) {
-            return new WrappedEvmAccount(extantMutable);
+            return extantMutable;
         } else if (deletedAccounts.contains(address)) {
             return null;
         } else {
@@ -169,7 +168,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
             }
             final var newMutable =
                     new UpdateTrackingAccount<>(origin, new UpdateAccountTrackerImpl(trackingLedgers.accounts()));
-            return new WrappedEvmAccount(track(newMutable));
+            return track(newMutable);
         }
     }
 

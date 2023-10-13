@@ -46,7 +46,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -303,7 +303,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public EvmAccount getAccount(@NonNull final Address address) {
+    public MutableAccount getAccount(@NonNull final Address address) {
         return evmFrameState.getMutableAccount(address);
     }
 
@@ -311,7 +311,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public EvmAccount createAccount(@NonNull final Address address, final long nonce, @NonNull final Wei balance) {
+    public MutableAccount createAccount(@NonNull final Address address, final long nonce, @NonNull final Wei balance) {
         if (pendingCreation == null) {
             throw new IllegalStateException(CANNOT_CREATE + address + " without a pending creation");
         }

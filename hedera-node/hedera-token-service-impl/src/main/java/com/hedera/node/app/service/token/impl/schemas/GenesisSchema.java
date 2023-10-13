@@ -66,9 +66,12 @@ import org.apache.logging.log4j.Logger;
 public class GenesisSchema extends Schema {
     private static final Logger log = LogManager.getLogger(GenesisSchema.class);
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
-    private static final int MAX_ACCOUNTS = 1024;
-    private static final int MAX_TOKEN_RELS = 1042;
-    private static final int MAX_MINTABLE_NFTS = 4096;
+    // These need to be big so databases are created at right scale. If they are too small then the on disk hash map
+    // buckets will be too full which results in very poor performance. Have chosen 10 billion as should give us
+    // plenty of runway.
+    private static final long MAX_ACCOUNTS = 10_000_000_000l;
+    private static final long MAX_TOKEN_RELS = 10_000_000_000l;
+    private static final long MAX_MINTABLE_NFTS = 10_000_000_000l;
     private static final long FIRST_RESERVED_SYSTEM_CONTRACT = 350L;
     private static final long LAST_RESERVED_SYSTEM_CONTRACT = 399L;
     private static final long FIRST_POST_SYSTEM_FILE_ENTITY = 200L;

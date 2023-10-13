@@ -74,7 +74,7 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
         final var addressToCreate = frame.getContractAddress();
         final MutableAccount contract;
         try {
-            contract = frame.getWorldUpdater().getOrCreate(addressToCreate).getMutable();
+            contract = frame.getWorldUpdater().getOrCreate(addressToCreate);
         } catch (ResourceExhaustedException ignore) {
             halt(frame, tracer, FAILED_CREATION_HALT_REASON, HaltShouldTraceAccountCreation.YES);
             return;
