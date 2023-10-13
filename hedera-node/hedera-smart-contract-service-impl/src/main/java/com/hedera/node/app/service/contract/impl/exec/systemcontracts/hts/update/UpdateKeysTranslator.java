@@ -20,7 +20,6 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ARRAY_BR
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.TOKEN_KEY;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
@@ -50,10 +49,6 @@ public class UpdateKeysTranslator extends AbstractHtsCallTranslator {
     @Override
     public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall<>(
-                attempt, nominalBodyFor(attempt), SingleTransactionRecordBuilder.class);
-    }
-
-    private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {
-        return decoder.decodeTokenUpdateKeys(attempt);
+                attempt, decoder.decodeTokenUpdateKeys(attempt), SingleTransactionRecordBuilder.class);
     }
 }
