@@ -16,24 +16,6 @@
 
 package contract;
 
-import com.esaulpaugh.headlong.abi.Address;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Token;
-import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateKeysTranslator;
-import org.apache.tuweni.bytes.Bytes;
-
-import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.Map;
-
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
@@ -50,6 +32,23 @@ import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.addErc20Relation;
 import static contract.XTestConstants.assertSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateKeysTranslator;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.tuweni.bytes.Bytes;
 
 public class UpdateKeysXTest extends AbstractContractXTest {
     private final Tuple[] TOKEN_KEY = new Tuple[] {
@@ -76,15 +75,12 @@ public class UpdateKeysXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(UpdateKeysTranslator.TOKEN_UPDATE_KEYS_FUNCTION
-                .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, INVALID_TOKEN_KEY)
-                .array()),
+                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, INVALID_TOKEN_KEY)
+                        .array()),
                 output -> {
                     assertEquals(
-                            Bytes.wrap(
-                                    ReturnTypes.encodedRc(INVALID_ADMIN_KEY).array()),
-                            output);
+                            Bytes.wrap(ReturnTypes.encodedRc(INVALID_ADMIN_KEY).array()), output);
                 });
-
     }
 
     @Override

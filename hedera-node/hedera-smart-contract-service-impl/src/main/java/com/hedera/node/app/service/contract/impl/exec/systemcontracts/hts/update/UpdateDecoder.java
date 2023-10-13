@@ -190,7 +190,8 @@ public class UpdateDecoder {
             final var contractId = asNumericContractId(addressIdConverter.convert(keyValueTuple.get(CONTRACT_ID)));
             final var ed25519 = (byte[]) keyValueTuple.get(ED25519);
             final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(ECDSA_SECP_256K1);
-            final var delegatableContractId = asNumericContractId(addressIdConverter.convert(keyValueTuple.get(DELEGATABLE_CONTRACT_ID)));
+            final var delegatableContractId =
+                    asNumericContractId(addressIdConverter.convert(keyValueTuple.get(DELEGATABLE_CONTRACT_ID)));
 
             tokenKeys.add(new TokenKeyWrapper(
                     keyType,
