@@ -50,6 +50,10 @@ import javax.inject.Inject;
  * to validate custom fees for token creation and fee schedule updates.
  */
 public class CustomFeesValidator {
+    // Sentinel token id used to denote that the fee is denominated in the same token as the token being created.
+    public static final TokenID SENTINEL_TOKEN_ID =
+            TokenID.newBuilder().shardNum(0L).realmNum(0L).tokenNum(0L).build();
+
     @Inject
     public CustomFeesValidator() {
         // Needed for Dagger injection
@@ -86,6 +90,7 @@ public class CustomFeesValidator {
         // For these custom fees we need to associate the collector with the token.
         final List<CustomFee> fees = new ArrayList<>();
         final var tokenType = createdToken.tokenType();
+        final var createdTokenId = createdToken.tokenId();
         for (final var fee : customFees) {
             final var collector = accountStore.getAccountById(fee.feeCollectorAccountIdOrElse(AccountID.DEFAULT));
             validateTrue(collector != null, INVALID_CUSTOM_FEE_COLLECTOR);
@@ -95,7 +100,7 @@ public class CustomFeesValidator {
 
             switch (fee.fee().kind()) {
                 case FIXED_FEE -> validateFixedFeeForCreation(
-                        tokenType, fee, createdToken, tokenRelationStore, tokenStore, fees);
+                        tokenType, fee, createdTokenId, tokenRelationStore, tokenStore, fees);
                 case FRACTIONAL_FEE -> validateFractionalFeeForCreation(tokenType, fee, fees);
                 case ROYALTY_FEE -> validateRoyaltyFeeForCreation(tokenType, fee, tokenRelationStore, tokenStore, fees);
                 default -> throw new IllegalArgumentException(
@@ -216,7 +221,7 @@ public class CustomFeesValidator {
     private void validateFixedFeeForCreation(
             @NonNull final TokenType tokenType,
             @NonNull final CustomFee fee,
-            @NonNull final Token createdToken,
+            @NonNull final TokenID createdTokenId,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final WritableTokenStore tokenStore,
             @NonNull final List<CustomFee> feesWithCollectorsToAutoAssociate) {
@@ -228,10 +233,11 @@ public class CustomFeesValidator {
             // If the denominating token id is set to sentinel value 0.0.0, then the fee is
             // denominated in the same token as the token being created.
             // For these fees the collector should be auto-associated to the token.
-            if (fixedFee.denominatingTokenIdOrThrow().tokenNum() == 0L) {
+            if (fixedFee.denominatingTokenIdOrThrow().equals(SENTINEL_TOKEN_ID)) {
                 validateTrue(isFungibleCommon(tokenType), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
                 final var copy = fee.copyBuilder();
-                copy.fixedFee(fixedFee.copyBuilder().denominatingTokenId(createdToken.tokenId()));
+                final var fixedFeeCopy = fixedFee.copyBuilder();
+                copy.fixedFee(fixedFeeCopy.denominatingTokenId(createdTokenId).build());
                 feesWithCollectorsToAutoAssociate.add(copy.build());
             } else {
                 validateExplicitTokenDenomination(

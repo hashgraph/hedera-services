@@ -17,7 +17,6 @@
 package com.hedera.node.app.hapi.utils.fee;
 
 import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -50,13 +49,8 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
      * @param txBody transaction body
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
-    public FeeData getContractCreateTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasContractCreateInstance()) {
-            throw new InvalidTxBodyException("ContractCreateInstance Tx Body not available for Fee Calculation");
-        }
+    public FeeData getContractCreateTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj) {
         long bpt = 0;
         long vpt = 0;
         long rbs = 0;
@@ -142,14 +136,9 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
      * @param contractExpiryTime contract expiration time
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
     public FeeData getContractUpdateTxFeeMatrices(
-            TransactionBody txBody, Timestamp contractExpiryTime, SigValueObj sigValObj) throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasContractUpdateInstance()) {
-            throw new InvalidTxBodyException("ContractUpdateInstance Tx Body not available for Fee Calculation");
-        }
-
+            TransactionBody txBody, Timestamp contractExpiryTime, SigValueObj sigValObj) {
         long bpt = 0;
         long vpt = 0;
         long rbs = 0;
@@ -197,14 +186,8 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
      * @param txBody transaction body
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
-    public FeeData getContractCallTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasContractCall()) {
-            throw new InvalidTxBodyException("ContractCreateInstance Tx Body not available for Fee Calculation");
-        }
-
+    public FeeData getContractCallTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj) {
         long bpt = 0;
         long vpt = 0;
         long rbs = 0;
@@ -452,11 +435,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
         return storageSize;
     }
 
-    public FeeData getContractDeleteTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasContractDeleteInstance()) {
-            throw new InvalidTxBodyException("ContractDelete Tx Body not available for Fee Calculation");
-        }
+    public FeeData getContractDeleteTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj) {
         long bpt = 0;
         long vpt = 0;
         long rbs = 0;
@@ -500,14 +479,8 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
      * @param txBody transaction body
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
-    public FeeData getEthereumTransactionFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasEthereumTransaction()) {
-            throw new InvalidTxBodyException("Ethereum Transaction Body not available for Fee Calculation");
-        }
-
+    public FeeData getEthereumTransactionFeeMatrices(TransactionBody txBody, SigValueObj sigValObj) {
         long bpt = 0;
         long vpt = 0;
         long rbs = 0;

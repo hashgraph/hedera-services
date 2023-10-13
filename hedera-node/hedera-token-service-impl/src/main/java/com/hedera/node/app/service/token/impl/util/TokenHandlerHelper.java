@@ -42,11 +42,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
@@ -58,7 +60,9 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Class for retrieving objects in a certain context, e.g. during a {@code handler.handle(...)} call.
@@ -199,5 +203,19 @@ public class TokenHandlerHelper {
         validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
 
         return tokenRel;
+    }
+
+    /**
+     * Checks that a key does not represent an immutable account, e.g. the staking rewards account.
+     * Throws a {@link PreCheckException} with the designated response code otherwise.
+     * @param key the key to check
+     * @param responseCode the response code to throw
+     * @throws PreCheckException if the account is considered immutable
+     */
+    public static void verifyIsNotImmutableAccount(
+            @Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException {
+        if (EMPTY_KEY_LIST.equals(key)) {
+            throw new PreCheckException(responseCode);
+        }
     }
 }
