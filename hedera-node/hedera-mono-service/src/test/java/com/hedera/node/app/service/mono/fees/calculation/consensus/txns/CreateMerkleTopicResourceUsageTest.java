@@ -17,10 +17,8 @@
 package com.hedera.node.app.service.mono.fees.calculation.consensus.txns;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.test.utils.AccountIDConverter;
 import com.hedera.test.utils.DurationConverter;
 import com.hedera.test.utils.Ed25519KeyConverter;
@@ -56,14 +54,6 @@ class CreateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
         assertFalse(subject.applicableTo(nonCreateTopicTx));
     }
 
-    @Test
-    void getFeeThrowsExceptionForBadTxBody() {
-        final var nonCreateTopicTx = TransactionBody.getDefaultInstance();
-
-        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
-        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(nonCreateTopicTx, sigValueObj, view));
-    }
-
     @ParameterizedTest
     @CsvSource({
         ", , , , 0, 8, 0", // base values for bpt and rbh
@@ -91,8 +81,7 @@ class CreateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
             @ConvertWith(AccountIDConverter.class) final AccountID autoRenewAccountId,
             @ConvertWith(DurationConverter.class) final Duration autoRenewPeriod,
             final int expectedExtraBpt,
-            final int expectedExtraServicesRbh)
-            throws InvalidTxBodyException {
+            final int expectedExtraServicesRbh) {
         final var txBody = makeTransactionBody(memo, adminJKey, submitJKey, autoRenewAccountId, autoRenewPeriod);
 
         final var feeData = subject.usageGiven(txBody, sigValueObj, view);

@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ONLY;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
@@ -33,7 +32,6 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.mono.fees.calculation.system.txns.FreezeResourceUsage;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
@@ -178,13 +176,8 @@ public class FreezeHandler implements TransactionHandler {
         requireNonNull(feeContext);
         final var op = feeContext.body();
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            try {
-                return new FreezeResourceUsage().usageGiven(fromPbj(op), sigValueObj, null);
-            } catch (InvalidTxBodyException e) {
-                throw new HandleException(INVALID_TRANSACTION_BODY);
-            }
-        });
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new FreezeResourceUsage()
+                .usageGiven(fromPbj(op), sigValueObj, null));
     }
 
     /**

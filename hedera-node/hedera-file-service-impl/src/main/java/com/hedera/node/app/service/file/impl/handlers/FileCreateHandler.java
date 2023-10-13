@@ -113,7 +113,7 @@ public class FileCreateHandler implements TransactionHandler {
 
         try {
             final var effectiveExpiryMeta =
-                    handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta);
+                    handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta, false);
             builder.expirationSecond(effectiveExpiryMeta.expiry());
 
             handleContext.attributeValidator().validateMemo(fileCreateTransactionBody.memo());

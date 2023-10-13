@@ -51,6 +51,7 @@ import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -189,21 +190,32 @@ public class FeesAndRatesProvider {
                     .getFileContent(query)
                     .getFileGetContents();
             status = response.getHeader().getNodeTransactionPrecheckCode();
-            if (status == OK) {
-                break;
-            } else {
+            if (status != OK) {
                 log.warn(
-                        "'{}' download attempt paid with {} got status {}, retrying...",
+                        "'{}' download attempt paid with {} got status {}; retrying {}...",
                         asFileString(fid),
                         toReadableString(payment),
-                        status);
+                        status,
+                        attemptsLeft);
+                simpleSleep(1);
             }
-        } while (--attemptsLeft > 0);
+        } while (status != OK && --attemptsLeft > 0);
         if (status != OK) {
             throw new IllegalStateException(
                     String.format("Could not download '%s' final status %s", asFileString(fid), status));
         }
         return response;
+    }
+
+    // Should really be in a utility somewhere, but it doesn't seem to be.
+    private void simpleSleep(final int secondsToSleep) {
+        if (secondsToSleep <= Byte.MAX_VALUE) {
+            try {
+                TimeUnit.SECONDS.sleep(secondsToSleep);
+            } catch (final InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     private Query downloadQueryWith(Transaction payment, boolean costOnly, FileID fileId) {

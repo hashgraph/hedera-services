@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,29 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.validation;
+package com.swirlds.platform.test.event.validation;
 
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.validation.GossipEventValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/**
- * Validates a {@link GossipEvent} received from a peer
- */
-public interface GossipEventValidator {
-    /**
-     * Validate an event
-     *
-     * @param event
-     * 		the event to validate
-     * @return true if the event is valid, false otherwise
-     */
-    boolean isEventValid(@NonNull GossipEvent event);
+public class TestGossipEventValidator implements GossipEventValidator {
+    private final boolean validation;
+    private final String name;
 
-    /**
-     * @return The name of the validator
-     */
-    default @NonNull String validatorName() {
-        return this.getClass().getSimpleName();
+    public TestGossipEventValidator(final boolean validation, @NonNull final String name) {
+        this.validation = validation;
+        this.name = name;
+    }
+
+    @Override
+    public boolean isEventValid(@NonNull GossipEvent event) {
+        return validation;
+    }
+
+    @NonNull
+    @Override
+    public String validatorName() {
+        return name;
     }
 }
