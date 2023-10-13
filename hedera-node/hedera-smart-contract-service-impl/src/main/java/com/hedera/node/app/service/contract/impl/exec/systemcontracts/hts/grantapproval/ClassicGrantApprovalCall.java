@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -51,10 +53,14 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
             return reversionWith(INVALID_TOKEN_ID, 0L);
         }
         final var recordBuilder = systemContractOperations()
-                .dispatch(callERCGrantApproval(), verificationStrategy, spender, SingleTransactionRecordBuilder.class);
+                .dispatch(callGrantApproval(), verificationStrategy, sender, SingleTransactionRecordBuilder.class);
         final var status = recordBuilder.status();
         if (status != ResponseCodeEnum.SUCCESS) {
-            return reversionWith(status, 0L);
+            if (status.equals(INVALID_ALLOWANCE_SPENDER_ID)) {
+                return reversionWith(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, 0L);
+            } else {
+                return reversionWith(status, 0L);
+            }
         } else {
             final var encodedOutput = tokenType.equals(TokenType.FUNGIBLE_COMMON)
                     ? GrantApprovalTranslator.GRANT_APPROVAL.getOutputs().encodeElements((long) status.protoOrdinal())

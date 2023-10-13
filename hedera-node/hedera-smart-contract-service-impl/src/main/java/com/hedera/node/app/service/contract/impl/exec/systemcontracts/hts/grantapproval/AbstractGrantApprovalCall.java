@@ -55,7 +55,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
         this.tokenType = tokenType;
     }
 
-    public TransactionBody callERCGrantApproval() {
+    public TransactionBody callGrantApproval() {
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(sender).build())
                 .cryptoApproveAllowance(approve(token, spender, amount, tokenType))
