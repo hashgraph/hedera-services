@@ -51,7 +51,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 
-public class UpdateExpiryXTest extends AbstractContractXTest {
+public class UpdatesExpiryXTest extends AbstractContractXTest {
     private static final long EXPIRY_TIMESTAMP = Instant.now().plusSeconds(3600).toEpochMilli() / 1000;
     private static final long AUTO_RENEW_PERIOD = 8_000_000L;
 

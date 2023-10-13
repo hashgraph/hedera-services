@@ -41,7 +41,6 @@ public class UpdateExpiryTranslator extends AbstractHtsCallTranslator {
 
     @Inject
     public UpdateExpiryTranslator(UpdateDecoder decoder) {
-        // Dagger2
         this.decoder = decoder;
     }
 

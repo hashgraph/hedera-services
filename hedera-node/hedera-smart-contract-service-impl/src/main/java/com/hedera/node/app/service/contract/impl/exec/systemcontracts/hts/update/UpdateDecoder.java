@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updat
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumericContractId;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Timestamp;
@@ -178,10 +179,12 @@ public class UpdateDecoder {
 
     private TransactionBody decodeTokenUpdateExpiry(
             @NonNull final Tuple call, @NonNull final AddressIdConverter addressIdConverter) {
+        final var tokenId = (Address) call.get(0);
+        final var expiryTuple = (Tuple) call.get(1);
         final var txnBodyBuilder = TokenUpdateTransactionBody.newBuilder();
-        txnBodyBuilder.token(ConversionUtils.asTokenId(call.get(0)));
 
-        final var tokenExpiry = decodeTokenExpiry(call.get(1), addressIdConverter);
+        txnBodyBuilder.token(ConversionUtils.asTokenId(tokenId));
+        final var tokenExpiry = decodeTokenExpiry(expiryTuple, addressIdConverter);
 
         if (tokenExpiry.second() != 0) {
             txnBodyBuilder.expiry(

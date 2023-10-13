@@ -59,7 +59,7 @@ class UpdateExpiryTranslatorTest {
 
     private static final long EXPIRY_TIMESTAMP = Instant.now().plusSeconds(3600).toEpochMilli() / 1000;
     private static final long AUTO_RENEW_PERIOD = 8_000_000L;
-    private final Tuple expiry = Tuple.of(EXPIRY_TIMESTAMP, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
+    private static final Tuple expiry = Tuple.of(EXPIRY_TIMESTAMP, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
 
     @BeforeEach
     void setUp() {
