@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.leaky;
 
+import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -28,12 +29,15 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createWellKnownFungibleToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createWellKnownNonFungibleToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -47,15 +51,23 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wellKnownTokenEntities;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFeeNetOfTransfers;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeNoFallback;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOfDeferred;
@@ -74,6 +86,7 @@ import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.FAL
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TRUE;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.VALID_ALIAS;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.INITIAL_BALANCE;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.TRANSFER_TXN_2;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ANOTHER_SPENDER;
@@ -94,12 +107,14 @@ import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ANOTHER_ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
+import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.SENDER_TXN;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.DEFAULT_MIN_AUTO_RENEW_PERIOD;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.TokenIdOrderingAsserts.withOrderedTokenIds;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
+import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.UNIQUE;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.RECEIVER;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
@@ -108,6 +123,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdat
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
@@ -115,6 +131,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -125,11 +142,13 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
@@ -138,12 +157,15 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
@@ -189,7 +211,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 hollowAccountCompletionWithSimultaniousPropertiesUpdate(),
                 contractDeployAfterEthereumTransferLazyCreate(),
                 contractCallAfterEthereumTransferLazyCreate(),
-                autoAssociationPropertiesWorkAsExpected());
+                autoAssociationPropertiesWorkAsExpected(),
+                autoAssociationWorksForContracts(),
+                // Interactions between HIP-18 and HIP-542
+                customFeesHaveExpectedAutoCreateInteractions());
     }
 
     private HapiSpec autoAssociationPropertiesWorkAsExpected() {
@@ -1078,6 +1103,143 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
+    public HapiSpec autoAssociationWorksForContracts() {
+        final var theContract = "CreateDonor";
+        final String tokenA = "tokenA";
+        final String tokenB = "tokenB";
+        final String uniqueToken = UNIQUE;
+        final String tokenAcreateTxn = "tokenACreate";
+        final String tokenBcreateTxn = "tokenBCreate";
+        final String transferToFU = "transferToFU";
+
+        return propertyPreservingHapiSpec("autoAssociationWorksForContracts")
+                .preserving("contracts.allowAutoAssociations")
+                .given(
+                        overriding("contracts.allowAutoAssociations", "true"),
+                        newKeyNamed(SUPPLY_KEY),
+                        uploadInitCode(theContract),
+                        contractCreate(theContract).maxAutomaticTokenAssociations(2),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                        tokenCreate(tokenA)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(Long.MAX_VALUE)
+                                .treasury(TOKEN_TREASURY)
+                                .via(tokenAcreateTxn),
+                        tokenCreate(tokenB)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(Long.MAX_VALUE)
+                                .treasury(TOKEN_TREASURY)
+                                .via(tokenBcreateTxn),
+                        tokenCreate(uniqueToken)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(SUPPLY_KEY)
+                                .treasury(TOKEN_TREASURY),
+                        mintToken(uniqueToken, List.of(copyFromUtf8("ONE"), copyFromUtf8("TWO"))),
+                        getTxnRecord(tokenAcreateTxn)
+                                .hasNewTokenAssociation(tokenA, TOKEN_TREASURY)
+                                .logged(),
+                        getTxnRecord(tokenBcreateTxn)
+                                .hasNewTokenAssociation(tokenB, TOKEN_TREASURY)
+                                .logged(),
+                        cryptoTransfer(moving(1, tokenA).between(TOKEN_TREASURY, theContract))
+                                .via(transferToFU)
+                                .logged(),
+                        getTxnRecord(transferToFU)
+                                .hasNewTokenAssociation(tokenA, theContract)
+                                .logged(),
+                        getContractInfo(theContract)
+                                .has(ContractInfoAsserts.contractWith()
+                                        .hasAlreadyUsedAutomaticAssociations(1)
+                                        .maxAutoAssociations(2)))
+                .when(
+                        cryptoTransfer(movingUnique(uniqueToken, 1L).between(TOKEN_TREASURY, theContract)),
+                        getContractInfo(theContract)
+                                .has(ContractInfoAsserts.contractWith()
+                                        .hasAlreadyUsedAutomaticAssociations(2)
+                                        .maxAutoAssociations(2)))
+                .then(
+                        cryptoTransfer(moving(1, tokenB).between(TOKEN_TREASURY, theContract))
+                                .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)
+                                .via("failedTransfer"),
+                        getContractInfo(theContract)
+                                .has(ContractInfoAsserts.contractWith()
+                                        .hasAlreadyUsedAutomaticAssociations(2)
+                                        .maxAutoAssociations(2))
+                                .logged());
+    }
+
+    @HapiTest
+    private HapiSpec customFeesHaveExpectedAutoCreateInteractions() {
+        final var nftWithRoyaltyNoFallback = "nftWithRoyaltyNoFallback";
+        final var nftWithRoyaltyPlusHtsFallback = "nftWithRoyaltyPlusFallback";
+        final var nftWithRoyaltyPlusHbarFallback = "nftWithRoyaltyPlusHbarFallback";
+        final var ftWithNetOfTransfersFractional = "ftWithNetOfTransfersFractional";
+        final var ftWithNonNetOfTransfersFractional = "ftWithNonNetOfTransfersFractional";
+        final var finalReceiverKey = "finalReceiverKey";
+        final var otherCollector = "otherCollector";
+        final var finalTxn = "finalTxn";
+
+        return propertyPreservingHapiSpec("CustomFeesHaveExpectedAutoCreateInteractions")
+                .preserving("contracts.allowAutoAssociations")
+                .given(
+                        overriding("contracts.allowAutoAssociations", "true"),
+                        wellKnownTokenEntities(),
+                        cryptoCreate(otherCollector),
+                        cryptoCreate(CIVILIAN).maxAutomaticTokenAssociations(42),
+                        inParallel(
+                                createWellKnownFungibleToken(
+                                        ftWithNetOfTransfersFractional,
+                                        creation -> creation.withCustom(fractionalFeeNetOfTransfers(
+                                                1L, 100L, 1L, OptionalLong.of(5L), TOKEN_TREASURY))),
+                                createWellKnownFungibleToken(
+                                        ftWithNonNetOfTransfersFractional,
+                                        creation -> creation.withCustom(
+                                                fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), TOKEN_TREASURY))),
+                                createWellKnownNonFungibleToken(
+                                        nftWithRoyaltyNoFallback,
+                                        1,
+                                        creation ->
+                                                creation.withCustom(royaltyFeeNoFallback(1L, 100L, TOKEN_TREASURY))),
+                                createWellKnownNonFungibleToken(
+                                        nftWithRoyaltyPlusHbarFallback,
+                                        1,
+                                        creation -> creation.withCustom(royaltyFeeWithFallback(
+                                                1L,
+                                                100L,
+                                                fixedHbarFeeInheritingRoyaltyCollector(ONE_HBAR),
+                                                TOKEN_TREASURY)))),
+                        tokenAssociate(otherCollector, ftWithNonNetOfTransfersFractional),
+                        createWellKnownNonFungibleToken(
+                                nftWithRoyaltyPlusHtsFallback,
+                                1,
+                                creation -> creation.withCustom(royaltyFeeWithFallback(
+                                        1L,
+                                        100L,
+                                        fixedHtsFeeInheritingRoyaltyCollector(666, ftWithNonNetOfTransfersFractional),
+                                        otherCollector))))
+                .when(
+                        autoCreateWithFungible(ftWithNetOfTransfersFractional),
+                        autoCreateWithFungible(ftWithNonNetOfTransfersFractional),
+                        autoCreateWithNonFungible(nftWithRoyaltyNoFallback, SUCCESS),
+                        autoCreateWithNonFungible(
+                                nftWithRoyaltyPlusHbarFallback, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE))
+                .then(
+                        newKeyNamed(finalReceiverKey),
+                        cryptoTransfer(
+                                moving(100_000, ftWithNonNetOfTransfersFractional)
+                                        .between(TOKEN_TREASURY, CIVILIAN),
+                                movingUnique(nftWithRoyaltyPlusHtsFallback, 1L).between(TOKEN_TREASURY, CIVILIAN)),
+                        cryptoTransfer(
+                                        moving(10_000, ftWithNonNetOfTransfersFractional)
+                                                .between(CIVILIAN, finalReceiverKey),
+                                        movingUnique(nftWithRoyaltyPlusHtsFallback, 1L)
+                                                .between(CIVILIAN, finalReceiverKey))
+                                .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
+                                .via(finalTxn));
+    }
+
     private long tinybarCostOfGas(final HapiSpec spec, final HederaFunctionality function, final long gasAmount) {
         final var gasThousandthsOfTinycentPrice = spec.fees()
                 .getCurrentOpFeeData()
@@ -1087,6 +1249,28 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 .getGas();
         final var rates = spec.ratesProvider().rates();
         return (gasThousandthsOfTinycentPrice / 1000 * rates.getHbarEquiv()) / rates.getCentEquiv() * gasAmount;
+    }
+
+    private HapiSpecOperation autoCreateWithFungible(final String token) {
+        final var keyName = VALID_ALIAS + "-" + token;
+        final var txn = "autoCreationVia" + token;
+        return blockingOrder(
+                newKeyNamed(keyName),
+                cryptoTransfer(moving(100_000, token).between(TOKEN_TREASURY, CIVILIAN)),
+                cryptoTransfer(moving(10_000, token).between(CIVILIAN, keyName)).via(txn),
+                getTxnRecord(txn).assertingKnownEffectivePayers());
+    }
+
+    private HapiSpecOperation autoCreateWithNonFungible(final String token, final ResponseCodeEnum expectedStatus) {
+        final var keyName = VALID_ALIAS + "-" + token;
+        final var txn = "autoCreationVia" + token;
+        return blockingOrder(
+                newKeyNamed(keyName),
+                cryptoTransfer(movingUnique(token, 1L).between(TOKEN_TREASURY, CIVILIAN)),
+                cryptoTransfer(movingUnique(token, 1L).between(CIVILIAN, keyName))
+                        .via(txn)
+                        .hasKnownStatus(expectedStatus),
+                getTxnRecord(txn).assertingKnownEffectivePayers());
     }
 
     @Override
