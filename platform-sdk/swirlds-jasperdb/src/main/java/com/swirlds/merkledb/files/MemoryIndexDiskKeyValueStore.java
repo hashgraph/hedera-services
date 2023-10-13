@@ -74,22 +74,36 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     private final AtomicLong maxValidKey;
 
     /**
+     * A function that will be called to report the duration of the compaction, in ms
+     */
+    private final BiConsumer<Integer, Long> reportDurationMetricFunction;
+    /**
+     * A function that will be called to report the amount of space saved by the compaction, in Mb
+     */
+    private final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction;
+
+    private final Runnable updateStatsFunction;
+
+    /**
      * Construct a new MemoryIndexDiskKeyValueStore
      *
-     * @param storeDir The directory to store data files in
-     * @param storeName The name for the data store, this allows more than one data store in a
-     *     single directory.
-     * @param legacyStoreName Base name for the data store. If not null, the store will process
-     *     files with this prefix at startup. New files in the store will be prefixed with {@code
-     *     storeName}
-     * @param dataItemSerializer Serializer for converting raw data to/from data items
-     * @param loadedDataCallback call back for handing loaded data from existing files on startup.
-     *     Can be null if not needed.
-     * @param keyToDiskLocationIndex The index to use for keys to disk locations. Having this passed
-     *     in allows multiple MemoryIndexDiskKeyValueStore stores to share the same index if there
-     *     key ranges do not overlap. For example with internal node and leaf paths in a virtual map
-     *     tree. It also lets the caller decide the LongList implementation to use. This does mean
-     *     the caller is responsible for snapshot of the index.
+     * @param storeDir                       The directory to store data files in
+     * @param storeName                      The name for the data store, this allows more than one data store in a
+     *                                       single directory.
+     * @param legacyStoreName                Base name for the data store. If not null, the store will process
+     *                                       files with this prefix at startup. New files in the store will be prefixed with {@code
+     *                                       storeName}
+     * @param dataItemSerializer             Serializer for converting raw data to/from data items
+     * @param loadedDataCallback             call back for handing loaded data from existing files on startup.
+     *                                       Can be null if not needed.
+     * @param keyToDiskLocationIndex         The index to use for keys to disk locations. Having this passed
+     *                                       in allows multiple MemoryIndexDiskKeyValueStore stores to share the same index if there
+     *                                       key ranges do not overlap. For example with internal node and leaf paths in a virtual map
+     *                                       tree. It also lets the caller decide the LongList implementation to use. This does mean
+     *                                       the caller is responsible for snapshot of the index.
+     * @param reportDurationMetricFunction  A function that will be called to report the duration of the compaction
+     * @param reportSavedSpaceMetricFunction A function that will be called to report the amount of space saved by the compaction
+     * @param updateStatsFunction A function that updates statistics of total usage of disk space and off-heap space
      * @throws IOException If there was a problem opening data files
      */
     public MemoryIndexDiskKeyValueStore(
@@ -98,10 +112,16 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             final String legacyStoreName,
             final DataItemSerializer<D> dataItemSerializer,
             final LoadedDataCallback loadedDataCallback,
-            final LongList keyToDiskLocationIndex)
+            final LongList keyToDiskLocationIndex,
+            BiConsumer<Integer, Long> reportDurationMetricFunction,
+            BiConsumer<Integer, Double> reportSavedSpaceMetricFunction,
+            Runnable updateStatsFunction)
             throws IOException {
         this.storeName = storeName;
         index = keyToDiskLocationIndex;
+        this.reportDurationMetricFunction = reportDurationMetricFunction;
+        this.reportSavedSpaceMetricFunction = reportSavedSpaceMetricFunction;
+        this.updateStatsFunction = updateStatsFunction;
         final boolean indexIsEmpty = keyToDiskLocationIndex.size() == 0;
         // create store dir
         Files.createDirectories(storeDir);
@@ -135,16 +155,19 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * Compact data store files using the compaction algorithm.
      *
-     * @param reportDurationMetricFunction function to report how long compaction took, in ms
-     * @param reportSavedSpaceMetricFunction function to report how much space was compacted, in Mb
      * @throws IOException if there was a problem merging
      * @throws InterruptedException if the merge thread was interupted
      */
-    public boolean compact(
-            @Nullable final BiConsumer<Integer, Long> reportDurationMetricFunction,
-            @Nullable final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction)
-            throws IOException, InterruptedException {
+    public boolean doCompact() throws IOException, InterruptedException {
         return fileCompactor.compact(index, reportDurationMetricFunction, reportSavedSpaceMetricFunction);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Runnable getUpdateTotalStatsFunction() {
+        return updateStatsFunction;
     }
 
     /**

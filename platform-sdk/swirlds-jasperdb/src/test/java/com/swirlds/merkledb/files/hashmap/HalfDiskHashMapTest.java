@@ -51,7 +51,10 @@ class HalfDiskHashMapTest {
                 tempDirPath.resolve(testType.name()),
                 "HalfDiskHashMapTest",
                 null,
-                false);
+                false,
+                null,
+                null,
+                null);
         map.printStats();
         return map;
     }
@@ -114,7 +117,10 @@ class HalfDiskHashMapTest {
                 tempSnapshotDir,
                 "HalfDiskHashMapTest",
                 null,
-                false);
+                false,
+                null,
+                null,
+                null);
         mapFromSnapshot.printStats();
         checkData(testType, mapFromSnapshot, 1, count, 1);
         // check deletion
@@ -151,7 +157,7 @@ class HalfDiskHashMapTest {
         createSomeData(testType, map, 1111, 10_000, 1);
         checkData(testType, map, 1, 10_000, 1);
         // do a merge
-        map.compact(null, null);
+        map.compact();
         // check all data after
         checkData(testType, map, 1, 10_000, 1);
     }

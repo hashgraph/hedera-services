@@ -170,9 +170,19 @@ class MemoryIndexDiskKeyValueStoreTest {
         // let's store hashes as easy test class
         final Path tempDir = testDirectory.resolve("DataFileTest");
         final LongListOffHeap index = new LongListOffHeap();
+        final AtomicLong timeSpent = new AtomicLong(0);
+        final AtomicDouble savedSpace = new AtomicDouble(0.0);
         final MemoryIndexDiskKeyValueStore<long[]> store =
                 new MemoryIndexDiskKeyValueStore<>(
-                        tempDir, "MemoryIndexDiskKeyValueStoreTest", null, testType.dataItemSerializer, null, index) {
+                        tempDir,
+                        "MemoryIndexDiskKeyValueStoreTest",
+                        null,
+                        testType.dataItemSerializer,
+                        null,
+                        index,
+                        (type, time) -> timeSpent.set(time),
+                        (type, space) -> savedSpace.set(space),
+                        null) {
                     @Override
                     DataFileCompactor createFileCompactor() {
                         return new DataFileCompactor(fileCollection) {
@@ -193,9 +203,7 @@ class MemoryIndexDiskKeyValueStoreTest {
         // check number of files created
         assertEquals(3, Files.list(tempDir).count(), "unexpected # of files #1");
         // merge all files
-        final AtomicLong timeSpent = new AtomicLong(0);
-        final AtomicDouble savedSpace = new AtomicDouble(0.0);
-        store.compact((type, time) -> timeSpent.set(time), (type, space) -> savedSpace.set(space));
+        store.compact();
         // check number of files after merge
         assertEquals(1, Files.list(tempDir).count(), "unexpected # of files #2");
         // check all data
@@ -222,7 +230,7 @@ class MemoryIndexDiskKeyValueStoreTest {
                 }
             } else {
                 try {
-                    store.compact(null, null);
+                    store.compact();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -271,7 +279,10 @@ class MemoryIndexDiskKeyValueStoreTest {
                 null,
                 testType.dataItemSerializer,
                 null,
-                snapshotIndex);
+                snapshotIndex,
+                null,
+                null,
+                null);
         checkRange(testType, storeFromSnapshot, 0, 2000, 8910);
         checkRange(testType, storeFromSnapshot, 2000, 48_000, 56_000);
         storeFromSnapshot.close();

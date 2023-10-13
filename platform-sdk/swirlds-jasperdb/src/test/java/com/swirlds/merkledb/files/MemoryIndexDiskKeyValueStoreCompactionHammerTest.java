@@ -102,7 +102,10 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
                 null,
                 serializer,
                 (key, dataLocation, dataValue) -> {},
-                new LongListOffHeap());
+                new LongListOffHeap(),
+                null,
+                null,
+                null);
 
         // This is just a nice little output that you can copy and paste to watch the database
         // directory do its thing
@@ -474,7 +477,7 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
         protected void doWork() throws Exception {
 
             if (iteration % 5 == 0) {
-                coll.compact(null, null);
+                coll.compact();
             }
             iteration++;
         }

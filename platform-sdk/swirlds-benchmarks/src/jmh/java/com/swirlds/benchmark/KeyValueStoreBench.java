@@ -49,7 +49,10 @@ public class KeyValueStoreBench extends BaseBench {
                 null,
                 new BenchmarkRecordSerializer(),
                 (key, dataLocation, dataValue) -> {},
-                new LongListOffHeap());
+                new LongListOffHeap(),
+                null,
+                null,
+                null);
         System.out.println();
 
         // Write files
@@ -69,7 +72,7 @@ public class KeyValueStoreBench extends BaseBench {
 
         // Merge files
         start = System.currentTimeMillis();
-        store.compact(null, null);
+        store.compact();
         System.out.println("Compacted files in " + (System.currentTimeMillis() - start) + "ms");
 
         // Verify merged content

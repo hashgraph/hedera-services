@@ -47,8 +47,8 @@ public class HalfDiskMapBench extends BaseBench {
         final long[] map = new long[verify ? maxKey : 0];
         Arrays.fill(map, INVALID_PATH);
 
-        final var store =
-                new HalfDiskHashMap<>(maxKey, new BenchmarkKeySerializer(), getTestDir(), "mergeBench", null, false);
+        final var store = new HalfDiskHashMap<>(
+                maxKey, new BenchmarkKeySerializer(), getTestDir(), "mergeBench", null, false, null, null, null);
         System.out.println();
 
         // Write files
@@ -69,7 +69,7 @@ public class HalfDiskMapBench extends BaseBench {
 
         // Merge files
         start = System.currentTimeMillis();
-        store.compact(null, null);
+        store.compact();
         System.out.println("Compacted files in " + (System.currentTimeMillis() - start) + "ms");
 
         // Verify merged content

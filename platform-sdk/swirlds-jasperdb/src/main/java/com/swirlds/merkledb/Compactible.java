@@ -16,27 +16,41 @@
 
 package com.swirlds.merkledb;
 
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.LongSummaryStatistics;
-import java.util.function.BiConsumer;
 
 /**
  * This interface indicates that the data storage files in the implementing class can be compacted
  */
 public interface Compactible {
     /**
-     * Compact the files in the implementing class
-     * @param reportDurationMetricFunction a function that will be called to report the duration of the compaction
-     * @param reportSavedSpaceMetricFunction a function that will be called to report the amount of space saved by the compaction
+     * Compact the files in the implementing class and update the stats for total usage of disk space and off-heap space
+     * if the compaction was successful
      * @return true if the compaction was successful, false otherwise
      * @throws IOException if there was a problem compaction
      * @throws InterruptedException if the compaction is interrupted
      */
-    boolean compact(
-            @Nullable BiConsumer<Integer, Long> reportDurationMetricFunction,
-            @Nullable BiConsumer<Integer, Double> reportSavedSpaceMetricFunction)
-            throws IOException, InterruptedException;
+    default boolean compact() throws IOException, InterruptedException {
+        boolean result = doCompact();
+        Runnable updateTotalStatsFunction = getUpdateTotalStatsFunction();
+        if (result && updateTotalStatsFunction != null) {
+            updateTotalStatsFunction.run();
+        }
+        return result;
+    }
+
+    /**
+     * Compacts the files in the implementing class
+     * @return true if the compaction was successful, false otherwise
+     * @throws IOException if there was a problem compaction
+     * @throws InterruptedException if the compaction is interrupted
+     */
+    boolean doCompact() throws IOException, InterruptedException;
+
+    /**
+     * @return the function to update the total usage stats
+     */
+    Runnable getUpdateTotalStatsFunction();
 
     /**
      * Get statistics for sizes of all files

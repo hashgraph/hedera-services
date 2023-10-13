@@ -17,16 +17,12 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
-import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
-import static com.swirlds.common.test.fixtures.RandomUtils.nextLong;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.apache.commons.lang3.RandomUtils.nextBoolean;
-import static org.apache.commons.lang3.RandomUtils.nextDouble;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
@@ -48,12 +44,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.verification.VerificationMode;
@@ -74,20 +68,12 @@ class MerkleDbCompactionCoordinatorTest {
 
     private MerkleDbCompactionCoordinator coordinator;
 
-    private Integer compactionLevel;
-    private Long compactionTime;
-    private Double savedSpace;
-
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
         String table = randomAlphabetic(7);
-        coordinator = new MerkleDbCompactionCoordinator(
-                table, statisticsUpdater, objectKeyToPath, hashStoreDisk, pathToHashKeyValue);
+        coordinator = new MerkleDbCompactionCoordinator(table, objectKeyToPath, hashStoreDisk, pathToHashKeyValue);
         coordinator.enableBackgroundCompaction();
-        compactionLevel = nextInt(1, 6);
-        compactionTime = nextLong(100, 10000);
-        savedSpace = nextDouble(100, 1000);
     }
 
     @ParameterizedTest
@@ -97,13 +83,8 @@ class MerkleDbCompactionCoordinatorTest {
         testCompaction(
                 objectKeyToPath,
                 coordinator::compactDiskStoreForObjectKeyToPathAsync,
-                (level, time) -> verify(statisticsUpdater).setLeafKeysStoreCompactionTimeMs(level, time),
-                (level, savedSpace) ->
-                        verify(statisticsUpdater).setLeafKeysStoreCompactionSavedSpaceMb(level, savedSpace),
                 // expect compaction to be started
                 true,
-                // if compaction passed, the statistics should be updated
-                compactionPassed,
                 compactionPassed);
     }
 
@@ -118,13 +99,8 @@ class MerkleDbCompactionCoordinatorTest {
         testCompaction(
                 hashStoreDisk,
                 coordinator::compactDiskStoreForHashesAsync,
-                (level, time) -> verify(statisticsUpdater).setHashesStoreCompactionTimeMs(level, time),
-                (level, savedSpace) ->
-                        verify(statisticsUpdater).setHashesStoreCompactionSavedSpaceMb(level, savedSpace),
                 // expect compaction to be started
                 true,
-                // if compaction passed, the statistics should be updated
-                compactionPassed,
                 compactionPassed);
     }
 
@@ -139,13 +115,8 @@ class MerkleDbCompactionCoordinatorTest {
         testCompaction(
                 pathToHashKeyValue,
                 coordinator::compactPathToKeyValueAsync,
-                (level, time) -> verify(statisticsUpdater).setLeavesStoreCompactionTimeMs(level, time),
-                (level, savedSpace) ->
-                        verify(statisticsUpdater).setLeavesStoreCompactionSavedSpaceMb(level, savedSpace),
                 // expect compaction to be started
                 true,
-                // if compaction passed, the statistics should be updated
-                compactionPassed,
                 compactionPassed);
     }
 
@@ -160,13 +131,9 @@ class MerkleDbCompactionCoordinatorTest {
         testCompaction(
                 objectKeyToPath,
                 coordinator::compactDiskStoreForObjectKeyToPathAsync,
-                (level, time) -> verify(statisticsUpdater, never()).setLeafKeysStoreCompactionTimeMs(level, time),
-                (level, savedSpace) ->
-                        verify(statisticsUpdater, never()).setLeafKeysStoreCompactionSavedSpaceMb(level, savedSpace),
-                // compaction shouldn't be started and statistic should not be updated because compaction is disabled
+                // compaction shouldn't be started
                 false,
-                nextBoolean(),
-                false);
+                nextBoolean());
     }
 
     @Test
@@ -175,13 +142,9 @@ class MerkleDbCompactionCoordinatorTest {
         testCompaction(
                 hashStoreDisk,
                 coordinator::compactDiskStoreForHashesAsync,
-                (level, time) -> verify(statisticsUpdater, never()).setHashesStoreCompactionTimeMs(level, time),
-                (level, savedSpace) ->
-                        verify(statisticsUpdater, never()).setHashesStoreCompactionSavedSpaceMb(level, savedSpace),
-                // compaction shouldn't be started and statistic should not be updated because compaction is disabled
+                // compaction shouldn't be started
                 false,
-                nextBoolean(),
-                false);
+                nextBoolean());
     }
 
     @Test
@@ -190,13 +153,9 @@ class MerkleDbCompactionCoordinatorTest {
         testCompaction(
                 pathToHashKeyValue,
                 coordinator::compactPathToKeyValueAsync,
-                (level, time) -> verify(statisticsUpdater, never()).setLeavesStoreCompactionTimeMs(level, time),
-                (level, savedSpace) ->
-                        verify(statisticsUpdater, never()).setLeavesStoreCompactionSavedSpaceMb(level, savedSpace),
-                // compaction shouldn't be started and statistic should not be updated because compaction is disabled
+                // compaction shouldn't be started
                 false,
-                nextBoolean(),
-                false);
+                nextBoolean());
     }
 
     @Test
@@ -248,7 +207,7 @@ class MerkleDbCompactionCoordinatorTest {
         coordinator.compactPathToKeyValueAsync();
 
         // let all compactions get to the latch
-        Thread.sleep(10);
+        testLatch.await();
 
         // latch is released by interruption of the compaction thread
         coordinator.stopAndDisableBackgroundCompaction();
@@ -256,9 +215,9 @@ class MerkleDbCompactionCoordinatorTest {
         assertEventuallyDoesNotThrow(
                 () -> {
                     try {
-                        verify(objectKeyToPath).compact(any(), any());
-                        verify(pathToHashKeyValue).compact(any(), any());
-                        verify(hashStoreDisk).compact(any(), any());
+                        verify(objectKeyToPath).compact();
+                        verify(pathToHashKeyValue).compact();
+                        verify(hashStoreDisk).compact();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -277,11 +236,8 @@ class MerkleDbCompactionCoordinatorTest {
     private void testCompaction(
             Compactible compactibleToTest,
             Runnable methodCall,
-            BiConsumer<Integer, Long> reportDurationMetricFunction,
-            BiConsumer<Integer, Double> reportSavedSpaceMetricFunction,
             boolean expectCompactionStarted,
-            boolean compactionPassed,
-            boolean expectStatUpdate)
+            boolean compactionPassed)
             throws IOException, InterruptedException {
         CountDownLatch testLatch = new CountDownLatch(1);
         CountDownLatch compactLatch = new CountDownLatch(1);
@@ -295,30 +251,20 @@ class MerkleDbCompactionCoordinatorTest {
         }
         compactLatch.countDown();
 
-        assertCompactable(
-                compactibleToTest,
-                reportDurationMetricFunction,
-                reportSavedSpaceMetricFunction,
-                expectCompactionStarted,
-                expectStatUpdate);
+        assertCompactable(compactibleToTest, expectCompactionStarted);
 
         reset(objectKeyToPath, pathToHashKeyValue, hashStoreDisk, statisticsUpdater);
         initCompactibleMock(compactibleToTest, compactionPassed, testLatch, compactLatch);
 
         // the second time it should succeed as well
         methodCall.run();
-        assertCompactable(
-                compactibleToTest,
-                reportDurationMetricFunction,
-                reportSavedSpaceMetricFunction,
-                expectCompactionStarted,
-                expectStatUpdate);
+        assertCompactable(compactibleToTest, expectCompactionStarted);
     }
 
     private void testCompactionFailed(Compactible compactibleToTest, Runnable methodCall)
             throws IOException, InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        when(compactibleToTest.compact(ArgumentMatchers.any(), any())).thenAnswer(invocation -> {
+        when(compactibleToTest.compact()).thenAnswer(invocation -> {
             latch.await();
             throw new RuntimeException("testCompactionFailed");
         });
@@ -330,7 +276,7 @@ class MerkleDbCompactionCoordinatorTest {
         assertEventuallyDoesNotThrow(
                 () -> {
                     try {
-                        verify(compactibleToTest).compact(any(), any());
+                        verify(compactibleToTest).compact();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -347,35 +293,22 @@ class MerkleDbCompactionCoordinatorTest {
             CountDownLatch testLatch,
             CountDownLatch compactLatch)
             throws IOException, InterruptedException {
-        when(compactibleToTest.compact(ArgumentMatchers.any(), any())).thenAnswer(invocation -> {
+        when(compactibleToTest.compact()).thenAnswer(invocation -> {
             testLatch.countDown();
             compactLatch.await();
-            invocation.getArgument(0, BiConsumer.class).accept(compactionLevel, compactionTime);
-            invocation.getArgument(1, BiConsumer.class).accept(compactionLevel, savedSpace);
             return compactionPassed;
         });
     }
 
-    private void assertCompactable(
-            Compactible compactibleToTest,
-            BiConsumer<Integer, Long> reportDurationMetricFunction,
-            BiConsumer<Integer, Double> reportSavedSpaceMetricFunction,
-            boolean expectCompactionStarted,
-            boolean expectStatUpdate) {
+    private void assertCompactable(Compactible compactibleToTest, boolean expectCompactionStarted) {
         assertEventuallyDoesNotThrow(
                 () -> {
-                    reportDurationMetricFunction.accept(compactionLevel, compactionTime);
-                    reportSavedSpaceMetricFunction.accept(compactionLevel, savedSpace);
                     VerificationMode compactionVerificationMode = expectCompactionStarted ? times(1) : never();
                     try {
-                        verify(compactibleToTest, compactionVerificationMode).compact(any(), any());
+                        verify(compactibleToTest, compactionVerificationMode).compact();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
-
-                    VerificationMode statVerificationMode = expectStatUpdate ? times(1) : never();
-                    verify(statisticsUpdater, statVerificationMode).updateStoreFileStats();
-                    verify(statisticsUpdater, statVerificationMode).updateOffHeapStats();
                 },
                 Duration.ofMillis(100),
                 "Unexpected mock state");

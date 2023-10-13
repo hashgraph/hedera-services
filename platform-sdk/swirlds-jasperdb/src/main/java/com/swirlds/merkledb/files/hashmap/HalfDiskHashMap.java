@@ -135,6 +135,20 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     /** MerkleDb settings */
     private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
+    /**
+     * A function that will be called to report the duration of the compaction
+     */
+    private final BiConsumer<Integer, Long> reportDurationMetricFunction;
+    /**
+     * A function that will be called to report the amount of space saved by the compaction
+     */
+    private final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction;
+
+    /**
+     * A function that updates statistics of total usage of disk space and off-heap space
+     */
+    private final Runnable updateStatsFunction;
+
     /** Executor for parallel bucket reads/updates in {@link #endWriting()} */
     private static final ExecutorService flushExecutor = Executors.newFixedThreadPool(
             config.getNumHalfDiskHashMapFlushThreads(),
@@ -148,19 +162,22 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     /**
      * Construct a new HalfDiskHashMap
      *
-     * @param mapSize The maximum map number of entries. This should be more than big enough to
-     *     avoid too many key collisions.
-     * @param keySerializer Serializer for converting raw data to/from keys
-     * @param storeDir The directory to use for storing data files.
-     * @param storeName The name for the data store, this allows more than one data store in a
-     *     single directory.
-     * @param legacyStoreName Base name for the data store. If not null, the store will process
-     *     files with this prefix at startup. New files in the store will be prefixed with {@code
-     *     storeName}
-     * @param preferDiskBasedIndex When true we will use disk based index rather than ram where
-     *     possible. This will come with a significant performance cost, especially for writing. It
-     *     is possible to load a data source that was written with memory index with disk based
-     *     index and vice versa.
+     * @param mapSize                        The maximum map number of entries. This should be more than big enough to
+     *                                       avoid too many key collisions.
+     * @param keySerializer                  Serializer for converting raw data to/from keys
+     * @param storeDir                       The directory to use for storing data files.
+     * @param storeName                      The name for the data store, this allows more than one data store in a
+     *                                       single directory.
+     * @param legacyStoreName                Base name for the data store. If not null, the store will process
+     *                                       files with this prefix at startup. New files in the store will be prefixed with {@code
+     *                                       storeName}
+     * @param preferDiskBasedIndex           When true we will use disk based index rather than ram where
+     *                                       possible. This will come with a significant performance cost, especially for writing. It
+     *                                       is possible to load a data source that was written with memory index with disk based
+     *                                       index and vice versa.
+     * @param reportDurationMetricFunction  A function that will be called to report the duration of the compaction
+     * @param reportSavedSpaceMetricFunction A function that will be called to report the amount of space saved by the compaction
+     * @param updateStatsFunction A function that updates statistics of total usage of disk space and off-heap space
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
     public HalfDiskHashMap(
@@ -169,10 +186,16 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
-            final boolean preferDiskBasedIndex)
+            final boolean preferDiskBasedIndex,
+            @Nullable BiConsumer<Integer, Long> reportDurationMetricFunction,
+            @Nullable BiConsumer<Integer, Double> reportSavedSpaceMetricFunction,
+            @Nullable Runnable updateStatsFunction)
             throws IOException {
         this.mapSize = mapSize;
         this.storeName = storeName;
+        this.reportDurationMetricFunction = reportDurationMetricFunction;
+        this.reportSavedSpaceMetricFunction = reportSavedSpaceMetricFunction;
+        this.updateStatsFunction = updateStatsFunction;
         Path indexFile = storeDir.resolve(storeName + BUCKET_INDEX_FILENAME_SUFFIX);
         // create bucket serializer
         this.bucketSerializer = new BucketSerializer<>(keySerializer);
@@ -263,12 +286,17 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
      * {@inheritDoc}
      */
     @Override
-    public boolean compact(
-            @Nullable final BiConsumer<Integer, Long> reportDurationMetricFunction,
-            @Nullable final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction)
-            throws IOException, InterruptedException {
+    public boolean doCompact() throws IOException, InterruptedException {
         return fileCompactor.compact(
                 bucketIndexToBucketLocation, reportDurationMetricFunction, reportSavedSpaceMetricFunction);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Runnable getUpdateTotalStatsFunction() {
+        return updateStatsFunction;
     }
 
     /**

@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -76,14 +75,13 @@ class CompactionInterruptTest {
      * Run a test to do a compaction, and then call stopAndDisableBackgroundCompaction(). The expected result is the merging thread
      * should be interrupted and end quickly.
      */
-    boolean startMergeThenInterruptImpl() throws IOException, InterruptedException, ExecutionException {
+    boolean startMergeThenInterruptImpl() throws IOException, InterruptedException {
         final Path storeDir = tmpFileDir.resolve("startMergeThenInterruptImpl");
         String tableName = "mergeThenInterrupt";
         final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
                 TestType.variable_variable.dataType().createDataSource(storeDir, tableName, COUNT, 0, false, true);
         final MerkleDbCompactionCoordinator compactor = new MerkleDbCompactionCoordinator(
                 tableName,
-                dataSource.getStatisticsUpdater(),
                 dataSource.getObjectKeyToPath(),
                 dataSource.getHashStoreDisk(),
                 dataSource.getPathToKeyValue());
@@ -133,7 +131,6 @@ class CompactionInterruptTest {
                 TestType.variable_variable.dataType().createDataSource(storeDir, tableName, COUNT, 0, false, true);
         final MerkleDbCompactionCoordinator compactor = new MerkleDbCompactionCoordinator(
                 tableName,
-                dataSource.getStatisticsUpdater(),
                 dataSource.getObjectKeyToPath(),
                 dataSource.getHashStoreDisk(),
                 dataSource.getPathToKeyValue());
@@ -179,11 +176,10 @@ class CompactionInterruptTest {
         long initCount = compactingExecutor.getCompletedTaskCount();
 
         // getting access to the guts of the compactor to check the state of the futures
-        InterruptibleCompletableFuture hashStoreDiskFuture =
-                compactor.compactionFuturesByName.get(tableName + HASH_STORE_DISK_SUFFIX);
-        InterruptibleCompletableFuture pathToKeyValueFuture =
+        Future<Boolean> hashStoreDiskFuture = compactor.compactionFuturesByName.get(tableName + HASH_STORE_DISK_SUFFIX);
+        Future<Boolean> pathToKeyValueFuture =
                 compactor.compactionFuturesByName.get(tableName + PATH_TO_KEY_VALUE_SUFFIX);
-        InterruptibleCompletableFuture objectKeyToPathFuture =
+        Future<Boolean> objectKeyToPathFuture =
                 compactor.compactionFuturesByName.get(tableName + OBJECT_KEY_TO_PATH_SUFFIX);
 
         // stopping the compaction
@@ -191,12 +187,9 @@ class CompactionInterruptTest {
 
         assertFalse(compactor.isCompactionEnabled(), "compactionEnabled should be false");
 
-        assertFutureCancelled(
-                hashStoreDiskFuture.asCompletableFuture(), "hashStoreDiskFuture should have been cancelled");
-        assertFutureCancelled(
-                pathToKeyValueFuture.asCompletableFuture(), "pathToKeyValueFuture should have been cancelled");
-        assertFutureCancelled(
-                objectKeyToPathFuture.asCompletableFuture(), "objectKeyToPathFuture should have been cancelled");
+        assertFutureCancelled(hashStoreDiskFuture, "hashStoreDiskFuture should have been cancelled");
+        assertFutureCancelled(pathToKeyValueFuture, "pathToKeyValueFuture should have been cancelled");
+        assertFutureCancelled(objectKeyToPathFuture, "objectKeyToPathFuture should have been cancelled");
         assertTrue(compactor.compactionFuturesByName.isEmpty(), "compactionFuturesByName should be empty");
         assertEventuallyEquals(
                 0, () -> compactingExecutor.getQueue().size(), Duration.ofMillis(100), "The queue should be empty");
@@ -209,7 +202,7 @@ class CompactionInterruptTest {
                         .formatted(compactingExecutor.getCompletedTaskCount(), expectedTaskCount));
     }
 
-    private static void assertFutureCancelled(Future<Void> hashStoreDiskFuture, String message) {
+    private static void assertFutureCancelled(Future<Boolean> hashStoreDiskFuture, String message) {
         assertEventuallyTrue(hashStoreDiskFuture::isCancelled, Duration.ofMillis(10), message);
     }
 

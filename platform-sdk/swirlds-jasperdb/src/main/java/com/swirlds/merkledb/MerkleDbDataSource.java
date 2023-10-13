@@ -284,6 +284,14 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         } else {
             hashStoreRam = null;
         }
+
+        statisticsUpdater = new MerkleDbStatisticsUpdater(this);
+
+        Runnable updateTotalStatsFunction = () -> {
+            statisticsUpdater.updateStoreFileStats();
+            statisticsUpdater.updateOffHeapStats();
+        };
+
         // internal node hashes store, on disk
         hasDiskStoreForHashes = tableConfig.getHashesRamToDiskThreshold() < Long.MAX_VALUE;
         hashStoreDisk = hasDiskStoreForHashes
@@ -293,7 +301,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                         tableName + ":internalHashes",
                         virtualHashRecordSerializer,
                         null,
-                        pathToDiskLocationInternalNodes)
+                        pathToDiskLocationInternalNodes,
+                        statisticsUpdater::setHashesStoreCompactionTimeMs,
+                        statisticsUpdater::setHashesStoreCompactionSavedSpaceMb,
+                        updateTotalStatsFunction)
                 : null;
 
         // key to path store
@@ -325,7 +336,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     dbPaths.objectKeyToPathDirectory,
                     tableName + "_objectkeytopath",
                     tableName + ":objectKeyToPath",
-                    tableConfig.isPreferDiskBasedIndices());
+                    tableConfig.isPreferDiskBasedIndices(),
+                    statisticsUpdater::setLeafKeysStoreCompactionTimeMs,
+                    statisticsUpdater::setLeafKeysStoreCompactionSavedSpaceMb,
+                    updateTotalStatsFunction);
             objectKeyToPath.printStats();
             // we do not need callback as HalfDiskHashMap loads its own data from disk
             loadedDataCallback = null;
@@ -338,7 +352,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 tableName + ":pathToHashKeyValue",
                 leafRecordSerializer,
                 loadedDataCallback,
-                pathToDiskLocationLeafNodes);
+                pathToDiskLocationLeafNodes,
+                statisticsUpdater::setLeavesStoreCompactionTimeMs,
+                statisticsUpdater::setLeavesStoreCompactionSavedSpaceMb,
+                updateTotalStatsFunction);
 
         // Leaf records cache
         leafRecordCacheSize = config.leafRecordCacheSize();
@@ -356,8 +373,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 tableConfig.getHashesRamToDiskThreshold());
 
         statisticsUpdater = new MerkleDbStatisticsUpdater(this);
-        compactor = new MerkleDbCompactionCoordinator(
-                tableName, statisticsUpdater, objectKeyToPath, hashStoreDisk, pathToKeyValue);
+        compactor = new MerkleDbCompactionCoordinator(tableName, objectKeyToPath, hashStoreDisk, pathToKeyValue);
 
         if (compactionEnabled) {
             enableBackgroundCompaction();
