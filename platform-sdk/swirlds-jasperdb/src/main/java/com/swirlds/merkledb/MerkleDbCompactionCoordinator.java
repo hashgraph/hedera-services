@@ -148,7 +148,9 @@ class MerkleDbCompactionCoordinator {
      */
     void stopAndDisableBackgroundCompaction() {
         synchronized (compactionFuturesByName) {
-            compactionFuturesByName.forEach((k, v) -> v.cancel());
+            for (var futureEntry : compactionFuturesByName.values()) {
+                futureEntry.cancel();
+            }
             compactionFuturesByName.clear();
             compactionEnabled.set(false);
         }
@@ -250,10 +252,10 @@ class MerkleDbCompactionCoordinator {
         private final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction;
 
         public CompactionTask(
-                String id,
+                @NonNull String id,
                 @NonNull Compactible compactible,
-                BiConsumer<Integer, Long> reportDurationMetricFunction,
-                BiConsumer<Integer, Double> reportSavedSpaceMetricFunction) {
+                @Nullable BiConsumer<Integer, Long> reportDurationMetricFunction,
+                @Nullable BiConsumer<Integer, Double> reportSavedSpaceMetricFunction) {
             requireNonNull(id);
             requireNonNull(compactible);
             this.id = id;
@@ -267,7 +269,6 @@ class MerkleDbCompactionCoordinator {
             try {
                 return compactible.compact(reportDurationMetricFunction, reportSavedSpaceMetricFunction);
             } catch (final InterruptedException | ClosedByInterruptException e) {
-                Thread.currentThread().interrupt();
                 logger.info(MERKLE_DB.getMarker(), "Interrupted while compacting, this is allowed.", e);
             } catch (Exception e) {
                 // It is important that we capture all exceptions here, otherwise a single exception
