@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.QueryModule;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
@@ -58,6 +59,9 @@ class QueryModuleTest {
     private HederaEvmBlocks hederaEvmBlocks;
 
     @Mock
+    private TinybarValues tinybarValues;
+
+    @Mock
     private ReadableAccountStore readableAccountStore;
 
     @Mock
@@ -87,6 +91,7 @@ class QueryModuleTest {
     @Test
     void providesExpectedHederaEvmContext() {
         assertInstanceOf(
-                HederaEvmContext.class, QueryModule.provideHederaEvmContext(hederaOperations, hederaEvmBlocks));
+                HederaEvmContext.class,
+                QueryModule.provideHederaEvmContext(hederaOperations, hederaEvmBlocks, tinybarValues));
     }
 }
