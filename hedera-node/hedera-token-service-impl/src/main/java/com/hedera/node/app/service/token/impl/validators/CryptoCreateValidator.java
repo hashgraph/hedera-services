@@ -129,16 +129,6 @@ public class CryptoCreateValidator {
         validateTrue(accountId == null || isDeleted, ALIAS_ALREADY_ASSIGNED);
     }
 
-    private boolean isOfEvmAddressSize(final Bytes alias) {
-        return alias.toByteArray().length == EVM_ADDRESS_SIZE;
-    }
-
-    private boolean isEcdsaAddress(final Bytes alias) {
-        var aliasByteString = ByteString.copyFrom(alias.toByteArray());
-        return aliasByteString.size() == ECDSA_SECP256K1_ALIAS_SIZE
-                && aliasByteString.startsWith(ECDSA_KEY_ALIAS_PREFIX);
-    }
-
     private boolean canSkipNormalKeyValidation(@NonNull final Key key, final boolean isInternalDispatch) {
         return isInternalDispatch && IMMUTABILITY_SENTINEL_KEY.equals(key);
     }
