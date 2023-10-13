@@ -16,15 +16,20 @@
 
 package com.swirlds.platform.event.creation.rules;
 
+import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMITED;
+
+import com.swirlds.platform.event.creation.EventCreationStatus;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Combines multiple {@link EventCreationRule} objects into a single object. Allows event creation if all the
- * contained limiters allow event creation.
+ * Combines multiple {@link EventCreationRule} objects into a single object. Allows event creation if all the contained
+ * limiters allow event creation.
  */
 public class AggregateEventCreationRules implements EventCreationRule {
 
     private final EventCreationRule[] rules;
+    private EventCreationStatus mostRecentStatus = RATE_LIMITED;
 
     /**
      * Create a new {@link AggregateEventCreationRules} from the given list of rules.
@@ -50,8 +55,9 @@ public class AggregateEventCreationRules implements EventCreationRule {
      */
     @Override
     public boolean isEventCreationPermitted() {
-        for (final EventCreationRule limiter : rules) {
-            if (!limiter.isEventCreationPermitted()) {
+        for (final EventCreationRule rule : rules) {
+            if (!rule.isEventCreationPermitted()) {
+                mostRecentStatus = rule.getEventCreationStatus();
                 return false;
             }
         }
@@ -64,8 +70,20 @@ public class AggregateEventCreationRules implements EventCreationRule {
      */
     @Override
     public void eventWasCreated() {
-        for (final EventCreationRule limiter : rules) {
-            limiter.eventWasCreated();
+        for (final EventCreationRule rule : rules) {
+            rule.eventWasCreated();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Note: this method only returns the current status if the most recent call to {@link #isEventCreationPermitted()}
+     * returned false, otherwise the value returned by this method is undefined.
+     */
+    @NonNull
+    @Override
+    public EventCreationStatus getEventCreationStatus() {
+        return mostRecentStatus;
     }
 }
