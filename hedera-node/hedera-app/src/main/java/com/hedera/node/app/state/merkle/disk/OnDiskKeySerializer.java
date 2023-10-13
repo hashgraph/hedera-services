@@ -106,12 +106,7 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
 
     @Override
     public int deserializeKeySize(@NonNull final ByteBuffer byteBuffer) {
-        try {
-            return codec.measure(BufferedData.wrap(byteBuffer)) + 4;
-        } catch (IOException e) {
-            // Maybe log here?
-            return -1;
-        }
+        return byteBuffer.getInt() + Integer.BYTES;
     }
 
     @Override

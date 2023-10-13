@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
-import static com.hedera.node.app.service.mono.contracts.operation.HederaSStoreOperation.ILLEGAL_STATE_CHANGE_RESULT;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
@@ -36,7 +35,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -53,16 +51,13 @@ class HederaSStoreOperationTest {
     private EVM evm;
 
     @Mock
-    private EvmAccount evmAccount;
+    private MutableAccount evmAccount;
 
     @Mock
     private GasCalculator gasCalculator;
 
     @Mock
     private MessageFrame frame;
-
-    @Mock
-    private MutableAccount mutableAccount;
 
     @Mock
     private HederaWorldUpdater updater;
@@ -75,15 +70,6 @@ class HederaSStoreOperationTest {
     @BeforeEach
     void setUp() {
         subject = new HederaSStoreOperation(EIP_1706_MINIMUM, gasCalculator, dynamicProperties);
-    }
-
-    @Test
-    void recognizesImmutableAccount() {
-        givenStackItemsAndRecipientAccount();
-
-        final var result = subject.execute(frame, evm);
-
-        assertSame(ILLEGAL_STATE_CHANGE_RESULT, result);
     }
 
     @Test
@@ -136,7 +122,7 @@ class HederaSStoreOperationTest {
 
         assertResultsEqual(expected, actual);
         verify(frame).incrementGasRefund(storageRefundAmount);
-        verify(mutableAccount).setStorageValue(key, value);
+        verify(evmAccount).setStorageValue(key, value);
         verify(frame).storageWasUpdated(key, value);
         verify(frame).warmUpStorage(recipient, key);
     }
@@ -153,21 +139,20 @@ class HederaSStoreOperationTest {
         given(frame.getMessageFrameStack()).willReturn(messageStack);
         given(updater.parentUpdater()).willReturn(Optional.empty());
         given(dynamicProperties.enabledSidecars()).willReturn(Set.of(CONTRACT_STATE_CHANGE));
-        given(mutableAccount.getAddress()).willReturn(unaliasedRecipient);
+        given(evmAccount.getAddress()).willReturn(unaliasedRecipient);
 
         final var actual = subject.execute(frame, evm);
 
         assertResultsEqual(expected, actual);
         verify(frame).incrementGasRefund(storageRefundAmount);
-        verify(mutableAccount).setStorageValue(key, value);
+        verify(evmAccount).setStorageValue(key, value);
         verify(frame).storageWasUpdated(key, value);
         verify(frame).warmUpStorage(unaliasedRecipient, key);
     }
 
     private void givenStackItemsAndMutableRecipientAccount() {
         givenStackItemsAndRecipientAccount();
-        given(evmAccount.getMutable()).willReturn(mutableAccount);
-        given(mutableAccount.getAddress()).willReturn(recipient);
+        given(evmAccount.getAddress()).willReturn(recipient);
         given(gasCalculator.calculateStorageCost(any(), any(), any())).willReturn(storageCost);
     }
 
