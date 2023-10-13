@@ -38,9 +38,6 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.FungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenInfoPrecompile.decodeGetTokenInfo;
-import static org.hyperledger.besu.datatypes.Address.BLS12_G1ADD;
-import static org.hyperledger.besu.datatypes.Address.KZG_POINT_EVAL;
-import static org.hyperledger.besu.datatypes.Address.PARENT_BEACON_BLOCK_ROOT_REGISTRY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -194,6 +191,9 @@ class GetTokenInfoPrecompilesTest {
     @Mock
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
+    private static final Address ADDRESS_A = Address.fromHexString("0xa");
+    private static final Address ADDRESS_B = Address.fromHexString("0xb");
+    private static final Address ADDRESS_C = Address.fromHexString("0xc");
     public static final Bytes GET_TOKEN_INFO_INPUT =
             Bytes.fromHexString("0x1f69565f000000000000000000000000000000000000000000000000000000000000000a");
     public static final Bytes GET_FUNGIBLE_TOKEN_INFO_INPUT =
@@ -952,7 +952,7 @@ class GetTokenInfoPrecompilesTest {
     void decodeGetTokenInfoAsExpected() {
         tokenInfoPrecompile.when(() -> decodeGetTokenInfo(GET_TOKEN_INFO_INPUT)).thenCallRealMethod();
         entityIdUtils
-                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(KZG_POINT_EVAL.toArray()))
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(ADDRESS_A.toArray()))
                 .thenCallRealMethod();
         final var decodedInput = decodeGetTokenInfo(GET_TOKEN_INFO_INPUT);
 
@@ -966,7 +966,7 @@ class GetTokenInfoPrecompilesTest {
                 .when(() -> decodeGetFungibleTokenInfo(GET_FUNGIBLE_TOKEN_INFO_INPUT))
                 .thenCallRealMethod();
         entityIdUtils
-                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(PARENT_BEACON_BLOCK_ROOT_REGISTRY.toArray()))
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(ADDRESS_B.toArray()))
                 .thenCallRealMethod();
         final var decodedInput = decodeGetFungibleTokenInfo(GET_FUNGIBLE_TOKEN_INFO_INPUT);
 
@@ -980,7 +980,7 @@ class GetTokenInfoPrecompilesTest {
                 .when(() -> decodeGetNonFungibleTokenInfo(GET_NON_FUNGIBLE_TOKEN_INFO_INPUT))
                 .thenCallRealMethod();
         entityIdUtils
-                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(BLS12_G1ADD.toArray()))
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(ADDRESS_C.toArray()))
                 .thenCallRealMethod();
         final var decodedInput = decodeGetNonFungibleTokenInfo(GET_NON_FUNGIBLE_TOKEN_INFO_INPUT);
 

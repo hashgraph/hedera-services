@@ -32,6 +32,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.fixtures.FakeFeeRecordBuilder;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -48,9 +49,9 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -126,6 +127,23 @@ class TokenServiceApiImplTest {
         final var postIncrementAccount = requireNonNull(accountState.get(CONTRACT_ACCOUNT_ID));
         assertEquals(SOME_STORE_KEY, postIncrementAccount.firstContractStorageKey());
         assertEquals(10, postIncrementAccount.contractKvPairsNumber());
+    }
+
+    @Test
+    void missingAccountHasZeroOriginalKvUsage() {
+        assertEquals(0, subject.originalKvUsageFor(CONTRACT_ACCOUNT_ID));
+    }
+
+    @Test
+    void extantContractHasOriginalUsage() {
+        accountStore.put(Account.newBuilder()
+                .accountId(CONTRACT_ACCOUNT_ID)
+                .contractKvPairsNumber(3)
+                .smartContract(true)
+                .build());
+        ((WritableKVStateBase<?, ?>) accountState).commit();
+
+        assertEquals(3, subject.originalKvUsageFor(CONTRACT_ACCOUNT_ID));
     }
 
     @Test
@@ -246,22 +264,7 @@ class TokenServiceApiImplTest {
     }
 
     @Test
-    void returnsModifiedKeys() {
-        accountStore.put(Account.newBuilder()
-                .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
-                .smartContract(true)
-                .build());
-        accountStore.put(Account.newBuilder()
-                .accountId(AccountID.newBuilder().accountNum(OTHER_CONTRACT_ID_BY_NUM.contractNumOrThrow()))
-                .smartContract(true)
-                .build());
-
-        final var modifiedIdSet = subject.modifiedAccountIds();
-        assertEquals(Set.of(CONTRACT_ACCOUNT_ID, OTHER_CONTRACT_ACCOUNT_ID), modifiedIdSet);
-    }
-
-    @Test
-    void returnsUpdatedNonces() {
+    void returnsUpdatedNoncesAndCreatedIds() {
         accountStore.put(Account.newBuilder()
                 .accountId(CONTRACT_ACCOUNT_ID)
                 .ethereumNonce(123L)
@@ -273,8 +276,18 @@ class TokenServiceApiImplTest {
                 .ethereumNonce(124L)
                 .smartContract(true)
                 .build());
-        final var updatedNonces = subject.updatedContractNonces();
-        assertEquals(List.of(new ContractNonceInfo(CONTRACT_ID_BY_NUM, 124L)), updatedNonces);
+        accountStore.put(Account.newBuilder()
+                .accountId(OTHER_CONTRACT_ACCOUNT_ID)
+                .ethereumNonce(1L)
+                .smartContract(true)
+                .build());
+        final var expectedSummary = new ContractChangeSummary(
+                new ArrayList<>(List.of(OTHER_CONTRACT_ID_BY_NUM)),
+                new ArrayList<>(List.of(
+                        new ContractNonceInfo(CONTRACT_ID_BY_NUM, 124L),
+                        new ContractNonceInfo(OTHER_CONTRACT_ID_BY_NUM, 1L))));
+        final var actualSummary = subject.summarizeContractChanges();
+        assertEquals(expectedSummary, actualSummary);
     }
 
     @Test

@@ -59,9 +59,8 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
-import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater<HederaMutableWorldState, Account>
         implements HederaWorldUpdater, HederaEvmStackedWorldUpdater {
@@ -214,13 +213,11 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
     }
 
     @Override
-    public EvmAccount getAccount(final Address addressOrAlias) {
+    public MutableAccount getAccount(final Address addressOrAlias) {
         final var address = aliases().resolveForEvm(addressOrAlias);
         if (isTokenRedirect(address)) {
             final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
-            final var newMutable =
-                    new UpdateTrackingAccount<>(proxyAccount, new UpdateAccountTrackerImpl(trackingAccounts()));
-            return new WrappedEvmAccount(newMutable);
+            return new UpdateTrackingAccount<>(proxyAccount, new UpdateAccountTrackerImpl(trackingAccounts()));
         }
         return super.getAccount(address);
     }
