@@ -18,6 +18,8 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
@@ -64,9 +66,8 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        if (tokenMeta.hasKycKey()) {
-            context.requireKey(tokenMeta.kycKey());
-        }
+        if (!tokenMeta.hasKycKey()) throw new PreCheckException(TOKEN_HAS_NO_KYC_KEY);
+        context.requireKey(tokenMeta.kycKey());
     }
 
     /**
