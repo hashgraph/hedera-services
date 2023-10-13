@@ -1102,7 +1102,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var hotTxn = "hotTxn";
         final var mintTxn = "mintTxn";
 
-        return onlyDefaultHapiSpec("NftTransfersCannotRepeatSerialNos")
+        return defaultHapiSpec("NftTransfersCannotRepeatSerialNos")
                 .given(
                         newKeyNamed(multipurpose),
                         cryptoCreate(TOKEN_TREASURY),
