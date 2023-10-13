@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
@@ -112,6 +113,14 @@ public class GrantApprovalXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess(),
                 "Owner granting approval of 100 fungible units");
+        // TRY APPROVE AND EXPECT IVALID
+        runHtsCallAndExpectRevert(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(GrantApprovalTranslator.GRANT_APPROVAL
+                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, ERC721_TOKEN_ADDRESS, BigInteger.valueOf(100L))
+                        .array()),
+                ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
+                "Owner granting approval of 100 fungible units for invalid spender");
         // TRY TRANSFER AND EXPECT SUCCESS
         runHtsCallAndExpectOnSuccess(
                 UNAUTHORIZED_SPENDER_BESU_ADDRESS,
