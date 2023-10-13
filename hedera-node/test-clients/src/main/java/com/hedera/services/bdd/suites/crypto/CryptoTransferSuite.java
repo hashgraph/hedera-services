@@ -62,7 +62,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.allowanceTinyBarsFromTo;
@@ -1170,6 +1169,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         getAccountInfo(owningParty).has(accountWith().noChangesFromSnapshot(owningParty)));
     }
 
+    @HapiTest
     private HapiSpec hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle() {
         final var uncheckedHbarTxn = "uncheckedHbarTxn";
         final var uncheckedFtTxn = "uncheckedFtTxn";
@@ -1196,15 +1196,15 @@ public class CryptoTransferSuite extends HapiSuite {
                         /* And bypassing precheck */
                         usableTxnIdNamed(uncheckedHbarTxn).payerId(DEFAULT_PAYER),
                         usableTxnIdNamed(uncheckedFtTxn).payerId(DEFAULT_PAYER),
-                        uncheckedSubmit(cryptoTransfer(tinyBarsFromTo(OWNING_PARTY, OWNING_PARTY, 1))
-                                        .signedBy(DEFAULT_PAYER, OWNING_PARTY)
-                                        .txnId(uncheckedHbarTxn))
-                                .payingWith(GENESIS),
-                        uncheckedSubmit(cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(OWNING_PARTY, OWNING_PARTY))
-                                        .signedBy(DEFAULT_PAYER, OWNING_PARTY)
-                                        .dontFullyAggregateTokenTransfers()
-                                        .txnId(uncheckedFtTxn))
-                                .payingWith(GENESIS))
+                        cryptoTransfer(tinyBarsFromTo(OWNING_PARTY, OWNING_PARTY, 1))
+                                .signedBy(DEFAULT_PAYER, OWNING_PARTY)
+                                .txnId(uncheckedHbarTxn)
+                                .hasKnownStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+                        cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(OWNING_PARTY, OWNING_PARTY))
+                                .signedBy(DEFAULT_PAYER, OWNING_PARTY)
+                                .dontFullyAggregateTokenTransfers()
+                                .txnId(uncheckedFtTxn)
+                                .hasKnownStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
                 .then(
                         sleepFor(5_000),
                         getReceipt(uncheckedHbarTxn).hasPriorityStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
