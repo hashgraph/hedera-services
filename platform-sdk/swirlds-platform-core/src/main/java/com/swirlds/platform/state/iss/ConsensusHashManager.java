@@ -187,8 +187,7 @@ public class ConsensusHashManager {
      * but with a null event version.
      */
     public void handlePostconsensusSignatureTransaction(
-            @NonNull final NodeId signerId,
-            @NonNull final StateSignatureTransaction signatureTransaction) {
+            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
         handlePostconsensusSignatureTransaction(signerId, signatureTransaction, null);
     }
 

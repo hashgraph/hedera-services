@@ -148,8 +148,9 @@ public class HashgraphPicture extends JPanel {
         final PlatformEvent e1 = event.getSelfParent();
         PlatformEvent e2 = event.getOtherParent();
         final AddressBook addressBook = hashgraphSource.getAddressBook();
-        if (e2 != null && (!addressBook.contains(e2.getCreatorId())
-                || addressBook.getIndexOfNodeId(e2.getCreatorId()) >= addressBook.getSize())) {
+        if (e2 != null
+                && (!addressBook.contains(e2.getCreatorId())
+                        || addressBook.getIndexOfNodeId(e2.getCreatorId()) >= addressBook.getSize())) {
             // if the creator of the other parent has been removed,
             // treat it as if there is no other parent
             e2 = null;
@@ -176,7 +177,9 @@ public class HashgraphPicture extends JPanel {
         final int fa = fm.getMaxAscent();
         final int fd = fm.getMaxDescent();
         final PlatformEvent e2 = event.getOtherParent() != null
-                && hashgraphSource.getAddressBook().contains(event.getOtherParent().getCreatorId())
+                        && hashgraphSource
+                                .getAddressBook()
+                                .contains(event.getOtherParent().getCreatorId())
                 ? event.getOtherParent()
                 : null;
         final Color color = HashgraphGuiUtils.eventColor(event, options);

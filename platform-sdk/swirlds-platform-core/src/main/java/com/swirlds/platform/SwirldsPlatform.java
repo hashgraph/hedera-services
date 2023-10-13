@@ -430,7 +430,8 @@ public class SwirldsPlatform implements Platform {
                 new ConsensusSystemTransactionManager();
         consensusSystemTransactionManager.addHandler(
                 StateSignatureTransaction.class,
-                (ignored, nodeId, txn, v) -> consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn, v));
+                (ignored, nodeId, txn, v) ->
+                        consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn, v));
         consensusSystemTransactionManager.addHandler(
                 StateSignatureTransaction.class,
                 (ignored, nodeId, txn, v) -> signedStateManager.handlePostconsensusSignatureTransaction(nodeId, txn));

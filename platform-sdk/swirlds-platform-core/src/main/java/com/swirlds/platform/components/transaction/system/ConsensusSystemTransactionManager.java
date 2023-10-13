@@ -122,7 +122,8 @@ public class ConsensusSystemTransactionManager {
 
         for (final EventImpl event : round.getConsensusEvents()) {
             event.systemTransactionIterator()
-                    .forEachRemaining(transaction -> handleTransaction(state, event.getCreatorId(), transaction, event.getSoftwareVersion()));
+                    .forEachRemaining(transaction ->
+                            handleTransaction(state, event.getCreatorId(), transaction, event.getSoftwareVersion()));
         }
     }
 }
