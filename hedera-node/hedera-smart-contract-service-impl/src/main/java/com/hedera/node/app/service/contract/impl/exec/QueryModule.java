@@ -50,9 +50,10 @@ public interface QueryModule {
     @Provides
     @QueryScope
     static TinybarValues provideTinybarValues(@NonNull final ExchangeRate exchangeRate) {
-        // Use zeros for all resource prices, since we charge for query gas via an independent
-        // CryptoTransfer in the query header; and it is illegal to emit logs in a static call
-        return new TinybarValues(exchangeRate, PREPAID_RESOURCE_PRICES);
+        // Use zeros for all resource prices, since they are "prepaid" via an independent
+        // CryptoTransfer in the query header; use null for the child transaction resource
+        // prices, since queries cannot have child transactions
+        return new TinybarValues(exchangeRate, PREPAID_RESOURCE_PRICES, null);
     }
 
     @Provides
@@ -105,11 +106,11 @@ public interface QueryModule {
 
     @Binds
     @QueryScope
-    HederaOperations bindExtWorldScope(QueryHederaOperations queryExtWorldScope);
+    HederaOperations bindHederaOperations(QueryHederaOperations queryExtWorldScope);
 
     @Binds
     @QueryScope
-    HederaNativeOperations bindExtFrameScope(QueryHederaNativeOperations queryExtFrameScope);
+    HederaNativeOperations bindHederaNativeOperations(QueryHederaNativeOperations queryExtFrameScope);
 
     @Binds
     @QueryScope
@@ -117,6 +118,5 @@ public interface QueryModule {
 
     @Binds
     @QueryScope
-    SystemContractOperations bindQuerySystemContractOperations(
-            QuerySystemContractOperations querySystemContractOperations);
+    SystemContractOperations bindSystemContractOperations(QuerySystemContractOperations querySystemContractOperations);
 }

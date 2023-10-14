@@ -212,7 +212,8 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         final var context = component.txnContextFactory().apply(PLACEHOLDER_CALL_BODY);
         final var tinybarValues = new TinybarValues(
                 context.exchangeRateInfo().activeRate(Instant.now()),
-                context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT));
+                context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT),
+                contractCallResourcePrices);
         final var enhancement = new HederaWorldUpdater.Enhancement(
                 new HandleHederaOperations(
                         component.config().getConfigData(LedgerConfig.class),
