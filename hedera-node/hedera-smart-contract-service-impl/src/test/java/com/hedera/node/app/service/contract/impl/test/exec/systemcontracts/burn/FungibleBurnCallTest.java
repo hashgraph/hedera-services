@@ -32,6 +32,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.FungibleBurnCall;
@@ -61,7 +62,13 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
     @Test
     void revertsOnMissingToken() {
         subject = new FungibleBurnCall(
-                1234, mockEnhancement(), null, verificationStrategy, FRAME_SENDER_ADDRESS, addressIdConverter);
+                1234,
+                gasCalculator,
+                mockEnhancement(),
+                null,
+                verificationStrategy,
+                FRAME_SENDER_ADDRESS,
+                addressIdConverter);
 
         final var result = subject.execute().fullResult().result();
 
@@ -136,6 +143,7 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
     private FungibleBurnCall subjectForBurn(final long amount) {
         return new FungibleBurnCall(
                 amount,
+                gasCalculator,
                 mockEnhancement(),
                 FUNGIBLE_TOKEN_ID,
                 verificationStrategy,

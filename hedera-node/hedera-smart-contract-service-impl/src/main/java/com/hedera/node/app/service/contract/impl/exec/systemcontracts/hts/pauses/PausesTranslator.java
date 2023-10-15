@@ -35,8 +35,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class PausesTranslator extends AbstractHtsCallTranslator {
-    public static final Function PAUSE = new Function("pauseToken(address)", ReturnTypes.INT_64);
-    public static final Function UNPAUSE = new Function("unpauseToken(address)", ReturnTypes.INT_64);
+    public static final Function PAUSE = new Function("pauseToken(address)", ReturnTypes.INT64_INT64);
+    public static final Function UNPAUSE = new Function("unpauseToken(address)", ReturnTypes.INT64_INT64);
 
     private final PausesDecoder decoder;
 
@@ -59,7 +59,7 @@ public class PausesTranslator extends AbstractHtsCallTranslator {
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall<>(
-                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class);
+                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class, dispatchGasCalculator);
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {

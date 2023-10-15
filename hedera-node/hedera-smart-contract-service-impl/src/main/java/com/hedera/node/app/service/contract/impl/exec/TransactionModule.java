@@ -26,7 +26,7 @@ import com.hedera.node.app.service.contract.impl.annotations.InitialState;
 import com.hedera.node.app.service.contract.impl.annotations.TopLevelResourcePrices;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
-import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
@@ -73,11 +73,11 @@ public interface TransactionModule {
 
     @Provides
     @TransactionScope
-    static DispatchGasCalculator provideSystemContractGasCalculator(
+    static SystemContractGasCalculator provideSystemContractGasCalculator(
             @NonNull final HandleContext context,
             @NonNull final CanonicalDispatchPrices canonicalDispatchPrices,
             @NonNull final TinybarValues tinybarValues) {
-        return new DispatchGasCalculator(
+        return new SystemContractGasCalculator(
                 tinybarValues, canonicalDispatchPrices, body -> context.dispatchComputeFees(body)
                         .totalFee());
     }
@@ -133,9 +133,10 @@ public interface TransactionModule {
     @TransactionScope
     static HederaEvmContext provideHederaEvmContext(
             @NonNull final TinybarValues tinybarValues,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaOperations hederaOperations,
             @NonNull final HederaEvmBlocks hederaEvmBlocks) {
-        return new HederaEvmContext(hederaOperations.gasPriceInTinybars(), false, hederaEvmBlocks, tinybarValues);
+        return new HederaEvmContext(hederaOperations.gasPriceInTinybars(), false, hederaEvmBlocks, tinybarValues, systemContractGasCalculator);
     }
 
     @Provides

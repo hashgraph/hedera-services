@@ -60,6 +60,7 @@ public class GetAllowanceTranslator extends AbstractHtsCallTranslator {
             final var call = GetAllowanceTranslator.ERC_GET_ALLOWANCE.decodeCall(attempt.inputBytes());
             return new GetAllowanceCall(
                     attempt.addressIdConverter(),
+                    attempt.systemContractGasCalculator(),
                     attempt.enhancement(),
                     attempt.redirectToken(),
                     call.get(0),
@@ -72,6 +73,7 @@ public class GetAllowanceTranslator extends AbstractHtsCallTranslator {
             final Address spender = call.get(2);
             return new GetAllowanceCall(
                     attempt.addressIdConverter(),
+                    attempt.systemContractGasCalculator(),
                     attempt.enhancement(),
                     attempt.linkedToken(ConversionUtils.fromHeadlongAddress(token)),
                     owner,

@@ -55,7 +55,7 @@ public class MintTranslator extends AbstractHtsCallTranslator {
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall<>(
-                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class);
+                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class, dispatchGasCalculator);
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {

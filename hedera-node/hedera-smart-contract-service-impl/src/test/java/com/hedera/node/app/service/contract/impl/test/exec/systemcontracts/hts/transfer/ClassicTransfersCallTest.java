@@ -52,7 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class ClassicTransfersCallTest extends HtsCallTestBase {
-    private static final TupleType INT64_ENCODER = TupleType.parse(ReturnTypes.INT_64);
+    private static final TupleType INT64_ENCODER = TupleType.parse(ReturnTypes.INT64_INT64);
 
     @Mock
     private VerificationStrategy verificationStrategy;

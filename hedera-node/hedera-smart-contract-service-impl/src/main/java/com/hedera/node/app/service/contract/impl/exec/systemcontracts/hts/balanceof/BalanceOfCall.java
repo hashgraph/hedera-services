@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -39,9 +40,10 @@ public class BalanceOfCall extends AbstractRevertibleTokenViewCall {
 
     public BalanceOfCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @Nullable final Token token,
             @NonNull final Address owner) {
-        super(enhancement, token);
+        super(gasCalculator, enhancement, token);
         this.owner = requireNonNull(owner);
     }
 
@@ -50,10 +52,9 @@ public class BalanceOfCall extends AbstractRevertibleTokenViewCall {
      */
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token) {
-        // TODO - gas calculation
         final var ownerNum = accountNumberForEvmReference(owner, nativeOperations());
         if (ownerNum < 0) {
-            return revertResult(INVALID_ACCOUNT_ID, 0L);
+            return revertResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement());
         }
 
         final var tokenNum = token.tokenIdOrThrow().tokenNum();
@@ -61,6 +62,6 @@ public class BalanceOfCall extends AbstractRevertibleTokenViewCall {
         final var balance = relation == null ? 0 : relation.balance();
         final var output = BalanceOfTranslator.BALANCE_OF.getOutputs().encodeElements(BigInteger.valueOf(balance));
 
-        return successResult(output, 0L);
+        return successResult(output, gasCalculator.viewGasRequirement());
     }
 }

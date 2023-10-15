@@ -35,7 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class DefaultKycStatusCallTest extends HtsCallTestBase {
     @Test
     void returnsDefaultKycStatusForPresentToken() {
-        final var subject = new DefaultFreezeStatusCall(mockEnhancement(), false, FUNGIBLE_TOKEN);
+        final var subject = new DefaultFreezeStatusCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 
@@ -50,7 +50,7 @@ class DefaultKycStatusCallTest extends HtsCallTestBase {
 
     @Test
     void returnsDefaultKycStatusForMissingToken() {
-        final var subject = new DefaultFreezeStatusCall(mockEnhancement(), false, null);
+        final var subject = new DefaultFreezeStatusCall(gasCalculator, mockEnhancement(), false, null);
 
         final var result = subject.execute().fullResult().result();
 
@@ -65,7 +65,7 @@ class DefaultKycStatusCallTest extends HtsCallTestBase {
 
     @Test
     void returnsDefaultKycStatusForMissingTokenStaticCall() {
-        final var subject = new DefaultFreezeStatusCall(mockEnhancement(), true, null);
+        final var subject = new DefaultFreezeStatusCall(gasCalculator, mockEnhancement(), true, null);
 
         final var result = subject.execute().fullResult().result();
 

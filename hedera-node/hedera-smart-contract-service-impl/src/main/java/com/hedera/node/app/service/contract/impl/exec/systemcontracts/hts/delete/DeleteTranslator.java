@@ -19,11 +19,14 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.delet
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.token.TokenDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -46,7 +49,17 @@ public class DeleteTranslator extends AbstractHtsCallTranslator {
     @Override
     public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall<>(
-                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class);
+                attempt,
+                bodyForClassic(attempt),
+                SingleTransactionRecordBuilder.class,
+                DeleteTranslator::gasRequirement);
+    }
+
+    public static long gasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.DELETE);
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {

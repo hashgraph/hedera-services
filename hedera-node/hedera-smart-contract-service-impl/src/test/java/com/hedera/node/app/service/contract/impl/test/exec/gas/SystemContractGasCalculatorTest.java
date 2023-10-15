@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
-import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import java.util.function.ToLongFunction;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +30,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class DispatchGasCalculatorTest {
+class SystemContractGasCalculatorTest {
     @Mock
     private TinybarValues tinybarValues;
 
@@ -40,11 +40,11 @@ class DispatchGasCalculatorTest {
     @Mock
     private CanonicalDispatchPrices canonicalDispatchPrices;
 
-    private DispatchGasCalculator subject;
+    private SystemContractGasCalculator subject;
 
     @BeforeEach
     void setUp() {
-        subject = new DispatchGasCalculator(tinybarValues, canonicalDispatchPrices, feeCalculator);
+        subject = new SystemContractGasCalculator(tinybarValues, canonicalDispatchPrices, feeCalculator);
     }
 
     @Test

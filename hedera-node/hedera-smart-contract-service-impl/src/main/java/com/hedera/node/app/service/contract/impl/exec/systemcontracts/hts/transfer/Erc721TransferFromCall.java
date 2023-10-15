@@ -62,7 +62,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final AddressIdConverter addressIdConverter) {
-        super(enhancement);
+        super(gasCalculator, enhancement);
         this.from = requireNonNull(from);
         this.to = requireNonNull(to);
         this.tokenId = tokenId;

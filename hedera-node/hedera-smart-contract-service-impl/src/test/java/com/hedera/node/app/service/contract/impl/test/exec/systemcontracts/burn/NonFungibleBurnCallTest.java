@@ -119,6 +119,7 @@ public class NonFungibleBurnCallTest extends HtsCallTestBase {
     private FungibleBurnCall subjectForNFTBurn(final long serialNo) {
         return new FungibleBurnCall(
                 serialNo,
+                gasCalculator,
                 mockEnhancement(),
                 NON_FUNGIBLE_TOKEN_ID,
                 verificationStrategy,

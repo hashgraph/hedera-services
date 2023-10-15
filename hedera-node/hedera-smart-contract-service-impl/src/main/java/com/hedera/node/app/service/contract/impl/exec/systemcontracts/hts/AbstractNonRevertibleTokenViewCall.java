@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,16 +36,17 @@ public abstract class AbstractNonRevertibleTokenViewCall extends AbstractHtsCall
     private final Token token;
 
     protected AbstractNonRevertibleTokenViewCall(
-            @NonNull final HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token) {
-        super(enhancement);
+            @NonNull final SystemContractGasCalculator gasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @Nullable final Token token) {
+        super(gasCalculator, enhancement);
         this.token = token;
     }
 
     @Override
     public @NonNull PricedResult execute() {
-        // TODO - gas calculation
         if (token == null) {
-            return gasOnly(viewCallResultWith(INVALID_TOKEN_ID, 0L));
+            return gasOnly(viewCallResultWith(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement()));
         } else {
             return gasOnly(resultOfViewingToken(token));
         }

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.utils;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_STATE_CHANGE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TINYBAR_VALUES_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
@@ -32,9 +33,12 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -96,7 +100,8 @@ public class FrameBuilder {
                 .value(value)
                 .apparentValue(value)
                 .blockValues(context.blockValuesOf(transaction.gasLimit()))
-                .completer(unused -> {})
+                .completer(unused -> {
+                })
                 .isStatic(context.staticCall())
                 .miningBeneficiary(nominalCoinbase)
                 .blockHashLookup(context.blocks()::blockHashOf)
@@ -114,13 +119,21 @@ public class FrameBuilder {
         final var needsStorageTracker = contractsConfig.sidecars().contains(CONTRACT_STATE_CHANGE);
         return needsStorageTracker
                 ? Map.of(
-                        CONFIG_CONTEXT_VARIABLE,
-                        config,
-                        TRACKER_CONTEXT_VARIABLE,
-                        new StorageAccessTracker(),
-                        TINYBAR_VALUES_VARIABLE,
-                        context.tinybarValues())
-                : Map.of(CONFIG_CONTEXT_VARIABLE, config, TINYBAR_VALUES_VARIABLE, context.tinybarValues());
+                CONFIG_CONTEXT_VARIABLE,
+                config,
+                TRACKER_CONTEXT_VARIABLE,
+                new StorageAccessTracker(),
+                TINYBAR_VALUES_VARIABLE,
+                context.tinybarValues(),
+                SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE,
+                context.systemContractGasCalculator())
+                : Map.of(
+                CONFIG_CONTEXT_VARIABLE,
+                config,
+                TINYBAR_VALUES_VARIABLE,
+                context.tinybarValues(),
+                SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE,
+                context.systemContractGasCalculator());
     }
 
     private MessageFrame finishedAsCreate(

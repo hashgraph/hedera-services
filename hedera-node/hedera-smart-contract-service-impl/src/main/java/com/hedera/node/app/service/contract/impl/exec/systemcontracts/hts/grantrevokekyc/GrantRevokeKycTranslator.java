@@ -31,8 +31,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class GrantRevokeKycTranslator extends AbstractHtsCallTranslator {
-    public static final Function GRANT_KYC = new Function("grantTokenKyc(address,address)", ReturnTypes.INT_64);
-    public static final Function REVOKE_KYC = new Function("revokeTokenKyc(address,address)", ReturnTypes.INT_64);
+    public static final Function GRANT_KYC = new Function("grantTokenKyc(address,address)", ReturnTypes.INT64_INT64);
+    public static final Function REVOKE_KYC = new Function("revokeTokenKyc(address,address)", ReturnTypes.INT64_INT64);
 
     private final GrantRevokeKycDecoder decoder;
 
@@ -55,7 +55,7 @@ public class GrantRevokeKycTranslator extends AbstractHtsCallTranslator {
     @Override
     public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall<>(
-                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class);
+                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class, dispatchGasCalculator);
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {

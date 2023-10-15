@@ -66,7 +66,7 @@ public class UpdateTranslator extends AbstractHtsCallTranslator {
     @Override
     public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall<>(
-                attempt, nominalBodyFor(attempt), SingleTransactionRecordBuilder.class);
+                attempt, nominalBodyFor(attempt), SingleTransactionRecordBuilder.class, dispatchGasCalculator);
     }
 
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {

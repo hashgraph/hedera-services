@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.exec.gas.DispatchType.BURN_FUNGIBLE;
+import static com.hedera.node.app.service.contract.impl.exec.gas.DispatchType.BURN_NFT;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
@@ -27,6 +29,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
@@ -47,12 +50,13 @@ public class NonFungibleBurnCall extends AbstractHtsCall implements BurnCall {
 
     public NonFungibleBurnCall(
             final List<Long> serialNo,
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final TokenID tokenId,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
             @NonNull final AddressIdConverter addressIdConverter) {
-        super(enhancement);
+        super(gasCalculator, enhancement);
         this.tokenId = requireNonNull(tokenId);
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.spender = requireNonNull(spender);
@@ -62,20 +66,16 @@ public class NonFungibleBurnCall extends AbstractHtsCall implements BurnCall {
 
     @Override
     public @NonNull PricedResult execute() {
-        if (tokenId == null) {
-            return reversionWith(INVALID_TOKEN_ID, 0L);
-        }
-        final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
-        final var recordBuilder = systemContractOperations()
-                .dispatch(syntheticBurnNonFungible(), verificationStrategy, spenderId, TokenBurnRecordBuilder.class);
-        if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder.status(), 0L));
-        } else {
-            final var encodedOutput = BurnTranslator.BURN_TOKEN_V1
-                    .getOutputs()
-                    .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
-            return gasOnly(successResult(encodedOutput, recordBuilder.getNewTotalSupply()));
-        }
+        return executeBurn(
+                tokenId,
+                BURN_NFT,
+                addressIdConverter,
+                verificationStrategy,
+                gasCalculator,
+                this::syntheticBurnNonFungible,
+                spender,
+                systemContractOperations(),
+                gasRequirement -> reversionWith(INVALID_TOKEN_ID, gasRequirement));
     }
 
     private TransactionBody syntheticBurnNonFungible() {

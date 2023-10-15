@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNonRevertibleTokenViewCall;
@@ -35,10 +36,11 @@ public class DefaultKycStatusCall extends AbstractNonRevertibleTokenViewCall {
     private final boolean isStaticCall;
 
     public DefaultKycStatusCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             final boolean isStaticCall,
             @Nullable final Token token) {
-        super(enhancement, token);
+        super(gasCalculator, enhancement, token);
         this.isStaticCall = isStaticCall;
     }
 
@@ -48,9 +50,7 @@ public class DefaultKycStatusCall extends AbstractNonRevertibleTokenViewCall {
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@Nullable final Token token) {
         requireNonNull(token);
-        // TODO - gas calculation
-
-        return fullResultsFor(SUCCESS, 0L, token.accountsKycGrantedByDefault());
+        return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), token.accountsKycGrantedByDefault());
     }
 
     @Override

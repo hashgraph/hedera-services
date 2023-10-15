@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNftViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -37,8 +38,11 @@ public class OwnerOfCall extends AbstractNftViewCall {
     private static final long TREASURY_OWNER_NUM = 0L;
 
     public OwnerOfCall(
-            @NonNull HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token, final long serialNo) {
-        super(enhancement, token, serialNo);
+            @NonNull final SystemContractGasCalculator gasCalculator,
+            @NonNull HederaWorldUpdater.Enhancement enhancement,
+            @Nullable final Token token,
+            final long serialNo) {
+        super(gasCalculator, enhancement, token, serialNo);
     }
 
     /**
@@ -49,7 +53,6 @@ public class OwnerOfCall extends AbstractNftViewCall {
             @NonNull final Token token, @NonNull final Nft nft) {
         requireNonNull(token);
         requireNonNull(nft);
-        // TODO - gas calculation
         final var explicitId = nft.ownerIdOrElse(AccountID.DEFAULT);
         final long ownerNum;
         if (explicitId.accountNumOrElse(TREASURY_OWNER_NUM) == TREASURY_OWNER_NUM) {
@@ -57,12 +60,13 @@ public class OwnerOfCall extends AbstractNftViewCall {
         } else {
             ownerNum = explicitId.accountNumOrThrow();
         }
+        final var gasRequirement = gasCalculator.viewGasRequirement();
         final var owner = nativeOperations().getAccount(ownerNum);
         if (owner == null) {
-            return revertResult(INVALID_ACCOUNT_ID, 0L);
+            return revertResult(INVALID_ACCOUNT_ID, gasRequirement);
         } else {
             final var output = OwnerOfTranslator.OWNER_OF.getOutputs().encodeElements(headlongAddressOf(owner));
-            return HederaSystemContract.FullResult.successResult(output, 0L);
+            return HederaSystemContract.FullResult.successResult(output, gasRequirement);
         }
     }
 }

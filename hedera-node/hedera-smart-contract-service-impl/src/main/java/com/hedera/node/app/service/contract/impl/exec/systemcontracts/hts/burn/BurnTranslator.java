@@ -32,8 +32,8 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class BurnTranslator extends AbstractHtsCallTranslator {
 
-    public static final Function BURN_TOKEN_V1 = new Function("burnToken(address,uint64,int64[])", ReturnTypes.INT);
-    public static final Function BURN_TOKEN_V2 = new Function("burnToken(address,int64,int64[])", ReturnTypes.INT);
+    public static final Function BURN_TOKEN_V1 = new Function("burnToken(address,uint64,int64[])", ReturnTypes.INT64_INT64);
+    public static final Function BURN_TOKEN_V2 = new Function("burnToken(address,int64,int64[])", ReturnTypes.INT64_INT64);
 
     @Inject
     public BurnTranslator() {
@@ -65,6 +65,7 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
             return token.tokenType() == TokenType.FUNGIBLE_COMMON
                     ? new FungibleBurnCall(
                             amount,
+                            attempt.systemContractGasCalculator(),
                             attempt.enhancement(),
                             ConversionUtils.asTokenId(call.get(0)),
                             attempt.defaultVerificationStrategy(),
@@ -72,6 +73,7 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
                             attempt.addressIdConverter())
                     : new NonFungibleBurnCall(
                             Longs.asList(call.get(2)),
+                            attempt.systemContractGasCalculator(),
                             attempt.enhancement(),
                             ConversionUtils.asTokenId(call.get(0)),
                             attempt.defaultVerificationStrategy(),

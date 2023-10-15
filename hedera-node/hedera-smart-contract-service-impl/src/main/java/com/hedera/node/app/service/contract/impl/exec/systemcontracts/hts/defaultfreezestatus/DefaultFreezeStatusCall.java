@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNonRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -34,10 +35,11 @@ public class DefaultFreezeStatusCall extends AbstractNonRevertibleTokenViewCall 
     private final boolean isStaticCall;
 
     public DefaultFreezeStatusCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             final boolean isStaticCall,
             @Nullable final Token token) {
-        super(enhancement, token);
+        super(gasCalculator, enhancement, token);
         this.isStaticCall = isStaticCall;
     }
 
@@ -47,9 +49,7 @@ public class DefaultFreezeStatusCall extends AbstractNonRevertibleTokenViewCall 
     @Override
     protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
-        // TODO - gas calculation
-
-        return fullResultsFor(SUCCESS, 0L, token.accountsFrozenByDefault());
+        return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), token.accountsFrozenByDefault());
     }
 
     @Override

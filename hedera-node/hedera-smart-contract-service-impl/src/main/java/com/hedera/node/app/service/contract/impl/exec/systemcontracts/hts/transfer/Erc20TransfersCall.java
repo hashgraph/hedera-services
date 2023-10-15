@@ -69,7 +69,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
             @NonNull final AddressIdConverter addressIdConverter) {
-        super(enhancement);
+        super(gasCalculator, enhancement);
         this.amount = amount;
         this.from = from;
         this.to = requireNonNull(to);

@@ -54,7 +54,7 @@ public class ERCGrantApprovalCall extends AbstractHtsCall {
             @NonNull final AccountID spender,
             @NonNull final BigInteger amount,
             @NonNull final TokenType tokenType) {
-        super(enhancement);
+        super(gasCalculator, enhancement);
         this.verificationStrategy = verificationStrategy;
         this.sender = sender;
         this.token = token;
