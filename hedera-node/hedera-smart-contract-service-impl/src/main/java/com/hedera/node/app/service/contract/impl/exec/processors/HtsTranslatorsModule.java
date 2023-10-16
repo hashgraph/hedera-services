@@ -48,6 +48,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totals
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateExpiryTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.wipe.WipeTranslator;
 import dagger.Module;
@@ -300,6 +301,13 @@ public interface HtsTranslatorsModule {
     @IntoSet
     static HtsCallTranslator provideUpdateTranslator(@NonNull final UpdateTranslator translator) {
 
+        return translator;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    static HtsCallTranslator provideUpdateExpiryTranslator(@NonNull final UpdateExpiryTranslator translator) {
         return translator;
     }
 }
