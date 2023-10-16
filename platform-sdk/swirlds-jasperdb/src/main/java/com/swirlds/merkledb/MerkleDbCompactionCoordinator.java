@@ -101,9 +101,9 @@ class MerkleDbCompactionCoordinator {
         this.pathToKeyValueTask = new CompactionTask(tableName + PATH_TO_KEY_VALUE_SUFFIX, pathToKeyValue);
 
         ExecutorService executorService = new ThreadPoolExecutor(
+                1,
                 config.compactionThreads(),
-                config.compactionThreads(),
-                0L,
+                50L,
                 TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(),
                 new ThreadConfiguration(getStaticThreadManager())
