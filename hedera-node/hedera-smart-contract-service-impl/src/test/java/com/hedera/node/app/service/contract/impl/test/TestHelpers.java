@@ -39,6 +39,7 @@ import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
@@ -107,7 +108,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
 public class TestHelpers {
-
+    public static final String LEDGER_ID = "01";
     public static final Bytes ETH_WITH_CALL_DATA = Bytes.fromHex(
             "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792");
     public static final Bytes ETH_WITH_TO_ADDRESS = Bytes.fromHex(
@@ -295,7 +296,6 @@ public class TestHelpers {
             .feeScheduleKey(FEE_SCHEDULE_KEY)
             .pauseKey(PAUSE_KEY)
             .build();
-
     public static final List<Tuple> EXPECTED_FIXED_CUSTOM_FEES = List.of(
             Tuple.of(2L, headlongAddressOf(ZERO_TOKEN_ID), true, false, headlongAddressOf(SENDER_ID)),
             Tuple.of(3L, headlongAddressOf(FUNGIBLE_TOKEN_ID), false, false, headlongAddressOf(SENDER_ID)));
@@ -349,6 +349,7 @@ public class TestHelpers {
             .nftId(NftID.newBuilder().tokenId(NON_FUNGIBLE_TOKEN_ID).serialNumber(NFT_SERIAL_NO))
             .ownerId(A_NEW_ACCOUNT_ID)
             .spenderId(B_NEW_ACCOUNT_ID)
+            .mintTime(Timestamp.newBuilder().seconds(1000000L).build())
             .build();
     public static final org.apache.tuweni.bytes.Bytes SOME_REVERT_REASON =
             org.apache.tuweni.bytes.Bytes.wrap("I prefer not to".getBytes());
