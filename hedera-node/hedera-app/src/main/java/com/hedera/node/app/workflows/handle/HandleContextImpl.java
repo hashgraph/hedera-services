@@ -559,7 +559,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             }
         }
 
-        final var validationResult = validate(verifier, function, txBody, payer, userTransactionConsensusTime, payerKey);
+        final var validationResult =
+                validate(verifier, function, txBody, payer, userTransactionConsensusTime, payerKey);
         if (validationResult.status != SO_FAR_SO_GOOD) {
             childRecordBuilder.status(validationResult.responseCodeEnum);
             return;
@@ -601,8 +602,13 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private record ValidationResult(
             @NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum) {}
 
-    private ValidationResult validate(@NonNull final HandleContextVerifier verifier, HederaFunctionality function,
-            TransactionBody txBody, AccountID payer, Instant userTransactionConsensusTime, Key payerKey) {
+    private ValidationResult validate(
+            @NonNull final HandleContextVerifier verifier,
+            HederaFunctionality function,
+            TransactionBody txBody,
+            AccountID payer,
+            Instant userTransactionConsensusTime,
+            Key payerKey) {
 
         TransactionKeys transactionKeys;
         try {
