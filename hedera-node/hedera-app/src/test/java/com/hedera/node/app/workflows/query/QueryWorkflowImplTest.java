@@ -548,7 +548,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Test
     void testThrottleFails() throws IOException {
         // given
-        when(synchronizedThrottleAccumulator.shouldThrottle(eq(HederaFunctionality.FILE_GET_INFO), any()))
+        when(synchronizedThrottleAccumulator.shouldThrottle(eq(HederaFunctionality.FILE_GET_INFO), any(), any()))
                 .thenReturn(true);
         final var responseBuffer = newEmptyBuffer();
 
