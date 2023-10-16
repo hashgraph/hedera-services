@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -64,7 +63,6 @@ import com.hedera.node.app.service.contract.impl.state.RentFactors;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.TokenEvmAccount;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedHashSet;
@@ -355,10 +353,9 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
-    void returnsContractDeletedResponseCodeWithDeletedAccount() {
+    void returnsNullWithDeletedAccount() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).deleted(true));
-        final var exception = assertThrows(HandleException.class, () -> subject.getAddress(ACCOUNT_NUM));
-        assertEquals(CONTRACT_DELETED, exception.getStatus());
+        assertNull(subject.getAddress(ACCOUNT_NUM));
     }
 
     @Test
