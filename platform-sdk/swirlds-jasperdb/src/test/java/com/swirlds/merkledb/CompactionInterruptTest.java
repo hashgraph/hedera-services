@@ -147,7 +147,7 @@ class CompactionInterruptTest {
                 return null;
             });
 
-            ThreadPoolExecutor compactingExecutor = (ThreadPoolExecutor) compactor.createOrGetCompactingExecutor();
+            ThreadPoolExecutor compactingExecutor = (ThreadPoolExecutor) compactor.getCompactingExecutor();
             // we should take into account previous test runs
             long initTaskCount = compactingExecutor.getTaskCount();
             // start compaction for all three storages
@@ -172,7 +172,7 @@ class CompactionInterruptTest {
     }
 
     private static void stopCompactionAndVerifyItsStopped(String tableName, MerkleDbCompactionCoordinator compactor) {
-        ThreadPoolExecutor compactingExecutor = (ThreadPoolExecutor) compactor.createOrGetCompactingExecutor();
+        ThreadPoolExecutor compactingExecutor = (ThreadPoolExecutor) compactor.getCompactingExecutor();
         long initCount = compactingExecutor.getCompletedTaskCount();
 
         // getting access to the guts of the compactor to check the state of the futures

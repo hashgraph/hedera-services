@@ -99,6 +99,22 @@ class MerkleDbCompactionCoordinator {
             hashesStoreDiskTask = null;
         }
         this.pathToKeyValueTask = new CompactionTask(tableName + PATH_TO_KEY_VALUE_SUFFIX, pathToKeyValue);
+
+        ExecutorService executorService = new ThreadPoolExecutor(
+                config.compactionThreads(),
+                config.compactionThreads(),
+                0L,
+                TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(),
+                new ThreadConfiguration(getStaticThreadManager())
+                        .setThreadGroup(new ThreadGroup("Compaction"))
+                        .setComponent(MERKLEDB_COMPONENT)
+                        .setThreadName("Compacting")
+                        .setExceptionHandler(
+                                (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during merging", ex))
+                        .buildFactory());
+
+        compactionExecutorServiceRef.set(executorService);
     }
 
     /**
@@ -159,7 +175,7 @@ class MerkleDbCompactionCoordinator {
             return;
         }
 
-        ExecutorService executor = createOrGetCompactingExecutor();
+        ExecutorService executor = getCompactingExecutor();
 
         synchronized (compactionFuturesByName) {
             if (compactionFuturesByName.containsKey(task.id)) {
@@ -177,46 +193,10 @@ class MerkleDbCompactionCoordinator {
     }
 
     /**
-     * Creates a thread pool for compaction tasks if it does not exist yet, or returns the existing one.
-     * If the existing thread pool is shutdown, it will be replaced with a new one. Note that there is only one
-     * compacting thread-pool per JVM.
      * @return a thread pool for compaction tasks
      */
-    ExecutorService createOrGetCompactingExecutor() {
-        ExecutorService executorService = compactionExecutorServiceRef.get();
-        if (executorService == null) {
-            executorService = new ThreadPoolExecutor(
-                    getCompactingThreadNumber(),
-                    getCompactingThreadNumber(),
-                    0L,
-                    TimeUnit.MILLISECONDS,
-                    new LinkedBlockingQueue<>(),
-                    new ThreadConfiguration(getStaticThreadManager())
-                            .setThreadGroup(new ThreadGroup("Compaction"))
-                            .setComponent(MERKLEDB_COMPONENT)
-                            .setThreadName("Compacting")
-                            .setExceptionHandler((t, ex) ->
-                                    logger.error(EXCEPTION.getMarker(), "Uncaught exception during merging", ex))
-                            .buildFactory());
-            if (!compactionExecutorServiceRef.compareAndSet(null, executorService)) {
-                try {
-                    executorService.shutdown();
-                } catch (Exception e) {
-                    logger.error(EXCEPTION.getMarker(), "Failed to shutdown compaction executor service", e);
-                }
-            }
-        } else {
-            if (executorService.isShutdown()) {
-                compactionExecutorServiceRef.compareAndSet(executorService, null);
-                return createOrGetCompactingExecutor();
-            }
-        }
-
+    ExecutorService getCompactingExecutor() {
         return compactionExecutorServiceRef.get();
-    }
-
-    int getCompactingThreadNumber() {
-        return config.compactionThreads();
     }
 
     boolean isCompactionEnabled() {

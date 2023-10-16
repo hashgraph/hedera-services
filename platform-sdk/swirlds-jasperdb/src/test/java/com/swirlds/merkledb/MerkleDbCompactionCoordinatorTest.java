@@ -20,12 +20,9 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDo
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.apache.commons.lang3.RandomUtils.nextBoolean;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -40,10 +37,6 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -159,42 +152,6 @@ class MerkleDbCompactionCoordinatorTest {
     }
 
     @Test
-    void testCreateOrGetCompactingExecutor() throws ExecutionException, InterruptedException {
-        MerkleDbCompactionCoordinator spy1 = spy(coordinator);
-        MerkleDbCompactionCoordinator spy2 = spy(coordinator);
-
-        CountDownLatch latch1 = new CountDownLatch(1);
-        CountDownLatch latch2 = new CountDownLatch(1);
-        when(spy1.getCompactingThreadNumber()).thenAnswer(invocation -> {
-            latch1.await();
-            return 1;
-        });
-        when(spy2.getCompactingThreadNumber()).thenAnswer(invocation -> {
-            latch2.await();
-            return 2;
-        });
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
-        Future<ExecutorService> service1Future = executorService.submit(spy1::createOrGetCompactingExecutor);
-        Future<ExecutorService> service2Future = executorService.submit(spy2::createOrGetCompactingExecutor);
-        latch1.countDown();
-        ExecutorService executorService1 = service1Future.get();
-        latch2.countDown();
-        ExecutorService executorService2 = service2Future.get();
-
-        assertSame(executorService1, executorService2);
-
-        ExecutorService executor = coordinator.createOrGetCompactingExecutor();
-        // if the executor is already created, the same instance should be returned
-        assertSame(executor, coordinator.createOrGetCompactingExecutor());
-
-        executor.shutdown();
-        // if the executor is shutdown, a new instance should be returned
-        ExecutorService newExecutor = coordinator.createOrGetCompactingExecutor();
-        assertNotSame(executor, newExecutor);
-        assertSame(newExecutor, coordinator.createOrGetCompactingExecutor());
-    }
-
-    @Test
     void testCompactionCancelled() throws IOException, InterruptedException {
         CountDownLatch compactLatch = new CountDownLatch(1);
         CountDownLatch testLatch = new CountDownLatch(3);
@@ -218,6 +175,46 @@ class MerkleDbCompactionCoordinatorTest {
                         verify(objectKeyToPath).compact();
                         verify(pathToHashKeyValue).compact();
                         verify(hashStoreDisk).compact();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                    verifyNoInteractions(statisticsUpdater);
+                },
+                Duration.ofMillis(100),
+                "Unexpected mock state");
+    }
+
+    @Test
+    void testCompactionWithNullNullables() throws IOException, InterruptedException {
+        String table = randomAlphabetic(7);
+        coordinator = new MerkleDbCompactionCoordinator(table, null, null, pathToHashKeyValue);
+        coordinator.enableBackgroundCompaction();
+
+        testCompaction(
+                pathToHashKeyValue,
+                coordinator::compactPathToKeyValueAsync,
+                // expect compaction to be started
+                true,
+                true);
+
+        reset(pathToHashKeyValue);
+
+        CountDownLatch compactLatch = new CountDownLatch(1);
+        CountDownLatch testLatch = new CountDownLatch(1);
+        initCompactibleMock(pathToHashKeyValue, nextBoolean(), testLatch, compactLatch);
+
+        coordinator.compactPathToKeyValueAsync();
+
+        // let all compactions get to the latch
+        testLatch.await();
+
+        // latch is released by interruption of the compaction thread
+        coordinator.stopAndDisableBackgroundCompaction();
+
+        assertEventuallyDoesNotThrow(
+                () -> {
+                    try {
+                        verify(pathToHashKeyValue).compact();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
