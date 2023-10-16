@@ -617,13 +617,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             return new ValidationResult(PRE_HANDLE_FAILURE, KEY_NOT_PROVIDED);
         }
 
-        // Check the time box of the transaction
-        try {
-            checker.checkTimeBox(txBody, userTransactionConsensusTime);
-        } catch (final PreCheckException e) {
-            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
-        }
-
         // Check if the payer has the required permissions
         if (!authorizer.isAuthorized(payer, function)) {
             if (function == HederaFunctionality.SYSTEM_DELETE) {
