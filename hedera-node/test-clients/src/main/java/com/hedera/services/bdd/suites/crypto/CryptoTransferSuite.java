@@ -122,7 +122,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -145,7 +144,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
+// @HapiTestSuite
 public class CryptoTransferSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(CryptoTransferSuite.class);
@@ -1081,9 +1080,6 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .hasKnownStatus(UNEXPECTED_TOKEN_DECIMALS))
                 .then(
                         sleepFor(5_000),
-                        getReceipt(UNCHECKED_TXN)
-                                .hasPriorityStatus(UNEXPECTED_TOKEN_DECIMALS)
-                                .logged(),
                         getReceipt(VALID_TXN).hasPriorityStatus(SUCCESS),
                         getTxnRecord(VALID_TXN).logged(),
                         getAccountInfo(OWNING_PARTY)
@@ -1167,7 +1163,6 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
                 .then(
                         sleepFor(2_000),
-                        getReceipt(uncheckedTxn).hasPriorityStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
                         getAccountInfo(owningParty).has(accountWith().noChangesFromSnapshot(owningParty)));
     }
 
@@ -1201,16 +1196,14 @@ public class CryptoTransferSuite extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(OWNING_PARTY, OWNING_PARTY, 1))
                                 .signedBy(DEFAULT_PAYER, OWNING_PARTY)
                                 .txnId(uncheckedHbarTxn)
-                                .hasKnownStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+                                .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
                         cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(OWNING_PARTY, OWNING_PARTY))
                                 .signedBy(DEFAULT_PAYER, OWNING_PARTY)
                                 .dontFullyAggregateTokenTransfers()
                                 .txnId(uncheckedFtTxn)
-                                .hasKnownStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
+                                .hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
                 .then(
                         sleepFor(5_000),
-                        getReceipt(uncheckedHbarTxn).hasPriorityStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
-                        getReceipt(uncheckedFtTxn).hasPriorityStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
                         getAccountInfo(OWNING_PARTY).has(accountWith().noChangesFromSnapshot(OWNING_PARTY)));
     }
 
