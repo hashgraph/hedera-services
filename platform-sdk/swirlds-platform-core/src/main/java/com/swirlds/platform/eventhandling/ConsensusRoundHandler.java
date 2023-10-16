@@ -45,7 +45,6 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -62,6 +61,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -126,7 +127,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
     private final SoftwareVersion softwareVersion;
 
-    private final RoundAppliedToStateConsumer roundAppliedToStateConsumer;
+    private final Consumer<Long> roundAppliedToStateConsumer;
 
     /**
      * A method that blocks until an event becomes durable.
@@ -171,7 +172,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
+            @NonNull final Consumer<Long> roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
@@ -373,7 +374,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         consensusTimingStat.setTimePoint(2);
 
-        roundAppliedToStateConsumer.roundAppliedToState(round.getRoundNum());
+        roundAppliedToStateConsumer.accept(round.getRoundNum());
 
         consensusTimingStat.setTimePoint(3);
 
