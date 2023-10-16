@@ -16,9 +16,15 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_NOT_PROVIDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -72,6 +78,7 @@ import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.handle.verifier.DelegateHandleContextVerifier;
 import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -551,6 +558,13 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 return;
             }
         }
+
+        final var validationResult = validate(verifier, function, txBody, payer, userTransactionConsensusTime, payerKey);
+        if (validationResult.status != SO_FAR_SO_GOOD) {
+            childRecordBuilder.status(validationResult.responseCodeEnum);
+            return;
+        }
+
         final var childContext = new HandleContextImpl(
                 txBody,
                 function,
@@ -582,6 +596,67 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             childRecordBuilder.status(e.getStatus());
             recordListBuilder.revertChildRecordBuilders(childRecordBuilder);
         }
+    }
+
+    private record ValidationResult(
+            @NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum) {}
+
+    private ValidationResult validate(@NonNull final HandleContextVerifier verifier, HederaFunctionality function,
+            TransactionBody txBody, AccountID payer, Instant userTransactionConsensusTime, Key payerKey) {
+
+        TransactionKeys transactionKeys;
+        try {
+            transactionKeys = allKeysForTransaction(txBody, payer);
+        } catch (PreCheckException e) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, KEY_NOT_PROVIDED);
+        }
+
+        // Check the time box of the transaction
+        try {
+            checker.checkTimeBox(txBody, userTransactionConsensusTime);
+        } catch (final PreCheckException e) {
+            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
+        }
+
+        // Check if the payer has the required permissions
+        if (!authorizer.isAuthorized(payer, function)) {
+            if (function == HederaFunctionality.SYSTEM_DELETE) {
+                return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.NOT_SUPPORTED);
+            }
+            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.UNAUTHORIZED);
+        }
+
+        // Check if the transaction is privileged and if the payer has the required privileges
+        final var privileges = authorizer.hasPrivilegedAuthorization(payer, function, txBody);
+        if (privileges == SystemPrivilege.UNAUTHORIZED) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.AUTHORIZATION_FAILED);
+        }
+        if (privileges == SystemPrivilege.IMPERMISSIBLE) {
+            return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE);
+        }
+
+        // Check all signature verifications. This will also wait, if validation is still ongoing.
+        final var payerKeyVerification = verifier.verificationFor(payerKey);
+        if (payerKeyVerification.failed()) {
+            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_SIGNATURE);
+        }
+
+        // verify all the keys
+        for (final var key : transactionKeys.requiredNonPayerKeys()) {
+            final var verification = verifier.verificationFor(key);
+            if (verification.failed()) {
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
+            }
+        }
+        // If there are any hollow accounts whose signatures need to be verified, verify them
+        for (final var hollowAccount : transactionKeys.requiredHollowAccounts()) {
+            final var verification = verifier.verificationFor(hollowAccount.alias());
+            if (verification.failed()) {
+                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
+            }
+        }
+
+        return new ValidationResult(SO_FAR_SO_GOOD, OK);
     }
 
     @Override
