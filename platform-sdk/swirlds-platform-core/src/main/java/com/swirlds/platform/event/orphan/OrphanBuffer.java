@@ -211,20 +211,23 @@ public class OrphanBuffer {
         final Deque<GossipEvent> nonOrphanStack = new LinkedList<>();
         nonOrphanStack.push(event);
 
+        // When a missing parent is found, there may be many descendants of that parent who end up
+        // being un-orphaned. This loop frees all such orphans non-recursively (recursion yields pretty
+        // code but can thrash the stack).
         while (!nonOrphanStack.isEmpty()) {
+            currentOrphanCount--;
+
             final GossipEvent nonOrphan = nonOrphanStack.pop();
             final EventDescriptor nonOrphanDescriptor = nonOrphan.getDescriptor();
 
             if (nonOrphan.getGeneration() < minimumGenerationNonAncient) {
                 // Although it doesn't cause harm to pass along ancient events, it is unnecessary to do so.
                 intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
-                currentOrphanCount--;
                 continue;
             }
 
             eventConsumer.accept(nonOrphan);
             eventsWithParents.add(nonOrphanDescriptor);
-            currentOrphanCount--;
 
             // since this event is no longer an orphan, we need to recheck all of its children to see if any might
             // not be orphans anymore
