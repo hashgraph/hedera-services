@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator.ERC_GET_APPROVED;
@@ -37,29 +38,37 @@ public class GetApprovedCall extends AbstractRevertibleTokenViewCall {
 
     private final long serialNo;
     private final boolean isErcCall;
+    private final boolean isStaticCall;
 
     public GetApprovedCall(
-            @NonNull HederaWorldUpdater.Enhancement enhancement,
-            @Nullable Token token,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @Nullable final Token token,
             final long serialNo,
-            final boolean isErcCall) {
+            final boolean isErcCall,
+            final boolean isStaticCall) {
         super(enhancement, token);
         this.serialNo = serialNo;
         this.isErcCall = isErcCall;
+        this.isStaticCall = isStaticCall;
     }
 
     @Override
-    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token) {
+    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
         // TODO - gas calculation
         if (token.tokenType() != TokenType.NON_FUNGIBLE_UNIQUE) {
-            return revertResult(INVALID_TOKEN_ID, 0L);
+            if (!isStaticCall) {
+                return revertResult(INVALID_TOKEN_NFT_SERIAL_NUMBER, 0L);
+            } else {
+                return revertResult(INVALID_TOKEN_ID, 0L);
+            }
         }
-        var spenderNum = nativeOperations()
-                .getNft(token.tokenId().tokenNum(), serialNo)
-                .spenderId()
-                .accountNumOrThrow();
-        var spender = nativeOperations().getAccount(spenderNum);
+        final var nft = nativeOperations().getNft(token.tokenId().tokenNum(), serialNo);
+        if (nft == null || !nft.hasNftId()) {
+            return revertResult(INVALID_TOKEN_NFT_SERIAL_NUMBER, 0L);
+        }
+        final var spenderNum = nft.spenderId().accountNumOrThrow();
+        final var spender = nativeOperations().getAccount(spenderNum);
         return isErcCall
                 ? successResult(ERC_GET_APPROVED.getOutputs().encodeElements(headlongAddressOf(spender)), 0L)
                 : successResult(
