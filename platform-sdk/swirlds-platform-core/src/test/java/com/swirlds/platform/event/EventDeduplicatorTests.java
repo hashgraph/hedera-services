@@ -22,6 +22,8 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +32,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -109,8 +112,17 @@ class EventDeduplicatorTests {
             assertTrue(emittedEvents.add(event), "Event was emitted twice");
         };
 
+        final AtomicLong eventsExitedIntakePipeline = new AtomicLong(0);
+        final IntakeEventCounter intakeEventCounter = mock(IntakeEventCounter.class);
+        doAnswer(invocation -> {
+                    eventsExitedIntakePipeline.incrementAndGet();
+                    return null;
+                })
+                .when(intakeEventCounter)
+                .eventExitedIntakePipeline(any());
+
         final EventDeduplicator deduplicator =
-                new EventDeduplicator(TestPlatformContextBuilder.create().build(), eventConsumer);
+                new EventDeduplicator(TestPlatformContextBuilder.create().build(), eventConsumer, intakeEventCounter);
 
         int duplicateEventCount = 0;
         int ancientEventCount = 0;
@@ -159,10 +171,8 @@ class EventDeduplicatorTests {
                 deduplicator.setMinimumGenerationNonAncient(minimumGenerationNonAncient.addAndGet(1));
             }
         }
-        System.out.println("duplicateEventCount: " + duplicateEventCount);
-        System.out.println("ancientEventCount: " + ancientEventCount);
-        System.out.println("emittedEvents.size(): " + emittedEvents.size());
 
+        assertEquals(TEST_EVENT_COUNT, eventsExitedIntakePipeline.get() + emittedEvents.size());
         assertEquals(TEST_EVENT_COUNT, emittedEvents.size() + ancientEventCount + duplicateEventCount);
     }
 }
