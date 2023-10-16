@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -133,44 +134,38 @@ class DataFileCollectionMergeHammerTest {
         final Random rand = new Random(777);
         final AtomicBoolean stop = new AtomicBoolean(false);
         ExecutorService writerService = Executors.newSingleThreadExecutor();
-        Future<?> writerFuture = writerService.submit(() -> {
+        Future<?> writerFuture = writerService.submit((Callable<Void>) () -> {
             while (!stop.get()) {
-                try {
-                    coll.startWriting();
-                    final int numRecords = rand.nextInt(2500);
-                    long prevId = 0;
-                    for (int i = 0; i < numRecords; i++) {
-                        final long id = prevId + rand.nextInt((10_000) - (int) prevId);
-                        if (id == prevId) {
-                            break;
-                        }
-                        prevId = id;
-                        index.put(id, coll.storeDataItem(new long[] {id, rand.nextLong()}));
+                coll.startWriting();
+                final int numRecords = rand.nextInt(2500);
+                long prevId = 0;
+                for (int i = 0; i < numRecords; i++) {
+                    final long id = prevId + rand.nextInt((10_000) - (int) prevId);
+                    if (id == prevId) {
+                        break;
                     }
-                    coll.endWriting(index.size() * 2L - 1, index.size() * 2L).setFileCompleted();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    prevId = id;
+                    index.put(id, coll.storeDataItem(new long[] {id, rand.nextLong()}));
                 }
+                coll.endWriting(index.size() * 2L - 1, index.size() * 2L).setFileCompleted();
             }
+            return null;
         });
 
         ExecutorService compactorService = Executors.newSingleThreadExecutor();
-        Future<?> compactorFuture = compactorService.submit(() -> {
+        Future<?> compactorFuture = compactorService.submit((Callable<Void>) () -> {
             while (!stop.get()) {
-                try {
-                    final List<DataFileReader<?>> filesToMerge =
-                            (List<DataFileReader<?>>) (Object) coll.getAllCompletedFiles();
-                    if (filesToMerge.size() > compactor.getMinNumberOfFilesToCompact()) {
-                        System.out.println(filesToMerge.size());
-                    }
-                    if (filesToMerge.size() > 10000) {
-                        stop.set(true);
-                    }
-                    compactor.compactFiles(index, filesToMerge, 1);
-                } catch (Exception e) {
-                    e.printStackTrace();
+                final List<DataFileReader<?>> filesToMerge =
+                        (List<DataFileReader<?>>) (Object) coll.getAllCompletedFiles();
+                if (filesToMerge.size() > compactor.getMinNumberOfFilesToCompact()) {
+                    System.out.println(filesToMerge.size());
                 }
+                if (filesToMerge.size() > 10000) {
+                    stop.set(true);
+                }
+                compactor.compactFiles(index, filesToMerge, 1);
             }
+            return null;
         });
 
         for (int i = 0; i < 100; i++) {
