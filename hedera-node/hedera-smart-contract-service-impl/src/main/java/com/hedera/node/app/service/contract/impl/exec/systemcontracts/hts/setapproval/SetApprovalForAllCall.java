@@ -33,6 +33,7 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 
+// @Future remove to revert #9214 after modularization is completed
 public class SetApprovalForAllCall extends AbstractHtsCall {
 
     private final VerificationStrategy verificationStrategy;

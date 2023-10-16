@@ -105,8 +105,6 @@ class XTestConstants {
     static final Bytes SN_3456_METADATA = Bytes.wrap("https://example.com/721/" + 3456);
     static final com.esaulpaugh.headlong.abi.Address ERC721_TOKEN_ADDRESS = AbstractContractXTest.asHeadlongAddress(
             asLongZeroAddress(ERC721_TOKEN_ID.tokenNum()).toArray());
-    static final com.esaulpaugh.headlong.abi.Address INVALID_TOKEN_ADDRESS = AbstractContractXTest.asHeadlongAddress(
-            asLongZeroAddress(Long.MAX_VALUE).toArray());
     static final TokenID ERC20_TOKEN_ID = TokenID.newBuilder().tokenNum(1027L).build();
     static final com.esaulpaugh.headlong.abi.Address ERC20_TOKEN_ADDRESS = AbstractContractXTest.asHeadlongAddress(
             asLongZeroAddress(ERC20_TOKEN_ID.tokenNum()).toArray());

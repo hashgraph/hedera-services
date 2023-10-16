@@ -39,8 +39,8 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
     /**
      * Convenience overload that slightly eases construction for the most common case.
      *
-     * @param attempt           the attempt to translate to a dispatching
-     * @param syntheticBody     the synthetic body to dispatch
+     * @param attempt the attempt to translate to a dispatching
+     * @param syntheticBody the synthetic body to dispatch
      * @param recordBuilderType the type of the record builder to expect from the dispatch
      */
     public DispatchForResponseCodeHtsCall(
@@ -58,10 +58,10 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
     /**
      * More general constructor, for cases where perhaps a custom {@link VerificationStrategy} is needed.
      *
-     * @param enhancement          the enhancement to use
-     * @param spenderId            the id of the spender
-     * @param syntheticBody        the synthetic body to dispatch
-     * @param recordBuilderType    the type of the record builder to expect from the dispatch
+     * @param enhancement the enhancement to use
+     * @param spenderId the id of the spender
+     * @param syntheticBody the synthetic body to dispatch
+     * @param recordBuilderType the type of the record builder to expect from the dispatch
      * @param verificationStrategy the verification strategy to use
      */
     public <U extends SingleTransactionRecordBuilder> DispatchForResponseCodeHtsCall(
@@ -85,7 +85,6 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
         // TODO - gas calculation
         final var recordBuilder =
                 systemContractOperations().dispatch(syntheticBody, verificationStrategy, spenderId, recordBuilderType);
-
         return completionWith(recordBuilder.status(), 0L);
     }
 }
