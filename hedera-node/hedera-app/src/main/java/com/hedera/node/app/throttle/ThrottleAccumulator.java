@@ -81,7 +81,7 @@ public class ThrottleAccumulator {
 
     private static final Logger log = LogManager.getLogger(ThrottleAccumulator.class);
     private static final Set<HederaFunctionality> GAS_THROTTLED_FUNCTIONS =
-        EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
+            EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
     private static final int UNKNOWN_NUM_IMPLICIT_CREATIONS = -1;
 
     private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
@@ -94,9 +94,9 @@ public class ThrottleAccumulator {
     private final String throttleType;
 
     public ThrottleAccumulator(
-        @NonNull final IntSupplier capacitySplitSource,
-        @NonNull final ConfigProvider configProvider,
-        @NonNull final String throttleType) {
+            @NonNull final IntSupplier capacitySplitSource,
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final String throttleType) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.capacitySplitSource = requireNonNull(capacitySplitSource, "capacitySplitSource must not be null");
         this.throttleType = requireNonNull(throttleType, "throttleType must not be null");
@@ -134,10 +134,10 @@ public class ThrottleAccumulator {
      * @return whether the query should be throttled
      */
     public boolean shouldThrottle(
-        @NonNull final HederaFunctionality queryFunction,
-        @NonNull final Instant now,
-        @NonNull final Query query,
-        @Nullable final AccountID queryPayerId) {
+            @NonNull final HederaFunctionality queryFunction,
+            @NonNull final Instant now,
+            @NonNull final Query query,
+            @Nullable final AccountID queryPayerId) {
         final var configuration = configProvider.getConfiguration();
 
         if (queryPayerId == null) {
@@ -150,13 +150,13 @@ public class ThrottleAccumulator {
         }
 
         final var shouldThrottleByGas =
-            configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
+                configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
 
         resetLastAllowedUse();
         if (isGasThrottled(queryFunction)
-            && shouldThrottleByGas
-            && (gasThrottle == null
-            || !gasThrottle.allow(now, query.contractCallLocal().gas()))) {
+                && shouldThrottleByGas
+                && (gasThrottle == null
+                        || !gasThrottle.allow(now, query.contractCallLocal().gas()))) {
             reclaimLastAllowedUse();
             return true;
         }
@@ -543,10 +543,10 @@ public class ThrottleAccumulator {
         gasThrottle = new GasLimitDeterministicThrottle(capacity);
 
         log.info(
-            "Resolved {} gas throttle -\n {} gas/sec (throttling {})",
-            throttleType,
-            gasThrottle.capacity(),
-            (contractsConfig.throttleThrottleByGas() ? "ON" : "OFF"));
+                "Resolved {} gas throttle -\n {} gas/sec (throttling {})",
+                throttleType,
+                gasThrottle.capacity(),
+                (contractsConfig.throttleThrottleByGas() ? "ON" : "OFF"));
     }
 
     @NonNull
@@ -557,22 +557,22 @@ public class ThrottleAccumulator {
 
     private void logResolvedDefinitions(final int capacitySplit) {
         var sb = new StringBuilder("Resolved " + throttleType + " ")
-            .append("(after splitting capacity ")
-            .append(capacitySplit)
-            .append(" ways) - \n");
+                .append("(after splitting capacity ")
+                .append(capacitySplit)
+                .append(" ways) - \n");
         functionReqs.entrySet().stream()
-            .sorted(Comparator.comparing(entry -> entry.getKey().toString()))
-            .forEach(entry -> {
-                var function = entry.getKey();
-                var manager = entry.getValue();
-                sb.append("  ")
-                    .append(function)
-                    .append(": ")
-                    .append(manager.currentUsage()) // use current usage instead of the package private
-                    // asReadableRequirements(), otherwise we need to make it public as
-                    // well
-                    .append("\n");
-            });
+                .sorted(Comparator.comparing(entry -> entry.getKey().toString()))
+                .forEach(entry -> {
+                    var function = entry.getKey();
+                    var manager = entry.getValue();
+                    sb.append("  ")
+                            .append(function)
+                            .append(": ")
+                            .append(manager.currentUsage()) // use current usage instead of the package private
+                            // asReadableRequirements(), otherwise we need to make it public as
+                            // well
+                            .append("\n");
+                });
         log.info("{}", () -> sb.toString().trim());
     }
 
