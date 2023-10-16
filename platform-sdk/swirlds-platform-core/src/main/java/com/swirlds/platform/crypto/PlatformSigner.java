@@ -22,6 +22,7 @@ import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.system.PlatformConstructionException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -38,11 +39,14 @@ public class PlatformSigner implements Signer, HashSigner {
      * @param keysAndCerts
      * 		the platform's keys and certificates
      */
-    public PlatformSigner(final KeysAndCerts keysAndCerts)
-            throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException {
-        Signature s = Signature.getInstance(CryptoConstants.SIG_TYPE2, CryptoConstants.SIG_PROVIDER);
-        s.initSign(keysAndCerts.sigKeyPair().getPrivate());
-        this.signature = s;
+    public PlatformSigner(final KeysAndCerts keysAndCerts) {
+        try {
+            Signature s = Signature.getInstance(CryptoConstants.SIG_TYPE2, CryptoConstants.SIG_PROVIDER);
+            s.initSign(keysAndCerts.sigKeyPair().getPrivate());
+            this.signature = s;
+        } catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException e) {
+            throw new PlatformConstructionException(e);
+        }
     }
 
     @Override

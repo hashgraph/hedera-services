@@ -92,6 +92,9 @@ import java.time.Duration;
  *                                      careful enabling this network wide. If this is enabled and all states on disk
  *                                      have deserialization bugs, then all nodes will delete all state copies and the
  *                                      network will restart from genesis.
+ * @param validateInitialState          If false then do not do ISS validation on the state loaded from disk at startup.
+ *                                      This should always be enabled in production environments. Disabling initial
+ *                                      state validation is intended to be a test-only feature.
  */
 @ConfigData("state")
 public record StateConfig(
@@ -117,7 +120,8 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled,
         @ConfigProperty(defaultValue = "emergencyRecovery.yaml") String emergencyStateFileName,
         @ConfigProperty(defaultValue = "1") int signedStateFreq,
-        @ConfigProperty(defaultValue = "false") boolean deleteInvalidStateFiles) {
+        @ConfigProperty(defaultValue = "false") boolean deleteInvalidStateFiles,
+        @ConfigProperty(defaultValue = "true") boolean validateInitialState) {
 
     /**
      * Get the main class name that should be used for signed states.
