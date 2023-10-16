@@ -24,20 +24,29 @@ import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
+import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
+import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
+import static contract.XTestConstants.SENDER_HEADLONG_ADDRESS;
+import static contract.XTestConstants.SENDER_ID;
+import static contract.XTestConstants.SN_1234;
+import static contract.XTestConstants.SN_1234_METADATA;
 import static contract.XTestConstants.addErc20Relation;
+import static contract.XTestConstants.assertSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance.GetAllowanceTranslator;
@@ -78,6 +87,20 @@ public class GetAllowanceXTest extends AbstractContractXTest {
                                 .getOutputs()
                                 .encodeElements(BigInteger.valueOf(1_000L))),
                         output));
+        runHtsCallAndExpectOnSuccess(
+                APPROVED_BESU_ADDRESS,
+                bytesForRedirect(
+                        GetAllowanceTranslator.GET_ALLOWANCE.encodeCallWithArgs(
+                                ERC721_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, APPROVED_HEADLONG_ADDRESS),
+                        ERC20_TOKEN_ID),
+                assertSuccess());
+        runHtsCallAndExpectOnSuccess(
+                APPROVED_BESU_ADDRESS,
+                bytesForRedirect(
+                        GetAllowanceTranslator.GET_ALLOWANCE.encodeCallWithArgs(
+                                ERC20_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, SENDER_HEADLONG_ADDRESS),
+                        ERC20_TOKEN_ID),
+                assertSuccess());
     }
 
     @Override
@@ -90,6 +113,13 @@ public class GetAllowanceXTest extends AbstractContractXTest {
                                 .tokenId(ERC20_TOKEN_ID)
                                 .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .build());
+                put(
+                        ERC721_TOKEN_ID,
+                        Token.newBuilder()
+                                .tokenId(ERC721_TOKEN_ID)
+                                .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .build());
             }
         };
@@ -126,6 +156,22 @@ public class GetAllowanceXTest extends AbstractContractXTest {
                         Account.newBuilder()
                                 .accountId(APPROVED_ID)
                                 .alias(APPROVED_ADDRESS)
+                                .build());
+            }
+        };
+    }
+
+    @Override
+    protected Map<NftID, Nft> initialNfts() {
+        return new HashMap<>() {
+            {
+                put(
+                        SN_1234,
+                        Nft.newBuilder()
+                                .nftId(SN_1234)
+                                .ownerId(OWNER_ID)
+                                .spenderId(SENDER_ID)
+                                .metadata(SN_1234_METADATA)
                                 .build());
             }
         };
