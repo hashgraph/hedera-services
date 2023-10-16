@@ -49,6 +49,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
@@ -133,6 +134,8 @@ public class HevmTransactionFactory {
         return switch (body.data().kind()) {
             case CONTRACT_CREATE_INSTANCE -> fromHapiCreate(
                     body.transactionIDOrThrow().accountIDOrThrow(), body.contractCreateInstanceOrThrow());
+            case CONTRACT_UPDATE_INSTANCE -> fromHapiUpdate(
+                    body.transactionIDOrThrow().accountIDOrThrow(), body.contractUpdateInstanceOrThrow());
             case CONTRACT_CALL -> fromHapiCall(
                     body.transactionIDOrThrow().accountIDOrThrow(), body.contractCallOrThrow());
             case ETHEREUM_TRANSACTION -> fromHapiEthereum(
@@ -157,6 +160,27 @@ public class HevmTransactionFactory {
                 NOT_APPLICABLE,
                 NOT_APPLICABLE,
                 body);
+    }
+
+    private HederaEvmTransaction fromHapiUpdate(
+            @NonNull final AccountID payer, @NonNull final ContractUpdateTransactionBody body) {
+        // assertValidCreation(body); TODO: per Michael - I think if we should be able to use validations from
+        // TokenServiceApi to save some effort (e.g. to validate staking elections we can reuse like here)
+        var account = accountStore.getContractById(body.contractIDOrThrow());
+        final var autorenew = account.autoRenewAccountId();
+
+        return new HederaEvmTransaction(
+                payer,
+                body.autoRenewAccountId(),
+                body.contractIDOrThrow(),
+                NOT_APPLICABLE,
+                Bytes.EMPTY,
+                null,
+                1000000, // TODO:
+                1000000, // TODO:
+                NOT_APPLICABLE,
+                NOT_APPLICABLE,
+                null);
     }
 
     private HederaEvmTransaction fromHapiCall(

@@ -24,6 +24,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
+import com.hedera.node.app.service.contract.impl.exec.TransactionComponent.Factory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -31,6 +33,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
@@ -38,9 +41,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ContractUpdateHandler implements TransactionHandler {
+
+    private final Provider<Factory> provider;
+
     @Inject
-    public ContractUpdateHandler() {
-        // Exists for injection
+    public ContractUpdateHandler(@NonNull final Provider<TransactionComponent.Factory> provider) {
+        this.provider = requireNonNull(provider);
     }
 
     @Override
@@ -74,6 +80,17 @@ public class ContractUpdateHandler implements TransactionHandler {
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
-        throw new UnsupportedOperationException("Not implemented");
+        // Create the transaction-scoped component
+        final var component = provider.get().create(context);
+
+        // Run its in-scope transaction and get the outcome
+        final var outcome = component.contextTransactionProcessor().call();
+
+        // TODO: implement ContractUpdateRecordBuilder
+        // Assemble the appropriate top-level record for the result
+        //        context.recordBuilder(ContractCreateRecordBuilder.class)
+        //            .contractCreateResult(outcome.result())
+        //            .contractID(outcome.recipientIdIfCreated());
+        //        throwIfUnsuccessful(outcome.status());
     }
 }
