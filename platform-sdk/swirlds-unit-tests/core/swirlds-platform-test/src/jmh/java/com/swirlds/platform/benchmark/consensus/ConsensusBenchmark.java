@@ -80,7 +80,6 @@ public class ConsensusBenchmark {
         consensus = new ConsensusImpl(
                 configuration.getConfigData(ConsensusConfig.class),
                 new NoOpConsensusMetrics(),
-                (r, g) -> {},
                 emitter.getGraphGenerator().getAddressBook());
     }
 
@@ -89,7 +88,7 @@ public class ConsensusBenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public void calculateConsensus(final Blackhole bh) {
         for (final IndexedEvent event : events) {
-            bh.consume(consensus.addEvent(event, null));
+            bh.consume(consensus.addEvent(event));
         }
     }
 

@@ -101,14 +101,15 @@ public final class RecoveryTestUtils {
                 randomSignature(random).getSignatureBytes());
 
         final ConsensusData consensusData = new ConsensusData();
-        consensusData.setRoundCreated(random.nextLong());
-        consensusData.setStale(random.nextBoolean());
         consensusData.setConsensusTimestamp(now);
         consensusData.setRoundReceived(round);
         consensusData.setConsensusOrder(random.nextLong());
         consensusData.setLastInRoundReceived(lastInRound);
 
-        return new EventImpl(baseEventHashedData, baseEventUnhashedData, consensusData);
+        final EventImpl event = new EventImpl(baseEventHashedData, baseEventUnhashedData, consensusData);
+        event.setRoundCreated(random.nextLong());
+        event.setStale(random.nextBoolean());
+        return event;
     }
 
     /**

@@ -16,15 +16,19 @@
 
 package com.swirlds.platform.recovery;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.notification.NotificationEngine;
@@ -40,11 +44,17 @@ import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.system.state.notifications.NewRecoveredStateNotification;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.ApplicationDefinitionLoader;
+import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.consensus.SyntheticSnapshot;
+import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventMutableFile;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
+import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
-import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -55,10 +65,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -115,6 +122,11 @@ public final class EventRecoveryWorkflow {
 
         setupConstructableRegistry();
 
+        // parameters if the app needs them
+        final ApplicationDefinition appDefinition =
+                ApplicationDefinitionLoader.loadDefault(getAbsolutePath(DEFAULT_CONFIG_FILE_NAME));
+        ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
+
         final SwirldMain appMain = loadAppMain(mainClassName);
 
         if (!Files.exists(resultingStateDirectory)) {
@@ -138,8 +150,14 @@ public final class EventRecoveryWorkflow {
 
             logger.info(STARTUP.getMarker(), "Reapplying transactions");
 
-            final ReservedSignedState resultingState = reapplyTransactions(
-                    platformContext, initialState, appMain, roundIterator, finalRound, selfId, loadSigningKeys);
+            final RecoveredState recoveredState = reapplyTransactions(
+                    platformContext,
+                    initialState.getAndReserve("recoverState()"),
+                    appMain,
+                    roundIterator,
+                    finalRound,
+                    selfId,
+                    loadSigningKeys);
 
             logger.info(
                     STARTUP.getMarker(),
@@ -147,14 +165,27 @@ public final class EventRecoveryWorkflow {
                     resultingStateDirectory);
 
             SignedStateFileWriter.writeSignedStateFilesToDirectory(
-                    selfId, resultingStateDirectory, resultingState.get(), platformContext.getConfiguration());
+                    selfId, resultingStateDirectory, recoveredState.state().get(), platformContext.getConfiguration());
             final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
             updateEmergencyRecoveryFile(
                     stateConfig, resultingStateDirectory, initialState.get().getConsensusTimestamp());
 
-            logger.info(STARTUP.getMarker(), "Recovery process completed");
+            logger.info(STARTUP.getMarker(), "Signed state written to disk");
 
-            resultingState.close();
+            final PreconsensusEventFile preconsensusEventFile = PreconsensusEventFile.of(
+                    Instant.now(),
+                    0,
+                    recoveredState.judge().getGeneration(),
+                    recoveredState.judge().getGeneration(),
+                    recoveredState.state().get().getRound(),
+                    resultingStateDirectory);
+            final PreconsensusEventMutableFile mutableFile = preconsensusEventFile.getMutableFile();
+            mutableFile.writeEvent(recoveredState.judge());
+            mutableFile.close();
+
+            recoveredState.state().close();
+
+            logger.info(STARTUP.getMarker(), "Recovery process completed");
         }
     }
 
@@ -221,7 +252,7 @@ public final class EventRecoveryWorkflow {
      * @throws IOException if there is a problem reading from the event stream file
      */
     @NonNull
-    public static ReservedSignedState reapplyTransactions(
+    public static RecoveredState reapplyTransactions(
             @NonNull final PlatformContext platformContext,
             @NonNull final ReservedSignedState initialState,
             @NonNull final SwirldMain appMain,
@@ -238,9 +269,6 @@ public final class EventRecoveryWorkflow {
         Objects.requireNonNull(selfId, "selfId must not be null");
 
         final Configuration configuration = platformContext.getConfiguration();
-
-        final long roundsNonAncient =
-                configuration.getConfigData(ConsensusConfig.class).roundsNonAncient();
 
         initialState.get().getState().throwIfImmutable("initial state must be mutable");
 
@@ -268,6 +296,7 @@ public final class EventRecoveryWorkflow {
         ReservedSignedState signedState = initialState;
 
         // Apply events to the state
+        GossipEvent lastEvent = null;
         while (roundIterator.hasNext()
                 && (finalRound == -1 || roundIterator.peek().getRoundNum() <= finalRound)) {
             final Round round = roundIterator.next();
@@ -278,8 +307,10 @@ public final class EventRecoveryWorkflow {
                     round.getEventCount(),
                     round.getRoundNum());
 
-            signedState = handleNextRound(platformContext, signedState, round, roundsNonAncient);
+            signedState = handleNextRound(
+                    platformContext, signedState, round, configuration.getConfigData(ConsensusConfig.class));
             platform.setLatestState(signedState.get());
+            lastEvent = ((EventImpl) getLastEvent(round)).getBaseEvent();
         }
 
         logger.info(STARTUP.getMarker(), "Hashing resulting signed state");
@@ -299,7 +330,7 @@ public final class EventRecoveryWorkflow {
 
         platform.close();
 
-        return signedState;
+        return new RecoveredState(signedState, Objects.requireNonNull(lastEvent));
     }
 
     /**
@@ -308,29 +339,31 @@ public final class EventRecoveryWorkflow {
      * @param platformContext  the current context
      * @param previousState    the previous round's signed state
      * @param round            the next round
-     * @param roundsNonAncient the number of rounds until an event becomes ancient
+     * @param config           the consensus configuration
      * @return the resulting signed state
      */
     private static ReservedSignedState handleNextRound(
             @NonNull final PlatformContext platformContext,
             @NonNull final ReservedSignedState previousState,
             @NonNull final Round round,
-            final long roundsNonAncient) {
+            @NonNull final ConsensusConfig config) {
 
         final Instant currentRoundTimestamp = getRoundTimestamp(round);
-
         previousState.get().getState().throwIfImmutable();
         final State newState = previousState.get().getState().copy();
+        final EventImpl lastEvent = (EventImpl) getLastEvent(round);
+        CryptographyHolder.get().digestSync(lastEvent.getBaseEvent().getHashedData());
         newState.getPlatformState()
                 .getPlatformData()
                 .setRound(round.getRoundNum())
-                .setNumEventsCons(previousState.get().getNumEventsCons() + round.getEventCount())
                 .setHashEventsCons(getHashEventsCons(previousState.get().getHashEventsCons(), round))
-                .setEvents(collectEventsForRound(
-                        roundsNonAncient, previousState.get().getEvents(), round))
                 .setConsensusTimestamp(currentRoundTimestamp)
-                .setMinGenInfo(
-                        getMinGenInfo(roundsNonAncient, previousState.get().getMinGenInfo(), round))
+                .setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
+                        round.getRoundNum(),
+                        lastEvent.getConsensusOrder(),
+                        currentRoundTimestamp,
+                        config,
+                        lastEvent.getBaseEvent()))
                 .setCreationSoftwareVersion(previousState
                         .get()
                         .getState()
@@ -388,13 +421,17 @@ public final class EventRecoveryWorkflow {
      * @return the round's timestamp
      */
     static Instant getRoundTimestamp(final Round round) {
+        return getLastEvent(round).getConsensusTimestamp();
+    }
+
+    static ConsensusEvent getLastEvent(final Round round) {
         final Iterator<ConsensusEvent> iterator = round.iterator();
 
         while (iterator.hasNext()) {
             final ConsensusEvent event = iterator.next();
 
             if (!iterator.hasNext()) {
-                return event.getConsensusTimestamp();
+                return event;
             }
         }
 
@@ -445,74 +482,6 @@ public final class EventRecoveryWorkflow {
 
         return CompareTo.isLessThan(previousRoundTimestamp, freezeTime)
                 && CompareTo.isGreaterThanOrEqualTo(currentRoundTimestamp, freezeTime);
-    }
-
-    /**
-     * Collect the events that need to go into a signed state using the previous round's state and the new round.
-     *
-     * @param roundsNonAncient the number of rounds until an event becomes ancient
-     * @param previousEvents   the previous round's state
-     * @param round            the current round
-     * @return an array of all non-ancient events
-     */
-    static EventImpl[] collectEventsForRound(
-            final long roundsNonAncient, final EventImpl[] previousEvents, final Round round) {
-
-        final long firstRoundToKeep = round.getRoundNum() - roundsNonAncient;
-
-        final List<EventImpl> eventList = new ArrayList<>();
-        for (final EventImpl event : previousEvents) {
-            if (event.getRoundReceived() >= firstRoundToKeep) {
-                eventList.add(event);
-            }
-        }
-
-        for (final ConsensusEvent event : round) {
-            eventList.add((EventImpl) event);
-        }
-
-        return eventList.toArray(new EventImpl[0]);
-    }
-
-    /**
-     * <p>
-     * Get the minimum generation info for all non-ancient rounds.
-     * </p>
-     *
-     * <p>
-     * This implementation differs from what happens in a real platform because the event stream contains insufficient
-     * information to fully reconstruct all consensus data. This implementation will reuse the minimum generation info
-     * from the previous rounds, and will set the minimum generation for the current round to be equal to the minimum
-     * generation of all events in the current round.
-     * </p>
-     *
-     * @param roundsNonAncient   the number of rounds until an event becomes ancient
-     * @param previousMinGenInfo the previous round's minimum generation info
-     * @param round              the current round
-     * @return minimum generation info for the rounds described by the events
-     */
-    static List<MinGenInfo> getMinGenInfo(
-            final long roundsNonAncient, final List<MinGenInfo> previousMinGenInfo, final Round round) {
-
-        final long firstRoundToKeep = round.getRoundNum() - roundsNonAncient;
-        final List<MinGenInfo> minGenInfos = new ArrayList<>();
-
-        for (final MinGenInfo minGenInfo : previousMinGenInfo) {
-            if (minGenInfo.round() >= firstRoundToKeep) {
-                minGenInfos.add(minGenInfo);
-            }
-        }
-
-        if (!round.isEmpty()) {
-            long minimumGeneration = Integer.MAX_VALUE;
-            for (final ConsensusEvent event : round) {
-                final EventImpl eventImpl = (EventImpl) event;
-                minimumGeneration = Math.min(minimumGeneration, eventImpl.getGeneration());
-            }
-            minGenInfos.add(new MinGenInfo(round.getRoundNum(), minimumGeneration));
-        }
-
-        return minGenInfos;
     }
 
     /**

@@ -91,7 +91,7 @@ public class OrchestratorBuilder {
     }
 
     public @NonNull ConsensusTestOrchestrator build() {
-        final ResettableRandom random = RandomUtils.initRandom(seed);
+        final ResettableRandom random = RandomUtils.initRandom(seed, false);
         final long weightSeed = random.nextLong();
         final long graphSeed = random.nextLong();
         final long shuffler1Seed = random.nextLong();
