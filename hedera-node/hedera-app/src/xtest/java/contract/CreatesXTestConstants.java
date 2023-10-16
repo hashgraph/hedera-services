@@ -19,11 +19,10 @@ package contract;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.INVALID_ACCOUNT_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
+import static contract.XUtils.asAddress;
 
-import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import java.math.BigInteger;
-import org.apache.tuweni.bytes.Bytes;
 
 public class CreatesXTestConstants {
     static final long NEXT_ENTITY_NUM = 1004L;
@@ -66,12 +65,5 @@ public class CreatesXTestConstants {
             Tuple[] tokenKeys,
             Tuple expiry) {
         return Tuple.of(name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault, tokenKeys, expiry);
-    }
-
-    // casts Address to null
-    public static Address asAddress(String address) {
-        final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
-        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
-        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
     }
 }

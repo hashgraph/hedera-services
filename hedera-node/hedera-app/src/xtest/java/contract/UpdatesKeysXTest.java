@@ -31,9 +31,9 @@ import static contract.XTestConstants.SENDER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.addErc20Relation;
 import static contract.XTestConstants.assertSuccess;
+import static contract.XUtils.asAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
@@ -50,7 +50,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 
-public class UpdateKeysXTest extends AbstractContractXTest {
+public class UpdatesKeysXTest extends AbstractContractXTest {
     private final Tuple[] TOKEN_KEY = new Tuple[] {
         Tuple.of(
                 BigInteger.valueOf(1),
@@ -146,12 +146,5 @@ public class UpdateKeysXTest extends AbstractContractXTest {
                         .smartContract(true)
                         .build());
         return accounts;
-    }
-
-    // casts Address to null
-    public static Address asAddress(String address) {
-        final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
-        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
-        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
     }
 }

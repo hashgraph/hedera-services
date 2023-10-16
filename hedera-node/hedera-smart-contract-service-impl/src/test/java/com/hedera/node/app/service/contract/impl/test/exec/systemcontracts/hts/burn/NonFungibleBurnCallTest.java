@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.burn;
+package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.burn;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator.BURN_TOKEN_V1;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator.BURN_TOKEN_V2;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,7 +42,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-public class FungibleBurnCallTest extends HtsCallTestBase {
+public class NonFungibleBurnCallTest extends HtsCallTestBase {
 
     private static final org.hyperledger.besu.datatypes.Address FRAME_SENDER_ADDRESS = EIP_1014_ADDRESS;
 
@@ -59,21 +58,11 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
     private FungibleBurnCall subject;
 
     @Test
-    void revertsOnMissingToken() {
-        subject = new FungibleBurnCall(
-                1234, mockEnhancement(), null, verificationStrategy, FRAME_SENDER_ADDRESS, addressIdConverter);
+    void happyPathV1() {
+        givensForSuccessfulNFTBurnV1AndV2();
+        given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
 
-        final var result = subject.execute().fullResult().result();
-
-        assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(Bytes.wrap(INVALID_TOKEN_ID.protoName().getBytes()), result.getOutput());
-    }
-
-    @Test
-    void burnTokenHappyPathV1() {
-        givensForSuccessfulBurnTokenV1AndV2();
-
-        subject = subjectForBurn(10L);
+        subject = subjectForNFTBurn(1L);
 
         final var result = subject.execute().fullResult().result();
 
@@ -86,10 +75,11 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
     }
 
     @Test
-    void burnTokenHappyPathV2() {
-        givensForSuccessfulBurnTokenV1AndV2();
+    void happyPathV2() {
+        givensForSuccessfulNFTBurnV1AndV2();
+        given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
 
-        subject = subjectForBurn(10L);
+        subject = subjectForNFTBurn(1L);
 
         final var result = subject.execute().fullResult().result();
 
@@ -103,17 +93,11 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
 
     @Test
     void unhappyPathRevertsWithReason() {
-        given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
-                .willReturn(A_NEW_ACCOUNT_ID);
-        given(systemContractOperations.dispatch(
-                        any(TransactionBody.class),
-                        eq(verificationStrategy),
-                        eq(A_NEW_ACCOUNT_ID),
-                        eq(TokenBurnRecordBuilder.class)))
-                .willReturn(recordBuilder);
+        givensForSuccessfulNFTBurnV1AndV2();
+
         given(recordBuilder.status()).willReturn(INVALID_TOKEN_BURN_AMOUNT);
 
-        subject = subjectForBurn(1L);
+        subject = subjectForNFTBurn(1L);
 
         final var result = subject.execute().fullResult().result();
 
@@ -121,7 +105,7 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
         assertEquals(Bytes.wrap(INVALID_TOKEN_BURN_AMOUNT.protoName().getBytes()), result.getOutput());
     }
 
-    private void givensForSuccessfulBurnTokenV1AndV2() {
+    private void givensForSuccessfulNFTBurnV1AndV2() {
         given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID);
         given(systemContractOperations.dispatch(
@@ -130,14 +114,13 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
                         eq(A_NEW_ACCOUNT_ID),
                         eq(TokenBurnRecordBuilder.class)))
                 .willReturn(recordBuilder);
-        given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
     }
 
-    private FungibleBurnCall subjectForBurn(final long amount) {
+    private FungibleBurnCall subjectForNFTBurn(final long serialNo) {
         return new FungibleBurnCall(
-                amount,
+                serialNo,
                 mockEnhancement(),
-                FUNGIBLE_TOKEN_ID,
+                NON_FUNGIBLE_TOKEN_ID,
                 verificationStrategy,
                 FRAME_SENDER_ADDRESS,
                 addressIdConverter);

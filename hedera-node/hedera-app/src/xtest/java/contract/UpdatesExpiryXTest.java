@@ -29,10 +29,10 @@ import static contract.XTestConstants.SENDER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.SENDER_ID;
 import static contract.XTestConstants.addErc20Relation;
 import static contract.XTestConstants.assertSuccess;
+import static contract.XUtils.asAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
@@ -150,11 +150,5 @@ public class UpdatesExpiryXTest extends AbstractContractXTest {
                         .smartContract(true)
                         .build());
         return accounts;
-    }
-
-    private static Address asAddress(String address) {
-        final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
-        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
-        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
     }
 }
