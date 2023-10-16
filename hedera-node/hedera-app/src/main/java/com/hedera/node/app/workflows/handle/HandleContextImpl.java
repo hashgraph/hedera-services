@@ -560,7 +560,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         final var validationResult =
-                validate(verifier, function, txBody, payer, userTransactionConsensusTime, payerKey);
+                validate(verifier, function, txBody, payer, payerKey);
         if (validationResult.status != SO_FAR_SO_GOOD) {
             childRecordBuilder.status(validationResult.responseCodeEnum);
             return;
@@ -607,7 +607,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             HederaFunctionality function,
             TransactionBody txBody,
             AccountID payer,
-            Instant userTransactionConsensusTime,
             Key payerKey) {
 
         TransactionKeys transactionKeys;
