@@ -29,14 +29,20 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Deduplicates events.
  * <p>
- * A duplicate event is defined as an event with an identical descriptor, and identical signature to an event that has
+ * A duplicate event is defined as an event with an identical descriptor and identical signature to an event that has
  * already been observed.
  */
 public class EventDeduplicator {
+    /**
+     * Avoid the creation of lambdas for Map.computeIfAbsent() by reusing this lambda.
+     */
+    private static final Function<EventDescriptor, Set<byte[]>> NEW_HASH_SET = ignored -> new HashSet<>();
+
     /**
      * Initial capacity of {@link #observedEvents}.
      */
@@ -100,26 +106,16 @@ public class EventDeduplicator {
             return;
         }
 
-        final EventDescriptor eventDescriptor = event.getDescriptor();
-
-        // a duplicate descriptor alone isn't sufficient to constitute a duplicate event
-        // we still need to check the signature
-        final boolean duplicateDescriptor = observedEvents.containsKey(eventDescriptor);
-
-        if (!duplicateDescriptor) {
-            observedEvents.put(eventDescriptor, new HashSet<>());
-        }
-
-        if (observedEvents.get(eventDescriptor).add(event.getUnhashedData().getSignature())) {
-            if (duplicateDescriptor) {
-                // the event is not a duplicate, but the descriptor matches that of a previously received event
-                // keep track of this signature disparity, as receiving an event with a different signature
-                // is indicative of malicious behavior
+        final Set<byte[]> signatures = observedEvents.computeIfAbsent(event.getDescriptor(), NEW_HASH_SET);
+        if (signatures.add(event.getUnhashedData().getSignature())) {
+            if (signatures.size() != 1) {
+                // signature is unique, but descriptor is not
                 disparateSignatureAccumulator.update(1);
             }
 
             eventConsumer.accept(event);
         } else {
+            // duplicate descriptor and signature
             duplicateEventAccumulator.update(1);
         }
     }

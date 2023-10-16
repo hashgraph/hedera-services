@@ -46,7 +46,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests the {@link EventDeduplicator} class
  */
-public class EventDeduplicatorTests {
+class EventDeduplicatorTests {
     private Random random;
 
     /**
