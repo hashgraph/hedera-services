@@ -45,6 +45,7 @@ import org.apache.logging.log4j.Logger;
  * A {@link GossipEventValidator} which validates the event's signature
  */
 public class SignatureValidator implements GossipEventValidator {
+    public static final String VALIDATOR_NAME = "SIGNATURE_VALIDATOR";
     private static final Logger logger = LogManager.getLogger(SignatureValidator.class);
     private final SignatureVerifier signatureVerifier;
     private final Map<NodeId, PublicKey> previousKeyMap = new HashMap<>();
@@ -145,5 +146,10 @@ public class SignatureValidator implements GossipEventValidator {
         }
 
         return isValidSignature(event, publicKey);
+    }
+
+    @Override
+    public @NonNull String validatorName() {
+        return VALIDATOR_NAME;
     }
 }

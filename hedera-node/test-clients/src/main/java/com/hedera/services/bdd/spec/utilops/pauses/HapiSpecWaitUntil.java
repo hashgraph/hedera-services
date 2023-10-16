@@ -35,37 +35,56 @@ public class HapiSpecWaitUntil extends UtilOp {
     private long stakePeriodMins;
     private long targetTimeOffsetSecs;
     private boolean startOfNextStakingPeriod;
+    private long adhocPeriodMs;
+    private WaitUntilTarget waitUntilTarget;
+
+    enum WaitUntilTarget {
+        SPECIFIC_TIME,
+        START_OF_NEXT_STAKING_PERIOD,
+        START_OF_NEXT_ADHOC_PERIOD
+    }
 
     public HapiSpecWaitUntil(String timeOfDay) throws ParseException {
         timeMs = convertToEpochMillis(timeOfDay);
+        waitUntilTarget = WaitUntilTarget.SPECIFIC_TIME;
+    }
+
+    public static HapiSpecWaitUntil untilStartOfNextAdhocPeriod(final long adhocPeriodMs) {
+        return new HapiSpecWaitUntil(adhocPeriodMs);
     }
 
     public static HapiSpecWaitUntil untilStartOfNextStakingPeriod(final long stakePeriodMins) {
-        return new HapiSpecWaitUntil(stakePeriodMins);
+        return new HapiSpecWaitUntil(stakePeriodMins, 0L);
     }
 
     public static HapiSpecWaitUntil untilJustBeforeStakingPeriod(final long stakePeriodMins, final long secondsBefore) {
         return new HapiSpecWaitUntil(stakePeriodMins, -secondsBefore);
     }
 
-    private HapiSpecWaitUntil(final long stakePeriodMins) {
-        this(stakePeriodMins, 0L);
+    private HapiSpecWaitUntil(final long adhocPeriodMs) {
+        this.adhocPeriodMs = adhocPeriodMs;
+        this.waitUntilTarget = WaitUntilTarget.START_OF_NEXT_ADHOC_PERIOD;
     }
 
     private HapiSpecWaitUntil(final long stakePeriodMins, final long targetTimeOffsetSecs) {
         this.stakePeriodMins = stakePeriodMins;
         this.targetTimeOffsetSecs = targetTimeOffsetSecs;
         this.startOfNextStakingPeriod = true;
+        this.waitUntilTarget = WaitUntilTarget.START_OF_NEXT_STAKING_PERIOD;
     }
 
     @Override
     protected boolean submitOp(HapiSpec spec) throws Throwable {
-        final var stakePeriodMillis = stakePeriodMins * 60 * 1000L;
         final var now = Instant.now();
-        if (startOfNextStakingPeriod) {
+        if (waitUntilTarget == WaitUntilTarget.START_OF_NEXT_STAKING_PERIOD) {
+            final var stakePeriodMillis = stakePeriodMins * 60 * 1000L;
             final var currentPeriod = getPeriod(now, stakePeriodMillis);
             final var nextPeriod = currentPeriod + 1;
             timeMs = nextPeriod * stakePeriodMillis + (targetTimeOffsetSecs * 1000L);
+        } else if (waitUntilTarget == WaitUntilTarget.START_OF_NEXT_ADHOC_PERIOD) {
+            final var currentPeriod = getPeriod(now, adhocPeriodMs);
+            final var nextPeriod = currentPeriod + 1;
+            timeMs = nextPeriod * adhocPeriodMs;
         }
         log.info(
                 "Sleeping until epoch milli {} ({} CST)",

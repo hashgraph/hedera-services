@@ -25,7 +25,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.event.tipset.TipsetEventCreationManagerFactory.buildTipsetEventCreationManager;
+import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildEventCreationManager;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 
 import com.swirlds.base.state.Startable;
@@ -59,6 +59,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookUtils;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
@@ -88,9 +89,9 @@ import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
 import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.AsyncEventCreationManager;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
@@ -102,7 +103,6 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
-import com.swirlds.platform.event.tipset.AsyncTipsetEventCreationManager;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -130,6 +130,7 @@ import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
+import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
@@ -140,6 +141,7 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
+import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
@@ -151,7 +153,6 @@ import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -159,7 +160,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -212,6 +212,8 @@ public class SwirldsPlatform implements Platform {
      * Validates events and passes valid events further down the pipeline.
      */
     private final EventValidator eventValidator;
+    /** Contains all validators for events */
+    private final GossipEventValidators eventValidators;
 
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
     private final ConsensusRoundHandler consensusRoundHandler;
@@ -281,9 +283,9 @@ public class SwirldsPlatform implements Platform {
     private final RecycleBin recycleBin;
 
     /**
-     * Creates new events using the tipset algorithm.
+     * Creates new events.
      */
-    private final AsyncTipsetEventCreationManager tipsetEventCreator;
+    private final AsyncEventCreationManager eventCreator;
 
     /**
      * The round of the most recent reconnect state received, or {@link com.swirlds.common.system.UptimeData#NO_ROUND}
@@ -304,7 +306,6 @@ public class SwirldsPlatform implements Platform {
      * @param appVersion               the current version of the running application
      * @param softwareUpgrade          true if a software upgrade occurred since the last run.
      * @param initialState             the initial state of the platform
-     * @param previousAddressBook      the address book used before the restart, or null if this is the first one ever
      * @param emergencyRecoveryManager used in emergency recovery.
      */
     SwirldsPlatform(
@@ -315,9 +316,8 @@ public class SwirldsPlatform implements Platform {
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final boolean softwareUpgrade,
+            final boolean softwareUpgrade,
             @NonNull final SignedState initialState,
-            @Nullable final AddressBook previousAddressBook,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
@@ -375,7 +375,7 @@ public class SwirldsPlatform implements Platform {
         EventCounter.registerEventCounterMetrics(metrics);
 
         // Manually wire components for now.
-        final ManualWiring wiring = new ManualWiring(platformContext, threadManager, getAddressBook());
+        final ManualWiring wiring = new ManualWiring(platformContext, threadManager, dispatchBuilder, getAddressBook());
         metrics.addUpdater(wiring::updateMetrics);
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
@@ -401,6 +401,26 @@ public class SwirldsPlatform implements Platform {
 
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
+        final ConsensusHashManager consensusHashManager = components.add(new ConsensusHashManager(
+                Time.getCurrent(),
+                dispatchBuilder,
+                currentAddressBook,
+                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                stateConfig,
+                epochHash));
+
+        components.add(new IssHandler(
+                Time.getCurrent(),
+                dispatchBuilder,
+                stateConfig,
+                selfId,
+                platformStatusManager,
+                this::haltRequested,
+                wiring::handleFatalError,
+                appCommunicationComponent));
+
+        components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
+
         stateManagementComponent = wiring.wireStateManagementComponent(
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
                 actualMainClassName,
@@ -411,12 +431,10 @@ public class SwirldsPlatform implements Platform {
                 appCommunicationComponent,
                 preconsensusEventWriter,
                 platformStatusManager::getCurrentStatus,
-                platformStatusManager::submitStatusAction,
-                epochHash);
+                platformStatusManager::submitStatusAction);
         wiring.registerComponents(components);
 
         final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
-        final ConsensusHashManager consensusHashManager = stateManagementComponent.getConsensusHashManager();
 
         final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager =
                 new PreconsensusSystemTransactionManager();
@@ -489,7 +507,7 @@ public class SwirldsPlatform implements Platform {
                 stateHashSignQueue,
                 preconsensusEventWriter::waitUntilDurable,
                 platformStatusManager,
-                stateManagementComponent::roundAppliedToState,
+                consensusHashManager::roundCompleted,
                 appVersion));
 
         final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
@@ -564,10 +582,14 @@ public class SwirldsPlatform implements Platform {
         // address book but are in the previous one, so we need both for signature validation
         if (basicConfig.verifyEventSigs()) {
             validators.add(new SignatureValidator(
-                    previousAddressBook, currentAddressBook, appVersion, CryptoStatic::verifySignature, time));
+                    initialState.getState().getPlatformState().getPreviousAddressBook(),
+                    currentAddressBook,
+                    appVersion,
+                    CryptoStatic::verifySignature,
+                    time));
         }
 
-        final GossipEventValidators eventValidators = new GossipEventValidators(validators);
+        eventValidators = new GossipEventValidators(validators);
         eventValidator = new EventValidator(
                 eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer, intakeEventCounter);
 
@@ -581,7 +603,7 @@ public class SwirldsPlatform implements Platform {
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
                 .build());
 
-        tipsetEventCreator = buildTipsetEventCreationManager(
+        eventCreator = buildEventCreationManager(
                 platformContext,
                 threadManager,
                 time,
@@ -663,7 +685,7 @@ public class SwirldsPlatform implements Platform {
             });
         }
 
-        final Clearable pauseEventCreation = tipsetEventCreator::pauseEventCreation;
+        final Clearable pauseEventCreation = eventCreator::pauseEventCreation;
 
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
@@ -771,13 +793,8 @@ public class SwirldsPlatform implements Platform {
     private void loadStateIntoEventCreator(@NonNull final SignedState signedState) {
         Objects.requireNonNull(signedState);
 
-        if (tipsetEventCreator == null) {
-            // New event creation logic is disabled via settings
-            return;
-        }
-
         try {
-            tipsetEventCreator.setMinimumGenerationNonAncient(
+            eventCreator.setMinimumGenerationNonAncient(
                     signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
 
             // The event creator may not be started yet. To avoid filling up queues, only register
@@ -791,7 +808,7 @@ public class SwirldsPlatform implements Platform {
             }
 
             for (final EventImpl event : latestEvents.values()) {
-                tipsetEventCreator.registerEvent(event);
+                eventCreator.registerEvent(event);
             }
 
         } catch (final InterruptedException e) {
@@ -880,6 +897,22 @@ public class SwirldsPlatform implements Platform {
             // thread will get the up-to-date data loaded
             new PauseAndLoad(intakeQueue, eventLinker).loadFromSignedState(signedState);
 
+            // we need to use the address books from state for validating events, because they might be different
+            // from the ones we had before the reconnect
+            intakeQueue.pause();
+            try {
+                eventValidators.replaceValidator(
+                        SignatureValidator.VALIDATOR_NAME,
+                        new SignatureValidator(
+                                signedState.getState().getPlatformState().getPreviousAddressBook(),
+                                signedState.getState().getPlatformState().getAddressBook(),
+                                appVersion,
+                                CryptoStatic::verifySignature,
+                                Time.getCurrent()));
+            } finally {
+                intakeQueue.resume();
+            }
+
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 
             try {
@@ -909,7 +942,7 @@ public class SwirldsPlatform implements Platform {
         }
 
         gossip.resetFallenBehind();
-        tipsetEventCreator.resumeEventCreation();
+        eventCreator.resumeEventCreation();
         platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
     }
 
@@ -1003,7 +1036,7 @@ public class SwirldsPlatform implements Platform {
         // The event creator is intentionally started before replaying the preconsensus event stream.
         // This prevents the event creator's intake queue from filling up and blocking. Note that
         // this component won't actually create events until the platform has the appropriate status.
-        Optional.of(tipsetEventCreator).ifPresent(Startable::start);
+        eventCreator.start();
 
         replayPreconsensusEvents();
         gossip.start();
@@ -1020,7 +1053,7 @@ public class SwirldsPlatform implements Platform {
      */
     public void performPcesRecovery() {
         components.start();
-        Optional.of(tipsetEventCreator).ifPresent(Startable::start);
+        eventCreator.start();
         replayPreconsensusEvents();
         stateManagementComponent.dumpLatestImmutableState(StateToDiskReason.PCES_RECOVERY_COMPLETE, true);
     }

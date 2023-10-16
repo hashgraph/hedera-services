@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.test.exec.processors;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REMAINING_GAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.isSameResult;
-import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -69,6 +68,7 @@ class CustomMessageCallProcessorTest {
     private static final Address CODE_ADDRESS = Address.fromHexString("0x111222333");
     private static final Address SENDER_ADDRESS = Address.fromHexString("0x222333444");
     private static final Address RECEIVER_ADDRESS = Address.fromHexString("0x33344455");
+    private static final Address ADDRESS_6 = Address.fromHexString("0x6");
 
     @Mock
     private EVM evm;
@@ -164,9 +164,9 @@ class CustomMessageCallProcessorTest {
     void valueCannotBeTransferredToSystemContracts() {
         final var isHalted = new AtomicBoolean();
         givenHaltableFrame(isHalted);
-        givenCallWithCode(ALTBN128_ADD);
-        given(addressChecks.isSystemAccount(ALTBN128_ADD)).willReturn(true);
-        given(registry.get(ALTBN128_ADD)).willReturn(nativePrecompile);
+        givenCallWithCode(ADDRESS_6);
+        given(addressChecks.isSystemAccount(ADDRESS_6)).willReturn(true);
+        given(registry.get(ADDRESS_6)).willReturn(nativePrecompile);
         given(frame.getValue()).willReturn(Wei.ONE);
 
         subject.start(frame, operationTracer);
@@ -295,9 +295,9 @@ class CustomMessageCallProcessorTest {
     }
 
     private void givenEvmPrecompileCall() {
-        given(addressChecks.isSystemAccount(ALTBN128_ADD)).willReturn(true);
-        given(registry.get(ALTBN128_ADD)).willReturn(nativePrecompile);
-        given(frame.getContractAddress()).willReturn(ALTBN128_ADD);
+        given(addressChecks.isSystemAccount(ADDRESS_6)).willReturn(true);
+        given(registry.get(ADDRESS_6)).willReturn(nativePrecompile);
+        given(frame.getContractAddress()).willReturn(ADDRESS_6);
         given(frame.getInputData()).willReturn(INPUT_DATA);
         given(frame.getValue()).willReturn(Wei.ZERO);
     }

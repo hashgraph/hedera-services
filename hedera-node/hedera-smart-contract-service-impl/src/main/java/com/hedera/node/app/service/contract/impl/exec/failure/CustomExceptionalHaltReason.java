@@ -32,6 +32,7 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
     ERROR_DECODING_PRECOMPILE_INPUT("Error when decoding precompile input."),
     FAILURE_DURING_LAZY_ACCOUNT_CREATION("Failure during lazy account creation"),
     NOT_SUPPORTED("Not supported."),
+    CONTRACT_ENTITY_LIMIT_REACHED("Contract entity limit reached."),
     INVALID_FEE_SUBMITTED("Invalid fee submitted for an EVM call.");
 
     private final String description;
@@ -59,6 +60,8 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
             return ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
         } else if (reason == INVALID_SIGNATURE) {
             return ResponseCodeEnum.INVALID_SIGNATURE;
+        } else if (reason == CONTRACT_ENTITY_LIMIT_REACHED) {
+            return ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
         } else if (reason == ExceptionalHaltReason.INSUFFICIENT_GAS) {
             return ResponseCodeEnum.INSUFFICIENT_GAS;
         } else if (reason == ExceptionalHaltReason.ILLEGAL_STATE_CHANGE) {

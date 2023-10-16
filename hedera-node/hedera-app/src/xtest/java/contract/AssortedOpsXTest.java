@@ -204,10 +204,8 @@ public class AssortedOpsXTest extends AbstractContractXTest {
         final var finalizedAndDestructed = Objects.requireNonNull(accounts.get(FINALIZED_AND_DESTRUCTED_ID));
         assertEquals(1, finalizedAndDestructed.contractKvPairsNumber());
 
-        // TODO - uncomment once we have, hopefully, a SavepointStack.commit() method that
-        //  will allow the root updater to see the storage diff for the entire transaction
         final var pointlessIntermediary = Objects.requireNonNull(accounts.get(POINTLESS_INTERMEDIARY_ID));
-        //        assertEquals(2, pointlessIntermediary.contractKvPairsNumber());
+        assertEquals(2, pointlessIntermediary.contractKvPairsNumber());
 
         final var survivingChild = Objects.requireNonNull(accounts.get(RUBE_GOLDBERG_CHILD_ID));
         assertEquals(1, survivingChild.contractKvPairsNumber());

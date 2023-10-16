@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.hapi.utils.fee;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -86,11 +85,7 @@ public final class FileFeeBuilder extends FeeBuilder {
         return getQueryFeeDataMatrices(feeMatrices);
     }
 
-    public FeeData getSystemDeleteFileTxFeeMatrices(TransactionBody txBody, SigValueObj numSignatures)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasSystemDelete()) {
-            throw new InvalidTxBodyException("System Delete Tx Body not available for Fee Calculation");
-        }
+    public FeeData getSystemDeleteFileTxFeeMatrices(TransactionBody txBody, SigValueObj numSignatures) {
         long bpt = 0;
         long vpt = 0;
         long rbs = 0;
@@ -126,11 +121,7 @@ public final class FileFeeBuilder extends FeeBuilder {
         return getFeeDataMatrices(feeMatricesForTx, numSignatures.getPayerAcctSigCount(), rbsNetwork);
     }
 
-    public FeeData getSystemUnDeleteFileTxFeeMatrices(TransactionBody txBody, SigValueObj numSignatures)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasSystemUndelete()) {
-            throw new InvalidTxBodyException("System UnDelete Tx Body not available for Fee Calculation");
-        }
+    public FeeData getSystemUnDeleteFileTxFeeMatrices(TransactionBody txBody, SigValueObj numSignatures) {
         long bpt = 0;
         long vpt = 0;
         long rbs = 0;
@@ -164,12 +155,7 @@ public final class FileFeeBuilder extends FeeBuilder {
         return getFeeDataMatrices(feeMatricesForTx, numSignatures.getPayerAcctSigCount(), rbsNetwork);
     }
 
-    public FeeData getFileDeleteTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasFileDelete()) {
-            throw new InvalidTxBodyException("FileDelete Tx Body not available for Fee Calculation");
-        }
-
+    public FeeData getFileDeleteTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj) {
         long bpt = 0;
         long vpt = 0;
         long rbs = 0;
