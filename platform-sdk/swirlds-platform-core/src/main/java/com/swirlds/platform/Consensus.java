@@ -16,40 +16,26 @@
 
 package com.swirlds.platform;
 
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.consensus.RoundNumberProvider;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.signed.LoadableFromSignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
-/**
- * An interface for classes that calculate consensus of events
- */
-public interface Consensus extends GraphGenerations, RoundNumberProvider {
+/** An interface for classes that calculate consensus of events */
+public interface Consensus extends GraphGenerations, RoundNumberProvider, LoadableFromSignedState {
     /**
-     * Adds an event to the consensus object. This should be the only public method that modifies the state of the
-     * object.
+     * Adds an event to the consensus object. This should be the only public method that modifies
+     * the state of the object.
      *
-     * @param event
-     * 		the event to be added
-     * @param addressBook
-     * 		the address book to be used
-     * @return A list of consensus events, or null if no consensus was reached
+     * @param event the event to be added
+     * @return A list of consensus rounds, each with a list of consensus events (that can be empty). The rounds are
+     * stored in consensus order (round at index 0 occurs before the round at index 1 in consensus time). Returns null
+     * if no consensus was reached
      */
-    List<EventImpl> addEvent(EventImpl event, AddressBook addressBook);
-
-    /**
-     * Returns a list of 3 lists of hashes of witnesses associated with round "round".
-     *
-     * The list contains 3 lists. The first is the hashes of the famous witnesses in round "round".
-     * The second is the hashes of witnesses in round "round"-1 which are ancestors of those in the first
-     * list. The third is the hashes of witnesses in round "round"-2 which are ancestors of those in
-     * the first list.
-     *
-     * @param round
-     * 		the 3 lists are rounds round, round-1, round-2
-     * @return the list of 3 lists of hashes of witnesses (famous for round "round", and ancestors of those)
-     */
-    List<List<Hash>> getWitnessHashes(final long round);
+    @Nullable
+    List<ConsensusRound> addEvent(@NonNull EventImpl event);
 }

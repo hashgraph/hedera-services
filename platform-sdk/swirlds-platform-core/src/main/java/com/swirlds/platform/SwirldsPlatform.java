@@ -298,6 +298,9 @@ public class SwirldsPlatform implements Platform {
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
+    /** Manages emergency recovery */
+    private final EmergencyRecoveryManager emergencyRecoveryManager;
+
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
@@ -326,6 +329,7 @@ public class SwirldsPlatform implements Platform {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
+        this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager");
         final Time time = Time.getCurrent();
 
         final DispatchBuilder dispatchBuilder =
@@ -412,7 +416,8 @@ public class SwirldsPlatform implements Platform {
                 currentAddressBook,
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 stateConfig,
-                epochHash));
+                epochHash,
+                appVersion));
 
         components.add(new IssHandler(
                 Time.getCurrent(),
@@ -450,10 +455,11 @@ public class SwirldsPlatform implements Platform {
                 new ConsensusSystemTransactionManager();
         consensusSystemTransactionManager.addHandler(
                 StateSignatureTransaction.class,
-                (ignored, nodeId, txn) -> consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn));
+                (ignored, nodeId, txn, v) ->
+                        consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn, v));
         consensusSystemTransactionManager.addHandler(
                 StateSignatureTransaction.class,
-                (ignored, nodeId, txn) -> signedStateManager.handlePostconsensusSignatureTransaction(nodeId, txn));
+                (ignored, nodeId, txn, v) -> signedStateManager.handlePostconsensusSignatureTransaction(nodeId, txn));
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
@@ -665,14 +671,13 @@ public class SwirldsPlatform implements Platform {
                 this::clearAllPipelines,
                 intakeEventCounter);
 
+        consensusRef.set(new ConsensusImpl(
+                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                consensusMetrics,
+                getAddressBook()));
+
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;
-
-            consensusRef.set(new ConsensusImpl(
-                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                    consensusMetrics,
-                    consensusRoundHandler::addMinGenInfo,
-                    getAddressBook()));
         } else {
             initialMinimumGenerationNonAncient =
                     initialState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient();
@@ -811,6 +816,11 @@ public class SwirldsPlatform implements Platform {
             eventCreator.setMinimumGenerationNonAncient(
                     signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
 
+            // newer states will not have events, so we need to check for null
+            if (signedState.getState().getPlatformState().getPlatformData().getEvents() == null) {
+                return;
+            }
+
             // The event creator may not be started yet. To avoid filling up queues, only register
             // the latest event from each creator. These are the only ones the event creator cares about.
 
@@ -839,22 +849,20 @@ public class SwirldsPlatform implements Platform {
     private void loadStateIntoConsensus(@NonNull final SignedState signedState) {
         Objects.requireNonNull(signedState);
 
-        consensusRef.set(new ConsensusImpl(
-                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                consensusMetrics,
-                consensusRoundHandler::addMinGenInfo,
-                getAddressBook(),
-                signedState));
+        consensusRef.get().loadFromSignedState(signedState);
 
-        if (signedState.getEvents().length > 0) {
+        // old states will have events in them that need to be loaded, newer states will not
+        if (signedState.getEvents() != null) {
             shadowGraph.initFromEvents(
                     EventUtils.prepareForShadowGraph(
                             // we need to pass in a copy of the array, otherwise prepareForShadowGraph will rearrange
-                            // the events in the signed state which will cause issues for other components
-                            // that depend on it
+                            // the events in the signed state which will cause issues for other components that depend
+                            // on it
                             signedState.getEvents().clone()),
                     // we need to provide the minGen from consensus so that expiry matches after a restart/reconnect
                     consensusRef.get().getMinRoundGeneration());
+        } else {
+            shadowGraph.startFromGeneration(consensusRef.get().getMinGenerationNonAncient());
         }
 
         gossip.loadFromSignedState(signedState);
@@ -1082,8 +1090,11 @@ public class SwirldsPlatform implements Platform {
                 .getConfiguration()
                 .getConfigData(PreconsensusEventStreamConfig.class)
                 .enableReplay();
+        final boolean emergencyRecoveryNeeded = emergencyRecoveryManager.isEmergencyStateRequired();
 
-        if (enableReplay) {
+        // if we need to do an emergency recovery, replaying the PCES could cause issues if the
+        // minimum generation non-ancient is reversed to a smaller value, so we skip it
+        if (enableReplay && !emergencyRecoveryNeeded) {
             PreconsensusEventReplayWorkflow.replayPreconsensusEvents(
                     platformContext,
                     threadManager,

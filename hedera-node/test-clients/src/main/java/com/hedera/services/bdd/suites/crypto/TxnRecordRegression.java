@@ -108,16 +108,17 @@ public class TxnRecordRegression extends HapiSuite {
                         cryptoCreate("misc").via("success"),
                         usableTxnIdNamed("rightAccountWrongId").payerId("misc"))
                 .when()
-                .then(getTxnRecord("rightAccountWrongId").hasCostAnswerPrecheck(RECORD_NOT_FOUND));
+                .then(getTxnRecord("rightAccountWrongId").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
+    @HapiTest
     private HapiSpec recordUnavailableBeforeConsensus() {
         return defaultHapiSpec("RecordUnavailableBeforeConsensus")
                 .given()
                 .when()
                 .then(
                         cryptoCreate("misc").via("success").balance(1_000L).deferStatusResolution(),
-                        getTxnRecord("success").hasCostAnswerPrecheck(RECORD_NOT_FOUND));
+                        getTxnRecord("success").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
     private HapiSpec recordUnavailableIfRejectedInPrecheck() {

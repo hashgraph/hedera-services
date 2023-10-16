@@ -84,9 +84,10 @@ class CriticalQuorumTest {
         final BaseEventUnhashedData baseEventUnhashedData = new BaseEventUnhashedData();
 
         final ConsensusData consensusData = new ConsensusData();
-        consensusData.setRoundCreated(roundCreated);
+        final EventImpl event = new EventImpl(baseEventHashedData, baseEventUnhashedData, consensusData);
+        event.setRoundCreated(roundCreated);
 
-        return new EventImpl(baseEventHashedData, baseEventUnhashedData, consensusData);
+        return event;
     }
 
     /**

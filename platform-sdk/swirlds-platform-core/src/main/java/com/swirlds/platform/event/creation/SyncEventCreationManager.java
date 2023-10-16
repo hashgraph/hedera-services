@@ -34,9 +34,9 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Wraps an {@link EventCreator} and provides additional functionality. Will sometimes decide not to create new
- * events based on external rules or based on paused status. Forwards created events to a consumer, and retries
- * forwarding if the consumer is not immediately able to accept the event.
+ * Wraps an {@link EventCreator} and provides additional functionality. Will sometimes decide not to create new events
+ * based on external rules or based on paused status. Forwards created events to a consumer, and retries forwarding if
+ * the consumer is not immediately able to accept the event.
  */
 public class SyncEventCreationManager {
 
@@ -73,6 +73,8 @@ public class SyncEventCreationManager {
     /**
      * Constructor.
      *
+     * @param platformContext    the platform context
+     * @param time               provides wall clock time
      * @param creator            creates events
      * @param eventCreationRules rules for deciding when it is permitted to create events
      * @param eventConsumer      events that are created are passed here, consumer returns true if the event was
@@ -126,6 +128,9 @@ public class SyncEventCreationManager {
             phase.activatePhase(NO_ELIGIBLE_PARENTS);
         } else {
             eventCreationRules.eventWasCreated();
+            // We created an event, we won't be allowed to create another until some time has elapsed.
+            phase.activatePhase(RATE_LIMITED);
+
             tryToSubmitMostRecentEvent();
 
             // We created an event, we won't be allowed to create another until some time has elapsed.
@@ -141,6 +146,8 @@ public class SyncEventCreationManager {
             final boolean accepted = eventConsumer.apply(mostRecentlyCreatedEvent);
             if (accepted) {
                 mostRecentlyCreatedEvent = null;
+            } else {
+                phase.activatePhase(PIPELINE_INSERTION);
             }
         }
     }

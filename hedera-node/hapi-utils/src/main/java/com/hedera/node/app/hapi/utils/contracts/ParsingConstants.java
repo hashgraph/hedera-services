@@ -54,10 +54,14 @@ public final class ParsingConstants {
     public static final String ROYALTY_FEE_V2 = "(int64,int64,int64,address,bool,address)";
     public static final String TOKEN_KEY = "(uint256," + KEY_VALUE + ")";
 
-    public static final String HEDERA_TOKEN =
+    public static final String HEDERA_TOKEN_V1 =
+            "(" + "string,string,address,string,bool,uint32,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
+    public static final String HEDERA_TOKEN_V2 =
             "(" + "string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
+    public static final String HEDERA_TOKEN_V3 =
+            "(" + "string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY_V2 + ")";
     public static final String TOKEN_INFO = "("
-            + HEDERA_TOKEN
+            + HEDERA_TOKEN_V2
             + ",int64,bool,bool,bool,"
             + FIXED_FEE
             + ARRAY_BRACKETS

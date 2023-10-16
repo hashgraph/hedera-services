@@ -459,6 +459,28 @@ public class GenesisSchema extends Schema {
             @NonNull final WritableKVState<FileID, File> files) {
         logger.debug("Creating genesis throttle definitions file");
 
+        byte[] throttleDefinitionsProtoBytes = readThrottleDefinitionsBytes(bootstrapConfig);
+
+        // Store the configuration in state
+        final var fileNum = filesConfig.throttleDefinitions();
+        final var fileId = FileID.newBuilder()
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .fileNum(fileNum)
+                .build();
+        final var masterKey =
+                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
+        files.put(
+                fileId,
+                File.newBuilder()
+                        .contents(Bytes.wrap(throttleDefinitionsProtoBytes))
+                        .fileId(fileId)
+                        .keys(KeyList.newBuilder().keys(masterKey))
+                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
+                        .build());
+    }
+
+    public static byte[] readThrottleDefinitionsBytes(@NonNull BootstrapConfig bootstrapConfig) {
         // Get the path to the throttles permissions file
         final var throttleDefinitionsResource = bootstrapConfig.throttleDefsJsonResource();
         final var pathToThrottleDefinitions = Path.of(throttleDefinitionsResource);
@@ -500,24 +522,7 @@ public class GenesisSchema extends Schema {
             logger.fatal("Throttle definitions JSON could not be parsed and converted to proto");
             throw new IllegalStateException("Throttle definitions JSON could not be parsed and converted to proto", e);
         }
-
-        // Store the configuration in state
-        final var fileNum = filesConfig.throttleDefinitions();
-        final var fileId = FileID.newBuilder()
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .fileNum(fileNum)
-                .build();
-        final var masterKey =
-                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
-        files.put(
-                fileId,
-                File.newBuilder()
-                        .contents(Bytes.wrap(throttleDefinitionsProtoBytes))
-                        .fileId(fileId)
-                        .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
-                        .build());
+        return throttleDefinitionsProtoBytes;
     }
 
     // ================================================================================================================
