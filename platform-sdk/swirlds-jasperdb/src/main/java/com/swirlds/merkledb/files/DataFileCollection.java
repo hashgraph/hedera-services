@@ -23,7 +23,7 @@ import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.merkledb.files.DataFileCommon.byteOffsetFromDataLocation;
 import static com.swirlds.merkledb.files.DataFileCommon.fileIndexFromDataLocation;
 import static com.swirlds.merkledb.files.DataFileCommon.isFullyWrittenDataFile;
-import static com.swirlds.merkledb.files.DataFileCompactor.DEFAULT_COMPACTION_LEVEL;
+import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
 import static java.util.Collections.singletonList;
 
 import com.swirlds.merkledb.KeyRange;
@@ -359,7 +359,7 @@ public class DataFileCollection<D> implements Snapshotable {
         if (activeDataFileWriter != null) {
             throw new IOException("Tried to start writing when we were already writing.");
         }
-        final DataFileWriter<D> writer = newDataFile(Instant.now(), DEFAULT_COMPACTION_LEVEL);
+        final DataFileWriter<D> writer = newDataFile(Instant.now(), INITIAL_COMPACTION_LEVEL);
         currentDataFileWriter.set(writer);
         final DataFileMetadata metadata = writer.getMetadata();
         final DataFileReader<D> reader = addNewDataFileReader(writer.getPath(), metadata);
@@ -650,10 +650,6 @@ public class DataFileCollection<D> implements Snapshotable {
         }
         return new DataFileWriter<>(
                 storeName, storeDir, newFileIndex, dataItemSerializer, creationTime, compactionLevel);
-    }
-
-    String getStoreName() {
-        return storeName;
     }
 
     /**

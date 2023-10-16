@@ -270,7 +270,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
         // create file collection
         fileCollection =
                 new DataFileCollection<>(storeDir, storeName, legacyStoreName, bucketSerializer, loadedDataCallback);
-        fileCompactor = new DataFileCompactor(fileCollection);
+        fileCompactor = new DataFileCompactor(storeName, fileCollection);
     }
 
     /**
@@ -300,23 +300,23 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     }
 
     /**
-     * Puts this store compaction on hold, if in progress, until {@link #resumeMerging()} is called.
+     * Puts this store compaction on hold, if in progress, until {@link #resumeCompaction()} is called.
      * If compaction is not in progress, calling this method will prevent new compactions from
      * starting until resumed.
      *
      * @throws IOException If an I/O error occurs.
      */
-    public void pauseMerging() throws IOException {
+    public void pauseCompaction() throws IOException {
         fileCompactor.pauseCompaction();
     }
 
     /**
      * Resumes this store compaction if it was in progress, or unblocks a new compaction if it was
-     * blocked to start because of {@link #pauseMerging()}.
+     * blocked to start because of {@link #pauseCompaction()}.
      *
      * @throws IOException If an I/O error occurs.
      */
-    public void resumeMerging() throws IOException {
+    public void resumeCompaction() throws IOException {
         fileCompactor.resumeCompaction();
     }
 

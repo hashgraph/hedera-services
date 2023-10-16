@@ -45,14 +45,15 @@ public class DataFileCollectionBench extends BaseBench {
 
     @Benchmark
     public void merge() throws Exception {
-        beforeTest("mergeBench");
+        String storeName = "mergeBench";
+        beforeTest(storeName);
 
         final LongListOffHeap index = new LongListOffHeap();
         final BenchmarkRecord[] map = new BenchmarkRecord[verify ? maxKey : 0];
         final var store =
                 new DataFileCollection<BenchmarkRecord>(
                         getTestDir(),
-                        "mergeBench",
+                        storeName,
                         null,
                         new BenchmarkRecordSerializer(),
                         (key, dataLocation, dataValue) -> {}) {
@@ -60,7 +61,7 @@ public class DataFileCollectionBench extends BaseBench {
                         return readDataItem(dataLocation);
                     }
                 };
-        final var compactor = new DataFileCompactor(store);
+        final var compactor = new DataFileCompactor(storeName, store);
         System.out.println();
 
         // Write files

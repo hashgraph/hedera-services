@@ -62,7 +62,14 @@ public class DataFileCompactor {
      */
     private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
-    public static final int DEFAULT_COMPACTION_LEVEL = 0;
+    /**
+     * This is the compaction level that non-compacted files have.
+     */
+    public static final int INITIAL_COMPACTION_LEVEL = 0;
+    /**
+     * Name of the file store to compact.
+     */
+    private final String storeName;
     /**
      * The data file collection to compact
      */
@@ -89,11 +96,11 @@ public class DataFileCompactor {
      * closed before the snapshot, and then a new writer / new file is created after the snapshot is
      * taken.
      */
-    private final AtomicReference<DataFileWriter<?>> currentCompactionWriter = new AtomicReference<>();
+    private final AtomicReference<DataFileWriter<?>> currentWriter = new AtomicReference<>();
     /**
      * Currrent data file reader for the compaction writer above.
      */
-    private final AtomicReference<DataFileReader<?>> currentCompactionReader = new AtomicReference<>();
+    private final AtomicReference<DataFileReader<?>> currentReader = new AtomicReference<>();
     /**
      * The list of new files created during compaction. Usually, all files to process are compacted
      * to a single new file, but if compaction is interrupted by a snapshot, there may be more than
@@ -114,7 +121,8 @@ public class DataFileCompactor {
      */
     private final AtomicInteger compactionLevelInProgress = new AtomicInteger(0);
 
-    public DataFileCompactor(final DataFileCollection<?> dataFileCollection) {
+    public DataFileCompactor(String storeName, final DataFileCollection<?> dataFileCollection) {
+        this.storeName = storeName;
         this.dataFileCollection = dataFileCollection;
     }
 
@@ -136,10 +144,7 @@ public class DataFileCompactor {
             throws IOException, InterruptedException {
         if (filesToCompact.size() < getMinNumberOfFilesToCompact()) {
             // nothing to do we have merged since the last data update
-            logger.debug(
-                    MERKLE_DB.getMarker(),
-                    "No files were available for merging [{}]",
-                    dataFileCollection.getStoreName());
+            logger.debug(MERKLE_DB.getMarker(), "No files were available for merging [{}]", storeName);
             return Collections.emptyList();
         }
 
@@ -196,7 +201,7 @@ public class DataFileCompactor {
                 // and current data file writer and reader will point to a new file
                 snapshotCompactionLock.acquire();
                 try {
-                    final DataFileWriter<?> newFileWriter = currentCompactionWriter.get();
+                    final DataFileWriter<?> newFileWriter = currentWriter.get();
                     long serializationVersion = reader.getMetadata().getSerializationVersion();
                     final long newLocation = newFileWriter.writeCopiedDataItem(
                             serializationVersion, reader.readDataItemBytes(fileOffset));
@@ -259,13 +264,13 @@ public class DataFileCompactor {
         final Instant startTime = currentCompactionStartTime.get();
         assert startTime != null;
         final DataFileWriter<?> newFileWriter = dataFileCollection.newDataFile(startTime, compactionLevel);
-        currentCompactionWriter.set(newFileWriter);
+        currentWriter.set(newFileWriter);
         final Path newFileCreated = newFileWriter.getPath();
         newCompactedFiles.add(newFileCreated);
         final DataFileMetadata newFileMetadata = newFileWriter.getMetadata();
         final DataFileReader<?> newFileReader =
                 dataFileCollection.addNewDataFileReader(newFileCreated, newFileMetadata);
-        currentCompactionReader.set(newFileReader);
+        currentReader.set(newFileReader);
     }
 
     /**
@@ -278,11 +283,11 @@ public class DataFileCompactor {
      * @throws IOException If an I/O error occurs
      */
     private void finishCurrentCompactionFile() throws IOException {
-        currentCompactionWriter.get().finishWriting();
-        currentCompactionWriter.set(null);
+        currentWriter.get().finishWriting();
+        currentWriter.set(null);
         // Now include the file in future compactions
-        currentCompactionReader.get().setFileCompleted();
-        currentCompactionReader.set(null);
+        currentReader.get().setFileCompleted();
+        currentReader.set(null);
     }
 
     /**
@@ -306,7 +311,7 @@ public class DataFileCompactor {
         snapshotCompactionLock.acquireUninterruptibly();
         // Check if compaction is currently in progress. If so, flush and close the current file, so
         // it's included to the snapshot
-        final DataFileWriter<?> compactionWriter = currentCompactionWriter.get();
+        final DataFileWriter<?> compactionWriter = currentWriter.get();
         if (compactionWriter != null) {
             compactionWasInProgress.set(true);
             compactionLevelInProgress.set(compactionWriter.getMetadata().getCompactionLevel());
@@ -334,8 +339,8 @@ public class DataFileCompactor {
     public void resumeCompaction() throws IOException {
         try {
             if (compactionWasInProgress.getAndSet(false)) {
-                assert currentCompactionWriter.get() == null;
-                assert currentCompactionReader.get() == null;
+                assert currentWriter.get() == null;
+                assert currentReader.get() == null;
                 startNewCompactionFile(compactionLevelInProgress.getAndSet(0));
             }
         } finally {
@@ -359,7 +364,6 @@ public class DataFileCompactor {
             @Nullable final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction)
             throws IOException, InterruptedException {
 
-        final String storeName = dataFileCollection.getStoreName();
         final List<? extends DataFileReader<?>> allCompactableFiles = dataFileCollection.getAllCompletedFiles();
         final List<DataFileReader<?>> filesToCompact = compactionPlan((List<DataFileReader<?>>) allCompactableFiles);
         if (filesToCompact.isEmpty()) {
@@ -447,7 +451,7 @@ public class DataFileCompactor {
 
         final List<DataFileReader<?>> readersToCompact = new ArrayList<>();
 
-        List<DataFileReader<?>> nonCompactedReaders = readersByLevel.get(DEFAULT_COMPACTION_LEVEL);
+        List<DataFileReader<?>> nonCompactedReaders = readersByLevel.get(INITIAL_COMPACTION_LEVEL);
         if (nonCompactedReaders.size() < getMinNumberOfFilesToCompact()) {
             return Collections.emptyList();
         }
@@ -455,16 +459,19 @@ public class DataFileCompactor {
         // we always compact files from level 0
         readersToCompact.addAll(nonCompactedReaders);
 
-        for (int i = 1; i <= maxCompactionLevel; i++) {
+        for (int i = 0; i <= maxCompactionLevel; i++) {
             final List<DataFileReader<?>> readers = readersByLevel.get(i);
-            // Presumably, one file comes from the previous level.
+            // initial level is the special case, it doesn't have previous levels
+            final int minRequiredAtLevel = (i == INITIAL_COMPACTION_LEVEL)
+                    ? getMinNumberOfFilesToCompact()
+                    : getMinNumberOfFilesToCompact() - 1;
+            // Presumably, one file comes from the compaction of the previous level.
             // If, counting this file in, it still doesn't have enough, then it stops collecting.
-            if (readers.size() < getMinNumberOfFilesToCompact() - 1) {
+            if (readers.size() < minRequiredAtLevel) {
                 break;
             }
             readersToCompact.addAll(readers);
         }
-
         return readersToCompact;
     }
 }

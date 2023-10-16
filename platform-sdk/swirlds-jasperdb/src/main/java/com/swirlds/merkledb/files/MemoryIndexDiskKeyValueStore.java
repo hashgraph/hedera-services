@@ -149,7 +149,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     }
 
     DataFileCompactor createFileCompactor() {
-        return new DataFileCompactor(fileCollection);
+        return new DataFileCompactor(storeName, fileCollection);
     }
 
     /**

@@ -17,7 +17,7 @@
 package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.files.DataFileCommon.createDataFilePath;
-import static com.swirlds.merkledb.files.DataFileCompactor.DEFAULT_COMPACTION_LEVEL;
+import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -115,7 +115,7 @@ class DataFileLowLevelTest {
                 DATA_FILE_INDEX,
                 testType.dataItemSerializer,
                 TEST_START,
-                DEFAULT_COMPACTION_LEVEL);
+                INITIAL_COMPACTION_LEVEL);
         LongArrayList listOfDataItemLocations = new LongArrayList(1000);
         for (int i = 0; i < 1000; i++) {
             long[] dataValue;
@@ -351,7 +351,7 @@ class DataFileLowLevelTest {
                 DATA_FILE_INDEX + 1,
                 testType.dataItemSerializer,
                 TEST_START.plus(1, ChronoUnit.SECONDS),
-                DEFAULT_COMPACTION_LEVEL);
+                INITIAL_COMPACTION_LEVEL);
 
         final var dataFile = dataFileMap.get(testType);
         final var dataFileMetadata = dataFileMetadataMap.get(testType);

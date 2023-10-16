@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.merkledb.files.DataFileCompactor.DEFAULT_COMPACTION_LEVEL;
+import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -33,7 +33,7 @@ class DataFileMetadataTest {
         final int index = 4;
         final Instant creationDate = Instant.ofEpochSecond(1_234_567L);
         final long serializationVersion = 7;
-        final int compactionLevel = DEFAULT_COMPACTION_LEVEL;
+        final int compactionLevel = INITIAL_COMPACTION_LEVEL;
 
         final DataFileMetadata base = new DataFileMetadata(
                 fileFormatVersion,

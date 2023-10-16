@@ -172,10 +172,11 @@ class MemoryIndexDiskKeyValueStoreTest {
         final LongListOffHeap index = new LongListOffHeap();
         final AtomicLong timeSpent = new AtomicLong(0);
         final AtomicDouble savedSpace = new AtomicDouble(0.0);
+        String storeName = "MemoryIndexDiskKeyValueStoreTest";
         final MemoryIndexDiskKeyValueStore<long[]> store =
                 new MemoryIndexDiskKeyValueStore<>(
                         tempDir,
-                        "MemoryIndexDiskKeyValueStoreTest",
+                        storeName,
                         null,
                         testType.dataItemSerializer,
                         null,
@@ -185,7 +186,7 @@ class MemoryIndexDiskKeyValueStoreTest {
                         null) {
                     @Override
                     DataFileCompactor createFileCompactor() {
-                        return new DataFileCompactor(fileCollection) {
+                        return new DataFileCompactor(storeName, fileCollection) {
                             @Override
                             int getMinNumberOfFilesToCompact() {
                                 return 1;
@@ -274,15 +275,7 @@ class MemoryIndexDiskKeyValueStoreTest {
         // open snapshot and check data
         final LongListOffHeap snapshotIndex = new LongListOffHeap();
         final MemoryIndexDiskKeyValueStore<long[]> storeFromSnapshot = new MemoryIndexDiskKeyValueStore<>(
-                tempSnapshotDir,
-                "MemoryIndexDiskKeyValueStoreTest",
-                null,
-                testType.dataItemSerializer,
-                null,
-                snapshotIndex,
-                null,
-                null,
-                null);
+                tempSnapshotDir, storeName, null, testType.dataItemSerializer, null, snapshotIndex, null, null, null);
         checkRange(testType, storeFromSnapshot, 0, 2000, 8910);
         checkRange(testType, storeFromSnapshot, 2000, 48_000, 56_000);
         storeFromSnapshot.close();

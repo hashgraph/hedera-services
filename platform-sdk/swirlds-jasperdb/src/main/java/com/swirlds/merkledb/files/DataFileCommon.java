@@ -331,7 +331,7 @@ public final class DataFileCommon {
         Object[] allFileIndexes = fileCollection.getAllCompletedFiles().stream()
                 .map(reader -> reader.getMetadata().getIndex())
                 .toArray();
-        logger.warn(
+        logger.info(
                 MERKLE_DB.getMarker(),
                 // Note that speed of read and write doesn't exactly map to the real read/write speed
                 // because we consult in-memory index and skip some entries. Effective read/write speed

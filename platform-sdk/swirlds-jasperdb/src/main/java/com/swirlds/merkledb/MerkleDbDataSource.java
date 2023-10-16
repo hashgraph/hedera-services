@@ -39,9 +39,11 @@ import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.collections.OffHeapUser;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection;
+import com.swirlds.merkledb.files.DataFileReader;
 import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
 import com.swirlds.merkledb.files.VirtualHashRecordSerializer;
 import com.swirlds.merkledb.files.VirtualLeafRecordSerializer;
+import com.swirlds.merkledb.files.hashmap.Bucket;
 import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
 import com.swirlds.merkledb.files.hashmap.HalfDiskVirtualKeySet;
 import com.swirlds.merkledb.files.hashmap.VirtualKeySetSerializer;
@@ -441,7 +443,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
         pathToKeyValue.pauseCompaction();
         if (!isLongKeyMode) {
-            objectKeyToPath.pauseMerging();
+            objectKeyToPath.pauseCompaction();
         }
     }
 
@@ -452,13 +454,13 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
         pathToKeyValue.resumeCompaction();
         if (!isLongKeyMode) {
-            objectKeyToPath.resumeMerging();
+            objectKeyToPath.resumeCompaction();
         }
     }
 
     /**
      * Save a batch of data to data store.
-     * <br>
+     * <p>
      * If you call this method where not all data is provided to cover the change in
      * firstLeafPath and lastLeafPath, then any reads after this call may return rubbish or throw
      * obscure exceptions for any internals or leaves that have not been written. For example, if
@@ -1067,7 +1069,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         });
 
         if (hasDiskStoreForHashes) {
-            statisticsUpdater.setFlushHashesStoreFileSize(hashStoreDisk.endWriting());
+            DataFileReader<VirtualHashRecord> newHashesFile = hashStoreDisk.endWriting();
+            statisticsUpdater.setFlushHashesStoreFileSize(newHashesFile);
             compactor.compactDiskStoreForHashesAsync();
         }
     }
@@ -1133,10 +1136,12 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         });
 
         // end writing
-        statisticsUpdater.setFlushLeavesStoreFileSize(pathToKeyValue.endWriting());
+        DataFileReader<VirtualLeafRecord<K, V>> pathToKeyValueReader = pathToKeyValue.endWriting();
+        statisticsUpdater.setFlushLeavesStoreFileSize(pathToKeyValueReader);
         compactor.compactPathToKeyValueAsync();
         if (!isLongKeyMode) {
-            statisticsUpdater.setFlushLeafKeysStoreFileSize(objectKeyToPath.endWriting());
+            DataFileReader<Bucket<K>> objectKeyToPathReader = objectKeyToPath.endWriting();
+            statisticsUpdater.setFlushLeafKeysStoreFileSize(objectKeyToPathReader);
             compactor.compactDiskStoreForObjectKeyToPathAsync();
         }
     }

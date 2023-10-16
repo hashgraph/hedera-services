@@ -68,9 +68,10 @@ class DataFileCollectionMergeHammerTest {
         assertDoesNotThrow(() -> {
             final LongListHeap index = new LongListHeap();
             final var serializer = new ExampleFixedSizeDataSerializer();
+            String storeName = "benchmark";
             final var coll = new DataFileCollection<>(
-                    tempFileDir.resolve("benchmark"), "benchmark", serializer, (key, dataLocation, dataValue) -> {});
-            final var compactor = new DataFileCompactor(coll);
+                    tempFileDir.resolve(storeName), storeName, serializer, (key, dataLocation, dataValue) -> {});
+            final var compactor = new DataFileCompactor(storeName, coll);
 
             final Random rand = new Random(777);
             for (int i = 0; i < numFiles; i++) {
@@ -124,9 +125,10 @@ class DataFileCollectionMergeHammerTest {
         final Path tempFileDir = TemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionMergeHammerTest");
         final LongListHeap index = new LongListHeap();
         final var serializer = new ExampleFixedSizeDataSerializer();
+        String storeName = "hammer";
         final var coll = new DataFileCollection<>(
-                tempFileDir.resolve("hammer"), "hammer", serializer, (key, dataLocation, dataValue) -> {});
-        final var compactor = new DataFileCompactor(coll);
+                tempFileDir.resolve(storeName), storeName, serializer, (key, dataLocation, dataValue) -> {});
+        final var compactor = new DataFileCompactor(storeName, coll);
 
         final Random rand = new Random(777);
         final AtomicBoolean stop = new AtomicBoolean(false);
