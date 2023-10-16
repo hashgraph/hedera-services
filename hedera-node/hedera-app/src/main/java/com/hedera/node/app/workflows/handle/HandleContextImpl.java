@@ -559,8 +559,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             }
         }
 
-        final var validationResult =
-                validate(verifier, function, txBody, payer, payerKey);
+        final var validationResult = validate(verifier, function, txBody, payer, payerKey);
         if (validationResult.status != SO_FAR_SO_GOOD) {
             childRecordBuilder.status(validationResult.responseCodeEnum);
             return;
