@@ -19,6 +19,7 @@ package com.swirlds.platform.consensus;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -85,6 +86,9 @@ public class AncestorSearch {
         for (final EventImpl e : visited) {
             if (e.getRecTimes().size() == events.size()) {
                 commonAncestors.add(e);
+                // sort the rec times so that they can be used to find the median when calculating
+                // their consensus timestamps
+                Collections.sort(e.getRecTimes());
             } else {
                 // reclaim the memory for the list of received times
                 e.setRecTimes(null);

@@ -17,9 +17,11 @@
 package com.swirlds.platform.components.transaction.system;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Handles system transactions post-consensus
@@ -32,9 +34,14 @@ public interface ConsensusSystemTransactionHandler<T extends SystemTransaction> 
     /**
      * Execute the post-consensus system transaction handler
      *
-     * @param state       a mutable state
-     * @param nodeId      the id of the node which created the transaction
-     * @param transaction the transaction being handled
+     * @param state        a mutable state
+     * @param nodeId       the id of the node which created the transaction
+     * @param transaction  the transaction being handled
+     * @param eventVersion the version of the event that contains the transaction
      */
-    void handle(@NonNull State state, @NonNull NodeId nodeId, @NonNull T transaction);
+    void handle(
+            @NonNull State state,
+            @NonNull NodeId nodeId,
+            @NonNull T transaction,
+            @Nullable SoftwareVersion eventVersion);
 }

@@ -84,7 +84,7 @@ class PlatformStateTests {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final InputOutputStream io = new InputOutputStream();
-        final PlatformState state = randomPlatformState(false);
+        final PlatformState state = randomPlatformState();
         io.getOutput().writeMerkleTree(testDirectory, state);
 
         io.startReading();
