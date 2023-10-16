@@ -108,12 +108,17 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         final var nftSerialNums = new ArrayList<>(new LinkedHashSet<>(op.serialNumbers()));
         final var validated =
                 validateSemantics(tokenId, fungibleBurnCount, nftSerialNums, tokenStore, tokenRelStore, tokensConfig);
+        final var treasuryRel = validated.tokenTreasuryRel();
         final var token = validated.token();
+
+        if (token.hasKycKey()) {
+            validateTrue(treasuryRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+        }
 
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
             changeSupply(
                     validated.token(),
-                    validated.tokenTreasuryRel(),
+                    treasuryRel,
                     -fungibleBurnCount,
                     INVALID_TOKEN_BURN_AMOUNT,
                     accountStore,
@@ -133,13 +138,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
 
             // Update counts for accounts and token rels
             changeSupply(
-                    token,
-                    validated.tokenTreasuryRel(),
-                    -nftSerialNums.size(),
-                    FAIL_INVALID,
-                    accountStore,
-                    tokenStore,
-                    tokenRelStore);
+                    token, treasuryRel, -nftSerialNums.size(), FAIL_INVALID, accountStore, tokenStore, tokenRelStore);
 
             // Update treasury's NFT count
             final var treasuryAcct = accountStore.get(token.treasuryAccountId());

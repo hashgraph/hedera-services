@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.event.creation.rules;
 
+import com.swirlds.platform.event.creation.EventCreationStatus;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * An object used to limit or prevent the creation of new events.
  */
@@ -32,4 +35,13 @@ public interface EventCreationRule {
      * This method is called whenever an event is created.
      */
     void eventWasCreated();
+
+    /**
+     * If event creation is blocked by this rule, this method should return the status that the event creator should
+     * adopt.
+     *
+     * @return the status that the event creator should adopt if this rule blocks event creation
+     */
+    @NonNull
+    EventCreationStatus getEventCreationStatus();
 }

@@ -19,11 +19,11 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyIsNotImmutableAccount;
+import static com.hedera.node.app.service.token.impl.validators.CustomFeesValidator.SENTINEL_TOKEN_ID;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -38,7 +38,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenCreateResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -52,7 +51,6 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -123,6 +121,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var tokenStore = context.writableStore(WritableTokenStore.class);
         final var tokenRelationStore = context.writableStore(WritableTokenRelationStore.class);
 
+        final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
+
         /* Validate if the current token can be created */
         validateTrue(
                 tokenStore.sizeOfState() + 1 <= tokensConfig.maxNumber(),
@@ -140,12 +140,17 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         // validate custom fees and get back list of fees with created token denomination
         final var feesSetNeedingCollectorAutoAssociation = customFeesValidator.validateForCreation(
                 newToken, accountStore, tokenRelationStore, tokenStore, op.customFeesOrElse(emptyList()));
-
         // Put token into modifications map
         tokenStore.put(newToken);
         // associate token with treasury and collector ids of custom fees whose token denomination
         // is set to sentinel value
-        associateAccounts(context, newToken, accountStore, tokenRelationStore, feesSetNeedingCollectorAutoAssociation);
+        associateAccounts(
+                context,
+                newToken,
+                accountStore,
+                tokenRelationStore,
+                feesSetNeedingCollectorAutoAssociation,
+                recordBuilder);
 
         // Since we have associated treasury and needed fee collector accounts in the previous step,
         // this relation must exist
@@ -162,24 +167,26 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 .build());
 
         // Update record with newly created token id
-        final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
         recordBuilder.tokenID(newTokenId);
     }
 
     /**
      * Associate treasury account and the collector accounts of custom fees whose token denomination
      * is set to sentinel value, to use denomination as newly created token.
-     * @param newToken newly created token
-     * @param accountStore account store
-     * @param tokenRelStore token relation store
+     *
+     * @param newToken                        newly created token
+     * @param accountStore                    account store
+     * @param tokenRelStore                   token relation store
      * @param requireCollectorAutoAssociation set of custom fees whose token denomination is set to sentinel value
+     * @param recordBuilder
      */
     private void associateAccounts(
             final HandleContext context,
             final Token newToken,
             final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            final List<CustomFee> requireCollectorAutoAssociation) {
+            final List<CustomFee> requireCollectorAutoAssociation,
+            final TokenCreateRecordBuilder recordBuilder) {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 
@@ -189,6 +196,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         // If this succeeds, create and link token relation.
         tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, treasury, newToken, tokenRelStore);
         createAndLinkTokenRels(treasury, List.of(newToken), accountStore, tokenRelStore);
+        recordBuilder.addAutomaticTokenAssociation(asTokenAssociation(newToken.tokenId(), treasury.accountId()));
 
         for (final var customFee : requireCollectorAutoAssociation) {
             // This should exist as it is validated in validateSemantics
@@ -207,10 +215,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             // If this succeeds, create and link token relation.
             tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
             createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
+            recordBuilder.addAutomaticTokenAssociation(asTokenAssociation(newToken.tokenId(), collector.accountId()));
         }
-        final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
-        final var newRelation = tokenRelStore.get(newToken.treasuryAccountId(), newToken.tokenId());
-        recordBuilder.addAutomaticTokenAssociation(asTokenAssociation(newRelation.tokenId(), newRelation.accountId()));
     }
 
     /**
@@ -248,7 +254,38 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 false,
                 op.freezeDefault(),
                 false,
-                op.customFees());
+                modifyCustomFeesWithSentinelValues(op.customFeesOrElse(emptyList()), newTokenNum));
+    }
+
+    /**
+     * Modify the custom fees with the newly created token number as the token denomination.
+     * For any custom fixed fees that has 0.0.0 as denominating tokenId, it should be changed
+     * to the newly created token number before setting it to the token.
+     * @param customFees list of custom fees
+     * @param newTokenNum newly created token number
+     * @return modified custom fees
+     */
+    private List<CustomFee> modifyCustomFeesWithSentinelValues(
+            final List<CustomFee> customFees, final long newTokenNum) {
+        return customFees.stream()
+                .map(fee -> {
+                    if (fee.hasFixedFee()
+                            && fee.fixedFeeOrThrow().hasDenominatingTokenId()
+                            && fee.fixedFeeOrThrow()
+                                    .denominatingTokenIdOrThrow()
+                                    .equals(SENTINEL_TOKEN_ID)) {
+                        final var newTokenId =
+                                TokenID.newBuilder().tokenNum(newTokenNum).build();
+                        final var modifiedFixedFee = fee.fixedFeeOrThrow()
+                                .copyBuilder()
+                                .denominatingTokenId(newTokenId)
+                                .build();
+                        // Assign the modified fee back to the original fee object
+                        return fee.copyBuilder().fixedFee(modifiedFixedFee).build();
+                    }
+                    return fee; // Return unmodified fee if conditions are not met
+                })
+                .toList();
     }
 
     /**
@@ -290,7 +327,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         // validate expiration and auto-renew account if present
         final var givenExpiryMeta = getExpiryMeta(op);
-        final var resolvedExpiryMeta = context.expiryValidator().resolveCreationAttempt(false, givenExpiryMeta);
+        final var resolvedExpiryMeta = context.expiryValidator().resolveCreationAttempt(false, givenExpiryMeta, false);
 
         // validate auto-renew account exists
         if (resolvedExpiryMeta.hasAutoRenewAccountId()) {
@@ -379,14 +416,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         return feeContext
                 .feeCalculator(
                         tokenSubTypeFrom(type, !op.customFeesOrElse(emptyList()).isEmpty()))
-                .legacyCalculate(sigValueObj -> {
-                    try {
-                        return new TokenCreateResourceUsage(txnEstimateFactory)
-                                .usageGiven(fromPbj(body), sigValueObj, null);
-                    } catch (InvalidTxBodyException e) {
-                        throw new HandleException(INVALID_TRANSACTION_BODY);
-                    }
-                });
+                .legacyCalculate(sigValueObj ->
+                        new TokenCreateResourceUsage(txnEstimateFactory).usageGiven(fromPbj(body), sigValueObj, null));
     }
 
     public static SubType tokenSubTypeFrom(final TokenType tokenType, boolean hasCustomFees) {

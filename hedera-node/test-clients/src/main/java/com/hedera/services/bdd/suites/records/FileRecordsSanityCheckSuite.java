@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshot
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateRecordTransactionFees;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -51,6 +52,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
         });
     }
 
+    @HapiTest
     private HapiSpec fileAppendRecordSanityChecks() {
         return defaultHapiSpec("FileAppendRecordSanityChecks")
                 .given(flattened(
@@ -63,6 +65,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
+    @HapiTest
     private HapiSpec fileCreateRecordSanityChecks() {
         return defaultHapiSpec("FileCreateRecordSanityChecks")
                 .given(takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER))
@@ -73,6 +76,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
+    @HapiTest
     private HapiSpec fileDeleteRecordSanityChecks() {
         return defaultHapiSpec("FileDeleteRecordSanityChecks")
                 .given(flattened(
@@ -85,6 +89,7 @@ public class FileRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
+    @HapiTest
     private HapiSpec fileUpdateRecordSanityChecks() {
         return defaultHapiSpec("FileUpdateRecordSanityChecks")
                 .given(flattened(
