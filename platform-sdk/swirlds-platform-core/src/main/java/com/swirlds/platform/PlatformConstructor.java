@@ -35,7 +35,6 @@ import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -63,6 +62,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
+import java.util.function.Consumer;
 
 /**
  * Used to construct platform components that use DI
@@ -218,7 +218,7 @@ public final class PlatformConstructor {
             @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
+            @NonNull final Consumer<Long> roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
 
         return new ConsensusRoundHandler(
