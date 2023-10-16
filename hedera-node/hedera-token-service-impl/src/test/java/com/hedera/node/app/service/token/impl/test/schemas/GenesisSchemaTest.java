@@ -35,6 +35,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -65,6 +66,9 @@ final class GenesisSchemaTest {
 
     @Mock
     private GenesisRecordsBuilder genesisRecordsBuilder;
+
+    @Mock
+    private HandleThrottleParser handleThrottling;
 
     @Captor
     private ArgumentCaptor<Map<Account, CryptoCreateTransactionBody.Builder>> sysAcctMapCaptor;
@@ -99,7 +103,7 @@ final class GenesisSchemaTest {
     void createsAllAccounts() {
         final var schema = new GenesisSchema();
         final var migrationContext = new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder);
+                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling);
 
         schema.migrate(migrationContext);
 
@@ -175,7 +179,7 @@ final class GenesisSchemaTest {
         });
         newStates = newStatesInstance(new MapWritableKVState<>(ACCOUNTS_KEY, accts));
         final var migrationContext = new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder);
+                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling);
 
         schema.migrate(migrationContext);
 
@@ -217,7 +221,7 @@ final class GenesisSchemaTest {
         });
         newStates = newStatesInstance(new MapWritableKVState<>(ACCOUNTS_KEY, accts));
         final var migrationContext = new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder);
+                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling);
 
         schema.migrate(migrationContext);
 
@@ -231,7 +235,7 @@ final class GenesisSchemaTest {
     void systemAccountsCreated() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder));
+                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
 
         for (int i = 1; i <= 100; i++) {
             final var balance = i == 2 ? EXPECTED_TREASURY_TINYBARS_BALANCE : 0L;
@@ -249,7 +253,7 @@ final class GenesisSchemaTest {
     void accountsBetweenFilesAndContracts() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder));
+                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
 
         for (int i = 200; i < 350; i++) {
             final var account = accounts.get(accountID(i));
@@ -264,7 +268,7 @@ final class GenesisSchemaTest {
     void contractEntityIdsNotUsed() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder));
+                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
 
         for (int i = 350; i < 400; i++) {
             assertThat(accounts.contains(accountID(i))).isFalse();
@@ -275,7 +279,7 @@ final class GenesisSchemaTest {
     void accountsAfterContracts() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder));
+                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
 
         for (int i = 400; i <= 750; i++) {
             final var account = accounts.get(accountID(i));
@@ -290,7 +294,7 @@ final class GenesisSchemaTest {
     void entityIdsBetweenSystemAccountsAndRewardAccountsAreEmpty() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder));
+                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
 
         for (int i = 751; i < 800; i++) {
             assertThat(accounts.contains(accountID(i))).isFalse();
@@ -301,7 +305,7 @@ final class GenesisSchemaTest {
     void stakingRewardAccounts() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder));
+                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
 
         final var stakingRewardAccount = accounts.get(accountID(800));
         verifyStakingAccount(stakingRewardAccount);
@@ -314,7 +318,7 @@ final class GenesisSchemaTest {
     void entityIdsAfterRewardAccountsAreEmpty() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder));
+                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
 
         for (int i = 802; i < 900; i++) {
             assertThat(accounts.contains(accountID(i))).isFalse();
@@ -325,7 +329,7 @@ final class GenesisSchemaTest {
     void specialAccountsAfter900() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder));
+                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
 
         for (int i = 900; i <= 1000; i++) {
             final var account = accounts.get(accountID(i));

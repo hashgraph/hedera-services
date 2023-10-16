@@ -21,11 +21,13 @@ import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYE
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.factoryFrom;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -70,6 +72,7 @@ public class UmbrellaRedux extends HapiSuite {
 
     @HapiTest
     private HapiSpec umbrellaRedux() {
+        var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("UmbrellaRedux")
                 .given(
                         withOpContext((spec, opLog) -> {
@@ -79,6 +82,7 @@ public class UmbrellaRedux extends HapiSuite {
                             spec.addOverrideProperties(Map.of(
                                     "status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get())));
                         }),
+                        fileUpdate(THROTTLE_DEFS).payingWith(GENESIS).contents(defaultThrottles.toByteArray()),
                         cryptoCreate(UNIQUE_PAYER_ACCOUNT)
                                 .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
                                 .withRecharging()
