@@ -23,7 +23,6 @@ import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;

@@ -28,7 +28,6 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;
 import com.swirlds.common.system.status.StatusActionSubmitter;

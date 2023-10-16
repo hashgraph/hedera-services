@@ -20,7 +20,6 @@ import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;
 import com.swirlds.common.system.status.StatusActionSubmitter;
