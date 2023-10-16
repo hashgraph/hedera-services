@@ -27,6 +27,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildEventCreationManager;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
+import static com.swirlds.platform.state.iss.ConsensusHashManager.DO_NOT_IGNORE_ROUNDS;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
@@ -410,14 +411,15 @@ public class SwirldsPlatform implements Platform {
 
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
+        final long roundToIgnore = stateConfig.validateInitialState() ? DO_NOT_IGNORE_ROUNDS : initialState.getRound();
         final ConsensusHashManager consensusHashManager = components.add(new ConsensusHashManager(
+                platformContext,
                 Time.getCurrent(),
                 dispatchBuilder,
                 currentAddressBook,
-                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                stateConfig,
                 epochHash,
-                appVersion));
+                appVersion,
+                roundToIgnore));
 
         components.add(new IssHandler(
                 Time.getCurrent(),
