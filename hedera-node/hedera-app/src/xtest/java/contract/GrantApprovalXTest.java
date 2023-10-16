@@ -78,12 +78,20 @@ import org.apache.tuweni.bytes.Bytes;
  * <ol>
  *     <li>Transfer {@code ERC20_TOKEN} to RECEIVER. This should fail with code SPENDER_DOES_NOT_HAVE_ALLOWANCE.</li>
  *     <li>Approve {@code ERC20_TOKEN} via {@link com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator#GRANT_APPROVAL}.</li>
+ *     <li>Approve {@code ERC20_TOKEN} via {@link com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator#GRANT_APPROVAL}.
+ *     This should fail with code TOKEN_NOT_ASSOCIATED_TO_ACCOUNT.</li>
  *     <li>Transfer {@code ERC20_TOKEN} from SENDER to RECEIVER. This should now succeed.</li>
  *     <li>Transfer {@code ERC20_TOKEN} from SENDER to RECEIVER. This should fail with code AMOUNT_EXCEEDS_ALLOWANCE.</li>
  *     <li>Transfer {@code ERC721_TOKEN} to RECEIVER. This should fail with code SPENDER_DOES_NOT_HAVE_ALLOWANCE.</li>
  *     <li>Approve NFT {@code ERC721_TOKEN} via {@link com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator#GRANT_APPROVAL_NFT}.
  *     This should fail with code INVALID_TOKEN_NFT_SERIAL_NUMBER.</li>
  *     <li>Approve NFT {@code ERC721_TOKEN} via {@link com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator#GRANT_APPROVAL_NFT}.</li>
+ *     <li>Approve NFT {@code ERC721_TOKEN} via {@link com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator#GRANT_APPROVAL_NFT}.
+ *     This should fail with code SENDER_DOES_NOT_OWN_NFT_SERIAL_NO.</li>
+ *     <li>Approve NFT {@code ERC721_TOKEN} via {@link com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator#GRANT_APPROVAL_NFT}.
+ *     This should fail with code FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES.</li>
+ *     <li>Approve NFT {@code ERC721_TOKEN} via {@link com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator#GRANT_APPROVAL_NFT}.
+ *     This should fail with code INVALID_TOKEN_ID.</li>
  *     <li>Transfer {@code ERC721_TOKEN} from  SENDER to RECEIVER. This should now succeed.</li>
  *     <li> ERC Approve {@code ERC20_TOKEN} via {@link com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator#ERC_GRANT_APPROVAL}.</li>
  *     <li>Transfer {@code ERC20_TOKEN} from  SENDER to RECEIVER. This should now succeed.</li>
