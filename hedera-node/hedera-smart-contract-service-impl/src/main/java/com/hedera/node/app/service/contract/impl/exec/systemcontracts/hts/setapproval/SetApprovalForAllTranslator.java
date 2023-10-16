@@ -17,13 +17,12 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval;
 
 import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DecoderResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -61,12 +60,12 @@ public class SetApprovalForAllTranslator extends AbstractHtsCallTranslator {
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var result = bodyForClassic(attempt);
-
-        return new DispatchForResponseCodeHtsCall<>(
-                attempt, result.body(), SingleTransactionRecordBuilder.class, result.wantedStatus(), result.shouldRevert());
+        // @Future remove to revert #9214 after modularization is completed
+        return new SetApprovalForAllCall(attempt, result);
+        //  return new DispatchForResponseCodeHtsCall<>(attempt, result, SingleTransactionRecordBuilder.class);
     }
 
-    private DecoderResult bodyForClassic(@NonNull final HtsCallAttempt attempt) {
+    private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
         if (selectorMatches(attempt, SET_APPROVAL_FOR_ALL)) {
             return decoder.decodeSetApprovalForAll(attempt);
         }

@@ -17,15 +17,12 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asTokenId;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DecoderResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -46,22 +43,10 @@ public class SetApprovalForAllDecoder {
      * @param attempt the attempt to decode
      * @return a {@link TransactionBody}
      */
-    public DecoderResult decodeSetApprovalForAll(@NonNull final HtsCallAttempt attempt) {
+    public TransactionBody decodeSetApprovalForAll(@NonNull final HtsCallAttempt attempt) {
         final var call = SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL.decodeCall(attempt.inputBytes());
         final var operatorId = attempt.addressIdConverter().convert(call.get(1));
-        final var body =
-                bodyOf(approveAllAllowanceNFTBody(attempt.senderId(), asTokenId(call.get(0)), operatorId, call.get(2)));
-
-        // @Future remove those IF statements to revert #9214 after modularization is completed
-        // The DecoderResult wrapper may be removed.
-        if (attempt.linkedToken(fromHeadlongAddress(call.get(0))) == null) {
-            return new DecoderResult(body, ResponseCodeEnum.INVALID_ACCOUNT_ID, false);
-        }
-        if (operatorId.accountNum() == null) {
-            return new DecoderResult(body, ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, true);
-        }
-
-        return new DecoderResult(body, null, false);
+        return bodyOf(approveAllAllowanceNFTBody(attempt.senderId(), asTokenId(call.get(0)), operatorId, call.get(2)));
     }
 
     /**
@@ -70,21 +55,13 @@ public class SetApprovalForAllDecoder {
      * @param attempt the attempt to decode
      * @return a {@link TransactionBody}
      */
-    public DecoderResult decodeSetApprovalForAllERC(@NonNull final HtsCallAttempt attempt) {
+    public TransactionBody decodeSetApprovalForAllERC(@NonNull final HtsCallAttempt attempt) {
         final var call = SetApprovalForAllTranslator.ERC721_SET_APPROVAL_FOR_ALL.decodeCall(attempt.inputBytes());
         final var tokenId = attempt.redirectTokenId();
         Objects.requireNonNull(tokenId, "Redirect Token ID is null.");
 
         final var operatorId = attempt.addressIdConverter().convert(call.get(0));
-        final var body = bodyOf(approveAllAllowanceNFTBody(attempt.senderId(), tokenId, operatorId, call.get(1)));
-
-        // @Future remove to revert #9214 after modularization is completed
-        // The DecoderResult wrapper may be removed.
-        if (operatorId.accountNum() == null) {
-            return new DecoderResult(body, ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, true);
-        }
-
-        return new DecoderResult(body, null, false);
+        return bodyOf(approveAllAllowanceNFTBody(attempt.senderId(), tokenId, operatorId, call.get(1)));
     }
 
     private CryptoApproveAllowanceTransactionBody approveAllAllowanceNFTBody(

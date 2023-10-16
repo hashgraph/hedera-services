@@ -181,6 +181,10 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             final var spenderAccount = accountStore.getAccountById(spender);
             validateNFTSpender(serialNums, spenderAccount);
 
+            if (allowance.hasApprovedForAll()) {
+                validateNFTSpender(spenderAccount);
+            }
+
             final var effectiveOwner = getEffectiveOwner(owner, payer, accountStore, expiryValidator);
             validateTokenBasics(effectiveOwner, spender, token, tokenRelStore);
 
@@ -235,14 +239,18 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
     }
 
-    private void validateSpender(long amount, Account spenderAccount) {
+    private void validateSpender(final long amount, final Account spenderAccount) {
         validateTrue(
                 amount == 0 || (spenderAccount != null && !spenderAccount.deleted()), INVALID_ALLOWANCE_SPENDER_ID);
     }
 
-    private void validateNFTSpender(List<Long> serialNumbers, Account spenderAccount) {
+    private void validateNFTSpender(final List<Long> serialNumbers, final Account spenderAccount) {
         validateTrue(
                 serialNumbers.isEmpty() || (spenderAccount != null && !spenderAccount.deleted()),
                 INVALID_ALLOWANCE_SPENDER_ID);
+    }
+
+    private void validateNFTSpender(final Account spenderAccount) {
+        validateTrue((spenderAccount != null && !spenderAccount.deleted()), INVALID_ALLOWANCE_SPENDER_ID);
     }
 }

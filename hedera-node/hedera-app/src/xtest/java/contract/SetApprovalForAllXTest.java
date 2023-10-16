@@ -16,17 +16,18 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
 import static contract.MiscClassicTransfersXTestConstants.NEXT_ENTITY_NUM;
+import static contract.MiscViewsXTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.INVALID_SENDER_HEADLONG_ADDRESS;
-import static contract.XTestConstants.INVALID_TOKEN_ADDRESS;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
@@ -48,7 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
@@ -176,6 +176,15 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
 
         // @Future remove to revert #9214 after modularization is completed
         // Those tests ensure that the precompile matches mono behaviour
+        // Try SetApproveForAll with Invalid Account address
+        runHtsCallAndExpectRevert(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, INVALID_SENDER_HEADLONG_ADDRESS, false)
+                        .array()),
+                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+
+        // Try SetApproveForAll with Invalid Account address, ERC Cal
         runHtsCallAndExpectRevert(
                 OWNER_BESU_ADDRESS,
                 bytesForRedirect(
@@ -184,22 +193,14 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
                         ERC721_TOKEN_ID),
                 TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
-        runHtsCallAndExpectRevert(
-                OWNER_BESU_ADDRESS,
-                Bytes.wrap(SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL
-                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, INVALID_SENDER_HEADLONG_ADDRESS, false)
-                        .array()),
-                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-
+        // Try SetApproveForAll with Invalid Token
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL
-                        .encodeCallWithArgs(INVALID_TOKEN_ADDRESS, SENDER_HEADLONG_ADDRESS, true)
+                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, SENDER_HEADLONG_ADDRESS, true)
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(ResponseCodeEnum.INVALID_TOKEN_ID)
-                                .array()),
-                        output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
     }
 
     @Override
