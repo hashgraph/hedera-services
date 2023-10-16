@@ -169,7 +169,7 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
         modifier.stop();
         compactor.stop();
 
-        // Check both futures with a blocking call to see if they through errors. If not, we're good
+        // Check both futures with a blocking call to see if they throw errors. If not, we're good
         // (no ISS).
         assertDoesNotThrow(
                 (ThrowingSupplier<Void>) modifierFuture::get, "Should not throw, something failed while modifying.");
