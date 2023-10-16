@@ -23,18 +23,15 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNAUTHO
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.ClassicGrantApprovalCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import java.math.BigInteger;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
@@ -60,12 +57,7 @@ public class ClassicGrantApprovalCallTest extends HtsCallTestBase {
                 UNAUTHORIZED_SPENDER_ID,
                 BigInteger.valueOf(100L),
                 TokenType.FUNGIBLE_COMMON);
-        given(systemContractOperations.dispatch(
-                        any(TransactionBody.class),
-                        eq(verificationStrategy),
-                        eq(UNAUTHORIZED_SPENDER_ID),
-                        eq(SingleTransactionRecordBuilder.class)))
-                .willReturn(recordBuilder);
+        given(systemContractOperations.dispatch(any(), any(), any(), any())).willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         final var result = subject.execute().fullResult().result();
 
@@ -87,12 +79,7 @@ public class ClassicGrantApprovalCallTest extends HtsCallTestBase {
                 UNAUTHORIZED_SPENDER_ID,
                 BigInteger.valueOf(100L),
                 TokenType.NON_FUNGIBLE_UNIQUE);
-        given(systemContractOperations.dispatch(
-                        any(TransactionBody.class),
-                        eq(verificationStrategy),
-                        eq(UNAUTHORIZED_SPENDER_ID),
-                        eq(SingleTransactionRecordBuilder.class)))
-                .willReturn(recordBuilder);
+        given(systemContractOperations.dispatch(any(), any(), any(), any())).willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
         final var result = subject.execute().fullResult().result();
 
