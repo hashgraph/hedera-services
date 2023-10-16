@@ -63,7 +63,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
                         eq(verificationStrategy),
-                        eq(UNAUTHORIZED_SPENDER_ID),
+                        eq(OWNER_ID),
                         eq(SingleTransactionRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
@@ -89,7 +89,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
                         eq(verificationStrategy),
-                        eq(UNAUTHORIZED_SPENDER_ID),
+                        eq(OWNER_ID),
                         eq(SingleTransactionRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);

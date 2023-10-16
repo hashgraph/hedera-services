@@ -282,7 +282,8 @@ public class HevmTransactionFactory {
         expiryValidator.resolveCreationAttempt(
                 true,
                 new ExpiryMeta(
-                        NA, autoRenewPeriod, body.hasAutoRenewAccountId() ? body.autoRenewAccountIdOrThrow() : null));
+                        NA, autoRenewPeriod, body.hasAutoRenewAccountId() ? body.autoRenewAccountIdOrThrow() : null),
+                false);
     }
 
     private Bytes initcodeFor(@NonNull final ContractCreateTransactionBody body) {

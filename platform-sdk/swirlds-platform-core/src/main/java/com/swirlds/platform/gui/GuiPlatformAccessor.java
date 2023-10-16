@@ -98,7 +98,8 @@ public final class GuiPlatformAccessor {
          * Create a new EventOrderInfo from an event.
          */
         public static EventOrderInfo of(@NonNull final EventImpl event) {
-            return new EventOrderInfo(event.getConsensusOrder(), event.getTimeReceived());
+            return new EventOrderInfo(
+                    event.getConsensusOrder(), event.getBaseEvent().getTimeReceived());
         }
 
         /**

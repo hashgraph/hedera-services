@@ -17,11 +17,13 @@
 package com.swirlds.platform.test.eventflow;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -72,11 +74,13 @@ public class SystemTransactionTracker implements Failable {
      * @param creatorId   the id of the node which created the transaction
      * @param transaction the transaction to consume. of type {@link SystemTransactionPing}, since
      *                    {@link TransactionUtils#incrementingSystemTransaction()} uses them
+     * @param eventVersion the version of the event that contains this transaction
      */
     public void handlePostconsensusSystemTransaction(
             @NonNull final State state,
             @NonNull final NodeId creatorId,
-            @NonNull final SystemTransactionPing transaction) {
+            @NonNull final SystemTransactionPing transaction,
+            @Nullable final SoftwareVersion eventVersion) {
         Objects.requireNonNull(state, "state must not be null");
         Objects.requireNonNull(creatorId, "creatorId must not be null");
         Objects.requireNonNull(transaction, "transaction must not be null");

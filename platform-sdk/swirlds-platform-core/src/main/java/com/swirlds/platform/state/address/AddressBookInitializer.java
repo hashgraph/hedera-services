@@ -163,6 +163,16 @@ public class AddressBookInitializer {
     }
 
     /**
+     * Checks whether there has been a change in the address book on initialization. If there was no change, the
+     * previous address book will be null.
+     *
+     * @return true if the address book has changed on initialization
+     */
+    public boolean hasAddressBookChanged() {
+        return previousAddressBook != null;
+    }
+
+    /**
      * Determines the address book to use.  If the configured current version of the application is higher than the save
      * state version, the swirld state is given the config address book to determine weights.  If the address book
      * returned by the swirld application is valid, it is the initial address book to use, otherwise the configuration
@@ -174,12 +184,14 @@ public class AddressBookInitializer {
     @NonNull
     private InitializedAddressBooks initialize() {
         AddressBook candidateAddressBook;
+        final AddressBook previousAddressBook;
         if (useConfigAddressBook) {
             // settings.txt override to use config.txt address book
             logger.info(
                     STARTUP.getMarker(),
                     "Overriding the address book in the state with the address book from config.txt");
             candidateAddressBook = configAddressBook;
+            previousAddressBook = stateAddressBook;
         } else if (initialState.isGenesisState()) {
             // Starting from Genesis, config and state address book should be the same.
             if (!Objects.equals(configAddressBook, initialState.getAddressBook())) {
@@ -188,11 +200,13 @@ public class AddressBookInitializer {
             logger.info(STARTUP.getMarker(), "Starting from genesis: using the config address book.");
             candidateAddressBook = configAddressBook;
             checkCandidateAddressBookValidity(candidateAddressBook);
+            previousAddressBook = null;
         } else if (!softwareUpgrade) {
             // Loaded State From Disk, Non-Genesis, No Software Upgrade
             logger.info(STARTUP.getMarker(), "Using the loaded state's address book and weight values.");
             candidateAddressBook = stateAddressBook;
             // since state address book was checked for validity prior to adoption, no check needed here.
+            previousAddressBook = null;
         } else {
             // Loaded State from Disk, Non-Genesis, There is a software version upgrade
             logger.info(
@@ -203,8 +217,8 @@ public class AddressBookInitializer {
                     .updateWeight(configAddressBook.copy(), platformContext)
                     .copy();
             candidateAddressBook = checkCandidateAddressBookValidity(candidateAddressBook);
+            previousAddressBook = stateAddressBook;
         }
-        final AddressBook previousAddressBook = initialState.isGenesisState() ? null : stateAddressBook;
         recordAddressBooks(candidateAddressBook);
         return new InitializedAddressBooks(candidateAddressBook, previousAddressBook);
     }
