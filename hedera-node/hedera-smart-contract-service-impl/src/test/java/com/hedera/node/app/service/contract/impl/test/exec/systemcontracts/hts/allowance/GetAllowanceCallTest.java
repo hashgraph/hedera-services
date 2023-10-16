@@ -53,6 +53,7 @@ public class GetAllowanceCallTest extends HtsCallTestBase {
                 NON_FUNGIBLE_TOKEN,
                 OWNER_HEADLONG_ADDRESS,
                 APPROVED_HEADLONG_ADDRESS,
+                true,
                 true);
 
         final var result = subject.execute().fullResult().result();
@@ -69,7 +70,8 @@ public class GetAllowanceCallTest extends HtsCallTestBase {
                 FUNGIBLE_TOKEN,
                 OWNER_HEADLONG_ADDRESS,
                 APPROVED_HEADLONG_ADDRESS,
-                true);
+                true,
+                false);
         given(addressIdConverter.convert(any())).willReturn(B_NEW_ACCOUNT_ID);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 
@@ -91,7 +93,8 @@ public class GetAllowanceCallTest extends HtsCallTestBase {
                 FUNGIBLE_TOKEN,
                 OWNER_HEADLONG_ADDRESS,
                 APPROVED_HEADLONG_ADDRESS,
-                false);
+                false,
+                true);
         given(addressIdConverter.convert(any())).willReturn(B_NEW_ACCOUNT_ID);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 
