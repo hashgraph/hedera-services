@@ -312,6 +312,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         getAccountBalance(TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L));
     }
 
+    @HapiTest
     private HapiSpec canUseAliasAndAccountCombinations() {
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
@@ -391,6 +392,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2875
+    @HapiTest
     private HapiSpec canUseMirrorAliasesForNonContractXfers() {
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
