@@ -25,7 +25,7 @@ public enum EventCreationStatus {
      */
     ATTEMPTING_CREATION,
     /**
-     * Events are not currently being created because there are currently no evens to serve as parents.
+     * Events are not currently being created because there are currently no events to serve as parents.
      */
     NO_ELIGIBLE_PARENTS,
     /**

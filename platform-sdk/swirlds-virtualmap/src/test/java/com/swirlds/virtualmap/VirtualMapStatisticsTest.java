@@ -129,7 +129,7 @@ public class VirtualMapStatisticsTest {
     @Test
     void testNodeCacheSize() {
         // given
-        final Metric metric = getMetric("lifecycle_", "nodeCacheSizeMb_" + LABEL);
+        final Metric metric = getMetric("lifecycle_", "nodeCacheSizeB_" + LABEL);
         // when
         statistics.setNodeCacheSize(2345L);
         // then

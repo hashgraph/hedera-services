@@ -45,7 +45,6 @@ public abstract class DetGenerateUtils {
     private static final int DEFAULT_TRANSACTION_NUMBER = 10;
     private static final int DEFAULT_TRANSACTION_MAX_SIZE = 100;
     private static final int DEFAULT_SIGNATURE_SIZE = 384;
-    private static final int DEFAULT_ROUND_MAX_DIFF = 10;
 
     public static BaseEventHashedData generateBaseEventHashedData(final Random random) {
         return new BaseEventHashedData(
@@ -69,19 +68,12 @@ public abstract class DetGenerateUtils {
     public static ConsensusData generateConsensusEventData(final Random random) {
         final ConsensusData data = new ConsensusData();
 
-        data.setRoundCreated(nextLong(random, 0));
-
         // isWitness & isFamous are no longer part of ConsensusEvent. random.nextBoolean() have been left here so that
         // an event would be the same given the same seed.
         random.nextBoolean();
         random.nextBoolean();
 
-        data.setStale(random.nextBoolean());
         data.setConsensusTimestamp(generateRandomInstant(random, DEFAULT_MAX_EPOCH));
-        data.setRoundReceived(nextLong(
-                random,
-                data.getRoundCreated() + 1, // RoundReceived must be higher than RoundCreated
-                data.getRoundCreated() + DEFAULT_ROUND_MAX_DIFF));
         data.setConsensusOrder(nextLong(random, 0));
 
         return data;

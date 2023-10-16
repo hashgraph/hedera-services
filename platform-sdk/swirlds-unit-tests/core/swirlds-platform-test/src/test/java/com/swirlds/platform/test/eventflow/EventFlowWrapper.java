@@ -205,15 +205,19 @@ public class EventFlowWrapper {
             final Consumer<ConsensusRound> roundConsumer,
             final EventEmitter<?> eventEmitter) {
 
-        final Consensus consensus =
-                ConsensusUtils.buildSimpleConsensus(addressBook, consensusRoundHandler::addMinGenInfo);
+        final Consensus consensus = ConsensusUtils.buildSimpleConsensus(addressBook);
 
         final List<ConsensusRound> allConsensusRounds = new LinkedList<>();
 
         for (int i = 0; i < numEvents; i++) {
             // Apply events to consensus and store the events that reached consensus
-            final List<ConsensusRound> consensusRounds =
-                    ConsensusUtils.applyEventsToConsensusUsingWrapper(eventEmitter, consensus, 1);
+            final List<ConsensusRound> consensusRounds = ConsensusUtils.applyEventsToConsensus(
+                            eventEmitter, consensus, 1)
+                    // empty rounds will be discarded, filter them out, so we don't expect a signed state
+                    // for them
+                    .stream()
+                    .filter(cr -> !cr.getConsensusEvents().isEmpty())
+                    .toList();
 
             // Apply all consensus events to ConsensusRoundHandler
             try {

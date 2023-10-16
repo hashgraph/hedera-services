@@ -44,7 +44,7 @@ public class ConsensusRounds {
     /** The maximum round created of all the known witnesses */
     private long maxRoundCreated = ConsensusConstants.ROUND_UNDEFINED;
     /** The round we are currently voting on */
-    private final ElectionRound electionRound = new ElectionRound();
+    private final RoundElections roundElections = new RoundElections();
 
     /** Constructs an empty object */
     public ConsensusRounds(
@@ -61,14 +61,14 @@ public class ConsensusRounds {
     public void reset() {
         minGenStorage.reset(ConsensusConstants.ROUND_FIRST);
         maxRoundCreated = ConsensusConstants.ROUND_UNDEFINED;
-        electionRound.reset();
+        roundElections.reset();
     }
 
     /**
      * @return the round number below which the fame of all witnesses has been decided
      */
     public long getFameDecidedBelow() {
-        return electionRound.getRound();
+        return roundElections.getRound();
     }
 
     /**
@@ -96,7 +96,7 @@ public class ConsensusRounds {
         }
 
         // the theorem doesn't apply, so we can't decide yet, so elections are needed
-        electionRound.addWitness(witness);
+        roundElections.addWitness(witness);
     }
 
     /**
@@ -125,7 +125,7 @@ public class ConsensusRounds {
      * @return true if we have decided fame for at least one round, this is false only at genesis
      */
     private boolean isAnyRoundDecided() {
-        return electionRound.getRound() > ConsensusConstants.ROUND_FIRST;
+        return roundElections.getRound() > ConsensusConstants.ROUND_FIRST;
     }
 
     /**
@@ -133,8 +133,8 @@ public class ConsensusRounds {
      * election.
      */
     public void currentElectionDecided() {
-        minGenStorage.add(electionRound.getRound(), electionRound.creatMinGenInfo());
-        electionRound.startNextElection();
+        minGenStorage.add(roundElections.getRound(), roundElections.creatMinGenInfo());
+        roundElections.startNextElection();
         // Delete the oldest rounds with round number which is expired
         minGenStorage.removeOlderThan(getFameDecidedBelow() - config.roundsExpired());
     }
@@ -150,21 +150,21 @@ public class ConsensusRounds {
     }
 
     private long getLastRoundDecided() {
-        return electionRound.getRound() - 1;
+        return roundElections.getRound() - 1;
     }
 
     /**
      * @return the current round we are voting on
      */
     public long getElectionRoundNumber() {
-        return electionRound.getRound();
+        return roundElections.getRound();
     }
 
     /**
      * @return the round we are currently voting on
      */
-    public @NonNull ElectionRound getElectionRound() {
-        return electionRound;
+    public @NonNull RoundElections getElectionRound() {
+        return roundElections;
     }
 
     /**
@@ -190,7 +190,7 @@ public class ConsensusRounds {
         for (final MinGenInfo roundGenPair : minGen) {
             minGenStorage.add(roundGenPair.round(), roundGenPair);
         }
-        electionRound.setRound(minGenStorage.getLatest().round() + 1);
+        roundElections.setRound(minGenStorage.getLatest().round() + 1);
     }
 
     /**
