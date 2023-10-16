@@ -411,7 +411,8 @@ public class SwirldsPlatform implements Platform {
                 currentAddressBook,
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 stateConfig,
-                epochHash));
+                epochHash,
+                appVersion));
 
         components.add(new IssHandler(
                 Time.getCurrent(),
