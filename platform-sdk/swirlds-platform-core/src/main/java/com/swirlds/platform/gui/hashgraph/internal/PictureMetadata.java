@@ -56,8 +56,8 @@ public class PictureMetadata {
         ymin = (int) Math.round(height1 + 0.025 * height2);
         ymax = (int) Math.round(height1 + 0.975 * height2) - textLineHeight;
 
-        long minGenTmp = Integer.MAX_VALUE;
-        long maxGenTmp = Integer.MIN_VALUE;
+        long minGenTmp = Long.MAX_VALUE;
+        long maxGenTmp = Long.MIN_VALUE;
         for (final PlatformEvent event : events) {
             minGenTmp = Math.min(minGenTmp, event.getGeneration());
             maxGenTmp = Math.max(maxGenTmp, event.getGeneration());

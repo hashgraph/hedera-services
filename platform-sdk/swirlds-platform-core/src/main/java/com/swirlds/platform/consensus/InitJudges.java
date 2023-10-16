@@ -72,7 +72,7 @@ public final class InitJudges {
     }
 
     /**
-     * Process an init judge
+     * Process an init judge. This should only be called if {@link #isInitJudge(Hash)} returns true
      *
      * @param judge the judge
      */
