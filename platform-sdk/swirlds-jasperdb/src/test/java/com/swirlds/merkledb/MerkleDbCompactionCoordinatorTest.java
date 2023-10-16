@@ -17,6 +17,8 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.apache.commons.lang3.RandomUtils.nextBoolean;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,6 +39,9 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -64,9 +69,24 @@ class MerkleDbCompactionCoordinatorTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        String table = randomAlphabetic(7);
-        coordinator = new MerkleDbCompactionCoordinator(table, objectKeyToPath, hashStoreDisk, pathToHashKeyValue);
+        coordinator = new MerkleDbCompactionCoordinator("test", objectKeyToPath, hashStoreDisk, pathToHashKeyValue);
         coordinator.enableBackgroundCompaction();
+    }
+
+    @AfterEach
+    void cleanUp() {
+        coordinator.stopAndDisableBackgroundCompaction();
+        assertEventuallyTrue(
+                () -> ((ThreadPoolExecutor) coordinator.getCompactingExecutor())
+                        .getQueue()
+                        .isEmpty(),
+                Duration.ofSeconds(1),
+                "Queue is not empty");
+        assertEventuallyEquals(
+                0,
+                () -> ((ThreadPoolExecutor) coordinator.getCompactingExecutor()).getActiveCount(),
+                Duration.ofSeconds(1),
+                "Active task count is not 0");
     }
 
     @ParameterizedTest
@@ -164,7 +184,7 @@ class MerkleDbCompactionCoordinatorTest {
         coordinator.compactPathToKeyValueAsync();
 
         // let all compactions get to the latch
-        testLatch.await();
+        assertAwait(testLatch);
 
         // latch is released by interruption of the compaction thread
         coordinator.stopAndDisableBackgroundCompaction();
@@ -206,7 +226,7 @@ class MerkleDbCompactionCoordinatorTest {
         coordinator.compactPathToKeyValueAsync();
 
         // let all compactions get to the latch
-        testLatch.await();
+        assertAwait(testLatch);
 
         // latch is released by interruption of the compaction thread
         coordinator.stopAndDisableBackgroundCompaction();
@@ -225,9 +245,9 @@ class MerkleDbCompactionCoordinatorTest {
     }
 
     private void stopAndDisableCompaction() {
-        assertTrue(coordinator.isCompactionEnabled());
+        assertTrue(coordinator.isCompactionEnabled(), "Compaction is supposed to be enabled");
         coordinator.stopAndDisableBackgroundCompaction();
-        assertFalse(coordinator.isCompactionEnabled());
+        assertFalse(coordinator.isCompactionEnabled(), "Compaction is supposed to be disabled");
     }
 
     private void testCompaction(
@@ -244,7 +264,7 @@ class MerkleDbCompactionCoordinatorTest {
         methodCall.run();
         methodCall.run();
         if (expectCompactionStarted) {
-            testLatch.await();
+            assertAwait(testLatch);
         }
         compactLatch.countDown();
 
@@ -262,11 +282,10 @@ class MerkleDbCompactionCoordinatorTest {
             throws IOException, InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         when(compactibleToTest.compact()).thenAnswer(invocation -> {
-            latch.await();
+            assertAwait(latch);
             throw new RuntimeException("testCompactionFailed");
         });
 
-        // run twice to make sure that the second call is discarded because one compaction is already in progress
         methodCall.run();
         latch.countDown();
 
@@ -274,13 +293,17 @@ class MerkleDbCompactionCoordinatorTest {
                 () -> {
                     try {
                         verify(compactibleToTest).compact();
-                    } catch (Exception e) {
+                    } catch (IOException | InterruptedException e) {
                         throw new RuntimeException(e);
                     }
                     verifyNoInteractions(statisticsUpdater);
                 },
                 Duration.ofMillis(100),
                 "Unexpected mock state");
+    }
+
+    private static void assertAwait(CountDownLatch latch) throws InterruptedException {
+        assertTrue(latch.await(10, TimeUnit.SECONDS), "Latch wasn't released");
     }
 
     @SuppressWarnings("unchecked")
@@ -292,7 +315,7 @@ class MerkleDbCompactionCoordinatorTest {
             throws IOException, InterruptedException {
         when(compactibleToTest.compact()).thenAnswer(invocation -> {
             testLatch.countDown();
-            compactLatch.await();
+            assertAwait(compactLatch);
             return compactionPassed;
         });
     }

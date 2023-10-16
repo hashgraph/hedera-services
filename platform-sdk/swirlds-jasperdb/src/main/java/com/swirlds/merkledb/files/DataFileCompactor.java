@@ -374,15 +374,7 @@ public class DataFileCompactor {
         final int filesCount = filesToCompact.size();
         logger.info(MERKLE_DB.getMarker(), "[{}] Starting compaction", storeName);
 
-        int highestExistingCompactionLevel =
-                filesToCompact.get(filesCount - 1).getMetadata().getCompactionLevel();
-        /*
-          The target compaction level should not exceed the maxCompactionLevel configuration parameter.
-          We need a limit on compaction levels for two reasons:
-           - To ensure a reasonably predictable frequency for full compactions, even for data that changes infrequently.
-           - We maintain metrics for each level, and there should be a cap on the number of these metrics.
-        */
-        final int targetCompactionLevel = Math.min(highestExistingCompactionLevel + 1, config.maxCompactionLevel());
+        final int targetCompactionLevel = getTargetCompactionLevel(filesToCompact, filesCount);
 
         final long start = System.currentTimeMillis();
 
@@ -426,6 +418,19 @@ public class DataFileCompactor {
                 tookMillis);
 
         return true;
+    }
+
+    /**
+     * The target compaction level should not exceed the maxCompactionLevel configuration parameter.
+     * We need a limit on compaction levels for two reasons:
+     *  - To ensure a reasonably predictable frequency for full compactions, even for data that changes infrequently.
+     *  - We maintain metrics for each level, and there should be a cap on the number of these metrics.
+     */
+    private static int getTargetCompactionLevel(List<DataFileReader<?>> filesToCompact, int filesCount) {
+        int highestExistingCompactionLevel =
+                filesToCompact.get(filesCount - 1).getMetadata().getCompactionLevel();
+
+        return Math.min(highestExistingCompactionLevel + 1, config.maxCompactionLevel());
     }
 
     /**
