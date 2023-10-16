@@ -47,6 +47,7 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessage
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
@@ -107,6 +108,7 @@ public class SingleTransactionRecordBuilderImpl
                 TokenBurnRecordBuilder,
                 TokenCreateRecordBuilder,
                 ContractCreateRecordBuilder,
+                ContractUpdateRecordBuilder,
                 ContractCallRecordBuilder,
                 EthereumTransactionRecordBuilder,
                 CryptoDeleteRecordBuilder,
@@ -115,6 +117,7 @@ public class SingleTransactionRecordBuilderImpl
                 FeeRecordBuilder,
                 ContractDeleteRecordBuilder,
                 GenesisAccountRecordBuilder {
+
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
@@ -357,6 +360,14 @@ public class SingleTransactionRecordBuilderImpl
             @Nullable ContractFunctionResult contractCreateResult) {
         transactionRecordBuilder.contractCreateResult(contractCreateResult);
         this.contractFunctionResult = contractCreateResult;
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public ContractUpdateRecordBuilder contractUpdateResult(@Nullable ContractFunctionResult contractUpdateResult) {
+        // transactionRecordBuilder.contractUpdateResult(contractUpdateResult); TODO: implement?
+        this.contractFunctionResult = contractUpdateResult;
         return this;
     }
 
