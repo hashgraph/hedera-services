@@ -24,6 +24,7 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
 import java.util.Objects;
@@ -58,6 +59,17 @@ public class EventDeduplicator {
      */
     private long minimumGenerationNonAncient = 0;
 
+    /**
+     * Keeps track of the number of events in the intake pipeline from each peer
+     */
+    private final IntakeEventCounter intakeEventCounter;
+
+    /**
+     * A map from event descriptor to a set of signatures that have been received for that event.
+     */
+    private final SequenceMap<EventDescriptor, Set<byte[]>> observedEvents =
+            new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
+
     private static final LongAccumulator.Config DUPLICATE_EVENT_CONFIG = new LongAccumulator.Config(
                     PLATFORM_CATEGORY, "duplicateEvents")
             .withDescription("Events received that exactly match a previous event")
@@ -72,21 +84,19 @@ public class EventDeduplicator {
     private final LongAccumulator disparateSignatureAccumulator;
 
     /**
-     * A map from event descriptor to a set of signatures that have been received for that event.
-     */
-    private final SequenceMap<EventDescriptor, Set<byte[]>> observedEvents =
-            new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
-
-    /**
      * Constructor
      *
-     * @param platformContext the platform context
-     * @param eventConsumer   deduplicated events are passed to this consumer
+     * @param platformContext    the platform context
+     * @param eventConsumer      deduplicated events are passed to this consumer
+     * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
      */
     public EventDeduplicator(
-            @NonNull final PlatformContext platformContext, @NonNull final Consumer<GossipEvent> eventConsumer) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Consumer<GossipEvent> eventConsumer,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.eventConsumer = Objects.requireNonNull(eventConsumer);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         this.duplicateEventAccumulator = platformContext.getMetrics().getOrCreate(DUPLICATE_EVENT_CONFIG);
         this.disparateSignatureAccumulator = platformContext.getMetrics().getOrCreate(DISPARATE_SIGNATURE_CONFIG);
@@ -103,6 +113,7 @@ public class EventDeduplicator {
     public void handleEvent(@NonNull final GossipEvent event) {
         if (event.getGeneration() < minimumGenerationNonAncient) {
             // Ancient events can be safely ignored.
+            intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
             return;
         }
 
@@ -117,6 +128,7 @@ public class EventDeduplicator {
         } else {
             // duplicate descriptor and signature
             duplicateEventAccumulator.update(1);
+            intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
         }
     }
 
