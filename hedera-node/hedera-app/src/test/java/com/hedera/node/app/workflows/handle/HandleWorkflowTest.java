@@ -749,7 +749,7 @@ class HandleWorkflowTest extends AppTestBase {
         final var alice = aliasesState.get(new ProtoBytes(Bytes.wrap(ALICE_ALIAS)));
         assertThat(alice).isEqualTo(ALICE.account().accountId());
         // TODO: Check that record was created
-        verify(systemFileUpdateFacility).handleTxBody(any(), any(), any());
+        verify(systemFileUpdateFacility).handleTxBody(any(), any());
         verify(dualStateUpdateFacility).handleTxBody(any(), any(), any());
     }
 
