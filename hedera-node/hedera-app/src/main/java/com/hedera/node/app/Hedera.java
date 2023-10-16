@@ -18,6 +18,8 @@ package com.hedera.node.app;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.swirlds.common.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
@@ -669,9 +671,9 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
-        this.backendThrottle = new ThrottleAccumulator(() -> 1, configProvider);
-        this.frontendThrottle =
-                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider);
+        this.backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE.type());
+        this.frontendThrottle = new ThrottleAccumulator(
+                () -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE.type());
         this.monoMultiplierSources = createMultiplierSources();
 
         logger.info("Initializing ExchangeRateManager");
@@ -752,9 +754,9 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
-        this.backendThrottle = new ThrottleAccumulator(() -> 1, configProvider);
-        this.frontendThrottle =
-                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider);
+        this.backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE.type());
+        this.frontendThrottle = new ThrottleAccumulator(
+                () -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE.type());
         this.monoMultiplierSources = createMultiplierSources();
 
         logger.info("Initializing ExchangeRateManager");

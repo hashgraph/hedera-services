@@ -285,6 +285,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     // https://github.com/hashgraph/hedera-services/pull/5485
+    @HapiTest
     private HapiSpec callLocalDoesNotCheckSignaturesNorPayer() {
         return defaultHapiSpec("callLocalDoesNotCheckSignaturesNorPayer")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))

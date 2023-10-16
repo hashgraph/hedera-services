@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.components;
 
+import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
@@ -96,8 +98,8 @@ class IngestComponentTest {
                         SemanticVersion.newBuilder().major(2).build()));
 
         final var configProvider = new ConfigProviderImpl(false);
-        final var handleThrottling = new ThrottleAccumulator(() -> 1, configProvider);
-        final var synchronizedThrottleAccumulator = new ThrottleAccumulator(() -> 5, configProvider);
+        final var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE.type());
+        final var frontendThrottle = new ThrottleAccumulator(() -> 5, configProvider, FRONTEND_THROTTLE.type());
         final var monoMultiplierSources = new MonoMultiplierSources(
                 new ThrottleMultiplierSource(null, null, null, null, null, null, null),
                 new ThrottleMultiplierSource(null, null, null, null, null, null, null));
@@ -116,9 +118,9 @@ class IngestComponentTest {
                         throttleManager,
                         exchangeRateManager,
                         monoMultiplierSources,
-                        handleThrottling,
-                        synchronizedThrottleAccumulator))
-                .networkUtilizationManager(new NetworkUtilizationManagerImpl(handleThrottling, monoMultiplierSources))
+                        backendThrottle,
+                        frontendThrottle))
+                .networkUtilizationManager(new NetworkUtilizationManagerImpl(backendThrottle, monoMultiplierSources))
                 .throttleManager(throttleManager)
                 .self(selfNodeInfo)
                 .maxSignedTxnSize(1024)
