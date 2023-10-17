@@ -98,6 +98,13 @@ public class CustomFeeAssessor extends BaseTokenHandler {
         var newFungibleTransfers = 0;
         for (final var entry : result.getMutableInputTokenAdjustments().entrySet()) {
             inputFungibleTransfers += entry.getValue().size();
+            entry.getValue().forEach((k, v) -> {
+                if (v < 0) {
+                    final var tokenRel = tokenRelStore.get(k, entry.getKey());
+                    final var finalTokenRelBalance = tokenRel.balance() + v;
+                    validateTrue(finalTokenRelBalance >= 0, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+                }
+            });
         }
         result.getHbarAdjustments().forEach((k, v) -> {
             if (v < 0) {
