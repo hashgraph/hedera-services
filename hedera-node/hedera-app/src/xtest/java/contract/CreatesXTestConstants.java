@@ -17,7 +17,7 @@
 package contract;
 
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
-import static contract.XTestConstants.INVALID_ACCOUNT_ADDRESS;
+import static contract.XTestConstants.INVALID_ACCOUNT_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -47,7 +47,7 @@ public class CreatesXTestConstants {
 
     static final Tuple TOKEN_INVALID_KEY = Tuple.of(
             BigInteger.valueOf(1),
-            Tuple.of(false, INVALID_ACCOUNT_ADDRESS, new byte[] {}, new byte[] {}, asAddress("")));
+            Tuple.of(false, INVALID_ACCOUNT_HEADLONG_ADDRESS, new byte[] {}, new byte[] {}, asAddress("")));
 
     static final Tuple EXPIRY = Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
 
