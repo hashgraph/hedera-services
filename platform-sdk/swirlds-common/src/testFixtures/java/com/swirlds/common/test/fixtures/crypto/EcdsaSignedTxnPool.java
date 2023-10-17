@@ -16,11 +16,10 @@
 
 package com.swirlds.common.test.fixtures.crypto;
 
-import static com.swirlds.common.crypto.engine.EcdsaSecp256k1Verifier.EC_COORD_SIZE;
+import static com.swirlds.common.crypto.engine.EcdsaSecp256k1Verifier.ECDSA_UNCOMPRESSED_KEY_SIZE;
 import static com.swirlds.common.test.fixtures.crypto.EcdsaUtils.asRawEcdsaSecp256k1Key;
 import static com.swirlds.common.test.fixtures.crypto.EcdsaUtils.signDigestWithEcdsaSecp256k1;
 
-import com.goterl.lazysodium.interfaces.Sign;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -34,15 +33,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Provides pre-generated random transactions that are optionally pre-signed with ECDSA(secp256k1) signatures.
  */
 public class EcdsaSignedTxnPool {
-    /**
-     * the length of signature in bytes
-     */
-    private static final int SIGNATURE_LENGTH = Sign.BYTES;
 
     /**
      * the length of the public key in bytes
      */
-    private static final int PUBLIC_KEY_LEN = 2 * EC_COORD_SIZE;
+    private static final int PUBLIC_KEY_LEN = ECDSA_UNCOMPRESSED_KEY_SIZE;
 
     private static class SignedTxn {
         private final int sigLen;
