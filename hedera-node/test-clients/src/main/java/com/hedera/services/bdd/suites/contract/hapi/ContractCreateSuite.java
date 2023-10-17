@@ -464,6 +464,7 @@ public class ContractCreateSuite extends HapiSuite {
                         getAccountBalance(beneficiary).hasTinyBars(3 * (totalToSend / 2)));
     }
 
+    @HapiTest
     private HapiSpec cannotCreateTooLargeContract() {
         ByteString contents;
         try {
