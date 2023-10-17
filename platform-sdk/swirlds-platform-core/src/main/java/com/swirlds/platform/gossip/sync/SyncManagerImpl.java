@@ -18,7 +18,6 @@ package com.swirlds.platform.gossip.sync;
 
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.logging.LogMarker.FREEZE;
-import static com.swirlds.logging.LogMarker.SYNC;
 
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -137,10 +136,6 @@ public class SyncManagerImpl implements FallenBehindManager {
         // we shouldn't sync if the event intake queue is too big
         final int intakeQueueSize = intakeQueue.size();
         if (intakeQueueSize > eventConfig.eventIntakeQueueThrottleSize()) {
-            logger.debug(
-                    SYNC.getMarker(),
-                    "don't accept sync because event intake queue is too big, size: {}",
-                    intakeQueueSize);
             return false;
         }
         return true;
