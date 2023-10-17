@@ -25,7 +25,7 @@ import java.util.function.Consumer;
  *
  * @param <T> the type of object that the work handles
  */
-public class WireInserter<T> {
+public class WireChannel<T> {
 
     private final Wire wire;
     private Consumer<Object> handler;
@@ -35,7 +35,7 @@ public class WireInserter<T> {
      *
      * @param wire the wire to insert data into
      */
-    WireInserter(@NonNull final Wire wire) {
+    WireChannel(@NonNull final Wire wire) {
         this.wire = Objects.requireNonNull(wire);
     }
 
@@ -49,7 +49,7 @@ public class WireInserter<T> {
      */
     @SuppressWarnings("unchecked")
     @NonNull
-    public WireInserter<T> bind(@NonNull final Consumer<T> handler) {
+    public WireChannel<T> bind(@NonNull final Consumer<T> handler) {
         if (this.handler != null) {
             throw new IllegalStateException("Handler already bound");
         }

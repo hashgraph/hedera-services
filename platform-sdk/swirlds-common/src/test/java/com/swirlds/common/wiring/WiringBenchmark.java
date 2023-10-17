@@ -61,21 +61,23 @@ class WiringBenchmark {
                 .build();
         final EventPool eventPool = new EventPool();
 
-        final WireInserter<Event> toOrphanBufferInserter = toOrphanBuffer.createInserter();
-        final WireInserter<Event> toVerifierInserter = toVerifier.createInserter();
+        // Step 2: create channels
 
-        // Step 2: construct components
+        final WireChannel<Event> orphanBufferChannel = toOrphanBuffer.createChannel();
+        final WireChannel<Event> verifierChannel = toVerifier.createChannel();
+
+        // Step 3: construct components
 
         final TopologicalEventSorter orphanBuffer = new TopologicalEventSorter(eventPool);
-        final EventVerifier verifier = new EventVerifier(toOrphanBufferInserter::put);
-        final Gossip gossip = new Gossip(executor, eventPool, toVerifierInserter::put);
+        final EventVerifier verifier = new EventVerifier(orphanBufferChannel::put);
+        final Gossip gossip = new Gossip(executor, eventPool, verifierChannel::put);
 
-        // Step 3: hook wires into components
+        // Step 4: bind wires to components
 
-        toOrphanBufferInserter.bind(orphanBuffer);
-        toVerifierInserter.bind(verifier);
+        orphanBufferChannel.bind(orphanBuffer);
+        verifierChannel.bind(verifier);
 
-        // Step 4: run
+        // Step 5: run
 
         // Create a user thread for running "gossip". It will continue to generate events until explicitly stopped.
         System.out.println("Starting gossip");

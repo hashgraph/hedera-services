@@ -69,29 +69,29 @@ public abstract class Wire {
     public abstract long getUnprocessedTaskCount();
 
     /**
-     * Get a wire inserter for this wire. In order to use this inserter, a handler must be bound via
-     * {@link WireInserter#bind(Consumer)}.
+     * Get a wire channel for this wire. In order to use this channel, a handler must be bound via
+     * {@link WireChannel#bind(Consumer)}.
      *
      * @param <T> the type of data handled by the handler
-     * @return the inserter
+     * @return the channel
      */
     @NonNull
-    public final <T> WireInserter<T> createInserter() {
-        return new WireInserter<>(this);
+    public final <T> WireChannel<T> createChannel() {
+        return new WireChannel<>(this);
     }
 
     /**
-     * Get a wire inserter for this wire. In order to use this inserter, a handler must be bound via
-     * {@link WireInserter#bind(Consumer)}.
+     * Get a wire channel for this wire. In order to use this channel, a handler must be bound via
+     * {@link WireChannel#bind(Consumer)}.
      *
      * @param clazz the type of data handled by the handler, convenience argument for scenarios where the compiler can't
      *              figure out generic types
      * @param <T>   the type of data handled by the handler
-     * @return the inserter
+     * @return the channel
      */
     @NonNull
-    public final <T> WireInserter<T> createInserter(@NonNull final Class<T> clazz) {
-        return new WireInserter<>(this);
+    public final <T> WireChannel<T> createChannel(@NonNull final Class<T> clazz) {
+        return new WireChannel<>(this);
     }
 
     /**
