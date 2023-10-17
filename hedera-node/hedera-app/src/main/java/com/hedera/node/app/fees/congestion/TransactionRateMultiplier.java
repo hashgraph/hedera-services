@@ -50,12 +50,12 @@ import com.hedera.node.config.data.TopicsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
-public class TransactionRateMultiplierSource {
+public class TransactionRateMultiplier {
     private final HederaState state;
     private final ConfigProvider configProvider;
     private final ThrottleMultiplier delegate;
 
-    public TransactionRateMultiplierSource(
+    public TransactionRateMultiplier(
             @NonNull final ThrottleMultiplier delegate,
             @NonNull final ConfigProvider configProvider,
             @NonNull final HederaState state) {

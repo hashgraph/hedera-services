@@ -33,7 +33,7 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
-import com.hedera.node.app.fees.congestion.TransactionRateMultiplierSource;
+import com.hedera.node.app.fees.congestion.TransactionRateMultiplier;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.NetworkInfoImpl;
@@ -708,7 +708,7 @@ public final class Hedera implements SwirldMain {
                         .percentCongestionMultipliers(),
                 () -> backendThrottle.activeThrottlesFor(CRYPTO_TRANSFER));
 
-        final var txnRateMultiplier = new TransactionRateMultiplierSource(genericFeeMultiplier, configProvider, state);
+        final var txnRateMultiplier = new TransactionRateMultiplier(genericFeeMultiplier, configProvider, state);
 
         final var gasFeeMultiplier = new ThrottleMultiplier(
                 "EVM gas/sec",

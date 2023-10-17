@@ -23,11 +23,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 public class CongestionMultipliers {
-    private final TransactionRateMultiplierSource genericFeeMultiplier;
+    private final TransactionRateMultiplier genericFeeMultiplier;
     private final ThrottleMultiplier gasFeeMultiplier;
 
     public CongestionMultipliers(
-            @NonNull final TransactionRateMultiplierSource genericFeeMultiplier,
+            @NonNull final TransactionRateMultiplier genericFeeMultiplier,
             @NonNull final ThrottleMultiplier gasFeeMultiplier) {
         this.genericFeeMultiplier = requireNonNull(genericFeeMultiplier, "genericFeeMultiplier must not be null");
         this.gasFeeMultiplier = requireNonNull(gasFeeMultiplier, "gasFeeMultiplier must not be null");
