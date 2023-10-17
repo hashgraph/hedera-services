@@ -16,6 +16,7 @@
 
 package com.swirlds.common.test.fixtures.crypto;
 
+import static com.swirlds.common.crypto.engine.EcdsaSecp256k1Verifier.ECDSA_KECCAK_256_SIZE;
 import static com.swirlds.common.crypto.engine.EcdsaSecp256k1Verifier.ECDSA_UNCOMPRESSED_KEY_SIZE;
 import static com.swirlds.common.test.fixtures.crypto.EcdsaUtils.asRawEcdsaSecp256k1Key;
 import static com.swirlds.common.test.fixtures.crypto.EcdsaUtils.signDigestWithEcdsaSecp256k1;
@@ -24,6 +25,8 @@ import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.security.KeyPair;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPublicKey;
 import java.util.ArrayList;
 import java.util.SplittableRandom;
@@ -105,12 +108,12 @@ public class EcdsaSignedTxnPool {
 
         tx.clearSignatures();
         tx.extractSignature(
-                transactionSize + PUBLIC_KEY_LEN,
+                ECDSA_KECCAK_256_SIZE + PUBLIC_KEY_LEN,
                 signedTxn.sigLen,
-                transactionSize,
+                ECDSA_KECCAK_256_SIZE,
                 PUBLIC_KEY_LEN,
                 0,
-                transactionSize,
+                ECDSA_KECCAK_256_SIZE,
                 SignatureType.ECDSA_SECP256K1);
 
         return tx.getSignatures().get(0);
@@ -123,18 +126,24 @@ public class EcdsaSignedTxnPool {
         generateActiveKeyPair();
 
         final byte[] activePubKey = asRawEcdsaSecp256k1Key((ECPublicKey) activeKp.getPublic());
-        for (int i = 0; i < poolSize; i++) {
-            final byte[] msg = new byte[transactionSize];
-            random.nextBytes(msg);
-            final byte[] sig = signDigestWithEcdsaSecp256k1(activeKp.getPrivate(), msg);
+        try {
+            final MessageDigest messageDigest = MessageDigest.getInstance("KECCAK-256");
+            for (int i = 0; i < poolSize; i++) {
+                final byte[] rawMsg = new byte[transactionSize];
+                random.nextBytes(rawMsg);
+                final byte[] msg = messageDigest.digest(rawMsg);
+                final byte[] sig = signDigestWithEcdsaSecp256k1(activeKp.getPrivate(), msg);
 
-            final byte[] buffer = new byte[transactionSize + sig.length + activePubKey.length];
-            System.arraycopy(msg, 0, buffer, 0, msg.length);
-            System.arraycopy(activePubKey, 0, buffer, msg.length, activePubKey.length);
-            System.arraycopy(sig, 0, buffer, msg.length + activePubKey.length, sig.length);
+                final byte[] buffer = new byte[transactionSize + sig.length + activePubKey.length];
+                System.arraycopy(msg, 0, buffer, 0, msg.length);
+                System.arraycopy(activePubKey, 0, buffer, msg.length, activePubKey.length);
+                System.arraycopy(sig, 0, buffer, msg.length + activePubKey.length, sig.length);
 
-            final SignedTxn signedTxn = new SignedTxn(sig.length, new SwirldTransaction(buffer));
-            signedTxns.add(signedTxn);
+                final SignedTxn signedTxn = new SignedTxn(sig.length, new SwirldTransaction(buffer));
+                signedTxns.add(signedTxn);
+            }
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
         }
     }
 
