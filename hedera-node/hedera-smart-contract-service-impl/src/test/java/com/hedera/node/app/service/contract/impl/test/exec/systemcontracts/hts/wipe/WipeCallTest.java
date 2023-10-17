@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.wipe;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
@@ -40,8 +56,7 @@ public class WipeCallTest extends HtsCallTestBase {
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(attempt.addressIdConverter().convertSender(any())).willReturn(OWNER_ID);
 
-        final var subject =
-                new WipeCall(attempt, TransactionBody.newBuilder().build());
+        final var subject = new WipeCall(attempt, TransactionBody.newBuilder().build());
 
         given(systemContractOperations.dispatch(any(), any(), any(), any())).willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
