@@ -40,8 +40,6 @@ public class ConcurrentWire extends Wire {
     private final ObjectCounter offRamp;
     private final String name;
 
-    // TODO write unit tests for this class
-
     /**
      * Constructor.
      *
@@ -159,7 +157,7 @@ public class ConcurrentWire extends Wire {
      * {@inheritDoc}
      */
     @Override
-    public void interruptableFlush() throws InterruptedException {
+    public void interruptableFlush() {
         logger.error(
                 EXCEPTION.getMarker(),
                 "flush() called on concurrent wire {}. Concurrent wires do not implement flush, "
