@@ -107,9 +107,9 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
-import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.event.validation.GossipEventValidator;
 import com.swirlds.platform.event.validation.GossipEventValidators;
+import com.swirlds.platform.event.validation.LegacyEventValidator;
 import com.swirlds.platform.event.validation.SignatureValidator;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
@@ -215,7 +215,7 @@ public class SwirldsPlatform implements Platform {
     /**
      * Validates events and passes valid events further down the pipeline.
      */
-    private final EventValidator eventValidator;
+    private final LegacyEventValidator eventValidator;
     /** Contains all validators for events */
     private final GossipEventValidators eventValidators;
 
@@ -612,7 +612,7 @@ public class SwirldsPlatform implements Platform {
         }
 
         eventValidators = new GossipEventValidators(validators);
-        eventValidator = new EventValidator(
+        eventValidator = new LegacyEventValidator(
                 eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer, intakeEventCounter);
 
         intakeQueue = components.add(new QueueThreadConfiguration<GossipEvent>(threadManager)

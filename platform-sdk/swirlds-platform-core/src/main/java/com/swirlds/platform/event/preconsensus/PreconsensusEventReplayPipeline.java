@@ -24,7 +24,7 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.validation.EventValidator;
+import com.swirlds.platform.event.validation.LegacyEventValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -62,7 +62,7 @@ public class PreconsensusEventReplayPipeline {
 
     private final PlatformContext platformContext;
     private final IOIterator<GossipEvent> unhashedEventIterator;
-    private final EventValidator eventValidator;
+    private final LegacyEventValidator eventValidator;
 
     /**
      * Create a new event replay pipeline.
@@ -76,7 +76,7 @@ public class PreconsensusEventReplayPipeline {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final IOIterator<GossipEvent> unhashedEventIterator,
-            @NonNull final EventValidator eventValidator) {
+            @NonNull final LegacyEventValidator eventValidator) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);

@@ -40,7 +40,7 @@ import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventReplayPipeline;
-import com.swirlds.platform.event.validation.EventValidator;
+import com.swirlds.platform.event.validation.LegacyEventValidator;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
@@ -184,7 +184,7 @@ class PreconsensusEventReplayPipelineTests {
         final List<GossipEvent> receivedEvents = new ArrayList<>(eventCount);
         final AtomicInteger count = new AtomicInteger(0);
 
-        final EventValidator eventValidator = mock(EventValidator.class);
+        final LegacyEventValidator eventValidator = mock(LegacyEventValidator.class);
         doAnswer((invocation) -> {
                     final GossipEvent event = invocation.getArgument(0);
                     assertNotNull(event.getHashedData().getHash());
@@ -252,7 +252,7 @@ class PreconsensusEventReplayPipelineTests {
         final List<GossipEvent> receivedEvents = new ArrayList<>(eventCount);
         final AtomicInteger count = new AtomicInteger(0);
 
-        final EventValidator eventValidator = mock(EventValidator.class);
+        final LegacyEventValidator eventValidator = mock(LegacyEventValidator.class);
         doAnswer((invocation) -> {
                     final GossipEvent event = invocation.getArgument(0);
                     assertNotNull(event.getHashedData().getHash());
@@ -315,7 +315,7 @@ class PreconsensusEventReplayPipelineTests {
         final AtomicInteger count = new AtomicInteger(0);
         final BaseEventHashedData errorEvent = events.get(eventCount / 2).getHashedData();
 
-        final EventValidator eventValidator = mock(EventValidator.class);
+        final LegacyEventValidator eventValidator = mock(LegacyEventValidator.class);
         doAnswer((invocation) -> {
                     final GossipEvent event = invocation.getArgument(0);
 
@@ -382,7 +382,7 @@ class PreconsensusEventReplayPipelineTests {
         final List<GossipEvent> receivedEvents = new ArrayList<>(eventCount);
         final AtomicInteger count = new AtomicInteger(0);
 
-        final EventValidator eventValidator = mock(EventValidator.class);
+        final LegacyEventValidator eventValidator = mock(LegacyEventValidator.class);
         doAnswer((invocation) -> {
                     final GossipEvent event = invocation.getArgument(0);
                     assertNotNull(event.getHashedData().getHash());

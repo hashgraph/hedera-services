@@ -33,7 +33,7 @@ import com.swirlds.platform.Crypto;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
-import com.swirlds.platform.event.validation.EventValidator;
+import com.swirlds.platform.event.validation.LegacyEventValidator;
 import com.swirlds.platform.gossip.chatter.ChatterGossip;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -105,7 +105,7 @@ public final class GossipFactory {
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final EventValidator eventValidator,
+            @NonNull final LegacyEventValidator eventValidator,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
