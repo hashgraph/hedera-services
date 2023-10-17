@@ -300,4 +300,19 @@ class ConsensusTests {
                 .setIterations(NUM_ITER)
                 .run();
     }
+
+    @ParameterizedTest
+    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#orderInvarianceTests")
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.PLATFORM)
+    @Tag(TestComponentTags.CONSENSUS)
+    @Tag(TestQualifierTags.AT_SCALE)
+    @DisplayName("Genesis Snapshot Tests")
+    void genesisSnapshotTest(final ConsensusTestParams params) {
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::genesisSnapshotTest)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
+    }
 }
