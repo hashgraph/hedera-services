@@ -97,7 +97,7 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
                 if (nft.hasOwnerId()) {
                     validateTrue(nft.ownerId().equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
                 } else {
-                    if (senderId.hasAlias()) {
+                    if (!senderId.hasAccountNum() && senderId.hasAlias()) {
                         validateTrue(
                                 treasury.equals(accountIdFromHexedMirrorAddress(senderId.alias())),
                                 SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);

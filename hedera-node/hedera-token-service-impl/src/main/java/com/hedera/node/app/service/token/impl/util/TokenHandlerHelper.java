@@ -200,7 +200,7 @@ public class TokenHandlerHelper {
         requireNonNull(tokenRelStore);
 
         var tokenRel = tokenRelStore.get(accountId, tokenId);
-        if (accountId.hasAlias()) {
+        if (!accountId.hasAccountNum() && accountId.hasAlias()) {
             tokenRel = tokenRelStore.get(accountIdFromHexedMirrorAddress(accountId.alias()), tokenId);
         }
 

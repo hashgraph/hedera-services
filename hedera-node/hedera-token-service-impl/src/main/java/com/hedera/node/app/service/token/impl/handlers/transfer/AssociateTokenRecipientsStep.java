@@ -84,7 +84,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 final var receiverId = aa.receiverAccountID();
                 var senderId = aa.senderAccountID();
                 // sender should be associated already. If not throw exception
-                if (senderId.hasAlias()) {
+                if (!senderId.hasAccountNum() && senderId.hasAlias()) {
                     senderId = accountIdFromHexedMirrorAddress(senderId.alias());
                 }
                 validateTrue(tokenRelStore.get(senderId, tokenId) != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
