@@ -18,7 +18,6 @@ package com.hedera.node.app.state;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.records.RecordCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -43,7 +42,6 @@ import java.util.List;
  */
 /*@ThreadSafe*/
 public interface HederaRecordCache extends RecordCache {
-
     /**
      * Records the fact that the given {@link TransactionID} has been seen by the given node. If the node has already
      * been seen, then this call is a no-op. This call does not perform any additional validation of the transaction ID.
@@ -51,12 +49,12 @@ public interface HederaRecordCache extends RecordCache {
      * @param nodeId The node ID of the node that submitted this transaction to consensus, as known in the address book
      * @param payerAccountId The {@link AccountID} of the "payer" of the transaction
      * @param transactionRecords The list of all related transaction records. This may be a stream of 1, if the list
-     *                           only contains the user transactions. Or it may be a list including user transactions
-     *                           and child transactions (preceding and following). There is no requirement on the order
-     *                           of records in this list.
+     *                           only contains the user transaction. Or it may be a list including preceding
+     *                           transactions, user transactions, and child transactions. There is no requirement as to
+     *                           the order of items in this list.
      */
     /*HANDLE THREAD ONLY*/
-    void add(long nodeId, @NonNull AccountID payerAccountId, @NonNull List<TransactionRecord> transactionRecords);
+    void add(long nodeId, @NonNull AccountID payerAccountId, @NonNull List<SingleTransactionRecord> transactionRecords);
 
     /**
      * Checks if the given transaction ID has been seen by this node. If it has not, the result is

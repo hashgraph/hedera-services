@@ -17,7 +17,7 @@
 package com.hedera.node.app.records.impl;
 
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

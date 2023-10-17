@@ -49,8 +49,6 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#TRANSACTION_GET_RECORD}.
@@ -58,8 +56,6 @@ import org.apache.logging.log4j.Logger;
 // use RecordCache for this
 @Singleton
 public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
-    private static final Logger logger = LogManager.getLogger(NetworkTransactionGetRecordHandler.class);
-
     @Inject
     public NetworkTransactionGetRecordHandler() {
         // Exists for injection
@@ -108,12 +104,11 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         final var responseBuilder = TransactionGetRecordResponse.newBuilder();
         final var transactionId = op.transactionIDOrThrow();
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
-
         responseBuilder.header(header);
         if (header.nodeTransactionPrecheckCode() == ResponseCodeEnum.OK && responseType != COST_ANSWER) {
             final var history = recordCache.getHistory(transactionId);
             if (history == null || history.records().isEmpty()) {
-                // TODO Can we even ever hit this case? Doesn't the validate method make sure this doesn't happen?
+                // Can we even ever hit this case? Doesn't the validate method make sure this doesn't happen?
                 // If we do not yet have a record, then we return this. This has some asymmetry with the call to get
                 // a transaction receipt, which will return a receipt with a status of UNKNOWN if the transactionID
                 // is known but there is not yet any kind of record.

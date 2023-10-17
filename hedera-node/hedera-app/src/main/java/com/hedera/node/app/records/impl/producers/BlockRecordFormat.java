@@ -17,7 +17,7 @@
 package com.hedera.node.app.records.impl.producers;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;

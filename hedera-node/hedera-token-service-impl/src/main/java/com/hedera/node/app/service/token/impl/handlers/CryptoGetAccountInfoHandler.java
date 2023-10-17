@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.tokenRelationshipsOf;
-import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -152,7 +151,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         } else {
             final var info = AccountInfo.newBuilder();
             info.ledgerId(ledgerConfig.id());
-            if (!isEmpty(account.key()) && !account.key().equals(IMMUTABILITY_SENTINEL_KEY)) info.key(account.key());
+            if (!isEmpty(account.key())) info.key(account.key());
             // Set this field with the account's id since that's guaranteed to be a numeric 0.0.X id;
             // the request might have been made using a 0.0.<alias> id
             info.accountID(account.accountIdOrThrow());

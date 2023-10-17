@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -68,7 +69,8 @@ class RecordListBuilderTest extends AppTestBase {
         assertThat(recordListBuilder.precedingRecordBuilders()).isEmpty();
         assertThat(recordListBuilder.childRecordBuilders()).isEmpty();
         assertThat(recordListBuilder.userTransactionRecordBuilder()).isNotNull();
-        assertThat(recordListBuilder.userTransactionRecordBuilder().consensusNow()).isEqualTo(consensusTime);
+        assertThat(recordListBuilder.userTransactionRecordBuilder().consensusNow())
+                .isEqualTo(consensusTime);
         assertThat(result.userTransactionRecord()).isNotNull();
         assertThat(result.records()).containsExactly(result.userTransactionRecord());
     }
@@ -95,9 +97,7 @@ class RecordListBuilderTest extends AppTestBase {
                 .nanosBefore(1, result.userTransactionRecord())
                 .hasNonce(1)
                 .hasNoParent();
-        assertCreatedRecord(records.get(1))
-                .hasNonce(0)
-                .hasNoParent();
+        assertCreatedRecord(records.get(1)).hasNonce(0).hasNoParent();
     }
 
     @Test
@@ -124,10 +124,7 @@ class RecordListBuilderTest extends AppTestBase {
                 .nanosBefore(1, result.userTransactionRecord())
                 .hasNonce(1)
                 .hasNoParent();
-        assertCreatedRecord(records.get(2))
-                .hasNonce(0)
-                .hasNoParent();
-
+        assertCreatedRecord(records.get(2)).hasNonce(0).hasNoParent();
     }
 
     @Test
@@ -167,9 +164,7 @@ class RecordListBuilderTest extends AppTestBase {
         // then
         assertThat(records).hasSize(2);
         assertThat(records.get(0)).isSameAs(result.userTransactionRecord());
-        assertCreatedRecord(records.get(0))
-                .hasNonce(0)
-                .hasNoParent();
+        assertCreatedRecord(records.get(0)).hasNonce(0).hasNoParent();
         assertCreatedRecord(records.get(1))
                 .nanosAfter(1, result.userTransactionRecord())
                 .hasNonce(1)
@@ -192,9 +187,7 @@ class RecordListBuilderTest extends AppTestBase {
         // then
         assertThat(records).hasSize(3);
         assertThat(records.get(0)).isSameAs(result.userTransactionRecord());
-        assertCreatedRecord(records.get(0))
-                .hasNonce(0)
-                .hasNoParent();
+        assertCreatedRecord(records.get(0)).hasNonce(0).hasNoParent();
         assertCreatedRecord(records.get(1))
                 .nanosAfter(1, result.userTransactionRecord())
                 .hasNonce(1)
@@ -260,9 +253,7 @@ class RecordListBuilderTest extends AppTestBase {
                 .hasNonce(1)
                 .hasNoParent()
                 .hasTransaction(second);
-        assertCreatedRecord(records.get(2))
-                .hasNonce(0)
-                .hasNoParent();
+        assertCreatedRecord(records.get(2)).hasNonce(0).hasNoParent();
         assertCreatedRecord(records.get(3))
                 .nanosAfter(1, result.userTransactionRecord())
                 .hasNonce(3)
@@ -292,10 +283,7 @@ class RecordListBuilderTest extends AppTestBase {
         // Then, we will find all three records exist, where "child1" will be reverted, but child 2 will not be.
         assertThat(records).hasSize(3);
         assertThat(records.get(0)).isSameAs(result.userTransactionRecord());
-        assertCreatedRecord(records.get(0))
-                .hasNonce(0)
-                .hasResponseCode(OK)
-                .hasNoParent();
+        assertCreatedRecord(records.get(0)).hasNonce(0).hasResponseCode(OK).hasNoParent();
         assertCreatedRecord(records.get(1))
                 .nanosAfter(1, result.userTransactionRecord())
                 .hasNonce(1)
@@ -341,10 +329,7 @@ class RecordListBuilderTest extends AppTestBase {
         // then
         assertThat(records).hasSize(5);
         assertThat(records.get(0)).isSameAs(result.userTransactionRecord());
-        assertCreatedRecord(records.get(0))
-                .hasNonce(0)
-                .hasResponseCode(OK)
-                .hasNoParent();
+        assertCreatedRecord(records.get(0)).hasNonce(0).hasResponseCode(OK).hasNoParent();
         assertCreatedRecord(records.get(1))
                 .nanosAfter(1, result.userTransactionRecord())
                 .hasNonce(1)
@@ -382,9 +367,7 @@ class RecordListBuilderTest extends AppTestBase {
         // then
         assertThat(records).hasSize(2);
         assertThat(records.get(0)).isSameAs(result.userTransactionRecord());
-        assertCreatedRecord(records.get(0))
-                .hasNonce(0)
-                .hasNoParent();
+        assertCreatedRecord(records.get(0)).hasNonce(0).hasNoParent();
         assertCreatedRecord(records.get(1))
                 .nanosAfter(1, result.userTransactionRecord())
                 .hasNonce(1)
@@ -407,9 +390,7 @@ class RecordListBuilderTest extends AppTestBase {
         // then
         assertThat(records).hasSize(3);
         assertThat(records.get(0)).isSameAs(result.userTransactionRecord());
-        assertCreatedRecord(records.get(0))
-                .hasNonce(0)
-                .hasNoParent();
+        assertCreatedRecord(records.get(0)).hasNonce(0).hasNoParent();
         assertCreatedRecord(records.get(1))
                 .nanosAfter(1, result.userTransactionRecord())
                 .hasNonce(1)
@@ -482,7 +463,9 @@ class RecordListBuilderTest extends AppTestBase {
         final var child1Tx = simpleCryptoTransfer();
         final var child1 = recordListBuilder.addRemovableChild(CONFIGURATION).transaction(child1Tx);
         recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer()); // will be removed
-        recordListBuilder.addRemovableChild(CONFIGURATION).transaction(simpleCryptoTransfer()) // will be removed
+        recordListBuilder
+                .addRemovableChild(CONFIGURATION)
+                .transaction(simpleCryptoTransfer()) // will be removed
                 .status(ACCOUNT_ID_DOES_NOT_EXIST);
 
         // when
@@ -558,7 +541,8 @@ class RecordListBuilderTest extends AppTestBase {
         assertCreatedRecord(records.get(2))
                 .nanosAfter(2, result.userTransactionRecord())
                 .hasNonce(2) // second child
-                .hasResponseCode(OK) // child3's children were reverted, second child comes before, so it is not affected
+                .hasResponseCode(
+                        OK) // child3's children were reverted, second child comes before, so it is not affected
                 .hasTransaction(child2Tx)
                 .hasParent(result.userTransactionRecord());
         assertCreatedRecord(records.get(3))
@@ -617,20 +601,27 @@ class RecordListBuilderTest extends AppTestBase {
 
         TransactionRecordAssertions nanosBefore(final int nanos, @NonNull final SingleTransactionRecord otherRecord) {
             final var otherTimestamp = otherRecord.transactionRecord().consensusTimestampOrThrow();
-            final var expectedTimestamp = otherTimestamp.copyBuilder().nanos(otherTimestamp.nanos() - nanos).build();
+            final var expectedTimestamp = otherTimestamp
+                    .copyBuilder()
+                    .nanos(otherTimestamp.nanos() - nanos)
+                    .build();
             assertThat(record.transactionRecord().consensusTimestampOrThrow()).isEqualTo(expectedTimestamp);
             return this;
         }
 
         TransactionRecordAssertions nanosAfter(final int nanos, @NonNull final SingleTransactionRecord otherRecord) {
             final var otherTimestamp = otherRecord.transactionRecord().consensusTimestampOrThrow();
-            final var expectedTimestamp = otherTimestamp.copyBuilder().nanos(otherTimestamp.nanos() + nanos).build();
+            final var expectedTimestamp = otherTimestamp
+                    .copyBuilder()
+                    .nanos(otherTimestamp.nanos() + nanos)
+                    .build();
             assertThat(record.transactionRecord().consensusTimestampOrThrow()).isEqualTo(expectedTimestamp);
             return this;
         }
 
         TransactionRecordAssertions hasNonce(final int nonce) {
-            assertThat(record.transactionRecord().transactionIDOrThrow().nonce()).isEqualTo(nonce);
+            assertThat(record.transactionRecord().transactionIDOrThrow().nonce())
+                    .isEqualTo(nonce);
             return this;
         }
 

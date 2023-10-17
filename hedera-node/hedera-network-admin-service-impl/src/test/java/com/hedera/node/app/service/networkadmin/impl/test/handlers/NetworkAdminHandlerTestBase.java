@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
@@ -51,6 +52,7 @@ import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
@@ -262,24 +264,31 @@ public class NetworkAdminHandlerTestBase {
                 .transactionID(otherNonceOneTransactionID)
                 .receipt(receipt)
                 .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(1)))
+                .parentConsensusTimestamp(asTimestamp(consensusTimestamp))
                 .build();
         recordTwo = TransactionRecord.newBuilder()
                 .transactionID(otherNonceTwoTransactionID)
                 .receipt(receipt)
                 .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(2)))
+                .parentConsensusTimestamp(asTimestamp(consensusTimestamp))
                 .build();
         recordThree = TransactionRecord.newBuilder()
                 .transactionID(otherNonceThreeTransactionID)
                 .receipt(receipt)
                 .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(3)))
+                .parentConsensusTimestamp(asTimestamp(consensusTimestamp))
                 .build();
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(primaryRecord));
-        cache.add(1, PAYER_ACCOUNT_ID, List.of(duplicate1));
-        cache.add(2, PAYER_ACCOUNT_ID, List.of(duplicate2));
-        cache.add(3, PAYER_ACCOUNT_ID, List.of(duplicate3));
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(recordOne));
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(recordTwo));
-        cache.add(0, PAYER_ACCOUNT_ID, List.of(recordThree));
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(primaryRecord)));
+        cache.add(1, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate1)));
+        cache.add(2, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate2)));
+        cache.add(3, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate3)));
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordOne)));
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordTwo)));
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordThree)));
+    }
+
+    private SingleTransactionRecord singleTransactionRecord(TransactionRecord record) {
+        return new SingleTransactionRecord(Transaction.DEFAULT, record, List.of());
     }
 
     protected MapReadableKVState<AccountID, Account> readableAccountState() {

@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -52,11 +53,10 @@ import java.util.stream.Stream;
  * <p>After transaction handling, this class will produce the list of all created records. They will be assigned
  * transaction IDs and consensus timestamps and parent consensus timestamps as appropriate.
  *
- * <p>As all classes intended to be used within the handle-workflow, this class is <em>not</em> thread-safe.
+ * <p>As with all classes intended to be used within the handle-workflow, this class is <em>not</em> thread-safe.
  */
 public final class RecordListBuilder {
     private static final String CONFIGURATION_MUST_NOT_BE_NULL = "configuration must not be null";
-
     /** The record builder for the user transaction. */
     private final SingleTransactionRecordBuilderImpl userTxnRecordBuilder;
     /**
@@ -99,9 +99,7 @@ public final class RecordListBuilder {
      */
     @NonNull
     public List<SingleTransactionRecordBuilderImpl> precedingRecordBuilders() {
-        return precedingTxnRecordBuilders != null
-                ? unmodifiableList(precedingTxnRecordBuilders)
-                : List.of();
+        return precedingTxnRecordBuilders != null ? unmodifiableList(precedingTxnRecordBuilders) : List.of();
     }
 
     /**
@@ -148,8 +146,7 @@ public final class RecordListBuilder {
         final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
         final var consensusNow = parentConsensusTimestamp.minusNanos(precedingCount + 1L);
         final var recordBuilder =
-                new SingleTransactionRecordBuilderImpl(consensusNow)
-                        .exchangeRate(userTxnRecordBuilder.exchangeRate());
+                new SingleTransactionRecordBuilderImpl(consensusNow).exchangeRate(userTxnRecordBuilder.exchangeRate());
         precedingTxnRecordBuilders.add(recordBuilder);
         return recordBuilder;
     }
@@ -187,7 +184,8 @@ public final class RecordListBuilder {
         return doAddChild(configuration, true);
     }
 
-    private SingleTransactionRecordBuilderImpl doAddChild(@NonNull final Configuration configuration, final boolean removable) {
+    private SingleTransactionRecordBuilderImpl doAddChild(
+            @NonNull final Configuration configuration, final boolean removable) {
         // FUTURE: We should reuse the RecordListBuilder between handle calls, and we should reuse these lists, in
         // which case we will no longer have to create them lazily.
         if (childRecordBuilders == null) {
@@ -254,7 +252,7 @@ public final class RecordListBuilder {
         }
 
         // Now that we know from where to begin reverting, walk over all the children and revert or remove them.
-        // If we do a remove, we need to shift elements around. this can be quite expensive since we use an array
+        // If we do a remove, we need to shift elements around. This can be quite expensive since we use an array
         // list for our data structure. So we will shift elements as necessary as we walk through the list.
         final var count = childRecordBuilders.size();
         int into = index; // The position in the array into which we should put the next remaining child
@@ -298,9 +296,8 @@ public final class RecordListBuilder {
         int count = precedingTxnRecordBuilders == null ? 0 : precedingTxnRecordBuilders.size();
         for (int i = count - 1; i >= 0; i--) {
             final var recordBuilder = precedingTxnRecordBuilders.get(i);
-            records.add(recordBuilder
-                    .transactionID(idBuilder.nonce(i + 1).build())
-                    .build());
+            records.add(
+                    recordBuilder.transactionID(idBuilder.nonce(i + 1).build()).build());
         }
 
         records.add(userTxnRecord);
@@ -340,6 +337,5 @@ public final class RecordListBuilder {
      *                the user transaction record, which comes before child records.
      */
     public record Result(
-            @NonNull SingleTransactionRecord userTransactionRecord,
-            @NonNull List<SingleTransactionRecord> records) {}
+            @NonNull SingleTransactionRecord userTransactionRecord, @NonNull List<SingleTransactionRecord> records) {}
 }

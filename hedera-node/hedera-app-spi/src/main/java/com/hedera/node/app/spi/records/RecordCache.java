@@ -160,5 +160,4 @@ public interface RecordCache {
      */
     @NonNull
     List<TransactionRecord> getRecords(@NonNull AccountID accountID);
-
 }

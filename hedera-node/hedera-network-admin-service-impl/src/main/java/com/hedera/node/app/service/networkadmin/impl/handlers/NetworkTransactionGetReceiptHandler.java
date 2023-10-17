@@ -94,11 +94,13 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
                 responseBuilder.receipt(history.userTransactionReceipt());
                 if (op.includeDuplicates()) {
                     responseBuilder.duplicateTransactionReceipts(history.duplicateRecords().stream()
-                            .map(TransactionRecord::receiptOrThrow).toList());
+                            .map(TransactionRecord::receiptOrThrow)
+                            .toList());
                 }
                 if (op.includeChildReceipts()) {
                     responseBuilder.childTransactionReceipts(history.childRecords().stream()
-                            .map(TransactionRecord::receiptOrThrow).toList());
+                            .map(TransactionRecord::receiptOrThrow)
+                            .toList());
                 }
             }
         }
