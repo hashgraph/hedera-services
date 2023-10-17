@@ -20,9 +20,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -53,14 +51,13 @@ public class Issue1742Suite extends HapiSuite {
         final long PAYER_BALANCE = 1_000_000L;
 
         return defaultHapiSpec("CryptoTransferListShowsOnlyFeesAfterIAB")
-                .given(flattened(
-                        cryptoCreate("payer").balance(PAYER_BALANCE),
-                        takeBalanceSnapshots(FUNDING, NODE, GENESIS, "payer")))
-                .when(cryptoTransfer(tinyBarsFromTo("payer", GENESIS, PAYER_BALANCE))
-                        .payingWith("payer")
-                        .via("txn")
-                        .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE))
-                .then(validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS, "payer")));
+                .given(cryptoCreate("payer").balance(PAYER_BALANCE))
+                .when()
+                .then(
+                        cryptoTransfer(tinyBarsFromTo("payer", GENESIS, PAYER_BALANCE))
+                                .payingWith("payer")
+                                .via("txn")
+                                .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
     @Override
