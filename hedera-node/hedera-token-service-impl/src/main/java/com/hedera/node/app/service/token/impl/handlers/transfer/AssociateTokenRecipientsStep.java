@@ -91,11 +91,11 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 final var nft = nftStore.get(tokenId, aa.serialNumber());
                 validateTrue(nft != null, INVALID_NFT_ID);
 
-                // First check for an allowance or spender ID (different from the owner) for this NFT
+                // First check for an allowance or spender ID (different from the owner or treasury) for this NFT
                 final var nftOwnerId = nft.hasOwnerId() ? nft.ownerIdOrThrow() : null;
                 final var nftSpenderId = nft.hasSpenderId() ? nft.spenderIdOrThrow() : null;
                 boolean allowanceFound = false;
-                if (nftOwnerId != null && !senderId.equals(nftOwnerId)) {
+                if (nftOwnerId != null && !senderId.equals(nftOwnerId) && !senderId.equals(token.treasuryAccountId())) {
                     final var senderAcct =
                             getIfUsable(senderId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
                     final var approvedNftAllowances = senderAcct.approveForAllNftAllowancesOrElse(emptyList());
