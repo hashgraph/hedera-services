@@ -24,6 +24,7 @@ import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -69,7 +70,7 @@ public class SequentialWire extends Wire {
         void send(
                 @NonNull final SequentialTask nextTask,
                 @NonNull final Consumer<Object> handler,
-                @NonNull final Object data) {
+                @Nullable final Object data) {
             this.nextTask = nextTask;
             this.handler = handler;
             this.data = data;
@@ -223,5 +224,47 @@ public class SequentialWire extends Wire {
     @Override
     public long getUnprocessedTaskCount() {
         return onRamp.getCount();
+    }
+
+    // TODO unit test
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void flush() {
+        onRamp.forceOnRamp();
+
+        final Semaphore semaphore = new Semaphore(1);
+        semaphore.acquireUninterruptibly();
+
+        final SequentialTask nextTask = new SequentialTask(2);
+        SequentialTask currentTask;
+        do {
+            currentTask = lastTask.get();
+        } while (!lastTask.compareAndSet(currentTask, nextTask));
+        currentTask.send(nextTask, x -> semaphore.release(), null);
+
+        semaphore.acquireUninterruptibly();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void interruptableFlush() throws InterruptedException {
+        onRamp.forceOnRamp();
+
+        final Semaphore semaphore = new Semaphore(1);
+        semaphore.acquire();
+
+        final SequentialTask nextTask = new SequentialTask(2);
+        SequentialTask currentTask;
+        do {
+            currentTask = lastTask.get();
+        } while (!lastTask.compareAndSet(currentTask, nextTask));
+        currentTask.send(nextTask, x -> semaphore.release(), null);
+
+        semaphore.acquire();
     }
 }

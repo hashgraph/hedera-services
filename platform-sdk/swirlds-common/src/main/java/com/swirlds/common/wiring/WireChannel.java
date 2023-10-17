@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -64,7 +65,7 @@ public class WireChannel<T> {
      *
      * @param data the data to be processed by the wire
      */
-    public void put(@NonNull final T data) {
+    public void put(@Nullable final T data) {
         wire.put(handler, data);
     }
 
@@ -75,7 +76,7 @@ public class WireChannel<T> {
      * @param data the data to be processed by the wire
      * @throws InterruptedException if the thread is interrupted while waiting for capacity to become available
      */
-    public void interruptablePut(@NonNull final T data) throws InterruptedException {
+    public void interruptablePut(@Nullable final T data) throws InterruptedException {
         wire.interruptablePut(handler, data);
     }
 
@@ -86,7 +87,7 @@ public class WireChannel<T> {
      * @param data the data to be processed by the wire
      * @return true if the data was accepted, false otherwise
      */
-    public boolean offer(@NonNull final T data) {
+    public boolean offer(@Nullable final T data) {
         return wire.offer(handler, data);
     }
 
@@ -97,7 +98,7 @@ public class WireChannel<T> {
      *
      * @param data the data to be processed by the wire
      */
-    public void inject(@NonNull final T data) {
+    public void inject(@Nullable final T data) {
         wire.inject(handler, data);
     }
 }

@@ -16,6 +16,9 @@
 
 package com.swirlds.common.wiring.internal;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+
+import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.wiring.Wire;
 import com.swirlds.common.wiring.counters.NoOpCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -23,11 +26,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A {@link Wire} that permits parallel execution of tasks. Similar to {@link ConcurrentWire} but with extra metering.
  */
 public class ConcurrentWire extends Wire {
+
+    private static final Logger logger = LogManager.getLogger(ConcurrentWire.class);
+
     private final ObjectCounter onRamp;
     private final ObjectCounter offRamp;
     private final String name;
@@ -132,5 +140,31 @@ public class ConcurrentWire extends Wire {
     @Override
     public long getUnprocessedTaskCount() {
         return onRamp.getCount();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void flush() {
+        logger.error(
+                EXCEPTION.getMarker(),
+                "flush() called on concurrent wire {}. Concurrent wires do not implement flush, "
+                        + "and so this operation is a no op.\n{}",
+                name,
+                StackTrace.getStackTrace());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void interruptableFlush() throws InterruptedException {
+        logger.error(
+                EXCEPTION.getMarker(),
+                "flush() called on concurrent wire {}. Concurrent wires do not implement flush, "
+                        + "and so this operation is a no op.\n{}",
+                name,
+                StackTrace.getStackTrace());
     }
 }

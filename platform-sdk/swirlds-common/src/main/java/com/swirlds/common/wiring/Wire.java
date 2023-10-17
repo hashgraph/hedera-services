@@ -19,6 +19,7 @@ package com.swirlds.common.wiring;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
 
 /**
@@ -94,17 +95,26 @@ public abstract class Wire {
         return new WireChannel<>(this);
     }
 
-    //    /**
-    //     * Flush all data in the wire. Blocks until all data currently in flight has been processed.
-    //     */
-    //    public abstract void flush();
-    //
-    //    /**
-    //     * Flush all data in the wire. Blocks until all data currently in flight has been processed.
-    //     *
-    //     * @throws InterruptedException if the thread is interrupted while waiting for all data to be processed
-    //     */
-    //    public abstract void interruptableFlush() throws InterruptedException;
+    /**
+     * Flush all data in the wire. Blocks until all data currently in flight has been processed.
+     * <p>
+     * Note: not all wire implementations support flushing. Currently, only wires with
+     * {@link WireBuilder#withConcurrency(boolean)} set to false support flushing. Calling this method on a wire that
+     * does not support flushing will result in an error being written to the log (no exception is thrown).
+     */
+    public abstract void flush();
+
+    /**
+     * Flush all data in the wire. Blocks until all data currently in flight has been processed.
+     *
+     * <p>
+     * Note: not all wire implementations support flushing. Currently, only wires with
+     * {@link WireBuilder#withConcurrency(boolean)} set to false support flushing. Calling this method on a wire that
+     * does not support flushing will result in an error being written to the log (no exception is thrown).
+     *
+     * @throws InterruptedException if the thread is interrupted while waiting for all data to be processed
+     */
+    public abstract void interruptableFlush() throws InterruptedException;
 
     /**
      * Add a task to the wire. May block if back pressure is enabled. Similar to
@@ -114,7 +124,7 @@ public abstract class Wire {
      * @param handler handles the provided data
      * @param data    the data to be processed by the wire
      */
-    protected abstract void put(@NonNull Consumer<Object> handler, @NonNull Object data);
+    protected abstract void put(@NonNull Consumer<Object> handler, @Nullable Object data);
 
     /**
      * Add a task to the wire. May block if back pressure is enabled. If backpressure is enabled and being applied, this
@@ -123,7 +133,7 @@ public abstract class Wire {
      * @param data the data to be processed by the wire
      * @throws InterruptedException if the thread is interrupted while waiting for capacity to become available
      */
-    protected abstract void interruptablePut(@NonNull Consumer<Object> handler, @NonNull Object data)
+    protected abstract void interruptablePut(@NonNull Consumer<Object> handler, @Nullable Object data)
             throws InterruptedException;
 
     /**
@@ -133,7 +143,7 @@ public abstract class Wire {
      * @param data the data to be processed by the wire
      * @return true if the data was accepted, false otherwise
      */
-    protected abstract boolean offer(@NonNull Consumer<Object> handler, @NonNull Object data);
+    protected abstract boolean offer(@NonNull Consumer<Object> handler, @Nullable Object data);
 
     /**
      * Inject data into the wire, doing so even if it causes the number of unprocessed tasks to exceed the capacity
@@ -142,5 +152,5 @@ public abstract class Wire {
      *
      * @param data the data to be processed by the wire
      */
-    protected abstract void inject(@NonNull Consumer<Object> handler, @NonNull Object data);
+    protected abstract void inject(@NonNull Consumer<Object> handler, @Nullable Object data);
 }

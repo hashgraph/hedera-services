@@ -961,5 +961,230 @@ class SequentialWireTests {
                 valueB.get(), wireValueB::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
     }
 
-    // TODO if we keep both variations of the wire then make sure we have coverage for both for all scenarios
+    /**
+     * Validate the behavior of the flush() method.
+     */
+    @Test
+    void flushTest() throws InterruptedException {
+        final AtomicInteger wireValue = new AtomicInteger();
+        final CountDownLatch latch = new CountDownLatch(1);
+        final Consumer<Integer> handler = x -> {
+            try {
+                if (x == 0) {
+                    latch.await();
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            wireValue.set(hash32(wireValue.get(), x));
+        };
+
+        final Wire wire = Wire.builder("test")
+                .withConcurrency(false)
+                .withScheduledTaskCapacity(10)
+                .build();
+        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        assertEquals(0, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
+
+        final AtomicInteger value = new AtomicInteger();
+
+        // Flushing a wire with nothing in it should return quickly.
+        completeBeforeTimeout(wire::flush, Duration.ofSeconds(1), "unable to flush wire");
+
+        // We will be stuck handling 0 and we will have the capacity for 10 more, for a total of 11 tasks in flight
+        completeBeforeTimeout(
+                () -> {
+                    for (int i = 0; i < 11; i++) {
+                        channel.put(i);
+                        value.set(hash32(value.get(), i));
+                    }
+                },
+                Duration.ofSeconds(1),
+                "unable to add tasks");
+        assertEquals(10, wire.getUnprocessedTaskCount());
+
+        // Try to enqueue work on another thread. It should get stuck and be
+        // unable to add anything until we release the latch.
+        final AtomicBoolean allWorkAdded = new AtomicBoolean(false);
+        new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    for (int i = 11; i < 100; i++) {
+                        channel.put(i);
+                        value.set(hash32(value.get(), i));
+                    }
+                    allWorkAdded.set(true);
+                })
+                .build(true);
+
+        // On another thread, flush the wire. This should also get stuck.
+        final AtomicBoolean flushed = new AtomicBoolean(false);
+        new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    wire.flush();
+                    flushed.set(true);
+                })
+                .build(true);
+
+        // Adding work to an unblocked wire should be very fast. If we sleep for a while, we'd expect that an unblocked
+        // wire would have processed all of the work that was added to it.
+        MILLISECONDS.sleep(50);
+        assertFalse(allWorkAdded.get());
+        assertFalse(flushed.get());
+        // The flush operation puts a task on the wire, which bumps the number up to 11 from 10
+        assertEquals(11, wire.getUnprocessedTaskCount());
+
+        // Even if the wire has no capacity, neither offer() nor inject() should not block.
+        completeBeforeTimeout(
+                () -> {
+                    assertFalse(channel.offer(1234));
+                    assertFalse(channel.offer(4321));
+                    assertFalse(channel.offer(-1));
+                    channel.inject(42);
+                    value.set(hash32(value.get(), 42));
+                },
+                Duration.ofSeconds(1),
+                "unable to offer tasks");
+
+        // Release the latch, all work should now be added
+        latch.countDown();
+
+        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(1), "unable to add all work");
+        assertEventuallyTrue(flushed::get, Duration.ofSeconds(1), "unable to flush wire");
+        assertEventuallyEquals(
+                0L,
+                wire::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "Wire unprocessed task count did not match expected value");
+        assertEventuallyEquals(
+                value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+    }
+
+    /**
+     * Validate the behavior of the interruptableFlush() method.
+     */
+    @Test
+    void interruptableFlushTest() throws InterruptedException {
+        final AtomicInteger wireValue = new AtomicInteger();
+        final CountDownLatch latch = new CountDownLatch(1);
+        final Consumer<Integer> handler = x -> {
+            try {
+                if (x == 0) {
+                    latch.await();
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            wireValue.set(hash32(wireValue.get(), x));
+        };
+
+        final Wire wire = Wire.builder("test")
+                .withConcurrency(false)
+                .withScheduledTaskCapacity(10)
+                .build();
+        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        assertEquals(0, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
+
+        final AtomicInteger value = new AtomicInteger();
+
+        // Flushing a wire with nothing in it should return quickly.
+        completeBeforeTimeout(wire::flush, Duration.ofSeconds(1), "unable to flush wire");
+
+        // We will be stuck handling 0 and we will have the capacity for 10 more, for a total of 11 tasks in flight
+        completeBeforeTimeout(
+                () -> {
+                    for (int i = 0; i < 11; i++) {
+                        channel.put(i);
+                        value.set(hash32(value.get(), i));
+                    }
+                },
+                Duration.ofSeconds(1),
+                "unable to add tasks");
+        assertEquals(10, wire.getUnprocessedTaskCount());
+
+        // Try to enqueue work on another thread. It should get stuck and be
+        // unable to add anything until we release the latch.
+        final AtomicBoolean allWorkAdded = new AtomicBoolean(false);
+        new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    for (int i = 11; i < 100; i++) {
+                        channel.put(i);
+                        value.set(hash32(value.get(), i));
+                    }
+                    allWorkAdded.set(true);
+                })
+                .build(true);
+
+        // On another thread, flush the wire. This should also get stuck.
+        final AtomicBoolean flushed = new AtomicBoolean(false);
+        new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    try {
+                        wire.interruptableFlush();
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    flushed.set(true);
+                })
+                .build(true);
+
+        // Flush the wire on a thread that we are going to intentionally interrupt.
+        final AtomicBoolean interrupted = new AtomicBoolean(false);
+        final AtomicBoolean flushedBeforeInterrupt = new AtomicBoolean(false);
+        final Thread threadToInterrupt = new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    try {
+                        wire.interruptableFlush();
+                        flushedBeforeInterrupt.set(true);
+                    } catch (InterruptedException e) {
+                        interrupted.set(true);
+                        throw new RuntimeException(e);
+                    }
+                })
+                .build(true);
+
+        // Wait a little time. Threads should become blocked.
+        MILLISECONDS.sleep(50);
+
+        // Interrupt the thread. This should happen fairly quickly.
+        threadToInterrupt.interrupt();
+        assertEventuallyTrue(interrupted::get, Duration.ofSeconds(1), "thread was not interrupted");
+        assertFalse(flushedBeforeInterrupt.get());
+
+        // Adding work to an unblocked wire should be very fast. If we sleep for a while, we'd expect that an unblocked
+        // wire would have processed all of the work that was added to it.
+        MILLISECONDS.sleep(50);
+        assertFalse(allWorkAdded.get());
+        assertFalse(flushed.get());
+        // The flush operation puts a task on the wire and we flush twice, bumping the number from 10 to 12
+        assertEquals(12, wire.getUnprocessedTaskCount());
+
+        // Even if the wire has no capacity, neither offer() nor inject() should not block.
+        completeBeforeTimeout(
+                () -> {
+                    assertFalse(channel.offer(1234));
+                    assertFalse(channel.offer(4321));
+                    assertFalse(channel.offer(-1));
+                    channel.inject(42);
+                    value.set(hash32(value.get(), 42));
+                },
+                Duration.ofSeconds(1),
+                "unable to offer tasks");
+
+        // Release the latch, all work should now be added
+        latch.countDown();
+
+        assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(1), "unable to add all work");
+        assertEventuallyTrue(flushed::get, Duration.ofSeconds(1), "unable to flush wire");
+        assertEventuallyEquals(
+                0L,
+                wire::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "Wire unprocessed task count did not match expected value");
+        assertEventuallyEquals(
+                value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+    }
 }
