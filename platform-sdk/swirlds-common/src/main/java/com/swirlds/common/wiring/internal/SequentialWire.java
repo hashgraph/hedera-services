@@ -43,6 +43,36 @@ public class SequentialWire extends Wire {
     private final ForkJoinPool pool;
 
     /**
+     * Constructor.
+     *
+     * @param name                     the name of the wire
+     * @param pool                     the fork join pool that will execute tasks on this wire
+     * @param uncaughtExceptionHandler the uncaught exception handler
+     * @param onRamp                   an object counter that is incremented when data is added to the wire, ignored if
+     *                                 null
+     * @param offRamp                  an object counter that is decremented when data is removed from the wire, ignored
+     *                                 if null
+     * @param busyTimer                a timer that tracks the amount of time the wire is busy, ignored if null
+     */
+    public SequentialWire(
+            @NonNull final String name,
+            @NonNull ForkJoinPool pool,
+            @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
+            @NonNull final ObjectCounter onRamp,
+            @NonNull final ObjectCounter offRamp,
+            @NonNull final FractionalTimer busyTimer) {
+
+        this.pool = Objects.requireNonNull(pool);
+        this.name = Objects.requireNonNull(name);
+        this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
+        this.onRamp = Objects.requireNonNull(onRamp);
+        this.offRamp = Objects.requireNonNull(offRamp);
+        this.busyTimer = Objects.requireNonNull(busyTimer);
+
+        this.lastTask = new AtomicReference<>(new SequentialTask(1));
+    }
+
+    /**
      * A task in a sequential wire.
      */
     private class SequentialTask extends AbstractTask {
@@ -106,36 +136,6 @@ public class SequentialWire extends Wire {
             }
             return true;
         }
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param name                     the name of the wire
-     * @param pool                     the fork join pool that will execute tasks on this wire
-     * @param uncaughtExceptionHandler the uncaught exception handler
-     * @param onRamp                   an object counter that is incremented when data is added to the wire, ignored if
-     *                                 null
-     * @param offRamp                  an object counter that is decremented when data is removed from the wire, ignored
-     *                                 if null
-     * @param busyTimer                a timer that tracks the amount of time the wire is busy, ignored if null
-     */
-    public SequentialWire(
-            @NonNull final String name,
-            @NonNull ForkJoinPool pool,
-            @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
-            @NonNull final ObjectCounter onRamp,
-            @NonNull final ObjectCounter offRamp,
-            @NonNull final FractionalTimer busyTimer) {
-
-        this.pool = Objects.requireNonNull(pool);
-        this.name = Objects.requireNonNull(name);
-        this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
-        this.onRamp = Objects.requireNonNull(onRamp);
-        this.offRamp = Objects.requireNonNull(offRamp);
-        this.busyTimer = Objects.requireNonNull(busyTimer);
-
-        this.lastTask = new AtomicReference<>(new SequentialTask(1));
     }
 
     /**

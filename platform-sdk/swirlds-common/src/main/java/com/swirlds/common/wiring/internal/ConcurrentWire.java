@@ -22,6 +22,7 @@ import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.wiring.Wire;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
@@ -66,6 +67,35 @@ public class ConcurrentWire extends Wire {
         this.offRamp = Objects.requireNonNull(offRamp);
     }
 
+    private class ConcurrentTask extends AbstractTask {
+
+        private final Consumer<Object> handler;
+        private final Object data;
+
+        /**
+         * Constructor.
+         *
+         * @param handler the method that will be called when this task is executed
+         * @param data    the data to be passed to the consumer for this task
+         */
+        protected ConcurrentTask(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
+            super(pool, 0);
+            this.handler = handler;
+            this.data = data;
+        }
+
+        @Override
+        protected boolean exec() {
+            offRamp.offRamp();
+            try {
+                handler.accept(data);
+            } catch (final Throwable t) {
+                uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
+            }
+            return true;
+        }
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -81,18 +111,7 @@ public class ConcurrentWire extends Wire {
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.onRamp();
-        new AbstractTask(pool, 0) {
-            @Override
-            protected boolean exec() {
-                offRamp.offRamp();
-                try {
-                    handler.accept(data);
-                } catch (final Throwable t) {
-                    uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
-                }
-                return true;
-            }
-        }.send();
+        new ConcurrentTask(handler, data).send();
     }
 
     /**
@@ -102,18 +121,7 @@ public class ConcurrentWire extends Wire {
     protected void interruptablePut(@NonNull final Consumer<Object> handler, @NonNull final Object data)
             throws InterruptedException {
         onRamp.interruptableOnRamp();
-        new AbstractTask(pool, 0) {
-            @Override
-            protected boolean exec() {
-                offRamp.offRamp();
-                try {
-                    handler.accept(data);
-                } catch (final Throwable t) {
-                    uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
-                }
-                return true;
-            }
-        }.send();
+        new ConcurrentTask(handler, data).send();
     }
 
     /**
@@ -125,18 +133,7 @@ public class ConcurrentWire extends Wire {
         if (!accepted) {
             return false;
         }
-        new AbstractTask(pool, 0) {
-            @Override
-            protected boolean exec() {
-                offRamp.offRamp();
-                try {
-                    handler.accept(data);
-                } catch (final Throwable t) {
-                    uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
-                }
-                return true;
-            }
-        }.send();
+        new ConcurrentTask(handler, data).send();
         return true;
     }
 
@@ -146,18 +143,7 @@ public class ConcurrentWire extends Wire {
     @Override
     protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.forceOnRamp();
-        new AbstractTask(pool, 0) { // TODO can this be an inline class?
-            @Override
-            protected boolean exec() {
-                offRamp.offRamp();
-                try {
-                    handler.accept(data);
-                } catch (final Throwable t) {
-                    uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
-                }
-                return true;
-            }
-        }.send();
+        new ConcurrentTask(handler, data).send();
     }
 
     /**
