@@ -45,7 +45,7 @@ public class ReturnTypes {
 
     public static final String INT = "(int)";
     public static final String INT_64 = "(int64)";
-    public static final String INT64_INT64 = "(int64)";
+    public static final String INT64_INT64 = "(int64,int64)";
     public static final String BYTE = "(uint8)";
     public static final String BOOL = "(bool)";
     public static final String STRING = "(string)";
@@ -57,7 +57,7 @@ public class ReturnTypes {
     public static final String RESPONSE_CODE_EXPIRY = RESPONSE_STATUS_AT_BEGINNING + EXPIRY_V2 + ")";
     public static final String RESPONSE_CODE_TOKEN_KEY = RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE + ")";
 
-    private static final TupleType RC_ENCODER = TupleType.parse(INT64_INT64);
+    private static final TupleType RC_ENCODER = TupleType.parse(INT_64);
 
     /**
      * Encodes the given {@code status} as a return value for a classic transfer call.

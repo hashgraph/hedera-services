@@ -27,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -39,11 +40,12 @@ public class GetApprovedCall extends AbstractRevertibleTokenViewCall {
     private final boolean isErcCall;
 
     public GetApprovedCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull HederaWorldUpdater.Enhancement enhancement,
             @Nullable Token token,
             final long serialNo,
             final boolean isErcCall) {
-        super(enhancement, token);
+        super(gasCalculator, enhancement, token);
         this.serialNo = serialNo;
         this.isErcCall = isErcCall;
     }
@@ -51,9 +53,8 @@ public class GetApprovedCall extends AbstractRevertibleTokenViewCall {
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token) {
         requireNonNull(token);
-        // TODO - gas calculation
         if (token.tokenType() != TokenType.NON_FUNGIBLE_UNIQUE) {
-            return revertResult(INVALID_TOKEN_ID, 0L);
+            return revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
         }
         var spenderNum = nativeOperations()
                 .getNft(token.tokenId().tokenNum(), serialNo)

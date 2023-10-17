@@ -32,8 +32,10 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class BurnTranslator extends AbstractHtsCallTranslator {
 
-    public static final Function BURN_TOKEN_V1 = new Function("burnToken(address,uint64,int64[])", ReturnTypes.INT64_INT64);
-    public static final Function BURN_TOKEN_V2 = new Function("burnToken(address,int64,int64[])", ReturnTypes.INT64_INT64);
+    public static final Function BURN_TOKEN_V1 =
+            new Function("burnToken(address,uint64,int64[])", ReturnTypes.INT64_INT64);
+    public static final Function BURN_TOKEN_V2 =
+            new Function("burnToken(address,int64,int64[])", ReturnTypes.INT64_INT64);
 
     @Inject
     public BurnTranslator() {

@@ -56,9 +56,13 @@ public class TokenKeyTranslator extends AbstractHtsCallTranslator {
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var args = TOKEN_KEY.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
-        final BigInteger keyType = (BigInteger) args.get(1);
+        final BigInteger keyType = args.get(1);
         return new TokenKeyCall(
-                attempt.enhancement(), attempt.isStaticCall(), token, getTokenKey(token, keyType.intValue()));
+                attempt.systemContractGasCalculator(),
+                attempt.enhancement(),
+                attempt.isStaticCall(),
+                token,
+                getTokenKey(token, keyType.intValue()));
     }
 
     private Key getTokenKey(Token token, int keyType) throws InvalidTransactionException {

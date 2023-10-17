@@ -17,14 +17,12 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.QueryModule;
-import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
 import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -37,9 +35,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.QueryContext;
-import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -67,6 +62,7 @@ class QueryModuleTest {
 
     @Mock
     private TinybarValues tinybarValues;
+
     @Mock
     private SystemContractGasCalculator systemContractGasCalculator;
 
@@ -95,12 +91,15 @@ class QueryModuleTest {
     void providesExpectedHederaEvmContext() {
         assertInstanceOf(
                 HederaEvmContext.class,
-                QueryModule.provideHederaEvmContext(hederaOperations, hederaEvmBlocks, tinybarValues, systemContractGasCalculator));
+                QueryModule.provideHederaEvmContext(
+                        hederaOperations, hederaEvmBlocks, tinybarValues, systemContractGasCalculator));
     }
 
     @Test
     void systemContractCalculatorNotUsableForChildDispatchCalculations() {
         final var calculator = QueryModule.provideSystemContractGasCalculator(canonicalDispatchPrices, tinybarValues);
-        assertThrows(IllegalStateException.class, () -> calculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.APPROVE));
+        assertThrows(
+                IllegalStateException.class,
+                () -> calculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.APPROVE));
     }
 }

@@ -41,7 +41,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class IsFrozenCallTest extends HtsCallTestBase {
     @Test
     void returnsIsFrozenForPresentToken() {
-        final var subject = new IsFrozenCall(mockEnhancement(), false, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject = new IsFrozenCall(
+                gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
@@ -62,7 +63,8 @@ class IsFrozenCallTest extends HtsCallTestBase {
 
     @Test
     void returnsIsFrozenForMissingToken() {
-        final var subject = new IsFrozenCall(mockEnhancement(), false, null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject =
+                new IsFrozenCall(gasCalculator, mockEnhancement(), false, null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
@@ -83,7 +85,8 @@ class IsFrozenCallTest extends HtsCallTestBase {
 
     @Test
     void returnsIsFrozenForMissingAccount() {
-        final var subject = new IsFrozenCall(mockEnhancement(), false, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject = new IsFrozenCall(
+                gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
@@ -104,7 +107,8 @@ class IsFrozenCallTest extends HtsCallTestBase {
 
     @Test
     void returnsIsFrozenForMissingTokenStaticCall() {
-        final var subject = new IsFrozenCall(mockEnhancement(), true, null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject =
+                new IsFrozenCall(gasCalculator, mockEnhancement(), true, null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
@@ -120,7 +124,8 @@ class IsFrozenCallTest extends HtsCallTestBase {
 
     @Test
     void returnsIsFrozenForMissingAccountStaticCall() {
-        final var subject = new IsFrozenCall(mockEnhancement(), true, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject = new IsFrozenCall(
+                gasCalculator, mockEnhancement(), true, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic

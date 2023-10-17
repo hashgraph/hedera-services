@@ -49,6 +49,11 @@ public class IsApprovedForAllTranslator extends AbstractHtsCallTranslator {
     @Override
     public IsApprovedForAllCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var args = IS_APPROVED_FOR_ALL.decodeCall(attempt.input().toArrayUnsafe());
-        return new IsApprovedForAllCall(attempt.enhancement(), attempt.redirectToken(), args.get(0), args.get(1));
+        return new IsApprovedForAllCall(
+                attempt.systemContractGasCalculator(),
+                attempt.enhancement(),
+                attempt.redirectToken(),
+                args.get(0),
+                args.get(1));
     }
 }

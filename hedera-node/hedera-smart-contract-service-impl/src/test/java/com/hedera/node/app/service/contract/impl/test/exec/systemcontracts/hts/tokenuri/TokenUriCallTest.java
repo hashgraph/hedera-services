@@ -35,7 +35,7 @@ class TokenUriCallTest extends HtsCallTestBase {
 
     @Test
     void returnsUnaliasedOwnerLongZeroForPresentTokenAndNonTreasuryNft() {
-        subject = new TokenUriCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, NFT_SERIAL_NO);
+        subject = new TokenUriCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, NFT_SERIAL_NO);
 
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), NFT_SERIAL_NO))
                 .willReturn(CIVILIAN_OWNED_NFT);

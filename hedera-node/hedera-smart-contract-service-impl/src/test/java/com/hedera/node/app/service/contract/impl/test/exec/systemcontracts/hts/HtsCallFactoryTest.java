@@ -27,8 +27,8 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.bytesFo
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
@@ -38,7 +38,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanc
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -47,10 +46,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class HtsCallFactoryTest extends HtsCallTestBase {
-    private static final List<HtsCallTranslator> NO_TRANSLATORS = Collections.emptyList();
-
     @Mock
     private HtsCallAddressChecks addressChecks;
+
+    @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
 
     @Mock
     private VerificationStrategies verificationStrategies;
@@ -84,6 +84,8 @@ class HtsCallFactoryTest extends HtsCallTestBase {
     void instantiatesCallWithInContextEnhancementAndDelegateCallInfo() {
         given(initialFrame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE))
                 .willReturn(DEFAULT_CONFIG);
+        given(initialFrame.getContextVariable(FrameUtils.SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE))
+                .willReturn(systemContractGasCalculator);
         stack.push(initialFrame);
         stack.addFirst(frame);
         given(frame.getMessageFrameStack()).willReturn(stack);

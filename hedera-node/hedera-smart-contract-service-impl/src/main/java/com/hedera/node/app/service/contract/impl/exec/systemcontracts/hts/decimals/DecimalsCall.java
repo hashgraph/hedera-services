@@ -51,7 +51,9 @@ public class DecimalsCall extends AbstractRevertibleTokenViewCall {
             return revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
         } else {
             final var decimals = Math.min(MAX_REPORTABLE_DECIMALS, token.decimals());
-            return successResult(DecimalsTranslator.DECIMALS.getOutputs().encodeElements(decimals), gasCalculator.viewGasRequirement());
+            return successResult(
+                    DecimalsTranslator.DECIMALS.getOutputs().encodeElements(decimals),
+                    gasCalculator.viewGasRequirement());
         }
     }
 }

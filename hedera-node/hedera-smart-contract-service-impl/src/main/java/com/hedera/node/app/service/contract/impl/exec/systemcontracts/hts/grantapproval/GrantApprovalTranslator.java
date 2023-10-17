@@ -18,11 +18,14 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grant
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -39,9 +42,9 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
 
     public static final Function ERC_GRANT_APPROVAL = new Function("approve(address,uint256)", ReturnTypes.BOOL);
     public static final Function ERC_GRANT_APPROVAL_NFT = new Function("approve(address,uint256)");
-    public static final Function GRANT_APPROVAL = new Function("approve(address,address,uint256)", ReturnTypes.INT64_INT64);
+    public static final Function GRANT_APPROVAL = new Function("approve(address,address,uint256)", ReturnTypes.INT_64);
     public static final Function GRANT_APPROVAL_NFT =
-            new Function("approveNFT(address,address,uint256)", ReturnTypes.INT64_INT64);
+            new Function("approveNFT(address,address,uint256)", ReturnTypes.INT_64);
     private final GrantApprovalDecoder decoder;
 
     @Inject
@@ -66,8 +69,18 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
             return bodyForErc(attempt);
         } else {
             return new DispatchForResponseCodeHtsCall<>(
-                    attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class, dispatchGasCalculator);
+                    attempt,
+                    bodyForClassic(attempt),
+                    SingleTransactionRecordBuilder.class,
+                    GrantApprovalTranslator::gasRequirement);
         }
+    }
+
+    public static long gasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.APPROVE);
     }
 
     private boolean matchesClassicSelector(@NonNull final byte[] selector) {
@@ -93,6 +106,7 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
         final var amount = call.get(1);
         return new ERCGrantApprovalCall(
                 attempt.enhancement(),
+                attempt.systemContractGasCalculator(),
                 attempt.defaultVerificationStrategy(),
                 attempt.senderId(),
                 Objects.requireNonNull(attempt.redirectTokenId()),

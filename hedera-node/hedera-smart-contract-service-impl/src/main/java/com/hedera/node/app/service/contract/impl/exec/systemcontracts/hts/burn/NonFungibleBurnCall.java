@@ -17,15 +17,9 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.exec.gas.DispatchType.BURN_FUNGIBLE;
 import static com.hedera.node.app.service.contract.impl.exec.gas.DispatchType.BURN_NFT;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -34,10 +28,8 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.math.BigInteger;
 import java.util.List;
 
 public class NonFungibleBurnCall extends AbstractHtsCall implements BurnCall {

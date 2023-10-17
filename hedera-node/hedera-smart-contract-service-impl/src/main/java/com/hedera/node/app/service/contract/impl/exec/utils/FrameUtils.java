@@ -74,7 +74,8 @@ public class FrameUtils {
         return initialFrameOf(frame).getContextVariable(TINYBAR_VALUES_VARIABLE);
     }
 
-    public static @NonNull SystemContractGasCalculator systemContractGasCalculatorOf(@NonNull final MessageFrame frame) {
+    public static @NonNull SystemContractGasCalculator systemContractGasCalculatorOf(
+            @NonNull final MessageFrame frame) {
         return initialFrameOf(frame).getContextVariable(SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE);
     }
 

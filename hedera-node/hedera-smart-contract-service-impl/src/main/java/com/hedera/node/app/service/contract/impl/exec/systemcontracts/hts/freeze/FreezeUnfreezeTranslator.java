@@ -37,8 +37,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FreezeUnfreezeTranslator extends AbstractHtsCallTranslator {
-    public static final Function FREEZE = new Function("freezeToken(address,address)", ReturnTypes.INT64_INT64);
-    public static final Function UNFREEZE = new Function("unfreezeToken(address,address)", ReturnTypes.INT64_INT64);
+    public static final Function FREEZE = new Function("freezeToken(address,address)", ReturnTypes.INT_64);
+    public static final Function UNFREEZE = new Function("unfreezeToken(address,address)", ReturnTypes.INT_64);
     private final FreezeUnfreezeDecoder decoder;
 
     @Inject

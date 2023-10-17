@@ -29,6 +29,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.ERCGrantApprovalCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator;
@@ -48,12 +49,16 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
     private VerificationStrategy verificationStrategy;
 
     @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
+
+    @Mock
     private CryptoTransferRecordBuilder recordBuilder;
 
     @Test
     void erc20approve() {
         subject = new ERCGrantApprovalCall(
                 mockEnhancement(),
+                systemContractGasCalculator,
                 verificationStrategy,
                 OWNER_ID,
                 FUNGIBLE_TOKEN_ID,
@@ -80,6 +85,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
     void erc721approve() {
         subject = new ERCGrantApprovalCall(
                 mockEnhancement(),
+                systemContractGasCalculator,
                 verificationStrategy,
                 OWNER_ID,
                 NON_FUNGIBLE_TOKEN_ID,

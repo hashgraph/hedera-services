@@ -56,11 +56,20 @@ public class GetApprovedTranslator extends AbstractHtsCallTranslator {
         if (matchesErcSelector(attempt.selector())) {
             final var args = ERC_GET_APPROVED.decodeCall(attempt.input().toArrayUnsafe());
             return new GetApprovedCall(
-                    attempt.enhancement(), attempt.redirectToken(), asExactLongValueOrZero(args.get(0)), true);
+                    attempt.systemContractGasCalculator(),
+                    attempt.enhancement(),
+                    attempt.redirectToken(),
+                    asExactLongValueOrZero(args.get(0)),
+                    true);
         } else {
             final var args = HAPI_GET_APPROVED.decodeCall(attempt.input().toArrayUnsafe());
             final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
-            return new GetApprovedCall(attempt.enhancement(), token, asExactLongValueOrZero(args.get(1)), false);
+            return new GetApprovedCall(
+                    attempt.systemContractGasCalculator(),
+                    attempt.enhancement(),
+                    token,
+                    asExactLongValueOrZero(args.get(1)),
+                    false);
         }
     }
 

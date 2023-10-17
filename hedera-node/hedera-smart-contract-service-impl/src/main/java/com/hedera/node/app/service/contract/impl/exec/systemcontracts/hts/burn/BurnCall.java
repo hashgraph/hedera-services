@@ -16,6 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
+
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -28,15 +33,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
-import java.math.BigInteger;
 import java.util.function.LongFunction;
 import java.util.function.Supplier;
-
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 
 public interface BurnCall extends HtsCall {
     /**
@@ -72,20 +70,14 @@ public interface BurnCall extends HtsCall {
         final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
         final var body = bodySupplier.get();
         final var gasRequirement = gasCalculator.gasRequirement(body, dispatchType);
-        final var recordBuilder = systemContractOperations
-                .dispatch(
-                        body,
-                        verificationStrategy,
-                        spenderId,
-                        TokenBurnRecordBuilder.class);
+        final var recordBuilder =
+                systemContractOperations.dispatch(body, verificationStrategy, spenderId, TokenBurnRecordBuilder.class);
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(recordBuilder.status(), gasRequirement));
         } else {
             final var encodedOutput = BurnTranslator.BURN_TOKEN_V1
                     .getOutputs()
-                    .encodeElements(
-                            BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()),
-                            BigInteger.valueOf(recordBuilder.getNewTotalSupply()));
+                    .encodeElements((long) ResponseCodeEnum.SUCCESS.protoOrdinal(), recordBuilder.getNewTotalSupply());
             return gasOnly(successResult(encodedOutput, gasRequirement));
         }
     }

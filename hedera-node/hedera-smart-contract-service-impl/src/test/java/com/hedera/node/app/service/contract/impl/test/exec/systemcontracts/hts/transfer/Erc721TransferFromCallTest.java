@@ -115,6 +115,7 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
                 verificationStrategy,
                 FRAME_SENDER_ADDRESS,
                 mockEnhancement(),
+                gasCalculator,
                 addressIdConverter);
     }
 }

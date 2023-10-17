@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
@@ -54,6 +55,9 @@ class FrameBuilderTest {
     private TinybarValues tinybarValues;
 
     @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
+
+    @Mock
     private HederaEvmBlocks blocks;
 
     @Mock
@@ -79,7 +83,7 @@ class FrameBuilderTest {
         final var frame = subject.buildInitialFrameWith(
                 transaction,
                 worldUpdater,
-                wellKnownContextWith(blocks, tinybarValues),
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                 config,
                 EIP_1014_ADDRESS,
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
@@ -124,7 +128,7 @@ class FrameBuilderTest {
         final var frame = subject.buildInitialFrameWith(
                 transaction,
                 worldUpdater,
-                wellKnownContextWith(blocks, tinybarValues),
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                 config,
                 EIP_1014_ADDRESS,
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
@@ -166,7 +170,7 @@ class FrameBuilderTest {
         final var frame = subject.buildInitialFrameWith(
                 transaction,
                 worldUpdater,
-                wellKnownContextWith(blocks, tinybarValues),
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                 config,
                 EIP_1014_ADDRESS,
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
@@ -208,7 +212,7 @@ class FrameBuilderTest {
         final var frame = subject.buildInitialFrameWith(
                 transaction,
                 worldUpdater,
-                wellKnownContextWith(blocks, tinybarValues),
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                 config,
                 EIP_1014_ADDRESS,
                 NON_SYSTEM_LONG_ZERO_ADDRESS,

@@ -39,7 +39,6 @@ import com.hedera.node.app.service.contract.impl.hevm.QueryContextHevmBlocks;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import dagger.Binds;
 import dagger.Module;
@@ -64,9 +63,8 @@ public interface QueryModule {
     static SystemContractGasCalculator provideSystemContractGasCalculator(
             @NonNull final CanonicalDispatchPrices canonicalDispatchPrices,
             @NonNull final TinybarValues tinybarValues) {
-        return new SystemContractGasCalculator(
-                tinybarValues, canonicalDispatchPrices, body -> {
-                    throw new IllegalStateException("Queries should fail before dispatching a child transaction");
+        return new SystemContractGasCalculator(tinybarValues, canonicalDispatchPrices, body -> {
+            throw new IllegalStateException("Queries should fail before dispatching a child transaction");
         });
     }
 
@@ -113,7 +111,11 @@ public interface QueryModule {
             @NonNull final TinybarValues tinybarValues,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator) {
         return new HederaEvmContext(
-               hederaOperations.gasPriceInTinybars(), true, hederaEvmBlocks, tinybarValues, systemContractGasCalculator);
+                hederaOperations.gasPriceInTinybars(),
+                true,
+                hederaEvmBlocks,
+                tinybarValues,
+                systemContractGasCalculator);
     }
 
     @Binds

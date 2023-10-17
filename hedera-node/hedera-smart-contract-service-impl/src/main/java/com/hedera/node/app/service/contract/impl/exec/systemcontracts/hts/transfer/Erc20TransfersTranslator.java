@@ -74,6 +74,7 @@ public class Erc20TransfersTranslator extends AbstractHtsCallTranslator {
             @NonNull final BigInteger amount,
             @NonNull final HtsCallAttempt attempt) {
         return new Erc20TransfersCall(
+                attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 amount.longValueExact(),
                 from,

@@ -58,7 +58,8 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
                 attempt.addressIdConverter().convertSender(attempt.senderAddress()),
                 syntheticBody,
                 recordBuilderType,
-                attempt.defaultVerificationStrategy(), dispatchGasCalculator);
+                attempt.defaultVerificationStrategy(),
+                dispatchGasCalculator);
     }
 
     /**
@@ -95,6 +96,7 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
         // TODO - gas calculation
         final var recordBuilder =
                 systemContractOperations().dispatch(syntheticBody, verificationStrategy, spenderId, recordBuilderType);
-        return completionWith(recordBuilder.status(), 0L);
+        final var gasRequirement = dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement);
+        return completionWith(recordBuilder.status(), gasRequirement);
     }
 }

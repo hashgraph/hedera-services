@@ -136,7 +136,12 @@ public interface TransactionModule {
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaOperations hederaOperations,
             @NonNull final HederaEvmBlocks hederaEvmBlocks) {
-        return new HederaEvmContext(hederaOperations.gasPriceInTinybars(), false, hederaEvmBlocks, tinybarValues, systemContractGasCalculator);
+        return new HederaEvmContext(
+                hederaOperations.gasPriceInTinybars(),
+                false,
+                hederaEvmBlocks,
+                tinybarValues,
+                systemContractGasCalculator);
     }
 
     @Provides

@@ -18,11 +18,14 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.pause
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
@@ -35,8 +38,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class PausesTranslator extends AbstractHtsCallTranslator {
-    public static final Function PAUSE = new Function("pauseToken(address)", ReturnTypes.INT64_INT64);
-    public static final Function UNPAUSE = new Function("unpauseToken(address)", ReturnTypes.INT64_INT64);
+    public static final Function PAUSE = new Function("pauseToken(address)", ReturnTypes.INT_64);
+    public static final Function UNPAUSE = new Function("unpauseToken(address)", ReturnTypes.INT_64);
 
     private final PausesDecoder decoder;
 
@@ -59,7 +62,26 @@ public class PausesTranslator extends AbstractHtsCallTranslator {
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall<>(
-                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class, dispatchGasCalculator);
+                attempt,
+                bodyForClassic(attempt),
+                SingleTransactionRecordBuilder.class,
+                Arrays.equals(attempt.selector(), PAUSE.selector())
+                        ? PausesTranslator::pauseGasRequirement
+                        : PausesTranslator::unpauseGasRequirement);
+    }
+
+    public static long pauseGasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.PAUSE);
+    }
+
+    public static long unpauseGasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.UNPAUSE);
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {

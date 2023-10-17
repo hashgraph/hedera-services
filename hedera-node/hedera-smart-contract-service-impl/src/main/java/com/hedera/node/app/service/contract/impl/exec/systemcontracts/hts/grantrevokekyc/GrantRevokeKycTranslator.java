@@ -18,7 +18,10 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grant
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.*;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
@@ -31,8 +34,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class GrantRevokeKycTranslator extends AbstractHtsCallTranslator {
-    public static final Function GRANT_KYC = new Function("grantTokenKyc(address,address)", ReturnTypes.INT64_INT64);
-    public static final Function REVOKE_KYC = new Function("revokeTokenKyc(address,address)", ReturnTypes.INT64_INT64);
+    public static final Function GRANT_KYC = new Function("grantTokenKyc(address,address)", ReturnTypes.INT_64);
+    public static final Function REVOKE_KYC = new Function("revokeTokenKyc(address,address)", ReturnTypes.INT_64);
 
     private final GrantRevokeKycDecoder decoder;
 
@@ -55,7 +58,26 @@ public class GrantRevokeKycTranslator extends AbstractHtsCallTranslator {
     @Override
     public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall<>(
-                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class, dispatchGasCalculator);
+                attempt,
+                bodyForClassic(attempt),
+                SingleTransactionRecordBuilder.class,
+                Arrays.equals(attempt.selector(), GRANT_KYC.selector())
+                        ? GrantRevokeKycTranslator::grantGasRequirement
+                        : GrantRevokeKycTranslator::revokeGasRequirement);
+    }
+
+    public static long grantGasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.GRANT_KYC);
+    }
+
+    public static long revokeGasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.REVOKE_KYC);
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {

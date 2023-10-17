@@ -36,6 +36,7 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall;
@@ -64,11 +65,15 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
     @Mock
     private CryptoTransferRecordBuilder recordBuilder;
 
+    @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
+
     private Erc20TransfersCall subject;
 
     @Test
     void revertsOnMissingToken() {
         subject = new Erc20TransfersCall(
+                systemContractGasCalculator,
                 mockEnhancement(),
                 1234,
                 null,
@@ -150,6 +155,7 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
 
     private Erc20TransfersCall subjectForTransfer(final long amount) {
         return new Erc20TransfersCall(
+                systemContractGasCalculator,
                 mockEnhancement(),
                 amount,
                 null,
@@ -162,6 +168,7 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
 
     private Erc20TransfersCall subjectForTransferFrom(final long amount) {
         return new Erc20TransfersCall(
+                systemContractGasCalculator,
                 mockEnhancement(),
                 amount,
                 FROM_ADDRESS,

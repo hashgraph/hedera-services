@@ -39,13 +39,13 @@ import javax.inject.Singleton;
 @Singleton
 public class AssociationsTranslator extends AbstractHtsCallTranslator {
     public static final Function HRC_ASSOCIATE = new Function("associate()", ReturnTypes.INT);
-    public static final Function ASSOCIATE_ONE = new Function("associateToken(address,address)", ReturnTypes.INT64_INT64);
-    public static final Function DISSOCIATE_ONE = new Function("dissociateToken(address,address)", ReturnTypes.INT64_INT64);
+    public static final Function ASSOCIATE_ONE = new Function("associateToken(address,address)", ReturnTypes.INT_64);
+    public static final Function DISSOCIATE_ONE = new Function("dissociateToken(address,address)", ReturnTypes.INT_64);
     public static final Function HRC_DISSOCIATE = new Function("dissociate()", ReturnTypes.INT);
     public static final Function ASSOCIATE_MANY =
-            new Function("associateTokens(address,address[])", ReturnTypes.INT64_INT64);
+            new Function("associateTokens(address,address[])", ReturnTypes.INT_64);
     public static final Function DISSOCIATE_MANY =
-            new Function("dissociateTokens(address,address[])", ReturnTypes.INT64_INT64);
+            new Function("dissociateTokens(address,address[])", ReturnTypes.INT_64);
 
     private final AssociationsDecoder decoder;
 

@@ -36,6 +36,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
@@ -66,6 +67,9 @@ class CustomGasChargingTest {
     private TinybarValues tinybarValues;
 
     @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
+
+    @Mock
     private HederaWorldUpdater worldUpdater;
 
     @Mock
@@ -81,14 +85,18 @@ class CustomGasChargingTest {
     @Test
     void staticCallsDoNotChargeGas() {
         final var chargingResult = subject.chargeForGas(
-                sender, relayer, wellKnownContextWith(blocks, true, tinybarValues), worldUpdater, wellKnownHapiCall());
+                sender,
+                relayer,
+                wellKnownContextWith(blocks, true, tinybarValues, systemContractGasCalculator),
+                worldUpdater,
+                wellKnownHapiCall());
         assertEquals(0, chargingResult.relayerAllowanceUsed());
         verifyNoInteractions(gasCalculator, worldUpdater);
     }
 
     @Test
     void zeroPriceGasDoesNoChargingWork() {
-        final var context = new HederaEvmContext(0L, false, blocks, tinybarValues);
+        final var context = new HederaEvmContext(0L, false, blocks, tinybarValues, systemContractGasCalculator);
         final var chargingResult = subject.chargeForGas(sender, relayer, context, worldUpdater, wellKnownHapiCall());
         assertEquals(0, chargingResult.relayerAllowanceUsed());
         verifyNoInteractions(gasCalculator, worldUpdater);
@@ -96,7 +104,7 @@ class CustomGasChargingTest {
 
     @Test
     void zeroPriceGasReturnsImmediately() {
-        final var context = new HederaEvmContext(0L, false, blocks, tinybarValues);
+        final var context = new HederaEvmContext(0L, false, blocks, tinybarValues, systemContractGasCalculator);
         final var chargingResult = subject.chargeForGas(sender, relayer, context, worldUpdater, wellKnownHapiCall());
         assertEquals(0, chargingResult.relayerAllowanceUsed());
         verifyNoInteractions(gasCalculator);
@@ -109,7 +117,7 @@ class CustomGasChargingTest {
                 MAX_GAS_ALLOWANCE / 2,
                 sender,
                 relayer,
-                wellKnownContextWith(blocks, true, tinybarValues),
+                wellKnownContextWith(blocks, true, tinybarValues, systemContractGasCalculator),
                 worldUpdater);
         verifyNoInteractions(worldUpdater);
     }
@@ -117,7 +125,12 @@ class CustomGasChargingTest {
     @Test
     void consumedGasDoesNotRefundAnything() {
         subject.maybeRefundGiven(
-                0, MAX_GAS_ALLOWANCE / 2, sender, relayer, wellKnownContextWith(blocks, tinybarValues), worldUpdater);
+                0,
+                MAX_GAS_ALLOWANCE / 2,
+                sender,
+                relayer,
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                worldUpdater);
         verifyNoInteractions(worldUpdater);
     }
 
@@ -125,7 +138,13 @@ class CustomGasChargingTest {
     void withNoRelayerSenderGetsFullRefund() {
         given(sender.hederaId()).willReturn(SENDER_ID);
         final var unusedGas = GAS_LIMIT / 2;
-        subject.maybeRefundGiven(unusedGas, 0, sender, null, wellKnownContextWith(blocks, tinybarValues), worldUpdater);
+        subject.maybeRefundGiven(
+                unusedGas,
+                0,
+                sender,
+                null,
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                worldUpdater);
         verify(worldUpdater).refundFee(SENDER_ID, unusedGas * NETWORK_GAS_PRICE);
     }
 
@@ -137,7 +156,12 @@ class CustomGasChargingTest {
         final var refund = unusedGas * NETWORK_GAS_PRICE;
         final var allowanceUsed = 2 * refund / 3;
         subject.maybeRefundGiven(
-                unusedGas, allowanceUsed, sender, relayer, wellKnownContextWith(blocks, tinybarValues), worldUpdater);
+                unusedGas,
+                allowanceUsed,
+                sender,
+                relayer,
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                worldUpdater);
         verify(worldUpdater).refundFee(RELAYER_ID, allowanceUsed);
         verify(worldUpdater).refundFee(SENDER_ID, refund - allowanceUsed);
     }
@@ -149,7 +173,12 @@ class CustomGasChargingTest {
         final var refund = unusedGas * NETWORK_GAS_PRICE;
         final var allowanceUsed = 3 * refund / 2;
         subject.maybeRefundGiven(
-                unusedGas, allowanceUsed, sender, relayer, wellKnownContextWith(blocks, tinybarValues), worldUpdater);
+                unusedGas,
+                allowanceUsed,
+                sender,
+                relayer,
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                worldUpdater);
         verify(worldUpdater).refundFee(RELAYER_ID, refund);
         verifyNoMoreInteractions(worldUpdater);
     }
@@ -162,7 +191,7 @@ class CustomGasChargingTest {
                 () -> subject.chargeForGas(
                         sender,
                         relayer,
-                        wellKnownContextWith(blocks, tinybarValues),
+                        wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                         worldUpdater,
                         wellKnownRelayedHapiCallWithGasLimit(TestHelpers.INTRINSIC_GAS - 1)));
     }
@@ -175,7 +204,11 @@ class CustomGasChargingTest {
         assertFailsWith(
                 INSUFFICIENT_PAYER_BALANCE,
                 () -> subject.chargeForGas(
-                        sender, relayer, wellKnownContextWith(blocks, tinybarValues), worldUpdater, transaction));
+                        sender,
+                        relayer,
+                        wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                        worldUpdater,
+                        transaction));
     }
 
     @Test
@@ -185,7 +218,11 @@ class CustomGasChargingTest {
         given(sender.hederaId()).willReturn(SENDER_ID);
         given(sender.getBalance()).willReturn(Wei.of(transaction.upfrontCostGiven(NETWORK_GAS_PRICE)));
         final var chargingResult = subject.chargeForGas(
-                sender, relayer, wellKnownContextWith(blocks, tinybarValues), worldUpdater, transaction);
+                sender,
+                relayer,
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                worldUpdater,
+                transaction);
         assertEquals(0, chargingResult.relayerAllowanceUsed());
         verify(worldUpdater).collectFee(SENDER_ID, transaction.gasCostGiven(NETWORK_GAS_PRICE));
     }
@@ -198,7 +235,11 @@ class CustomGasChargingTest {
         assertFailsWith(
                 INSUFFICIENT_TX_FEE,
                 () -> subject.chargeForGas(
-                        sender, relayer, wellKnownContextWith(blocks, tinybarValues), worldUpdater, transaction));
+                        sender,
+                        relayer,
+                        wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                        worldUpdater,
+                        transaction));
     }
 
     @Test
@@ -209,7 +250,11 @@ class CustomGasChargingTest {
         assertFailsWith(
                 INSUFFICIENT_PAYER_BALANCE,
                 () -> subject.chargeForGas(
-                        sender, relayer, wellKnownContextWith(blocks, tinybarValues), worldUpdater, transaction));
+                        sender,
+                        relayer,
+                        wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                        worldUpdater,
+                        transaction));
     }
 
     @Test
@@ -220,7 +265,11 @@ class CustomGasChargingTest {
         given(relayer.getBalance()).willReturn(Wei.of(gasCost));
         given(relayer.hederaId()).willReturn(RELAYER_ID);
         final var chargingResult = subject.chargeForGas(
-                sender, relayer, wellKnownContextWith(blocks, tinybarValues), worldUpdater, transaction);
+                sender,
+                relayer,
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                worldUpdater,
+                transaction);
         assertEquals(gasCost, chargingResult.relayerAllowanceUsed());
         verify(worldUpdater).collectFee(RELAYER_ID, gasCost);
     }
@@ -233,7 +282,11 @@ class CustomGasChargingTest {
         given(sender.getBalance()).willReturn(Wei.of(gasCost));
         given(sender.hederaId()).willReturn(SENDER_ID);
         final var chargingResult = subject.chargeForGas(
-                sender, relayer, wellKnownContextWith(blocks, tinybarValues), worldUpdater, transaction);
+                sender,
+                relayer,
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                worldUpdater,
+                transaction);
         assertEquals(0, chargingResult.relayerAllowanceUsed());
         verify(worldUpdater).collectFee(SENDER_ID, gasCost);
     }
@@ -247,7 +300,11 @@ class CustomGasChargingTest {
         assertFailsWith(
                 INSUFFICIENT_PAYER_BALANCE,
                 () -> subject.chargeForGas(
-                        sender, relayer, wellKnownContextWith(blocks, tinybarValues), worldUpdater, transaction));
+                        sender,
+                        relayer,
+                        wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                        worldUpdater,
+                        transaction));
     }
 
     @Test
@@ -260,7 +317,11 @@ class CustomGasChargingTest {
         assertFailsWith(
                 INSUFFICIENT_PAYER_BALANCE,
                 () -> subject.chargeForGas(
-                        sender, relayer, wellKnownContextWith(blocks, tinybarValues), worldUpdater, transaction));
+                        sender,
+                        relayer,
+                        wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                        worldUpdater,
+                        transaction));
     }
 
     @Test
@@ -270,7 +331,11 @@ class CustomGasChargingTest {
         assertFailsWith(
                 INSUFFICIENT_TX_FEE,
                 () -> subject.chargeForGas(
-                        sender, relayer, wellKnownContextWith(blocks, tinybarValues), worldUpdater, transaction));
+                        sender,
+                        relayer,
+                        wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                        worldUpdater,
+                        transaction));
     }
 
     @Test
@@ -285,7 +350,11 @@ class CustomGasChargingTest {
         given(relayer.getBalance()).willReturn(Wei.of(gasCost));
         given(relayer.hederaId()).willReturn(RELAYER_ID);
         final var chargingResult = subject.chargeForGas(
-                sender, relayer, wellKnownContextWith(blocks, tinybarValues), worldUpdater, transaction);
+                sender,
+                relayer,
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
+                worldUpdater,
+                transaction);
         assertEquals(relayerGasCost, chargingResult.relayerAllowanceUsed());
         verify(worldUpdater).collectFee(SENDER_ID, transaction.offeredGasCost());
         verify(worldUpdater).collectFee(RELAYER_ID, relayerGasCost);

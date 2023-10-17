@@ -32,19 +32,18 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.FungibleBurnCall;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
-import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 public class FungibleBurnCallTest extends HtsCallTestBase {
+    private static final long NEW_TOTAL_SUPPLY = 666L;
 
     private static final org.hyperledger.besu.datatypes.Address FRAME_SENDER_ADDRESS = EIP_1014_ADDRESS;
 
@@ -88,7 +87,7 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
         assertEquals(
                 asBytesResult(BURN_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) ResponseCodeEnum.SUCCESS.protoOrdinal(), NEW_TOTAL_SUPPLY)),
                 result.getOutput());
     }
 
@@ -104,7 +103,7 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
         assertEquals(
                 asBytesResult(BURN_TOKEN_V2
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) ResponseCodeEnum.SUCCESS.protoOrdinal(), NEW_TOTAL_SUPPLY)),
                 result.getOutput());
     }
 
@@ -138,6 +137,7 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
                         eq(TokenBurnRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
+        given(recordBuilder.getNewTotalSupply()).willReturn(NEW_TOTAL_SUPPLY);
     }
 
     private FungibleBurnCall subjectForBurn(final long amount) {

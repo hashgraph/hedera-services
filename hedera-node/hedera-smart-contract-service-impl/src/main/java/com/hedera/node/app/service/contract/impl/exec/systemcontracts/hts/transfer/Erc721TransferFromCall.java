@@ -31,6 +31,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
@@ -61,6 +62,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final AddressIdConverter addressIdConverter) {
         super(gasCalculator, enhancement);
         this.from = requireNonNull(from);

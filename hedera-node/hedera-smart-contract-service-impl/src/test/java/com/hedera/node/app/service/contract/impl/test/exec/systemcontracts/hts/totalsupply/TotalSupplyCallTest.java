@@ -35,7 +35,7 @@ class TotalSupplyCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithMissingToken() {
-        subject = new TotalSupplyCall(mockEnhancement(), null);
+        subject = new TotalSupplyCall(gasCalculator, mockEnhancement(), null);
 
         final var result = subject.execute().fullResult().result();
 
@@ -45,7 +45,7 @@ class TotalSupplyCallTest extends HtsCallTestBase {
 
     @Test
     void returnsSupplyForPresentToken() {
-        subject = new TotalSupplyCall(mockEnhancement(), FUNGIBLE_TOKEN);
+        subject = new TotalSupplyCall(gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 

@@ -50,6 +50,6 @@ public class SymbolTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public SymbolCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        return new SymbolCall(attempt.enhancement(), attempt.redirectToken());
+        return new SymbolCall(attempt.systemContractGasCalculator(), attempt.enhancement(), attempt.redirectToken());
     }
 }

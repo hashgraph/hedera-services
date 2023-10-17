@@ -50,6 +50,6 @@ public class NameTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public NameCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        return new NameCall(attempt.enhancement(), attempt.redirectToken());
+        return new NameCall(attempt.systemContractGasCalculator(), attempt.enhancement(), attempt.redirectToken());
     }
 }

@@ -68,7 +68,6 @@ public class HtsCallAttempt {
     private final List<HtsCallTranslator> callTranslators;
     private final boolean isStaticCall;
 
-
     // too may parameters
     @SuppressWarnings("java:S107")
     public HtsCallAttempt(

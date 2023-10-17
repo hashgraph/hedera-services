@@ -31,6 +31,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
@@ -61,6 +62,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
     // too many parameters
     @SuppressWarnings("java:S107")
     public Erc20TransfersCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             final long amount,
             @Nullable final Address from,
