@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.eventflow;
+package com.swirlds.platform.event.orphan;
 
-import com.swirlds.common.system.transaction.Transaction;
-import java.time.Instant;
+import com.swirlds.common.system.events.EventDescriptor;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
-public record HandledTransaction(Transaction transaction, Instant timeHandled, Instant consensusTime) {}
+/**
+ * A missing parent event and the orphans that are missing it.
+ *
+ * @param parent  the parent event
+ * @param orphans the orphans that are missing the parent
+ */
+record ParentAndOrphans(@NonNull EventDescriptor parent, @NonNull List<OrphanedEvent> orphans) {}

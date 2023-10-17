@@ -37,9 +37,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class SwirldStateManagerImplTests {
+class SwirldStateManagerTests {
 
-    private SwirldStateManagerImpl swirldStateManagerImpl;
+    private SwirldStateManager swirldStateManager;
     private State initialState;
 
     @BeforeEach
@@ -51,7 +51,7 @@ class SwirldStateManagerImplTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        swirldStateManagerImpl = new SwirldStateManagerImpl(
+        swirldStateManager = new SwirldStateManager(
                 platformContext,
                 addressBook,
                 new NodeId(0L),
@@ -72,7 +72,7 @@ class SwirldStateManagerImplTests {
                 "The initial state is copied and should be referenced once as the previous immutable state.");
         assertEquals(
                 1,
-                swirldStateManagerImpl.getConsensusState().getReservationCount(),
+                swirldStateManager.getConsensusState().getReservationCount(),
                 "The consensus state should have one reference.");
     }
 
@@ -80,7 +80,7 @@ class SwirldStateManagerImplTests {
     @DisplayName("Load From Signed State - state reference counts")
     void loadFromSignedStateRefCount() {
         final SignedState ss1 = newSignedState();
-        swirldStateManagerImpl.loadFromSignedState(ss1);
+        swirldStateManager.loadFromSignedState(ss1);
 
         assertEquals(
                 2,
@@ -89,11 +89,11 @@ class SwirldStateManagerImplTests {
                         + "signed state and the previous immutable state in SwirldStateManager.");
         assertEquals(
                 1,
-                swirldStateManagerImpl.getConsensusState().getReservationCount(),
+                swirldStateManager.getConsensusState().getReservationCount(),
                 "The current consensus state should have a single reference count.");
 
         final SignedState ss2 = newSignedState();
-        swirldStateManagerImpl.loadFromSignedState(ss2);
+        swirldStateManager.loadFromSignedState(ss2);
 
         assertEquals(
                 2,
@@ -102,7 +102,7 @@ class SwirldStateManagerImplTests {
                         + "signed state and the previous immutable state in SwirldStateManager.");
         assertEquals(
                 1,
-                swirldStateManagerImpl.getConsensusState().getReservationCount(),
+                swirldStateManager.getConsensusState().getReservationCount(),
                 "The current consensus state should have a single reference count.");
         assertEquals(
                 1,

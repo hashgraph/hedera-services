@@ -17,11 +17,13 @@
 package com.swirlds.platform.state.iss;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.logging.LogMarker.STATE_HASH;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
@@ -84,6 +86,16 @@ public class ConsensusHashManager {
      */
     private final RateLimiter catastrophicIssRateLimiter;
 
+    /**
+     * Use this constant if the consensus hash manager should not ignore any rounds.
+     */
+    public static final int DO_NOT_IGNORE_ROUNDS = -1;
+
+    /**
+     * A round that should not be validated. Set to {@link #DO_NOT_IGNORE_ROUNDS} if all rounds should be validated.
+     */
+    private final long ignoredRound;
+
     private final SelfIssTrigger selfIssDispatcher;
     private final CatastrophicIssTrigger catastrophicIssDispatcher;
     private final StateHashValidityTrigger stateHashValidityDispatcher;
@@ -91,22 +103,27 @@ public class ConsensusHashManager {
     /**
      * Create an object that tracks reported hashes and detects ISS events.
      *
+     * @param platformContext        the platform context
      * @param time                   provides the current wall clock time
      * @param dispatchBuilder        responsible for building dispatchers
      * @param addressBook            the address book for the network
-     * @param consensusConfig        consensus configuration
-     * @param stateConfig            state configuration
      * @param currentEpochHash       the current epoch hash
      * @param currentSoftwareVersion the current software version
+     * @param ignoredRound           a round that should not be validated. Set to {@link #DO_NOT_IGNORE_ROUNDS} if all
+     *                               rounds should be validated.
      */
     public ConsensusHashManager(
+            @NonNull final PlatformContext platformContext,
             final Time time,
             final DispatchBuilder dispatchBuilder,
             final AddressBook addressBook,
-            final ConsensusConfig consensusConfig,
-            final StateConfig stateConfig,
             final Hash currentEpochHash,
-            final SoftwareVersion currentSoftwareVersion) {
+            final SoftwareVersion currentSoftwareVersion,
+            final long ignoredRound) {
+
+        final ConsensusConfig consensusConfig =
+                platformContext.getConfiguration().getConfigData(ConsensusConfig.class);
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
         final Duration timeBetweenIssLogs = Duration.ofSeconds(stateConfig.secondsBetweenIssLogs());
         lackingSignaturesRateLimiter = new RateLimiter(time, timeBetweenIssLogs);
@@ -126,6 +143,11 @@ public class ConsensusHashManager {
 
         this.roundData = new ConcurrentSequenceMap<>(
                 -consensusConfig.roundsNonAncient(), consensusConfig.roundsNonAncient(), x -> x);
+
+        this.ignoredRound = ignoredRound;
+        if (ignoredRound != DO_NOT_IGNORE_ROUNDS) {
+            logger.warn(STARTUP.getMarker(), "No ISS detection will be performed for round {}", ignoredRound);
+        }
     }
 
     /**
@@ -137,6 +159,11 @@ public class ConsensusHashManager {
         if (round <= previousRound) {
             throw new IllegalArgumentException(
                     "previous round was " + previousRound + ", can't decrease round to " + round);
+        }
+
+        if (round == ignoredRound) {
+            // This round is intentionally ignored.
+            return;
         }
 
         final long oldestRoundToValidate = round - roundData.getSequenceNumberCapacity() + 1;
@@ -183,15 +210,6 @@ public class ConsensusHashManager {
     }
 
     /**
-     * Same as {@link #handlePostconsensusSignatureTransaction(NodeId, StateSignatureTransaction, SoftwareVersion)}
-     * but with a null event version.
-     */
-    public void handlePostconsensusSignatureTransaction(
-            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
-        handlePostconsensusSignatureTransaction(signerId, signatureTransaction, null);
-    }
-
-    /**
      * <p>
      * Observes post-consensus state signature transactions.
      * </p>
@@ -208,7 +226,7 @@ public class ConsensusHashManager {
     public void handlePostconsensusSignatureTransaction(
             @NonNull final NodeId signerId,
             @NonNull final StateSignatureTransaction signatureTransaction,
-            @Nullable SoftwareVersion eventVersion) {
+            @Nullable final SoftwareVersion eventVersion) {
 
         Objects.requireNonNull(signerId);
         Objects.requireNonNull(signatureTransaction);
@@ -225,6 +243,11 @@ public class ConsensusHashManager {
 
         if (!addressBook.contains(signerId)) {
             // we don't care about nodes not in the address book
+            return;
+        }
+
+        if (signatureTransaction.getRound() == ignoredRound) {
+            // This round is intentionally ignored.
             return;
         }
 
@@ -252,6 +275,11 @@ public class ConsensusHashManager {
      */
     @Observer(value = StateHashedTrigger.class, comment = "check hash derived by this node")
     public void stateHashedObserver(final Long round, final Hash hash) {
+        if (round == ignoredRound) {
+            // This round is intentionally ignored.
+            return;
+        }
+
         final RoundHashValidator roundHashValidator = roundData.get(round);
         if (roundHashValidator == null) {
             throw new IllegalStateException(
