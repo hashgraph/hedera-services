@@ -328,7 +328,13 @@ final class GenesisSchemaTest {
         // None of the blocklist accounts will exist, but they shouldn't be created since blocklists aren't enabled
         config = buildConfig(NUM_SYSTEM_ACCOUNTS, false);
         final var migrationContext = new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore);
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                handleThrottling,
+                entityIdStore);
 
         schema.migrate(migrationContext);
 
