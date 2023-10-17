@@ -46,12 +46,17 @@ public class Issue1648Suite extends HapiSuite {
     public static HapiSpec recordStorageFeeIncreasesWithNumTransfers() {
         return defaultHapiSpec("RecordStorageFeeIncreasesWithNumTransfers")
                 .given(
-                        UtilVerbs.inParallel(
-                                cryptoCreate("A"), cryptoCreate("B"), cryptoCreate("C"), cryptoCreate("D")),
-                        UtilVerbs.inParallel(
-                                cryptoTransfer(tinyBarsFromTo("A", "B", 1L)).via("txn1"),
-                                cryptoTransfer(tinyBarsFromTo("A", "B", 1L), tinyBarsFromTo("C", "D", 1L))
-                                        .via("txn2")))
+                        cryptoCreate("civilian").balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate("A"),
+                        cryptoCreate("B"),
+                        cryptoCreate("C"),
+                        cryptoCreate("D"),
+                        cryptoTransfer(tinyBarsFromTo("A", "B", 1L))
+                                .payingWith("civilian")
+                                .via("txn1"),
+                        cryptoTransfer(tinyBarsFromTo("A", "B", 1L), tinyBarsFromTo("C", "D", 1L))
+                                .payingWith("civilian")
+                                .via("txn2"))
                 .when(UtilVerbs.recordFeeAmount("txn1", "feeForOne"), UtilVerbs.recordFeeAmount("txn2", "feeForTwo"))
                 .then(UtilVerbs.assertionsHold((spec, assertLog) -> {
                     long feeForOne = spec.registry().getAmount("feeForOne");
