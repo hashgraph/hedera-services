@@ -25,7 +25,6 @@ import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.VirtualKey;
@@ -105,7 +104,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     private final AtomicInteger bucketIndex = new AtomicInteger(0);
 
     /** List of bucket entries in this bucket */
-    private final List<BucketEntry> entries = new ArrayList<>();
+    private final List<BucketEntry> entries = new ArrayList<>(64);
 
     /**
      * Create a new bucket with the default size.
@@ -312,7 +311,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         for (int index = 0; index < entryCount; index++) {
             final BucketEntry entry = entries.get(index);
             if (keyHashCode == entry.getHashCode()) {
-                if (entry.equals(keySerializer, key)) {
+                if (entry.getKey().equals(key)) {
                     return index;
                 }
             }
@@ -332,7 +331,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             final BucketEntry entry = entries.get(i);
             final int hashCode = entry.getHashCode();
             final long value = entry.getValue();
-            final K key = keySerializer.deserialize(entry.getKeyBytes());
+            final K key = entry.getKey();
             sb.append("    ENTRY[" + i + "] value= " + value + " keyHashCode=" + hashCode + " key=" + key + "\n");
         }
         sb.append("}");
@@ -355,15 +354,12 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         private long value;
         /** Key */
         private K key;
-        /** Serialized key */
-        private BufferedData keyBytes;
 
         /** Creates new bucket entry from hash code, value, and serialized key bytes */
         public BucketEntry(final int hashCode, final long value, @NonNull final K key) {
             this.hashCode = hashCode;
             this.value = value;
             this.key = key;
-            this.keyBytes = null;
         }
 
         /** Creates new bucket entry by reading its fields from the given protobuf buffer */
@@ -372,7 +368,6 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             hashCode = 0;
             value = 0;
             key = null;
-            keyBytes = null;
 
             // read fields
             while (entryData.hasRemaining()) {
@@ -394,8 +389,8 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             }
 
             // check required fields
-            if ((key == null) && (keyBytes == null)) {
-                throw new IllegalArgumentException("Null key / key bytes for bucket entry");
+            if (key == null) {
+                throw new IllegalArgumentException("Null key for bucket entry");
             }
         }
 
@@ -408,7 +403,6 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             // as a byte buffer. In this case, either entry key is not null, or key bytes as
             // BufferedData is not null, or key bytes as ByteBuffer is not null
             key = keySerializer.deserialize(buffer, 0);
-            keyBytes = null;
         }
 
         public int getHashCode() {
@@ -424,23 +418,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         }
 
         public K getKey() {
-            if (key == null) {
-                assert keyBytes != null;
-                key = keySerializer.deserialize(keyBytes);
-            }
             return key;
-        }
-
-        public BufferedData getKeyBytes() {
-            if (keyBytes == null) {
-                assert key != null;
-                final int size = keySerializer.getSerializedSize(key);
-                keyBytes = BufferedData.allocate(size);
-                keySerializer.serialize(key, keyBytes);
-            } else {
-                keyBytes.reset();
-            }
-            return keyBytes;
         }
 
         public int sizeInBytes() {
@@ -449,8 +427,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             if (value != 0) {
                 size += ProtoUtils.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoUtils.WIRE_TYPE_FIXED_64_BIT) + Long.BYTES;
             }
-            final BufferedData keyb = getKeyBytes();
-            size += ProtoUtils.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, (int) keyb.capacity());
+            size += ProtoUtils.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySerializer.getSerializedSize(key));
             return size;
         }
 
@@ -461,18 +438,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
                 ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_VALUE);
                 out.writeLong(value);
             }
-            final BufferedData keyb = getKeyBytes();
-            ProtoUtils.writeBytes(out, FIELD_BUCKETENTRY_KEYBYTES, (int) keyb.capacity(), o -> o.writeBytes(keyb));
-        }
-
-        public boolean equals(final KeySerializer<K> keySerializer, final K key) {
-            if (this.key != null) {
-                return this.key.equals(key);
-            } else {
-                assert keyBytes != null;
-                keyBytes.reset();
-                return keySerializer.equals(keyBytes, key);
-            }
+            ProtoUtils.writeBytes(out, FIELD_BUCKETENTRY_KEYBYTES, sizeInBytes(), o -> keySerializer.serialize(key, o));
         }
     }
 }
