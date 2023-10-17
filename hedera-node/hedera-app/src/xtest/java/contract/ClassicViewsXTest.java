@@ -22,6 +22,8 @@ import static contract.ClassicViewsXTestConstants.ADMIN_KEY;
 import static contract.ClassicViewsXTestConstants.AUTORENEW_SECONDS;
 import static contract.ClassicViewsXTestConstants.CLASSIC_QUERIES_X_TEST_ID;
 import static contract.ClassicViewsXTestConstants.CLASSIC_VIEWS_INITCODE_FILE_ID;
+import static contract.ClassicViewsXTestConstants.CUSTOM_FEES;
+import static contract.ClassicViewsXTestConstants.EXPECTED_CUSTOM_FEES;
 import static contract.ClassicViewsXTestConstants.EXPECTED_TOKEN_EXPIRY;
 import static contract.ClassicViewsXTestConstants.EXPIRATION_SECONDS;
 import static contract.ClassicViewsXTestConstants.FEE_SCHEDULE_KEY;
@@ -31,6 +33,7 @@ import static contract.ClassicViewsXTestConstants.GET_DEFAULT_KYC_STATUS;
 import static contract.ClassicViewsXTestConstants.GET_IS_FROZEN;
 import static contract.ClassicViewsXTestConstants.GET_IS_KYC;
 import static contract.ClassicViewsXTestConstants.GET_IS_TOKEN;
+import static contract.ClassicViewsXTestConstants.GET_TOKEN_CUSTOM_FEES;
 import static contract.ClassicViewsXTestConstants.GET_TOKEN_EXPIRY;
 import static contract.ClassicViewsXTestConstants.GET_TOKEN_KEY;
 import static contract.ClassicViewsXTestConstants.GET_TOKEN_TYPE;
@@ -163,6 +166,12 @@ public class ClassicViewsXTest extends AbstractContractXTest {
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(64L)),
                 ERC_USER_ID,
                 assertingCallLocalResultIs(returnExpectedKey(PAUSE_KEY)));
+
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_TOKEN_CUSTOM_FEES, ERC20_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(EXPECTED_CUSTOM_FEES));
     }
 
     private Query miscViewsQuery(@NonNull final Function function, @NonNull final Object... args) {
@@ -313,6 +322,7 @@ public class ClassicViewsXTest extends AbstractContractXTest {
                         .supplyKey(SUPPLY_KEY)
                         .feeScheduleKey(FEE_SCHEDULE_KEY)
                         .pauseKey(PAUSE_KEY)
+                        .customFees(CUSTOM_FEES)
                         .build());
         tokens.put(
                 ERC721_TOKEN_ID,

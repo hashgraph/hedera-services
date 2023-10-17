@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.validation;
 
-import static com.swirlds.logging.LogMarker.EVENT_SIG;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
 
@@ -28,7 +27,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,6 +43,7 @@ import org.apache.logging.log4j.Logger;
  * A {@link GossipEventValidator} which validates the event's signature
  */
 public class SignatureValidator implements GossipEventValidator {
+    public static final String VALIDATOR_NAME = "SIGNATURE_VALIDATOR";
     private static final Logger logger = LogManager.getLogger(SignatureValidator.class);
     private final SignatureVerifier signatureVerifier;
     private final Map<NodeId, PublicKey> previousKeyMap = new HashMap<>();
@@ -88,11 +87,6 @@ public class SignatureValidator implements GossipEventValidator {
      * @return true iff the signature is crypto-verified to be correct
      */
     private boolean isValidSignature(final BaseEvent event, final PublicKey publicKey) {
-        logger.debug(
-                EVENT_SIG.getMarker(),
-                "event signature is about to be verified. {}",
-                () -> EventStrings.toShortString(event));
-
         final boolean valid = signatureVerifier.verifySignature(
                 event.getHashedData().getHash().getValue(),
                 event.getUnhashedData().getSignature(),
@@ -145,5 +139,10 @@ public class SignatureValidator implements GossipEventValidator {
         }
 
         return isValidSignature(event, publicKey);
+    }
+
+    @Override
+    public @NonNull String validatorName() {
+        return VALIDATOR_NAME;
     }
 }

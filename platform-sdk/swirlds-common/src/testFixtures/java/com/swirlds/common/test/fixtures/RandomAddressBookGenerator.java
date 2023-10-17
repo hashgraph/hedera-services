@@ -161,7 +161,7 @@ public class RandomAddressBookGenerator {
         final SerializablePublicKey encPublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.EC, id.id());
         final SerializablePublicKey agreePublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.EC, id.id());
 
-        final String nickname = RandomUtils.randomString(random, 10);
+        final String nickname = NameUtils.getName(id.id());
         final String selfName = RandomUtils.randomString(random, 10);
 
         final int maxPort = 65535;

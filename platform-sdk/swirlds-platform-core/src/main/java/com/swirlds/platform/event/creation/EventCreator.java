@@ -41,7 +41,8 @@ public interface EventCreator {
     void setMinimumGenerationNonAncient(long minimumGenerationNonAncient);
 
     /**
-     * Create a new event if it is legal to do so.
+     * Create a new event if it is legal to do so. The only time this should not create an event is if there are no
+     * eligible parents.
      *
      * @return the new event, or null if it is not legal to create a new event
      */

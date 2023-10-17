@@ -17,6 +17,8 @@
 package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER_FROM;
@@ -59,8 +61,12 @@ import org.jetbrains.annotations.NotNull;
  * Exercises freeze and unfreeze a token via the following steps relative to an {@code OWNER} account:
  * <ol>
  *     <li>Associate {@code ERC20_TOKEN} to RECEIVER.</li>
- *     <li>Freeze {@code ERC721_TOKEN} via {@link FreezeUnfreezeTranslator#FREEZE}.</li>
+ *     <li>Freeze {@code ERC20TOKEN} via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code INVALID_ACCOUNT_ID.</li>
+ *     <li>Freeze {@code ERC20TOKEN} via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code INVALID_TOKEN_ID.</li>
+ *     <li>Freeze {@code ERC2-TOKEN} via {@link FreezeUnfreezeTranslator#FREEZE}.</li>
  *     <li>Transfer {@code ERC20_TOKEN} from SENDER to RECEIVER.  This should fail with code ACCOUNT_FROZEN_FOR_TOKEN.</li>
+ *     <li>Unfreeze {@code ERC20_TOKEN} via {@link FreezeUnfreezeTranslator#UNFREEZE}. This should fail with code INVALID_ACCOUNT_ID.</li>
+ *     <li>Unfreeze {@code ERC20_TOKEN} via {@link FreezeUnfreezeTranslator#UNFREEZE}. This should fail with code INVALID_TOKEN_ID.</li>
  *     <li>Unfreeze {@code ERC20_TOKEN} via {@link FreezeUnfreezeTranslator#UNFREEZE}.</li>
  *     <li>Transfer {@code ERC20_TOKEN} from  SENDER to RECEIVER.  This should now succeed</li>
  *     <li>Freeze {@code ERC721_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code TOKEN_HAS_NO_FREEZE_KEY.</li>
@@ -77,6 +83,22 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(RECEIVER_HEADLONG_ADDRESS, A_TOKEN_ADDRESS)
                         .array()),
                 assertSuccess());
+        // FREEZE INVALID ACCOUNT
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(FreezeUnfreezeTranslator.FREEZE
+                        .encodeCallWithArgs(A_TOKEN_ADDRESS, A_TOKEN_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()), output));
+        // FREEZE INVALID TOKEN
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(FreezeUnfreezeTranslator.FREEZE
+                        .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, OWNER_HEADLONG_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
         // FREEZE
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
@@ -91,6 +113,22 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                         ERC_20_TRANSFER.encodeCallWithArgs(RECEIVER_HEADLONG_ADDRESS, BigInteger.valueOf(100L)),
                         A_TOKEN_ID),
                 ACCOUNT_FROZEN_FOR_TOKEN);
+        // UNFREEZE INVALID ACCOUNT
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(FreezeUnfreezeTranslator.UNFREEZE
+                        .encodeCallWithArgs(A_TOKEN_ADDRESS, A_TOKEN_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()), output));
+        // UNFREEZE INVALID TOKEN
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(FreezeUnfreezeTranslator.UNFREEZE
+                        .encodeCallWithArgs(OWNER_HEADLONG_ADDRESS, OWNER_HEADLONG_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
         // UNFREEZE
         runHtsCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,

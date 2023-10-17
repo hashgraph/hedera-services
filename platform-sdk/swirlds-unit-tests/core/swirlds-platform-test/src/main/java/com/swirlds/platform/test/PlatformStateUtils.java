@@ -18,13 +18,11 @@ package com.swirlds.platform.test;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
-import static com.swirlds.platform.test.fixtures.event.RandomEventUtils.randomEvent;
 
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
@@ -39,14 +37,14 @@ public final class PlatformStateUtils {
     /**
      * Generate a randomized PlatformState object. Values contained internally may be nonsensical.
      */
-    public static PlatformState randomPlatformState(boolean generateEventList) {
-        return randomPlatformState(new Random(), generateEventList);
+    public static PlatformState randomPlatformState() {
+        return randomPlatformState(new Random());
     }
 
     /**
      * Generate a randomized PlatformState object. Values contained internally may be nonsensical.
      */
-    public static PlatformState randomPlatformState(final Random random, boolean generateEventList) {
+    public static PlatformState randomPlatformState(final Random random) {
         final PlatformState platformState = new PlatformState();
         final PlatformData platformData = new PlatformData();
         platformState.setPlatformData(platformData);
@@ -59,26 +57,20 @@ public final class PlatformStateUtils {
         platformState.setAddressBook(addressBook);
         platformData.setHashEventsCons(randomHash(random));
         platformData.setRound(random.nextLong());
-        platformData.setNumEventsCons(random.nextLong());
         platformData.setConsensusTimestamp(randomInstant(random));
-        platformData.setEvents(new EventImpl[0]);
-        platformData.setMinGenInfo(List.of());
-
-        if (generateEventList) {
-            final EventImpl[] events = new EventImpl[10];
-            for (int index = 0; index < events.length; index++) {
-                events[index] = randomEvent(random, new NodeId(random.nextLong(Long.MAX_VALUE)), null, null);
-            }
-            platformState.getPlatformData().setEvents(events);
-        }
-
-        platformState.getPlatformData().setLastTransactionTimestamp(randomInstant(random));
 
         final List<MinGenInfo> minGenInfo = new LinkedList<>();
         for (int index = 0; index < 10; index++) {
             minGenInfo.add(new MinGenInfo(random.nextLong(), random.nextLong()));
         }
-        platformState.getPlatformData().setMinGenInfo(minGenInfo);
+        platformState
+                .getPlatformData()
+                .setSnapshot(new ConsensusSnapshot(
+                        random.nextLong(),
+                        List.of(randomHash(random), randomHash(random), randomHash(random)),
+                        minGenInfo,
+                        random.nextLong(),
+                        randomInstant(random)));
 
         return platformState;
     }
