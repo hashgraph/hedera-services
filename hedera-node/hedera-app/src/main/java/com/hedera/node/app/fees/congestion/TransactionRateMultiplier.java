@@ -36,7 +36,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -51,20 +50,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 public class TransactionRateMultiplier {
-    private final HederaState state;
-    private final ConfigProvider configProvider;
     private final ThrottleMultiplier delegate;
+    private final ConfigProvider configProvider;
 
     public TransactionRateMultiplier(
-            @NonNull final ThrottleMultiplier delegate,
-            @NonNull final ConfigProvider configProvider,
-            @NonNull final HederaState state) {
+            @NonNull final ThrottleMultiplier delegate, @NonNull final ConfigProvider configProvider) {
         this.delegate = requireNonNull(delegate, "delegate must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
-        this.state = requireNonNull(state, "state must not be null");
     }
 
-    public long currentMultiplier(TransactionInfo txnInfo) {
+    public long currentMultiplier(TransactionInfo txnInfo, SavepointStackImpl stack) {
         final var throttleMultiplier = delegate.currentMultiplier();
         final var configuration = configProvider.getConfiguration();
         final var entityScaleFactors =
@@ -72,42 +67,41 @@ public class TransactionRateMultiplier {
 
         return switch (txnInfo.functionality()) {
             case CRYPTO_CREATE -> entityScaleFactors
-                    .scaleForNew(ACCOUNT, roundedAccountPercentUtil())
+                    .scaleForNew(ACCOUNT, roundedAccountPercentUtil(stack))
                     .scaling((int) throttleMultiplier);
             case CONTRACT_CREATE -> entityScaleFactors
-                    .scaleForNew(CONTRACT, roundedContractPercentUtil())
+                    .scaleForNew(CONTRACT, roundedContractPercentUtil(stack))
                     .scaling((int) throttleMultiplier);
             case FILE_CREATE -> entityScaleFactors
-                    .scaleForNew(FILE, roundedFilePercentUtil())
+                    .scaleForNew(FILE, roundedFilePercentUtil(stack))
                     .scaling((int) throttleMultiplier);
             case TOKEN_MINT -> {
                 final var mintsWithMetadata =
                         !txnInfo.txBody().tokenMint().metadata().isEmpty();
                 yield mintsWithMetadata
                         ? entityScaleFactors
-                                .scaleForNew(NFT, roundedNftPercentUtil())
+                                .scaleForNew(NFT, roundedNftPercentUtil(stack))
                                 .scaling((int) throttleMultiplier)
                         : throttleMultiplier;
             }
             case TOKEN_CREATE -> entityScaleFactors
-                    .scaleForNew(TOKEN, roundedTokenPercentUtil())
+                    .scaleForNew(TOKEN, roundedTokenPercentUtil(stack))
                     .scaling((int) throttleMultiplier);
             case TOKEN_ASSOCIATE_TO_ACCOUNT -> entityScaleFactors
-                    .scaleForNew(TOKEN_ASSOCIATION, roundedTokenRelPercentUtil())
+                    .scaleForNew(TOKEN_ASSOCIATION, roundedTokenRelPercentUtil(stack))
                     .scaling((int) throttleMultiplier);
             case CONSENSUS_CREATE_TOPIC -> entityScaleFactors
-                    .scaleForNew(TOPIC, roundedTopicPercentUtil())
+                    .scaleForNew(TOPIC, roundedTopicPercentUtil(stack))
                     .scaling((int) throttleMultiplier);
             default -> throttleMultiplier;
         };
     }
 
-    private int roundedAccountPercentUtil() {
+    private int roundedAccountPercentUtil(SavepointStackImpl stack) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfAccounts =
                 configuration.getConfigData(AccountsConfig.class).maxNumber();
 
-        final var stack = new SavepointStackImpl(state);
         final var writableAccountStoreFactory = new WritableStoreFactory(stack, TokenService.NAME);
         final var accountsStore = writableAccountStoreFactory.getStore(WritableAccountStore.class);
         final var numAccountsAndContracts = accountsStore.sizeOfAccountState();
@@ -120,12 +114,11 @@ public class TransactionRateMultiplier {
         return maxNumOfAccounts == 0 ? 100 : (int) ((100 * numAccounts) / maxNumOfAccounts);
     }
 
-    private int roundedContractPercentUtil() {
+    private int roundedContractPercentUtil(SavepointStackImpl stack) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfContracts =
                 configuration.getConfigData(ContractsConfig.class).maxNumber();
 
-        final var stack = new SavepointStackImpl(state);
         final var writableContractStoreFactory = new WritableStoreFactory(stack, ContractService.NAME);
         final var contractsStore = writableContractStoreFactory.getStore(WritableContractStateStore.class);
         final var numContracts = contractsStore.getNumBytecodes();
@@ -133,11 +126,10 @@ public class TransactionRateMultiplier {
         return maxNumOfContracts == 0 ? 100 : (int) ((100 * numContracts) / maxNumOfContracts);
     }
 
-    private int roundedFilePercentUtil() {
+    private int roundedFilePercentUtil(SavepointStackImpl stack) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfFiles = configuration.getConfigData(FilesConfig.class).maxNumber();
 
-        final var stack = new SavepointStackImpl(state);
         final var writableFileStoreFactory = new WritableStoreFactory(stack, FileService.NAME);
         final var fileStore = writableFileStoreFactory.getStore(WritableFileStore.class);
         final var numOfFiles = fileStore.sizeOfState();
@@ -145,11 +137,10 @@ public class TransactionRateMultiplier {
         return maxNumOfFiles == 0 ? 100 : (int) ((100 * numOfFiles) / maxNumOfFiles);
     }
 
-    private int roundedNftPercentUtil() {
+    private int roundedNftPercentUtil(SavepointStackImpl stack) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfNfts = configuration.getConfigData(TokensConfig.class).nftsMaxAllowedMints();
 
-        final var stack = new SavepointStackImpl(state);
         final var writableNftStoreFactory = new WritableStoreFactory(stack, TokenService.NAME);
         final var nftStore = writableNftStoreFactory.getStore(WritableNftStore.class);
         final var numOfNfts = nftStore.sizeOfState();
@@ -157,12 +148,11 @@ public class TransactionRateMultiplier {
         return maxNumOfNfts == 0 ? 100 : (int) ((100 * numOfNfts) / maxNumOfNfts);
     }
 
-    private int roundedTokenPercentUtil() {
+    private int roundedTokenPercentUtil(SavepointStackImpl stack) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfTokens =
                 configuration.getConfigData(TokensConfig.class).maxNumber();
 
-        final var stack = new SavepointStackImpl(state);
         final var writableTokenStoreFactory = new WritableStoreFactory(stack, TokenService.NAME);
         final var tokenStore = writableTokenStoreFactory.getStore(WritableTokenStore.class);
         final var numOfTokens = tokenStore.sizeOfState();
@@ -170,12 +160,11 @@ public class TransactionRateMultiplier {
         return maxNumOfTokens == 0 ? 100 : (int) ((100 * numOfTokens) / maxNumOfTokens);
     }
 
-    private int roundedTokenRelPercentUtil() {
+    private int roundedTokenRelPercentUtil(SavepointStackImpl stack) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfTokenRels =
                 configuration.getConfigData(TokensConfig.class).maxAggregateRels();
 
-        final var stack = new SavepointStackImpl(state);
         final var writableTokenRelsStoreFactory = new WritableStoreFactory(stack, TokenService.NAME);
         final var tokenRelStore = writableTokenRelsStoreFactory.getStore(WritableTokenRelationStore.class);
         final var numOfTokensRels = tokenRelStore.sizeOfState();
@@ -183,12 +172,11 @@ public class TransactionRateMultiplier {
         return maxNumOfTokenRels == 0 ? 100 : (int) ((100 * numOfTokensRels) / maxNumOfTokenRels);
     }
 
-    private int roundedTopicPercentUtil() {
+    private int roundedTopicPercentUtil(SavepointStackImpl stack) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumberOfTopics =
                 configuration.getConfigData(TopicsConfig.class).maxNumber();
 
-        final var stack = new SavepointStackImpl(state);
         final var writableTopicsStoreFactory = new WritableStoreFactory(stack, ConsensusService.NAME);
         final var topicStore = writableTopicsStoreFactory.getStore(WritableTopicStore.class);
         final var numOfTopics = topicStore.sizeOfState();

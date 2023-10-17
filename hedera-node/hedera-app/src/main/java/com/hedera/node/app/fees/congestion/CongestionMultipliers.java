@@ -19,6 +19,7 @@ package com.hedera.node.app.fees.congestion;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -38,8 +39,8 @@ public class CongestionMultipliers {
         genericFeeMultiplier.updateMultiplier(consensusTime);
     }
 
-    public long maxCurrentMultiplier(TransactionInfo txnInfo) {
-        return Math.max(gasFeeMultiplier.currentMultiplier(), genericFeeMultiplier.currentMultiplier(txnInfo));
+    public long maxCurrentMultiplier(TransactionInfo txnInfo, SavepointStackImpl stack) {
+        return Math.max(gasFeeMultiplier.currentMultiplier(), genericFeeMultiplier.currentMultiplier(txnInfo, stack));
     }
 
     @NonNull

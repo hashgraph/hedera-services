@@ -708,7 +708,7 @@ public final class Hedera implements SwirldMain {
                         .percentCongestionMultipliers(),
                 () -> backendThrottle.activeThrottlesFor(CRYPTO_TRANSFER));
 
-        final var txnRateMultiplier = new TransactionRateMultiplier(genericFeeMultiplier, configProvider, state);
+        final var txnRateMultiplier = new TransactionRateMultiplier(genericFeeMultiplier, configProvider);
 
         final var gasFeeMultiplier = new ThrottleMultiplier(
                 "EVM gas/sec",
