@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.service.token.impl.util.EntityIdUtils.accountIdFromHexedMirrorAddress;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -82,11 +81,8 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
 
             for (final var aa : xfers.nftTransfersOrElse(emptyList())) {
                 final var receiverId = aa.receiverAccountID();
-                var senderId = aa.senderAccountID();
+                final var senderId = aa.senderAccountID();
                 // sender should be associated already. If not throw exception
-                if (!senderId.hasAccountNum() && senderId.hasAlias()) {
-                    senderId = accountIdFromHexedMirrorAddress(senderId.alias());
-                }
                 validateTrue(tokenRelStore.get(senderId, tokenId) != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
                 final var nft = nftStore.get(tokenId, aa.serialNumber());

@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static com.hedera.node.app.service.token.impl.util.EntityIdUtils.accountIdFromHexedMirrorAddress;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
@@ -97,13 +96,7 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
                 if (nft.hasOwnerId()) {
                     validateTrue(nft.ownerId().equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
                 } else {
-                    if (!senderId.hasAccountNum() && senderId.hasAlias()) {
-                        validateTrue(
-                                treasury.equals(accountIdFromHexedMirrorAddress(senderId.alias())),
-                                SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-                    } else {
-                        validateTrue(treasury.equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-                    }
+                    validateTrue(treasury.equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
                 }
                 nftStore.put(copyNft.build());
 
