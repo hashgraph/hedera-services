@@ -33,20 +33,25 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.TransactionComponent.Factory;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import java.util.Set;
+import javax.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ContractUpdateHandlerParityTest {
+
     private ReadableAccountStore accountStore;
-    private final ContractUpdateHandler subject = new ContractUpdateHandler();
+    private Provider<Factory> provider = mock(Provider.class);
+    private final ContractUpdateHandler subject = new ContractUpdateHandler(provider);
 
     @BeforeEach
     void setUp() {
