@@ -20,22 +20,22 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public final class EventPool {
-    private final BlockingQueue<Event> pool = new LinkedBlockingQueue<>();
+public final class WiringBenchmarkEventPool {
+    private final BlockingQueue<WiringBenchmarkEvent> pool = new LinkedBlockingQueue<>();
 
-    public EventPool() {}
+    public WiringBenchmarkEventPool() {}
 
     @NonNull
-    public Event checkout(long number) {
-        Event event = pool.poll();
+    public WiringBenchmarkEvent checkout(long number) {
+        WiringBenchmarkEvent event = pool.poll();
         if (event == null) {
-            event = new Event();
+            event = new WiringBenchmarkEvent();
         }
         event.reset(number);
         return event;
     }
 
-    public void checkin(Event event) {
+    public void checkin(WiringBenchmarkEvent event) {
         pool.add(event);
     }
 }

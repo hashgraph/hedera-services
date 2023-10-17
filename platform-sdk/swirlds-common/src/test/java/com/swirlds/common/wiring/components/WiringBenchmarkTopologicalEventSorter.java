@@ -18,19 +18,19 @@ package com.swirlds.common.wiring.components;
 
 import java.util.function.Consumer;
 
-public class TopologicalEventSorter implements Consumer<Event> {
+public class WiringBenchmarkTopologicalEventSorter implements Consumer<WiringBenchmarkEvent> {
     private static final int PRINT_FREQUENCY = 10_000_000;
-    private final EventPool eventPool;
+    private final WiringBenchmarkEventPool eventPool;
     private long lastTimestamp;
     private long checkSum;
 
-    public TopologicalEventSorter(EventPool eventPool) {
+    public WiringBenchmarkTopologicalEventSorter(WiringBenchmarkEventPool eventPool) {
         this.eventPool = eventPool;
         this.checkSum = 0;
     }
 
     @Override
-    public void accept(Event event) {
+    public void accept(WiringBenchmarkEvent event) {
         final long number = event.number();
         checkSum += number + 1; // make 0 contribute to the sum
         if (number % PRINT_FREQUENCY == 0) {

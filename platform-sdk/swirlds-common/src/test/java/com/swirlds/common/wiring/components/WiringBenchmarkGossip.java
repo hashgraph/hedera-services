@@ -23,15 +23,16 @@ import java.util.function.Consumer;
 /**
  * A quick and dirty simulation of gossip :-). It will generate events like crazy.
  */
-public class Gossip {
+public class WiringBenchmarkGossip {
     private final Executor executor;
-    private final EventPool eventPool;
-    private final Consumer<Event> toEventVerifier;
+    private final WiringBenchmarkEventPool eventPool;
+    private final Consumer<WiringBenchmarkEvent> toEventVerifier;
     private final AtomicLong eventNumber = new AtomicLong();
     private volatile boolean stopped = false;
     private volatile long checkSum;
 
-    public Gossip(Executor executor, EventPool eventPool, Consumer<Event> toEventVerifier) {
+    public WiringBenchmarkGossip(
+            Executor executor, WiringBenchmarkEventPool eventPool, Consumer<WiringBenchmarkEvent> toEventVerifier) {
         this.executor = executor;
         this.toEventVerifier = toEventVerifier;
         this.eventPool = eventPool;

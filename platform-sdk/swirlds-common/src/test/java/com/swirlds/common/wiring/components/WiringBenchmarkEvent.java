@@ -16,27 +16,22 @@
 
 package com.swirlds.common.wiring.components;
 
-import java.util.function.Consumer;
+public final class WiringBenchmarkEvent {
+    private long number = -1; // We'll let the orphan buffer assign this, although I think consensus actually does
+    private final byte[] data = new byte[1024 * 32]; // Just gotta have some bytes. Whatever.
 
-public class EventVerifier implements Consumer<Event> {
-    private final Consumer<Event> output;
+    public WiringBenchmarkEvent() {}
 
-    public EventVerifier(Consumer<Event> output) {
-        this.output = output;
+    void reset(long number) {
+        this.number = number;
     }
 
     @Override
-    public void accept(Event event) {
-        // Pretend like we did verification by sleeping for a few microseconds
-        busySleep(2000);
-        output.accept(event);
+    public String toString() {
+        return "Event {number=" + number + "}";
     }
 
-    public static void busySleep(long nanos) {
-        long elapsed;
-        final long startTime = System.nanoTime();
-        do {
-            elapsed = System.nanoTime() - startTime;
-        } while (elapsed < nanos);
+    public long number() {
+        return number;
     }
 }

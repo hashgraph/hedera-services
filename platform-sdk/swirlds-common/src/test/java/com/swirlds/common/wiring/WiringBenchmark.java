@@ -20,11 +20,11 @@ import static java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFacto
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.wiring.components.Event;
-import com.swirlds.common.wiring.components.EventPool;
-import com.swirlds.common.wiring.components.EventVerifier;
-import com.swirlds.common.wiring.components.Gossip;
-import com.swirlds.common.wiring.components.TopologicalEventSorter;
+import com.swirlds.common.wiring.components.WiringBenchmarkEvent;
+import com.swirlds.common.wiring.components.WiringBenchmarkEventPool;
+import com.swirlds.common.wiring.components.WiringBenchmarkEventVerifier;
+import com.swirlds.common.wiring.components.WiringBenchmarkGossip;
+import com.swirlds.common.wiring.components.WiringBenchmarkTopologicalEventSorter;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import java.util.concurrent.ForkJoinPool;
@@ -59,18 +59,18 @@ class WiringBenchmark {
                 .withConcurrency(false)
                 .withOffRamp(backpressure)
                 .build();
-        final EventPool eventPool = new EventPool();
+        final WiringBenchmarkEventPool eventPool = new WiringBenchmarkEventPool();
 
         // Step 2: create channels
 
-        final WireChannel<Event> orphanBufferChannel = toOrphanBuffer.createChannel();
-        final WireChannel<Event> verifierChannel = toVerifier.createChannel();
+        final WireChannel<WiringBenchmarkEvent> orphanBufferChannel = toOrphanBuffer.createChannel();
+        final WireChannel<WiringBenchmarkEvent> verifierChannel = toVerifier.createChannel();
 
         // Step 3: construct components
 
-        final TopologicalEventSorter orphanBuffer = new TopologicalEventSorter(eventPool);
-        final EventVerifier verifier = new EventVerifier(orphanBufferChannel::put);
-        final Gossip gossip = new Gossip(executor, eventPool, verifierChannel::put);
+        final WiringBenchmarkTopologicalEventSorter orphanBuffer = new WiringBenchmarkTopologicalEventSorter(eventPool);
+        final WiringBenchmarkEventVerifier verifier = new WiringBenchmarkEventVerifier(orphanBufferChannel::put);
+        final WiringBenchmarkGossip gossip = new WiringBenchmarkGossip(executor, eventPool, verifierChannel::put);
 
         // Step 4: bind wires to components
 
