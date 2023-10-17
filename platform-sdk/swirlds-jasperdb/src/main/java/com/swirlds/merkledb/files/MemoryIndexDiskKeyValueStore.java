@@ -87,21 +87,14 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * Construct a new MemoryIndexDiskKeyValueStore
      *
-     * @param storeDir                       The directory to store data files in
-     * @param storeName                      The name for the data store, this allows more than one data store in a
-     *                                       single directory.
-     * @param legacyStoreName                Base name for the data store. If not null, the store will process
-     *                                       files with this prefix at startup. New files in the store will be prefixed with {@code
-     *                                       storeName}
-     * @param dataItemSerializer             Serializer for converting raw data to/from data items
-     * @param loadedDataCallback             call back for handing loaded data from existing files on startup.
-     *                                       Can be null if not needed.
-     * @param keyToDiskLocationIndex         The index to use for keys to disk locations. Having this passed
-     *                                       in allows multiple MemoryIndexDiskKeyValueStore stores to share the same index if there
-     *                                       key ranges do not overlap. For example with internal node and leaf paths in a virtual map
-     *                                       tree. It also lets the caller decide the LongList implementation to use. This does mean
-     *                                       the caller is responsible for snapshot of the index.
-     * @param reportDurationMetricFunction  A function that will be called to report the duration of the compaction
+     * @param storeDir The directory to store data files in
+     * @param storeName The name for the data store, this allows more than one data store in a single directory.
+     * @param legacyStoreName Base name for the data store. If not null, the store will process files with this prefix at startup. New files in the store will be prefixed with {@code storeName}
+     * @param dataItemSerializer Serializer for converting raw data to/from data items
+     * @param loadedDataCallback call back for handing loaded data from existing files on startup. Can be null if not needed.
+     * @param keyToDiskLocationIndex The index to use for keys to disk locations. Having this passed in allows multiple MemoryIndexDiskKeyValueStore stores to share the same index if there
+     * key ranges do not overlap. For example with internal node and leaf paths in a virtual map tree. It also lets the caller decide the LongList implementation to use. This does mean the caller is responsible for snapshot of the index.
+     * @param reportDurationMetricFunction A function that will be called to report the duration of the compaction
      * @param reportSavedSpaceMetricFunction A function that will be called to report the amount of space saved by the compaction
      * @param updateStatsFunction A function that updates statistics of total usage of disk space and off-heap space
      * @throws IOException If there was a problem opening data files

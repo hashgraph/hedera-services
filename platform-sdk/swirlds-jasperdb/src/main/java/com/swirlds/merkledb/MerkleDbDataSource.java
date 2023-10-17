@@ -206,7 +206,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
         // create thread group with label
         final ThreadGroup threadGroup = new ThreadGroup("MerkleDb-" + tableName);
-        // create scheduledThreadPool for executing merges
         // create thread pool storing internal records
         storeInternalExecutor = Executors.newSingleThreadExecutor(new ThreadConfiguration(getStaticThreadManager())
                 .setComponent(MERKLEDB_COMPONENT)
@@ -374,7 +373,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 tableConfig.getMaxNumberOfKeys(),
                 tableConfig.getHashesRamToDiskThreshold());
 
-        statisticsUpdater = new MerkleDbStatisticsUpdater(this);
         compactor = new MerkleDbCompactionCoordinator(tableName, objectKeyToPath, hashStoreDisk, pathToKeyValue);
 
         if (compactionEnabled) {

@@ -191,7 +191,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * @param storeDir The directory to store data files
      * @param storeName Base name for the data files, allowing more than one DataFileCollection to
      *     share a directory
-     * @param legacyStoreName Base name for the data files. If not null, data files with this prefixas
+     * @param legacyStoreName Base name for the data files. If not null, data files with this prefix
      *     are processed by this file collection at startup same way as files prefixed with
      *     storeName
      * @param dataItemSerializer Serializer responsible for serializing/deserializing data items

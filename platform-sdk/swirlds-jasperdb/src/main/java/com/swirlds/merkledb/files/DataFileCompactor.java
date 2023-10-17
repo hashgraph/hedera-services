@@ -287,6 +287,7 @@ public class DataFileCompactor {
         currentWriter.set(null);
         // Now include the file in future compactions
         currentReader.get().setFileCompleted();
+        currentReader.get().close();
         currentReader.set(null);
     }
 
