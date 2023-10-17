@@ -22,12 +22,8 @@ import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction.BodyCase.FCMTRANSACTION;
-import static com.swirlds.logging.LogMarker.DEMO_INFO;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
-import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
-import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
-import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.serialize;
+import static com.swirlds.logging.LogMarker.*;
+import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -39,13 +35,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.*;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.events.Event;
@@ -64,17 +54,7 @@ import com.swirlds.demo.platform.actions.QuorumTriggeredAction;
 import com.swirlds.demo.platform.expiration.ExpirationRecordEntry;
 import com.swirlds.demo.platform.expiration.ExpirationUtils;
 import com.swirlds.demo.platform.freeze.FreezeTransactionHandler;
-import com.swirlds.demo.platform.fs.stresstest.proto.Activity;
-import com.swirlds.demo.platform.fs.stresstest.proto.AppTransactionSignatureType;
-import com.swirlds.demo.platform.fs.stresstest.proto.ControlTransaction;
-import com.swirlds.demo.platform.fs.stresstest.proto.ControlType;
-import com.swirlds.demo.platform.fs.stresstest.proto.FCMTransaction;
-import com.swirlds.demo.platform.fs.stresstest.proto.FreezeTransaction;
-import com.swirlds.demo.platform.fs.stresstest.proto.RandomBytesTransaction;
-import com.swirlds.demo.platform.fs.stresstest.proto.SimpleAction;
-import com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction;
-import com.swirlds.demo.platform.fs.stresstest.proto.TestTransactionWrapper;
-import com.swirlds.demo.platform.fs.stresstest.proto.VirtualMerkleTransaction;
+import com.swirlds.demo.platform.fs.stresstest.proto.*;
 import com.swirlds.demo.platform.iss.IssLeaf;
 import com.swirlds.demo.platform.nft.NftId;
 import com.swirlds.demo.platform.nft.NftLedger;
@@ -99,6 +79,8 @@ import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
@@ -139,7 +121,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      */
     private static final long minTransTimestampIncrNanos = 1_000;
 
-    /** statistics for handleTransaction */
+    /**
+     * statistics for handleTransaction
+     */
     private static final String HANDLE_TRANSACTION_CATEGORY = "HandleTransaction";
 
     private static long htCountFCM;
@@ -230,12 +214,18 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      */
     private QuorumTriggeredAction<ControlAction> controlQuorum;
 
+    /**
+     * An instance of the keccak 256 digest algorithm.
+     */
+    private final MessageDigest keccakDigest;
+
     public PlatformTestingToolState() {
         super(ChildIndices.CHILD_COUNT);
 
         expectedFCMFamily = new ExpectedFCMFamilyImpl();
 
         referenceNftLedger = new ReferenceNftLedger(NFT_TRACKING_FRACTION);
+        keccakDigest = createKeccakDigest();
     }
 
     protected PlatformTestingToolState(final PlatformTestingToolState sourceState) {
@@ -320,6 +310,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         setImmutable(false);
         sourceState.setImmutable(true);
+        keccakDigest = createKeccakDigest();
     }
 
     /**
@@ -1311,6 +1302,27 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         this.invalidateHash();
     }
 
+    private MessageDigest createKeccakDigest() {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("KECCAK-256");
+        } catch (NoSuchAlgorithmException ignored) {
+            try {
+                digest = MessageDigest.getInstance("SHA3-256");
+            } catch (NoSuchAlgorithmException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        return digest;
+    }
+
+    private byte[] keccak256(final byte[] bytes) {
+        keccakDigest.reset();
+        keccakDigest.update(bytes);
+        return keccakDigest.digest();
+    }
+
     private void expandSignatures(final Transaction trans) {
         if (getConfig().isAppendSig()) {
             try {
@@ -1324,24 +1336,27 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                         testTransactionWrapper.getSignaturesRawBytes().toByteArray();
                 final AppTransactionSignatureType AppSignatureType = testTransactionWrapper.getSignatureType();
 
-                final int msgLen = testTransactionRawBytes.length;
-                final int sigOffset = msgLen + publicKey.length;
                 final SignatureType signatureType;
+                byte[] signaturePayload = testTransactionRawBytes;
 
                 if (AppSignatureType == AppTransactionSignatureType.ED25519) {
                     signatureType = SignatureType.ED25519;
                 } else if (AppSignatureType == AppTransactionSignatureType.ECDSA_SECP256K1) {
                     signatureType = SignatureType.ECDSA_SECP256K1;
+                    signaturePayload = keccak256(testTransactionRawBytes);
                 } else if (AppSignatureType == AppTransactionSignatureType.RSA) {
                     signatureType = SignatureType.RSA;
                 } else {
                     throw new UnsupportedOperationException("Unknown application signature type " + AppSignatureType);
                 }
 
+                final int msgLen = signaturePayload.length;
+                final int sigOffset = msgLen + publicKey.length;
+
                 // concatenate payload with public key and signature
                 final byte[] contents = ByteBuffer.allocate(
-                                testTransactionRawBytes.length + publicKey.length + signature.length)
-                        .put(testTransactionRawBytes)
+                                signaturePayload.length + publicKey.length + signature.length)
+                        .put(signaturePayload)
                         .put(publicKey)
                         .put(signature)
                         .array();
@@ -1590,13 +1605,17 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private static class ChildIndices {
         public static final int UNUSED = 0;
         public static final int CONFIG = 1;
-        /** last sequence by each member for consensus events */
+        /**
+         * last sequence by each member for consensus events
+         */
         public static final int NEXT_SEQUENCE_CONSENSUS = 2;
 
         public static final int FCM_FAMILY = 3;
         public static final int TRANSACTION_COUNTER = 4;
         public static final int ISS_LEAF = 5;
-        /** Migration test need this value to be able to load state file generated by v21 sdk */
+        /**
+         * Migration test need this value to be able to load state file generated by v21 sdk
+         */
         public static final int SDK_VERSION_21_CHILD_COUNT = 7;
 
         /**
