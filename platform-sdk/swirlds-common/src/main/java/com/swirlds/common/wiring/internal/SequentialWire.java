@@ -226,8 +226,6 @@ public class SequentialWire extends Wire {
         return onRamp.getCount();
     }
 
-    // TODO unit test
-
     /**
      * {@inheritDoc}
      */
