@@ -31,7 +31,7 @@ import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeService;
-import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
+import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
 import com.hedera.node.app.fees.congestion.TransactionRateMultiplierSource;
 import com.hedera.node.app.ids.EntityIdService;
@@ -176,7 +176,7 @@ public final class Hedera implements SwirldMain {
 
     private ThrottleAccumulator backendThrottle;
     private ThrottleAccumulator frontendThrottle;
-    private MonoMultiplierSources monoMultiplierSources;
+    private CongestionMultipliers congestionMultipliers;
 
     /**
      * The application name from the platform's perspective. This is currently locked in at the old main class name and
@@ -673,7 +673,7 @@ public final class Hedera implements SwirldMain {
         this.backendThrottle = new ThrottleAccumulator(() -> 1, configProvider);
         this.frontendThrottle =
                 new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider);
-        this.monoMultiplierSources = createMultiplierSources(state);
+        this.congestionMultipliers = createCongestionMultipliers(state);
 
         logger.info("Initializing ExchangeRateManager");
         exchangeRateManager = new ExchangeRateManager(configProvider);
@@ -692,7 +692,7 @@ public final class Hedera implements SwirldMain {
         initializeThrottles(state);
     }
 
-    private MonoMultiplierSources createMultiplierSources(HederaState state) {
+    private CongestionMultipliers createCongestionMultipliers(HederaState state) {
         final var genericFeeMultiplier = new ThrottleMultiplier(
                 "logical TPS",
                 "TPS",
@@ -725,7 +725,7 @@ public final class Hedera implements SwirldMain {
                         .percentCongestionMultipliers(),
                 () -> List.of(backendThrottle.gasLimitThrottle()));
 
-        return new MonoMultiplierSources(txnRateMultiplier, gasFeeMultiplier);
+        return new CongestionMultipliers(txnRateMultiplier, gasFeeMultiplier);
     }
 
     /*==================================================================================================================
@@ -759,7 +759,7 @@ public final class Hedera implements SwirldMain {
         this.backendThrottle = new ThrottleAccumulator(() -> 1, configProvider);
         this.frontendThrottle =
                 new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider);
-        this.monoMultiplierSources = createMultiplierSources(state);
+        this.congestionMultipliers = createCongestionMultipliers(state);
 
         logger.info("Initializing ExchangeRateManager");
         exchangeRateManager = new ExchangeRateManager(configProvider);
@@ -812,11 +812,11 @@ public final class Hedera implements SwirldMain {
                             configProvider,
                             throttleManager,
                             exchangeRateManager,
-                            monoMultiplierSources,
+                            congestionMultipliers,
                             backendThrottle,
                             frontendThrottle))
                     .networkUtilizationManager(
-                            new NetworkUtilizationManagerImpl(backendThrottle, monoMultiplierSources))
+                            new NetworkUtilizationManagerImpl(backendThrottle, congestionMultipliers))
                     .synchronizedThrottleAccumulator(new SynchronizedThrottleAccumulator(frontendThrottle))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .platform(platform)
@@ -888,7 +888,7 @@ public final class Hedera implements SwirldMain {
             this.frontendThrottle.applyGasConfig();
 
             // Updating the multiplier source to use the new throttle definitions
-            this.monoMultiplierSources.resetExpectations();
+            this.congestionMultipliers.resetExpectations();
         }
         logger.info("Throttles initialized");
     }

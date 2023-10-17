@@ -28,7 +28,7 @@ import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
+import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
 import com.hedera.node.app.fees.congestion.TransactionRateMultiplierSource;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
@@ -105,7 +105,7 @@ class IngestComponentTest {
         final var configProvider = new ConfigProviderImpl(false);
         final var handleThrottling = new ThrottleAccumulator(() -> 1, configProvider);
         final var synchronizedThrottleAccumulator = new ThrottleAccumulator(() -> 5, configProvider);
-        final var monoMultiplierSources = new MonoMultiplierSources(genericFeeMultiplier, gasFeeMultiplier);
+        final var congestionMultipliers = new CongestionMultipliers(genericFeeMultiplier, gasFeeMultiplier);
 
         final var exchangeRateManager = new ExchangeRateManager(configProvider);
 
@@ -120,10 +120,10 @@ class IngestComponentTest {
                         configProvider,
                         throttleManager,
                         exchangeRateManager,
-                        monoMultiplierSources,
+                        congestionMultipliers,
                         handleThrottling,
                         synchronizedThrottleAccumulator))
-                .networkUtilizationManager(new NetworkUtilizationManagerImpl(handleThrottling, monoMultiplierSources))
+                .networkUtilizationManager(new NetworkUtilizationManagerImpl(handleThrottling, congestionMultipliers))
                 .throttleManager(throttleManager)
                 .self(selfNodeInfo)
                 .maxSignedTxnSize(1024)

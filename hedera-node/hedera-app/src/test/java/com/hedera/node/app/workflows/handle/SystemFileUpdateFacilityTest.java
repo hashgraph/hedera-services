@@ -33,7 +33,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
+import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
@@ -80,7 +80,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
     private ExchangeRateManager exchangeRateManager;
 
     @Mock
-    private MonoMultiplierSources monoMultiplierSources;
+    private CongestionMultipliers congestionMultipliers;
 
     @Mock
     private ThrottleAccumulator throttleAccumulator;
@@ -106,7 +106,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 configProvider,
                 throttleManager,
                 exchangeRateManager,
-                monoMultiplierSources,
+                congestionMultipliers,
                 throttleAccumulator,
                 synchronizedThrottleAccumulator);
     }
@@ -123,7 +123,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         null,
                         throttleManager,
                         exchangeRateManager,
-                        monoMultiplierSources,
+                        congestionMultipliers,
                         throttleAccumulator,
                         synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
@@ -131,7 +131,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         configProvider,
                         null,
                         exchangeRateManager,
-                        monoMultiplierSources,
+                        congestionMultipliers,
                         throttleAccumulator,
                         synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
@@ -139,7 +139,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         configProvider,
                         throttleManager,
                         null,
-                        monoMultiplierSources,
+                        congestionMultipliers,
                         throttleAccumulator,
                         synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
@@ -155,7 +155,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         configProvider,
                         throttleManager,
                         exchangeRateManager,
-                        monoMultiplierSources,
+                        congestionMultipliers,
                         null,
                         synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
@@ -163,7 +163,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         configProvider,
                         throttleManager,
                         exchangeRateManager,
-                        monoMultiplierSources,
+                        congestionMultipliers,
                         throttleAccumulator,
                         null))
                 .isInstanceOf(NullPointerException.class);
@@ -241,7 +241,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 configProvider,
                 throttleManager,
                 exchangeRateManager,
-                monoMultiplierSources,
+                congestionMultipliers,
                 throttleAccumulator,
                 synchronizedThrottleAccumulator);
 

@@ -22,11 +22,11 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
-public class MonoMultiplierSources {
+public class CongestionMultipliers {
     private final TransactionRateMultiplierSource genericFeeMultiplier;
     private final ThrottleMultiplier gasFeeMultiplier;
 
-    public MonoMultiplierSources(
+    public CongestionMultipliers(
             @NonNull final TransactionRateMultiplierSource genericFeeMultiplier,
             @NonNull final ThrottleMultiplier gasFeeMultiplier) {
         this.genericFeeMultiplier = requireNonNull(genericFeeMultiplier, "genericFeeMultiplier must not be null");
