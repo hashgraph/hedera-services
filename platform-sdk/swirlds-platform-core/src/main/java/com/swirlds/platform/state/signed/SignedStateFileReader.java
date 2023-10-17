@@ -129,32 +129,20 @@ public final class SignedStateFileReader {
      * @throws IOException
      * 		if there is any problems with reading from a file
      */
-    public static DeserializedSignedState readStateFile(
+    public static @NonNull DeserializedSignedState readStateFile(
             @NonNull final PlatformContext platformContext, @NonNull final Path stateFile) throws IOException {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(stateFile);
 
-        if (!exists(stateFile)) {
-            throw new IOException("File " + stateFile.toAbsolutePath() + " does not exist!");
-        }
-        if (!Files.isRegularFile(stateFile)) {
-            throw new IOException("File " + stateFile.toAbsolutePath() + " is not a file!");
-        }
+        checkSignedStatePath(stateFile);
 
         final DeserializedSignedState returnState;
 
         final Triple<State, Hash, SigSet> data = deserializeAndDebugOnFailure(
                 () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
                 (final MerkleDataInputStream in) -> {
-                    final byte versionByte = in.readByte();
-                    if (versionByte != VERSIONED_FILE_BYTE) {
-                        throw new IOException(
-                                "File is not versioned -- data corrupted or is an unsupported legacy state");
-                    }
-
-                    in.readInt(); // file version
-                    in.readProtocolVersion();
+                    readAndCheckVersion(in);
 
                     final Path directory = stateFile.getParent();
 
@@ -174,5 +162,60 @@ public final class SignedStateFileReader {
                 newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.middle());
 
         return returnState;
+    }
+
+    /**
+     * Read only the signed state from a file, do not read the hash and signatures
+     *
+     * @param platformContext the platform context
+     * @param stateFile the file to read from
+     * @return the signed state read
+     * @throws IOException if any problem occurs while reading
+     */
+    public static @NonNull SignedState readSignedStateOnly(
+            @NonNull final PlatformContext platformContext, @NonNull final Path stateFile) throws IOException {
+        checkSignedStatePath(stateFile);
+
+        return deserializeAndDebugOnFailure(
+                () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
+                (final MerkleDataInputStream in) -> {
+                    readAndCheckVersion(in);
+                    return new SignedState(
+                            platformContext,
+                            in.readMerkleTree(stateFile.getParent(), MAX_MERKLE_NODES_IN_STATE),
+                            "SignedStateFileReader.readSignedStateOnly()",
+                            false);
+                });
+    }
+
+    /**
+     * Check the path of a signed state file
+     *
+     * @param stateFile the path to check
+     * @throws IOException if the path is not valid
+     */
+    private static void checkSignedStatePath(@NonNull final Path stateFile) throws IOException {
+        if (!exists(stateFile)) {
+            throw new IOException("File " + stateFile.toAbsolutePath() + " does not exist!");
+        }
+        if (!Files.isRegularFile(stateFile)) {
+            throw new IOException("File " + stateFile.toAbsolutePath() + " is not a file!");
+        }
+    }
+
+    /**
+     * Read the version from a signed state file and check it
+     *
+     * @param in the stream to read from
+     * @throws IOException if the version is invalid
+     */
+    private static void readAndCheckVersion(@NonNull final MerkleDataInputStream in) throws IOException {
+        final byte versionByte = in.readByte();
+        if (versionByte != VERSIONED_FILE_BYTE) {
+            throw new IOException("File is not versioned -- data corrupted or is an unsupported legacy state");
+        }
+
+        in.readInt(); // file version
+        in.readProtocolVersion();
     }
 }

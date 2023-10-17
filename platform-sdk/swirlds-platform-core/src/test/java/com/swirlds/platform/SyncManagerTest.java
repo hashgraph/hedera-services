@@ -21,8 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
@@ -39,7 +37,6 @@ import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.RandomGraph;
-import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.List;
@@ -61,7 +58,6 @@ class SyncManagerTest {
         public AddressBook addressBook;
         public NodeId selfId;
         public TransactionPool transactionPool;
-        public SwirldStateManager swirldStateManager;
         public RandomGraph connectionGraph;
         public SyncManagerImpl syncManager;
         public CriticalQuorum criticalQuorum;
@@ -69,20 +65,12 @@ class SyncManagerTest {
         public Configuration configuration;
 
         public SyncManagerTestData() {
-            this(spy(SwirldStateManager.class));
-        }
-
-        public SyncManagerTestData(final SwirldStateManager swirldStateManager) {
             final Random random = getRandomPrintSeed();
             hashgraph = new DummyHashgraph(random, 0);
             final PlatformContext platformContext =
                     TestPlatformContextBuilder.create().build();
 
             transactionPool = spy(new TransactionPool(platformContext));
-
-            this.swirldStateManager = swirldStateManager;
-
-            doReturn(false).when(swirldStateManager).isInFreezePeriod(any());
 
             this.addressBook = hashgraph.getAddressBook();
             this.selfId = addressBook.getNodeId(0);

@@ -262,10 +262,15 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
 
     @Test
     void pureChecksNonFungibleTokenTransfersHasRepeatedNftId() {
-        final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
-                .token(TOKEN_2468)
-                .nftTransfers(SERIAL_1_FROM_3333_TO_4444, SERIAL_2_FROM_4444_TO_3333, SERIAL_1_FROM_3333_TO_4444)
-                .build());
+        final var txn = newCryptoTransfer(
+                TokenTransferList.newBuilder()
+                        .token(TOKEN_2468)
+                        .nftTransfers(SERIAL_1_FROM_3333_TO_4444)
+                        .build(),
+                TokenTransferList.newBuilder()
+                        .token(TOKEN_2468)
+                        .nftTransfers(SERIAL_2_FROM_4444_TO_3333)
+                        .build());
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST));
@@ -308,7 +313,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
                 .token(TOKEN_2468)
                 .transfers(ACCT_3333_MINUS_10, ACCT_4444_PLUS_10)
-                .nftTransfers(SERIAL_1_FROM_3333_TO_4444)
+                .nftTransfers(SERIAL_1_FROM_3333_TO_4444, SERIAL_1_FROM_3333_TO_4444)
                 .build());
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
@@ -328,6 +333,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         // Tests that valid hbar transfers, fungible transfers, and non-fungible transfers are all valid when given
         // together
         final var token9753 = asToken(9753);
+        final var token9754 = asToken(9754);
         final var txn = newCryptoTransfer(
                 // Valid hbar transfers
                 List.of(ACCT_3333_MINUS_10, ACCT_4444_PLUS_10),
@@ -338,7 +344,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
                                 .transfers(ACCT_4444_MINUS_5, ACCT_3333_PLUS_5)
                                 .build(),
                         TokenTransferList.newBuilder()
-                                .token(token9753)
+                                .token(token9754)
                                 .transfers(ACCT_4444_MINUS_5, ACCT_3333_PLUS_5)
                                 .build(),
                         // Valid nft token transfers
