@@ -418,7 +418,13 @@ public final class Hedera implements SwirldMain {
             final var serviceName = service.getServiceName();
             logger.info("Migrating Service {}", serviceName);
             final var registry = (MerkleSchemaRegistry) registration.registry();
-            registry.migrate(state, previousVersion, currentVersion, configProvider.getConfiguration(), networkInfo);
+            registry.migrate(
+                    state,
+                    previousVersion,
+                    currentVersion,
+                    configProvider.getConfiguration(),
+                    networkInfo,
+                    backendThrottle);
         }
         logger.info("Migration complete");
     }

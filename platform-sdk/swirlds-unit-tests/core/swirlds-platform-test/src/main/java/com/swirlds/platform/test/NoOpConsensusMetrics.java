@@ -26,7 +26,7 @@ public class NoOpConsensusMetrics implements ConsensusMetrics {
     }
 
     @Override
-    public void coinRounds(final long numCoinRounds) {
+    public void coinRound() {
         // no-op
     }
 

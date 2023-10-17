@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -74,8 +75,11 @@ class EventObserverDispatcherTests {
 
         e2.setLastInRoundReceived(true);
 
-        dispatchAndCheckConsensus(
-                new ConsensusRound(List.of(e1, e2), mock(EventImpl.class), Generations.GENESIS_GENERATIONS));
+        dispatchAndCheckConsensus(new ConsensusRound(
+                List.of(e1, e2),
+                mock(EventImpl.class),
+                Generations.GENESIS_GENERATIONS,
+                mock(ConsensusSnapshot.class)));
     }
 
     private void dispatchAndCheckConsensus(final ConsensusRound consensusRound, final SimpleEventTracker... yes) {

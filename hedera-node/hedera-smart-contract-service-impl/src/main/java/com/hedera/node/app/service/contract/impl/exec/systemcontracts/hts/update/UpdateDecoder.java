@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updat
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumericContractId;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Timestamp;
@@ -40,9 +41,10 @@ import javax.inject.Singleton;
 public class UpdateDecoder {
 
     // below values correspond to  tuples' indexes
-    private static final int TOKEN_ID = 0;
+    private static final int TOKEN_ADDRESS = 0;
     private static final int HEDERA_TOKEN = 1;
 
+    private static final int EXPIRY = 1;
     private static final int TOKEN_KEYS = 1;
 
     private static final int KEY_TYPE = 0;
@@ -93,9 +95,33 @@ public class UpdateDecoder {
         return decodeTokenUpdate(call, attempt.addressIdConverter());
     }
 
+    /**
+     * Decodes a call to {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V1} into a synthetic {@link TransactionBody}.
+     *
+     * @param attempt the attempt
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeTokenUpdateExpiryV1(@NonNull final HtsCallAttempt attempt) {
+        final var call = UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V1.decodeCall(
+                attempt.input().toArrayUnsafe());
+        return decodeTokenUpdateExpiry(call, attempt.addressIdConverter());
+    }
+
+    /**
+     * Decodes a call to {@link UpdateExpiryTranslator#UPDATE_TOKEN_EXPIRY_INFO_V2} into a synthetic {@link TransactionBody}.
+     *
+     * @param attempt the attempt
+     * @return the synthetic transaction body
+     */
+    public TransactionBody decodeTokenUpdateExpiryV2(@NonNull final HtsCallAttempt attempt) {
+        final var call = UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V2.decodeCall(
+                attempt.input().toArrayUnsafe());
+        return decodeTokenUpdateExpiry(call, attempt.addressIdConverter());
+    }
+
     private TransactionBody decodeTokenUpdate(
             @NonNull final Tuple call, @NonNull final AddressIdConverter addressIdConverter) {
-        final var tokenId = ConversionUtils.asTokenId(call.get(TOKEN_ID));
+        final var tokenId = ConversionUtils.asTokenId(call.get(TOKEN_ADDRESS));
         final var hederaToken = (Tuple) call.get(HEDERA_TOKEN);
 
         final var tokenName = (String) hederaToken.get(0);
@@ -140,7 +166,7 @@ public class UpdateDecoder {
         final var call = UpdateKeysTranslator.TOKEN_UPDATE_KEYS_FUNCTION.decodeCall(
                 attempt.input().toArrayUnsafe());
 
-        final var tokenId = ConversionUtils.asTokenId(call.get(TOKEN_ID));
+        final var tokenId = ConversionUtils.asTokenId(call.get(TOKEN_ADDRESS));
         final var tokenKeys = decodeTokenKeys(call.get(TOKEN_KEYS), attempt.addressIdConverter());
 
         // Build the transaction body
@@ -178,6 +204,30 @@ public class UpdateDecoder {
         });
 
         return TransactionBody.newBuilder().tokenUpdate(builder).build();
+    }
+
+    private TransactionBody decodeTokenUpdateExpiry(
+            @NonNull final Tuple call, @NonNull final AddressIdConverter addressIdConverter) {
+        final var tokenId = (Address) call.get(TOKEN_ADDRESS);
+        final var expiryTuple = (Tuple) call.get(EXPIRY);
+        final var txnBodyBuilder = TokenUpdateTransactionBody.newBuilder();
+
+        txnBodyBuilder.token(ConversionUtils.asTokenId(tokenId));
+        final var tokenExpiry = decodeTokenExpiry(expiryTuple, addressIdConverter);
+
+        if (tokenExpiry.second() != 0) {
+            txnBodyBuilder.expiry(
+                    Timestamp.newBuilder().seconds(tokenExpiry.second()).build());
+        }
+        if (tokenExpiry.autoRenewAccount() != null) {
+            txnBodyBuilder.autoRenewAccount(tokenExpiry.autoRenewAccount());
+        }
+        if (tokenExpiry.autoRenewPeriod() != null
+                && tokenExpiry.autoRenewPeriod().seconds() != 0) {
+            txnBodyBuilder.autoRenewPeriod(tokenExpiry.autoRenewPeriod());
+        }
+
+        return TransactionBody.newBuilder().tokenUpdate(txnBodyBuilder).build();
     }
 
     private static List<TokenKeyWrapper> decodeTokenKeys(

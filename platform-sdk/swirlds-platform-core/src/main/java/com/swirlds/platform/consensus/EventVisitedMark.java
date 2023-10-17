@@ -24,11 +24,13 @@ import com.swirlds.platform.internal.EventImpl;
  * for each search.
  */
 public class EventVisitedMark {
+    /** the first mark used by consensus */
+    private static final int FIRST_MARK = 1;
     /**
      * an event with this number is "marked", all others are "unmarked". Used by the
      * ValidAncestorsIterator
      */
-    private int currMark = ConsensusConstants.FIRST_MARK;
+    private int currMark = FIRST_MARK;
 
     /** Called when a new search is starting to use a new mark value */
     public void nextMark() {
