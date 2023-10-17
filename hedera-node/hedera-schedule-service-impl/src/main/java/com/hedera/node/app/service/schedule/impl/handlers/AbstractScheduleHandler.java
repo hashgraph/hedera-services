@@ -40,7 +40,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -363,7 +363,7 @@ abstract class AbstractScheduleHandler {
          */
         @Override
         public Set<Key> apply(final Key key) {
-            final Set<Key> remainingUnverifiedKeys = new HashSet<>();
+            final Set<Key> remainingUnverifiedKeys = new LinkedHashSet<>();
             final var assistant = new ScheduleVerificationAssistant(signatories, remainingUnverifiedKeys);
             final SignatureVerification isVerified = context.verificationFor(key, assistant);
             // unverified primitive keys only count if the top-level key failed verification.

@@ -16,9 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
-public record HederaEvmContext(long gasPrice, boolean staticCall, HederaEvmBlocks blocks) {
+public record HederaEvmContext(long gasPrice, boolean staticCall, HederaEvmBlocks blocks, TinybarValues tinybarValues) {
     public BlockValues blockValuesOf(final long gasLimit) {
         return blocks.blockValuesOf(gasLimit);
     }

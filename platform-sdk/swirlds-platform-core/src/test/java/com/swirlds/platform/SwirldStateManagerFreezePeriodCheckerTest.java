@@ -18,32 +18,33 @@ package com.swirlds.platform;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.SwirldStateManagerImpl;
+import com.swirlds.platform.state.SwirldStateManagerUtils;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class SwirldStateManagerFreezePeriodCheckerTest {
-    private final State mockState = mock(State.class);
-    private final DualStateImpl mockDualState = mock(DualStateImpl.class);
-    private final Instant consensusTime = Instant.now();
 
     @Test
     void isInFreezePeriodTest() {
-        final SwirldStateManager swirldStateManager = spy(SwirldStateManagerImpl.class);
-        doReturn(mockState).when(swirldStateManager).getConsensusState();
+        final State mockState = mock(State.class);
+
+        final DualStateImpl mockDualState = mock(DualStateImpl.class);
+        final Instant consensusTime = Instant.now();
+
+        final AddressBook addressBook = mock(AddressBook.class);
+        when(addressBook.iterator()).thenReturn(Collections.emptyIterator());
 
         when(mockState.getPlatformDualState()).thenReturn(null);
         assertFalse(
-                swirldStateManager.isInFreezePeriod(Instant.now()),
+                SwirldStateManagerUtils.isInFreezePeriod(Instant.now(), mockState),
                 "when DualState is null, any Instant should not be in freezePeriod");
 
         when(mockState.getPlatformDualState()).thenReturn(mockDualState);
@@ -51,7 +52,7 @@ class SwirldStateManagerFreezePeriodCheckerTest {
             when(mockDualState.isInFreezePeriod(consensusTime)).thenReturn(isInFreezeTime);
             assertEquals(
                     isInFreezeTime,
-                    swirldStateManager.isInFreezePeriod(consensusTime),
+                    SwirldStateManagerUtils.isInFreezePeriod(consensusTime, mockState),
                     "swirldStateManager#isInFreezePeriod() should return the same result "
                             + "as current consensus DualState#isInFreezePeriod");
         }

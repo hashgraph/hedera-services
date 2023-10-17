@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
+import static com.swirlds.platform.state.iss.ConsensusHashManager.DO_NOT_IGNORE_ROUNDS;
 import static com.swirlds.platform.test.DispatchBuilderUtils.getDefaultDispatchConfiguration;
 import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateCatastrophicNodeHashes;
 import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateNodeHashes;
@@ -34,10 +35,11 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
@@ -47,7 +49,7 @@ import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -56,7 +58,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -65,15 +66,7 @@ class ConsensusHashManagerTests {
     /** the default epoch hash to use */
     private static final Hash DEFAULT_EPOCH_HASH = null;
 
-    private StateConfig stateConfig;
-    private ConsensusConfig consensusConfig;
-
-    @BeforeEach
-    void beforeEach() {
-        final TestConfigBuilder configBuilder = new TestConfigBuilder();
-        stateConfig = configBuilder.getOrCreateConfig().getConfigData(StateConfig.class);
-        consensusConfig = configBuilder.getOrCreateConfig().getConfigData(ConsensusConfig.class);
-    }
+    private static final SoftwareVersion DEFAULT_SOFTWARE_VERSION = null;
 
     @Test
     @DisplayName("Valid Signatures After Hash Test")
@@ -86,9 +79,18 @@ class ConsensusHashManagerTests {
                 .setWeightStandardDeviation(50)
                 .build();
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
-                Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig, DEFAULT_EPOCH_HASH);
+                platformContext,
+                Time.getCurrent(),
+                dispatchBuilder,
+                addressBook,
+                DEFAULT_EPOCH_HASH,
+                DEFAULT_SOFTWARE_VERSION,
+                DO_NOT_IGNORE_ROUNDS);
 
         final AtomicBoolean fail = new AtomicBoolean(false);
         dispatchBuilder.registerObserver(this, SelfIssTrigger.class, (a, b, c) -> fail.set(true));
@@ -109,7 +111,9 @@ class ConsensusHashManagerTests {
 
             for (final Address address : addressBook) {
                 manager.handlePostconsensusSignatureTransaction(
-                        address.getNodeId(), new StateSignatureTransaction(round, mock(Signature.class), roundHash));
+                        address.getNodeId(),
+                        new StateSignatureTransaction(round, mock(Signature.class), roundHash),
+                        null);
             }
         }
 
@@ -127,8 +131,14 @@ class ConsensusHashManagerTests {
                 .setWeightStandardDeviation(50)
                 .build();
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final NodeId selfId = addressBook.getNodeId(0);
-        final int roundsNonAncient = consensusConfig.roundsNonAncient();
+        final int roundsNonAncient = platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
 
         // Build a roadmap for this test. Generate the hashes that will be sent to the manager, and determine
         // the expected result of adding these hashes to the manager.
@@ -187,7 +197,13 @@ class ConsensusHashManagerTests {
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
-                Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig, DEFAULT_EPOCH_HASH);
+                platformContext,
+                Time.getCurrent(),
+                dispatchBuilder,
+                addressBook,
+                DEFAULT_EPOCH_HASH,
+                DEFAULT_SOFTWARE_VERSION,
+                DO_NOT_IGNORE_ROUNDS);
 
         final AtomicBoolean fail = new AtomicBoolean(false);
         final AtomicInteger issCount = new AtomicInteger(0);
@@ -271,7 +287,8 @@ class ConsensusHashManagerTests {
             manager.handlePostconsensusSignatureTransaction(
                     nodeId,
                     new StateSignatureTransaction(
-                            nodeHashInfo.round(), mock(Signature.class), nodeHashInfo.nodeStateHash()));
+                            nodeHashInfo.round(), mock(Signature.class), nodeHashInfo.nodeStateHash()),
+                    null);
         }
 
         // Shifting after completion should have no side effects
@@ -320,7 +337,13 @@ class ConsensusHashManagerTests {
     void earlyAddTest() {
         final Random random = getRandomPrintSeed();
 
-        final int roundsNonAncient = consensusConfig.roundsNonAncient();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final int roundsNonAncient = platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(100)
                 .setAverageWeight(100)
@@ -330,7 +353,13 @@ class ConsensusHashManagerTests {
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
-                Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig, DEFAULT_EPOCH_HASH);
+                platformContext,
+                Time.getCurrent(),
+                dispatchBuilder,
+                addressBook,
+                DEFAULT_EPOCH_HASH,
+                DEFAULT_SOFTWARE_VERSION,
+                DO_NOT_IGNORE_ROUNDS);
 
         dispatchBuilder.registerObserver(
                 this, CatastrophicIssTrigger.class, (a, b) -> fail("did not expect catastrophic ISS"));
@@ -360,7 +389,8 @@ class ConsensusHashManagerTests {
             }
             manager.handlePostconsensusSignatureTransaction(
                     info.nodeId(),
-                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()));
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
+                    null);
         }
 
         assertEquals(0, issCount.get(), "all data should have been ignored");
@@ -376,7 +406,8 @@ class ConsensusHashManagerTests {
             }
             manager.handlePostconsensusSignatureTransaction(
                     info.nodeId(),
-                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()));
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
+                    null);
         }
 
         assertEquals(1, issCount.get(), "data should not have been ignored");
@@ -387,7 +418,13 @@ class ConsensusHashManagerTests {
     void lateAddTest() {
         final Random random = getRandomPrintSeed();
 
-        final int roundsNonAncient = consensusConfig.roundsNonAncient();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final int roundsNonAncient = platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(100)
                 .setAverageWeight(100)
@@ -397,7 +434,13 @@ class ConsensusHashManagerTests {
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
-                Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig, DEFAULT_EPOCH_HASH);
+                platformContext,
+                Time.getCurrent(),
+                dispatchBuilder,
+                addressBook,
+                DEFAULT_EPOCH_HASH,
+                DEFAULT_SOFTWARE_VERSION,
+                DO_NOT_IGNORE_ROUNDS);
 
         dispatchBuilder.registerObserver(
                 this, CatastrophicIssTrigger.class, (a, b) -> fail("did not expect catastrophic ISS"));
@@ -427,7 +470,8 @@ class ConsensusHashManagerTests {
             }
             manager.handlePostconsensusSignatureTransaction(
                     info.nodeId(),
-                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()));
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
+                    null);
         }
 
         assertEquals(0, issCount.get(), "all data should have been ignored");
@@ -438,7 +482,13 @@ class ConsensusHashManagerTests {
     void shiftBeforeCompleteTest() {
         final Random random = getRandomPrintSeed();
 
-        final int roundsNonAncient = consensusConfig.roundsNonAncient();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final int roundsNonAncient = platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(100)
                 .setAverageWeight(100)
@@ -448,7 +498,13 @@ class ConsensusHashManagerTests {
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
-                Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig, DEFAULT_EPOCH_HASH);
+                platformContext,
+                Time.getCurrent(),
+                dispatchBuilder,
+                addressBook,
+                DEFAULT_EPOCH_HASH,
+                DEFAULT_SOFTWARE_VERSION,
+                DO_NOT_IGNORE_ROUNDS);
 
         final AtomicInteger issCount = new AtomicInteger();
         dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());
@@ -485,7 +541,8 @@ class ConsensusHashManagerTests {
 
             manager.handlePostconsensusSignatureTransaction(
                     info.nodeId(),
-                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()));
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
+                    null);
         }
 
         // Shift the window even though we have not added enough data for a decision
@@ -529,7 +586,13 @@ class ConsensusHashManagerTests {
     void catastrophicShiftBeforeCompleteTest() {
         final Random random = getRandomPrintSeed();
 
-        final int roundsNonAncient = consensusConfig.roundsNonAncient();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final int roundsNonAncient = platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(100)
                 .setAverageWeight(100)
@@ -539,7 +602,13 @@ class ConsensusHashManagerTests {
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
-                Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig, DEFAULT_EPOCH_HASH);
+                platformContext,
+                Time.getCurrent(),
+                dispatchBuilder,
+                addressBook,
+                DEFAULT_EPOCH_HASH,
+                DEFAULT_SOFTWARE_VERSION,
+                DO_NOT_IGNORE_ROUNDS);
 
         final AtomicInteger issCount = new AtomicInteger();
         dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());
@@ -571,7 +640,8 @@ class ConsensusHashManagerTests {
 
             manager.handlePostconsensusSignatureTransaction(
                     info.nodeId(),
-                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()));
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
+                    null);
 
             // Stop once we have added >2/3. We should not have decided yet, but will
             // have gathered enough to declare a catastrophic ISS
@@ -593,7 +663,13 @@ class ConsensusHashManagerTests {
     void bigShiftTest() {
         final Random random = getRandomPrintSeed();
 
-        final int roundsNonAncient = consensusConfig.roundsNonAncient();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final int roundsNonAncient = platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(100)
                 .setAverageWeight(100)
@@ -603,7 +679,13 @@ class ConsensusHashManagerTests {
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
-                Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig, DEFAULT_EPOCH_HASH);
+                platformContext,
+                Time.getCurrent(),
+                dispatchBuilder,
+                addressBook,
+                DEFAULT_EPOCH_HASH,
+                DEFAULT_SOFTWARE_VERSION,
+                DO_NOT_IGNORE_ROUNDS);
 
         final AtomicInteger issCount = new AtomicInteger();
         dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());
@@ -635,7 +717,8 @@ class ConsensusHashManagerTests {
 
             manager.handlePostconsensusSignatureTransaction(
                     info.nodeId(),
-                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()));
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()),
+                    null);
 
             // Stop once we have added >2/3. We should not have decided yet, but will
             // have gathered enough to declare a catastrophic ISS
@@ -649,5 +732,65 @@ class ConsensusHashManagerTests {
         manager.overridingStateObserver(roundsNonAncient + 100L, randomHash(random));
 
         assertEquals(0, issCount.get(), "there wasn't enough data submitted to observe the ISS");
+    }
+
+    @Test
+    @DisplayName("Ignored Round Test")
+    void ignoredRoundTest() {
+        final Random random = getRandomPrintSeed();
+
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setSize(100)
+                .setAverageWeight(100)
+                .setWeightStandardDeviation(50)
+                .build();
+
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
+        final ConsensusHashManager manager = new ConsensusHashManager(
+                platformContext,
+                Time.getCurrent(),
+                dispatchBuilder,
+                addressBook,
+                DEFAULT_EPOCH_HASH,
+                DEFAULT_SOFTWARE_VERSION,
+                1);
+
+        final AtomicBoolean fail = new AtomicBoolean(false);
+        dispatchBuilder.registerObserver(this, SelfIssTrigger.class, (a, b, c) -> fail.set(true));
+        dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> fail.set(true));
+
+        dispatchBuilder.start();
+
+        final int rounds = 1_000;
+        for (long round = 1; round <= rounds; round++) {
+            final Hash roundHash = randomHash(random);
+
+            if (round == 1) {
+                manager.overridingStateObserver(round, roundHash);
+            } else {
+                manager.roundCompleted(round);
+                manager.stateHashedObserver(round, roundHash);
+            }
+
+            for (final Address address : addressBook) {
+                if (round == 1) {
+                    // Intentionally send bad hashes in the first round. We are configured to ignore this round.
+                    manager.handlePostconsensusSignatureTransaction(
+                            address.getNodeId(),
+                            new StateSignatureTransaction(round, mock(Signature.class), randomHash(random)),
+                            null);
+                } else {
+                    manager.handlePostconsensusSignatureTransaction(
+                            address.getNodeId(),
+                            new StateSignatureTransaction(round, mock(Signature.class), roundHash),
+                            null);
+                }
+            }
+        }
+
+        assertFalse(fail.get(), "failure condition triggered");
     }
 }

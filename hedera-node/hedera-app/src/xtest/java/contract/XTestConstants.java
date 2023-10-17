@@ -27,18 +27,14 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.hapi.node.transaction.ExchangeRate;
-import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.time.Instant;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.hyperledger.besu.datatypes.Address;
@@ -47,22 +43,7 @@ import org.hyperledger.besu.datatypes.Address;
  * Common constants used in "x-test" classes.
  */
 class XTestConstants {
-    /**
-     * The exchange rate long used in dev environments to run HAPI spec; expected to be in effect for
-     * some x-tests to pass.
-     */
-    static final ExchangeRate TRADITIONAL_HAPI_SPEC_RATE = ExchangeRate.newBuilder()
-            .hbarEquiv(1)
-            .centEquiv(12)
-            .expirationTime(TimestampSeconds.newBuilder()
-                    .seconds(Instant.MAX.getEpochSecond())
-                    .build())
-            .build();
 
-    static final ExchangeRateSet SET_OF_TRADITIONAL_RATES = ExchangeRateSet.newBuilder()
-            .currentRate(TRADITIONAL_HAPI_SPEC_RATE)
-            .nextRate(TRADITIONAL_HAPI_SPEC_RATE)
-            .build();
     static final AccountID MISC_PAYER_ID =
             AccountID.newBuilder().accountNum(950L).build();
 
@@ -85,6 +66,8 @@ class XTestConstants {
     static final Address SENDER_BESU_ADDRESS = pbjToBesuAddress(SENDER_ADDRESS);
     static final AccountID RECEIVER_ID =
             AccountID.newBuilder().accountNum(987654321L).build();
+    static final AccountID INVALID_ID =
+            AccountID.newBuilder().accountNum(Long.MAX_VALUE).build();
     static final com.esaulpaugh.headlong.abi.Address RECEIVER_HEADLONG_ADDRESS =
             asHeadlongAddress(asEvmAddress(RECEIVER_ID.accountNumOrThrow()));
     static final Address RECEIVER_BESU_ADDRESS =
@@ -109,6 +92,8 @@ class XTestConstants {
     static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
     static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
             asHeadlongAddress(OWNER_ADDRESS.toByteArray());
+    static final com.esaulpaugh.headlong.abi.Address INVALID_ACCOUNT_ADDRESS =
+            asHeadlongAddress(asEvmAddress(INVALID_ID.accountNumOrThrow()));
     static final Key AN_ED25519_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
             .build();
@@ -148,5 +133,9 @@ class XTestConstants {
 
     public static Consumer<org.apache.tuweni.bytes.Bytes> assertSuccess() {
         return output -> assertEquals(SUCCESS_AS_BYTES, output);
+    }
+
+    public static Consumer<org.apache.tuweni.bytes.Bytes> assertSuccess(String orElseMessage) {
+        return output -> assertEquals(SUCCESS_AS_BYTES, output, orElseMessage);
     }
 }

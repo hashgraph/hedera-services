@@ -36,7 +36,7 @@ public class SignedStateUtils {
         SwirldState state = new DummySwirldState();
         State root = new State();
         root.setSwirldState(state);
-        root.setPlatformState(randomPlatformState(random, false));
+        root.setPlatformState(randomPlatformState(random));
         boolean shouldSaveToDisk = random.nextBoolean();
         SignedState signedState =
                 new SignedState(TestPlatformContextBuilder.create().build(), root, "test", shouldSaveToDisk);

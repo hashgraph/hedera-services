@@ -19,11 +19,13 @@ package com.swirlds.platform.test.consensus.framework;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.platform.Consensus;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.consensus.ConsensusUtils;
 import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.Random;
 
 /** A type which is responsible for managing a node in a consensus test */
@@ -62,17 +64,11 @@ public class ConsensusTestNode {
     public void restart() {
         // clear all generators
         eventEmitter.reset();
-
-        //
-        // Commented out until the consensus PR merges
-        // Since restart/reconnect works differently with snapshots, these tests are not compatible with
-        // the current implementation
-        //
-        //        final ConsensusSnapshot snapshot = Objects.requireNonNull(
-        //                        getOutput().getConsensusRounds().peekLast())
-        //                .getSnapshot();
+        final ConsensusSnapshot snapshot = Objects.requireNonNull(
+                        getOutput().getConsensusRounds().peekLast())
+                .getSnapshot();
         intake.reset();
-        //        intake.loadSnapshot(snapshot);
+        intake.loadSnapshot(snapshot);
     }
 
     /**
@@ -88,14 +84,9 @@ public class ConsensusTestNode {
 
         final ConsensusTestNode consensusTestNode = new ConsensusTestNode(
                 newEmitter, new TestIntake(newEmitter.getGraphGenerator().getAddressBook()));
-        //
-        // Commented out until the consensus PR merges
-        // Since restart/reconnect works differently with snapshots, these tests are not compatible with
-        // the current implementation
-        //
-        //        consensusTestNode.intake.loadSnapshot(
-        //                Objects.requireNonNull(getOutput().getConsensusRounds().peekLast())
-        //                        .getSnapshot());
+        consensusTestNode.intake.loadSnapshot(
+                Objects.requireNonNull(getOutput().getConsensusRounds().peekLast())
+                        .getSnapshot());
 
         assertTrue(consensusTestNode.intake.getConsensusRounds().isEmpty(), "we should not have reached consensus yet");
 

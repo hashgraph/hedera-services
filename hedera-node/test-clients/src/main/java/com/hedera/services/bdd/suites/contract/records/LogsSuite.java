@@ -28,6 +28,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -63,6 +64,7 @@ public class LogsSuite extends HapiSuite {
         return List.of(log0Works(), log1Works(), log2Works(), log3Works(), log4Works());
     }
 
+    @HapiTest
     private HapiSpec log0Works() {
         return defaultHapiSpec("log0Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -76,6 +78,7 @@ public class LogsSuite extends HapiSuite {
                                         .gasUsed(22_285))));
     }
 
+    @HapiTest
     private HapiSpec log1Works() {
         return defaultHapiSpec("log1Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -92,6 +95,7 @@ public class LogsSuite extends HapiSuite {
                                         .gasUsed(22_583))));
     }
 
+    @HapiTest
     private HapiSpec log2Works() {
         return defaultHapiSpec("log2Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -110,6 +114,7 @@ public class LogsSuite extends HapiSuite {
                                         .gasUsed(23_112))));
     }
 
+    @HapiTest
     private HapiSpec log3Works() {
         return defaultHapiSpec("log3Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -129,6 +134,7 @@ public class LogsSuite extends HapiSuite {
                                         .gasUsed(23_638))));
     }
 
+    @HapiTest
     private HapiSpec log4Works() {
         return defaultHapiSpec("log4Works")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))

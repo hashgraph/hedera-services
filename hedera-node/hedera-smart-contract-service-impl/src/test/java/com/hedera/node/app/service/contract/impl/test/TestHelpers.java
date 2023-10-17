@@ -17,8 +17,10 @@
 package com.hedera.node.app.service.contract.impl.test;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
@@ -28,6 +30,7 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERA
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
@@ -59,8 +62,8 @@ import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
-import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -73,6 +76,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -205,15 +209,6 @@ public class TestHelpers {
             .tokenType(TokenType.FUNGIBLE_COMMON)
             .build();
 
-    public static final Token UNREASONABLY_DIVISIBLE_TOKEN = Token.newBuilder()
-            .tokenId(FUNGIBLE_TOKEN_ID)
-            .name("Odd")
-            .symbol("ODD")
-            .decimals(Integer.MAX_VALUE)
-            .totalSupply(666666L)
-            .tokenType(TokenType.FUNGIBLE_COMMON)
-            .build();
-
     public static final CustomFee FIXED_HBAR_FEES = CustomFee.newBuilder()
             .fixedFee(FixedFee.newBuilder().amount(2).build())
             .feeCollectorAccountId(SENDER_ID)
@@ -300,6 +295,25 @@ public class TestHelpers {
             .feeScheduleKey(FEE_SCHEDULE_KEY)
             .pauseKey(PAUSE_KEY)
             .build();
+
+    public static final List<Tuple> EXPECTED_FIXED_CUSTOM_FEES = List.of(
+            Tuple.of(2L, headlongAddressOf(ZERO_TOKEN_ID), true, false, headlongAddressOf(SENDER_ID)),
+            Tuple.of(3L, headlongAddressOf(FUNGIBLE_TOKEN_ID), false, false, headlongAddressOf(SENDER_ID)));
+    public static final List<Tuple> EXPECTED_FRACTIONAL_CUSTOM_FEES =
+            List.of(Tuple.of(1L, 100L, 2L, 4L, true, headlongAddressOf(SENDER_ID)));
+    public static final List<Tuple> EXPECTED_ROYALTY_CUSTOM_FEES = List.of(
+            Tuple.of(2L, 50L, 0L, headlongAddressOf(ZERO_TOKEN_ID), true, headlongAddressOf(SENDER_ID)),
+            Tuple.of(2L, 50L, 5L, headlongAddressOf(FUNGIBLE_TOKEN_ID), false, headlongAddressOf(SENDER_ID)));
+
+    public static final Token UNREASONABLY_DIVISIBLE_TOKEN = Token.newBuilder()
+            .tokenId(FUNGIBLE_TOKEN_ID)
+            .name("Odd")
+            .symbol("ODD")
+            .decimals(Integer.MAX_VALUE)
+            .totalSupply(666666L)
+            .tokenType(TokenType.FUNGIBLE_COMMON)
+            .build();
+
     public static final long NFT_SERIAL_NO = 666L;
 
     public static final long[] NFT_SERIAL_NUMBERS = {41L, 42L, 43L};
@@ -633,13 +647,14 @@ public class TestHelpers {
                 ContractCreateTransactionBody.DEFAULT);
     }
 
-    public static HederaEvmContext wellKnownContextWith(@NonNull final HederaEvmBlocks blocks) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, false, blocks);
+    public static HederaEvmContext wellKnownContextWith(
+            @NonNull final HederaEvmBlocks blocks, TinybarValues tinybarValues) {
+        return new HederaEvmContext(NETWORK_GAS_PRICE, false, blocks, tinybarValues);
     }
 
     public static HederaEvmContext wellKnownContextWith(
-            @NonNull final HederaEvmBlocks blocks, final boolean staticCall) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, staticCall, blocks);
+            @NonNull final HederaEvmBlocks blocks, final boolean staticCall, TinybarValues tinybarValues) {
+        return new HederaEvmContext(NETWORK_GAS_PRICE, staticCall, blocks, tinybarValues);
     }
 
     public static void assertFailsWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {

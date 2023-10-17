@@ -955,4 +955,13 @@ public class SingleTransactionRecordBuilderImpl
     public AccountID getDeletedAccountBeneficiaryFor(@NonNull final AccountID deletedAccountID) {
         return deletedAccountBeneficiaries.get(deletedAccountID);
     }
+
+    /**
+     * Returns the in-progress {@link ContractFunctionResult}.
+     *
+     * @return the in-progress {@link ContractFunctionResult}
+     */
+    public ContractFunctionResult contractFunctionResult() {
+        return contractFunctionResult;
+    }
 }

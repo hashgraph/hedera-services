@@ -82,4 +82,9 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
         final ScheduleList inStateValue = schedulesByExpirationSecond.get(new ProtoLong(expirationTime));
         return inStateValue != null ? inStateValue.schedules() : null;
     }
+
+    @Override
+    public long numSchedulesInState() {
+        return schedulesById.size();
+    }
 }
