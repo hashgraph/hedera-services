@@ -17,6 +17,7 @@
 package com.hedera.node.config.data;
 
 import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
+import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
 import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
@@ -25,5 +26,5 @@ import com.swirlds.config.api.ConfigProperty;
 public record FeesConfig(
         @ConfigProperty(defaultValue = "60") @NetworkProperty int minCongestionPeriod,
         @ConfigProperty(defaultValue = "90,10x,95,25x,99,100x") CongestionMultipliers percentCongestionMultipliers,
-        // @ConfigProperty(defaultValue = "DEFAULT(0,1:1)")  EntityScaleFactors percentUtilizationScaleFactors,
+        @ConfigProperty(defaultValue = "DEFAULT(0,1:1)") EntityScaleFactors percentUtilizationScaleFactors,
         @ConfigProperty(defaultValue = "380") @NetworkProperty int tokenTransferUsageMultiplier) {}

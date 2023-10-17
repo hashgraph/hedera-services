@@ -69,6 +69,11 @@ public class MonoMultiplierSources {
         this.delegate.updateMultiplier(accessor, consensusTime);
     }
 
+    public long maxCurrentMultiplier() {
+        // TODO: final var accessor = ;
+        return this.delegate.maxCurrentMultiplier(null);
+    }
+
     @NonNull
     public Instant[] genericCongestionStarts() {
         return delegate.genericCongestionStarts();
