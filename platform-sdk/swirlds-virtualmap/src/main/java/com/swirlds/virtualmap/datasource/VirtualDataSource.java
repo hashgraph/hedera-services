@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.datasource;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
@@ -107,6 +108,30 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
      * 		If there was a problem reading the leaf record
      */
     VirtualLeafRecord<K, V> loadLeafRecord(final long path) throws IOException;
+
+    /**
+     * Loads the record for a leaf node by path and writes it to the provided output stream,
+     * if found. If the record is not found, this method does not write anything and returns false.
+     *
+     * <p>Default implementation is to load a record using {@link #loadLeafRecord(long)} method
+     * and then serialize it to the output stream. Some implementation may be more efficient and
+     * skip deserializing the record and then re-serializing it to the stream, but just writing
+     * serialized bytes directly. In this case, serialized bytes must be binary compatible with
+     * virtual leaf record self-serialization format.
+     *
+     * @param path virtual leaf node path
+     * @param out output stream to write the record to
+     * @return {@code true} if the record was found and written, {@code false} otherwise
+     * @throws IOException if an I/O error occurred
+     */
+    default boolean loadAndWriteLeafRecord(final long path, final SerializableDataOutputStream out) throws IOException {
+        final VirtualLeafRecord<K, V> rec = loadLeafRecord(path);
+        if (rec == null) {
+            return false;
+        }
+        out.writeSerializable(rec, false);
+        return true;
+    }
 
     /**
      * Find the path of the given key

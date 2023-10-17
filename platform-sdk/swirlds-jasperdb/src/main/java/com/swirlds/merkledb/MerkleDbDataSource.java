@@ -29,6 +29,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -696,6 +697,16 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
         statistics.countLeafReads();
         return pathToKeyValue.get(path);
+    }
+
+    @Override
+    public boolean loadAndWriteLeafRecord(long path, SerializableDataOutputStream out) throws IOException {
+        final KeyRange leafPathRange = validLeafPathRange;
+        if (!leafPathRange.withinRange(path)) {
+            throw new IllegalArgumentException("path (" + path + ") is not valid; must be in range " + leafPathRange);
+        }
+        statistics.countLeafReads();
+        return pathToKeyValue.getAndWrite(path, out);
     }
 
     /**

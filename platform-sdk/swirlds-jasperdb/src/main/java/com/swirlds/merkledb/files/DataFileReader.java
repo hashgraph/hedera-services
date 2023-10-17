@@ -176,16 +176,10 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      *
      * @param dataLocation The file index combined with the offset for the starting block of the
      *     data in the file
-     * @return Deserialized data item, or {@code null} if deserialization is not requested
+     * @return Deserialized data item
      * @throws IOException If there was a problem reading from data file
      * @throws ClosedChannelException if the data file was closed
      */
-    public D readDataItem(final long dataLocation) throws IOException {
-        long serializationVersion = metadata.getSerializationVersion();
-        final ByteBuffer data = readDataItemBytes(dataLocation);
-        return dataItemSerializer.deserialize(data, serializationVersion);
-    }
-
     public ByteBuffer readDataItemBytes(final long dataLocation) throws IOException {
         final long serializationVersion = metadata.getSerializationVersion();
         final long byteOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
@@ -199,6 +193,12 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
             bytesToRead = dataItemSerializer.getSerializedSizeForVersion(serializationVersion);
         }
         return read(byteOffset, bytesToRead);
+    }
+
+    // For testing purposes
+    D readDataItem(final long dataLocation) throws IOException {
+        final ByteBuffer dataItemBytes = readDataItemBytes(dataLocation);
+        return dataItemSerializer.deserialize(dataItemBytes, dataItemSerializer.getCurrentDataVersion());
     }
 
     /**

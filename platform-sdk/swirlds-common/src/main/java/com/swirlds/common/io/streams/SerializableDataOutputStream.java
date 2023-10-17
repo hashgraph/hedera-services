@@ -104,6 +104,22 @@ public class SerializableDataOutputStream extends AugmentedDataOutputStream {
     }
 
     /**
+     * Writes a self serializable object to a stream. The object is provided as a byte array, assuming
+     * it has been serialized to the array previously. No class ID is written.
+     *
+     * @param serializedBytes
+     * 		the serialized object bytes
+     * @param version
+     * 		the serializable object class version
+     * @throws IOException
+     * 		thrown if any IO problems occur
+     */
+    public void writeSerializableBytes(final byte[] serializedBytes, final int version) throws IOException {
+        writeInt(version);
+        write(serializedBytes);
+    }
+
+    /**
      * Writes a list of objects returned by an {@link Iterator} when the size in known ahead of time. If the class is
      * known at the time of deserialization, the {@code writeClassId} param can be set to false. If the class might be
      * unknown when deserializing, then the {@code writeClassId} must be written.

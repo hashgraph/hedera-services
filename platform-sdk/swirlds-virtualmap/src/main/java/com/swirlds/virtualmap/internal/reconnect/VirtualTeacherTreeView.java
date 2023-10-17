@@ -30,7 +30,6 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
@@ -207,9 +206,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
     @Override
     public void serializeLeaf(final SerializableDataOutputStream out, final Long leaf) throws IOException {
         checkValidLeaf(leaf, reconnectState);
-        final VirtualLeafRecord<K, V> leafRecord = records.findLeafRecord(leaf, false);
-        assert leafRecord != null : "Unexpected null leaf record at path=" + leaf;
-        out.writeSerializable(leafRecord, false);
+        records.findAndWriteLeafRecord(leaf, out);
     }
 
     /**

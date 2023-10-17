@@ -26,6 +26,8 @@ import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
 import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 import static com.swirlds.merkledb.files.DataFileCommon.printDataLinkValidation;
 
+import com.swirlds.base.function.CheckedFunction;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
@@ -35,6 +37,7 @@ import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -89,6 +92,8 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      */
     private final AtomicLong maxValidKey;
 
+    private final DataItemSerializer<D> dataItemSerializer;
+
     /**
      * Construct a new MemoryIndexDiskKeyValueStore
      *
@@ -121,6 +126,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         final boolean indexIsEmpty = keyToDiskLocationIndex.size() == 0;
         // create store dir
         Files.createDirectories(storeDir);
+        this.dataItemSerializer = dataItemSerializer;
         // rebuild index as well as calling user's loadedDataCallback if needed
         final LoadedDataCallback combinedLoadedDataCallback;
         if (!indexIsEmpty && loadedDataCallback == null) {
@@ -309,6 +315,10 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         return dataFileReader;
     }
 
+    private D dataItemFromBytes(final ByteBuffer buf) throws IOException {
+        return dataItemSerializer.deserialize(buf, dataItemSerializer.getCurrentDataVersion());
+    }
+
     /**
      * Get a value by reading it from disk.
      *
@@ -317,6 +327,39 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * @throws IOException If there was a problem reading the value from file
      */
     public D get(final long key) throws IOException {
+        return getAndProcess(key, this::dataItemFromBytes);
+    }
+
+    /**
+     * Get a value by reading it from disk by the given key and write it to the provided output
+     * stream, if found. If the value is not found, nothing is written to the stream, and this
+     * method returns {@code false}.
+     *
+     * @param key The key to read value for
+     * @param out The stream to write the value to, if found
+     * @return {@code true} if the value is found and written to the stream, {@code false} otherwise
+     * @throws IOException If an I/O error occurred
+     */
+    public boolean getAndWrite(final long key, final SerializableDataOutputStream out) throws IOException {
+        final Boolean processed = getAndProcess(key, buf -> {
+            if (buf == null) {
+                return null;
+            }
+            final byte[] bytes;
+            if (buf.hasArray()) {
+                bytes = buf.array();
+            } else {
+                bytes = new byte[buf.remaining()];
+                buf.get(bytes);
+            }
+            out.writeSerializableBytes(bytes, (int) dataItemSerializer.getCurrentDataVersion());
+            return true;
+        });
+        return (processed != null) && processed;
+    }
+
+    private <T> T getAndProcess(final long key, final CheckedFunction<ByteBuffer, T, IOException> consumer)
+            throws IOException {
         // Check if out of range
         final KeyRange keyRange = fileCollection.getValidKeyRange();
         if (!keyRange.withinRange(key)) {
@@ -329,7 +372,11 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             return null;
         }
         // read from files via index lookup
-        return fileCollection.readDataItemUsingIndex(index, key);
+        final ByteBuffer item = fileCollection.readDataItemBytesUsingIndex(index, key);
+        if (item == null) {
+            return null;
+        }
+        return consumer.apply(item);
     }
 
     /**

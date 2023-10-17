@@ -21,6 +21,7 @@ import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileReader;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -48,15 +49,13 @@ public class DataFileCollectionBench extends BaseBench {
 
         final LongListOffHeap index = new LongListOffHeap();
         final BenchmarkRecord[] map = new BenchmarkRecord[verify ? maxKey : 0];
+        final BenchmarkRecordSerializer serializer = new BenchmarkRecordSerializer();
         final var store =
                 new DataFileCollection<BenchmarkRecord>(
-                        getTestDir(),
-                        "mergeBench",
-                        null,
-                        new BenchmarkRecordSerializer(),
-                        (key, dataLocation, dataValue) -> {}) {
+                        getTestDir(), "mergeBench", null, serializer, (key, dataLocation, dataValue) -> {}) {
                     BenchmarkRecord read(long dataLocation) throws IOException {
-                        return readDataItem(dataLocation);
+                        final ByteBuffer buf = readDataItemBytes(dataLocation);
+                        return serializer.deserialize(buf, serializer.getCurrentDataVersion());
                     }
                 };
         System.out.println();

@@ -20,6 +20,7 @@ import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
@@ -153,6 +154,17 @@ public class RecordAccessorImpl<K extends VirtualKey, V extends VirtualValue> im
         }
 
         return rec == VirtualNodeCache.DELETED_LEAF_RECORD ? null : rec;
+    }
+
+    @Override
+    public void findAndWriteLeafRecord(final long path, final SerializableDataOutputStream out) throws IOException {
+        final VirtualLeafRecord<K, V> rec = cache.lookupLeafByPath(path, false);
+        if (rec != null) {
+            out.writeSerializable(rec, false);
+            return;
+        }
+        final boolean written = dataSource.loadAndWriteLeafRecord(path, out);
+        assert written : "Leaf record is not found / processed " + path;
     }
 
     /**
