@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.cli;
 
 import static com.swirlds.platform.state.signed.SavedStateMetadata.NO_NODE_ID;
@@ -54,18 +70,26 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
         BootstrapUtils.setupConstructableRegistry();
 
-        final PlatformContext platformContext = new DefaultPlatformContext(configuration, new NoOpMetrics(),
-                CryptographyHolder.get());
+        final PlatformContext platformContext =
+                new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
 
         System.out.printf("Reading from %s %n", statePath.toAbsolutePath());
         final DeserializedSignedState deserializedSignedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath);
         try (final ReservedSignedState reservedSignedState = deserializedSignedState.reservedSignedState()) {
             System.out.printf("Replacing platform data %n");
-            reservedSignedState.get().getState().getPlatformState().getPlatformData().setRound(PlatformData.GENESIS_ROUND);
-            reservedSignedState.get().getState().getPlatformState().getPlatformData().setSnapshot(
-                    SyntheticSnapshot.getGenesisSnapshot()
-            );
+            reservedSignedState
+                    .get()
+                    .getState()
+                    .getPlatformState()
+                    .getPlatformData()
+                    .setRound(PlatformData.GENESIS_ROUND);
+            reservedSignedState
+                    .get()
+                    .getState()
+                    .getPlatformState()
+                    .getPlatformData()
+                    .setSnapshot(SyntheticSnapshot.getGenesisSnapshot());
             System.out.printf("Hashing state %n");
             MerkleCryptoFactory.getInstance()
                     .digestTreeAsync(reservedSignedState.get().getState())

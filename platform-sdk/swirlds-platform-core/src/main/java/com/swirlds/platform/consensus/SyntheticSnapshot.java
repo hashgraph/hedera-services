@@ -75,7 +75,7 @@ public final class SyntheticSnapshot {
     /**
      * @return the genesis snapshot
      */
-    public static @NonNull ConsensusSnapshot getGenesisSnapshot(){
+    public static @NonNull ConsensusSnapshot getGenesisSnapshot() {
         return GENESIS_SNAPSHOT;
     }
 }

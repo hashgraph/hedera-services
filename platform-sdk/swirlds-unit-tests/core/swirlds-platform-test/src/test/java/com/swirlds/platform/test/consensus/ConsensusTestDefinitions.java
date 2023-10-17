@@ -638,14 +638,14 @@ public final class ConsensusTestDefinitions {
      * Tests loading a genesis snapshot and continuing consensus from there
      */
     public static void genesisSnapshotTest(@NonNull final TestInput input) {
-        final ConsensusTestOrchestrator orchestrator = OrchestratorBuilder.builder()
-                .setTestInput(input)
-                .build();
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
         for (final ConsensusTestNode node : orchestrator.getNodes()) {
             node.getIntake().loadSnapshot(SyntheticSnapshot.getGenesisSnapshot());
         }
 
-        orchestrator.generateAllEvents()
+        orchestrator
+                .generateAllEvents()
                 .validateAndClear(Validations.standard()
                         .ratios(EventRatioValidation.standard()
                                 .setMinimumConsensusRatio(0.9 - (0.05 * input.numberOfNodes()))));
