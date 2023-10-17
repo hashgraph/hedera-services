@@ -17,14 +17,19 @@
 package com.swirlds.common.wiring.internal;
 
 import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.counters.NoOpCounter;
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * A {@link Wire} that permits parallel execution of tasks.
+ * A {@link Wire} that permits parallel execution of tasks. Similar to {@link ConcurrentWire} but with extra metering.
  */
 public class ConcurrentWire extends Wire {
+    private final ObjectCounter onRamp;
+    private final ObjectCounter offRamp;
     private final String name;
 
     // TODO write unit tests for this class
@@ -33,9 +38,14 @@ public class ConcurrentWire extends Wire {
      * Constructor.
      *
      * @param name    the name of the wire
+     * @param onRamp  an object counter that is incremented when data is added to the wire, ignored if null
+     * @param offRamp an object counter that is decremented when data is removed from the wire, ignored if null
      */
-    public ConcurrentWire(@NonNull final String name) {
+    public ConcurrentWire(
+            @NonNull final String name, @Nullable final ObjectCounter onRamp, @Nullable final ObjectCounter offRamp) {
         this.name = Objects.requireNonNull(name);
+        this.onRamp = onRamp == null ? NoOpCounter.getInstance() : onRamp;
+        this.offRamp = offRamp == null ? NoOpCounter.getInstance() : offRamp;
     }
 
     /**
@@ -52,9 +62,11 @@ public class ConcurrentWire extends Wire {
      */
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        onRamp.onRamp();
         new AbstractTask() {
             @Override
             protected boolean exec() {
+                offRamp.offRamp();
                 handler.accept(data);
                 return true;
             }
@@ -65,10 +77,13 @@ public class ConcurrentWire extends Wire {
      * {@inheritDoc}
      */
     @Override
-    protected void interruptablePut(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    protected void interruptablePut(@NonNull final Consumer<Object> handler, @NonNull final Object data)
+            throws InterruptedException {
+        onRamp.interruptableOnRamp();
         new AbstractTask() {
             @Override
             protected boolean exec() {
+                offRamp.offRamp();
                 handler.accept(data);
                 return true;
             }
@@ -80,9 +95,14 @@ public class ConcurrentWire extends Wire {
      */
     @Override
     protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        boolean accepted = onRamp.attemptOnRamp();
+        if (!accepted) {
+            return false;
+        }
         new AbstractTask() {
             @Override
             protected boolean exec() {
+                offRamp.offRamp();
                 handler.accept(data);
                 return true;
             }
@@ -95,9 +115,11 @@ public class ConcurrentWire extends Wire {
      */
     @Override
     protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        onRamp.forceOnRamp();
         new AbstractTask() {
             @Override
             protected boolean exec() {
+                offRamp.offRamp();
                 handler.accept(data);
                 return true;
             }
@@ -109,6 +131,6 @@ public class ConcurrentWire extends Wire {
      */
     @Override
     public long getUnprocessedTaskCount() {
-        return -1;
+        return onRamp.getCount();
     }
 }

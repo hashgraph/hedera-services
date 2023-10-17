@@ -16,8 +16,13 @@
 
 package com.swirlds.common.wiring.internal;
 
+import com.swirlds.common.metrics.extensions.FractionalTimer;
+import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.counters.NoOpCounter;
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -26,23 +31,18 @@ import java.util.function.Consumer;
  * A {@link Wire} that guarantees that tasks are executed sequentially in the order they are received.
  */
 public class SequentialWire extends Wire {
-    private final String name;
     private final AtomicReference<SequentialTask> lastTask;
 
-    /**
-     * Constructor.
-     *
-     * @param name the name of the wire
-     */
-    public SequentialWire(@NonNull final String name) {
-        this.name = Objects.requireNonNull(name);
-        this.lastTask = new AtomicReference<>(new SequentialTask(1));
-    }
+    private final ObjectCounter onRamp;
+    private final ObjectCounter offRamp;
+
+    private final FractionalTimer busyTimer;
+    private final String name;
 
     /**
      * A task in a sequential wire.
      */
-    private static class SequentialTask extends AbstractTask {
+    private class SequentialTask extends AbstractTask {
         private Consumer<Object> handler;
         private Object data;
         private SequentialTask nextTask;
@@ -88,16 +88,42 @@ public class SequentialWire extends Wire {
          */
         @Override
         public boolean exec() {
+            offRamp.offRamp();
+            busyTimer.activate();
             try {
                 handler.accept(data);
             } finally {
+                busyTimer.deactivate();
+
                 // Reduce the dependency count of the next task. If the next task already has its data, then this
                 // method will cause the next task to be immediately eligible for execution.
                 nextTask.send();
             }
-
             return true;
         }
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param name      the name of the wire
+     * @param onRamp    an object counter that is incremented when data is added to the wire, ignored if null
+     * @param offRamp   an object counter that is decremented when data is removed from the wire, ignored if null
+     * @param busyTimer a timer that tracks the amount of time the wire is busy, ignored if null
+     */
+    public SequentialWire(
+            @NonNull final String name,
+            @Nullable final ObjectCounter onRamp,
+            @Nullable final ObjectCounter offRamp,
+            @Nullable final FractionalTimer busyTimer) {
+
+        this.name = Objects.requireNonNull(name);
+
+        this.onRamp = onRamp == null ? NoOpCounter.getInstance() : onRamp;
+        this.offRamp = offRamp == null ? NoOpCounter.getInstance() : offRamp;
+
+        this.busyTimer = busyTimer == null ? new NoOpFractionalTimer() : busyTimer;
+        this.lastTask = new AtomicReference<>(new SequentialTask(1));
     }
 
     /**
@@ -114,6 +140,8 @@ public class SequentialWire extends Wire {
      */
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        onRamp.onRamp();
+
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
@@ -130,7 +158,10 @@ public class SequentialWire extends Wire {
      * {@inheritDoc}
      */
     @Override
-    protected void interruptablePut(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    protected void interruptablePut(@NonNull final Consumer<Object> handler, @NonNull final Object data)
+            throws InterruptedException {
+        onRamp.interruptableOnRamp();
+
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
@@ -148,6 +179,11 @@ public class SequentialWire extends Wire {
      */
     @Override
     protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        final boolean accepted = onRamp.attemptOnRamp();
+        if (!accepted) {
+            return false;
+        }
+
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
@@ -167,6 +203,8 @@ public class SequentialWire extends Wire {
      */
     @Override
     protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        onRamp.forceOnRamp();
+
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
@@ -184,6 +222,6 @@ public class SequentialWire extends Wire {
      */
     @Override
     public long getUnprocessedTaskCount() {
-        return -1;
+        return onRamp.getCount();
     }
 }

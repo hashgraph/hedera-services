@@ -57,14 +57,14 @@ public abstract class Wire {
     @NonNull
     public abstract String getName();
 
-    // TODO this currently samples the on ramp counter...
-    //  we may want to consider if this is acceptable API, and we certainly need to document this behavior better
-
     /**
      * Get the number of unprocessed tasks. Returns -1 if this wire is not monitoring the number of unprocessed tasks.
      * Wires do not track the number of unprocessed tasks by default. To enable tracking, enable
      * {@link WireMetricsBuilder#withScheduledTaskCountMetricEnabled(boolean)} or set a capacity that is not unlimited
      * via {@link WireBuilder#withScheduledTaskCapacity(long)}.
+     *
+     * <p>
+     * TODO this is wonky API, since a counter is not always enabled
      */
     public abstract long getUnprocessedTaskCount();
 
@@ -93,6 +93,18 @@ public abstract class Wire {
     public final <T> WireChannel<T> createChannel(@NonNull final Class<T> clazz) {
         return new WireChannel<>(this);
     }
+
+    //    /**
+    //     * Flush all data in the wire. Blocks until all data currently in flight has been processed.
+    //     */
+    //    public abstract void flush();
+    //
+    //    /**
+    //     * Flush all data in the wire. Blocks until all data currently in flight has been processed.
+    //     *
+    //     * @throws InterruptedException if the thread is interrupted while waiting for all data to be processed
+    //     */
+    //    public abstract void interruptableFlush() throws InterruptedException;
 
     /**
      * Add a task to the wire. May block if back pressure is enabled. Similar to

@@ -21,8 +21,6 @@ import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import com.swirlds.common.wiring.internal.ConcurrentWire;
-import com.swirlds.common.wiring.internal.MeteredConcurrentWire;
-import com.swirlds.common.wiring.internal.MeteredSequentialWire;
 import com.swirlds.common.wiring.internal.SequentialWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -176,14 +174,7 @@ public class WireBuilder {
      * @param onRamp  the on ramp counter
      * @param offRamp the off ramp counter
      */
-    private record Counters(@Nullable ObjectCounter onRamp, @Nullable ObjectCounter offRamp) {
-        /**
-         * Check if this wire has any counters that are not null.
-         */
-        public boolean hasNonNullCounters() {
-            return onRamp != null || offRamp != null;
-        }
-    }
+    private record Counters(@Nullable ObjectCounter onRamp, @Nullable ObjectCounter offRamp) {}
 
     /**
      * Figure out which counters to use for this wire (if any), constructing them if they need to be constructed.
@@ -240,21 +231,10 @@ public class WireBuilder {
         final Counters counters = buildCounters();
         final FractionalTimer busyTimer = buildBusyTimer();
 
-        final Wire wire;
         if (concurrent) {
-            if (counters.hasNonNullCounters()) {
-                wire = new MeteredConcurrentWire(name, counters.onRamp(), counters.offRamp);
-            } else {
-                wire = new ConcurrentWire(name);
-            }
+            return new ConcurrentWire(name, counters.onRamp(), counters.offRamp());
         } else {
-            if (counters.hasNonNullCounters() || busyTimer != null) {
-                wire = new MeteredSequentialWire(name, counters.onRamp(), counters.offRamp(), busyTimer);
-            } else {
-                wire = new SequentialWire(name);
-            }
+            return new SequentialWire(name, counters.onRamp(), counters.offRamp(), busyTimer);
         }
-
-        return wire;
     }
 }
