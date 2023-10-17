@@ -53,9 +53,7 @@ public interface RecordCache {
      * transactions with the same ID that also came to consensus.
      *
      * <p>The {@code childRecords} list contains a list of all child transactions of the original user transaction.
-     * Duplicate transactions never have child transactions. Please note, that while the {@code records} list is ordered
-     * by consensus order, as is the {@code childRecords} list, the {@code childRecords} list may contain transactions
-     * that come before the first user transaction record, and/or after it.
+     * Duplicate transactions never have child transactions.
      *
      * @param nodeIds The IDs of every node that submitted a transaction with the txId that came to consensus and was
      *                handled. This is an unordered set, since deterministic ordering is not required for this in-memory
