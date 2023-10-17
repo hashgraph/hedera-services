@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -26,6 +27,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent.Factory;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -86,11 +88,10 @@ public class ContractUpdateHandler implements TransactionHandler {
         // Run its in-scope transaction and get the outcome
         final var outcome = component.contextTransactionProcessor().call();
 
-        // TODO: implement ContractUpdateRecordBuilder
         // Assemble the appropriate top-level record for the result
-        //        context.recordBuilder(ContractCreateRecordBuilder.class)
-        //            .contractCreateResult(outcome.result())
-        //            .contractID(outcome.recipientIdIfCreated());
-        //        throwIfUnsuccessful(outcome.status());
+        context.recordBuilder(ContractUpdateRecordBuilder.class)
+                .contractUpdateResult(outcome.result())
+                .contractID(outcome.recipientIdIfCreated());
+        throwIfUnsuccessful(outcome.status());
     }
 }
