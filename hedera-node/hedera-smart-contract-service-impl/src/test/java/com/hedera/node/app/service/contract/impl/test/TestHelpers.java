@@ -17,8 +17,10 @@
 package com.hedera.node.app.service.contract.impl.test;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
@@ -28,14 +30,17 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERA
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -48,13 +53,17 @@ import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.FixedFee;
+import com.hedera.hapi.node.transaction.FractionalFee;
+import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
-import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -67,6 +76,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -198,6 +208,102 @@ public class TestHelpers {
             .totalSupply(666666L)
             .tokenType(TokenType.FUNGIBLE_COMMON)
             .build();
+
+    public static final CustomFee FIXED_HBAR_FEES = CustomFee.newBuilder()
+            .fixedFee(FixedFee.newBuilder().amount(2).build())
+            .feeCollectorAccountId(SENDER_ID)
+            .build();
+    public static final CustomFee FIXED_TOKEN_FEES = CustomFee.newBuilder()
+            .fixedFee(FixedFee.newBuilder()
+                    .amount(3)
+                    .denominatingTokenId(FUNGIBLE_TOKEN_ID)
+                    .build())
+            .feeCollectorAccountId(SENDER_ID)
+            .build();
+    public static final CustomFee FRACTION_FEES = CustomFee.newBuilder()
+            .fractionalFee(FractionalFee.newBuilder()
+                    .fractionalAmount(
+                            Fraction.newBuilder().numerator(1).denominator(100).build())
+                    .minimumAmount(2)
+                    .maximumAmount(4)
+                    .netOfTransfers(true)
+                    .build())
+            .feeCollectorAccountId(SENDER_ID)
+            .build();
+    public static final CustomFee ROYALTY_FEE_WITHOUT_FALLBACK = CustomFee.newBuilder()
+            .royaltyFee(RoyaltyFee.newBuilder()
+                    .exchangeValueFraction(
+                            Fraction.newBuilder().numerator(2).denominator(50).build())
+                    .build())
+            .feeCollectorAccountId(SENDER_ID)
+            .build();
+    public static final CustomFee ROYALTY_FEE_WITH_FALLBACK = CustomFee.newBuilder()
+            .royaltyFee(RoyaltyFee.newBuilder()
+                    .exchangeValueFraction(
+                            Fraction.newBuilder().numerator(2).denominator(50).build())
+                    .fallbackFee(FixedFee.newBuilder()
+                            .amount(5)
+                            .denominatingTokenId(FUNGIBLE_TOKEN_ID)
+                            .build())
+                    .build())
+            .feeCollectorAccountId(SENDER_ID)
+            .build();
+    public static final List<CustomFee> CUSTOM_FEES = List.of(
+            FIXED_HBAR_FEES, FIXED_TOKEN_FEES, FRACTION_FEES, ROYALTY_FEE_WITHOUT_FALLBACK, ROYALTY_FEE_WITH_FALLBACK);
+    public static final Key ADMIN_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
+            .build();
+    public static final Key KYC_KEY = Key.newBuilder()
+            .ecdsaSecp256k1(Bytes.fromHex("0202020202020202020202020202020202020202020202020202020202020202"))
+            .build();
+    public static final Key FREEZE_KEY =
+            Key.newBuilder().contractID(CALLED_CONTRACT_ID).build();
+    public static final Key WIPE_KEY =
+            Key.newBuilder().delegatableContractId(CHILD_CONTRACT_ID).build();
+    public static final Key SUPPLY_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0303030303030303030303030303030303030303030303030303030303030303"))
+            .build();
+    public static final Key FEE_SCHEDULE_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0404040404040404040404040404040404040404040404040404040404040404"))
+            .build();
+    public static final Key PAUSE_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0505050505050505050505050505050505050505050505050505050505050505"))
+            .build();
+    public static final Token FUNGIBLE_EVERYTHING_TOKEN = Token.newBuilder()
+            .tokenId(FUNGIBLE_TOKEN_ID)
+            .name("Fungible Everything Token")
+            .symbol("FET")
+            .memo("The memo")
+            .treasuryAccountId(SENDER_ID)
+            .decimals(6)
+            .totalSupply(7777777L)
+            .maxSupply(88888888L)
+            .supplyType(TokenSupplyType.FINITE)
+            .tokenType(TokenType.FUNGIBLE_COMMON)
+            .accountsFrozenByDefault(true)
+            .accountsKycGrantedByDefault(true)
+            .paused(true)
+            .expirationSecond(100)
+            .autoRenewAccountId(SENDER_ID)
+            .autoRenewSeconds(200)
+            .customFees(CUSTOM_FEES)
+            .adminKey(ADMIN_KEY)
+            .kycKey(KYC_KEY)
+            .freezeKey(FREEZE_KEY)
+            .wipeKey(WIPE_KEY)
+            .supplyKey(SUPPLY_KEY)
+            .feeScheduleKey(FEE_SCHEDULE_KEY)
+            .pauseKey(PAUSE_KEY)
+            .build();
+
+    public static final List<Tuple> EXPECTED_FIXED_CUSTOM_FEES = List.of(
+            Tuple.of(2L, headlongAddressOf(ZERO_TOKEN_ID), true, false, headlongAddressOf(SENDER_ID)),
+            Tuple.of(3L, headlongAddressOf(FUNGIBLE_TOKEN_ID), false, false, headlongAddressOf(SENDER_ID)));
+    public static final List<Tuple> EXPECTED_FRACTIONAL_CUSTOM_FEES =
+            List.of(Tuple.of(1L, 100L, 2L, 4L, true, headlongAddressOf(SENDER_ID)));
+    public static final List<Tuple> EXPECTED_ROYALTY_CUSTOM_FEES = List.of(
+            Tuple.of(2L, 50L, 0L, headlongAddressOf(ZERO_TOKEN_ID), true, headlongAddressOf(SENDER_ID)),
+            Tuple.of(2L, 50L, 5L, headlongAddressOf(FUNGIBLE_TOKEN_ID), false, headlongAddressOf(SENDER_ID)));
 
     public static final Token UNREASONABLY_DIVISIBLE_TOKEN = Token.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
@@ -541,13 +647,14 @@ public class TestHelpers {
                 ContractCreateTransactionBody.DEFAULT);
     }
 
-    public static HederaEvmContext wellKnownContextWith(@NonNull final HederaEvmBlocks blocks) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, false, blocks);
+    public static HederaEvmContext wellKnownContextWith(
+            @NonNull final HederaEvmBlocks blocks, TinybarValues tinybarValues) {
+        return new HederaEvmContext(NETWORK_GAS_PRICE, false, blocks, tinybarValues);
     }
 
     public static HederaEvmContext wellKnownContextWith(
-            @NonNull final HederaEvmBlocks blocks, final boolean staticCall) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, staticCall, blocks);
+            @NonNull final HederaEvmBlocks blocks, final boolean staticCall, TinybarValues tinybarValues) {
+        return new HederaEvmContext(NETWORK_GAS_PRICE, staticCall, blocks, tinybarValues);
     }
 
     public static void assertFailsWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.infra;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -242,6 +243,11 @@ public class HevmTransactionFactory {
         validateTrue(body.gas() >= minGasLimit, INSUFFICIENT_GAS);
         validateTrue(body.amount() >= 0, CONTRACT_NEGATIVE_VALUE);
         validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
+
+        final var contract = accountStore.getContractById(body.contractIDOrThrow());
+        if (contract != null) {
+            validateFalse(contract.deleted(), CONTRACT_DELETED);
+        }
     }
 
     private void assertValidCreation(@NonNull final ContractCreateTransactionBody body) {
@@ -282,7 +288,8 @@ public class HevmTransactionFactory {
         expiryValidator.resolveCreationAttempt(
                 true,
                 new ExpiryMeta(
-                        NA, autoRenewPeriod, body.hasAutoRenewAccountId() ? body.autoRenewAccountIdOrThrow() : null));
+                        NA, autoRenewPeriod, body.hasAutoRenewAccountId() ? body.autoRenewAccountIdOrThrow() : null),
+                false);
     }
 
     private Bytes initcodeFor(@NonNull final ContractCreateTransactionBody body) {

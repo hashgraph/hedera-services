@@ -96,4 +96,11 @@ public interface ContractStateStore {
      * @return the number of slots
      */
     long getNumSlots();
+
+    /**
+     * Returns the number of bytecodes.
+     *
+     * @return the number of bytecodes
+     */
+    long getNumBytecodes();
 }

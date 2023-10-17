@@ -164,6 +164,14 @@ public class FileAppendHandler implements TransactionHandler {
          */
         final long effectiveLifeTime;
         final var file = fileStore.getFileLeaf(fileID);
+
+        if (file == null) {
+            return feeContext
+                    .feeCalculator(SubType.DEFAULT)
+                    .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE)
+                    .calculate();
+        }
+
         final var fileNum = fileID.fileNum();
 
         final var firstSoftwareUpdateFile =

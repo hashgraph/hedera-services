@@ -18,7 +18,6 @@ package com.swirlds.platform.components;
 
 import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.LogMarker.STALE_EVENTS;
-import static com.swirlds.logging.LogMarker.SYNC;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
@@ -27,7 +26,6 @@ import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
@@ -65,8 +63,6 @@ public class EventIntake {
     private final EventLinker eventLinker;
     /** A functor that provides access to a {@code Consensus} instance. */
     private final Supplier<Consensus> consensusSupplier;
-
-    private final ConsensusWrapper consensusWrapper;
     /** A reference to the initial address book for this node. */
     private final AddressBook addressBook;
     /** An {@link EventObserverDispatcher} instance */
@@ -125,7 +121,6 @@ public class EventIntake {
         this.selfId = Objects.requireNonNull(selfId);
         this.eventLinker = Objects.requireNonNull(eventLinker);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
-        this.consensusWrapper = new ConsensusWrapper(consensusSupplier);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.phaseTimer = Objects.requireNonNull(phaseTimer);
@@ -190,29 +185,11 @@ public class EventIntake {
                 return;
             }
 
-            logger.debug(SYNC.getMarker(), "{} sees {}", selfId, event);
-
             phaseTimer.activatePhase(EventIntakePhase.PRECONSENSUS_DISPATCH);
             dispatcher.preConsensusEvent(event);
 
             logger.debug(INTAKE_EVENT.getMarker(), "Adding {} ", event::toShortString);
             final long minGenNonAncientBeforeAdding = consensus().getMinGenerationNonAncient();
-            // #5762 if we cannot calculate its roundCreated, then we use the one that was sent to us
-            final boolean missingSelfParent = event.getSelfParentHash() != null && event.getSelfParent() == null;
-            final boolean missingOtherParent = event.getOtherParentHash() != null && event.getOtherParent() == null;
-            // if we have created the event, it could have a missing parent, in this case we need to calculate the round
-            // since it cannot have been calculated before
-            if (!event.isCreatedBy(selfId) && (missingSelfParent || missingOtherParent)) {
-                if (event.getBaseEvent().isRoundCreatedSet()) {
-                    // we then use the round created sent to us
-                    event.setRoundCreated(event.getBaseEvent().getRoundCreated());
-                } else {
-                    logger.error(
-                            LogMarker.EXCEPTION.getMarker(),
-                            "cannot determine round created for event {}",
-                            event::toMediumString);
-                }
-            }
 
             if (prehandlePool == null) {
                 // Prehandle transactions on the intake thread (i.e. this thread).
@@ -225,11 +202,7 @@ public class EventIntake {
 
             // record the event in the hashgraph, which results in the events in consEvent reaching consensus
             phaseTimer.activatePhase(EventIntakePhase.ADDING_TO_HASHGRAPH);
-            final List<ConsensusRound> consRounds = consensusWrapper.addEvent(event, addressBook);
-
-            // after we calculate roundCreated, we set its value in GossipEvent so that it can be shared with other
-            // nodes
-            event.getBaseEvent().setRoundCreated(event.getRoundCreated());
+            final List<ConsensusRound> consRounds = consensus().addEvent(event);
 
             phaseTimer.activatePhase(EventIntakePhase.EVENT_ADDED_DISPATCH);
             dispatcher.eventAdded(event);

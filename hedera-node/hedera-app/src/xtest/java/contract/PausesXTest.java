@@ -21,6 +21,7 @@ import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
 import static contract.MiscClassicTransfersXTestConstants.NEXT_ENTITY_NUM;
+import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
@@ -102,7 +103,9 @@ public class PausesXTest extends AbstractContractXTest {
                                 SN_2345.serialNumber())
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(ReturnTypes.encodedRc(TOKEN_IS_PAUSED).array()), output));
+                        Bytes.wrap(ReturnTypes.encodedRc(TOKEN_IS_PAUSED).array()),
+                        output,
+                        "Token should have been paused"));
 
         // UNPAUSE
         runHtsCallAndExpectOnSuccess(
@@ -110,7 +113,7 @@ public class PausesXTest extends AbstractContractXTest {
                 Bytes.wrap(PausesTranslator.UNPAUSE
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS)
                         .array()),
-                assertSuccess());
+                assertSuccess("Unpause failed"));
 
         // Transfer series 2345 of ERC721_TOKEN to RECEIVER - should succeed now.
         runHtsCallAndExpectOnSuccess(
@@ -122,7 +125,7 @@ public class PausesXTest extends AbstractContractXTest {
                                 RECEIVER_HEADLONG_ADDRESS,
                                 SN_2345.serialNumber())
                         .array()),
-                assertSuccess());
+                assertSuccess("Post-unpause transfer failed"));
     }
 
     @Override
@@ -147,6 +150,7 @@ public class PausesXTest extends AbstractContractXTest {
                         .tokenId(ERC721_TOKEN_ID)
                         .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .pauseKey(AN_ED25519_KEY)
                         .build());
         return tokens;
     }

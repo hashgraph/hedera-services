@@ -31,9 +31,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -52,8 +52,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -237,20 +235,9 @@ public class TokenServiceApiImpl implements TokenServiceApi {
                 to.copyBuilder().tinybarBalance(to.tinybarBalance() + amount).build());
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public Set<AccountID> modifiedAccountIds() {
-        return accountStore.modifiedAccountsInState();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<ContractNonceInfo> updatedContractNonces() {
-        return accountStore.updatedContractNonces();
+    public ContractChangeSummary summarizeContractChanges() {
+        return accountStore.summarizeContractChanges();
     }
 
     /**
@@ -339,6 +326,12 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     @Override
     public void refundFees(@NonNull AccountID receiver, @NonNull Fees fees, @NonNull final FeeRecordBuilder rb) {
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public long originalKvUsageFor(@NonNull final AccountID id) {
+        final var oldAccount = accountStore.getOriginalValue(id);
+        return oldAccount == null ? 0 : oldAccount.contractKvPairsNumber();
     }
 
     /**

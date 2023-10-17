@@ -18,20 +18,36 @@ package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static contract.AssortedOpsXTestConstants.ONE_HBAR;
+import static contract.ClassicViewsXTestConstants.ADMIN_KEY;
+import static contract.ClassicViewsXTestConstants.AUTORENEW_SECONDS;
 import static contract.ClassicViewsXTestConstants.CLASSIC_QUERIES_X_TEST_ID;
 import static contract.ClassicViewsXTestConstants.CLASSIC_VIEWS_INITCODE_FILE_ID;
+import static contract.ClassicViewsXTestConstants.CUSTOM_FEES;
+import static contract.ClassicViewsXTestConstants.EXPECTED_CUSTOM_FEES;
+import static contract.ClassicViewsXTestConstants.EXPECTED_TOKEN_EXPIRY;
+import static contract.ClassicViewsXTestConstants.EXPIRATION_SECONDS;
+import static contract.ClassicViewsXTestConstants.FEE_SCHEDULE_KEY;
+import static contract.ClassicViewsXTestConstants.FREEZE_KEY;
 import static contract.ClassicViewsXTestConstants.GET_DEFAULT_FREEZE_STATUS;
 import static contract.ClassicViewsXTestConstants.GET_DEFAULT_KYC_STATUS;
 import static contract.ClassicViewsXTestConstants.GET_IS_FROZEN;
 import static contract.ClassicViewsXTestConstants.GET_IS_KYC;
 import static contract.ClassicViewsXTestConstants.GET_IS_TOKEN;
+import static contract.ClassicViewsXTestConstants.GET_TOKEN_CUSTOM_FEES;
+import static contract.ClassicViewsXTestConstants.GET_TOKEN_EXPIRY;
+import static contract.ClassicViewsXTestConstants.GET_TOKEN_KEY;
 import static contract.ClassicViewsXTestConstants.GET_TOKEN_TYPE;
+import static contract.ClassicViewsXTestConstants.KYC_KEY;
+import static contract.ClassicViewsXTestConstants.PAUSE_KEY;
+import static contract.ClassicViewsXTestConstants.SUPPLY_KEY;
 import static contract.ClassicViewsXTestConstants.TOKEN_DEFAULT_FREEZE_STATUS;
 import static contract.ClassicViewsXTestConstants.TOKEN_DEFAULT_KYC_STATUS;
 import static contract.ClassicViewsXTestConstants.TOKEN_IS_FROZEN;
 import static contract.ClassicViewsXTestConstants.TOKEN_IS_KYC;
 import static contract.ClassicViewsXTestConstants.TOKEN_IS_TOKEN;
 import static contract.ClassicViewsXTestConstants.TOKEN_TYPE_FUNGIBLE;
+import static contract.ClassicViewsXTestConstants.WIPE_KEY;
+import static contract.ClassicViewsXTestConstants.returnExpectedKey;
 import static contract.MiscViewsXTestConstants.COINBASE_ID;
 import static contract.MiscViewsXTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.MiscViewsXTestConstants.ERC_USER_ADDRESS;
@@ -65,6 +81,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,6 +125,53 @@ public class ClassicViewsXTest extends AbstractContractXTest {
                 miscViewsQuery(GET_DEFAULT_KYC_STATUS, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
                 assertingCallLocalResultIs(TOKEN_DEFAULT_KYC_STATUS));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_TOKEN_EXPIRY, ERC20_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(EXPECTED_TOKEN_EXPIRY));
+        // Token Keys
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(1L)),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(returnExpectedKey(ADMIN_KEY)));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(2L)),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(returnExpectedKey(KYC_KEY)));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(4L)),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(returnExpectedKey(FREEZE_KEY)));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(8L)),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(returnExpectedKey(WIPE_KEY)));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(16L)),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(returnExpectedKey(SUPPLY_KEY)));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(32L)),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(returnExpectedKey(FEE_SCHEDULE_KEY)));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(64L)),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(returnExpectedKey(PAUSE_KEY)));
+
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_TOKEN_CUSTOM_FEES, ERC20_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIs(EXPECTED_CUSTOM_FEES));
     }
 
     private Query miscViewsQuery(@NonNull final Function function, @NonNull final Object... args) {
@@ -248,6 +312,17 @@ public class ClassicViewsXTest extends AbstractContractXTest {
                         .decimals(erc20Decimals)
                         .totalSupply(erc20TotalSupply)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .expirationSecond(EXPIRATION_SECONDS)
+                        .autoRenewSeconds(AUTORENEW_SECONDS)
+                        .autoRenewAccountId(OPERATOR_ID)
+                        .adminKey(ADMIN_KEY)
+                        .kycKey(KYC_KEY)
+                        .freezeKey(FREEZE_KEY)
+                        .wipeKey(WIPE_KEY)
+                        .supplyKey(SUPPLY_KEY)
+                        .feeScheduleKey(FEE_SCHEDULE_KEY)
+                        .pauseKey(PAUSE_KEY)
+                        .customFees(CUSTOM_FEES)
                         .build());
         tokens.put(
                 ERC721_TOKEN_ID,

@@ -20,13 +20,28 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator.HAPI_GET_APPROVED;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static contract.HtsErc721TransferXTestConstants.*;
+import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
+import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
+import static contract.HtsErc721TransferXTestConstants.spenderAccount;
 import static contract.MiscViewsXTestConstants.NEXT_ENTITY_NUM;
-import static contract.XTestConstants.*;
+import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
+import static contract.XTestConstants.ERC721_TOKEN_ID;
+import static contract.XTestConstants.OWNER_ADDRESS;
+import static contract.XTestConstants.OWNER_ID;
+import static contract.XTestConstants.SENDER_ADDRESS;
+import static contract.XTestConstants.SENDER_BESU_ADDRESS;
+import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
+import static contract.XTestConstants.SENDER_ID;
+import static contract.XTestConstants.SN_1234;
+import static contract.XTestConstants.SN_1234_METADATA;
+import static contract.XTestConstants.SN_2345;
+import static contract.XTestConstants.SN_2345_METADATA;
+import static contract.XTestConstants.addErc721Relation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
@@ -35,7 +50,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,7 +70,7 @@ public class GetApprovedXTest extends AbstractContractXTest {
         // HapiGetApproved series 1234 of ERC721_TOKEN
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
-                Bytes.wrap(GetApprovedTranslator.HAPI_GET_APPROVED
+                Bytes.wrap(HAPI_GET_APPROVED
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, BigInteger.valueOf(1234))
                         .array()),
                 output -> assertEquals(
@@ -64,6 +78,14 @@ public class GetApprovedXTest extends AbstractContractXTest {
                                 .getOutputs()
                                 .encodeElements(SUCCESS.getNumber(), headlongAddressOf(spenderAccount))),
                         output));
+
+        // HapiGetApproved for invalid series 3456
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(HAPI_GET_APPROVED
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, BigInteger.valueOf(3456))
+                        .array()),
+                ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
     }
 
     @Override

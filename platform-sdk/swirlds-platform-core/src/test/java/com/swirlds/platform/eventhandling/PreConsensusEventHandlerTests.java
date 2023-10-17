@@ -24,10 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.utility.ThrowingRunnable;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.ThreadConfig;
@@ -84,9 +82,6 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
                 })
                 .when(swirldStateManager)
                 .handlePreConsensusEvent(any(EventImpl.class));
-
-        // the thread is not interruptable
-        when(swirldStateManager.getStopBehavior()).thenReturn(Stoppable.StopBehavior.BLOCKING);
 
         final ExecutorService executor = Executors.newFixedThreadPool(1);
 

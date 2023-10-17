@@ -34,6 +34,7 @@ import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
@@ -63,6 +64,7 @@ public class ConversionUtils {
     public static final long EVM_ADDRESS_LENGTH_AS_LONG = 20L;
     public static final int EVM_ADDRESS_LENGTH_AS_INT = 20;
     public static final int NUM_LONG_ZEROS = 12;
+    public static final long FEE_SCHEDULE_UNITS_PER_TINYCENT = 1000;
     private static final BigInteger MIN_LONG_VALUE = BigInteger.valueOf(Long.MIN_VALUE);
     private static final BigInteger MAX_LONG_VALUE = BigInteger.valueOf(Long.MAX_VALUE);
 
@@ -162,6 +164,42 @@ public class ConversionUtils {
             return 0L;
         }
         return value.longValueExact();
+    }
+
+    /**
+     * Given a {@link AccountID}, returns its address as a headlong address.
+     * @param accountID
+     * @return
+     */
+    public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final AccountID accountID) {
+        requireNonNull(accountID);
+        final var integralAddress = accountID.hasAccountNum()
+                ? asEvmAddress(accountID.accountNum())
+                : accountID.alias().toByteArray();
+        return asHeadlongAddress(integralAddress);
+    }
+
+    /**
+     * Given a {@link ContractID}, returns its address as a headlong address.
+     * @param contractId
+     * @return
+     */
+    public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final ContractID contractId) {
+        requireNonNull(contractId);
+        final var integralAddress = contractId.hasContractNum()
+                ? asEvmAddress(contractId.contractNum())
+                : contractId.evmAddress().toByteArray();
+        return asHeadlongAddress(integralAddress);
+    }
+
+    /**
+     * Given a {@link TokenID}, returns its address as a headlong address.
+     * @param tokenId
+     * @return
+     */
+    public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final TokenID tokenId) {
+        requireNonNull(tokenId);
+        return asHeadlongAddress(asEvmAddress(tokenId.tokenNum()));
     }
 
     /**
@@ -655,5 +693,14 @@ public class ConversionUtils {
     public static Address fromHeadlongAddress(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
         requireNonNull(address);
         return Address.fromHexString(address.toString());
+    }
+
+    public static long fromTinycentsToTinybars(final ExchangeRate exchangeRate, final long tinycents) {
+        return fromAToB(BigInteger.valueOf(tinycents), exchangeRate.hbarEquiv(), exchangeRate.centEquiv())
+                .longValueExact();
+    }
+
+    public static @NonNull BigInteger fromAToB(@NonNull final BigInteger aAmount, final int bEquiv, final int aEquiv) {
+        return aAmount.multiply(BigInteger.valueOf(bEquiv)).divide(BigInteger.valueOf(aEquiv));
     }
 }

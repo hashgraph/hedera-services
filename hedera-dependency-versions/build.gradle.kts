@@ -19,7 +19,7 @@ plugins {
 }
 
 val besuNativeVersion = "0.8.2"
-val besuVersion = "23.7.2"
+val besuVersion = "23.10.0"
 val bouncycastleVersion = "1.70"
 val daggerVersion = "2.42"
 val eclipseCollectionsVersion = "10.4.0"
@@ -110,4 +110,5 @@ moduleInfo {
     version("tuweni.units", tuweniVersion)
     version("uk.org.webcompere.systemstubs.core", systemStubsVersion)
     version("uk.org.webcompere.systemstubs.jupiter", systemStubsVersion)
+    version("jakarta.inject", "2.0.1")
 }
