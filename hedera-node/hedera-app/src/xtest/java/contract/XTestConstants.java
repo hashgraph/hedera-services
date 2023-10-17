@@ -64,6 +64,10 @@ class XTestConstants {
     static final com.esaulpaugh.headlong.abi.Address SENDER_HEADLONG_ADDRESS =
             asHeadlongAddress(SENDER_ADDRESS.toByteArray());
     static final Address SENDER_BESU_ADDRESS = pbjToBesuAddress(SENDER_ADDRESS);
+    static final Bytes BAD_SENDER =
+            com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("e22e624b8b8ea7244e8159ba7c0deeea2b6be991");
+    static final com.esaulpaugh.headlong.abi.Address INVALID_SENDER_HEADLONG_ADDRESS =
+            asHeadlongAddress(BAD_SENDER.toByteArray());
     static final AccountID RECEIVER_ID =
             AccountID.newBuilder().accountNum(987654321L).build();
     static final AccountID INVALID_ID =
