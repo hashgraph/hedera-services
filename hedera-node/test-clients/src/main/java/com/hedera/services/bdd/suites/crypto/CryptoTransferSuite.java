@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
@@ -147,7 +148,6 @@ import org.apache.logging.log4j.Logger;
 
 @HapiTestSuite
 public class CryptoTransferSuite extends HapiSuite {
-
     private static final Logger LOG = LogManager.getLogger(CryptoTransferSuite.class);
     private static final String OWNER = "owner";
     private static final String OTHER_OWNER = "otherOwner";
@@ -690,21 +690,22 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_ALLOWANCE_OWNER_ID));
     }
 
+    @HapiTest
     private HapiSpec allowanceTransfersWithComplexTransfersWork() {
-        return defaultHapiSpec("AllowanceTransfersWithComplexTransfersWork")
+        return onlyDefaultHapiSpec("AllowanceTransfersWithComplexTransfersWork")
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(KYC_KEY),
                         newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(OTHER_OWNER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(RECEIVER).balance(0L),
-                        cryptoCreate(OTHER_RECEIVER).balance(ONE_HBAR),
-                        cryptoCreate(ANOTHER_RECEIVER).balance(0L),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(FUNGIBLE_TOKEN)
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS), // 1001
+                        cryptoCreate(OTHER_OWNER).balance(ONE_HUNDRED_HBARS), // 1002
+                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS), // 1003
+                        cryptoCreate(RECEIVER).balance(0L), // 1004
+                        cryptoCreate(OTHER_RECEIVER).balance(ONE_HBAR), // 1005
+                        cryptoCreate(ANOTHER_RECEIVER).balance(0L), // 1006
+                        cryptoCreate(TOKEN_TREASURY), // 1007
+                        tokenCreate(FUNGIBLE_TOKEN) // 1008
                                 .supplyType(TokenSupplyType.FINITE)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -712,7 +713,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .initialSupply(5000)
                                 .adminKey(ADMIN_KEY)
                                 .kycKey(KYC_KEY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                        tokenCreate(NON_FUNGIBLE_TOKEN) // 1009
                                 .supplyType(TokenSupplyType.FINITE)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
@@ -813,6 +814,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .has(accountWith().balance(ONE_HBAR)));
     }
 
+    @HapiTest
     private HapiSpec allowanceTransfersWorkAsExpected() {
         return defaultHapiSpec("AllowanceTransfersWorkAsExpected")
                 .given(
@@ -822,12 +824,12 @@ public class CryptoTransferSuite extends HapiSuite {
                         newKeyNamed(PAUSE_KEY),
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(WIPE_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(RECEIVER),
-                        cryptoCreate(OTHER_RECEIVER).balance(ONE_HBAR).maxAutomaticTokenAssociations(1),
-                        tokenCreate(FUNGIBLE_TOKEN)
+                        cryptoCreate(TOKEN_TREASURY), // 1001
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS), // 1002
+                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS), // 1003
+                        cryptoCreate(RECEIVER), // 1004
+                        cryptoCreate(OTHER_RECEIVER).balance(ONE_HBAR).maxAutomaticTokenAssociations(1), // 1005
+                        tokenCreate(FUNGIBLE_TOKEN) // 1006
                                 .supplyType(TokenSupplyType.FINITE)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -837,7 +839,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .pauseKey(PAUSE_KEY)
                                 .kycKey(KYC_KEY)
                                 .freezeKey(FREEZE_KEY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                        tokenCreate(NON_FUNGIBLE_TOKEN) // 1007
                                 .supplyType(TokenSupplyType.FINITE)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
@@ -848,7 +850,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .wipeKey(WIPE_KEY)
                                 .pauseKey(PAUSE_KEY)
                                 .initialSupply(0L),
-                        tokenCreate(TOKEN_WITH_CUSTOM_FEE)
+                        tokenCreate(TOKEN_WITH_CUSTOM_FEE) // 1008
                                 .treasury(TOKEN_TREASURY)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .initialSupply(1000)
@@ -1033,6 +1035,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .payingWith(OWNER)
                                 .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, true, List.of())
                                 .fee(ONE_HUNDRED_HBARS),
+                        // here
                         cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 2L)
                                         .between(OWNER, RECEIVER))
                                 .payingWith(SPENDER)

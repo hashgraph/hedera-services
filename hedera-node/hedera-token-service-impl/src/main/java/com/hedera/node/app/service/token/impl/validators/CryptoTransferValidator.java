@@ -51,6 +51,7 @@ import java.util.HashSet;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.lang3.tuple.Pair;
 
 @Singleton
 public class CryptoTransferValidator {
@@ -67,13 +68,13 @@ public class CryptoTransferValidator {
      */
     public void pureChecks(@NonNull final CryptoTransferTransactionBody op) throws PreCheckException {
         final var acctAmounts = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
-        final var uniqueAcctIds = new HashSet<AccountID>();
+        final var uniqueAcctIds = new HashSet<Pair<AccountID, Boolean>>();
         long netBalance = 0;
         // Validate hbar transfers
         for (final AccountAmount acctAmount : acctAmounts) {
             validateTruePreCheck(acctAmount.hasAccountID(), INVALID_ACCOUNT_ID);
             final var acctId = validateAccountID(acctAmount.accountIDOrThrow());
-            uniqueAcctIds.add(acctId);
+            uniqueAcctIds.add(Pair.of(acctId, acctAmount.isApproval()));
             netBalance += acctAmount.amount();
         }
         validateTruePreCheck(netBalance == 0, INVALID_ACCOUNT_AMOUNTS);
@@ -89,13 +90,13 @@ public class CryptoTransferValidator {
             validateTruePreCheck(tokenID != null && !tokenID.equals(TokenID.DEFAULT), INVALID_TOKEN_ID);
 
             // Validate the fungible transfers
-            final var uniqueTokenAcctIds = new HashSet<AccountID>();
+            final var uniqueTokenAcctIds = new HashSet<Pair<AccountID, Boolean>>();
             final var fungibleTransfers = tokenTransfer.transfersOrElse(emptyList());
             long netTokenBalance = 0;
             boolean nonZeroFungibleValueFound = false;
             for (final AccountAmount acctAmount : fungibleTransfers) {
                 validateTruePreCheck(acctAmount.hasAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-                uniqueTokenAcctIds.add(acctAmount.accountIDOrThrow());
+                uniqueTokenAcctIds.add(Pair.of(acctAmount.accountIDOrThrow(), acctAmount.isApproval()));
                 netTokenBalance += acctAmount.amount();
                 if (!nonZeroFungibleValueFound && acctAmount.amount() != 0) {
                     nonZeroFungibleValueFound = true;

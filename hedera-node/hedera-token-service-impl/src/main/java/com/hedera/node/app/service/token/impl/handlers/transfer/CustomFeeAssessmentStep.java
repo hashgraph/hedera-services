@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -215,13 +216,17 @@ public class CustomFeeAssessmentStep {
             List<CryptoTransferTransactionBody> assessedTxns, List<AssessedCustomFee> assessedCustomFees) {}
 
     private void validateTotalAdjustments(final CryptoTransferTransactionBody op, final int maxTransfersDepth) {
-        final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT)
-                .accountAmountsOrElse(emptyList())
+        final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList()).stream()
+                .map(AccountAmount::accountID)
+                .collect(Collectors.toSet())
                 .size();
         var fungibleTokenChanges = 0;
         var nftTransfers = 0;
         for (final var xfer : op.tokenTransfersOrElse(emptyList())) {
-            fungibleTokenChanges += xfer.transfersOrElse(emptyList()).size();
+            fungibleTokenChanges += xfer.transfersOrElse(emptyList()).stream()
+                    .map(AccountAmount::accountID)
+                    .collect(Collectors.toSet())
+                    .size();
             nftTransfers += xfer.nftTransfersOrElse(emptyList()).size();
         }
 
