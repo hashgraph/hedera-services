@@ -24,6 +24,19 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class NoOpFractionalTimer implements FractionalTimer {
 
+    private static final NoOpFractionalTimer INSTANCE = new NoOpFractionalTimer();
+
+    private NoOpFractionalTimer() {}
+
+    /**
+     * Get the singleton instance.
+     *
+     * @return the singleton instance
+     */
+    public static FractionalTimer getInstance() {
+        return INSTANCE;
+    }
+
     /**
      * {@inheritDoc}
      */

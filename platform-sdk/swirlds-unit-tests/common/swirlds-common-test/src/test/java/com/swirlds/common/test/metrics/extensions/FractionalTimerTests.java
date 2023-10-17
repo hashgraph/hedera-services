@@ -163,7 +163,7 @@ class FractionalTimerTests {
 
     @Test
     void noOpTest() {
-        final FractionalTimer timer = new NoOpFractionalTimer();
+        final FractionalTimer timer = NoOpFractionalTimer.getInstance();
         timer.registerMetric(null, null, null, null);
         timer.activate();
         timer.activate(1234);

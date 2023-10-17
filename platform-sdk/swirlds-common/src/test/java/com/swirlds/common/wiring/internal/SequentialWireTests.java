@@ -1188,4 +1188,36 @@ class SequentialWireTests {
         assertEventuallyEquals(
                 value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
     }
+
+    @Test
+    void exceptionHandlingTest() {
+        final AtomicInteger wireValue = new AtomicInteger();
+        final Consumer<Integer> handler = x -> {
+            if (x == 50) {
+                throw new IllegalStateException("intentional");
+            }
+            wireValue.set(hash32(wireValue.get(), x));
+        };
+
+        final AtomicInteger exceptionCount = new AtomicInteger();
+
+        final Wire wire = Wire.builder("test")
+                .withConcurrency(false)
+                .withUncaughtExceptionHandler((t, e) -> exceptionCount.incrementAndGet())
+                .build();
+        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        assertEquals(-1, wire.getUnprocessedTaskCount());
+        assertEquals("test", wire.getName());
+
+        int value = 0;
+        for (int i = 0; i < 100; i++) {
+            channel.put(i);
+            if (i != 50) {
+                value = hash32(value, i);
+            }
+        }
+
+        assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEquals(1, exceptionCount.get());
+    }
 }

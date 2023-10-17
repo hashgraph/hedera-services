@@ -17,12 +17,11 @@
 package com.swirlds.common.wiring.internal;
 
 import com.swirlds.common.metrics.extensions.FractionalTimer;
-import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.wiring.Wire;
-import com.swirlds.common.wiring.counters.NoOpObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Semaphore;
@@ -40,7 +39,7 @@ public class SequentialWire extends Wire {
 
     private final FractionalTimer busyTimer;
     private final String name;
-
+    private final UncaughtExceptionHandler uncaughtExceptionHandler;
     private final ForkJoinPool pool;
 
     /**
@@ -96,6 +95,8 @@ public class SequentialWire extends Wire {
             busyTimer.activate();
             try {
                 handler.accept(data);
+            } catch (final Throwable t) {
+                uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
             } finally {
                 busyTimer.deactivate();
 
@@ -110,26 +111,30 @@ public class SequentialWire extends Wire {
     /**
      * Constructor.
      *
-     * @param pool      the fork join pool that will execute tasks on this wire
-     * @param name      the name of the wire
-     * @param onRamp    an object counter that is incremented when data is added to the wire, ignored if null
-     * @param offRamp   an object counter that is decremented when data is removed from the wire, ignored if null
-     * @param busyTimer a timer that tracks the amount of time the wire is busy, ignored if null
+     * @param name                     the name of the wire
+     * @param pool                     the fork join pool that will execute tasks on this wire
+     * @param uncaughtExceptionHandler the uncaught exception handler
+     * @param onRamp                   an object counter that is incremented when data is added to the wire, ignored if
+     *                                 null
+     * @param offRamp                  an object counter that is decremented when data is removed from the wire, ignored
+     *                                 if null
+     * @param busyTimer                a timer that tracks the amount of time the wire is busy, ignored if null
      */
     public SequentialWire(
-            @NonNull ForkJoinPool pool,
             @NonNull final String name,
-            @Nullable final ObjectCounter onRamp,
-            @Nullable final ObjectCounter offRamp,
-            @Nullable final FractionalTimer busyTimer) {
+            @NonNull ForkJoinPool pool,
+            @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
+            @NonNull final ObjectCounter onRamp,
+            @NonNull final ObjectCounter offRamp,
+            @NonNull final FractionalTimer busyTimer) {
 
         this.pool = Objects.requireNonNull(pool);
         this.name = Objects.requireNonNull(name);
+        this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
+        this.onRamp = Objects.requireNonNull(onRamp);
+        this.offRamp = Objects.requireNonNull(offRamp);
+        this.busyTimer = Objects.requireNonNull(busyTimer);
 
-        this.onRamp = onRamp == null ? NoOpObjectCounter.getInstance() : onRamp;
-        this.offRamp = offRamp == null ? NoOpObjectCounter.getInstance() : offRamp;
-
-        this.busyTimer = busyTimer == null ? new NoOpFractionalTimer() : busyTimer;
         this.lastTask = new AtomicReference<>(new SequentialTask(1));
     }
 

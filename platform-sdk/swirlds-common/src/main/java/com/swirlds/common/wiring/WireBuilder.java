@@ -16,22 +16,31 @@
 
 package com.swirlds.common.wiring;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+
 import com.swirlds.common.metrics.extensions.FractionalTimer;
+import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
+import com.swirlds.common.wiring.counters.NoOpObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import com.swirlds.common.wiring.internal.ConcurrentWire;
 import com.swirlds.common.wiring.internal.SequentialWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A builder for wires.
  */
 public class WireBuilder {
+
+    private static final Logger logger = LogManager.getLogger(WireBuilder.class);
 
     public static final long UNLIMITED_CAPACITY = -1;
 
@@ -42,11 +51,9 @@ public class WireBuilder {
     private ObjectCounter onRamp;
     private ObjectCounter offRamp;
     private ForkJoinPool pool = ForkJoinPool.commonPool();
+    private UncaughtExceptionHandler uncaughtExceptionHandler;
 
     private Duration backpressureSleepDuration = Duration.ofNanos(100);
-
-    // Future parameters:
-    //  - uncaught exception handler
 
     /**
      * Constructor.
@@ -104,6 +111,7 @@ public class WireBuilder {
      * @param onRamp the object counter that should be notified when data is added to the wire
      * @return this
      */
+    @NonNull
     public WireBuilder withOnRamp(@NonNull final ObjectCounter onRamp) {
         this.onRamp = Objects.requireNonNull(onRamp);
         return this;
@@ -122,6 +130,7 @@ public class WireBuilder {
      * @param offRamp the object counter that should be notified when data is removed from the wire
      * @return this
      */
+    @NonNull
     public WireBuilder withOffRamp(@NonNull final ObjectCounter offRamp) {
         this.offRamp = Objects.requireNonNull(offRamp);
         return this;
@@ -146,6 +155,7 @@ public class WireBuilder {
      * @param metricsBuilder the metrics builder
      * @return this
      */
+    @NonNull
     public WireBuilder withMetricsBuilder(@NonNull final WireMetricsBuilder metricsBuilder) {
         this.metricsBuilder = Objects.requireNonNull(metricsBuilder);
         return this;
@@ -157,24 +167,46 @@ public class WireBuilder {
      * @param pool the thread pool
      * @return this
      */
+    @NonNull
     public WireBuilder withPool(@NonNull final ForkJoinPool pool) {
         this.pool = Objects.requireNonNull(pool);
         return this;
     }
 
+    // TODO test this
+
     /**
-     * Describes the counters to be used by this wire.
+     * Provide a custom uncaught exception handler for this wire. If none is provided then the default uncaught
+     * exception handler will be used. The default handler will write a message to the log.
      *
-     * @param onRamp  the on ramp counter
-     * @param offRamp the off ramp counter
+     * @param uncaughtExceptionHandler the uncaught exception handler
+     * @return this
      */
-    private record Counters(@Nullable ObjectCounter onRamp, @Nullable ObjectCounter offRamp) {}
+    @NonNull
+    public WireBuilder withUncaughtExceptionHandler(@NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+        this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
+        return this;
+    }
+
+    /**
+     * Build an uncaught exception handler if one was not provided.
+     *
+     * @return the uncaught exception handler
+     */
+    @NonNull
+    private UncaughtExceptionHandler buildUncaughtExceptionHandler() {
+        if (uncaughtExceptionHandler != null) {
+            return uncaughtExceptionHandler;
+        } else {
+            return (thread, throwable) ->
+                    logger.error(EXCEPTION.getMarker(), "Uncaught exception in wire {}", name, throwable);
+        }
+    }
 
     /**
      * Figure out which counters to use for this wire (if any), constructing them if they need to be constructed.
      */
-    @NonNull
-    private Counters buildCounters() {
+    private void buildCounters() {
         if (scheduledTaskCapacity != UNLIMITED_CAPACITY) {
             if (onRamp != null) {
                 throw new IllegalStateException("Cannot specify both an on ramp and a scheduled task capacity");
@@ -184,7 +216,8 @@ public class WireBuilder {
             }
             final ObjectCounter counter =
                     new BackpressureObjectCounter(scheduledTaskCapacity, backpressureSleepDuration);
-            return new Counters(counter, counter);
+            this.onRamp = counter;
+            this.offRamp = counter;
         }
 
         if (metricsBuilder != null && metricsBuilder.isScheduledTaskCountMetricEnabled()) {
@@ -195,10 +228,16 @@ public class WireBuilder {
                 throw new IllegalStateException("Cannot specify both an off ramp and a scheduled task metric");
             }
             final ObjectCounter counter = new StandardObjectCounter();
-            return new Counters(counter, counter);
+            this.onRamp = counter;
+            this.offRamp = counter;
         }
 
-        return new Counters(onRamp, offRamp);
+        if (onRamp == null) {
+            onRamp = NoOpObjectCounter.getInstance();
+        }
+        if (offRamp == null) {
+            offRamp = NoOpObjectCounter.getInstance();
+        }
     }
 
     /**
@@ -206,10 +245,10 @@ public class WireBuilder {
      *
      * @return the busy timer, or null if not enabled
      */
-    @Nullable
+    @NonNull
     private FractionalTimer buildBusyTimer() {
-        if (concurrent || metricsBuilder == null || !metricsBuilder.isBusyFractionMetricEnabled()) {
-            return null;
+        if (metricsBuilder == null || !metricsBuilder.isBusyFractionMetricEnabled()) {
+            return NoOpFractionalTimer.getInstance();
         } else {
             return metricsBuilder.buildBusyTimer();
         }
@@ -222,13 +261,11 @@ public class WireBuilder {
      */
     @NonNull
     public Wire build() {
-        final Counters counters = buildCounters();
-        final FractionalTimer busyTimer = buildBusyTimer();
-
+        buildCounters();
         if (concurrent) {
-            return new ConcurrentWire(pool, name, counters.onRamp(), counters.offRamp());
+            return new ConcurrentWire(name, pool, buildUncaughtExceptionHandler(), onRamp, offRamp);
         } else {
-            return new SequentialWire(pool, name, counters.onRamp(), counters.offRamp(), busyTimer);
+            return new SequentialWire(name, pool, buildUncaughtExceptionHandler(), onRamp, offRamp, buildBusyTimer());
         }
     }
 }

@@ -20,6 +20,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
+import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -97,13 +98,13 @@ public class WireMetricsBuilder {
      *
      * @return the fractional timer
      */
-    @Nullable
+    @NonNull
     FractionalTimer buildBusyTimer() {
         if (busyFractionMetricEnabled) {
             busyFractionTimer = new StandardFractionalTimer(time);
             return busyFractionTimer;
         } else {
-            return null;
+            return NoOpFractionalTimer.getInstance();
         }
     }
 
