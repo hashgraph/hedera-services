@@ -87,6 +87,9 @@ class XTestConstants {
     static final TokenID ERC20_TOKEN_ID = TokenID.newBuilder().tokenNum(1027L).build();
     static final com.esaulpaugh.headlong.abi.Address ERC20_TOKEN_ADDRESS = AbstractContractXTest.asHeadlongAddress(
             asLongZeroAddress(ERC20_TOKEN_ID.tokenNum()).toArray());
+    static final TokenID OTHER_TOKEN_ID = TokenID.newBuilder().tokenNum(1777L).build();
+    static final com.esaulpaugh.headlong.abi.Address OTHER_TOKEN_ADDRESS = AbstractContractXTest.asHeadlongAddress(
+            asLongZeroAddress(OTHER_TOKEN_ID.tokenNum()).toArray());
     static final AccountID OWNER_ID = AccountID.newBuilder().accountNum(121212L).build();
     static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
     static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);

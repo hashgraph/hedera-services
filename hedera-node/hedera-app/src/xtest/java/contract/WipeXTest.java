@@ -16,6 +16,9 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.XTestConstants.AN_ED25519_KEY;
@@ -23,6 +26,8 @@ import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
+import static contract.XTestConstants.INVALID_SENDER_HEADLONG_ADDRESS;
+import static contract.XTestConstants.OTHER_TOKEN_ADDRESS;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
@@ -45,6 +50,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.wipe.WipeTranslator;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import java.util.HashMap;
@@ -93,6 +99,55 @@ public class WipeXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, 10L)
                         .array()),
                 assertSuccess());
+
+        // @Future remove to revert #9272 after modularization is completed
+        // Try to WIPE NFT with Invalid Token address
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(WipeTranslator.WIPE_NFT
+                        .encodeCallWithArgs(
+                                OTHER_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, new long[] {SN_1234.serialNumber()})
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
+
+        // Try to WIPE NFT with Invalid Account address
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(WipeTranslator.WIPE_NFT
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, INVALID_SENDER_HEADLONG_ADDRESS, new long[] {
+                            SN_1234.serialNumber()
+                        })
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()), output));
+
+        // Try to WIPE NFT with Invalid serial numbers address
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(WipeTranslator.WIPE_NFT
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, new long[] {-7511})
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_NFT_ID).array()), output));
+
+        // Try to execute with token address
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V1
+                        .encodeCallWithArgs(OTHER_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS, 10L)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
+
+        // Try to execute with invalid account address
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(WipeTranslator.WIPE_FUNGIBLE_V2
+                        .encodeCallWithArgs(OTHER_TOKEN_ADDRESS, INVALID_SENDER_HEADLONG_ADDRESS, 10L)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()), output));
     }
 
     @Override
