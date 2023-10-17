@@ -67,7 +67,6 @@ public class EcdsaSecp256k1Verifier {
     /** Logger */
     private static final Logger logger = LogManager.getLogger(EcdsaSecp256k1Verifier.class);
 
-
     /**
      * Verifies a ECDSA(secp256k1) signature of a message is valid for a given public key.
      *
@@ -87,26 +86,23 @@ public class EcdsaSecp256k1Verifier {
      * 		the public key to use to verify the signature
      * @return true if the signature is valid
      */
-    public boolean verify(@NonNull final byte[] rawSig,@NonNull final byte[] msg,@NonNull final byte[] pubKey) {
+    public boolean verify(@NonNull final byte[] rawSig, @NonNull final byte[] msg, @NonNull final byte[] pubKey) {
         // check message is already Keccak256 hash size
         if (msg.length != ECDSA_KECCAK_256_SIZE) {
-            logger.warn(
-                    TESTING_EXCEPTIONS.getMarker(), () -> "Message is not Keccak256 hash size 32 bytes [ msg = %s ]"
-                            .formatted(hex(msg)));
+            logger.warn(TESTING_EXCEPTIONS.getMarker(), () -> "Message is not Keccak256 hash size 32 bytes [ msg = %s ]"
+                    .formatted(hex(msg)));
             return false;
         }
         // check public key size
         if (pubKey.length != ECDSA_UNCOMPRESSED_KEY_SIZE) {
-            logger.warn(
-                    TESTING_EXCEPTIONS.getMarker(), () -> "Public key is not %d bytes [ publicKey = %s ]"
-                            .formatted(ECDSA_UNCOMPRESSED_KEY_SIZE, hex(pubKey)));
+            logger.warn(TESTING_EXCEPTIONS.getMarker(), () -> "Public key is not %d bytes [ publicKey = %s ]"
+                    .formatted(ECDSA_UNCOMPRESSED_KEY_SIZE, hex(pubKey)));
             return false;
         }
         // check signature size
         if (rawSig.length != ECDSA_SIGNATURE_SIZE) {
-            logger.warn(
-                    TESTING_EXCEPTIONS.getMarker(), () -> "Signature is not %d bytes [ rawSig = %s ]"
-                            .formatted(ECDSA_SIGNATURE_SIZE, hex(rawSig)));
+            logger.warn(TESTING_EXCEPTIONS.getMarker(), () -> "Signature is not %d bytes [ rawSig = %s ]"
+                    .formatted(ECDSA_SIGNATURE_SIZE, hex(rawSig)));
             return false;
         }
         // get cached buffers so we can reuse them and avoid allocating memory for each verification
@@ -137,8 +133,8 @@ public class EcdsaSecp256k1Verifier {
             return false;
         }
         // verify signature
-        final int result = LibSecp256k1.secp256k1_ecdsa_verify(LibSecp256k1.CONTEXT, nativeSignature, msg, nativePublicKey);
+        final int result =
+                LibSecp256k1.secp256k1_ecdsa_verify(LibSecp256k1.CONTEXT, nativeSignature, msg, nativePublicKey);
         return result == 1;
     }
 }
-

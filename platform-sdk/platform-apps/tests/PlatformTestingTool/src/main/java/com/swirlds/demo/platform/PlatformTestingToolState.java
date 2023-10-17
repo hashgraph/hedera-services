@@ -100,13 +100,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -1165,12 +1159,25 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                         logger.error(
                                 EXCEPTION.getMarker(),
                                 "Invalid Transaction Signature [status = {}, signatureType = {}, "
-                                        + "publicKey = {}, signature = {}, data = {} ]",
+                                        + "publicKey = {}, signature = {}, data = {}, "
+                                        + "actualPublicKey = {}, actualSignature = {}, actualData = {} ]",
                                 s.getSignatureStatus(),
                                 s.getSignatureType(),
                                 hex(publicKey),
                                 hex(signature),
-                                hex(testTransactionRawBytes));
+                                hex(testTransactionRawBytes),
+                                hex(Arrays.copyOfRange(
+                                        s.getContentsDirect(),
+                                        s.getPublicKeyOffset(),
+                                        s.getPublicKeyOffset() + s.getPublicKeyLength())),
+                                hex(Arrays.copyOfRange(
+                                        s.getContentsDirect(),
+                                        s.getSignatureOffset(),
+                                        s.getSignatureOffset() + s.getSignatureLength())),
+                                hex(Arrays.copyOfRange(
+                                        s.getContentsDirect(),
+                                        s.getMessageOffset(),
+                                        s.getMessageOffset() + s.getMessageLength())));
                     } else if (s.getSignatureStatus() != VerificationStatus.VALID && expectingInvalidSignature) {
                         expectedInvalidSignatureCount.incrementAndGet();
                     }
