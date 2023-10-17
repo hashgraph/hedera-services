@@ -31,15 +31,13 @@ import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.mono.fees.congestion.FeeMultiplierSource;
-import com.hedera.node.app.service.mono.fees.congestion.ThrottleMultiplierSource;
-import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
@@ -52,13 +50,13 @@ import com.hedera.node.config.data.TopicsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
-public class TransactionRateMultiplierSource implements FeeMultiplierSource {
+public class TransactionRateMultiplierSource {
     private final HederaState state;
     private final ConfigProvider configProvider;
-    private final ThrottleMultiplierSource delegate;
+    private final ThrottleMultiplier delegate;
 
     public TransactionRateMultiplierSource(
-            @NonNull final ThrottleMultiplierSource delegate,
+            @NonNull final ThrottleMultiplier delegate,
             @NonNull final ConfigProvider configProvider,
             @NonNull final HederaState state) {
         this.delegate = requireNonNull(delegate, "delegate must not be null");
@@ -66,35 +64,38 @@ public class TransactionRateMultiplierSource implements FeeMultiplierSource {
         this.state = requireNonNull(state, "state must not be null");
     }
 
-    @Override
-    public long currentMultiplier(TxnAccessor accessor) {
-        final var throttleMultiplier = delegate.currentMultiplier(accessor);
+    public long currentMultiplier(TransactionInfo txnInfo) {
+        final var throttleMultiplier = delegate.currentMultiplier();
         final var configuration = configProvider.getConfiguration();
         final var entityScaleFactors =
                 configuration.getConfigData(FeesConfig.class).percentUtilizationScaleFactors();
 
-        return switch (accessor.getFunction()) {
-            case CryptoCreate -> entityScaleFactors
+        return switch (txnInfo.functionality()) {
+            case CRYPTO_CREATE -> entityScaleFactors
                     .scaleForNew(ACCOUNT, roundedAccountPercentUtil())
                     .scaling((int) throttleMultiplier);
-            case ContractCreate -> entityScaleFactors
+            case CONTRACT_CREATE -> entityScaleFactors
                     .scaleForNew(CONTRACT, roundedContractPercentUtil())
                     .scaling((int) throttleMultiplier);
-            case FileCreate -> entityScaleFactors
+            case FILE_CREATE -> entityScaleFactors
                     .scaleForNew(FILE, roundedFilePercentUtil())
                     .scaling((int) throttleMultiplier);
-            case TokenMint -> accessor.mintsWithMetadata()
-                    ? entityScaleFactors
-                            .scaleForNew(NFT, roundedNftPercentUtil())
-                            .scaling((int) throttleMultiplier)
-                    : throttleMultiplier;
-            case TokenCreate -> entityScaleFactors
+            case TOKEN_MINT -> {
+                final var mintsWithMetadata =
+                        !txnInfo.txBody().tokenMint().metadata().isEmpty();
+                yield mintsWithMetadata
+                        ? entityScaleFactors
+                                .scaleForNew(NFT, roundedNftPercentUtil())
+                                .scaling((int) throttleMultiplier)
+                        : throttleMultiplier;
+            }
+            case TOKEN_CREATE -> entityScaleFactors
                     .scaleForNew(TOKEN, roundedTokenPercentUtil())
                     .scaling((int) throttleMultiplier);
-            case TokenAssociateToAccount -> entityScaleFactors
+            case TOKEN_ASSOCIATE_TO_ACCOUNT -> entityScaleFactors
                     .scaleForNew(TOKEN_ASSOCIATION, roundedTokenRelPercentUtil())
                     .scaling((int) throttleMultiplier);
-            case ConsensusCreateTopic -> entityScaleFactors
+            case CONSENSUS_CREATE_TOPIC -> entityScaleFactors
                     .scaleForNew(TOPIC, roundedTopicPercentUtil())
                     .scaling((int) throttleMultiplier);
             default -> throttleMultiplier;
@@ -195,22 +196,18 @@ public class TransactionRateMultiplierSource implements FeeMultiplierSource {
         return maxNumberOfTopics == 0 ? 100 : (int) ((100 * numOfTopics) / maxNumberOfTopics);
     }
 
-    @Override
-    public void updateMultiplier(TxnAccessor accessor, Instant consensusNow) {
-        delegate.updateMultiplier(accessor, consensusNow);
+    public void updateMultiplier(Instant consensusNow) {
+        delegate.updateMultiplier(consensusNow);
     }
 
-    @Override
     public void resetExpectations() {
         delegate.resetExpectations();
     }
 
-    @Override
     public void resetCongestionLevelStarts(Instant[] savedStartTimes) {
         delegate.resetCongestionLevelStarts(savedStartTimes);
     }
 
-    @Override
     public Instant[] congestionLevelStarts() {
         return delegate.congestionLevelStarts();
     }

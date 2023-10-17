@@ -32,6 +32,7 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
+import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
 import com.hedera.node.app.fees.congestion.TransactionRateMultiplierSource;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
@@ -42,7 +43,6 @@ import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.fees.congestion.ThrottleMultiplierSource;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
@@ -693,7 +693,7 @@ public final class Hedera implements SwirldMain {
     }
 
     private MonoMultiplierSources createMultiplierSources(HederaState state) {
-        final var genericFeeMultiplier = new ThrottleMultiplierSource(
+        final var genericFeeMultiplier = new ThrottleMultiplier(
                 "logical TPS",
                 "TPS",
                 "CryptoTransfer throughput",
@@ -710,7 +710,7 @@ public final class Hedera implements SwirldMain {
 
         final var txnRateMultiplier = new TransactionRateMultiplierSource(genericFeeMultiplier, configProvider, state);
 
-        final var gasFeeMultiplier = new ThrottleMultiplierSource(
+        final var gasFeeMultiplier = new ThrottleMultiplier(
                 "EVM gas/sec",
                 "gas/sec",
                 "EVM utilization",

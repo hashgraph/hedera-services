@@ -18,81 +18,50 @@ package com.hedera.node.app.fees.congestion;
 
 import static java.util.Objects.requireNonNull;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.transaction.SignedTransaction;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.fees.congestion.FeeMultiplierSource;
-import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
-import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 public class MonoMultiplierSources {
-    private static final TxnAccessor accessor;
-
-    static {
-        try {
-            // only accessor.congestionExempt() is used in the mono multiplier implementation and that seems like could
-            // be only set for triggered transactions
-            // so using just a dummy accessor
-            accessor = SignedTxnAccessor.from(Transaction.PROTOBUF
-                    .toBytes(Transaction.newBuilder()
-                            .signedTransactionBytes(SignedTransaction.PROTOBUF.toBytes(SignedTransaction.newBuilder()
-                                    .bodyBytes(TransactionBody.PROTOBUF.toBytes(TransactionBody.newBuilder()
-                                            .cryptoTransfer(CryptoTransferTransactionBody.newBuilder()
-                                                    .build())
-                                            .build()))
-                                    .build()))
-                            .build())
-                    .toByteArray());
-        } catch (InvalidProtocolBufferException e) {
-            //             this should never happen because we use a dummy transaction which should be always valid
-            throw new RuntimeException(e);
-        }
-    }
-
-    private final MultiplierSources delegate;
+    private final TransactionRateMultiplierSource genericFeeMultiplier;
+    private final ThrottleMultiplier gasFeeMultiplier;
 
     public MonoMultiplierSources(
-            @NonNull final FeeMultiplierSource genericFeeMultiplier,
-            @NonNull final FeeMultiplierSource gasFeeMultiplier) {
-        requireNonNull(genericFeeMultiplier, "genericFeeMultiplier must not be null");
-        requireNonNull(gasFeeMultiplier, "gasFeeMultiplier must not be null");
-
-        this.delegate = new MultiplierSources(genericFeeMultiplier, gasFeeMultiplier);
+            @NonNull final TransactionRateMultiplierSource genericFeeMultiplier,
+            @NonNull final ThrottleMultiplier gasFeeMultiplier) {
+        this.genericFeeMultiplier = requireNonNull(genericFeeMultiplier, "genericFeeMultiplier must not be null");
+        this.gasFeeMultiplier = requireNonNull(gasFeeMultiplier, "gasFeeMultiplier must not be null");
     }
 
     public void updateMultiplier(@NonNull final Instant consensusTime) {
-        this.delegate.updateMultiplier(accessor, consensusTime);
+        gasFeeMultiplier.updateMultiplier(consensusTime);
+        genericFeeMultiplier.updateMultiplier(consensusTime);
     }
 
-    public long maxCurrentMultiplier() {
-        // TODO: final var accessor = ;
-        return this.delegate.maxCurrentMultiplier(null);
+    public long maxCurrentMultiplier(TransactionInfo txnInfo) {
+        return Math.max(gasFeeMultiplier.currentMultiplier(), genericFeeMultiplier.currentMultiplier(txnInfo));
     }
 
     @NonNull
     public Instant[] genericCongestionStarts() {
-        return delegate.genericCongestionStarts();
+        return genericFeeMultiplier.congestionLevelStarts();
     }
 
     @NonNull
     public Instant[] gasCongestionStarts() {
-        return delegate.gasCongestionStarts();
+        return gasFeeMultiplier.congestionLevelStarts();
     }
 
     public void resetGenericCongestionLevelStarts(@NonNull final Instant[] startTimes) {
-        delegate.resetGenericCongestionLevelStarts(startTimes);
+        genericFeeMultiplier.resetCongestionLevelStarts(startTimes);
     }
 
     public void resetGasCongestionLevelStarts(@NonNull final Instant[] startTimes) {
-        delegate.resetGasCongestionLevelStarts(startTimes);
+        gasFeeMultiplier.resetCongestionLevelStarts(startTimes);
     }
 
     public void resetExpectations() {
-        delegate.resetExpectations();
+        gasFeeMultiplier.resetExpectations();
+        genericFeeMultiplier.resetExpectations();
     }
 }

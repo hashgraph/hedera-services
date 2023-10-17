@@ -29,10 +29,11 @@ import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
+import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
+import com.hedera.node.app.fees.congestion.TransactionRateMultiplierSource;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.fees.congestion.ThrottleMultiplierSource;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
@@ -74,6 +75,12 @@ class IngestComponentTest {
     @Mock
     private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
+    @Mock
+    TransactionRateMultiplierSource genericFeeMultiplier;
+
+    @Mock
+    ThrottleMultiplier gasFeeMultiplier;
+
     private HederaInjectionComponent app;
 
     @BeforeEach
@@ -98,9 +105,7 @@ class IngestComponentTest {
         final var configProvider = new ConfigProviderImpl(false);
         final var handleThrottling = new ThrottleAccumulator(() -> 1, configProvider);
         final var synchronizedThrottleAccumulator = new ThrottleAccumulator(() -> 5, configProvider);
-        final var monoMultiplierSources = new MonoMultiplierSources(
-                new ThrottleMultiplierSource(null, null, null, null, null, null, null),
-                new ThrottleMultiplierSource(null, null, null, null, null, null, null));
+        final var monoMultiplierSources = new MonoMultiplierSources(genericFeeMultiplier, gasFeeMultiplier);
 
         final var exchangeRateManager = new ExchangeRateManager(configProvider);
 
