@@ -682,6 +682,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
+    @HapiTest
     private HapiSpec bitcarbonTestStillPasses() {
         final var addressBook = "AddressBook";
         final var jurisdictions = "Jurisdictions";
@@ -900,6 +901,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .via(remove2));
     }
 
+    @HapiTest
     HapiSpec specialQueriesXTest() {
         final var secret = BigInteger.valueOf(123456789L);
         final var tinybars = BigInteger.valueOf(666_666_666L);
