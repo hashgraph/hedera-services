@@ -83,7 +83,7 @@ public class UpdateKeysXTest extends AbstractContractXTest {
                     assertEquals(
                             Bytes.wrap(ReturnTypes.encodedRc(INVALID_ADMIN_KEY).array()), output);
                 });
-        // Should throw `INVALID_ADMIN_KEY` as we are passing an invalid key with key type admin key
+        // Should throw `INVALID_TOKEN_ID` as we are passing an invalid token address
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(UpdateKeysTranslator.TOKEN_UPDATE_KEYS_FUNCTION
