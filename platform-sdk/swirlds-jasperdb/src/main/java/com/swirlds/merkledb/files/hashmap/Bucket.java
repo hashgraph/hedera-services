@@ -384,16 +384,18 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
                     value = entryData.readLong();
                 } else if (fieldNum == FIELD_BUCKETENTRY_KEYBYTES.number()) {
                     final int bytesSize = entryData.readVarInt(false);
-                    keyBytes = BufferedData.allocate(bytesSize);
-                    entryData.readBytes(keyBytes);
+                    long oldLimit = entryData.limit();
+                    entryData.limit(entryData.position() + bytesSize);
+                    key = keySerializer.deserialize(entryData);
+                    entryData.limit(oldLimit);
                 } else {
                     throw new IllegalArgumentException("Unknown bucket entry field: " + fieldNum);
                 }
             }
 
             // check required fields
-            if (keyBytes == null) {
-                throw new IllegalArgumentException("Null key bytes for bucket entry");
+            if ((key == null) && (keyBytes == null)) {
+                throw new IllegalArgumentException("Null key / key bytes for bucket entry");
             }
         }
 
