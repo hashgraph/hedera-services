@@ -39,10 +39,10 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
-import com.swirlds.platform.PlatformConstructor;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.metrics.ReconnectMetrics;
@@ -54,6 +54,8 @@ import com.swirlds.platform.network.connectivity.ConnectionServer;
 import com.swirlds.platform.network.connectivity.InboundConnectionHandler;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
+import com.swirlds.platform.network.connectivity.TcpFactory;
+import com.swirlds.platform.network.connectivity.TlsFactory;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
 import com.swirlds.platform.network.topology.StaticTopology;
@@ -64,7 +66,14 @@ import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.PlatformConstructionException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -163,8 +172,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 addressBook, selfId, basicConfig.numConnections(), unidirectionalConnectionsEnabled());
 
         final Configuration configuration = platformContext.getConfiguration();
-        final SocketFactory socketFactory =
-                PlatformConstructor.socketFactory(crypto.getKeysAndCerts(), cryptoConfig, socketConfig);
+        final SocketFactory socketFactory = socketFactory(crypto.getKeysAndCerts(), cryptoConfig, socketConfig);
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
                 selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion, configuration);
@@ -230,6 +238,29 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                         reconnectConfig.asyncStreamTimeout(),
                         reconnectMetrics),
                 stateConfig);
+    }
+
+    private static SocketFactory socketFactory(
+            @NonNull final KeysAndCerts keysAndCerts,
+            @NonNull final CryptoConfig cryptoConfig,
+            @NonNull final SocketConfig socketConfig) {
+        Objects.requireNonNull(keysAndCerts);
+        Objects.requireNonNull(cryptoConfig);
+        Objects.requireNonNull(socketConfig);
+
+        if (!socketConfig.useTLS()) {
+            return new TcpFactory(socketConfig);
+        }
+        try {
+            return new TlsFactory(keysAndCerts, socketConfig, cryptoConfig);
+        } catch (final NoSuchAlgorithmException
+                | UnrecoverableKeyException
+                | KeyStoreException
+                | KeyManagementException
+                | CertificateException
+                | IOException e) {
+            throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
+        }
     }
 
     /**

@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.state;
 
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -73,4 +74,7 @@ public interface MigrationContext {
      */
     @NonNull
     GenesisRecordsBuilder genesisRecordsBuilder();
+
+    @NonNull
+    HandleThrottleParser handleThrottling();
 }

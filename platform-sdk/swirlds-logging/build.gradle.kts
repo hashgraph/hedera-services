@@ -24,4 +24,5 @@ testModuleInfo {
     requires("org.apache.logging.log4j.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
+    requires("com.swirlds.base.test.fixtures")
 }
