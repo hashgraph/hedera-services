@@ -29,8 +29,6 @@ import java.util.function.LongUnaryOperator;
  */
 public class BackpressureObjectCounter extends ObjectCounter {
 
-    // TODO write unit tests for this class
-
     private final AtomicLong count = new AtomicLong(0);
     private final LongUnaryOperator increment;
     private final long sleepNanos;
@@ -72,22 +70,24 @@ public class BackpressureObjectCounter extends ObjectCounter {
      */
     @Override
     public void onRamp() {
+        boolean interrupted = false;
         while (true) {
             try {
                 count.updateAndGet(increment);
-                return;
+                break;
             } catch (final NoCapacityException e) {
                 if (sleepNanos >= 0) {
                     try {
                         NANOSECONDS.sleep(sleepNanos);
                     } catch (final InterruptedException ex) {
-                        // If we get interrupted we will end up spinning around in this loop
-                        // very rapidly without actually sleeping... but that's should be rare,
-                        // and so the performance implications are acceptable.
-                        Thread.currentThread().interrupt();
+                        interrupted = true;
                     }
                 }
             }
+        }
+
+        if (interrupted) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -101,6 +101,9 @@ public class BackpressureObjectCounter extends ObjectCounter {
                 count.updateAndGet(increment);
                 return;
             } catch (final NoCapacityException e) {
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new InterruptedException();
+                }
                 if (sleepNanos >= 0) {
                     NANOSECONDS.sleep(sleepNanos);
                 }

@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * A NoOp implementation of {@link FractionalTimer}.
  */
-public class NoOpFractionalTimer implements FractionalTimer { // TODO test
+public class NoOpFractionalTimer implements FractionalTimer {
 
     /**
      * {@inheritDoc}

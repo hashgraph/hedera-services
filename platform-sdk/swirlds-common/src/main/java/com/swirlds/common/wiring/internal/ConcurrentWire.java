@@ -20,7 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.wiring.Wire;
-import com.swirlds.common.wiring.counters.NoOpCounter;
+import com.swirlds.common.wiring.counters.NoOpObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -52,8 +52,8 @@ public class ConcurrentWire extends Wire {
     public ConcurrentWire(
             @NonNull final String name, @Nullable final ObjectCounter onRamp, @Nullable final ObjectCounter offRamp) {
         this.name = Objects.requireNonNull(name);
-        this.onRamp = onRamp == null ? NoOpCounter.getInstance() : onRamp;
-        this.offRamp = offRamp == null ? NoOpCounter.getInstance() : offRamp;
+        this.onRamp = onRamp == null ? NoOpObjectCounter.getInstance() : onRamp;
+        this.offRamp = offRamp == null ? NoOpObjectCounter.getInstance() : offRamp;
     }
 
     /**

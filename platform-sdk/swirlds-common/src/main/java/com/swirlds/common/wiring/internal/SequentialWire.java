@@ -19,7 +19,7 @@ package com.swirlds.common.wiring.internal;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.wiring.Wire;
-import com.swirlds.common.wiring.counters.NoOpCounter;
+import com.swirlds.common.wiring.counters.NoOpObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -120,8 +120,8 @@ public class SequentialWire extends Wire {
 
         this.name = Objects.requireNonNull(name);
 
-        this.onRamp = onRamp == null ? NoOpCounter.getInstance() : onRamp;
-        this.offRamp = offRamp == null ? NoOpCounter.getInstance() : offRamp;
+        this.onRamp = onRamp == null ? NoOpObjectCounter.getInstance() : onRamp;
+        this.offRamp = offRamp == null ? NoOpObjectCounter.getInstance() : offRamp;
 
         this.busyTimer = busyTimer == null ? new NoOpFractionalTimer() : busyTimer;
         this.lastTask = new AtomicReference<>(new SequentialTask(1));

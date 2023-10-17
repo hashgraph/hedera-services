@@ -23,8 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class StandardObjectCounter extends ObjectCounter {
 
-    // TODO write unit tests for this class
-
     private final AtomicLong count = new AtomicLong(0);
 
     /**

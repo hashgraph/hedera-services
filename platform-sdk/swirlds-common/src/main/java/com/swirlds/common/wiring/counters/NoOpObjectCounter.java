@@ -19,23 +19,23 @@ package com.swirlds.common.wiring.counters;
 /**
  * A counter that doesn't actually count. Saves us from having to do a (counter == null) check in the standard case.
  */
-public class NoOpCounter extends ObjectCounter {
+public class NoOpObjectCounter extends ObjectCounter {
 
-    private static final NoOpCounter INSTANCE = new NoOpCounter();
+    private static final NoOpObjectCounter INSTANCE = new NoOpObjectCounter();
 
     /**
      * Get the singleton instance.
      *
      * @return the singleton instance
      */
-    public static NoOpCounter getInstance() {
+    public static NoOpObjectCounter getInstance() {
         return INSTANCE;
     }
 
     /**
      * Constructor.
      */
-    private NoOpCounter() {}
+    private NoOpObjectCounter() {}
 
     /**
      * {@inheritDoc}
