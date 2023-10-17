@@ -890,8 +890,8 @@ public class CryptoTransferSuite extends HapiSuite {
                                 // INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE is the expected mono service
                                 // outcome here, but the modularized implementation doesn't provide enough information
                                 // to differentiate these error codes. Since this is an extreme edge case and a
-                                // difficult issue to fix, we'll allow either error code here for now. However, it may
-                                // be needed in the future to only accept the original error code.
+                                // difficult issue to fix, we'll allow either error code here for now. However, we may
+                                // need to revert back to only accepting the original error code in the future.
                                 .hasKnownStatusFrom(
                                         INSUFFICIENT_TOKEN_BALANCE, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE),
                         cryptoTransfer(movingWithAllowance(100, FUNGIBLE_TOKEN).between(OWNER, OWNER))
