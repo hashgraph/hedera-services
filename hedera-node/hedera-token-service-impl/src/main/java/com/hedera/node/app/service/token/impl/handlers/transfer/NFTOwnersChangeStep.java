@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.get
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
@@ -80,23 +81,12 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
                 final var nft = nftStore.get(tokenId, serial);
                 validateTrue(nft != null, INVALID_NFT_ID);
 
-                if (nftTransfer.isApproval()) {
-                    // If isApproval flag is set then the spender account must have paid for the transaction.
-                    // The transfer list specifies the owner who granted allowance as sender
-                    // check if the allowances from the sender account has the payer account as spender
-                    validateSpenderHasAllowance(senderAccount, topLevelPayer, tokenId, nft);
-                }
+                validateNftTransfer(nftTransfer, senderAccount, topLevelPayer, tokenId, nft, treasury);
 
                 final var copyNft = nft.copyBuilder();
                 // If the nft owner is not set then set it to the treasury account
-                if (!nft.hasOwnerId() || nft.ownerId().equals(AccountID.DEFAULT)) {
+                if (!nft.hasOwnerId() || nft.ownerIdOrThrow().equals(AccountID.DEFAULT)) {
                     copyNft.ownerId(treasury);
-                }
-                // owner of nft should match the sender in transfer list
-                if (nft.hasOwnerId()) {
-                    validateTrue(nft.ownerId().equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-                } else {
-                    validateTrue(treasury.equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
                 }
                 nftStore.put(copyNft.build());
 
@@ -116,6 +106,31 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
     }
 
     /**
+     * Validates various conditions for the nft transfer
+     */
+    static void validateNftTransfer(
+            NftTransfer nftTransfer,
+            Account senderAccount,
+            AccountID topLevelPayer,
+            TokenID tokenId,
+            Nft nft,
+            AccountID treasury) {
+        if (nftTransfer.isApproval()) {
+            // If isApproval flag is set then the spender account must have paid for the transaction.
+            // The transfer list specifies the owner who granted allowance as sender
+            // check if the allowances from the sender account has the payer account as spender
+            validateSpenderHasAllowance(senderAccount, topLevelPayer, tokenId, nft);
+        }
+
+        // owner of nft should match the sender in transfer list
+        if (nft.hasOwnerId()) {
+            validateTrue(nft.ownerIdOrThrow().equals(senderAccount.accountId()), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+        } else {
+            validateTrue(treasury.equals(senderAccount.accountId()), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+        }
+    }
+
+    /**
      * Validate if the spender has allowance to transfer the nft, if the nft is being transferred
      * with an isApproval flag set to true.
      * @param owner owner of the nft
@@ -123,7 +138,7 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
      * @param tokenId token id of the nft
      * @param nft nft to be transferred
      */
-    private void validateSpenderHasAllowance(
+    private static void validateSpenderHasAllowance(
             final Account owner, final AccountID spender, final TokenID tokenId, final Nft nft) {
         final var approveForAllAllowances = owner.approveForAllNftAllowances();
         final var allowance = AccountApprovalForAllAllowance.newBuilder()
