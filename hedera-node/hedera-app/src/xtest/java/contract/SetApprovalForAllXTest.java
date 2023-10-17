@@ -184,7 +184,7 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
                         .array()),
                 TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
-        // Try SetApproveForAll with Invalid Account address, ERC Cal
+        // Try SetApproveForAll with Invalid Account address, ERC Call
         runHtsCallAndExpectRevert(
                 OWNER_BESU_ADDRESS,
                 bytesForRedirect(
