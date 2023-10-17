@@ -382,6 +382,7 @@ class SequentialWireTests {
         final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
                 .withScheduledTaskCapacity(10)
+                .withBackpressureSleepDuration(Duration.ofMillis(1))
                 .build();
         final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());

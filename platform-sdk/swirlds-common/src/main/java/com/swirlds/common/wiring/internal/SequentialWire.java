@@ -24,6 +24,7 @@ import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -39,6 +40,8 @@ public class SequentialWire extends Wire {
 
     private final FractionalTimer busyTimer;
     private final String name;
+
+    private final ForkJoinPool pool;
 
     /**
      * A task in a sequential wire.
@@ -57,7 +60,7 @@ public class SequentialWire extends Wire {
          *                        be executed and data must be provided).
          */
         SequentialTask(final int dependencyCount) {
-            super(dependencyCount);
+            super(pool, dependencyCount);
         }
 
         /**
@@ -107,17 +110,20 @@ public class SequentialWire extends Wire {
     /**
      * Constructor.
      *
+     * @param pool      the fork join pool that will execute tasks on this wire
      * @param name      the name of the wire
      * @param onRamp    an object counter that is incremented when data is added to the wire, ignored if null
      * @param offRamp   an object counter that is decremented when data is removed from the wire, ignored if null
      * @param busyTimer a timer that tracks the amount of time the wire is busy, ignored if null
      */
     public SequentialWire(
+            @NonNull ForkJoinPool pool,
             @NonNull final String name,
             @Nullable final ObjectCounter onRamp,
             @Nullable final ObjectCounter offRamp,
             @Nullable final FractionalTimer busyTimer) {
 
+        this.pool = Objects.requireNonNull(pool);
         this.name = Objects.requireNonNull(name);
 
         this.onRamp = onRamp == null ? NoOpObjectCounter.getInstance() : onRamp;

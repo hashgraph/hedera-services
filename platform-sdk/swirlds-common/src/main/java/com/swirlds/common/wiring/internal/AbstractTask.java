@@ -16,6 +16,7 @@
 
 package com.swirlds.common.wiring.internal;
 
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,11 +31,9 @@ public abstract class AbstractTask extends ForkJoinTask<Void> {
     private final AtomicInteger dependencyCount;
 
     /**
-     * Constructor for a task with zero dependencies (i.e. one that is immediately eligible for execution).
+     * The fork join pool that will execute this task.
      */
-    protected AbstractTask() {
-        this(0);
-    }
+    private final ForkJoinPool pool;
 
     /**
      * Constructor.
@@ -42,7 +41,8 @@ public abstract class AbstractTask extends ForkJoinTask<Void> {
      * @param dependencyCount the number of dependencies that must be satisfied before this task is eligible for
      *                        execution
      */
-    protected AbstractTask(final int dependencyCount) {
+    protected AbstractTask(final ForkJoinPool pool, final int dependencyCount) {
+        this.pool = pool;
         this.dependencyCount = dependencyCount > 0 ? new AtomicInteger(dependencyCount) : null;
     }
 
@@ -66,7 +66,7 @@ public abstract class AbstractTask extends ForkJoinTask<Void> {
      */
     protected void send() {
         if (dependencyCount == null || dependencyCount.decrementAndGet() == 0) {
-            fork();
+            pool.execute(this);
         }
     }
 

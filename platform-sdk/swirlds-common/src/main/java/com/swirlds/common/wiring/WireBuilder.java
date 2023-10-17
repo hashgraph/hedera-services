@@ -26,10 +26,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.ForkJoinPool;
 
 /**
  * A builder for wires.
- *
  */
 public class WireBuilder {
 
@@ -41,12 +41,12 @@ public class WireBuilder {
     private long scheduledTaskCapacity = UNLIMITED_CAPACITY;
     private ObjectCounter onRamp;
     private ObjectCounter offRamp;
+    private ForkJoinPool pool = ForkJoinPool.commonPool();
 
     private Duration backpressureSleepDuration = Duration.ofNanos(100);
 
     // Future parameters:
     //  - uncaught exception handler
-    //  - max concurrency (or would this be implemented by limiting the thread pool size?)
 
     /**
      * Constructor.
@@ -152,20 +152,14 @@ public class WireBuilder {
     }
 
     /**
-     * Utility function for checking if we should use a metered wire.
+     * Provide a custom thread pool for this wire. If none is provided then the common fork join pool will be used.
      *
-     * @return true if metrics are enabled, false otherwise
+     * @param pool the thread pool
+     * @return this
      */
-    private boolean useMeteredWire() {
-        if (scheduledTaskCapacity != UNLIMITED_CAPACITY) {
-            return true;
-        }
-
-        if (metricsBuilder == null) {
-            return false;
-        }
-
-        return metricsBuilder.isScheduledTaskCountMetricEnabled() || metricsBuilder.isBusyFractionMetricEnabled();
+    public WireBuilder withPool(@NonNull final ForkJoinPool pool) {
+        this.pool = Objects.requireNonNull(pool);
+        return this;
     }
 
     /**
@@ -232,9 +226,9 @@ public class WireBuilder {
         final FractionalTimer busyTimer = buildBusyTimer();
 
         if (concurrent) {
-            return new ConcurrentWire(name, counters.onRamp(), counters.offRamp());
+            return new ConcurrentWire(pool, name, counters.onRamp(), counters.offRamp());
         } else {
-            return new SequentialWire(name, counters.onRamp(), counters.offRamp(), busyTimer);
+            return new SequentialWire(pool, name, counters.onRamp(), counters.offRamp(), busyTimer);
         }
     }
 }

@@ -51,11 +51,13 @@ class WiringBenchmark {
         final ObjectCounter backpressure = new BackpressureObjectCounter(10_000, null);
 
         final Wire toVerifier = Wire.builder("verification")
+                .withPool(executor)
                 .withConcurrency(true)
                 .withOnRamp(backpressure)
                 .build();
 
         final Wire toOrphanBuffer = Wire.builder("orphanBuffer")
+                .withPool(executor)
                 .withConcurrency(false)
                 .withOffRamp(backpressure)
                 .build();

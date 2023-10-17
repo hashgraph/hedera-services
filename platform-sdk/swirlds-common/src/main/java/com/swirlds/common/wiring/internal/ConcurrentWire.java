@@ -25,6 +25,7 @@ import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,15 +41,22 @@ public class ConcurrentWire extends Wire {
     private final ObjectCounter offRamp;
     private final String name;
 
+    private final ForkJoinPool pool;
+
     /**
      * Constructor.
      *
+     * @param pool    the fork join pool that will execute tasks on this wire
      * @param name    the name of the wire
      * @param onRamp  an object counter that is incremented when data is added to the wire, ignored if null
      * @param offRamp an object counter that is decremented when data is removed from the wire, ignored if null
      */
     public ConcurrentWire(
-            @NonNull final String name, @Nullable final ObjectCounter onRamp, @Nullable final ObjectCounter offRamp) {
+            @NonNull ForkJoinPool pool,
+            @NonNull final String name,
+            @Nullable final ObjectCounter onRamp,
+            @Nullable final ObjectCounter offRamp) {
+        this.pool = Objects.requireNonNull(pool);
         this.name = Objects.requireNonNull(name);
         this.onRamp = onRamp == null ? NoOpObjectCounter.getInstance() : onRamp;
         this.offRamp = offRamp == null ? NoOpObjectCounter.getInstance() : offRamp;
@@ -69,7 +77,7 @@ public class ConcurrentWire extends Wire {
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.onRamp();
-        new AbstractTask() {
+        new AbstractTask(pool, 0) {
             @Override
             protected boolean exec() {
                 offRamp.offRamp();
@@ -86,7 +94,7 @@ public class ConcurrentWire extends Wire {
     protected void interruptablePut(@NonNull final Consumer<Object> handler, @NonNull final Object data)
             throws InterruptedException {
         onRamp.interruptableOnRamp();
-        new AbstractTask() {
+        new AbstractTask(pool, 0) {
             @Override
             protected boolean exec() {
                 offRamp.offRamp();
@@ -105,7 +113,7 @@ public class ConcurrentWire extends Wire {
         if (!accepted) {
             return false;
         }
-        new AbstractTask() {
+        new AbstractTask(pool, 0) {
             @Override
             protected boolean exec() {
                 offRamp.offRamp();
@@ -122,7 +130,7 @@ public class ConcurrentWire extends Wire {
     @Override
     protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         onRamp.forceOnRamp();
-        new AbstractTask() {
+        new AbstractTask(pool, 0) {
             @Override
             protected boolean exec() {
                 offRamp.offRamp();
