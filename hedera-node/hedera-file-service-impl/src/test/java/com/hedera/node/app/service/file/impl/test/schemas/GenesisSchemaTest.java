@@ -72,7 +72,13 @@ final class GenesisSchemaTest {
 
         // When we migrate
         schema.migrate(new MigrationContextImpl(
-                prevStates, newStates, config, networkInfo, new GenesisRecordsConsensusHook(), handleThrottleParser, mock(WritableEntityIdStore.class)));
+                prevStates,
+                newStates,
+                config,
+                networkInfo,
+                new GenesisRecordsConsensusHook(),
+                handleThrottleParser,
+                mock(WritableEntityIdStore.class)));
 
         // Then the new state has empty bytes for files 151-158 and proper values
         final var files = newStates.<FileID, File>get(FileServiceImpl.BLOBS_KEY);

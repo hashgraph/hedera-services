@@ -239,7 +239,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // made (instead of allowing any arbitrary change to overall state). As above, we won't commit anything
             // until after this service's migration
             final var migrationContext = new MigrationContextImpl(
-                    previousStates, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling, entityIdStore);
+                    previousStates,
+                    newStates,
+                    config,
+                    networkInfo,
+                    genesisRecordsBuilder,
+                    handleThrottling,
+                    entityIdStore);
             if (updateInsteadOfMigrate) {
                 schema.restart(migrationContext);
             } else {
