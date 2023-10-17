@@ -126,12 +126,12 @@ public class WipeCallTest extends HtsCallTestBase {
         verifyResultStatus(result, ResponseCodeEnum.INVALID_NFT_ID);
     }
 
-    private static void verifyResultStatus(PrecompileContractResult result, ResponseCodeEnum invalidNftId) {
+    private static void verifyResultStatus(PrecompileContractResult result, ResponseCodeEnum expectedStatus) {
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
                 asBytesResult(WipeTranslator.WIPE_FUNGIBLE_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(invalidNftId.protoOrdinal()))),
+                        .encodeElements(BigInteger.valueOf(expectedStatus.protoOrdinal()))),
                 result.getOutput());
     }
 }
