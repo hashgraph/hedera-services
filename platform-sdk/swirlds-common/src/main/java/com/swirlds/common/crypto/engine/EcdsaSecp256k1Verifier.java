@@ -25,7 +25,7 @@ import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 
 /**
- * Verifies signatures created with a ECDSA(secp256k1) private key.
+ * Verifies signatures created with an ECDSA(secp256k1) private key.
  */
 public class EcdsaSecp256k1Verifier {
 
@@ -76,21 +76,23 @@ public class EcdsaSecp256k1Verifier {
      * <p>The signature must be 64 bytes where the first 32 bytes are the {code r} value of
      * the signature and the second 32 bytes are the {@code s} value of the signature.
      *
+     * <p>The msgHash must be 32 bytes keccak 256 hash of the message that was signed.
+     *
      * <p>All encodings are to be unsigned big-endian.
      *
      * @param rawSig
      * 		the (r, s) signature to be verified
-     * @param msg
-     * 		the original message that was signed
+     * @param msgHash
+     * 		the 32 bytes 256bit keccak hash of the message that was signed
      * @param pubKey
      * 		the public key to use to verify the signature
      * @return true if the signature is valid
      */
-    public boolean verify(@NonNull final byte[] rawSig, @NonNull final byte[] msg, @NonNull final byte[] pubKey) {
+    public boolean verify(@NonNull final byte[] rawSig, @NonNull final byte[] msgHash, @NonNull final byte[] pubKey) {
         // check message is already Keccak256 hash size
-        if (msg.length != ECDSA_KECCAK_256_SIZE) {
+        if (msgHash.length != ECDSA_KECCAK_256_SIZE) {
             logger.warn(TESTING_EXCEPTIONS.getMarker(), () -> "Message is not Keccak256 hash size 32 bytes [ msg = %s ]"
-                    .formatted(hex(msg)));
+                    .formatted(hex(msgHash)));
             return false;
         }
         // check public key size
@@ -134,7 +136,7 @@ public class EcdsaSecp256k1Verifier {
         }
         // verify signature
         final int result =
-                LibSecp256k1.secp256k1_ecdsa_verify(LibSecp256k1.CONTEXT, nativeSignature, msg, nativePublicKey);
+                LibSecp256k1.secp256k1_ecdsa_verify(LibSecp256k1.CONTEXT, nativeSignature, msgHash, nativePublicKey);
         return result == 1;
     }
 }
