@@ -18,6 +18,7 @@ package com.swirlds.common.wiring;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
@@ -60,12 +61,13 @@ public abstract class Wire {
 
     /**
      * Get the number of unprocessed tasks. Returns -1 if this wire is not monitoring the number of unprocessed tasks.
-     * Wires do not track the number of unprocessed tasks by default. To enable tracking, enable
-     * {@link WireMetricsBuilder#withScheduledTaskCountMetricEnabled(boolean)} or set a capacity that is not unlimited
-     * via {@link WireBuilder#withScheduledTaskCapacity(long)}.
-     *
-     * <p>
-     * TODO this is wonky API, since a counter is not always enabled
+     * Wires do not track the number of unprocessed tasks by default. This method will always return -1 unless one of
+     * the following is true:
+     * <ul>
+     * <li>{@link WireMetricsBuilder#withScheduledTaskCountMetricEnabled(boolean)} is called with the value true</li>
+     * <li>{@link WireBuilder#withScheduledTaskCapacity(long)} is passed a positive value</li>
+     * <li>{@link WireBuilder#withOnRamp(ObjectCounter)} is passed a counter that is not a no op counter</li>
+     * </ul>
      */
     public abstract long getUnprocessedTaskCount();
 

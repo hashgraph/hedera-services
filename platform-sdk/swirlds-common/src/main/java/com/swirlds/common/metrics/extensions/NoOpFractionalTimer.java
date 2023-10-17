@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * A NoOp implementation of {@link FractionalTimer}.
  */
-public class NoOpFractionalTimer implements FractionalTimer {
+public class NoOpFractionalTimer implements FractionalTimer { // TODO test
 
     /**
      * {@inheritDoc}
@@ -35,7 +35,7 @@ public class NoOpFractionalTimer implements FractionalTimer {
      * {@inheritDoc}
      */
     @Override
-    public void activate(long now) {}
+    public void activate(final long now) {}
 
     /**
      * {@inheritDoc}
@@ -47,7 +47,7 @@ public class NoOpFractionalTimer implements FractionalTimer {
      * {@inheritDoc}
      */
     @Override
-    public void deactivate(long now) {}
+    public void deactivate(final long now) {}
 
     /**
      * {@inheritDoc}
