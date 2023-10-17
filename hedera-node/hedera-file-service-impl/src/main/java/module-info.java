@@ -27,4 +27,5 @@ module com.hedera.node.app.service.file.impl {
     exports com.hedera.node.app.service.file.impl;
     exports com.hedera.node.app.service.file.impl.base;
     exports com.hedera.node.app.service.file.impl.utils;
+    exports com.hedera.node.app.service.file.impl.schemas;
 }

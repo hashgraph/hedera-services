@@ -22,7 +22,6 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
-import com.swirlds.platform.components.ConsensusWrapper;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
@@ -39,25 +38,20 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import java.util.function.BiConsumer;
 
 /** A class containing utilities for consensus tests. */
 public abstract class ConsensusUtils {
 
     public static final ConsensusMetrics NOOP_CONSENSUS_METRICS = new NoOpConsensusMetrics();
-    public static final BiConsumer<Long, Long> NOOP_MINGEN = (l1, l2) -> {};
 
-    public static List<ConsensusRound> applyEventsToConsensusUsingWrapper(
+    public static List<ConsensusRound> applyEventsToConsensus(
             final EventEmitter<?> emitter, final Consensus consensus, final long numberOfEvents) {
 
         final List<ConsensusRound> allConsensusRounds = new LinkedList<>();
 
-        final ConsensusWrapper wrapper = new ConsensusWrapper(() -> consensus);
-
         for (int i = 0; i < numberOfEvents; i++) {
             final IndexedEvent genEvent = emitter.emitEvent();
-            final List<ConsensusRound> rounds =
-                    wrapper.addEvent(genEvent, emitter.getGraphGenerator().getAddressBook());
+            final List<ConsensusRound> rounds = consensus.addEvent(genEvent);
             if (rounds != null) {
                 allConsensusRounds.addAll(rounds);
             }
@@ -66,20 +60,9 @@ public abstract class ConsensusUtils {
         return allConsensusRounds;
     }
 
-    /**
-     * Construct a simple Consensus object.
-     */
     public static ConsensusImpl buildSimpleConsensus(final AddressBook addressBook) {
-        return buildSimpleConsensus(addressBook, NOOP_MINGEN);
-    }
-
-    public static ConsensusImpl buildSimpleConsensus(
-            final AddressBook addressBook, final BiConsumer<Long, Long> minGenConsumer) {
         return new ConsensusImpl(
-                ConfigurationHolder.getConfigData(ConsensusConfig.class),
-                NOOP_CONSENSUS_METRICS,
-                minGenConsumer,
-                addressBook);
+                ConfigurationHolder.getConfigData(ConsensusConfig.class), NOOP_CONSENSUS_METRICS, addressBook);
     }
 
     /**
