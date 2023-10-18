@@ -27,6 +27,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,6 +44,7 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
     private final Address spender;
     private final AddressIdConverter addressIdConverter;
     private final boolean isERCCall;
+    private final boolean isStaticCall;
 
     @Inject
     public GetAllowanceCall(
@@ -51,12 +53,14 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
             @Nullable final Token token,
             @NonNull final Address owner,
             @NonNull final Address spender,
-            final boolean isERCCall) {
+            final boolean isERCCall,
+            final boolean isStaticCall) {
         super(enhancement, token);
         this.addressIdConverter = addressIdConverter;
         this.owner = requireNonNull(owner);
         this.spender = requireNonNull(spender);
         this.isERCCall = isERCCall;
+        this.isStaticCall = isStaticCall;
     }
 
     @NonNull
@@ -67,11 +71,20 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
         requireNonNull(owner);
         requireNonNull(spender);
         if (token.tokenType() != TokenType.FUNGIBLE_COMMON) {
-            return FullResult.revertResult(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID, 0L);
+            if (isStaticCall) {
+                return FullResult.revertResult(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID, 0L);
+            } else {
+                return FullResult.successResult(
+                        ReturnTypes.encodedRc(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS), 0L);
+            }
         }
         final var ownerID = addressIdConverter.convert(owner);
         final var ownerAccount = nativeOperations().getAccount(ownerID.accountNumOrThrow());
         final var spenderID = addressIdConverter.convert(spender);
+        if (!spenderID.hasAccountNum() && !isStaticCall) {
+            return FullResult.successResult(
+                    ReturnTypes.encodedRc(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS), 0L);
+        }
         final var allowance = getAllowance(token, requireNonNull(ownerAccount), spenderID);
         final var output = prepareOutput(allowance);
         return FullResult.successResult(output, 0L);
