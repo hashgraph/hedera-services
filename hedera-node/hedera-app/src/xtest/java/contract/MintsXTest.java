@@ -16,6 +16,7 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.A_TOKEN_ID;
@@ -28,6 +29,7 @@ import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
+import static contract.XTestConstants.INVALID_TOKEN_ADDRESS;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
@@ -66,6 +68,7 @@ import org.jetbrains.annotations.NotNull;
  *     <li>Mints {@code ERC721_TOKEN} via MINT operation</li>
  *     <li>Mints {@code ERC721_TOKEN} via MINT_V2 operation</li>
  *     <li>Mints {@code ERC20_TOKEN} without supply hey via MINT operation. This should fail with TOKEN_HAS_NO_SUPPLY_KEY</li>
+ *     <li>Mints {@code ERC20_TOKEN} for invalid token address via MINT operation. This should fail with INVALID_TOKEN_ID</li>
  * </ol>
  */
 public class MintsXTest extends AbstractContractXTest {
@@ -117,6 +120,15 @@ public class MintsXTest extends AbstractContractXTest {
                         Bytes.wrap(
                                 ReturnTypes.encodedRc(TOKEN_HAS_NO_SUPPLY_KEY).array()),
                         output));
+
+        // should fail when token has invalid address
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(MintTranslator.MINT
+                        .encodeCallWithArgs(INVALID_TOKEN_ADDRESS, BigInteger.valueOf(MINT_AMOUNT), new byte[][] {})
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
     }
 
     @Override
