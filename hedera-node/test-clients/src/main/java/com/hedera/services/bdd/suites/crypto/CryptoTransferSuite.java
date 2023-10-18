@@ -1034,7 +1034,6 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .payingWith(OWNER)
                                 .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, true, List.of())
                                 .fee(ONE_HUNDRED_HBARS),
-                        // here
                         cryptoTransfer(movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 2L)
                                         .between(OWNER, RECEIVER))
                                 .payingWith(SPENDER)
@@ -1379,7 +1378,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                                         relationshipWith(secondFungible)
                                                                 .balance(exchangeAmount / 15)))));
     }
-
+    @HapiTest
     private HapiSpec royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots() {
         final var uniqueWithRoyalty = "uniqueWithRoyalty";
         final var someFungible = "firstFungible";
