@@ -18,7 +18,6 @@ package com.swirlds.platform.components;
 
 import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.LogMarker.STALE_EVENTS;
-import static com.swirlds.logging.LogMarker.SYNC;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
@@ -185,8 +184,6 @@ public class EventIntake {
                 event.clear();
                 return;
             }
-
-            logger.debug(SYNC.getMarker(), "{} sees {}", selfId, event);
 
             phaseTimer.activatePhase(EventIntakePhase.PRECONSENSUS_DISPATCH);
             dispatcher.preConsensusEvent(event);

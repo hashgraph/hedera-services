@@ -16,13 +16,16 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -64,6 +67,8 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         if (matchesErcSelector(attempt.selector())) {
             return bodyForErc(attempt);
+        } else if (matchesClassicSelector(attempt.selector())) {
+            return bodyForClassicCall(attempt);
         } else {
             return new DispatchForResponseCodeHtsCall<>(
                     attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class);
@@ -85,6 +90,26 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
         } else {
             return decoder.decodeGrantApprovalNFT(attempt);
         }
+    }
+
+    private ClassicGrantApprovalCall bodyForClassicCall(final HtsCallAttempt attempt) {
+        final var tokenType = Arrays.equals(attempt.selector(), GRANT_APPROVAL.selector())
+                ? TokenType.FUNGIBLE_COMMON
+                : TokenType.NON_FUNGIBLE_UNIQUE;
+        final var call = Arrays.equals(attempt.selector(), GRANT_APPROVAL.selector())
+                ? GrantApprovalTranslator.GRANT_APPROVAL.decodeCall(attempt.inputBytes())
+                : GrantApprovalTranslator.GRANT_APPROVAL_NFT.decodeCall(attempt.inputBytes());
+        final var tokenAddress = call.get(0);
+        final var spender = attempt.addressIdConverter().convert(call.get(1));
+        final var amount = call.get(2);
+        return new ClassicGrantApprovalCall(
+                attempt.enhancement(),
+                attempt.defaultVerificationStrategy(),
+                attempt.senderId(),
+                ConversionUtils.asTokenId((Address) tokenAddress),
+                spender,
+                (BigInteger) amount,
+                tokenType);
     }
 
     private ERCGrantApprovalCall bodyForErc(final HtsCallAttempt attempt) {

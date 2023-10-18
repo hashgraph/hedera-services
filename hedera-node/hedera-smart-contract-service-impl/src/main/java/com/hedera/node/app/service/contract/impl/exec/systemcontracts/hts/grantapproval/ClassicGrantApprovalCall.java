@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -26,14 +26,15 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 
-public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
+public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
 
-    public ERCGrantApprovalCall(
+    public ClassicGrantApprovalCall(
             @NonNull final Enhancement enhancement,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final AccountID sender,
@@ -47,21 +48,25 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
     @NonNull
     @Override
     public PricedResult execute() {
-        // TODO - gas calculation
+        // TODO: gas calculation
         if (token == null) {
             return reversionWith(INVALID_TOKEN_ID, 0L);
         }
         final var recordBuilder = systemContractOperations()
                 .dispatch(callGrantApproval(), verificationStrategy, sender, SingleTransactionRecordBuilder.class);
-        if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder.status(), 0L));
+        final var status = recordBuilder.status();
+        if (status != ResponseCodeEnum.SUCCESS) {
+            if (status.equals(INVALID_ALLOWANCE_SPENDER_ID)) {
+                return reversionWith(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, 0L);
+            } else {
+                return reversionWith(status, 0L);
+            }
         } else {
             final var encodedOutput = tokenType.equals(TokenType.FUNGIBLE_COMMON)
-                    ? GrantApprovalTranslator.ERC_GRANT_APPROVAL.getOutputs().encodeElements(true)
-                    : GrantApprovalTranslator.ERC_GRANT_APPROVAL_NFT
-                            .getOutputs()
-                            .encodeElements();
-            return gasOnly(successResult(encodedOutput, 0L));
+                    ? GrantApprovalTranslator.GRANT_APPROVAL.getOutputs().encodeElements((long) status.protoOrdinal())
+                    : GrantApprovalTranslator.GRANT_APPROVAL_NFT.getOutputs().encodeElements((long)
+                            status.protoOrdinal());
+            return gasOnly(FullResult.successResult(encodedOutput, 0L));
         }
     }
 }
