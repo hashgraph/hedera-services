@@ -46,11 +46,11 @@ import static contract.ClassicViewsXTestConstants.GET_TOKEN_TYPE;
 import static contract.ClassicViewsXTestConstants.KYC_KEY;
 import static contract.ClassicViewsXTestConstants.PAUSE_KEY;
 import static contract.ClassicViewsXTestConstants.SUPPLY_KEY;
-import static contract.ClassicViewsXTestConstants.TOKEN_DEFAULT_FREEZE_STATUS;
-import static contract.ClassicViewsXTestConstants.TOKEN_DEFAULT_KYC_STATUS;
+import static contract.ClassicViewsXTestConstants.TOKEN_FROZEN_STATUS;
 import static contract.ClassicViewsXTestConstants.TOKEN_IS_FROZEN;
 import static contract.ClassicViewsXTestConstants.TOKEN_IS_KYC;
 import static contract.ClassicViewsXTestConstants.TOKEN_IS_TOKEN;
+import static contract.ClassicViewsXTestConstants.TOKEN_KYC_GRANTED_STATUS;
 import static contract.ClassicViewsXTestConstants.TOKEN_TYPE_FUNGIBLE;
 import static contract.ClassicViewsXTestConstants.WIPE_KEY;
 import static contract.ClassicViewsXTestConstants.returnExpectedKey;
@@ -127,12 +127,12 @@ public class ClassicViewsXTest extends AbstractContractXTest {
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_DEFAULT_FREEZE_STATUS, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(TOKEN_DEFAULT_FREEZE_STATUS));
+                assertingCallLocalResultIs(TOKEN_FROZEN_STATUS));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_DEFAULT_KYC_STATUS, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(TOKEN_DEFAULT_KYC_STATUS));
+                assertingCallLocalResultIs(TOKEN_KYC_GRANTED_STATUS));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_EXPIRY, ERC20_TOKEN_ADDRESS),

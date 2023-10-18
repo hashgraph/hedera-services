@@ -25,6 +25,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokeninfo.TokenInfoCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokeninfo.TokenInfoTranslator;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
+import com.swirlds.config.api.Configuration;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,9 @@ class TokenInfoTranslatorTest {
 
     @Mock
     private Enhancement enhancement;
+
+    @Mock
+    Configuration configuration;
 
     private TokenInfoTranslator subject;
 
@@ -60,6 +64,7 @@ class TokenInfoTranslatorTest {
         final Bytes inputBytes = Bytes.wrapByteBuffer(TokenInfoTranslator.TOKEN_INFO.encodeCall(tuple));
         given(attempt.input()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(enhancement);
+        given(attempt.configuration()).willReturn(configuration);
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(TokenInfoCall.class);

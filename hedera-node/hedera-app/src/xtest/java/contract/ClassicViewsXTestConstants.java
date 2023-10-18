@@ -68,9 +68,9 @@ public class ClassicViewsXTestConstants {
     // the token is fungible
     static final Bytes TOKEN_TYPE_FUNGIBLE = Bytes.fromHex(SUCCESS_RESPONSE_CODE_RETURNING_FALSE);
     // default freeze status is true
-    static final Bytes TOKEN_DEFAULT_FREEZE_STATUS = Bytes.fromHex(SUCCESS_RESPONSE_CODE_RETURNING_TRUE);
+    static final Bytes TOKEN_FROZEN_STATUS = Bytes.fromHex(SUCCESS_RESPONSE_CODE_RETURNING_TRUE);
     // default kyc status is true
-    static final Bytes TOKEN_DEFAULT_KYC_STATUS = Bytes.fromHex(SUCCESS_RESPONSE_CODE_RETURNING_TRUE);
+    static final Bytes TOKEN_KYC_GRANTED_STATUS = Bytes.fromHex(SUCCESS_RESPONSE_CODE_RETURNING_TRUE);
     static final long EXPIRATION_SECONDS = 100L;
     static final long AUTORENEW_SECONDS = 200L;
     static final ByteBuffer EXPECTED_TOKEN_EXPIRY = TOKEN_EXPIRY
