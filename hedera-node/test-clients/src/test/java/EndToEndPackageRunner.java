@@ -90,7 +90,6 @@ import com.hedera.services.bdd.suites.fees.CreateAndUpdateOps;
 import com.hedera.services.bdd.suites.fees.OverlappingKeysSuite;
 import com.hedera.services.bdd.suites.fees.QueryPaymentExploitsSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
-import com.hedera.services.bdd.suites.fees.TransferListServiceFeesSuite;
 import com.hedera.services.bdd.suites.file.DiverseStateCreation;
 import com.hedera.services.bdd.suites.file.DiverseStateValidation;
 import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
@@ -441,8 +440,7 @@ class EndToEndPackageRunner extends TestBase {
                 extractSpecsFromSuite(CreateAndUpdateOps::new),
                 extractSpecsFromSuite(OverlappingKeysSuite::new),
                 extractSpecsFromSuite(QueryPaymentExploitsSuite::new),
-                extractSpecsFromSuite(SpecialAccountsAreExempted::new),
-                extractSpecsFromSuite(TransferListServiceFeesSuite::new));
+                extractSpecsFromSuite(SpecialAccountsAreExempted::new));
     }
 
     @Tag("file")

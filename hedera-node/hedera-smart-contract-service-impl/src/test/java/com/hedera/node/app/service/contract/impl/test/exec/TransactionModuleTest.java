@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -145,14 +146,15 @@ class TransactionModuleTest {
 
     @Test
     void providesSystemGasContractCalculator() {
-        given(context.dispatchComputeFees(TransactionBody.DEFAULT)).willReturn(new Fees(1, 2, 3));
-        given(tinybarValues.childTransactionServiceGasPrice()).willReturn(2L);
+        given(context.dispatchComputeFees(TransactionBody.DEFAULT, AccountID.DEFAULT))
+                .willReturn(new Fees(1, 2, 3));
+        given(tinybarValues.childTransactionTinybarGasPrice()).willReturn(2L);
         given(canonicalDispatchPrices.canonicalPriceInTinycents(DispatchType.APPROVE))
                 .willReturn(66L);
         given(tinybarValues.asTinybars(66L)).willReturn(7L);
         final var calculator =
                 TransactionModule.provideSystemContractGasCalculator(context, canonicalDispatchPrices, tinybarValues);
-        final var result = calculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.APPROVE);
+        final var result = calculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.APPROVE, AccountID.DEFAULT);
         assertEquals(4L, result);
     }
 

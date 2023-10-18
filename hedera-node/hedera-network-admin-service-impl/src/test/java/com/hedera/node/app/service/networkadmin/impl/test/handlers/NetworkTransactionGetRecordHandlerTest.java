@@ -104,7 +104,6 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
 
         final var query = createGetTransactionRecordQuery(transactionID, false, false);
         given(context.query()).willReturn(query);
-        given(context.recordCache()).willReturn(cache);
 
         assertThatCode(() -> networkTransactionGetRecordHandler.validate(context))
                 .doesNotThrowAnyException();

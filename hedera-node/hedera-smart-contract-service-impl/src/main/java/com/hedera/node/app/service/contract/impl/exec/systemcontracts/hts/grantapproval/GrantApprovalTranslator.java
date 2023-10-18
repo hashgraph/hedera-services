@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -26,6 +29,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -67,6 +71,8 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         if (matchesErcSelector(attempt.selector())) {
             return bodyForErc(attempt);
+        } else if (matchesClassicSelector(attempt.selector())) {
+            return bodyForClassicCall(attempt);
         } else {
             return new DispatchForResponseCodeHtsCall<>(
                     attempt,
@@ -79,8 +85,9 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
     public static long gasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
-            @NonNull final HederaWorldUpdater.Enhancement enhancement) {
-        return systemContractGasCalculator.gasRequirement(body, DispatchType.APPROVE);
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final AccountID payerId) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.APPROVE, payerId);
     }
 
     private boolean matchesClassicSelector(@NonNull final byte[] selector) {
@@ -98,6 +105,27 @@ public class GrantApprovalTranslator extends AbstractHtsCallTranslator {
         } else {
             return decoder.decodeGrantApprovalNFT(attempt);
         }
+    }
+
+    private ClassicGrantApprovalCall bodyForClassicCall(final HtsCallAttempt attempt) {
+        final var tokenType = Arrays.equals(attempt.selector(), GRANT_APPROVAL.selector())
+                ? TokenType.FUNGIBLE_COMMON
+                : TokenType.NON_FUNGIBLE_UNIQUE;
+        final var call = Arrays.equals(attempt.selector(), GRANT_APPROVAL.selector())
+                ? GrantApprovalTranslator.GRANT_APPROVAL.decodeCall(attempt.inputBytes())
+                : GrantApprovalTranslator.GRANT_APPROVAL_NFT.decodeCall(attempt.inputBytes());
+        final var tokenAddress = call.get(0);
+        final var spender = attempt.addressIdConverter().convert(call.get(1));
+        final var amount = call.get(2);
+        return new ClassicGrantApprovalCall(
+                attempt.systemContractGasCalculator(),
+                attempt.enhancement(),
+                attempt.defaultVerificationStrategy(),
+                attempt.senderId(),
+                ConversionUtils.asTokenId((Address) tokenAddress),
+                spender,
+                (BigInteger) amount,
+                tokenType);
     }
 
     private ERCGrantApprovalCall bodyForErc(final HtsCallAttempt attempt) {

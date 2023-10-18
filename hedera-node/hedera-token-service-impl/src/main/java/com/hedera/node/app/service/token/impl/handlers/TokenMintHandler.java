@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
@@ -126,7 +127,11 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         // validate treasury relation exists
         final var treasuryRel = TokenHandlerHelper.getIfUsable(token.treasuryAccountId(), tokenId, tokenRelStore);
+
         validateTrue(treasuryRel != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        if (token.hasKycKey()) {
+            validateTrue(treasuryRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+        }
 
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
             // we need to know if treasury mint while creation to ignore supply key exist or not.
@@ -284,7 +289,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                 : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
         final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
-        final var payerId = feeContext.body().transactionIDOrThrow().accountIDOrThrow();
+        final var payerId = feeContext.payer();
         final var payerKey = readableAccountStore.getAccountById(payerId).keyOrThrow();
 
         final var calculator = feeContext.feeCalculator(subType);

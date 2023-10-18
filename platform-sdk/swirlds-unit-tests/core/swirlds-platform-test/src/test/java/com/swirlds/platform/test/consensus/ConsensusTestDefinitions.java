@@ -22,8 +22,18 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createCli
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createPartitionedOtherParentAffinityMatrix;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShunnedNodeOtherParentAffinityMatrix;
 
+import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.Threshold;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.SyntheticSnapshot;
+import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestOrchestrator;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestUtils;
 import com.swirlds.platform.test.consensus.framework.OrchestratorBuilder;
@@ -34,13 +44,23 @@ import com.swirlds.platform.test.event.emitter.PriorityEventEmitter;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
+import com.swirlds.platform.test.fixtures.event.EventUtils;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
+import com.swirlds.test.framework.ResourceLoader;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 public final class ConsensusTestDefinitions {
 
@@ -50,7 +70,7 @@ public final class ConsensusTestDefinitions {
      * Changing the order of events (without breaking topological order) should result in the same
      * consensus events.
      */
-    public static void orderInvarianceTests(final TestInput input) {
+    public static void orderInvarianceTests(@NonNull final TestInput input) {
         OrchestratorBuilder.builder()
                 .setTestInput(input)
                 .build()
@@ -61,7 +81,7 @@ public final class ConsensusTestDefinitions {
     }
 
     /** Send an ancient event to consensus and check if it is marked stale. */
-    public static void ancient(final TestInput input) {
+    public static void ancient(@NonNull final TestInput input) {
         // Setup: we use a priority emitter so that the dying node's events are added last, when
         // they are already ancient
         final List<Integer> nodePriorities =
@@ -95,7 +115,7 @@ public final class ConsensusTestDefinitions {
     }
 
     /** Test consensus in the presence of forks. */
-    public static void forkingTests(final TestInput input) {
+    public static void forkingTests(@NonNull final TestInput input) {
         // Use a custom event source generator that creates forking event sources
         final Function<List<Long>, List<EventSource<?>>> eventSourceBuilder = nodeWeights -> {
             final double forkProbability = 0.1;
@@ -145,7 +165,7 @@ public final class ConsensusTestDefinitions {
      *   <li>fully connected network
      * </ol>
      */
-    public static void partitionTests(final TestInput input) {
+    public static void partitionTests(@NonNull final TestInput input) {
         // Test setup
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
@@ -201,7 +221,7 @@ public final class ConsensusTestDefinitions {
      *   <li>fully connected network
      * </ol>
      */
-    public static void subQuorumPartitionTests(final TestInput input) {
+    public static void subQuorumPartitionTests(@NonNull final TestInput input) {
         // Network is connected for a while, then is partitioned, then is connected for a while
         // again.
         final ConsensusTestOrchestrator orchestrator =
@@ -247,7 +267,7 @@ public final class ConsensusTestDefinitions {
         orchestrator.validateAndClear(Validations.standard());
     }
 
-    public static void cliqueTests(final TestInput input) {
+    public static void cliqueTests(@NonNull final TestInput input) {
         final int numberOfNodes = input.numberOfNodes();
         // If the number of nodes is not divisible by 3 then the last clique will be slightly larger
         final int cliqueSize = numberOfNodes / 3;
@@ -283,7 +303,7 @@ public final class ConsensusTestDefinitions {
                         .setMaximumStaleRatio(0.05)));
     }
 
-    public static void variableRateTests(final TestInput input) {
+    public static void variableRateTests(@NonNull final TestInput input) {
         // Set the event source generator to create variable rate event sources
         final Consumer<EventSource<?>> configureVariable = es -> {
             final DynamicValue<Double> variableEventWeight = (Random r, long eventIndex, Double previousValue) -> {
@@ -313,7 +333,7 @@ public final class ConsensusTestDefinitions {
     }
 
     /** One node has a tendency to use stale other parents. */
-    public static void usesStaleOtherParents(final TestInput input) {
+    public static void usesStaleOtherParents(@NonNull final TestInput input) {
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
         orchestrator.configGenerators(g -> {
@@ -331,11 +351,22 @@ public final class ConsensusTestDefinitions {
     }
 
     /** One node has a tendency to provide stale other parents (when they are requested). */
-    public static void providesStaleOtherParents(final TestInput input) {
+    public static void providesStaleOtherParents(@NonNull final TestInput input) {
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
         // Setup: pick one node to provide stale other-parents
-        orchestrator.configGenerators(g -> g.getSource(g.getAddressBook().getNodeId(0))
+        // The node's weight should be less than a strong minority so that we can reach consensus
+        final NodeId staleParentProvider = StreamSupport.stream(
+                        Spliterators.spliteratorUnknownSize(
+                                orchestrator.getAddressBook().iterator(), 0),
+                        false)
+                .filter(a -> !Threshold.STRONG_MINORITY.isSatisfiedBy(
+                        a.getWeight(), orchestrator.getAddressBook().getTotalWeight()))
+                .findFirst()
+                .orElseThrow()
+                .getNodeId();
+        Objects.requireNonNull(staleParentProvider, "Could not find a node with less than a strong minority of weight");
+        orchestrator.configGenerators(g -> g.getSource(staleParentProvider)
                 .setRecentEventRetentionSize(5000)
                 .setProvidedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300)));
         orchestrator.generateAllEvents();
@@ -351,7 +382,7 @@ public final class ConsensusTestDefinitions {
      * A quorum of nodes stop producing events, thus preventing consensus and round created
      * advancement
      */
-    public static void quorumOfNodesGoDown(final TestInput input) {
+    public static void quorumOfNodesGoDown(@NonNull final TestInput input) {
         // Test setup
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
@@ -398,7 +429,7 @@ public final class ConsensusTestDefinitions {
     }
 
     /** less than a quorum stop producing events, consensus proceeds as normal */
-    public static void subQuorumOfNodesGoDown(final TestInput input) {
+    public static void subQuorumOfNodesGoDown(@NonNull final TestInput input) {
         // Test setup
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
@@ -441,7 +472,7 @@ public final class ConsensusTestDefinitions {
      * There should be no problems when the probability of events landing on the same timestamp is
      * higher than usual.
      */
-    public static void repeatedTimestampTest(final TestInput input) {
+    public static void repeatedTimestampTest(@NonNull final TestInput input) {
         OrchestratorBuilder.builder()
                 .setTestInput(input)
                 .build()
@@ -451,7 +482,7 @@ public final class ConsensusTestDefinitions {
                         .ratios(EventRatioValidation.standard().setMinimumConsensusRatio(0.3)));
     }
 
-    public static void stale(final TestInput input) {
+    public static void stale(@NonNull final TestInput input) {
         // setup
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
@@ -478,7 +509,7 @@ public final class ConsensusTestDefinitions {
      * Simulates a consensus restart. The number of nodes and number of events is chosen randomly
      * between the supplied bounds
      */
-    public static void restart(final TestInput input) {
+    public static void restart(@NonNull final TestInput input) {
 
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
@@ -494,7 +525,7 @@ public final class ConsensusTestDefinitions {
     }
 
     /** Simulates a reconnect */
-    public static void reconnect(final TestInput input) {
+    public static void reconnect(@NonNull final TestInput input) {
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
 
@@ -507,5 +538,98 @@ public final class ConsensusTestDefinitions {
         orchestrator.generateEvents(0.5);
         orchestrator.validateAndClear(
                 Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
+    }
+
+    public static void migrationTest(@NonNull final TestInput input)
+            throws URISyntaxException, ConstructableRegistryException, IOException {
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        final Path ssPath = ResourceLoader.getFile("modified-mainnet-state.swh.bin");
+        final SignedState state = SignedStateFileReader.readSignedStateOnly(
+                TestPlatformContextBuilder.create().build(), ssPath);
+        EventUtils.convertEvents(state);
+
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        orchestrator.loadSignedState(state);
+
+        orchestrator.generateEvents(1);
+        orchestrator.validateAndClear(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
+    }
+
+    public static void removeNode(@NonNull final TestInput input) {
+        final ConsensusTestOrchestrator orchestrator1 =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        orchestrator1.generateEvents(0.5);
+        orchestrator1.validate(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
+
+        final ConsensusTestOrchestrator orchestrator2 = OrchestratorBuilder.builder()
+                .setTestInput(input.setNumberOfNodes(input.numberOfNodes() - 1))
+                .build();
+        for (int i = 0; i < 2; i++) {
+            orchestrator2
+                    .getNodes()
+                    .get(i)
+                    .getIntake()
+                    .loadSnapshot(orchestrator1
+                            .getNodes()
+                            .get(i)
+                            .getIntake()
+                            .getLatestRound()
+                            .getSnapshot());
+            final int fi = i;
+            orchestrator1.getNodes().get(i).getOutput().getAddedEvents().forEach(e -> {
+                // since the same events are reused, the metadata needs to be cleared
+                e.clearMetadata();
+                e.setRoundCreated(ConsensusConstants.ROUND_UNDEFINED);
+                orchestrator2.getNodes().get(fi).getIntake().addLinkedEvent(e);
+            });
+            ConsensusUtils.loadEventsIntoGenerator(
+                    orchestrator1.getNodes().get(i).getOutput().getAddedEvents().toArray(EventImpl[]::new),
+                    orchestrator2.getNodes().get(i).getEventEmitter().getGraphGenerator(),
+                    orchestrator2.getNodes().get(i).getRandom());
+        }
+
+        orchestrator2.generateEvents(0.5);
+        orchestrator2.validate(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
+    }
+
+    public static void syntheticSnapshot(@NonNull final TestInput input) {
+        final long round = 100;
+        final long lastConsensusOrder = 4000;
+
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        final Instant snapshotTimestamp = Instant.now();
+        orchestrator.getNodes().forEach(n -> {
+            final int numEvents = orchestrator.getEventFraction(0.5);
+            n.getEventEmitter().setCheckpoint(numEvents);
+            final List<IndexedEvent> events = n.getEventEmitter().emitEvents(numEvents);
+            n.getEventEmitter().reset();
+            final Optional<IndexedEvent> maxGenEvent = events.stream()
+                    .max(Comparator.comparingLong(EventImpl::getGeneration).thenComparing(EventImpl::getCreatorId));
+            final ConsensusSnapshot syntheticSnapshot = SyntheticSnapshot.generateSyntheticSnapshot(
+                    round,
+                    lastConsensusOrder,
+                    snapshotTimestamp,
+                    ConfigurationBuilder.create()
+                            .withConfigDataType(ConsensusConfig.class)
+                            .build()
+                            .getConfigData(ConsensusConfig.class),
+                    maxGenEvent.orElseThrow().getBaseEvent());
+            n.getIntake().loadSnapshot(syntheticSnapshot);
+        });
+
+        orchestrator.generateEvents(0.5);
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.blank().setMaximumConsensusRatio(0))
+                // only 1 event will actually be added, that is the judge, so there can be no variation in the order
+                .remove(Validations.ValidationType.DIFFERENT_ORDER));
+
+        orchestrator.generateEvents(0.5);
+        orchestrator.validate(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.8)));
     }
 }

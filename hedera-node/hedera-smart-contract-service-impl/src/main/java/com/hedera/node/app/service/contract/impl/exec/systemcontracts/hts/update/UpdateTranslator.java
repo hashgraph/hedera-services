@@ -22,6 +22,7 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY_V
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.TOKEN_KEY;
 
 import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -78,8 +79,9 @@ public class UpdateTranslator extends AbstractHtsCallTranslator {
     public static long gasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
-            @NonNull final HederaWorldUpdater.Enhancement enhancement) {
-        return systemContractGasCalculator.gasRequirement(body, DispatchType.UPDATE);
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final AccountID payerId) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.UPDATE, payerId);
     }
 
     private TransactionBody nominalBodyFor(@NonNull final HtsCallAttempt attempt) {

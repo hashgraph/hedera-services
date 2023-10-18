@@ -33,7 +33,6 @@ import com.swirlds.platform.event.creation.rules.BackpressureRule;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import com.swirlds.platform.event.creation.rules.MaximumRateRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
-import com.swirlds.platform.event.creation.rules.ReconnectStateSavedRule;
 import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
@@ -112,11 +111,10 @@ public final class EventCreationManagerFactory {
         final EventCreationRule eventCreationRules = AggregateEventCreationRules.of(
                 new MaximumRateRule(platformContext, time),
                 new BackpressureRule(platformContext, eventIntakeQueue::size),
-                new PlatformStatusRule(platformStatusSupplier, transactionPool),
-                new ReconnectStateSavedRule(latestReconnectRound, latestSavedStateRound));
+                new PlatformStatusRule(platformStatusSupplier, transactionPool));
 
-        final SyncEventCreationManager syncEventCreationManager =
-                new SyncEventCreationManager(eventCreator, eventCreationRules, eventIntakeQueue::offer);
+        final SyncEventCreationManager syncEventCreationManager = new SyncEventCreationManager(
+                platformContext, time, eventCreator, eventCreationRules, eventIntakeQueue::offer);
 
         final AsyncEventCreationManager manager =
                 new AsyncEventCreationManager(platformContext, threadManager, syncEventCreationManager);

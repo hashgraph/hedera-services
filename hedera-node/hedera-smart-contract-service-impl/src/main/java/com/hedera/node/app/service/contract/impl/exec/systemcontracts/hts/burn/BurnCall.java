@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hed
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -47,6 +48,7 @@ public interface BurnCall extends HtsCall {
      * @param verificationStrategy the verification strategy
      * @param gasCalculator the gas calculator
      * @param spender the spender
+     * @param senderId the sender Hedera id
      * @param systemContractOperations the system contract operations
      * @param invalidTokenReversion the invalid token reversion
      * @return the result of the call
@@ -56,6 +58,7 @@ public interface BurnCall extends HtsCall {
     @SuppressWarnings("java:S107")
     default @NonNull PricedResult executeBurn(
             @Nullable final TokenID tokenId,
+            @NonNull final AccountID senderId,
             @NonNull final DispatchType dispatchType,
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategy verificationStrategy,
@@ -65,11 +68,11 @@ public interface BurnCall extends HtsCall {
             @NonNull final SystemContractOperations systemContractOperations,
             @NonNull final LongFunction<PricedResult> invalidTokenReversion) {
         if (tokenId == null) {
-            return invalidTokenReversion.apply(gasCalculator.canonicalPriceInTinybars(dispatchType));
+            return invalidTokenReversion.apply(gasCalculator.canonicalGasRequirement(dispatchType));
         }
         final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
         final var body = bodySupplier.get();
-        final var gasRequirement = gasCalculator.gasRequirement(body, dispatchType);
+        final var gasRequirement = gasCalculator.gasRequirement(body, dispatchType, senderId);
         final var recordBuilder =
                 systemContractOperations.dispatch(body, verificationStrategy, spenderId, TokenBurnRecordBuilder.class);
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {

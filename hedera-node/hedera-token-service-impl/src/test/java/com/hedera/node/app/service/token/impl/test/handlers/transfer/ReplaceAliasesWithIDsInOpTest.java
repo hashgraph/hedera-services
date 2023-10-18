@@ -50,7 +50,11 @@ import org.junit.jupiter.api.Test;
 class ReplaceAliasesWithIDsInOpTest extends StepsBase {
     @BeforeEach
     public void setUp() {
-        super.setUp();
+        replaceAliasesInternalSetup(true);
+    }
+
+    private void replaceAliasesInternalSetup(final boolean prepopulateReceiverIds) {
+        super.baseInternalSetUp(prepopulateReceiverIds);
         givenTxn();
         givenStoresAndConfig(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
@@ -59,6 +63,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
 
     @Test
     void autoCreatesAccounts() {
+        replaceAliasesInternalSetup(false);
         given(handleContext.dispatchRemovableChildTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {

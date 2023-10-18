@@ -66,7 +66,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -106,9 +106,6 @@ class IngestCheckerTest extends AppTestBase {
     TransactionChecker transactionChecker;
 
     @Mock(strictness = LENIENT)
-    ThrottleAccumulator throttleAccumulator;
-
-    @Mock(strictness = LENIENT)
     private SignatureExpander signatureExpander;
 
     @Mock(strictness = LENIENT)
@@ -126,8 +123,12 @@ class IngestCheckerTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private Authorizer authorizer;
 
+    @Mock(strictness = LENIENT)
+    private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+
     private DeduplicationCache deduplicationCache;
 
+    private TransactionInfo transactionInfo;
     private TransactionBody txBody;
     private Transaction tx;
 
@@ -157,7 +158,7 @@ class IngestCheckerTest extends AppTestBase {
                 .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
                 .build();
 
-        final var transactionInfo = new TransactionInfo(
+        transactionInfo = new TransactionInfo(
                 tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
         when(transactionChecker.check(tx)).thenReturn(transactionInfo);
 
@@ -171,14 +172,14 @@ class IngestCheckerTest extends AppTestBase {
                 nodeSelfAccountId,
                 currentPlatformStatus,
                 transactionChecker,
-                throttleAccumulator,
                 solvencyPreCheck,
                 signatureExpander,
                 signatureVerifier,
                 deduplicationCache,
                 dispatcher,
                 feeManager,
-                authorizer);
+                authorizer,
+                synchronizedThrottleAccumulator);
     }
 
     @Nested
@@ -220,14 +221,14 @@ class IngestCheckerTest extends AppTestBase {
                 otherNodeSelfAccountId,
                 currentPlatformStatus,
                 transactionChecker,
-                throttleAccumulator,
                 solvencyPreCheck,
                 signatureExpander,
                 signatureVerifier,
                 deduplicationCache,
                 dispatcher,
                 feeManager,
-                authorizer);
+                authorizer,
+                synchronizedThrottleAccumulator);
 
         // Then the checker should throw a PreCheckException
         assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
@@ -312,11 +313,13 @@ class IngestCheckerTest extends AppTestBase {
     @Nested
     @DisplayName("4. Check throttles")
     class ThrottleTests {
+
         @Test
         @DisplayName("When the transaction is throttled, the transaction should be rejected")
         void testThrottleFails() {
             // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
-            when(throttleAccumulator.shouldThrottle(eq(txBody))).thenReturn(true);
+            when(synchronizedThrottleAccumulator.shouldThrottle(transactionInfo, state))
+                    .thenReturn(true);
 
             // When the transaction is submitted
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
@@ -325,10 +328,10 @@ class IngestCheckerTest extends AppTestBase {
         }
 
         @Test
-        @DisplayName("If some random exception is thrown from ThrottleAccumulator, the exception is bubbled up")
+        @DisplayName("If some random exception is thrown from HapiThrottling, the exception is bubbled up")
         void randomException() {
-            // Given a ThrottleAccumulator that will throw a RuntimeException
-            when(throttleAccumulator.shouldThrottle(eq(txBody)))
+            // Given a HapiThrottling that will throw a RuntimeException
+            when(synchronizedThrottleAccumulator.shouldThrottle(transactionInfo, state))
                     .thenThrow(new RuntimeException("shouldThrottle exception"));
 
             // When the transaction is submitted, then the exception is bubbled up

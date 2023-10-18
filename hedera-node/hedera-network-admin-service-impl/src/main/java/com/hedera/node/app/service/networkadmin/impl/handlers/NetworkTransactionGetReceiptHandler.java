@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -74,11 +73,6 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
         if (!op.hasTransactionID() || !op.transactionID().hasAccountID()) {
             throw new PreCheckException(INVALID_TRANSACTION_ID);
         }
-
-        // The receipt must exist for that transaction ID
-        final var recordCache = context.recordCache();
-        final var receipt = recordCache.getReceipt(op.transactionIDOrThrow());
-        mustExist(receipt, RECEIPT_NOT_FOUND);
     }
 
     @Override

@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.gas.DispatchType.BURN_NFT;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -31,6 +32,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import org.hyperledger.besu.datatypes.Address;
 
 public class NonFungibleBurnCall extends AbstractHtsCall implements BurnCall {
 
@@ -38,7 +40,8 @@ public class NonFungibleBurnCall extends AbstractHtsCall implements BurnCall {
     private final TokenID tokenId;
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategy verificationStrategy;
-    private final org.hyperledger.besu.datatypes.Address spender;
+    private final AccountID senderId;
+    private final org.hyperledger.besu.datatypes.Address sender;
 
     public NonFungibleBurnCall(
             final List<Long> serialNo,
@@ -46,26 +49,29 @@ public class NonFungibleBurnCall extends AbstractHtsCall implements BurnCall {
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final TokenID tokenId,
             @NonNull final VerificationStrategy verificationStrategy,
-            @NonNull final org.hyperledger.besu.datatypes.Address spender,
+            @NonNull final AccountID senderId,
+            @NonNull final Address sender,
             @NonNull final AddressIdConverter addressIdConverter) {
         super(gasCalculator, enhancement);
         this.tokenId = requireNonNull(tokenId);
         this.verificationStrategy = requireNonNull(verificationStrategy);
-        this.spender = requireNonNull(spender);
+        this.sender = requireNonNull(sender);
         this.addressIdConverter = requireNonNull(addressIdConverter);
         this.serialNo = serialNo;
+        this.senderId = senderId;
     }
 
     @Override
     public @NonNull PricedResult execute() {
         return executeBurn(
                 tokenId,
+                senderId,
                 BURN_NFT,
                 addressIdConverter,
                 verificationStrategy,
                 gasCalculator,
                 this::syntheticBurnNonFungible,
-                spender,
+                sender,
                 systemContractOperations(),
                 gasRequirement -> reversionWith(INVALID_TOKEN_ID, gasRequirement));
     }

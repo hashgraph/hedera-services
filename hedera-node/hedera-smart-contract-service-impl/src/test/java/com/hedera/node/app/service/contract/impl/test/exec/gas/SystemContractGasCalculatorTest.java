@@ -18,11 +18,12 @@ package com.hedera.node.app.service.contract.impl.test.exec.gas;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
-import java.util.function.ToLongFunction;
+import java.util.function.ToLongBiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +36,7 @@ class SystemContractGasCalculatorTest {
     private TinybarValues tinybarValues;
 
     @Mock
-    private ToLongFunction<TransactionBody> feeCalculator;
+    private ToLongBiFunction<TransactionBody, AccountID> feeCalculator;
 
     @Mock
     private CanonicalDispatchPrices canonicalDispatchPrices;

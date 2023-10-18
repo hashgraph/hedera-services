@@ -193,6 +193,16 @@ public class ConversionUtils {
     }
 
     /**
+     * Given a {@link TokenID}, returns its address as a headlong address.
+     * @param tokenId
+     * @return
+     */
+    public static com.esaulpaugh.headlong.abi.Address headlongAddressOf(@NonNull final TokenID tokenId) {
+        requireNonNull(tokenId);
+        return asHeadlongAddress(asEvmAddress(tokenId.tokenNum()));
+    }
+
+    /**
      * Given an account, returns its "priority" address as a headlong address.
      *
      * @param account the account

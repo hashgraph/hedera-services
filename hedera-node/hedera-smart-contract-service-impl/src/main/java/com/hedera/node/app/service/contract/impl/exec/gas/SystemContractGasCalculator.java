@@ -16,10 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.gas;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.function.ToLongFunction;
+import java.util.function.ToLongBiFunction;
 
 /**
  * Computes the gas requirements for dispatching transactions or queries.
@@ -29,12 +30,12 @@ public class SystemContractGasCalculator {
 
     private final TinybarValues tinybarValues;
     private final CanonicalDispatchPrices dispatchPrices;
-    private final ToLongFunction<TransactionBody> feeCalculator;
+    private final ToLongBiFunction<TransactionBody, AccountID> feeCalculator;
 
     public SystemContractGasCalculator(
             @NonNull final TinybarValues tinybarValues,
             @NonNull final CanonicalDispatchPrices dispatchPrices,
-            @NonNull final ToLongFunction<TransactionBody> feeCalculator) {
+            @NonNull final ToLongBiFunction<TransactionBody, AccountID> feeCalculator) {
         this.tinybarValues = Objects.requireNonNull(tinybarValues);
         this.dispatchPrices = Objects.requireNonNull(dispatchPrices);
         this.feeCalculator = Objects.requireNonNull(feeCalculator);
@@ -46,36 +47,26 @@ public class SystemContractGasCalculator {
      *
      * @param body the transaction body to be dispatched
      * @param dispatchType the type of dispatch whose minimum cost should be respected
+     * @param payer the payer of the transaction
      * @return the gas requirement for the transaction to be dispatched
      */
-    public long gasRequirement(@NonNull final TransactionBody body, @NonNull final DispatchType dispatchType) {
-        return gasRequirement(body, canonicalPriceInTinybars(dispatchType));
+    public long gasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final DispatchType dispatchType,
+            @NonNull final AccountID payer) {
+        return gasRequirement(body, payer, canonicalPriceInTinybars(dispatchType));
     }
 
     /**
-     * Given a transaction body and a minimum price in tinybars, returns the gas requirement for the transaction
-     * to be dispatched.
-     *
-     * @param body the transaction body to be dispatched
-     * @param minimumPriceInTinybars the minimum price in tinybars
-     * @return the gas requirement for the transaction to be dispatched
-     */
-    public long gasRequirement(@NonNull final TransactionBody body, final long minimumPriceInTinybars) {
-        final var nominalPriceInTinybars = feeCalculator.applyAsLong(body);
-        final var priceInTinybars = Math.max(minimumPriceInTinybars, nominalPriceInTinybars);
-        final var gasPrice = tinybarValues.childTransactionServiceGasPrice();
-        final var gasRequirement = (priceInTinybars + gasPrice - 1) / gasPrice;
-        return gasRequirement + (gasRequirement / 5);
-    }
-
-    /**
-     * Given a dispatch type, returns the canonical price in tinybars for that dispatch type.
+     * Given a dispatch type, returns the canonical gas requirement for that dispatch type.
+     * Useful when providing a ballpark gas requirement in the absence of a valid
+     * transaction body for the dispatch type.
      *
      * @param dispatchType the dispatch type
-     * @return the canonical price in tinybars for that dispatch type
+     * @return the canonical gas requirement for that dispatch type
      */
-    public long canonicalPriceInTinybars(@NonNull final DispatchType dispatchType) {
-        return tinybarValues.asTinybars(dispatchPrices.canonicalPriceInTinycents(dispatchType));
+    public long canonicalGasRequirement(@NonNull final DispatchType dispatchType) {
+        return asGasRequirement(canonicalPriceInTinybars(dispatchType));
     }
 
     /**
@@ -88,5 +79,22 @@ public class SystemContractGasCalculator {
      */
     public long viewGasRequirement() {
         return FIXED_VIEW_GAS_COST;
+    }
+
+    private long gasRequirement(
+            @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinybars) {
+        final var nominalPriceInTinybars = feeCalculator.applyAsLong(body, payer);
+        final var priceInTinybars = Math.max(minimumPriceInTinybars, nominalPriceInTinybars);
+        return asGasRequirement(priceInTinybars);
+    }
+
+    private long canonicalPriceInTinybars(@NonNull final DispatchType dispatchType) {
+        return tinybarValues.asTinybars(dispatchPrices.canonicalPriceInTinycents(dispatchType));
+    }
+
+    private long asGasRequirement(final long tinybarPrice) {
+        final var gasPrice = tinybarValues.childTransactionTinybarGasPrice();
+        final var gasRequirement = (tinybarPrice + gasPrice - 1) / gasPrice;
+        return gasRequirement + (gasRequirement / 5);
     }
 }

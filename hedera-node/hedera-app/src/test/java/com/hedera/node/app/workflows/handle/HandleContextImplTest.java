@@ -611,7 +611,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             final var fees = new Fees(1L, 2L, 3L);
             given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
             final var captor = ArgumentCaptor.forClass(FeeContext.class);
-            final var result = context.dispatchComputeFees(defaultTransactionBody());
+            final var result = context.dispatchComputeFees(defaultTransactionBody(), account1002);
             verify(dispatcher).dispatchComputeFees(captor.capture());
             final var feeContext = captor.getValue();
             assertInstanceOf(ChildFeeContextImpl.class, feeContext);

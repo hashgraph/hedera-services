@@ -80,7 +80,7 @@ class ChildFeeContextImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ChildFeeContextImpl(feeManager, context, SAMPLE_BODY);
+        subject = new ChildFeeContextImpl(feeManager, context, SAMPLE_BODY, payerId);
     }
 
     @Test
@@ -105,7 +105,7 @@ class ChildFeeContextImplTest {
 
     @Test
     void propagatesInvalidBodyAsIse() {
-        subject = new ChildFeeContextImpl(feeManager, context, TransactionBody.DEFAULT);
+        subject = new ChildFeeContextImpl(feeManager, context, TransactionBody.DEFAULT, payerId);
         assertThrows(
                 IllegalStateException.class,
                 () -> subject.feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));

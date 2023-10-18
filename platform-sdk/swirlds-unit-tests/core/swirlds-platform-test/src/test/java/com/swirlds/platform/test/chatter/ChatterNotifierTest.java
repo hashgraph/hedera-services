@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.ChatterNotifier;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
@@ -66,7 +67,8 @@ class ChatterNotifierTest {
     @Test
     @Tag(TIME_CONSUMING)
     void testPurge() {
-        notifier.consensusRound(new ConsensusRound(List.of(event), mock(EventImpl.class), new Generations(1, 2, 3)));
+        notifier.consensusRound(new ConsensusRound(
+                List.of(event), mock(EventImpl.class), new Generations(1, 2, 3), mock(ConsensusSnapshot.class)));
         verify(chatterCore).shiftWindow(1);
     }
 }

@@ -18,6 +18,7 @@ package com.hedera.node.app.fees;
 
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -29,6 +30,7 @@ import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -39,14 +41,27 @@ public class ChildFeeContextImpl implements FeeContext {
     private final FeeManager feeManager;
     private final HandleContextImpl context;
     private final TransactionBody body;
+    private final AccountID payerId;
 
     public ChildFeeContextImpl(
             @NonNull final FeeManager feeManager,
             @NonNull final HandleContextImpl context,
-            @NonNull final TransactionBody body) {
+            @NonNull final TransactionBody body,
+            AccountID payerId) {
         this.feeManager = Objects.requireNonNull(feeManager);
         this.context = Objects.requireNonNull(context);
         this.body = Objects.requireNonNull(body);
+        this.payerId = Objects.requireNonNull(payerId);
+    }
+
+    @Override
+    public Instant currentTime() {
+        return context.consensusNow();
+    }
+
+    @Override
+    public @NonNull AccountID payer() {
+        return payerId;
     }
 
     @Override

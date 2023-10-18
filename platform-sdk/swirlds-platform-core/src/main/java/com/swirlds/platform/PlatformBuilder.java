@@ -239,7 +239,7 @@ public final class PlatformBuilder {
                     configAddressBook.copy(),
                     platformContext);
 
-            if (!initialState.get().isGenesisState()) {
+            if (addressBookInitializer.hasAddressBookChanged()) {
                 final State state = initialState.get().getState();
                 // Update the address book with the current address book read from config.txt.
                 // Eventually we will not do this, and only transactions will be capable of
@@ -247,6 +247,14 @@ public final class PlatformBuilder {
                 state.getPlatformState()
                         .setAddressBook(
                                 addressBookInitializer.getCurrentAddressBook().copy());
+
+                state.getPlatformState()
+                        .setPreviousAddressBook(
+                                addressBookInitializer.getPreviousAddressBook() == null
+                                        ? null
+                                        : addressBookInitializer
+                                                .getPreviousAddressBook()
+                                                .copy());
             }
 
             final SwirldsPlatform platform = new SwirldsPlatform(
@@ -259,7 +267,6 @@ public final class PlatformBuilder {
                     softwareVersion,
                     softwareUpgrade,
                     initialState.get(),
-                    addressBookInitializer.getPreviousAddressBook(),
                     emergencyRecoveryManager);
 
             if (firstTimeSetup) {

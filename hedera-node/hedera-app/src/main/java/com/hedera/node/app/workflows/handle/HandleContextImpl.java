@@ -281,6 +281,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
+    public Instant currentTime() {
+        return consensusNow();
+    }
+
+    @Override
     @NonNull
     public BlockRecordInfo blockRecordInfo() {
         return blockRecordInfo;
@@ -465,8 +470,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
-    public @NonNull Fees dispatchComputeFees(@NonNull final TransactionBody txBody) {
-        return dispatcher.dispatchComputeFees(new ChildFeeContextImpl(feeManager, this, txBody));
+    public @NonNull Fees dispatchComputeFees(@NonNull final TransactionBody txBody, @NonNull final AccountID payerId) {
+        return dispatcher.dispatchComputeFees(new ChildFeeContextImpl(feeManager, this, txBody, payerId));
     }
 
     @NonNull

@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.file.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifyNotSystemFile;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
@@ -27,7 +26,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
@@ -121,12 +119,9 @@ public class FileSystemDeleteHandler implements TransactionHandler {
     @Override
     public Fees calculateFees(@NonNull FeeContext feeContext) {
         final var op = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            try {
-                return new SystemDeleteFileResourceUsage(usageEstimator).usageGiven(fromPbj(op), sigValueObj);
-            } catch (InvalidTxBodyException e) {
-                throw new HandleException(INVALID_TRANSACTION_BODY);
-            }
-        });
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj ->
+                        new SystemDeleteFileResourceUsage(usageEstimator).usageGiven(fromPbj(op), sigValueObj));
     }
 }

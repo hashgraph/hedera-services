@@ -65,7 +65,7 @@ class TinybarValuesTest {
     void computesExpectedRbhServicePrice() {
         withTransactionSubject();
         final var expectedRbhPrice = RBH_FEE_SCHEDULE_RICE / (7 * 1000);
-        assertEquals(expectedRbhPrice, subject.topLevelServiceRbhPrice());
+        assertEquals(expectedRbhPrice, subject.topLevelTinybarRbhPrice());
     }
 
     @Test
@@ -79,13 +79,13 @@ class TinybarValuesTest {
     void computesExpectedChildGasServicePrice() {
         withTransactionSubject();
         final var expectedGasPrice = 2 * CHILD_TRANSACTION_GAS_FEE_SCHEDULE_PRICE / (7 * 1000);
-        assertEquals(expectedGasPrice, subject.childTransactionServiceGasPrice());
+        assertEquals(expectedGasPrice, subject.childTransactionTinybarGasPrice());
     }
 
     @Test
     void querySubjectRefusesToComputeChildGasServicePrice() {
         withQuerySubject();
-        assertThrows(IllegalStateException.class, subject::childTransactionServiceGasPrice);
+        assertThrows(IllegalStateException.class, subject::childTransactionTinybarGasPrice);
     }
 
     private void withTransactionSubject() {

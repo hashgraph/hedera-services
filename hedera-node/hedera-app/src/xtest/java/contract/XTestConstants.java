@@ -66,6 +66,13 @@ class XTestConstants {
     static final Address SENDER_BESU_ADDRESS = pbjToBesuAddress(SENDER_ADDRESS);
     static final AccountID RECEIVER_ID =
             AccountID.newBuilder().accountNum(987654321L).build();
+    static final AccountID INVALID_ID =
+            AccountID.newBuilder().accountNum(Long.MAX_VALUE).build();
+    static final Key INVALID_CONTRACT_ID_KEY = Key.newBuilder()
+            .contractID(ContractID.newBuilder()
+                    .contractNum(SENDER_ID.accountNumOrThrow())
+                    .build())
+            .build();
     static final com.esaulpaugh.headlong.abi.Address RECEIVER_HEADLONG_ADDRESS =
             asHeadlongAddress(asEvmAddress(RECEIVER_ID.accountNumOrThrow()));
     static final Address RECEIVER_BESU_ADDRESS =
@@ -90,6 +97,9 @@ class XTestConstants {
     static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
     static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
             asHeadlongAddress(OWNER_ADDRESS.toByteArray());
+    static final Bytes INVALID_ACCOUNT_ADDRESS = Bytes.wrap(asEvmAddress(INVALID_ID.accountNumOrThrow()));
+    static final com.esaulpaugh.headlong.abi.Address INVALID_ACCOUNT_HEADLONG_ADDRESS =
+            asHeadlongAddress(asEvmAddress(INVALID_ID.accountNumOrThrow()));
     static final Key AN_ED25519_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
             .build();

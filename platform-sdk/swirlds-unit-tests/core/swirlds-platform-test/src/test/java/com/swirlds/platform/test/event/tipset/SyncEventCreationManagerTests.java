@@ -18,17 +18,23 @@ package com.swirlds.platform.test.event.tipset;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMITED;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.creation.EventCreationStatus;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.SyncEventCreationManager;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,6 +68,12 @@ class SyncEventCreationManagerTests {
             public void eventWasCreated() {
                 eventWasCreatedCount.getAndIncrement();
             }
+
+            @NonNull
+            @Override
+            public EventCreationStatus getEventCreationStatus() {
+                return RATE_LIMITED;
+            }
         };
 
         final List<GossipEvent> createdEvents = new ArrayList<>();
@@ -70,7 +82,11 @@ class SyncEventCreationManagerTests {
             return true;
         };
 
-        final SyncEventCreationManager manager = new SyncEventCreationManager(creator, rule, eventConsumer);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final SyncEventCreationManager manager =
+                new SyncEventCreationManager(platformContext, Time.getCurrent(), creator, rule, eventConsumer);
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());
 
@@ -110,6 +126,12 @@ class SyncEventCreationManagerTests {
             public void eventWasCreated() {
                 eventWasCreatedCount.getAndIncrement();
             }
+
+            @NonNull
+            @Override
+            public EventCreationStatus getEventCreationStatus() {
+                return RATE_LIMITED;
+            }
         };
 
         final List<GossipEvent> createdEvents = new ArrayList<>();
@@ -118,7 +140,11 @@ class SyncEventCreationManagerTests {
             return true;
         };
 
-        final SyncEventCreationManager manager = new SyncEventCreationManager(creator, rule, eventConsumer);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final SyncEventCreationManager manager =
+                new SyncEventCreationManager(platformContext, Time.getCurrent(), creator, rule, eventConsumer);
 
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());
@@ -195,6 +221,12 @@ class SyncEventCreationManagerTests {
             public void eventWasCreated() {
                 eventWasCreatedCount.getAndIncrement();
             }
+
+            @NonNull
+            @Override
+            public EventCreationStatus getEventCreationStatus() {
+                return RATE_LIMITED;
+            }
         };
 
         final List<GossipEvent> createdEvents = new ArrayList<>();
@@ -207,7 +239,11 @@ class SyncEventCreationManagerTests {
             return true;
         };
 
-        final SyncEventCreationManager manager = new SyncEventCreationManager(creator, rule, eventConsumer);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final SyncEventCreationManager manager =
+                new SyncEventCreationManager(platformContext, Time.getCurrent(), creator, rule, eventConsumer);
 
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());
@@ -267,6 +303,12 @@ class SyncEventCreationManagerTests {
             public void eventWasCreated() {
                 eventWasCreatedCount.getAndIncrement();
             }
+
+            @NonNull
+            @Override
+            public EventCreationStatus getEventCreationStatus() {
+                return RATE_LIMITED;
+            }
         };
 
         final List<GossipEvent> createdEvents = new ArrayList<>();
@@ -275,7 +317,11 @@ class SyncEventCreationManagerTests {
             return true;
         };
 
-        final SyncEventCreationManager manager = new SyncEventCreationManager(creator, rule, eventConsumer);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final SyncEventCreationManager manager =
+                new SyncEventCreationManager(platformContext, Time.getCurrent(), creator, rule, eventConsumer);
 
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());
@@ -335,6 +381,12 @@ class SyncEventCreationManagerTests {
             public void eventWasCreated() {
                 eventWasCreatedCount.getAndIncrement();
             }
+
+            @NonNull
+            @Override
+            public EventCreationStatus getEventCreationStatus() {
+                return RATE_LIMITED;
+            }
         };
 
         final List<GossipEvent> createdEvents = new ArrayList<>();
@@ -349,7 +401,11 @@ class SyncEventCreationManagerTests {
             return true;
         };
 
-        final SyncEventCreationManager manager = new SyncEventCreationManager(creator, rule, eventConsumer);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final SyncEventCreationManager manager =
+                new SyncEventCreationManager(platformContext, Time.getCurrent(), creator, rule, eventConsumer);
 
         assertEquals(0, eventWasCreatedCount.get());
         assertEquals(0, createdEvents.size());

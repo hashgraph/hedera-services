@@ -17,19 +17,27 @@
 package contract;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.customfees.TokenCustomFeesTranslator.TOKEN_CUSTOM_FEES;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenexpiry.TokenExpiryTranslator.TOKEN_EXPIRY;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenkey.TokenKeyTranslator.TOKEN_KEY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static contract.MiscViewsXTestConstants.OPERATOR_ID;
+import static contract.XTestConstants.ERC20_TOKEN_ID;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.FixedFee;
+import com.hedera.hapi.node.transaction.FractionalFee;
+import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
+import java.util.List;
 
 public class ClassicViewsXTestConstants {
     private static int SUCCESS_INT = 22;
@@ -97,16 +105,49 @@ public class ClassicViewsXTestConstants {
                                 headlongAddressOf(key.delegatableContractIdOrElse(ZERO_CONTRACT_ID))));
     }
 
-    static final ByteBuffer EXPECTED_ADMIN_KEY = TOKEN_KEY
+    static final CustomFee FIXED_TOKEN_FEES = CustomFee.newBuilder()
+            .fixedFee(FixedFee.newBuilder()
+                    .amount(3)
+                    .denominatingTokenId(ERC20_TOKEN_ID)
+                    .build())
+            .feeCollectorAccountId(OPERATOR_ID)
+            .build();
+    static final CustomFee FRACTION_FEES = CustomFee.newBuilder()
+            .fractionalFee(FractionalFee.newBuilder()
+                    .fractionalAmount(
+                            Fraction.newBuilder().numerator(1).denominator(100).build())
+                    .minimumAmount(2)
+                    .maximumAmount(4)
+                    .netOfTransfers(true)
+                    .build())
+            .feeCollectorAccountId(OPERATOR_ID)
+            .build();
+    static final CustomFee ROYALTY_FEE_WITH_FALLBACK = CustomFee.newBuilder()
+            .royaltyFee(RoyaltyFee.newBuilder()
+                    .exchangeValueFraction(
+                            Fraction.newBuilder().numerator(2).denominator(50).build())
+                    .fallbackFee(FixedFee.newBuilder()
+                            .amount(5)
+                            .denominatingTokenId(ERC20_TOKEN_ID)
+                            .build())
+                    .build())
+            .feeCollectorAccountId(OPERATOR_ID)
+            .build();
+    static final List<CustomFee> CUSTOM_FEES = List.of(FIXED_TOKEN_FEES, FRACTION_FEES, ROYALTY_FEE_WITH_FALLBACK);
+    public static final List<Tuple> EXPECTED_FIXED_CUSTOM_FEES =
+            List.of(Tuple.of(3L, headlongAddressOf(ERC20_TOKEN_ID), false, false, headlongAddressOf(OPERATOR_ID)));
+    public static final List<Tuple> EXPECTED_FRACTIONAL_CUSTOM_FEES =
+            List.of(Tuple.of(1L, 100L, 2L, 4L, true, headlongAddressOf(OPERATOR_ID)));
+    public static final List<Tuple> EXPECTED_ROYALTY_CUSTOM_FEES =
+            List.of(Tuple.of(2L, 50L, 5L, headlongAddressOf(ERC20_TOKEN_ID), false, headlongAddressOf(OPERATOR_ID)));
+    static final ByteBuffer EXPECTED_CUSTOM_FEES = TOKEN_CUSTOM_FEES
             .getOutputs()
             .encodeElements(
                     SUCCESS_INT,
-                    Tuple.of(
-                            false,
-                            headlongAddressOf(ADMIN_KEY.contractIDOrElse(ZERO_CONTRACT_ID)),
-                            ADMIN_KEY.ed25519OrElse(Bytes.EMPTY).toByteArray(),
-                            ADMIN_KEY.ecdsaSecp256k1OrElse(Bytes.EMPTY).toByteArray(),
-                            headlongAddressOf(ADMIN_KEY.delegatableContractIdOrElse(ZERO_CONTRACT_ID))));
+                    EXPECTED_FIXED_CUSTOM_FEES.toArray(new Tuple[EXPECTED_FIXED_CUSTOM_FEES.size()]),
+                    EXPECTED_FRACTIONAL_CUSTOM_FEES.toArray(new Tuple[EXPECTED_FRACTIONAL_CUSTOM_FEES.size()]),
+                    EXPECTED_ROYALTY_CUSTOM_FEES.toArray(new Tuple[EXPECTED_ROYALTY_CUSTOM_FEES.size()]));
+
     static final Function GET_IS_FROZEN = new Function("isFrozenPublic(address,address)");
     static final Function GET_IS_KYC = new Function("isKycPublic(address,address)");
     static final Function GET_IS_TOKEN = new Function("isTokenPublic(address)");
@@ -115,4 +156,5 @@ public class ClassicViewsXTestConstants {
     static final Function GET_DEFAULT_KYC_STATUS = new Function("getTokenDefaultKycStatusPublic(address)");
     static final Function GET_TOKEN_EXPIRY = new Function("getTokenExpiryInfoPublic(address)");
     static final Function GET_TOKEN_KEY = new Function("getTokenKeyPublic(address,uint)");
+    static final Function GET_TOKEN_CUSTOM_FEES = new Function("getTokenCustomFeesPublic(address)");
 }

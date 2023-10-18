@@ -36,7 +36,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.InvalidKeyException;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -164,8 +164,8 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
             // all keys are "valid" on the transaction with this mock setup
             prepareContextAllPass(signTransaction);
             subject.handle(mockContext);
-            verifySignHandleSucceededAndExecuted(next, parentId, startCount);
             verifyAllSignatories(next, testChildKeys);
+            verifySignHandleSucceededAndExecuted(next, parentId, startCount);
             successCount++;
         }
         // verify that all the transactions succeeded.
@@ -173,7 +173,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     }
 
     private void verifyAllSignatories(final Schedule original, final TransactionKeys expectedKeys) {
-        final Set<Key> combinedSet = new HashSet<>(3);
+        final Set<Key> combinedSet = new LinkedHashSet<>(5);
         combinedSet.addAll(expectedKeys.requiredNonPayerKeys());
         combinedSet.addAll(expectedKeys.optionalNonPayerKeys());
         combinedSet.add(expectedKeys.payerKey());
@@ -183,6 +183,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     private void verifySignatorySet(final Schedule original, final Set<Key> expectedKeys) {
         assertThat(original.signatories()).isEmpty();
         final Schedule modified = writableSchedules.get(original.scheduleId());
+        assertThat(modified).isNotNull();
         assertThat(original.signatories()).isEmpty();
         assertThat(modified.signatories()).containsExactlyInAnyOrderElementsOf(expectedKeys);
     }

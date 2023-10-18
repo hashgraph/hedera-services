@@ -33,7 +33,7 @@ import java.util.Objects;
  * @param <T> the type of the record builder to expect from the dispatch
  */
 public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBuilder> extends AbstractHtsCall {
-    private final AccountID spenderId;
+    private final AccountID senderId;
     private final TransactionBody syntheticBody;
     private final Class<T> recordBuilderType;
     private final VerificationStrategy verificationStrategy;
@@ -66,7 +66,7 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
      * More general constructor, for cases where perhaps a custom {@link VerificationStrategy} is needed.
      *
      * @param enhancement the enhancement to use
-     * @param spenderId the id of the spender
+     * @param senderId the id of the spender
      * @param syntheticBody the synthetic body to dispatch
      * @param recordBuilderType the type of the record builder to expect from the dispatch
      * @param verificationStrategy the verification strategy to use
@@ -75,13 +75,13 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
     public <U extends SingleTransactionRecordBuilder> DispatchForResponseCodeHtsCall(
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final SystemContractGasCalculator gasCalculator,
-            @NonNull final AccountID spenderId,
+            @NonNull final AccountID senderId,
             @NonNull final TransactionBody syntheticBody,
             @NonNull final Class<T> recordBuilderType,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final DispatchGasCalculator dispatchGasCalculator) {
         super(gasCalculator, enhancement);
-        this.spenderId = Objects.requireNonNull(spenderId);
+        this.senderId = Objects.requireNonNull(senderId);
         this.syntheticBody = Objects.requireNonNull(syntheticBody);
         this.recordBuilderType = Objects.requireNonNull(recordBuilderType);
         this.verificationStrategy = Objects.requireNonNull(verificationStrategy);
@@ -93,10 +93,10 @@ public class DispatchForResponseCodeHtsCall<T extends SingleTransactionRecordBui
      */
     @Override
     public @NonNull PricedResult execute() {
-        // TODO - gas calculation
         final var recordBuilder =
-                systemContractOperations().dispatch(syntheticBody, verificationStrategy, spenderId, recordBuilderType);
-        final var gasRequirement = dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement);
+                systemContractOperations().dispatch(syntheticBody, verificationStrategy, senderId, recordBuilderType);
+        final var gasRequirement =
+                dispatchGasCalculator.gasRequirement(syntheticBody, gasCalculator, enhancement, senderId);
         return completionWith(recordBuilder.status(), gasRequirement);
     }
 }

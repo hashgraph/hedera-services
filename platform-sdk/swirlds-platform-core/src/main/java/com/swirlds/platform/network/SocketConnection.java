@@ -17,7 +17,7 @@
 package com.swirlds.platform.network;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.SYNC;
+import static com.swirlds.logging.LogMarker.NETWORK;
 
 import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.io.exceptions.BadIOException;
@@ -165,7 +165,7 @@ public class SocketConnection implements Connection {
             // only update when closing an open connection. Not when closing the same twice.
             connectionTracker.connectionClosed(isOutbound(), this);
         }
-        logger.debug(SYNC.getMarker(), "disconnecting connection from {} to {}", selfId, otherId);
+        logger.debug(NETWORK.getMarker(), "disconnecting connection from {} to {}", selfId, otherId);
 
         NetworkUtils.close(socket, dis, dos);
     }

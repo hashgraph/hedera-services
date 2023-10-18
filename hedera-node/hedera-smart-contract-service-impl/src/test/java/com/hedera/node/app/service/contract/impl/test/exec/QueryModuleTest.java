@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.p
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.QueryModule;
@@ -100,6 +101,6 @@ class QueryModuleTest {
         final var calculator = QueryModule.provideSystemContractGasCalculator(canonicalDispatchPrices, tinybarValues);
         assertThrows(
                 IllegalStateException.class,
-                () -> calculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.APPROVE));
+                () -> calculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.APPROVE, AccountID.DEFAULT));
     }
 }

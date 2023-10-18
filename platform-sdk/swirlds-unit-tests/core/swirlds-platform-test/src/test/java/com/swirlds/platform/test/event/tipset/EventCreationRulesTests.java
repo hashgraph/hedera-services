@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.event.tipset;
 
-import static com.swirlds.common.system.UptimeData.NO_ROUND;
 import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.common.system.status.PlatformStatus.CHECKING;
 import static com.swirlds.common.system.status.PlatformStatus.FREEZING;
@@ -39,14 +38,12 @@ import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import com.swirlds.platform.event.creation.rules.MaximumRateRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
-import com.swirlds.platform.event.creation.rules.ReconnectStateSavedRule;
 import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.DisplayName;
@@ -251,42 +248,5 @@ class EventCreationRulesTests {
                 assertFalse(rule.isEventCreationPermitted());
             }
         }
-    }
-
-    @Test
-    @DisplayName("ReconnectSavedStateRule Test")
-    void reconnectSavedStateRuleTest() {
-        final AtomicLong lastReconnectRound = new AtomicLong(NO_ROUND);
-        final AtomicLong lastSavedRound = new AtomicLong(NO_ROUND);
-
-        final ReconnectStateSavedRule rule = new ReconnectStateSavedRule(lastReconnectRound::get, lastSavedRound::get);
-
-        // No reconnects or state saves done yet
-        assertTrue(rule.isEventCreationPermitted());
-
-        // State saved, no reconnects
-        lastReconnectRound.set(NO_ROUND);
-        lastSavedRound.set(1);
-        assertTrue(rule.isEventCreationPermitted());
-
-        // Reconnect done, no state saved
-        lastReconnectRound.set(1);
-        lastSavedRound.set(NO_ROUND);
-        assertFalse(rule.isEventCreationPermitted());
-
-        // Reconnect done, state saved prior to reconnect
-        lastReconnectRound.set(1);
-        lastSavedRound.set(0);
-        assertFalse(rule.isEventCreationPermitted());
-
-        // reconnect state saved
-        lastReconnectRound.set(1);
-        lastSavedRound.set(1);
-        assertTrue(rule.isEventCreationPermitted());
-
-        // state saved after reconnect
-        lastReconnectRound.set(1);
-        lastSavedRound.set(2);
-        assertTrue(rule.isEventCreationPermitted());
     }
 }

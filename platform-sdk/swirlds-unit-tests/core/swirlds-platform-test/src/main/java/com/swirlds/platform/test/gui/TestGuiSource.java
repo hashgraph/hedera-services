@@ -17,7 +17,9 @@
 package com.swirlds.platform.test.gui;
 
 import com.swirlds.gui.hashgraph.HashgraphGuiSource;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.gui.hashgraph.internal.FinalShadowgraphGuiSource;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
@@ -37,6 +39,7 @@ public class TestGuiSource {
     private final GraphGenerator<?> graphGenerator;
     private final TestIntake intake;
     private final HashgraphGuiSource guiSource;
+    private ConsensusSnapshot savedSnapshot;
 
     public TestGuiSource(final long seed, final int numNodes) {
         graphGenerator = new StandardGraphGenerator(seed, generateSources(numNodes));
@@ -90,6 +93,34 @@ public class TestGuiSource {
             intake.reset();
             updateFameDecidedBelow.run();
         });
+        // snapshots
+        final JButton printLastSnapshot = new JButton("Print last snapshot");
+        printLastSnapshot.addActionListener(e -> {
+            final ConsensusRound round = intake.getConsensusRounds().peekLast();
+            if (round == null) {
+                System.out.println("No consensus rounds");
+            } else {
+                System.out.println(round.getSnapshot().toString());
+            }
+        });
+        final JButton saveLastSnapshot = new JButton("Save last snapshot");
+        saveLastSnapshot.addActionListener(e -> {
+            final ConsensusRound round = intake.getConsensusRounds().peekLast();
+            if (round == null) {
+                System.out.println("No consensus rounds");
+            } else {
+                savedSnapshot = round.getSnapshot();
+            }
+        });
+        final JButton loadSavedSnapshot = new JButton("Load saved snapshot");
+        loadSavedSnapshot.addActionListener(e -> {
+            if (savedSnapshot == null) {
+                System.out.println("No saved snapshot");
+                return;
+            }
+            intake.reset();
+            intake.loadSnapshot(savedSnapshot);
+        });
 
         // create JPanel
         final JPanel controls = new JPanel(new FlowLayout());
@@ -97,6 +128,9 @@ public class TestGuiSource {
         controls.add(numEvents);
         controls.add(reset);
         controls.add(fameDecidedBelow);
+        controls.add(printLastSnapshot);
+        controls.add(saveLastSnapshot);
+        controls.add(loadSavedSnapshot);
 
         return controls;
     }

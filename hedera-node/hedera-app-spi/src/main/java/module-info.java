@@ -19,4 +19,5 @@ module com.hedera.node.app.spi {
     exports com.hedera.node.app.spi.validation;
     exports com.hedera.node.app.spi.workflows.record;
     exports com.hedera.node.app.spi.authorization;
+    exports com.hedera.node.app.spi.throttle;
 }

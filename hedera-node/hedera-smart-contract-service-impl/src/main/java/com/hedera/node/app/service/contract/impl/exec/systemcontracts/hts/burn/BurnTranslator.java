@@ -71,6 +71,7 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
                             attempt.enhancement(),
                             ConversionUtils.asTokenId(call.get(0)),
                             attempt.defaultVerificationStrategy(),
+                            attempt.senderId(),
                             attempt.senderAddress(),
                             attempt.addressIdConverter())
                     : new NonFungibleBurnCall(
@@ -79,6 +80,7 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
                             attempt.enhancement(),
                             ConversionUtils.asTokenId(call.get(0)),
                             attempt.defaultVerificationStrategy(),
+                            attempt.senderId(),
                             attempt.senderAddress(),
                             attempt.addressIdConverter());
         }

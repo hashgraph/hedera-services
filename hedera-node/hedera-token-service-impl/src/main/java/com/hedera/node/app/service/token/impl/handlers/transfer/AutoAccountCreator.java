@@ -110,10 +110,6 @@ public class AutoAccountCreator {
             memo = AUTO_MEMO;
         }
 
-        var fee = autoCreationFeeFor(syntheticCreation);
-        if (isAliasEVMAddress) {
-            fee += getLazyCreationFinalizationFee();
-        }
         // TODO : distribute autocreation fee and deduct payer balance
         //        final var payer = handleContext.body().transactionID().accountID();
         //        final var payerAccount = accountStore.get(payer);
@@ -131,14 +127,13 @@ public class AutoAccountCreator {
         final var childRecord = handleContext.dispatchRemovableChildTransaction(
                 syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier, handleContext.payer());
 
-        if (!isAliasEVMAddress) {
-            final var key = asKeyFromAlias(alias);
-            if (key.hasEcdsaSecp256k1()) {
-                evmAddress = tryAddressRecovery(key, EthSigsUtils::recoverAddressFromPubKey);
-                if (evmAddress != null) {
-                    childRecord.evmAddress(Bytes.wrap(evmAddress));
-                }
-            }
+        if (!isAliasEVMAddress && evmAddress != null) {
+            childRecord.evmAddress(Bytes.wrap(evmAddress));
+        }
+
+        var fee = autoCreationFeeFor(syntheticCreation);
+        if (isAliasEVMAddress) {
+            fee += getLazyCreationFinalizationFee();
         }
         childRecord.transactionFee(fee);
 

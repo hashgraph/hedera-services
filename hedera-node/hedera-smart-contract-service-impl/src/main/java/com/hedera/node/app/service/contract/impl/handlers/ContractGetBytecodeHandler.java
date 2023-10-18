@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
@@ -70,6 +71,7 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
         validateFalsePreCheck(contractFrom(context) == null, INVALID_CONTRACT_ID);
+        validateFalsePreCheck(contractFrom(context).deleted(), CONTRACT_DELETED);
     }
 
     @Override

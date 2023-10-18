@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.delete;
 
 import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.token.TokenDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
@@ -58,8 +59,9 @@ public class DeleteTranslator extends AbstractHtsCallTranslator {
     public static long gasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
-            @NonNull final HederaWorldUpdater.Enhancement enhancement) {
-        return systemContractGasCalculator.gasRequirement(body, DispatchType.DELETE);
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final AccountID payerId) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.DELETE, payerId);
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {

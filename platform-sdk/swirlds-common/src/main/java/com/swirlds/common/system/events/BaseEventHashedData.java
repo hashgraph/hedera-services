@@ -366,14 +366,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         return otherParentHash != null;
     }
 
-    public byte[] getSelfParentHashValue() {
-        return selfParentHash == null ? null : selfParentHash.getValue();
-    }
-
-    public byte[] getOtherParentHashValue() {
-        return otherParentHash == null ? null : otherParentHash.getValue();
-    }
-
     public Instant getTimeCreated() {
         return timeCreated;
     }

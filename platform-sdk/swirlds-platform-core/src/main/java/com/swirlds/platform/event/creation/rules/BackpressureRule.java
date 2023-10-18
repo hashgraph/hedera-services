@@ -16,8 +16,11 @@
 
 package com.swirlds.platform.event.creation.rules;
 
+import static com.swirlds.platform.event.creation.EventCreationStatus.OVERLOADED;
+
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.event.creation.EventCreationConfig;
+import com.swirlds.platform.event.creation.EventCreationStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.IntSupplier;
@@ -65,5 +68,14 @@ public class BackpressureRule implements EventCreationRule {
     @Override
     public void eventWasCreated() {
         // no-op
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public EventCreationStatus getEventCreationStatus() {
+        return OVERLOADED;
     }
 }

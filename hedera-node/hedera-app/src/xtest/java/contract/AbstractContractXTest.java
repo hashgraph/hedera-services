@@ -17,6 +17,7 @@
 package contract;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,6 +36,9 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
@@ -213,7 +217,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         final var tinybarValues = new TinybarValues(
                 context.exchangeRateInfo().activeRate(Instant.now()),
                 context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT),
-                contractCallResourcePrices);
+                context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT));
         final var enhancement = new HederaWorldUpdater.Enhancement(
                 new HandleHederaOperations(
                         component.config().getConfigData(LedgerConfig.class),
@@ -227,6 +231,12 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         given(frame.getSenderAddress()).willReturn(sender);
         final Deque<MessageFrame> stack = new ArrayDeque<>();
         given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(component.config());
+        final var systemContractGasCalculator = new SystemContractGasCalculator(
+                tinybarValues,
+                new CanonicalDispatchPrices(new AssetsLoader()),
+                (body, payerId) -> context.dispatchComputeFees(body, payerId).totalFee());
+        given(initialFrame.getContextVariable(SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE))
+                .willReturn(systemContractGasCalculator);
         stack.push(initialFrame);
         stack.addFirst(frame);
         given(frame.getMessageFrameStack()).willReturn(stack);

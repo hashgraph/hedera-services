@@ -319,7 +319,7 @@ class HevmTransactionFactoryTest {
         final var createMeta = new ExpiryMeta(NA, SOME_DURATION.seconds(), NON_SYSTEM_ACCOUNT_ID);
         doThrow(new HandleException(INVALID_AUTORENEW_ACCOUNT))
                 .when(expiryValidator)
-                .resolveCreationAttempt(true, createMeta);
+                .resolveCreationAttempt(true, createMeta, false);
         assertCreateFailsWith(INVALID_AUTORENEW_ACCOUNT, b -> b.memo(SOME_MEMO)
                 .adminKey(AN_ED25519_KEY)
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)

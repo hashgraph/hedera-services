@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.gas.DispatchType.BURN_FUNGIBLE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -40,20 +41,25 @@ public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
 
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategy verificationStrategy;
-    private final org.hyperledger.besu.datatypes.Address spender;
+    private final AccountID senderId;
+    private final org.hyperledger.besu.datatypes.Address sender;
 
+    // too may parameters
+    @SuppressWarnings("java:S107")
     public FungibleBurnCall(
             final long amount,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final TokenID tokenId,
             @NonNull final VerificationStrategy verificationStrategy,
-            @NonNull final org.hyperledger.besu.datatypes.Address spender,
+            @NonNull final AccountID senderId,
+            @NonNull final org.hyperledger.besu.datatypes.Address sender,
             @NonNull final AddressIdConverter addressIdConverter) {
         super(gasCalculator, enhancement);
         this.amount = amount;
         this.tokenId = tokenId;
-        this.spender = requireNonNull(spender);
+        this.sender = requireNonNull(sender);
+        this.senderId = requireNonNull(senderId);
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.addressIdConverter = requireNonNull(addressIdConverter);
     }
@@ -62,12 +68,13 @@ public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
     public @NonNull PricedResult execute() {
         return executeBurn(
                 tokenId,
+                senderId,
                 BURN_FUNGIBLE,
                 addressIdConverter,
                 verificationStrategy,
                 gasCalculator,
                 () -> syntheticBurnUnits(requireNonNull(tokenId), amount),
-                spender,
+                sender,
                 systemContractOperations(),
                 gasRequirement -> reversionWith(INVALID_TOKEN_ID, gasRequirement));
     }

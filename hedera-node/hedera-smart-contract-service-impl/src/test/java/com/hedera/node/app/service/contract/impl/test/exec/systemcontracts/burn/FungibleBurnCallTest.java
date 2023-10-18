@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,6 +67,7 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
                 mockEnhancement(),
                 null,
                 verificationStrategy,
+                SENDER_ID,
                 FRAME_SENDER_ADDRESS,
                 addressIdConverter);
 
@@ -147,6 +149,7 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
                 mockEnhancement(),
                 FUNGIBLE_TOKEN_ID,
                 verificationStrategy,
+                SENDER_ID,
                 FRAME_SENDER_ADDRESS,
                 addressIdConverter);
     }

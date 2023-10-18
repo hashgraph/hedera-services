@@ -17,10 +17,8 @@
 package com.hedera.node.app.hapi.utils.fee;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -311,12 +309,5 @@ class FeeBuilderTest {
         assertEquals(
                 countKeyMetatData.length, FeeBuilder.calculateKeysMetadata(validED25519Keys, countKeyMetatData).length);
         assertEquals(2, FeeBuilder.calculateKeysMetadata(validED25519Keys, countKeyMetatData)[1]);
-    }
-
-    @Test
-    void assertGetCommonTransactionBodyBytesThrowsExceptionWhenTxBodyIsEmpty() {
-        assertThrows(InvalidTxBodyException.class, () -> {
-            FeeBuilder.getCommonTransactionBodyBytes(null);
-        });
     }
 }

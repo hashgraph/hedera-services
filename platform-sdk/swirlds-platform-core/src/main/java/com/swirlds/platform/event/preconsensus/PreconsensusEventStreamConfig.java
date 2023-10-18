@@ -109,4 +109,4 @@ public record PreconsensusEventStreamConfig(
         @ConfigProperty(defaultValue = "true") boolean enableReplay,
         @ConfigProperty(defaultValue = "1024") int replayQueueSize,
         @ConfigProperty(defaultValue = "8") int replayHashPoolSize,
-        @ConfigProperty(defaultValue = "true") boolean clearOnSoftwareUpgrade) {}
+        @ConfigProperty(defaultValue = "false") boolean clearOnSoftwareUpgrade) {}

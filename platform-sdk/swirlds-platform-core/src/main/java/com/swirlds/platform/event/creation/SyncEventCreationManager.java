@@ -16,6 +16,16 @@
 
 package com.swirlds.platform.event.creation;
 
+import static com.swirlds.platform.event.creation.EventCreationStatus.ATTEMPTING_CREATION;
+import static com.swirlds.platform.event.creation.EventCreationStatus.NO_ELIGIBLE_PARENTS;
+import static com.swirlds.platform.event.creation.EventCreationStatus.PAUSED;
+import static com.swirlds.platform.event.creation.EventCreationStatus.PIPELINE_INSERTION;
+import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMITED;
+
+import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.extensions.PhaseTimer;
+import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import com.swirlds.platform.internal.EventImpl;
@@ -24,9 +34,9 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Wraps an {@link EventCreator} and provides additional functionality. Will sometimes decide not to create new
- * events based on external rules or based on paused status. Forwards created events to a consumer, and retries
- * forwarding if the consumer is not immediately able to accept the event.
+ * Wraps an {@link EventCreator} and provides additional functionality. Will sometimes decide not to create new events
+ * based on external rules or based on paused status. Forwards created events to a consumer, and retries forwarding if
+ * the consumer is not immediately able to accept the event.
  */
 public class SyncEventCreationManager {
 
@@ -51,6 +61,11 @@ public class SyncEventCreationManager {
     private GossipEvent mostRecentlyCreatedEvent;
 
     /**
+     * Tracks the current phase of event creation.
+     */
+    private final PhaseTimer<EventCreationStatus> phase;
+
+    /**
      * Whether or not event creation is paused.
      */
     private boolean paused = false;
@@ -58,12 +73,16 @@ public class SyncEventCreationManager {
     /**
      * Constructor.
      *
+     * @param platformContext    the platform context
+     * @param time               provides wall clock time
      * @param creator            creates events
      * @param eventCreationRules rules for deciding when it is permitted to create events
      * @param eventConsumer      events that are created are passed here, consumer returns true if the event was
      *                           accepted and false if it needs to be resubmitted later
      */
     public SyncEventCreationManager(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Time time,
             @NonNull final EventCreator creator,
             @NonNull final EventCreationRule eventCreationRules,
             @NonNull final Function<GossipEvent, Boolean> eventConsumer) {
@@ -71,26 +90,51 @@ public class SyncEventCreationManager {
         this.creator = Objects.requireNonNull(creator);
         this.eventCreationRules = Objects.requireNonNull(eventCreationRules);
         this.eventConsumer = Objects.requireNonNull(eventConsumer);
+
+        phase = new PhaseTimerBuilder<>(platformContext, time, "platform", EventCreationStatus.class)
+                .enableFractionalMetrics()
+                .setInitialPhase(PAUSED)
+                .setMetricsNamePrefix("eventCreation")
+                .build();
     }
 
     /**
      * Attempt to create an event. If successful, attempt to pass that event to the event consumer.
      */
     public void maybeCreateEvent() {
-        if (paused || !eventCreationRules.isEventCreationPermitted()) {
+        if (paused) {
+            phase.activatePhase(PAUSED);
+            return;
+        }
+
+        if (!eventCreationRules.isEventCreationPermitted()) {
+            phase.activatePhase(eventCreationRules.getEventCreationStatus());
             return;
         }
 
         tryToSubmitMostRecentEvent();
         if (mostRecentlyCreatedEvent != null) {
             // Don't create a new event until the previous one has been accepted.
+            phase.activatePhase(PIPELINE_INSERTION);
             return;
         }
 
+        phase.activatePhase(ATTEMPTING_CREATION);
+
         mostRecentlyCreatedEvent = creator.maybeCreateEvent();
-        if (mostRecentlyCreatedEvent != null) {
+        if (mostRecentlyCreatedEvent == null) {
+            // The only reason why the event creator may choose not to create an event
+            // is if there are no eligible parents.
+            phase.activatePhase(NO_ELIGIBLE_PARENTS);
+        } else {
             eventCreationRules.eventWasCreated();
+            // We created an event, we won't be allowed to create another until some time has elapsed.
+            phase.activatePhase(RATE_LIMITED);
+
             tryToSubmitMostRecentEvent();
+
+            // We created an event, we won't be allowed to create another until some time has elapsed.
+            phase.activatePhase(RATE_LIMITED);
         }
     }
 
@@ -102,6 +146,8 @@ public class SyncEventCreationManager {
             final boolean accepted = eventConsumer.apply(mostRecentlyCreatedEvent);
             if (accepted) {
                 mostRecentlyCreatedEvent = null;
+            } else {
+                phase.activatePhase(PIPELINE_INSERTION);
             }
         }
     }

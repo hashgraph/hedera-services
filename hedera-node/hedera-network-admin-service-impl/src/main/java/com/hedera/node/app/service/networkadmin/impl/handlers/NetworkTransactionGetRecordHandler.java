@@ -26,7 +26,6 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_TX_RECORD_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_MATRICES_CONST;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.STATE_PROOF_SIZE;
-import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -97,10 +96,6 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         if (accountID == null || accountID.equals(AccountID.DEFAULT)) {
             throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
-
-        final var recordCache = context.recordCache();
-        final var receipt = recordCache.getReceipt(txnId);
-        mustExist(receipt, RECORD_NOT_FOUND);
     }
 
     @Override

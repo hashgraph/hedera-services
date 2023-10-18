@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult;
@@ -49,6 +50,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -86,6 +88,7 @@ public class CustomFeeAssessmentStep {
     /**
      * Given a transaction body, assess custom fees for the crypto transfer operation.
      * This is called in Ingest and handle to fetch fees for CryptoTransfer transaction.
+     *
      * @param feeContext - fee context
      * @return - list of assessed custom fees
      */
@@ -94,8 +97,9 @@ public class CustomFeeAssessmentStep {
 
         final var tokenStore = feeContext.readableStore(ReadableTokenStore.class);
         final var tokenRelStore = feeContext.readableStore(ReadableTokenRelationStore.class);
+        final var readableStore = feeContext.readableStore(ReadableAccountStore.class);
         final var config = feeContext.configuration();
-        final var result = assessFees(tokenStore, tokenRelStore, config);
+        final var result = assessFees(tokenStore, tokenRelStore, config, readableStore, AccountID::hasAlias);
         return result.assessedCustomFees();
     }
 
@@ -115,9 +119,11 @@ public class CustomFeeAssessmentStep {
         final var handleContext = transferContext.getHandleContext();
         final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
         final var tokenRelStore = handleContext.readableStore(ReadableTokenRelationStore.class);
+        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
         final var config = handleContext.configuration();
         final var recordBuilder = handleContext.recordBuilder(CryptoTransferRecordBuilder.class);
-        final var result = assessFees(tokenStore, tokenRelStore, config);
+        final var autoCreatedIds = transferContext.resolutions().values();
+        final var result = assessFees(tokenStore, tokenRelStore, config, accountStore, autoCreatedIds::contains);
 
         recordBuilder.assessedCustomFees(result.assessedCustomFees());
         customFeeAssessor.resetInitialNftChanges();
@@ -131,15 +137,20 @@ public class CustomFeeAssessmentStep {
      * It is possible the assessed token custom fees could trigger custom fee again.
      * So, we repeat the process for the assessed custom fees one more time.
      * This will be run once in handle and once in ingest to get fees for CryptoTransfer transaction.
+     *
      * @param tokenStore - token store
      * @param tokenRelStore - token relation store
      * @param config - configuration
+     * @param accountStore - account store
+     * @param autoCreationTest - predicate to test if account id is being auto created
      * @return - transaction body with assessed custom fees
      */
     public CustomFeeAssessmentResult assessFees(
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelStore,
-            @NonNull final Configuration config) {
+            @NonNull final Configuration config,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final Predicate<AccountID> autoCreationTest) {
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var tokensConfig = config.getConfigData(TokensConfig.class);
         final var maxTransfersAllowed = ledgerConfig.xferBalanceChangesMaxLen();
@@ -159,8 +170,14 @@ public class CustomFeeAssessmentStep {
         do {
             validateTrue(levelNum <= maxCustomFeeDepth, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
             // The result after each assessment
-            final var result =
-                    assessCustomFeesFrom(hbarTransfers, tokenTransfers, tokenStore, tokenRelStore, maxTransfersAllowed);
+            final var result = assessCustomFeesFrom(
+                    hbarTransfers,
+                    tokenTransfers,
+                    tokenStore,
+                    tokenRelStore,
+                    maxTransfersAllowed,
+                    accountStore,
+                    autoCreationTest);
             // when there are adjustments made to given transaction, need to re-build the transaction
             final var modifiedInputBody = changedInputTxn(txnToAssess, result);
             assessedTxns.add(modifiedInputBody);
@@ -190,6 +207,7 @@ public class CustomFeeAssessmentStep {
 
     /**
      * Record to hold the result of custom fee assessment.
+     *
      * @param assessedTxns - list of assessed cryptoTransfer transactions
      * @param assessedCustomFees - list of assessed custom fees
      */
@@ -301,7 +319,9 @@ public class CustomFeeAssessmentStep {
             @NonNull final List<TokenTransferList> tokenTransfers,
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelStore,
-            final int maxTransfersSize) {
+            final int maxTransfersSize,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final Predicate<AccountID> autoCreationTest) {
         final var result = new AssessmentResult(tokenTransfers, hbarTransfers);
 
         for (final var xfer : tokenTransfers) {
@@ -329,7 +349,15 @@ public class CustomFeeAssessmentStep {
                     if (feeMeta.treasuryId().equals(sender)) {
                         continue;
                     }
-                    customFeeAssessor.assess(sender, feeMeta, maxTransfersSize, null, result, tokenRelStore);
+                    customFeeAssessor.assess(
+                            sender,
+                            feeMeta,
+                            maxTransfersSize,
+                            null,
+                            result,
+                            tokenRelStore,
+                            accountStore,
+                            autoCreationTest);
                 }
             }
 
@@ -343,7 +371,9 @@ public class CustomFeeAssessmentStep {
                         maxTransfersSize,
                         nftTransfer.receiverAccountID(),
                         result,
-                        tokenRelStore);
+                        tokenRelStore,
+                        accountStore,
+                        autoCreationTest);
             }
         }
         return result;

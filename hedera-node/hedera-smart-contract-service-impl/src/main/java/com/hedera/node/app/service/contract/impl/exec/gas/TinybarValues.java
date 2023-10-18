@@ -75,7 +75,7 @@ public class TinybarValues {
      *
      * @return the tinybar-denominated price of a unit of gas for dispatching a child transaction
      */
-    public long childTransactionServiceGasPrice() {
+    public long childTransactionTinybarGasPrice() {
         if (childTransactionResourcePrices == null) {
             throw new IllegalStateException("Cannot dispatch a child transaction from a query");
         }
@@ -92,7 +92,7 @@ public class TinybarValues {
      *
      * @return the tinybar-denominated price of a rbh for the current operation
      */
-    public long topLevelServiceRbhPrice() {
+    public long topLevelTinybarRbhPrice() {
         return asTinybars(
                 topLevelResourcePrices.basePrices().servicedataOrThrow().rbh()
                         / FEE_SCHEDULE_UNITS_PER_TINYCENT

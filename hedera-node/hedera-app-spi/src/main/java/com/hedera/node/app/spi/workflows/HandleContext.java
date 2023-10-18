@@ -422,13 +422,15 @@ public interface HandleContext {
     /**
      * Dispatches the fee calculation for a child transaction (that might then be dispatched).
      *
-     * <p>The override payer id doesn't matter for this purpose, because there are no signatures
-     * provided or verified as part of a dispatch. So we provide only a {@link TransactionBody}.
+     * <p>The override payer id still matters for this purpose, because a transaction can add
+     * state whose lifetime is scoped to a payer account (the main current example is a
+     * {@link HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE} dispatch).
      *
-     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
+     * @param txBody the {@link TransactionBody} of the child transaction to compute fees for
+     * @param payerId the child payer
      * @return the calculated fees
      */
-    Fees dispatchComputeFees(@NonNull TransactionBody txBody);
+    Fees dispatchComputeFees(@NonNull TransactionBody txBody, @NonNull AccountID payerId);
 
     /**
      * Dispatches a child transaction that already has a transaction ID.

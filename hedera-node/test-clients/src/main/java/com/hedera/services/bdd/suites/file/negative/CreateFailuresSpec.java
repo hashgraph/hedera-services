@@ -18,14 +18,11 @@ package com.hedera.services.bdd.suites.file.negative;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
 import java.util.List;
@@ -46,22 +43,6 @@ public class CreateFailuresSpec extends HapiSuite {
             //						handleRejectsMissingWacl(),
             precheckRejectsBadEffectiveAutoRenewPeriod(),
         });
-    }
-
-    private HapiSpec handleRejectsMissingWacl() {
-        return defaultHapiSpec("handleRejectsMissingWacl")
-                .given(withOpContext((spec, opLog) -> spec.registry()
-                        .saveKey(
-                                "emptyKey",
-                                Key.newBuilder()
-                                        .setKeyList(KeyList.getDefaultInstance())
-                                        .build())))
-                .when()
-                .then(fileCreate("notHere")
-                        .contents("Not meant to be!")
-                        .key("emptyKey")
-                        .signedBy(GENESIS)
-                        .hasKnownStatus(ResponseCodeEnum.NO_WACL_KEY));
     }
 
     @HapiTest
