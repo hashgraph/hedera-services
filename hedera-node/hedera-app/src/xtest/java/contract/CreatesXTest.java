@@ -39,6 +39,7 @@ import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
+import static contract.XTestConstants.INVALID_ACCOUNT_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
@@ -68,6 +69,17 @@ public class CreatesXTest extends AbstractContractXTest {
             NAME,
             SYMBOL,
             OWNER_HEADLONG_ADDRESS,
+            MEMO,
+            true,
+            MAX_SUPPLY,
+            false,
+            new Tuple[] {TOKEN_KEY, TOKEN_KEY_TWO},
+            EXPIRY);
+
+    private static final Tuple INVALID_ACCOUNT_ID_HEDERA_TOKEN = hederaTokenFactory(
+            NAME,
+            SYMBOL,
+            INVALID_ACCOUNT_HEADLONG_ADDRESS,
             MEMO,
             true,
             MAX_SUPPLY,
@@ -232,8 +244,6 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
-        // should revert when token has no supplyKey
-
         // should successfully create non-fungible token with custom fees v1
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
@@ -257,6 +267,14 @@ public class CreatesXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
                         .array()),
                 assertSuccess());
+
+        // should successfully create fungible token v1
+        /*runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+                        .encodeCallWithArgs(INVALID_ACCOUNT_ID_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_BIG_INT)
+                        .array()),
+                assertSuccess());*/
     }
 
     @Override
