@@ -46,7 +46,6 @@ public class BackpressureObjectCounter extends ObjectCounter {
      *                      then do not sleep
      */
     public BackpressureObjectCounter(final long capacity, @Nullable Duration sleepDuration) {
-
         if (capacity <= 0) {
             throw new IllegalArgumentException("Capacity must be greater than zero");
         }
@@ -76,12 +75,14 @@ public class BackpressureObjectCounter extends ObjectCounter {
                 count.updateAndGet(increment);
                 break;
             } catch (final NoCapacityException e) {
-                if (sleepNanos >= 0) {
+                if (sleepNanos > 0) {
                     try {
                         NANOSECONDS.sleep(sleepNanos);
                     } catch (final InterruptedException ex) {
                         interrupted = true;
                     }
+                } else if (sleepNanos == 0) {
+                    Thread.yield();
                 }
             }
         }
@@ -104,8 +105,10 @@ public class BackpressureObjectCounter extends ObjectCounter {
                 if (Thread.currentThread().isInterrupted()) {
                     throw new InterruptedException();
                 }
-                if (sleepNanos >= 0) {
+                if (sleepNanos > 0) {
                     NANOSECONDS.sleep(sleepNanos);
+                } else if (sleepNanos == 0) {
+                    Thread.yield();
                 }
             }
         }

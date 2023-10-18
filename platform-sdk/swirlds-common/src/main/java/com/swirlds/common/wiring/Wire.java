@@ -103,6 +103,9 @@ public abstract class Wire {
      * Note: not all wire implementations support flushing. Currently, only wires with
      * {@link WireBuilder#withConcurrency(boolean)} set to false support flushing. Calling this method on a wire that
      * does not support flushing will result in an error being written to the log (no exception is thrown).
+     *
+     * @throws UnsupportedOperationException if {@link WireBuilder#withFlushingEnabled(boolean)} was set to false (or
+     *                                       was unset, default is false)
      */
     public abstract void flush();
 
@@ -114,7 +117,9 @@ public abstract class Wire {
      * {@link WireBuilder#withConcurrency(boolean)} set to false support flushing. Calling this method on a wire that
      * does not support flushing will result in an error being written to the log (no exception is thrown).
      *
-     * @throws InterruptedException if the thread is interrupted while waiting for all data to be processed
+     * @throws InterruptedException          if the thread is interrupted while waiting for all data to be processed
+     * @throws UnsupportedOperationException if {@link WireBuilder#withFlushingEnabled(boolean)} was set to false (or
+     *                                       was unset, default is false)
      */
     public abstract void interruptableFlush() throws InterruptedException;
 

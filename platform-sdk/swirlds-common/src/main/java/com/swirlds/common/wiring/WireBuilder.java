@@ -48,6 +48,7 @@ public class WireBuilder {
     private final String name;
     private WireMetricsBuilder metricsBuilder;
     private long scheduledTaskCapacity = UNLIMITED_CAPACITY;
+    private boolean flushingEnabled = false;
     private ObjectCounter onRamp;
     private ObjectCounter offRamp;
     private ForkJoinPool pool = ForkJoinPool.commonPool();
@@ -99,6 +100,20 @@ public class WireBuilder {
     }
 
     /**
+     * Set whether the wire should enable flushing. Default false. Flushing a wire with this disabled will cause the
+     * wire to throw an exception.
+     * </p>
+     *
+     * @param requireFlushCapability true if the wire should require flush capability, false otherwise
+     * @return this
+     */
+    @NonNull
+    public WireBuilder withFlushingEnabled(final boolean requireFlushCapability) {
+        this.flushingEnabled = requireFlushCapability;
+        return this;
+    }
+
+    /**
      * Specify an object counter that should be notified when data is added to the wire. This is useful for implementing
      * backpressure that spans multiple wires.
      * <p>
@@ -138,13 +153,18 @@ public class WireBuilder {
 
     /**
      * If backpressure is enabled via {@link #withScheduledTaskCapacity(long)}, then sleep this length of time whenever
-     * backpressure needs to be applied. If null then do not sleep (i.e. busy wait). Default 100 nanoseconds.
+     * backpressure needs to be applied. If set to a sleep time of 0 then {@link Thread#yield()} is invoked in a loop
+     * while back pressure is needed. If null then the thread will sit in a busy loop while back pressure is needed.
+     * Default 100 nanoseconds.
      *
      * @param backpressureSleepDuration the length of time to sleep when backpressure needs to be applied
      * @return this
      */
     @NonNull
     public WireBuilder withBackpressureSleepDuration(@Nullable final Duration backpressureSleepDuration) {
+        if (backpressureSleepDuration != null && backpressureSleepDuration.isNegative()) {
+            throw new IllegalArgumentException("Backpressure sleep duration must not be negative");
+        }
         this.backpressureSleepDuration = backpressureSleepDuration;
         return this;
     }
@@ -172,8 +192,6 @@ public class WireBuilder {
         this.pool = Objects.requireNonNull(pool);
         return this;
     }
-
-    // TODO test this
 
     /**
      * Provide a custom uncaught exception handler for this wire. If none is provided then the default uncaught
@@ -263,9 +281,11 @@ public class WireBuilder {
     public Wire build() {
         buildCounters();
         if (concurrent) {
+            // TODO enable flushing on concurrent wire
             return new ConcurrentWire(name, pool, buildUncaughtExceptionHandler(), onRamp, offRamp);
         } else {
-            return new SequentialWire(name, pool, buildUncaughtExceptionHandler(), onRamp, offRamp, buildBusyTimer());
+            return new SequentialWire(
+                    name, pool, buildUncaughtExceptionHandler(), onRamp, offRamp, buildBusyTimer(), flushingEnabled);
         }
     }
 }

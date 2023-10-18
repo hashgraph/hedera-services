@@ -36,7 +36,7 @@ public class SequentialWire extends Wire {
 
     private final ObjectCounter onRamp;
     private final ObjectCounter offRamp;
-
+    private final boolean flushEnabled;
     private final FractionalTimer busyTimer;
     private final String name;
     private final UncaughtExceptionHandler uncaughtExceptionHandler;
@@ -53,6 +53,8 @@ public class SequentialWire extends Wire {
      * @param offRamp                  an object counter that is decremented when data is removed from the wire, ignored
      *                                 if null
      * @param busyTimer                a timer that tracks the amount of time the wire is busy, ignored if null
+     * @param flushEnabled             if true, then {@link #flush()} and {@link #interruptableFlush()} will be enabled,
+     *                                 otherwise they will throw.
      */
     public SequentialWire(
             @NonNull final String name,
@@ -60,7 +62,8 @@ public class SequentialWire extends Wire {
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
             @NonNull final ObjectCounter onRamp,
             @NonNull final ObjectCounter offRamp,
-            @NonNull final FractionalTimer busyTimer) {
+            @NonNull final FractionalTimer busyTimer,
+            final boolean flushEnabled) {
 
         this.pool = Objects.requireNonNull(pool);
         this.name = Objects.requireNonNull(name);
@@ -68,6 +71,7 @@ public class SequentialWire extends Wire {
         this.onRamp = Objects.requireNonNull(onRamp);
         this.offRamp = Objects.requireNonNull(offRamp);
         this.busyTimer = Objects.requireNonNull(busyTimer);
+        this.flushEnabled = flushEnabled;
 
         this.lastTask = new AtomicReference<>(new SequentialTask(1));
     }
@@ -242,6 +246,13 @@ public class SequentialWire extends Wire {
      */
     @Override
     public void flush() {
+        if (!flushEnabled) {
+            // We intentionally throw this to make wire implementations more predictable. Even though there is no
+            // overhead if we enable flushing on a sequential wire but do not use it, some wire implementations
+            // may have overhead if flushing is enabled.
+            throw new UnsupportedOperationException("Flushing is not enabled for this wire");
+        }
+
         onRamp.forceOnRamp();
 
         final Semaphore semaphore = new Semaphore(1);
@@ -262,6 +273,13 @@ public class SequentialWire extends Wire {
      */
     @Override
     public void interruptableFlush() throws InterruptedException {
+        if (!flushEnabled) {
+            // We intentionally throw this to make wire implementations more predictable. Even though there is no
+            // overhead if we enable flushing on a sequential wire but do not use it, some wire implementations
+            // may have overhead if flushing is enabled.
+            throw new UnsupportedOperationException("Flushing is not enabled for this wire");
+        }
+
         onRamp.forceOnRamp();
 
         final Semaphore semaphore = new Semaphore(1);
