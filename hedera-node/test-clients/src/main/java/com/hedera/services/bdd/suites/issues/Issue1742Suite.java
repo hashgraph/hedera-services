@@ -55,11 +55,10 @@ public class Issue1742Suite extends HapiSuite {
         return defaultHapiSpec("CryptoTransferListShowsOnlyFeesAfterIAB")
                 .given(cryptoCreate("payer").balance(PAYER_BALANCE))
                 .when()
-                .then(
-                        cryptoTransfer(tinyBarsFromTo("payer", GENESIS, PAYER_BALANCE))
-                                .payingWith("payer")
-                                .via("txn")
-                                .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
+                .then(cryptoTransfer(tinyBarsFromTo("payer", GENESIS, PAYER_BALANCE))
+                        .payingWith("payer")
+                        .via("txn")
+                        .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
     @Override
