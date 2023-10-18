@@ -24,7 +24,7 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData("tokens")
 public record TokensConfig(
         @ConfigProperty(defaultValue = "10000000") @NetworkProperty long maxAggregateRels,
-        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean storeRelsOnDisk,
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean storeRelsOnDisk,
         @ConfigProperty(defaultValue = "1000000") @NetworkProperty long maxNumber,
         @ConfigProperty(defaultValue = "1000") @NetworkProperty int maxPerAccount,
         @ConfigProperty(defaultValue = "100") @NetworkProperty int maxSymbolUtf8Bytes,
@@ -38,14 +38,14 @@ public record TokensConfig(
         @ConfigProperty(value = "nfts.maxBatchSizeBurn", defaultValue = "10") @NetworkProperty int nftsMaxBatchSizeBurn,
         @ConfigProperty(value = "nfts.maxBatchSizeWipe", defaultValue = "10") @NetworkProperty int nftsMaxBatchSizeWipe,
         @ConfigProperty(value = "nfts.maxBatchSizeMint", defaultValue = "10") @NetworkProperty int nftsMaxBatchSizeMint,
-        @ConfigProperty(value = "nfts.maxAllowedMints", defaultValue = "5000000") @NetworkProperty
+        @ConfigProperty(value = "nfts.maxAllowedMints", defaultValue = "10000000") @NetworkProperty
                 long nftsMaxAllowedMints,
         @ConfigProperty(value = "nfts.maxQueryRange", defaultValue = "100") @NetworkProperty long nftsMaxQueryRange,
         @ConfigProperty(value = "nfts.useTreasuryWildcards", defaultValue = "true") @NetworkProperty
                 boolean nftsUseTreasuryWildcards,
         @ConfigProperty(value = "nfts.mintThrottleScaleFactor", defaultValue = "5:2")
                 ScaleFactor nftsMintThrottleScaleFactor,
-        @ConfigProperty(value = "nfts.useVirtualMerkle", defaultValue = "false") @NetworkProperty
+        @ConfigProperty(value = "nfts.useVirtualMerkle", defaultValue = "true") @NetworkProperty
                 boolean nftsUseVirtualMerkle,
         @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") @NetworkProperty
                 boolean autoCreationsIsEnabled) {}

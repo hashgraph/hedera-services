@@ -30,6 +30,6 @@ public record SchedulingConfig(
         @ConfigProperty(defaultValue = "10000000") @NetworkProperty long maxNumber,
         @ConfigProperty(defaultValue = "5356800") @NetworkProperty long maxExpirationFutureSeconds,
         @ConfigProperty(defaultValue =
-                "ConsensusSubmitMessage,CryptoTransfer,TokenMint,TokenBurn,CryptoApproveAllowance")
+                "CryptoTransfer,ConsensusSubmitMessage,TokenBurn,TokenMint,CryptoApproveAllowance")
                 @NetworkProperty HederaFunctionalitySet whitelist) {}
 // spotless:on
