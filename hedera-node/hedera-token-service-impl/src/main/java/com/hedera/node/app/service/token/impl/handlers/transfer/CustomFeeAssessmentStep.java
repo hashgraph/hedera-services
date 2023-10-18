@@ -204,8 +204,7 @@ public class CustomFeeAssessmentStep {
             throw new IllegalStateException("Custom fee charging exceeded max recursion depth");
         }
 
-        // If there are no assessed custom fees, as long as there are hbar transfers
-        // or token transfers in the transaction, add it to the list of assessed transactions for further steps.
+        // If the last charging level assessed fees, we should include them for further steps of CryptoTransfer
         if (!hbarTransfers.isEmpty() || !tokenTransfers.isEmpty()) {
             assessedTxns.add(txnToAssess);
         }
