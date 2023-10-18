@@ -180,18 +180,22 @@ public class CustomFeeAssessmentStep {
                     accountStore,
                     autoCreationTest);
             // when there are adjustments made to given transaction, need to re-build the transaction
-            final var modifiedInputBody = changedInputTxn(txnToAssess, result);
-            assessedTxns.add(modifiedInputBody);
+            if (!result.getAssessedCustomFees().isEmpty()) {
+                final var modifiedInputBody = changedInputTxn(txnToAssess, result);
+                assessedTxns.add(modifiedInputBody);
 
-            validateTotalAdjustments(modifiedInputBody, maxTransfersAllowed);
-            customFeesAssessed.addAll(result.getAssessedCustomFees());
+                validateTotalAdjustments(modifiedInputBody, maxTransfersAllowed);
+                customFeesAssessed.addAll(result.getAssessedCustomFees());
 
-            // build body from assessed custom fees to be fed to next level of assessment
-            txnToAssess = buildBodyFromAdjustments(result);
-
+                // build body from assessed custom fees to be fed to next level of assessment
+                txnToAssess = buildBodyFromAdjustments(result);
+            } else {
+                // If there are no assessed custom fee for the input transaction, this will be added to the
+                // list of assessed and exit since this doesn't trigger any more custom fees
+                break;
+            }
             tokenTransfers = txnToAssess.tokenTransfersOrElse(emptyList());
             hbarTransfers = txnToAssess.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
-
             levelNum++;
         } while (!tokenTransfers.isEmpty() && levelNum <= MAX_PLAUSIBLE_LEVEL_NUM);
 
@@ -200,7 +204,7 @@ public class CustomFeeAssessmentStep {
             throw new IllegalStateException("Custom fee charging exceeded max recursion depth");
         }
 
-        if (!hbarTransfers.isEmpty()) {
+        if (!hbarTransfers.isEmpty() || !tokenTransfers.isEmpty()) {
             assessedTxns.add(txnToAssess);
         }
         return new CustomFeeAssessmentResult(assessedTxns, customFeesAssessed);
