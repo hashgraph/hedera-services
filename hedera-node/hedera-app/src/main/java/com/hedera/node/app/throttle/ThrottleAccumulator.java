@@ -141,12 +141,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             @Nullable final AccountID queryPayerId) {
         final var configuration = configProvider.getConfiguration();
 
-        if (queryPayerId == null) {
-            return false;
-        }
-
-        final var isPayerThrottleExempt = throttleExempt(queryPayerId, configuration);
-        if (isPayerThrottleExempt) {
+        if (queryPayerId != null && throttleExempt(queryPayerId, configuration)) {
             return false;
         }
 
