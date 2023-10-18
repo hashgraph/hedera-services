@@ -45,6 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ChildFeeContextImplTest {
     private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     private static final Instant NOW = Instant.ofEpochSecond(1_234_567, 890);
+    private static final AccountID PAYER_ID = AccountID.newBuilder().accountNum(666L).build();
     private static final TransactionBody SAMPLE_BODY = TransactionBody.newBuilder()
             .cryptoTransfer(CryptoTransferTransactionBody.newBuilder()
                     .tokenTransfers(TokenTransferList.newBuilder()
@@ -80,7 +81,7 @@ class ChildFeeContextImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ChildFeeContextImpl(feeManager, context, SAMPLE_BODY, payerId);
+        subject = new ChildFeeContextImpl(feeManager, context, SAMPLE_BODY, PAYER_ID);
     }
 
     @Test
@@ -105,7 +106,7 @@ class ChildFeeContextImplTest {
 
     @Test
     void propagatesInvalidBodyAsIse() {
-        subject = new ChildFeeContextImpl(feeManager, context, TransactionBody.DEFAULT, payerId);
+        subject = new ChildFeeContextImpl(feeManager, context, TransactionBody.DEFAULT, PAYER_ID);
         assertThrows(
                 IllegalStateException.class,
                 () -> subject.feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
