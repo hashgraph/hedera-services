@@ -1378,6 +1378,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                                         relationshipWith(secondFungible)
                                                                 .balance(exchangeAmount / 15)))));
     }
+
     @HapiTest
     private HapiSpec royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots() {
         final var uniqueWithRoyalty = "uniqueWithRoyalty";
