@@ -45,7 +45,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ChildFeeContextImplTest {
     private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     private static final Instant NOW = Instant.ofEpochSecond(1_234_567, 890);
-    private static final AccountID PAYER_ID = AccountID.newBuilder().accountNum(666L).build();
+    private static final AccountID PAYER_ID =
+            AccountID.newBuilder().accountNum(666L).build();
     private static final TransactionBody SAMPLE_BODY = TransactionBody.newBuilder()
             .cryptoTransfer(CryptoTransferTransactionBody.newBuilder()
                     .tokenTransfers(TokenTransferList.newBuilder()
