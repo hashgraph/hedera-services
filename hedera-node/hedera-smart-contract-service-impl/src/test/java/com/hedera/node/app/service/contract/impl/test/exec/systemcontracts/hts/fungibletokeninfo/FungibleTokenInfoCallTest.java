@@ -19,35 +19,25 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_ACCOUNT_ID;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.typedKeyTupleFor;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ADMIN_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTED_FIXED_CUSTOM_FEES;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTED_FRACTIONAL_CUSTOM_FEES;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTED_ROYALTY_CUSTOM_FEES;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FEE_SCHEDULE_KEY;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FREEZE_KEY;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTE_DEFAULT_KEYLIST;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTE_KEYLIST;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_EVERYTHING_TOKEN;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.KYC_KEY;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PAUSE_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUPPLY_KEY;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.WIPE_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.TokenKeyType;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.fungibletokeninfo.FungibleTokenInfoCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.fungibletokeninfo.FungibleTokenInfoTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
-import java.math.BigInteger;
 import java.util.Collections;
-import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
@@ -72,15 +62,6 @@ class FungibleTokenInfoCallTest extends HtsCallTestBase {
 
         final var result = subject.execute().fullResult().result();
 
-        final var keyList = List.of(
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), ADMIN_KEY),
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), KYC_KEY),
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.FREEZE_KEY.value()), FREEZE_KEY),
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.WIPE_KEY.value()), WIPE_KEY),
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.SUPPLY_KEY.value()), SUPPLY_KEY),
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.FEE_SCHEDULE_KEY.value()), FEE_SCHEDULE_KEY),
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.PAUSE_KEY.value()), PAUSE_KEY));
-
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
                 Bytes.wrap(FungibleTokenInfoTranslator.FUNGIBLE_TOKEN_INFO
@@ -97,7 +78,7 @@ class FungibleTokenInfoCallTest extends HtsCallTestBase {
                                                         true,
                                                         88888888L,
                                                         true,
-                                                        keyList.toArray(new Tuple[0]),
+                                                        EXPECTE_KEYLIST.toArray(new Tuple[0]),
                                                         Tuple.of(100L, headlongAddressOf(SENDER_ID), 200L)),
                                                 7777777L,
                                                 false,
@@ -121,15 +102,6 @@ class FungibleTokenInfoCallTest extends HtsCallTestBase {
 
         final var result = subject.execute().fullResult().result();
 
-        final var keyList = List.of(
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), Key.DEFAULT),
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), Key.DEFAULT),
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.FREEZE_KEY.value()), Key.DEFAULT),
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.WIPE_KEY.value()), Key.DEFAULT),
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.SUPPLY_KEY.value()), Key.DEFAULT),
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.FEE_SCHEDULE_KEY.value()), Key.DEFAULT),
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.PAUSE_KEY.value()), Key.DEFAULT));
-
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
                 Bytes.wrap(FungibleTokenInfoTranslator.FUNGIBLE_TOKEN_INFO
@@ -146,7 +118,7 @@ class FungibleTokenInfoCallTest extends HtsCallTestBase {
                                                         false,
                                                         0L,
                                                         false,
-                                                        keyList.toArray(new Tuple[0]),
+                                                        EXPECTE_DEFAULT_KEYLIST.toArray(new Tuple[0]),
                                                         Tuple.of(0L, headlongAddressOf(ZERO_ACCOUNT_ID), 0L)),
                                                 0L,
                                                 false,

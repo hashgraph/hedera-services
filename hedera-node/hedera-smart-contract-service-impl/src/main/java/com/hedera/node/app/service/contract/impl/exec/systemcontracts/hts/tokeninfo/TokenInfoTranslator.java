@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokeninfo;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
+import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
@@ -42,6 +43,7 @@ public class TokenInfoTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public boolean matches(@NonNull final HtsCallAttempt attempt) {
+        requireNonNull(attempt);
         return Arrays.equals(attempt.selector(), TOKEN_INFO.selector());
     }
 
@@ -50,6 +52,7 @@ public class TokenInfoTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+        requireNonNull(attempt);
         final var args = TOKEN_INFO.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new TokenInfoCall(attempt.enhancement(), attempt.isStaticCall(), token, attempt.configuration());

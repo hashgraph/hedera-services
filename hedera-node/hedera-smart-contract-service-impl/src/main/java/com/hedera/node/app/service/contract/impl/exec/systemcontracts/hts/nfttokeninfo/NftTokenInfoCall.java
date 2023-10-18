@@ -48,7 +48,7 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
             final long serialNumber,
             @NonNull final Configuration configuration) {
         super(enhancement, token);
-        this.configuration = configuration;
+        this.configuration = requireNonNull(configuration);
         this.serialNumber = serialNumber;
         this.isStaticCall = isStaticCall;
     }
@@ -72,6 +72,9 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
 
     private @NonNull FullResult fullResultsFor(
             @NonNull final ResponseCodeEnum status, final long gasRequirement, @NonNull final Token token) {
+        requireNonNull(status);
+        requireNonNull(token);
+
         final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
         final var ledgerId = hex(ledgerConfig.id().toByteArray());
         final var nft = enhancement

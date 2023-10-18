@@ -65,10 +65,7 @@ public class TokenTupleUtils {
 
     /**
      * Returns a tuple of the {@code KeyValue} struct
-     * {@see
-     * https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L92
-     * }
-     *
+     * <br><a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L92">Link</a>
      * @param key the key to get the tuple for
      * @return Tuple encoding of the KeyValue
      */
@@ -102,10 +99,7 @@ public class TokenTupleUtils {
 
     /**
      * Returns a list of Tuples defined by the {@code FixedFee} structs
-     * {@see
-     * https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L236
-     * }
-     *
+     * <br><a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L236">Link</a>
      * @param token the token to get the fixed fees for
      * @return Tuple encoding of the FixedFee
      */
@@ -127,10 +121,7 @@ public class TokenTupleUtils {
 
     /**
      * Returns a list of Tuples defined by the {@code FractionalFee} struct
-     * {@see
-     * https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L256
-     * }
-     *
+     * <br>{<a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L256">Link</a>
      * @param token the token to get the fractional fees for
      * @return Tuple encoding of the FractionalFee
      */
@@ -157,10 +148,7 @@ public class TokenTupleUtils {
 
     /**
      * Returns a list of Tuples defined by the {@code RoyaltyFee} struct
-     * {@see
-     * https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L279
-     * }
-     *
+     * <br><a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L279">Link</a>
      * @param token the token to get the royalty fees for
      * @return Tuple encoding of the RoyaltyFee
      */
@@ -199,7 +187,7 @@ public class TokenTupleUtils {
 
     /**
      * Returns a list of Tuples defined by the {@code TokenInfo} struct
-     * struct TokenInfo { HederaToken token; int64 totalSupply; bool deleted; bool defaultKycStatus; bool pauseStatus; FixedFee[] fixedFees; FractionalFee[] fractionalFees; RoyaltyFee[] royaltyFees; string ledgerId; }
+     * <br><a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L173">Link</a>
      * @param token the token to get the token info for
      * @return Tuple encoding of the TokenInfo
      */
@@ -223,7 +211,7 @@ public class TokenTupleUtils {
 
     /**
      * Returns a tuple of the {@code FungibleTokenInfo} struct
-     * {@see https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L203 }
+     * <br><a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L203">Link</a>
      * @param token the token to get the fungible token info for
      * @return Tuple encoding of the FungibleTokenInfo
      */
@@ -233,8 +221,8 @@ public class TokenTupleUtils {
     }
 
     /**
-     * Returns a tuple of the {@Code NonFungibleTokenInfo} struct
-     * {@see https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L212 }
+     * Returns a tuple of the {@code NonFungibleTokenInfo} struct
+     * <br><a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L212">Link</a>
      * @return Tuple encoding of the NonFungibleTokenInfo
      */
     @NonNull
@@ -244,9 +232,7 @@ public class TokenTupleUtils {
             final long serialNumber,
             @NonNull final String ledgerId) {
 
-        final var nftMetaData = nft.metadata() != null
-                ? nft.metadata().toByteArray()
-                : com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY.toByteArray();
+        final var nftMetaData = nft.metadata() != null ? nft.metadata().toByteArray() : Bytes.EMPTY.toByteArray();
 
         return Tuple.of(
                 tokenInfoTupleFor(token, ledgerId),
@@ -259,7 +245,7 @@ public class TokenTupleUtils {
 
     /**
      * Returns a tuple of the {@code TokenKey} struct
-     * {@see https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L116 }
+     * <br><a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L116">Link</a>
      * @param keyType the type of key
      * @param key the key for creating the tuple
      * @return Tuple encoding of the TokenKey
@@ -278,26 +264,22 @@ public class TokenTupleUtils {
 
     /**
      * Returns a tuple of the {@code HederaToken} struct
-     * {@see https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L136 }
+     * <br><a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L136">Link</a>
      * @param token the token for creating the hederaToken tuple
      * @return Tuple encoding of the HederaToken
      */
     @NonNull
     private static Tuple hederaTokenTupleFor(@NonNull final Token token) {
         //
-        final var keyList = List.of(
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), token.adminKeyOrElse(Key.DEFAULT)),
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), token.kycKeyOrElse(Key.DEFAULT)),
-                typedKeyTupleFor(
-                        BigInteger.valueOf(TokenKeyType.FREEZE_KEY.value()), token.freezeKeyOrElse(Key.DEFAULT)),
-                typedKeyTupleFor(BigInteger.valueOf(TokenKeyType.WIPE_KEY.value()), token.wipeKeyOrElse(Key.DEFAULT)),
-                typedKeyTupleFor(
-                        BigInteger.valueOf(TokenKeyType.SUPPLY_KEY.value()), token.supplyKeyOrElse(Key.DEFAULT)),
-                typedKeyTupleFor(
-                        BigInteger.valueOf(TokenKeyType.FEE_SCHEDULE_KEY.value()),
-                        token.feeScheduleKeyOrElse(Key.DEFAULT)),
-                typedKeyTupleFor(
-                        BigInteger.valueOf(TokenKeyType.PAUSE_KEY.value()), token.pauseKeyOrElse(Key.DEFAULT)));
+        final Tuple[] keyList = {
+            typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), token.adminKeyOrElse(Key.DEFAULT)),
+            typedKeyTupleFor(TokenKeyType.KYC_KEY.bigIntegerValue(), token.kycKeyOrElse(Key.DEFAULT)),
+            typedKeyTupleFor(TokenKeyType.FREEZE_KEY.bigIntegerValue(), token.freezeKeyOrElse(Key.DEFAULT)),
+            typedKeyTupleFor(TokenKeyType.WIPE_KEY.bigIntegerValue(), token.wipeKeyOrElse(Key.DEFAULT)),
+            typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), token.supplyKeyOrElse(Key.DEFAULT)),
+            typedKeyTupleFor(TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), token.feeScheduleKeyOrElse(Key.DEFAULT)),
+            typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), token.pauseKeyOrElse(Key.DEFAULT))
+        };
 
         return Tuple.of(
                 token.name(),
@@ -307,7 +289,7 @@ public class TokenTupleUtils {
                 token.supplyType().protoOrdinal() == TokenSupplyType.FINITE_VALUE,
                 token.maxSupply(),
                 token.accountsFrozenByDefault(),
-                keyList.toArray(new Tuple[keyList.size()]),
+                keyList,
                 expiryTupleFor(token));
     }
 
@@ -328,6 +310,10 @@ public class TokenTupleUtils {
 
         public int value() {
             return value;
+        }
+
+        public BigInteger bigIntegerValue() {
+            return BigInteger.valueOf(value);
         }
     }
 }
