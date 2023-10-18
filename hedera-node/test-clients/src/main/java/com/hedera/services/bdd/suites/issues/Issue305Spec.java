@@ -82,8 +82,8 @@ public class Issue305Spec extends HapiSuite {
                 }))
                 .then(
                         fileCreate("tbd").key(KEY).deferStatusResolution(),
-                        fileDelete(nextFileId::get).signedBy(GENESIS, KEY).logged(),
-                        getFileInfo(nextFileId::get).logged());
+                        fileDelete(nextFileId::get).signedBy(GENESIS, KEY),
+                        getFileInfo(nextFileId::get).hasDeleted(true));
     }
 
     private HapiSpec congestionMultipliersRefreshOnPropertyUpdate() {
