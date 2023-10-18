@@ -865,7 +865,7 @@ class SequentialWireTests {
         final AtomicInteger wireValueB = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        final ObjectCounter backpressure = new BackpressureObjectCounter(10, null);
+        final ObjectCounter backpressure = new BackpressureObjectCounter(10, Duration.ofMillis(1));
 
         final Wire wireA = Wire.builder("testA")
                 .withConcurrency(false)

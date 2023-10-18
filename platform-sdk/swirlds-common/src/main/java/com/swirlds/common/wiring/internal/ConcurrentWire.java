@@ -24,21 +24,18 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A {@link Wire} that permits parallel execution of tasks. Similar to {@link ConcurrentWire} but with extra metering.
  */
 public class ConcurrentWire extends Wire {
 
-    private static final Logger logger = LogManager.getLogger(ConcurrentWire.class);
-
     private final ObjectCounter onRamp;
     private final ObjectCounter offRamp;
     private final String name;
     private final UncaughtExceptionHandler uncaughtExceptionHandler;
     private final ForkJoinPool pool;
+    private final boolean flushEnabled;
 
     /**
      * Constructor.
@@ -50,18 +47,22 @@ public class ConcurrentWire extends Wire {
      *                                 null
      * @param offRamp                  an object counter that is decremented when data is removed from the wire, ignored
      *                                 if null
+     * @param flushEnabled             if true, then {@link #flush()} and {@link #interruptableFlush()} will be enabled,
+     *                                 otherwise they will throw.
      */
     public ConcurrentWire(
             @NonNull final String name,
             @NonNull ForkJoinPool pool,
             @NonNull UncaughtExceptionHandler uncaughtExceptionHandler,
             @NonNull final ObjectCounter onRamp,
-            @NonNull final ObjectCounter offRamp) {
+            @NonNull final ObjectCounter offRamp,
+            final boolean flushEnabled) {
         this.name = Objects.requireNonNull(name);
         this.pool = Objects.requireNonNull(pool);
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
         this.onRamp = Objects.requireNonNull(onRamp);
         this.offRamp = Objects.requireNonNull(offRamp);
+        this.flushEnabled = flushEnabled;
     }
 
     private class ConcurrentTask extends AbstractTask {
@@ -156,7 +157,9 @@ public class ConcurrentWire extends Wire {
      */
     @Override
     public void flush() {
-        // TODO throw if flushing is disabled
+        if (!flushEnabled) {
+            throw new UnsupportedOperationException("Flushing is not enabled for this wire");
+        }
 
         onRamp.waitUntilEmpty();
     }
@@ -166,7 +169,9 @@ public class ConcurrentWire extends Wire {
      */
     @Override
     public void interruptableFlush() throws InterruptedException {
-        // TODO throw if flushing is disabled
+        if (!flushEnabled) {
+            throw new UnsupportedOperationException("Flushing is not enabled for this wire");
+        }
 
         onRamp.interruptableWaitUntilEmpty();
     }

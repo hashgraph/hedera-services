@@ -21,12 +21,14 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
+import com.swirlds.common.wiring.counters.MultiObjectCounter;
 import com.swirlds.common.wiring.counters.NoOpObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import com.swirlds.common.wiring.internal.ConcurrentWire;
 import com.swirlds.common.wiring.internal.SequentialWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.Objects;
@@ -114,12 +116,6 @@ public class WireBuilder {
     /**
      * Specify an object counter that should be notified when data is added to the wire. This is useful for implementing
      * backpressure that spans multiple wires.
-     * <p>
-     * Note that specifying an on ramp is incompatible with specifying a scheduled task capacity via
-     * {@link #withScheduledTaskCapacity(long)} and incompatible with enabling the scheduled task metric via
-     * {@link WireMetricsBuilder#withScheduledTaskCountMetricEnabled(boolean)}. Both of these configurations set up an
-     * object counter that is used for both on-ramping and off-ramping data on this wire. This is not compatible with
-     * providing a custom on-ramp from an external source.
      *
      * @param onRamp the object counter that should be notified when data is added to the wire
      * @return this
@@ -133,12 +129,6 @@ public class WireBuilder {
     /**
      * Specify an object counter that should be notified when data is removed from the wire. This is useful for
      * implementing backpressure that spans multiple wires.
-     * <p>
-     * Note that specifying an off ramp is incompatible with specifying a scheduled task capacity via
-     * {@link #withScheduledTaskCapacity(long)} and incompatible with enabling the scheduled task metric via
-     * {@link WireMetricsBuilder#withScheduledTaskCountMetricEnabled(boolean)}. Both of these configurations set up an
-     * object counter that is used for both on-ramping and off-ramping data on this wire. This is not compatible with
-     * providing a custom off ramp to an external source.
      *
      * @param offRamp the object counter that should be notified when data is removed from the wire
      * @return this
@@ -216,40 +206,50 @@ public class WireBuilder {
         }
     }
 
+    private record Counters(@NonNull ObjectCounter onRamp, @NonNull ObjectCounter offRamp) {}
+
+    /**
+     * Combine two counters into one.
+     *
+     * @param innerCounter the counter needed for internal implementation details, or null if not needed
+     * @param outerCounter the counter provided by the outer scope, or null if not provided
+     * @return the combined counter, or a no op counter if both are null
+     */
+    @NonNull
+    private static ObjectCounter combineCounters(
+            @Nullable final ObjectCounter innerCounter, @Nullable final ObjectCounter outerCounter) {
+        if (innerCounter == null) {
+            if (outerCounter == null) {
+                return NoOpObjectCounter.getInstance();
+            } else {
+                return outerCounter;
+            }
+        } else {
+            if (outerCounter == null) {
+                return innerCounter;
+            } else {
+                return new MultiObjectCounter(innerCounter, outerCounter);
+            }
+        }
+    }
+
     /**
      * Figure out which counters to use for this wire (if any), constructing them if they need to be constructed.
      */
-    private void buildCounters() {
+    @NonNull
+    private Counters buildCounters() {
+        final ObjectCounter innerCounter;
+
         if (scheduledTaskCapacity != UNLIMITED_CAPACITY) {
-            if (onRamp != null) {
-                throw new IllegalStateException("Cannot specify both an on ramp and a scheduled task capacity");
-            }
-            if (offRamp != null) {
-                throw new IllegalStateException("Cannot specify both an off ramp and a scheduled task capacity");
-            }
-            final ObjectCounter counter = new BackpressureObjectCounter(scheduledTaskCapacity, sleepDuration);
-            this.onRamp = counter;
-            this.offRamp = counter;
+            innerCounter = new BackpressureObjectCounter(scheduledTaskCapacity, sleepDuration);
+        } else if (metricsBuilder != null && metricsBuilder.isScheduledTaskCountMetricEnabled()
+                || (concurrent && flushingEnabled)) {
+            innerCounter = new StandardObjectCounter(sleepDuration);
+        } else {
+            innerCounter = null;
         }
 
-        if (metricsBuilder != null && metricsBuilder.isScheduledTaskCountMetricEnabled()) {
-            if (onRamp != null) {
-                throw new IllegalStateException("Cannot specify both an on ramp and a scheduled task metric");
-            }
-            if (offRamp != null) {
-                throw new IllegalStateException("Cannot specify both an off ramp and a scheduled task metric");
-            }
-            final ObjectCounter counter = new StandardObjectCounter(sleepDuration);
-            this.onRamp = counter;
-            this.offRamp = counter;
-        }
-
-        if (onRamp == null) {
-            onRamp = NoOpObjectCounter.getInstance();
-        }
-        if (offRamp == null) {
-            offRamp = NoOpObjectCounter.getInstance();
-        }
+        return new Counters(combineCounters(innerCounter, onRamp), combineCounters(innerCounter, offRamp));
     }
 
     /**
@@ -273,13 +273,24 @@ public class WireBuilder {
      */
     @NonNull
     public Wire build() {
-        buildCounters();
+        final Counters counters = buildCounters();
         if (concurrent) {
-            // TODO enable flushing on concurrent wire
-            return new ConcurrentWire(name, pool, buildUncaughtExceptionHandler(), onRamp, offRamp);
+            return new ConcurrentWire(
+                    name,
+                    pool,
+                    buildUncaughtExceptionHandler(),
+                    counters.onRamp(),
+                    counters.offRamp(),
+                    flushingEnabled);
         } else {
             return new SequentialWire(
-                    name, pool, buildUncaughtExceptionHandler(), onRamp, offRamp, buildBusyTimer(), flushingEnabled);
+                    name,
+                    pool,
+                    buildUncaughtExceptionHandler(),
+                    counters.onRamp(),
+                    counters.offRamp(),
+                    buildBusyTimer(),
+                    flushingEnabled);
         }
     }
 }
