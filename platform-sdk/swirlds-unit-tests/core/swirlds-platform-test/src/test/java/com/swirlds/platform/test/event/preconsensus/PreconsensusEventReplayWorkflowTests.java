@@ -39,7 +39,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
-import com.swirlds.platform.event.validation.LegacyEventValidator;
+import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -92,7 +92,7 @@ class PreconsensusEventReplayWorkflowTests {
             return it;
         });
 
-        final LegacyEventValidator eventValidator = mock(LegacyEventValidator.class);
+        final EventValidator eventValidator = mock(EventValidator.class);
         final AtomicInteger nextIndex = new AtomicInteger(0);
         doAnswer(invocation -> {
                     if (phase.get() != TestPhase.REPLAY_EVENTS) {
