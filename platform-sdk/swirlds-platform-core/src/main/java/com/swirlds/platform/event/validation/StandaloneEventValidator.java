@@ -28,6 +28,7 @@ import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
@@ -41,6 +42,8 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Validates events.
+ * <p>
+ * This validator is "standalone", because it is separate from the legacy intake monolith.
  */
 public class StandaloneEventValidator {
     private static final Logger logger = LogManager.getLogger(StandaloneEventValidator.class);
@@ -49,6 +52,11 @@ public class StandaloneEventValidator {
      * The minimum period between log messages reporting a specific type of validation failure
      */
     private static final Duration MINIMUM_LOG_PERIOD = Duration.ofMinutes(1);
+
+    /**
+     * A verifier for checking event signatures.
+     */
+    private final SignatureVerifier signatureVerifier;
 
     /**
      * Valid events are passed to this consumer.
@@ -114,6 +122,7 @@ public class StandaloneEventValidator {
      *
      * @param platformContext        the platform context
      * @param time                   a time object, for rate limiting loggers
+     * @param signatureVerifier      a verifier for checking event signatures
      * @param currentSoftwareVersion the current software version
      * @param intakeEventCounter     keeps track of the number of events in the intake pipeline from each peer
      * @param eventConsumer          deduplicated events are passed to this consumer
@@ -123,12 +132,14 @@ public class StandaloneEventValidator {
     public StandaloneEventValidator(
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
+            @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final Consumer<GossipEvent> eventConsumer,
             @Nullable final AddressBook previousAddressBook,
             @NonNull final AddressBook currentAddressBook) {
 
+        this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.eventConsumer = Objects.requireNonNull(eventConsumer);
@@ -161,6 +172,7 @@ public class StandaloneEventValidator {
                 && areParentsValid(event, currentAddressBook.getSize() == 1, parentLogger, invalidParentsAccumulator)
                 && isSignatureValid(
                         event.getBaseEvent(),
+                        signatureVerifier,
                         currentSoftwareVersion,
                         previousAddressBook,
                         currentAddressBook,

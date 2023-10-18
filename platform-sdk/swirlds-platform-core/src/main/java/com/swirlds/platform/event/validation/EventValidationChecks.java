@@ -19,7 +19,6 @@ package com.swirlds.platform.event.validation;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
 import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
-import static com.swirlds.platform.crypto.CryptoStatic.verifySignature;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.LongAccumulator;
@@ -28,12 +27,12 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;
-import java.util.Objects;
 
 /**
  * A collection of static methods for validating events
@@ -122,9 +121,10 @@ public class EventValidationChecks {
         final Hash selfParentHash = hashedData.getSelfParentHash();
         final long selfParentGeneration = hashedData.getSelfParentGen();
 
-        if (selfParentHash == null && selfParentGeneration >= FIRST_GENERATION) {
-            logger.error(
-                    INVALID_EVENT_ERROR.getMarker(), "Self parent hash is null, but generation is defined: {}", event);
+        // If a parent hash is missing, then the generation must also be invalid.
+        // If a parent hash is not missing, then the generation must be valid.
+        if (selfParentHash == null != selfParentGeneration < FIRST_GENERATION) {
+            logger.error(INVALID_EVENT_ERROR.getMarker(), "Self parent hash / generation mismatch: {}", event);
             metricAccumulator.update(1);
             return false;
         }
@@ -132,14 +132,13 @@ public class EventValidationChecks {
         final Hash otherParentHash = hashedData.getOtherParentHash();
         final long otherParentGeneration = hashedData.getOtherParentGen();
 
-        if (otherParentHash == null && otherParentGeneration >= FIRST_GENERATION) {
-            logger.error(
-                    INVALID_EVENT_ERROR.getMarker(), "Other parent hash is null, but generation is defined: {}", event);
+        if (otherParentHash == null != otherParentGeneration < FIRST_GENERATION) {
+            logger.error(INVALID_EVENT_ERROR.getMarker(), "Other parent hash / generation mismatch: {}", event);
             metricAccumulator.update(1);
             return false;
         }
 
-        if (!singleNodeNetwork && Objects.equals(selfParentHash, otherParentHash)) {
+        if (!singleNodeNetwork && selfParentHash != null && selfParentHash.equals(otherParentHash)) {
             logger.error(INVALID_EVENT_ERROR.getMarker(), "Both parents have the same hash: {} ", event);
             metricAccumulator.update(1);
             return false;
@@ -200,6 +199,7 @@ public class EventValidationChecks {
      * Determine whether a given event has a valid signature.
      *
      * @param event                  the event to be validated
+     * @param signatureVerifier      a signature verifier
      * @param currentSoftwareVersion the current software version
      * @param previousAddressBook    the previous address book
      * @param currentAddressBook     the current address book
@@ -209,6 +209,7 @@ public class EventValidationChecks {
      */
     public static boolean isSignatureValid(
             @NonNull final GossipEvent event,
+            @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @Nullable final AddressBook previousAddressBook,
             @NonNull final AddressBook currentAddressBook,
@@ -220,6 +221,16 @@ public class EventValidationChecks {
 
         if (applicableAddressBook == null) {
             // this occurrence was already logged while attempting to determine the applicable address book
+            metricAccumulator.update(1);
+            return false;
+        }
+
+        if (!applicableAddressBook.contains(event.getHashedData().getCreatorId())) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Node {} doesn't exist in applicable address book. Event: {}",
+                    event.getHashedData().getCreatorId(),
+                    event);
             metricAccumulator.update(1);
             return false;
         }
@@ -237,7 +248,7 @@ public class EventValidationChecks {
             return false;
         }
 
-        final boolean isSignatureValid = verifySignature(
+        final boolean isSignatureValid = signatureVerifier.verifySignature(
                 event.getHashedData().getHash().getValue(),
                 event.getUnhashedData().getSignature(),
                 publicKey);
