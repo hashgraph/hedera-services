@@ -19,9 +19,11 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.wipe;
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -59,10 +61,8 @@ public class WipeTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        // @Future remove to revert #9272 after modularization is completed
-        return new WipeCall(attempt, bodyForClassic(attempt));
-        //        return new DispatchForResponseCodeHtsCall<>(
-        //                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class);
+        return new DispatchForResponseCodeHtsCall<>(
+                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class);
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
