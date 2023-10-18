@@ -77,7 +77,7 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "true") boolean verifyEventSigs,
         @ConfigProperty(defaultValue = "true") boolean showInternalStats,
         @ConfigProperty(defaultValue = "false") boolean verboseStatistics,
-        @ConfigProperty(defaultValue = "40") int numConnections,
+        @ConfigProperty(defaultValue = "1000") int numConnections,
         @ConfigProperty(defaultValue = "true") boolean logStack,
         @ConfigProperty(defaultValue = "500") int sleepHeartbeat,
         @ConfigProperty(defaultValue = "60") double statsSkipSeconds,
