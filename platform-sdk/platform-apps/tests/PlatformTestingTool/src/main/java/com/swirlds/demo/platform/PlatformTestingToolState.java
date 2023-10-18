@@ -214,18 +214,12 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      */
     private QuorumTriggeredAction<ControlAction> controlQuorum;
 
-    /**
-     * An instance of the keccak 256 digest algorithm.
-     */
-    private final MessageDigest keccakDigest;
-
     public PlatformTestingToolState() {
         super(ChildIndices.CHILD_COUNT);
 
         expectedFCMFamily = new ExpectedFCMFamilyImpl();
 
         referenceNftLedger = new ReferenceNftLedger(NFT_TRACKING_FRACTION);
-        keccakDigest = createKeccakDigest();
     }
 
     protected PlatformTestingToolState(final PlatformTestingToolState sourceState) {
@@ -310,7 +304,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         setImmutable(false);
         sourceState.setImmutable(true);
-        keccakDigest = createKeccakDigest();
     }
 
     /**
@@ -1318,7 +1311,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     private byte[] keccak256(final byte[] bytes) {
-        keccakDigest.reset();
+        final MessageDigest keccakDigest = createKeccakDigest();
         keccakDigest.update(bytes);
         return keccakDigest.digest();
     }
