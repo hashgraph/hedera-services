@@ -33,6 +33,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.WireBuilder;
 import com.swirlds.common.wiring.WireChannel;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -42,10 +43,13 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class SequentialWireTests {
 
@@ -1232,5 +1236,72 @@ class SequentialWireTests {
 
         assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
         assertEquals(1, exceptionCount.get());
+    }
+
+    /**
+     * A test that shows that backpressure can cause a deadlock if we have more wires than threads.
+     */
+    @ParameterizedTest
+    @ValueSource(ints = {1, 3})
+    void deadlockTest(final int parallelism) throws InterruptedException {
+        final ForkJoinPool pool = new ForkJoinPool(parallelism);
+
+        // create 3 wires with the following bindings:
+        // a -> b -> c -> latch
+        final Wire a = Wire.builder("a")
+                .withConcurrency(false)
+                .withScheduledTaskCapacity(1)
+                .withBackpressureSleepDuration(Duration.ofMillis(1))
+                .withPool(pool)
+                .build();
+        final Wire b = Wire.builder("b")
+                .withConcurrency(false)
+                .withScheduledTaskCapacity(1)
+                .withBackpressureSleepDuration(Duration.ofMillis(1))
+                .withPool(pool)
+                .build();
+        final Wire c = Wire.builder("c")
+                .withConcurrency(false)
+                .withScheduledTaskCapacity(1)
+                .withBackpressureSleepDuration(Duration.ofMillis(1))
+                .withPool(pool)
+                .build();
+
+        final WireChannel<Object> channelA = a.createChannel();
+        final WireChannel<Object> channelB = b.createChannel();
+        final WireChannel<Object> channelC = c.createChannel();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        channelA.bind(channelB::put);
+        channelB.bind(channelC::put);
+        channelC.bind(o-> {
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // each wire has a capacity of 1, so we can have 1 task waiting on each wire
+        // insert an task into C, which will start executing and waiting on the latch
+        channelC.put(Object.class);
+        // fill up the queues for each wire
+        channelC.put(Object.class);
+        channelA.put(Object.class);
+        channelB.put(Object.class);
+
+        completeBeforeTimeout(
+                ()->{
+                    // release the latch, that should allow all tasks to complete
+                    latch.countDown();
+                    // if tasks are completing, none of the wires should block
+                    channelA.put(Object.class);
+                    channelB.put(Object.class);
+                    channelC.put(Object.class);
+                },
+                Duration.ofSeconds(1),
+                "deadlock"
+        );
     }
 }
