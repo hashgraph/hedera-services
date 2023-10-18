@@ -82,7 +82,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-
 import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;

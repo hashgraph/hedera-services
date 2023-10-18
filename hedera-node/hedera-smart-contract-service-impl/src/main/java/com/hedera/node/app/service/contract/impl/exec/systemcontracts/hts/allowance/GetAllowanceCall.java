@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static java.util.Objects.requireNonNull;
 
@@ -31,6 +29,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,6 +46,7 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
     private final Address spender;
     private final AddressIdConverter addressIdConverter;
     private final boolean isERCCall;
+    private final boolean isStaticCall;
 
     @Inject
     public GetAllowanceCall(
@@ -56,12 +56,14 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
             @Nullable final Token token,
             @NonNull final Address owner,
             @NonNull final Address spender,
-            final boolean isERCCall) {
+            final boolean isERCCall,
+            final boolean isStaticCall) {
         super(gasCalculator, enhancement, token);
         this.addressIdConverter = requireNonNull(addressIdConverter);
         this.owner = requireNonNull(owner);
         this.spender = requireNonNull(spender);
         this.isERCCall = isERCCall;
+        this.isStaticCall = isStaticCall;
     }
 
     @NonNull
@@ -70,15 +72,26 @@ public class GetAllowanceCall extends AbstractRevertibleTokenViewCall {
         requireNonNull(token);
         requireNonNull(owner);
         requireNonNull(spender);
+        final var gasRequirement = gasCalculator.viewGasRequirement();
         if (token.tokenType() != TokenType.FUNGIBLE_COMMON) {
-            return revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
+            if (isStaticCall) {
+                return FullResult.revertResult(
+                        com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID, gasRequirement);
+            } else {
+                return FullResult.successResult(
+                        ReturnTypes.encodedRc(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS), gasRequirement);
+            }
         }
         final var ownerID = addressIdConverter.convert(owner);
         final var ownerAccount = nativeOperations().getAccount(ownerID.accountNumOrThrow());
         final var spenderID = addressIdConverter.convert(spender);
+        if (!spenderID.hasAccountNum() && !isStaticCall) {
+            return FullResult.successResult(
+                    ReturnTypes.encodedRc(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS), gasRequirement);
+        }
         final var allowance = getAllowance(token, requireNonNull(ownerAccount), spenderID);
         final var output = prepareOutput(allowance);
-        return successResult(output, gasCalculator.viewGasRequirement());
+        return successResult(output, gasRequirement);
     }
 
     @NonNull

@@ -65,7 +65,8 @@ public class GetAllowanceTranslator extends AbstractHtsCallTranslator {
                     attempt.redirectToken(),
                     call.get(0),
                     call.get(1),
-                    true);
+                    true,
+                    attempt.isStaticCall());
         } else {
             final var call = GetAllowanceTranslator.GET_ALLOWANCE.decodeCall(attempt.inputBytes());
             final Address token = call.get(0);
@@ -78,7 +79,8 @@ public class GetAllowanceTranslator extends AbstractHtsCallTranslator {
                     attempt.linkedToken(ConversionUtils.fromHeadlongAddress(token)),
                     owner,
                     spender,
-                    false);
+                    false,
+                    attempt.isStaticCall());
         }
     }
 
