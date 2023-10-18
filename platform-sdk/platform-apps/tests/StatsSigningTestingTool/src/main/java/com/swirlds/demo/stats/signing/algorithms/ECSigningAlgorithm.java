@@ -159,7 +159,7 @@ public abstract class ECSigningAlgorithm implements SigningAlgorithm {
      * {@inheritDoc}
      */
     @Override
-    public byte[] hash(byte[] buffer, int offset, int len) {
+    public synchronized byte[] hash(byte[] buffer, int offset, int len) {
         return keccak256(buffer, offset, len);
     }
 
