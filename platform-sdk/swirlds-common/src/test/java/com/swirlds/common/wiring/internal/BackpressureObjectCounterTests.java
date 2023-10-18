@@ -46,7 +46,7 @@ class BackpressureObjectCounterTests {
     void countWithHighCapacityTest() throws InterruptedException {
         final Random random = getRandomPrintSeed();
 
-        final ObjectCounter counter = new BackpressureObjectCounter(1_000_000_000, null);
+        final ObjectCounter counter = new BackpressureObjectCounter(1_000_000_000, Duration.ofMillis(1));
 
         int count = 0;
         for (int i = 0; i < 1000; i++) {
@@ -76,14 +76,9 @@ class BackpressureObjectCounterTests {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {-1, 0, 1})
+    @ValueSource(ints = {0, 1})
     void onRampTest(final int sleepMillis) throws InterruptedException {
-        final Duration sleepDuration;
-        if (sleepMillis < 0) {
-            sleepDuration = null;
-        } else {
-            sleepDuration = Duration.ofMillis(sleepMillis);
-        }
+        final Duration sleepDuration = Duration.ofMillis(sleepMillis);
 
         final ObjectCounter counter = new BackpressureObjectCounter(10, sleepDuration);
 
@@ -129,14 +124,9 @@ class BackpressureObjectCounterTests {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {-1, 0, 1})
+    @ValueSource(ints = {0, 1})
     void interruptableOnRampTest(final int sleepMillis) throws InterruptedException {
-        final Duration sleepDuration;
-        if (sleepMillis < 0) {
-            sleepDuration = null;
-        } else {
-            sleepDuration = Duration.ofMillis(sleepMillis);
-        }
+        final Duration sleepDuration = Duration.ofMillis(sleepMillis);
 
         final ObjectCounter counter = new BackpressureObjectCounter(10, sleepDuration);
 
@@ -206,7 +196,7 @@ class BackpressureObjectCounterTests {
 
     @Test
     void attemptOnRampTest() {
-        final ObjectCounter counter = new BackpressureObjectCounter(10, null);
+        final ObjectCounter counter = new BackpressureObjectCounter(10, Duration.ofMillis(1));
 
         // Fill up the counter to capacity
         for (int i = 0; i < 10; i++) {
@@ -223,7 +213,7 @@ class BackpressureObjectCounterTests {
 
     @Test
     void forceOnRampTest() {
-        final ObjectCounter counter = new BackpressureObjectCounter(10, null);
+        final ObjectCounter counter = new BackpressureObjectCounter(10, Duration.ofMillis(1));
 
         // Fill up the counter to capacity
         for (int i = 0; i < 10; i++) {
@@ -236,5 +226,125 @@ class BackpressureObjectCounterTests {
         counter.forceOnRamp();
 
         assertEquals(11, counter.getCount());
+    }
+
+    @Test
+    void waitUntilEmptyTest() throws InterruptedException {
+        final ObjectCounter counter = new BackpressureObjectCounter(1000, Duration.ofMillis(1));
+
+        for (int i = 0; i < 100; i++) {
+            counter.onRamp();
+        }
+
+        final AtomicBoolean empty = new AtomicBoolean(false);
+        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    counter.waitUntilEmpty();
+                    empty.set(true);
+                })
+                .build(true);
+
+        // Should be blocked.
+        MILLISECONDS.sleep(50);
+        assertFalse(empty.get());
+
+        // Draining most of the things from the counter should still block.
+        for (int i = 0; i < 90; i++) {
+            counter.offRamp();
+        }
+        MILLISECONDS.sleep(50);
+        assertFalse(empty.get());
+
+        // Interrupting the thread should have no effect.
+        thread.interrupt();
+        MILLISECONDS.sleep(50);
+        assertFalse(empty.get());
+
+        // Removing remaining things from the counter should unblock.
+        for (int i = 0; i < 10; i++) {
+            counter.offRamp();
+        }
+
+        assertEventuallyTrue(empty::get, Duration.ofSeconds(1), "Counter did not empty in time.");
+    }
+
+    @Test
+    void interruptableWaitUntilEmptyTest() throws InterruptedException {
+        final ObjectCounter counter = new BackpressureObjectCounter(1000, Duration.ofMillis(1));
+
+        for (int i = 0; i < 100; i++) {
+            counter.onRamp();
+        }
+
+        final AtomicBoolean empty = new AtomicBoolean(false);
+        new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    try {
+                        counter.interruptableWaitUntilEmpty();
+                    } catch (final InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    empty.set(true);
+                })
+                .build(true);
+
+        // Should be blocked.
+        MILLISECONDS.sleep(50);
+        assertFalse(empty.get());
+
+        // Draining most of the things from the counter should still block.
+        for (int i = 0; i < 90; i++) {
+            counter.offRamp();
+        }
+        MILLISECONDS.sleep(50);
+        assertFalse(empty.get());
+
+        // Removing remaining things from the counter should unblock.
+        for (int i = 0; i < 10; i++) {
+            counter.offRamp();
+        }
+
+        assertEventuallyTrue(empty::get, Duration.ofSeconds(1), "Counter did not empty in time.");
+    }
+
+    @Test
+    void interruptWhileWaitingForEmptyTest() throws InterruptedException {
+        final ObjectCounter counter = new BackpressureObjectCounter(1000, Duration.ofMillis(1));
+
+        for (int i = 0; i < 100; i++) {
+            counter.onRamp();
+        }
+
+        final AtomicBoolean empty = new AtomicBoolean(false);
+        final AtomicBoolean interrupted = new AtomicBoolean(false);
+        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    try {
+                        counter.interruptableWaitUntilEmpty();
+                    } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        interrupted.set(true);
+                        return;
+                    }
+                    empty.set(true);
+                })
+                .build(true);
+
+        // Should be blocked.
+        MILLISECONDS.sleep(50);
+        assertFalse(empty.get());
+
+        // Draining most of the things from the counter should still block.
+        for (int i = 0; i < 90; i++) {
+            counter.offRamp();
+        }
+        MILLISECONDS.sleep(50);
+        assertFalse(empty.get());
+
+        // Interrupting the thread should cause us to unblock.
+        thread.interrupt();
+
+        assertEventuallyTrue(interrupted::get, Duration.ofSeconds(1), "thread was not interrupted");
+        assertFalse(empty.get());
     }
 }

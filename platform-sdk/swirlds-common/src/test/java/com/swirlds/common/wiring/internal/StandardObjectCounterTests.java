@@ -16,13 +16,19 @@
 
 package com.swirlds.common.wiring.internal;
 
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import java.time.Duration;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
 class StandardObjectCounterTests {
@@ -60,5 +66,123 @@ class StandardObjectCounterTests {
         }
     }
 
-    // TODO test waitUntilEmpty()
+    @Test
+    void waitUntilEmptyTest() throws InterruptedException {
+        final ObjectCounter counter = new StandardObjectCounter(Duration.ofMillis(1));
+
+        for (int i = 0; i < 100; i++) {
+            counter.onRamp();
+        }
+
+        final AtomicBoolean empty = new AtomicBoolean(false);
+        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    counter.waitUntilEmpty();
+                    empty.set(true);
+                })
+                .build(true);
+
+        // Should be blocked.
+        MILLISECONDS.sleep(50);
+        assertFalse(empty.get());
+
+        // Draining most of the things from the counter should still block.
+        for (int i = 0; i < 90; i++) {
+            counter.offRamp();
+        }
+        MILLISECONDS.sleep(50);
+        assertFalse(empty.get());
+
+        // Interrupting the thread should have no effect.
+        thread.interrupt();
+        MILLISECONDS.sleep(50);
+        assertFalse(empty.get());
+
+        // Removing remaining things from the counter should unblock.
+        for (int i = 0; i < 10; i++) {
+            counter.offRamp();
+        }
+
+        assertEventuallyTrue(empty::get, Duration.ofSeconds(1), "Counter did not empty in time.");
+    }
+
+    @Test
+    void interruptableWaitUntilEmptyTest() throws InterruptedException {
+        final ObjectCounter counter = new StandardObjectCounter(Duration.ofMillis(1));
+
+        for (int i = 0; i < 100; i++) {
+            counter.onRamp();
+        }
+
+        final AtomicBoolean empty = new AtomicBoolean(false);
+        new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    try {
+                        counter.interruptableWaitUntilEmpty();
+                    } catch (final InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    empty.set(true);
+                })
+                .build(true);
+
+        // Should be blocked.
+        MILLISECONDS.sleep(50);
+        assertFalse(empty.get());
+
+        // Draining most of the things from the counter should still block.
+        for (int i = 0; i < 90; i++) {
+            counter.offRamp();
+        }
+        MILLISECONDS.sleep(50);
+        assertFalse(empty.get());
+
+        // Removing remaining things from the counter should unblock.
+        for (int i = 0; i < 10; i++) {
+            counter.offRamp();
+        }
+
+        assertEventuallyTrue(empty::get, Duration.ofSeconds(1), "Counter did not empty in time.");
+    }
+
+    @Test
+    void interruptWhileWaitingForEmptyTest() throws InterruptedException {
+        final ObjectCounter counter = new StandardObjectCounter(Duration.ofMillis(1));
+
+        for (int i = 0; i < 100; i++) {
+            counter.onRamp();
+        }
+
+        final AtomicBoolean empty = new AtomicBoolean(false);
+        final AtomicBoolean interrupted = new AtomicBoolean(false);
+        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    try {
+                        counter.interruptableWaitUntilEmpty();
+                    } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        interrupted.set(true);
+                        return;
+                    }
+                    empty.set(true);
+                })
+                .build(true);
+
+        // Should be blocked.
+        MILLISECONDS.sleep(50);
+        assertFalse(empty.get());
+
+        // Draining most of the things from the counter should still block.
+        for (int i = 0; i < 90; i++) {
+            counter.offRamp();
+        }
+        MILLISECONDS.sleep(50);
+        assertFalse(empty.get());
+
+        // Interrupting the thread should cause us to unblock.
+        thread.interrupt();
+
+        assertEventuallyTrue(interrupted::get, Duration.ofSeconds(1), "thread was not interrupted");
+        assertFalse(empty.get());
+    }
 }
