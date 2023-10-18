@@ -55,21 +55,17 @@ public class SetApprovalForAllCall extends AbstractHtsCall {
                 .dispatch(transactionBody, verificationStrategy, sender, SingleTransactionRecordBuilder.class);
 
         final var status = recordBuilder.status();
-        final var encodedOutput = SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL
-                .getOutputs()
-                .encodeElements(BigInteger.valueOf(status.protoOrdinal()));
-
         if (status != ResponseCodeEnum.SUCCESS) {
             // This checks ensure mono behaviour
             if (status.equals(INVALID_ALLOWANCE_SPENDER_ID)) {
                 return reversionWith(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, 0L);
             }
             if (status.equals(INVALID_TOKEN_ID)) {
-                return gasOnly(successResult(encodedOutput, 0L));
+                return completionWith(INVALID_TOKEN_ID, 0L);
             }
-            return gasOnly(revertResult(status, 0L));
+            return reversionWith(status, 0L);
         } else {
-            return gasOnly(successResult(encodedOutput, 0L));
+            return completionWith(status, 0L);
         }
     }
 }
