@@ -103,6 +103,9 @@ class XTestConstants {
     static final Key AN_ED25519_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
             .build();
+    static final Key AN_ECDSA_KEY = Key.newBuilder()
+            .ecdsa384(Bytes.fromHex("1010101010101010101010101010101010101010101010101010101010101010"))
+            .build();
 
     static final TokenID INVALID_TOKEN_ID =
             TokenID.newBuilder().tokenNum(Long.MAX_VALUE).build();
@@ -146,7 +149,7 @@ class XTestConstants {
         return output -> assertEquals(SUCCESS_AS_BYTES, output);
     }
 
-    public static Consumer<org.apache.tuweni.bytes.Bytes> assertSuccess(String orElseMessage) {
+    public static Consumer<org.apache.tuweni.bytes.Bytes> assertSuccess(final String orElseMessage) {
         return output -> assertEquals(SUCCESS_AS_BYTES, output, orElseMessage);
     }
 }

@@ -18,6 +18,7 @@ package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER;
@@ -26,7 +27,10 @@ import static contract.AssociationsXTestConstants.A_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.A_TOKEN_ID;
 import static contract.AssociationsXTestConstants.B_TOKEN_ADDRESS;
 import static contract.AssociationsXTestConstants.B_TOKEN_ID;
+import static contract.AssociationsXTestConstants.C_TOKEN_ADDRESS;
+import static contract.AssociationsXTestConstants.C_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
+import static contract.XTestConstants.AN_ECDSA_KEY;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_BESU_ADDRESS;
@@ -69,7 +73,10 @@ import org.jetbrains.annotations.NotNull;
  *     <li>Unfreeze {@code ERC20_TOKEN} via {@link FreezeUnfreezeTranslator#UNFREEZE}. This should fail with code INVALID_TOKEN_ID.</li>
  *     <li>Unfreeze {@code ERC20_TOKEN} via {@link FreezeUnfreezeTranslator#UNFREEZE}.</li>
  *     <li>Transfer {@code ERC20_TOKEN} from  SENDER to RECEIVER.  This should now succeed</li>
- *     <li>Freeze {@code ERC721_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code TOKEN_HAS_NO_FREEZE_KEY.</li>
+ *     <li>Freeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code TOKEN_HAS_NO_FREEZE_KEY.</li>
+ *     <li>Unfreeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code TOKEN_HAS_NO_FREEZE_KEY.</li>
+ *     <li>Unfreeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code INVALID_SIGNATURE.</li>
+ *     <li>Freeze {@code ERC20_TOKEN} without provided freeze key via {@link FreezeUnfreezeTranslator#FREEZE}. This should fail with code INVALID_SIGNATURE.</li>
  * </ol>
  */
 public class FreezeUnfreezeXTest extends AbstractContractXTest {
@@ -154,6 +161,32 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                         Bytes.wrap(
                                 ReturnTypes.encodedRc(TOKEN_HAS_NO_FREEZE_KEY).array()),
                         output));
+        // UNFREEZE NO FREEZE KEY
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(FreezeUnfreezeTranslator.UNFREEZE
+                        .encodeCallWithArgs(B_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(
+                                ReturnTypes.encodedRc(TOKEN_HAS_NO_FREEZE_KEY).array()),
+                        output));
+        // UNFREEZE DIFFERENT FREEZE KEY
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(FreezeUnfreezeTranslator.UNFREEZE
+                        .encodeCallWithArgs(C_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output));
+        // FREEZE DIFFERENT FREEZE KEY
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(FreezeUnfreezeTranslator.FREEZE
+                        .encodeCallWithArgs(C_TOKEN_ADDRESS, OWNER_HEADLONG_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_SIGNATURE).array()), output));
     }
 
     @Override
@@ -175,6 +208,7 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                                 .accountId(OWNER_ID)
                                 .alias(OWNER_ADDRESS)
                                 .tinybarBalance(100_000_000L)
+                                .key(AN_ED25519_KEY)
                                 .build());
                 put(RECEIVER_ID, Account.newBuilder().accountId(RECEIVER_ID).build());
             }
@@ -199,6 +233,14 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
                                 .tokenId(B_TOKEN_ID)
                                 .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .build());
+                put(
+                        C_TOKEN_ID,
+                        Token.newBuilder()
+                                .tokenId(C_TOKEN_ID)
+                                .treasuryAccountId(UNAUTHORIZED_SPENDER_ID)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .freezeKey(AN_ECDSA_KEY)
                                 .build());
             }
         };
