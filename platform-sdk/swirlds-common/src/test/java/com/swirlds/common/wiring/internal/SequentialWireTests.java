@@ -322,7 +322,7 @@ class SequentialWireTests {
         final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
                 .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics(), Time.getCurrent())
-                        .withScheduledTaskCountMetricEnabled(true))
+                        .withUnhandledTaskMetricEnabled(true))
                 .build();
         final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
@@ -335,7 +335,7 @@ class SequentialWireTests {
         }
 
         assertEventuallyEquals(
-                99L,
+                100L,
                 wire::getUnprocessedTaskCount,
                 Duration.ofSeconds(1),
                 "Wire unprocessed task count did not match expected value, count = " + wire.getUnprocessedTaskCount());
@@ -343,7 +343,7 @@ class SequentialWireTests {
         latch0.countDown();
 
         assertEventuallyEquals(
-                49L,
+                50L,
                 wire::getUnprocessedTaskCount,
                 Duration.ofSeconds(1),
                 "Wire unprocessed task count did not match expected value");
@@ -351,7 +351,7 @@ class SequentialWireTests {
         latch50.countDown();
 
         assertEventuallyEquals(
-                1L,
+                2L,
                 wire::getUnprocessedTaskCount,
                 Duration.ofSeconds(1),
                 "Wire unprocessed task count did not match expected value");
@@ -384,7 +384,7 @@ class SequentialWireTests {
 
         final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
-                .withScheduledTaskCapacity(10)
+                .withUnhandledTaskCapacity(11)
                 .withSleepDuration(Duration.ofMillis(1))
                 .build();
         final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
@@ -397,14 +397,13 @@ class SequentialWireTests {
         completeBeforeTimeout(
                 () -> {
                     for (int i = 0; i < 11; i++) {
-                        System.out.println("                        putting " + i);
                         channel.put(i);
                         value.set(hash32(value.get(), i));
                     }
                 },
                 Duration.ofSeconds(1),
                 "unable to add tasks");
-        assertEquals(10, wire.getUnprocessedTaskCount());
+        assertEquals(11, wire.getUnprocessedTaskCount());
 
         // Try to enqueue work on another thread. It should get stuck and be
         // unable to add anything until we release the latch.
@@ -412,7 +411,6 @@ class SequentialWireTests {
         new ThreadConfiguration(getStaticThreadManager())
                 .setRunnable(() -> {
                     for (int i = 11; i < 100; i++) {
-                        System.out.println("                        putting " + i);
                         channel.put(i);
                         value.set(hash32(value.get(), i));
                     }
@@ -424,20 +422,19 @@ class SequentialWireTests {
         // wire would have processed all of the work that was added to it.
         MILLISECONDS.sleep(50);
         assertFalse(allWorkAdded.get());
-        assertEquals(10, wire.getUnprocessedTaskCount());
+        assertEquals(11, wire.getUnprocessedTaskCount());
 
         // Even if the wire has no capacity, neither offer() nor inject() should not block.
-        // TODO
-        //        completeBeforeTimeout(
-        //                () -> {
-        //                    assertFalse(channel.offer(1234));
-        //                    assertFalse(channel.offer(4321));
-        //                    assertFalse(channel.offer(-1));
-        //                    channel.inject(42);
-        //                    value.set(hash32(value.get(), 42));
-        //                },
-        //                Duration.ofSeconds(1),
-        //                "unable to offer tasks");
+        completeBeforeTimeout(
+                () -> {
+                    assertFalse(channel.offer(1234));
+                    assertFalse(channel.offer(4321));
+                    assertFalse(channel.offer(-1));
+                    channel.inject(42);
+                    value.set(hash32(value.get(), 42));
+                },
+                Duration.ofSeconds(1),
+                "unable to offer tasks");
 
         // Release the latch, all work should now be added
         latch.countDown();
@@ -446,7 +443,7 @@ class SequentialWireTests {
         assertEventuallyEquals(
                 0L,
                 wire::getUnprocessedTaskCount,
-                Duration.ofSeconds(10),
+                Duration.ofSeconds(1),
                 "Wire unprocessed task count did not match expected value. " + wire.getUnprocessedTaskCount());
         assertEventuallyEquals(
                 value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
@@ -473,7 +470,7 @@ class SequentialWireTests {
 
         final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
-                .withScheduledTaskCapacity(10)
+                .withUnhandledTaskCapacity(11)
                 .build();
         final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
@@ -491,7 +488,7 @@ class SequentialWireTests {
                 },
                 Duration.ofSeconds(1),
                 "unable to add tasks");
-        assertEquals(10, wire.getUnprocessedTaskCount());
+        assertEquals(11, wire.getUnprocessedTaskCount());
 
         // Try to enqueue work on another thread. It should get stuck and be
         // unable to add anything until we release the latch.
@@ -513,7 +510,7 @@ class SequentialWireTests {
         // wire would have processed all of the work that was added to it.
         MILLISECONDS.sleep(50);
         assertFalse(allWorkAdded.get());
-        assertEquals(10, wire.getUnprocessedTaskCount());
+        assertEquals(11, wire.getUnprocessedTaskCount());
 
         // Release the latch, all work should now be added
         latch.countDown();
@@ -549,7 +546,7 @@ class SequentialWireTests {
 
         final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
-                .withScheduledTaskCapacity(10)
+                .withUnhandledTaskCapacity(11)
                 .build();
         final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
@@ -567,7 +564,7 @@ class SequentialWireTests {
                 },
                 Duration.ofSeconds(1),
                 "unable to add tasks");
-        assertEquals(10, wire.getUnprocessedTaskCount());
+        assertEquals(11, wire.getUnprocessedTaskCount());
 
         // Try to enqueue work on another thread. It should get stuck and be
         // unable to add anything until we release the latch.
@@ -789,7 +786,7 @@ class SequentialWireTests {
 
         final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
-                .withScheduledTaskCapacity(10)
+                .withUnhandledTaskCapacity(11)
                 .build();
 
         final WireChannel<Integer> channel1 = wire.createChannel(Integer.class).bind(handler1);
@@ -810,7 +807,7 @@ class SequentialWireTests {
                 },
                 Duration.ofSeconds(1),
                 "unable to add tasks");
-        assertEquals(10, wire.getUnprocessedTaskCount());
+        assertEquals(11, wire.getUnprocessedTaskCount());
 
         // Try to enqueue work on another thread. It should get stuck and be
         // unable to add anything until we release the latch.
@@ -829,7 +826,7 @@ class SequentialWireTests {
         // wire would have processed all of the work that was added to it.
         MILLISECONDS.sleep(50);
         assertFalse(allWorkAdded.get());
-        assertEquals(10, wire.getUnprocessedTaskCount());
+        assertEquals(11, wire.getUnprocessedTaskCount());
 
         // Even if the wire has no capacity, neither offer() nor inject() should not block.
         completeBeforeTimeout(
@@ -865,7 +862,7 @@ class SequentialWireTests {
         final AtomicInteger wireValueB = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        final ObjectCounter backpressure = new BackpressureObjectCounter(10, Duration.ofMillis(1));
+        final ObjectCounter backpressure = new BackpressureObjectCounter(11, Duration.ofMillis(1));
 
         final Wire wireA = Wire.builder("testA")
                 .withConcurrency(false)
@@ -918,7 +915,7 @@ class SequentialWireTests {
                 },
                 Duration.ofSeconds(1),
                 "unable to add tasks");
-        assertEquals(10, backpressure.getCount());
+        assertEquals(11, backpressure.getCount());
 
         // Try to enqueue work on another thread. It should get stuck and be
         // unable to add anything until we release the latch.
@@ -938,7 +935,7 @@ class SequentialWireTests {
         // wire would have processed all of the work that was added to it.
         MILLISECONDS.sleep(50);
         assertFalse(allWorkAdded.get());
-        assertEquals(10, backpressure.getCount());
+        assertEquals(11, backpressure.getCount());
 
         // Even if the wire has no capacity, neither offer() nor inject() should not block.
         completeBeforeTimeout(
@@ -989,7 +986,7 @@ class SequentialWireTests {
 
         final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
-                .withScheduledTaskCapacity(10)
+                .withUnhandledTaskCapacity(11)
                 .withFlushingEnabled(true)
                 .build();
         final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
@@ -1011,7 +1008,7 @@ class SequentialWireTests {
                 },
                 Duration.ofSeconds(1),
                 "unable to add tasks");
-        assertEquals(10, wire.getUnprocessedTaskCount());
+        assertEquals(11, wire.getUnprocessedTaskCount());
 
         // Try to enqueue work on another thread. It should get stuck and be
         // unable to add anything until we release the latch.
@@ -1040,8 +1037,8 @@ class SequentialWireTests {
         MILLISECONDS.sleep(50);
         assertFalse(allWorkAdded.get());
         assertFalse(flushed.get());
-        // The flush operation puts a task on the wire, which bumps the number up to 11 from 10
-        assertEquals(11, wire.getUnprocessedTaskCount());
+        // The flush operation puts a task on the wire, which bumps the number up to 12 from 11
+        assertEquals(12, wire.getUnprocessedTaskCount());
 
         // Even if the wire has no capacity, neither offer() nor inject() should not block.
         completeBeforeTimeout(
@@ -1090,7 +1087,7 @@ class SequentialWireTests {
 
         final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
-                .withScheduledTaskCapacity(10)
+                .withUnhandledTaskCapacity(11)
                 .withFlushingEnabled(true)
                 .build();
         final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
@@ -1112,7 +1109,7 @@ class SequentialWireTests {
                 },
                 Duration.ofSeconds(1),
                 "unable to add tasks");
-        assertEquals(10, wire.getUnprocessedTaskCount());
+        assertEquals(11, wire.getUnprocessedTaskCount());
 
         // Try to enqueue work on another thread. It should get stuck and be
         // unable to add anything until we release the latch.
@@ -1168,8 +1165,8 @@ class SequentialWireTests {
         MILLISECONDS.sleep(50);
         assertFalse(allWorkAdded.get());
         assertFalse(flushed.get());
-        // The flush operation puts a task on the wire and we flush twice, bumping the number from 10 to 12
-        assertEquals(12, wire.getUnprocessedTaskCount());
+        // The flush operation puts a task on the wire and we flush twice, bumping the number from 11 to 13
+        assertEquals(13, wire.getUnprocessedTaskCount());
 
         // Even if the wire has no capacity, neither offer() nor inject() should not block.
         completeBeforeTimeout(
@@ -1201,7 +1198,7 @@ class SequentialWireTests {
     void flushDisabledTest() {
         final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
-                .withScheduledTaskCapacity(10)
+                .withUnhandledTaskCapacity(10)
                 .build();
 
         assertThrows(UnsupportedOperationException.class, wire::flush, "flush() should not be supported");
@@ -1253,19 +1250,19 @@ class SequentialWireTests {
         // a -> b -> c -> latch
         final Wire a = Wire.builder("a")
                 .withConcurrency(false)
-                .withScheduledTaskCapacity(1)
+                .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build();
         final Wire b = Wire.builder("b")
                 .withConcurrency(false)
-                .withScheduledTaskCapacity(1)
+                .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build();
         final Wire c = Wire.builder("c")
                 .withConcurrency(false)
-                .withScheduledTaskCapacity(1)
+                .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build();

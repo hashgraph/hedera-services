@@ -48,7 +48,7 @@ public class WireBuilder {
     private boolean concurrent = false;
     private final String name;
     private WireMetricsBuilder metricsBuilder;
-    private long scheduledTaskCapacity = UNLIMITED_CAPACITY;
+    private long unhandledTaskCapacity = UNLIMITED_CAPACITY;
     private boolean flushingEnabled = false;
     private ObjectCounter onRamp;
     private ObjectCounter offRamp;
@@ -91,12 +91,12 @@ public class WireBuilder {
     /**
      * Set the maximum number of permitted scheduled tasks in the wire. Default is unlimited.
      *
-     * @param scheduledTaskCapacity the maximum number of permitted scheduled tasks in the wire
+     * @param unhandledTaskCapacity the maximum number of permitted unhandled tasks on the wire
      * @return this
      */
     @NonNull
-    public WireBuilder withScheduledTaskCapacity(final long scheduledTaskCapacity) {
-        this.scheduledTaskCapacity = scheduledTaskCapacity;
+    public WireBuilder withUnhandledTaskCapacity(final long unhandledTaskCapacity) {
+        this.unhandledTaskCapacity = unhandledTaskCapacity;
         return this;
     }
 
@@ -240,9 +240,9 @@ public class WireBuilder {
     private Counters buildCounters() {
         final ObjectCounter innerCounter;
 
-        if (scheduledTaskCapacity != UNLIMITED_CAPACITY) {
-            innerCounter = new BackpressureObjectCounter(scheduledTaskCapacity, sleepDuration);
-        } else if (metricsBuilder != null && metricsBuilder.isScheduledTaskCountMetricEnabled()
+        if (unhandledTaskCapacity != UNLIMITED_CAPACITY) {
+            innerCounter = new BackpressureObjectCounter(unhandledTaskCapacity, sleepDuration);
+        } else if (metricsBuilder != null && metricsBuilder.isUnhandledTaskMetricEnabled()
                 || (concurrent && flushingEnabled)) {
             innerCounter = new StandardObjectCounter(sleepDuration);
         } else {

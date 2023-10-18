@@ -34,7 +34,7 @@ public class WireMetricsBuilder {
 
     private final Metrics metrics;
     private final Time time;
-    private boolean scheduledTaskCountMetricEnabled = false;
+    private boolean unhandledTaskMetricEnabled = false;
     private boolean busyFractionMetricEnabled = false;
     private StandardFractionalTimer busyFractionTimer;
 
@@ -50,14 +50,14 @@ public class WireMetricsBuilder {
     }
 
     /**
-     * Set whether the scheduled task count metric should be enabled. Default false.
+     * Set whether the unhandled task count metric should be enabled. Default false.
      *
-     * @param enabled true if the scheduled task count metric should be enabled, false otherwise
+     * @param enabled true if the unhandled task count metric should be enabled, false otherwise
      * @return this
      */
     @NonNull
-    public WireMetricsBuilder withScheduledTaskCountMetricEnabled(final boolean enabled) {
-        this.scheduledTaskCountMetricEnabled = enabled;
+    public WireMetricsBuilder withUnhandledTaskMetricEnabled(final boolean enabled) {
+        this.unhandledTaskMetricEnabled = enabled;
         return this;
     }
 
@@ -73,15 +73,15 @@ public class WireMetricsBuilder {
     public WireMetricsBuilder withBusyFractionMetricsEnabled(final boolean enabled) {
         this.busyFractionMetricEnabled = enabled;
         return this;
-    }
+    } // TODO test
 
     /**
      * Check if the scheduled task count metric is enabled.
      *
      * @return true if the scheduled task count metric is enabled, false otherwise
      */
-    boolean isScheduledTaskCountMetricEnabled() {
-        return scheduledTaskCountMetricEnabled;
+    boolean isUnhandledTaskMetricEnabled() {
+        return unhandledTaskMetricEnabled;
     }
 
     /**
@@ -115,12 +115,13 @@ public class WireMetricsBuilder {
      */
     void registerMetrics(@NonNull final String wireName, @Nullable final ObjectCounter scheduledTaskCounter) {
 
-        if (scheduledTaskCountMetricEnabled) {
+        if (unhandledTaskMetricEnabled) {
             Objects.requireNonNull(scheduledTaskCounter);
 
             final FunctionGauge.Config<Long> config = new FunctionGauge.Config<>(
-                            "platform", wireName + "_scheduled_task_count", Long.class, scheduledTaskCounter::getCount)
-                    .withDescription("The number of scheduled tasks for the wire " + wireName);
+                            "platform", wireName + "_unhandled_task_count", Long.class, scheduledTaskCounter::getCount)
+                    .withDescription(
+                            "The number of scheduled tasks that have not been fully handled for the wire " + wireName);
             metrics.getOrCreate(config);
         }
 

@@ -84,11 +84,12 @@ public class ConcurrentWire extends Wire {
 
         @Override
         protected boolean exec() {
-            offRamp.offRamp();
             try {
                 handler.accept(data);
             } catch (final Throwable t) {
                 uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
+            } finally {
+                onRamp.offRamp();
             }
             return true;
         }

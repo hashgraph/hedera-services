@@ -125,13 +125,13 @@ public class SequentialWire extends Wire {
          */
         @Override
         public boolean exec() {
-            offRamp.offRamp();
             busyTimer.activate();
             try {
                 handler.accept(data);
             } catch (final Throwable t) {
                 uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
             } finally {
+                offRamp.offRamp();
                 busyTimer.deactivate();
 
                 // Reduce the dependency count of the next task. If the next task already has its data, then this

@@ -64,8 +64,8 @@ public abstract class Wire {
      * Wires do not track the number of unprocessed tasks by default. This method will always return -1 unless one of
      * the following is true:
      * <ul>
-     * <li>{@link WireMetricsBuilder#withScheduledTaskCountMetricEnabled(boolean)} is called with the value true</li>
-     * <li>{@link WireBuilder#withScheduledTaskCapacity(long)} is passed a positive value</li>
+     * <li>{@link WireMetricsBuilder#withUnhandledTaskMetricEnabled(boolean)} is called with the value true</li>
+     * <li>{@link WireBuilder#withUnhandledTaskCapacity(long)} is passed a positive value</li>
      * <li>{@link WireBuilder#withOnRamp(ObjectCounter)} is passed a counter that is not a no op counter</li>
      * </ul>
      */
