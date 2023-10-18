@@ -205,8 +205,12 @@ public interface Cryptography {
      * Verifies the given digital signature for authenticity. The result of the verification will be returned by the
      * {@link TransactionSignature#getSignatureStatus()} method once the future (available via {@link
      * TransactionSignature#getFuture()}) has been completed.
-     *
+     * <p>
      * Note: This implementation is non-blocking and returns almost immediately.
+     * <p>
+     * Starting in version 0.43 and onwards, the {@link SignatureType#ECDSA_SECP256K1} signature algorithm requires the
+     * payload to be a KECCAK-256 hash of the original message. Verification will fail if the message is not 32 bytes in
+     * length and the output of 256-bit hashing function.
      *
      * @param signature
      * 		the signature to be verified
@@ -218,8 +222,12 @@ public interface Cryptography {
      * {@link TransactionSignature#getSignatureStatus()} method once the future (available via {@link
      * TransactionSignature#getFuture()}) has
      * been completed.
-     *
+     * <p>
      * Note: This implementation is non-blocking and returns almost immediately.
+     * <p>
+     * Starting in version 0.43 and onwards, the {@link SignatureType#ECDSA_SECP256K1} signature algorithm requires the
+     * payload to be a KECCAK-256 hash of the original message. Verification will fail if the message is not 32 bytes in
+     * length and the output of 256-bit hashing function.
      *
      * @param signatures
      * 		a list of signatures to be verified
@@ -229,8 +237,12 @@ public interface Cryptography {
     /**
      * Verifies the given digital signature for authenticity. Convenience method that defaults to {@link
      * SignatureType#ED25519} signatures.
-     *
+     * <p>
      * Note: This implementation is non-blocking and returns almost immediately.
+     * <p>
+     * Starting in version 0.43 and onwards, the {@link SignatureType#ECDSA_SECP256K1} signature algorithm requires the
+     * payload to be a KECCAK-256 hash of the original message. Verification will fail if the message is not 32 bytes in
+     * length and the output of 256-bit hashing function.
      *
      * @param data
      * 		the original contents that the signature should be verified against
@@ -247,8 +259,12 @@ public interface Cryptography {
 
     /**
      * Verifies the given digital signature for authenticity.
-     *
+     * <p>
      * Note: This implementation is non-blocking and returns almost immediately.
+     * <p>
+     * Starting in version 0.43 and onwards, the {@link SignatureType#ECDSA_SECP256K1} signature algorithm requires the
+     * payload to be a KECCAK-256 hash of the original message. Verification will fail if the message is not 32 bytes in
+     * length and the output of 256-bit hashing function.
      *
      * @param data
      * 		the original contents that the signature should be verified against
@@ -269,6 +285,10 @@ public interface Cryptography {
      * {@link TransactionSignature#getSignatureStatus()} method once the future (available via {@link
      * TransactionSignature#getFuture()}) has
      * been completed.
+     * <p>
+     * Starting in version 0.43 and onwards, the {@link SignatureType#ECDSA_SECP256K1} signature algorithm requires the
+     * payload to be a KECCAK-256 hash of the original message. Verification will fail if the message is not 32 bytes in
+     * length and the output of 256-bit hashing function.
      *
      * @param signature
      * 		the signature to be verified
@@ -283,6 +303,10 @@ public interface Cryptography {
      * {@link TransactionSignature#getSignatureStatus()} method once the future (available via {@link
      * TransactionSignature#getFuture()}) has
      * been completed.
+     * <p>
+     * Starting in version 0.43 and onwards, the {@link SignatureType#ECDSA_SECP256K1} signature algorithm requires the
+     * payload to be a KECCAK-256 hash of the original message. Verification will fail if the message is not 32 bytes in
+     * length and the output of 256-bit hashing function.
      *
      * @param signatures
      * 		a list of signatures to be verified

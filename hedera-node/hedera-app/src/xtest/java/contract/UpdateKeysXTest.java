@@ -17,6 +17,7 @@
 package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
@@ -24,6 +25,7 @@ import static contract.XTestConstants.INVALID_ACCOUNT_ADDRESS;
 import static contract.XTestConstants.INVALID_ACCOUNT_HEADLONG_ADDRESS;
 import static contract.XTestConstants.INVALID_CONTRACT_ID_KEY;
 import static contract.XTestConstants.INVALID_ID;
+import static contract.XTestConstants.INVALID_TOKEN_ADDRESS;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
 import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
@@ -80,6 +82,16 @@ public class UpdateKeysXTest extends AbstractContractXTest {
                 output -> {
                     assertEquals(
                             Bytes.wrap(ReturnTypes.encodedRc(INVALID_ADMIN_KEY).array()), output);
+                });
+        // Should throw `INVALID_TOKEN_ID` as we are passing an invalid token address
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateKeysTranslator.TOKEN_UPDATE_KEYS_FUNCTION
+                        .encodeCallWithArgs(INVALID_TOKEN_ADDRESS, INVALID_TOKEN_KEY)
+                        .array()),
+                output -> {
+                    assertEquals(
+                            Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output);
                 });
     }
 
