@@ -85,8 +85,6 @@ public abstract class Wire<O> {
         return new WireChannel<>(this);
     }
 
-    // TODO perhaps rename to solder
-
     /**
      * Specify a channel where output data should be passed. This forwarding operation respects back pressure.
      *
