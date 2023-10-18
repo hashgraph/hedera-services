@@ -20,6 +20,8 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinPool.ManagedBlocker;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongUnaryOperator;
 
@@ -32,6 +34,10 @@ public class BackpressureObjectCounter extends ObjectCounter {
     private final AtomicLong count = new AtomicLong(0);
     private final LongUnaryOperator increment;
     private final long sleepNanos;
+
+    private final ManagedBlocker onRampBlocker;
+    private final ManagedBlocker interruptableOnRampBlocker;
+    //    private final ManagedBlocker waitUntilEmptyBlocker;
 
     private static class NoCapacityException extends RuntimeException {
         public NoCapacityException() {}
@@ -55,11 +61,79 @@ public class BackpressureObjectCounter extends ObjectCounter {
             sleepNanos = sleepDuration.toNanos();
         }
 
+        // TODO move lambdas out of constructor
+
         increment = count -> {
             if (count >= capacity) {
                 throw new NoCapacityException();
             }
             return count + 1;
+        };
+
+        onRampBlocker = new ManagedBlocker() {
+            /**
+             * Blocks for a while (if configured to do so).
+             */
+            @Override
+            public boolean block() {
+                if (sleepNanos >= 0) {
+                    try {
+                        NANOSECONDS.sleep(sleepNanos);
+                    } catch (final InterruptedException e) {
+                        // Don't throw an interrupted exception, but allow the thread
+                        // to maintain its interrupted status;
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                return false;
+            }
+
+            /**
+             * Returns true if blocking is unnecessary.
+             */
+            @Override
+            public boolean isReleasable() {
+                // Make an attempt to reserve capacity.
+
+                try {
+                    count.updateAndGet(increment);
+                    // Capacity was reserved, no need to block.
+                    return true;
+                } catch (final NoCapacityException e) {
+                    // We were unable to reserve capacity, so blocking will be necessary.
+                    return false;
+                }
+            }
+        };
+
+        interruptableOnRampBlocker = new ManagedBlocker() {
+            /**
+             * Blocks for a while (if configured to do so).
+             */
+            @Override
+            public boolean block() throws InterruptedException {
+                if (sleepNanos >= 0) {
+                    NANOSECONDS.sleep(sleepNanos);
+                }
+                return false;
+            }
+
+            /**
+             * Returns true if blocking is unnecessary.
+             */
+            @Override
+            public boolean isReleasable() {
+                // Make an attempt to reserve capacity.
+
+                try {
+                    count.updateAndGet(increment);
+                    // Capacity was reserved, no need to block.
+                    return true;
+                } catch (final NoCapacityException e) {
+                    // We were unable to reserve capacity, so blocking will be necessary.
+                    return false;
+                }
+            }
         };
     }
 
@@ -68,26 +142,19 @@ public class BackpressureObjectCounter extends ObjectCounter {
      */
     @Override
     public void onRamp() {
-        boolean interrupted = false;
-        while (true) {
+        try {
+            count.updateAndGet(increment);
+            // Best case scenario: capacity is was immediately available.
+        } catch (final NoCapacityException e) {
+            // Slow case. Capacity wasn't available, so we need to block.
             try {
-                count.updateAndGet(increment);
-                break;
-            } catch (final NoCapacityException e) {
-                if (sleepNanos > 0) {
-                    try {
-                        NANOSECONDS.sleep(sleepNanos);
-                    } catch (final InterruptedException ex) {
-                        interrupted = true;
-                    }
-                } else if (sleepNanos == 0) {
-                    Thread.yield();
-                }
+                // This will block until capacity is available and the count has been incremented.
+                ForkJoinPool.managedBlock(onRampBlocker);
+            } catch (final InterruptedException ex) {
+                // This should be impossible.
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while blocking on an onRamp");
             }
-        }
-
-        if (interrupted) {
-            Thread.currentThread().interrupt();
         }
     }
 
@@ -96,20 +163,14 @@ public class BackpressureObjectCounter extends ObjectCounter {
      */
     @Override
     public void interruptableOnRamp() throws InterruptedException {
-        while (true) {
-            try {
-                count.updateAndGet(increment);
-                return;
-            } catch (final NoCapacityException e) {
-                if (Thread.currentThread().isInterrupted()) {
-                    throw new InterruptedException();
-                }
-                if (sleepNanos > 0) {
-                    NANOSECONDS.sleep(sleepNanos);
-                } else if (sleepNanos == 0) {
-                    Thread.yield();
-                }
-            }
+        try {
+            count.updateAndGet(increment);
+            // Best case scenario: capacity is was immediately available.
+        } catch (final NoCapacityException e) {
+            // Slow case. Capacity wasn't available, so we need to block.
+            // This will block until capacity is available and the count has been incremented
+            // or we are interrupted..
+            ForkJoinPool.managedBlock(interruptableOnRampBlocker);
         }
     }
 
