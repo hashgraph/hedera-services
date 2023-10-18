@@ -22,6 +22,7 @@ import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
 import static com.swirlds.platform.crypto.CryptoStatic.verifySignature;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
@@ -45,6 +46,9 @@ public class EventValidationChecks {
 
     /**
      * Determine whether a given event has a valid generation.
+     * <p>
+     * This validation method doesn't include metrics, since ancient events are shed throughout the intake process, not
+     * just during validation.
      *
      * @param event                       the event to be validated
      * @param minimumGenerationNonAncient the minimum generation for non-ancient events
@@ -71,11 +75,15 @@ public class EventValidationChecks {
     /**
      * Determine whether a given event has a valid creation time.
      *
-     * @param event  the event to be validated
-     * @param logger a logger for validation errors
+     * @param event             the event to be validated
+     * @param logger            a logger for validation errors
+     * @param metricAccumulator for counting occurrences of invalid event creation times
      * @return true if the creation time of the event is strictly after the creation time of its self-parent, otherwise false
      */
-    public static boolean isValidTimeCreated(@NonNull final EventImpl event, @NonNull final RateLimitedLogger logger) {
+    public static boolean isValidTimeCreated(
+            @NonNull final EventImpl event,
+            @NonNull final RateLimitedLogger logger,
+            @NonNull final LongAccumulator metricAccumulator) {
         final EventImpl selfParent = event.getSelfParent();
 
         final boolean validTimeCreated =
@@ -88,6 +96,7 @@ public class EventValidationChecks {
                     event.toMediumString(),
                     event.getTimeCreated().toString(),
                     selfParent.getTimeCreated().toString());
+            metricAccumulator.update(1);
         }
 
         return validTimeCreated;
@@ -99,10 +108,14 @@ public class EventValidationChecks {
      * @param event             the event to be validated
      * @param singleNodeNetwork true if the network is a single node network, otherwise false
      * @param logger            a logger for validation errors
+     * @param metricAccumulator for counting occurrences of invalid event parents
      * @return true if the event has valid parents, otherwise false
      */
     public static boolean areParentsValid(
-            @NonNull final EventImpl event, final boolean singleNodeNetwork, @NonNull final RateLimitedLogger logger) {
+            @NonNull final EventImpl event,
+            final boolean singleNodeNetwork,
+            @NonNull final RateLimitedLogger logger,
+            @NonNull final LongAccumulator metricAccumulator) {
 
         final BaseEventHashedData hashedData = event.getHashedData();
 
@@ -112,6 +125,7 @@ public class EventValidationChecks {
         if (selfParentHash == null && selfParentGeneration >= FIRST_GENERATION) {
             logger.error(
                     INVALID_EVENT_ERROR.getMarker(), "Self parent hash is null, but generation is defined: {}", event);
+            metricAccumulator.update(1);
             return false;
         }
 
@@ -121,11 +135,13 @@ public class EventValidationChecks {
         if (otherParentHash == null && otherParentGeneration >= FIRST_GENERATION) {
             logger.error(
                     INVALID_EVENT_ERROR.getMarker(), "Other parent hash is null, but generation is defined: {}", event);
+            metricAccumulator.update(1);
             return false;
         }
 
         if (!singleNodeNetwork && Objects.equals(selfParentHash, otherParentHash)) {
             logger.error(INVALID_EVENT_ERROR.getMarker(), "Both parents have the same hash: {} ", event);
+            metricAccumulator.update(1);
             return false;
         }
 
@@ -188,6 +204,7 @@ public class EventValidationChecks {
      * @param previousAddressBook    the previous address book
      * @param currentAddressBook     the current address book
      * @param logger                 a logger for validation errors
+     * @param metricAccumulator      for counting occurrences of invalid event signatures
      * @return true if the event has a valid signature, otherwise false
      */
     public static boolean isSignatureValid(
@@ -195,13 +212,15 @@ public class EventValidationChecks {
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @Nullable final AddressBook previousAddressBook,
             @NonNull final AddressBook currentAddressBook,
-            @NonNull final RateLimitedLogger logger) {
+            @NonNull final RateLimitedLogger logger,
+            @NonNull final LongAccumulator metricAccumulator) {
 
         final AddressBook applicableAddressBook = determineApplicableAddressBook(
                 event, currentSoftwareVersion, previousAddressBook, currentAddressBook, logger);
 
         if (applicableAddressBook == null) {
             // this occurrence was already logged while attempting to determine the applicable address book
+            metricAccumulator.update(1);
             return false;
         }
 
@@ -214,6 +233,7 @@ public class EventValidationChecks {
                     EXCEPTION.getMarker(),
                     "Cannot find publicKey for creator with ID: {}",
                     event.getHashedData().getCreatorId());
+            metricAccumulator.update(1);
             return false;
         }
 
@@ -229,6 +249,7 @@ public class EventValidationChecks {
                     event,
                     CommonUtils.hex(event.getUnhashedData().getSignature()),
                     event.getHashedData().getHash());
+            metricAccumulator.update(1);
         }
 
         return isSignatureValid;

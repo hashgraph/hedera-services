@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.validation;
 
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.platform.event.validation.EventValidationChecks.areParentsValid;
 import static com.swirlds.platform.event.validation.EventValidationChecks.isGenerationValid;
 import static com.swirlds.platform.event.validation.EventValidationChecks.isSignatureValid;
@@ -23,6 +24,7 @@ import static com.swirlds.platform.event.validation.EventValidationChecks.isVali
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
@@ -83,11 +85,29 @@ public class EventValidator {
     private final RateLimitedLogger parentLogger;
     private final RateLimitedLogger signatureLogger;
 
-    //    private static final LongAccumulator.Config DUPLICATE_EVENT_CONFIG = new LongAccumulator.Config(
-    //            PLATFORM_CATEGORY, "duplicateEvents")
-    //            .withDescription("Events received that exactly match a previous event")
-    //            .withUnit("events");
-    //    private final LongAccumulator duplicateEventAccumulator;
+    private static final LongAccumulator.Config INVALID_EVENT_CONFIG = new LongAccumulator.Config(
+                    PLATFORM_CATEGORY, "invalidEvents")
+            .withDescription("Events received that were found to be invalid")
+            .withUnit("events");
+    private final LongAccumulator invalidEventAccumulator;
+
+    private static final LongAccumulator.Config INVALID_TIME_CREATED_CONFIG = new LongAccumulator.Config(
+                    PLATFORM_CATEGORY, "eventsWithInvalidTimeCreated")
+            .withDescription("Events received with an invalid time created")
+            .withUnit("events");
+    private final LongAccumulator invalidTimeCreatedAccumulator;
+
+    private static final LongAccumulator.Config INVALID_PARENTS_CONFIG = new LongAccumulator.Config(
+                    PLATFORM_CATEGORY, "eventsWithInvalidParents")
+            .withDescription("Events received with invalid parents")
+            .withUnit("events");
+    private final LongAccumulator invalidParentsAccumulator;
+
+    private static final LongAccumulator.Config INVALID_SIGNATURE_CONFIG = new LongAccumulator.Config(
+                    PLATFORM_CATEGORY, "eventsWithInvalidSignature")
+            .withDescription("Events received with invalid signature")
+            .withUnit("events");
+    private final LongAccumulator invalidSignatureAccumulator;
 
     /**
      * Constructor
@@ -119,6 +139,11 @@ public class EventValidator {
         this.timeCreatedLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.parentLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.signatureLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
+
+        this.invalidEventAccumulator = platformContext.getMetrics().getOrCreate(INVALID_EVENT_CONFIG);
+        this.invalidTimeCreatedAccumulator = platformContext.getMetrics().getOrCreate(INVALID_TIME_CREATED_CONFIG);
+        this.invalidParentsAccumulator = platformContext.getMetrics().getOrCreate(INVALID_PARENTS_CONFIG);
+        this.invalidSignatureAccumulator = platformContext.getMetrics().getOrCreate(INVALID_SIGNATURE_CONFIG);
     }
 
     /**
@@ -132,18 +157,20 @@ public class EventValidator {
      */
     public void handleEvent(@NonNull final EventImpl event) {
         if (isGenerationValid(event.getBaseEvent(), minimumGenerationNonAncient, generationLogger)
-                && isValidTimeCreated(event, timeCreatedLogger)
-                && areParentsValid(event, currentAddressBook.getSize() == 1, parentLogger)
+                && isValidTimeCreated(event, timeCreatedLogger, invalidTimeCreatedAccumulator)
+                && areParentsValid(event, currentAddressBook.getSize() == 1, parentLogger, invalidParentsAccumulator)
                 && isSignatureValid(
                         event.getBaseEvent(),
                         currentSoftwareVersion,
                         previousAddressBook,
                         currentAddressBook,
-                        signatureLogger)) {
+                        signatureLogger,
+                        invalidSignatureAccumulator)) {
 
             eventConsumer.accept(event.getBaseEvent());
         } else {
             intakeEventCounter.eventExitedIntakePipeline(event.getBaseEvent().getSenderId());
+            invalidEventAccumulator.update(1);
         }
     }
 
