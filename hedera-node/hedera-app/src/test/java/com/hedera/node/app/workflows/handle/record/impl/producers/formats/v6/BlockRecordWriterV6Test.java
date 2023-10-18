@@ -33,7 +33,7 @@ import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
