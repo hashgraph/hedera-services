@@ -108,15 +108,15 @@ public class BurnsXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(B_TOKEN_ADDRESS, BigInteger.valueOf(TOKENS_TO_BURN), new long[] {})
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(
-                                ReturnTypes.encodedRc(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT).array()),
+                        Bytes.wrap(ReturnTypes.encodedRc(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
+                                .array()),
                         output));
 
         // should fail on totalSupply < amountToBurn
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
-                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, BigInteger.valueOf(TOKEN_BALANCE + 1), new long[]{})
+                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, BigInteger.valueOf(TOKEN_BALANCE + 1), new long[] {})
                         .array()),
                 output -> assertEquals(
                         Bytes.wrap(
@@ -127,12 +127,10 @@ public class BurnsXTest extends AbstractContractXTest {
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
-                        .encodeCallWithArgs(INVALID_TOKEN_ADDRESS, BigInteger.valueOf(TOKEN_BALANCE + 1), new long[]{})
+                        .encodeCallWithArgs(INVALID_TOKEN_ADDRESS, BigInteger.valueOf(TOKEN_BALANCE + 1), new long[] {})
                         .array()),
                 output -> assertEquals(
-                        Bytes.wrap(
-                                ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()),
-                        output));
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
 
         // should successfully burn NFT with V1
         runHtsCallAndExpectOnSuccess(
@@ -155,20 +153,20 @@ public class BurnsXTest extends AbstractContractXTest {
     @Override
     protected void assertExpectedTokenRelations(
             @NotNull final ReadableKVState<EntityIDPair, TokenRelation> tokenRelationships) {
-//        final var tokenRelation = tokenRelationships.get(EntityIDPair.newBuilder()
-//                .tokenId(ERC20_TOKEN_ID)
-//                .accountId(OWNER_ID)
-//                .build());
-//        assertNotNull(tokenRelation);
-//        // one token burnt from V1 and one token burnt from V2
-//        assertEquals(TOKEN_BALANCE - (TOKENS_TO_BURN + TOKENS_TO_BURN), tokenRelation.balance());
-//
-//        // asserts one NFT is burnt form V1 and one from V2
-//        final var receiverRelation = Objects.requireNonNull(tokenRelationships.get(EntityIDPair.newBuilder()
-//                .tokenId(ERC721_TOKEN_ID)
-//                .accountId(UNAUTHORIZED_SPENDER_ID)
-//                .build()));
-//        assertEquals(TOKEN_BALANCE - 2L, receiverRelation.balance());
+        final var tokenRelation = tokenRelationships.get(EntityIDPair.newBuilder()
+                .tokenId(ERC20_TOKEN_ID)
+                .accountId(OWNER_ID)
+                .build());
+        assertNotNull(tokenRelation);
+        // one token burnt from V1 and one token burnt from V2
+        assertEquals(TOKEN_BALANCE - (TOKENS_TO_BURN + TOKENS_TO_BURN), tokenRelation.balance());
+
+        // asserts one NFT is burnt form V1 and one from V2
+        final var receiverRelation = Objects.requireNonNull(tokenRelationships.get(EntityIDPair.newBuilder()
+                .tokenId(ERC721_TOKEN_ID)
+                .accountId(UNAUTHORIZED_SPENDER_ID)
+                .build()));
+        assertEquals(TOKEN_BALANCE - 2L, receiverRelation.balance());
     }
 
     @Override
