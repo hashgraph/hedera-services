@@ -42,10 +42,9 @@ public class BackpressureObjectCounter extends ObjectCounter {
      *
      * @param capacity      the maximum number of objects that can be in the part of the system that this object is
      *                      being used to monitor before backpressure is applied
-     * @param sleepDuration when there is no capacity available, sleep for this duration before trying again, if null
-     *                      then do not sleep
+     * @param sleepDuration when a method needs to block, the duration to sleep while blocking
      */
-    public BackpressureObjectCounter(final long capacity, @Nullable Duration sleepDuration) {
+    public BackpressureObjectCounter(final long capacity, @Nullable final Duration sleepDuration) {
         if (capacity <= 0) {
             throw new IllegalArgumentException("Capacity must be greater than zero");
         }
@@ -149,5 +148,43 @@ public class BackpressureObjectCounter extends ObjectCounter {
     @Override
     public long getCount() {
         return count.get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void waitUntilEmpty() {
+        boolean interrupted = false;
+
+        while (count.get() > 0) {
+            if (sleepNanos > 0) {
+                try {
+                    NANOSECONDS.sleep(sleepNanos);
+                } catch (final InterruptedException ex) {
+                    interrupted = true;
+                }
+            } else if (sleepNanos == 0) {
+                Thread.yield();
+            }
+        }
+
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void interruptableWaitUntilEmpty() throws InterruptedException {
+        while (count.get() > 0 && !Thread.currentThread().isInterrupted()) {
+            if (sleepNanos > 0) {
+                NANOSECONDS.sleep(sleepNanos);
+            } else if (sleepNanos == 0) {
+                Thread.yield();
+            }
+        }
     }
 }

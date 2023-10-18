@@ -106,4 +106,24 @@ public class MultiObjectCounter extends ObjectCounter { // TODO test
     public long getCount() {
         return counters[0].getCount();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void waitUntilEmpty() {
+        for (final ObjectCounter counter : counters) {
+            counter.waitUntilEmpty();
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void interruptableWaitUntilEmpty() throws InterruptedException {
+        for (final ObjectCounter counter : counters) {
+            counter.interruptableWaitUntilEmpty();
+        }
+    }
 }

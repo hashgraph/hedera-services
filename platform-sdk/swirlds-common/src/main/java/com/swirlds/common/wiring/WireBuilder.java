@@ -54,7 +54,7 @@ public class WireBuilder {
     private ForkJoinPool pool = ForkJoinPool.commonPool();
     private UncaughtExceptionHandler uncaughtExceptionHandler;
 
-    private Duration backpressureSleepDuration = Duration.ofNanos(100);
+    private Duration sleepDuration = Duration.ofNanos(100);
 
     /**
      * Constructor.
@@ -102,7 +102,6 @@ public class WireBuilder {
     /**
      * Set whether the wire should enable flushing. Default false. Flushing a wire with this disabled will cause the
      * wire to throw an exception.
-     * </p>
      *
      * @param requireFlushCapability true if the wire should require flush capability, false otherwise
      * @return this
@@ -152,20 +151,19 @@ public class WireBuilder {
     }
 
     /**
-     * If backpressure is enabled via {@link #withScheduledTaskCapacity(long)}, then sleep this length of time whenever
-     * backpressure needs to be applied. If set to a sleep time of 0 then {@link Thread#yield()} is invoked in a loop
-     * while back pressure is needed. If null then the thread will sit in a busy loop while back pressure is needed.
-     * Default 100 nanoseconds.
+     * If a method needs to block, this is the amount of time that is slept while waiting for the needed condition. If
+     * set to a sleep time of 0 then {@link Thread#yield()} is invoked in a loop while blocking is needed. If null
+     * then the thread will sit in a busy loop while blocking is needed. Default 100 nanoseconds.
      *
      * @param backpressureSleepDuration the length of time to sleep when backpressure needs to be applied
      * @return this
      */
     @NonNull
-    public WireBuilder withBackpressureSleepDuration(@Nullable final Duration backpressureSleepDuration) {
+    public WireBuilder withSleepDuration(@Nullable final Duration backpressureSleepDuration) {
         if (backpressureSleepDuration != null && backpressureSleepDuration.isNegative()) {
             throw new IllegalArgumentException("Backpressure sleep duration must not be negative");
         }
-        this.backpressureSleepDuration = backpressureSleepDuration;
+        this.sleepDuration = backpressureSleepDuration;
         return this;
     }
 
@@ -232,8 +230,7 @@ public class WireBuilder {
             if (offRamp != null) {
                 throw new IllegalStateException("Cannot specify both an off ramp and a scheduled task capacity");
             }
-            final ObjectCounter counter =
-                    new BackpressureObjectCounter(scheduledTaskCapacity, backpressureSleepDuration);
+            final ObjectCounter counter = new BackpressureObjectCounter(scheduledTaskCapacity, sleepDuration);
             this.onRamp = counter;
             this.offRamp = counter;
         }
@@ -245,7 +242,7 @@ public class WireBuilder {
             if (offRamp != null) {
                 throw new IllegalStateException("Cannot specify both an off ramp and a scheduled task metric");
             }
-            final ObjectCounter counter = new StandardObjectCounter();
+            final ObjectCounter counter = new StandardObjectCounter(sleepDuration);
             this.onRamp = counter;
             this.offRamp = counter;
         }

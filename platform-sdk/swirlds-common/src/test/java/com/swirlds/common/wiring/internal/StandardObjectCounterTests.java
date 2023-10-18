@@ -21,19 +21,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
+import java.time.Duration;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 class StandardObjectCounterTests {
 
-    /**
-     * This implementation is really simple, there is basically only one use pattern that is interesting.
-     */
     @Test
     void basicOperationTest() throws InterruptedException {
         final Random random = getRandomPrintSeed();
 
-        final ObjectCounter counter = new StandardObjectCounter();
+        final ObjectCounter counter = new StandardObjectCounter(Duration.ofMillis(1));
 
         int count = 0;
         for (int i = 0; i < 1000; i++) {
@@ -61,4 +59,6 @@ class StandardObjectCounterTests {
             assertEquals(count, counter.getCount());
         }
     }
+
+    // TODO test waitUntilEmpty()
 }

@@ -382,7 +382,7 @@ class SequentialWireTests {
         final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
                 .withScheduledTaskCapacity(10)
-                .withBackpressureSleepDuration(Duration.ofMillis(1))
+                .withSleepDuration(Duration.ofMillis(1))
                 .build();
         final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
@@ -984,6 +984,7 @@ class SequentialWireTests {
         final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
                 .withScheduledTaskCapacity(10)
+                .withFlushingEnabled(true)
                 .build();
         final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
@@ -1084,6 +1085,7 @@ class SequentialWireTests {
         final Wire wire = Wire.builder("test")
                 .withConcurrency(false)
                 .withScheduledTaskCapacity(10)
+                .withFlushingEnabled(true)
                 .build();
         final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
@@ -1187,6 +1189,17 @@ class SequentialWireTests {
                 "Wire unprocessed task count did not match expected value");
         assertEventuallyEquals(
                 value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+    }
+
+    @Test
+    void flushDisabledTest() {
+        final Wire wire = Wire.builder("test")
+                .withConcurrency(false)
+                .withScheduledTaskCapacity(10)
+                .build();
+
+        assertThrows(UnsupportedOperationException.class, wire::flush, "flush() should not be supported");
+        assertThrows(UnsupportedOperationException.class, wire::interruptableFlush, "flush() should not be supported");
     }
 
     @Test

@@ -76,4 +76,16 @@ public class NoOpObjectCounter extends ObjectCounter {
     public long getCount() {
         return -1;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void waitUntilEmpty() {}
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void interruptableWaitUntilEmpty() {}
 }

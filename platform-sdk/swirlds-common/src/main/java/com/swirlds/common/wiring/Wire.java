@@ -99,10 +99,15 @@ public abstract class Wire {
 
     /**
      * Flush all data in the wire. Blocks until all data currently in flight has been processed.
+     *
      * <p>
-     * Note: not all wire implementations support flushing. Currently, only wires with
-     * {@link WireBuilder#withConcurrency(boolean)} set to false support flushing. Calling this method on a wire that
-     * does not support flushing will result in an error being written to the log (no exception is thrown).
+     * Note: must be enabled by passing true to {@link WireBuilder#withFlushingEnabled(boolean)}.
+     *
+     * <p>
+     * Warning: some implementations of flush may block indefinitely if new work is continuously added to the wire while
+     * flushing. Such implementations are guaranteed to finish flushing once new work is no longer being added. Some
+     * implementations do not have this restriction, and will return as soon as all of the in flight work has been
+     * processed, regardless of whether or not new work is being added.
      *
      * @throws UnsupportedOperationException if {@link WireBuilder#withFlushingEnabled(boolean)} was set to false (or
      *                                       was unset, default is false)
@@ -110,12 +115,17 @@ public abstract class Wire {
     public abstract void flush();
 
     /**
-     * Flush all data in the wire. Blocks until all data currently in flight has been processed.
+     * Flush all data in the wire. Blocks until all data currently in flight has been processed or until the thread is
+     * interrupted.
      *
      * <p>
-     * Note: not all wire implementations support flushing. Currently, only wires with
-     * {@link WireBuilder#withConcurrency(boolean)} set to false support flushing. Calling this method on a wire that
-     * does not support flushing will result in an error being written to the log (no exception is thrown).
+     * Note: must be enabled by passing true to {@link WireBuilder#withFlushingEnabled(boolean)}.
+     *
+     * <p>
+     * Warning: some implementations of flush may block indefinitely if new work is continuously added to the wire while
+     * flushing. Such implementations are guaranteed to finish flushing once new work is no longer being added. Some
+     * implementations do not have this restriction, and will return as soon as all of the in flight work has been
+     * processed, regardless of whether or not new work is being added.
      *
      * @throws InterruptedException          if the thread is interrupted while waiting for all data to be processed
      * @throws UnsupportedOperationException if {@link WireBuilder#withFlushingEnabled(boolean)} was set to false (or

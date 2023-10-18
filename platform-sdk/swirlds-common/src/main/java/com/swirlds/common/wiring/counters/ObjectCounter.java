@@ -57,4 +57,19 @@ public abstract class ObjectCounter {
      * Get the number of objects in the part of the system that this object is being used to monitor.
      */
     public abstract long getCount();
+
+    // TODO test these methods
+
+    /**
+     * Blocks until the number of objects off-ramped is equal to the number of objects on-ramped.
+     */
+    public abstract void waitUntilEmpty();
+
+    /**
+     * Blocks until the number of objects off-ramped is equal to the number of objects on-ramped or the thread is
+     * interrupted.
+     *
+     * @throws InterruptedException if the thread is interrupted while waiting
+     */
+    public abstract void interruptableWaitUntilEmpty() throws InterruptedException;
 }

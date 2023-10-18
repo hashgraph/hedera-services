@@ -16,9 +16,6 @@
 
 package com.swirlds.common.wiring.internal;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-
-import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.wiring.Wire;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -159,24 +156,18 @@ public class ConcurrentWire extends Wire {
      */
     @Override
     public void flush() {
-        logger.error(
-                EXCEPTION.getMarker(),
-                "flush() called on concurrent wire {}. Concurrent wires do not implement flush, "
-                        + "and so this operation is a no op.\n{}",
-                name,
-                StackTrace.getStackTrace());
+        // TODO throw if flushing is disabled
+
+        onRamp.waitUntilEmpty();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void interruptableFlush() {
-        logger.error(
-                EXCEPTION.getMarker(),
-                "flush() called on concurrent wire {}. Concurrent wires do not implement flush, "
-                        + "and so this operation is a no op.\n{}",
-                name,
-                StackTrace.getStackTrace());
+    public void interruptableFlush() throws InterruptedException {
+        // TODO throw if flushing is disabled
+
+        onRamp.interruptableWaitUntilEmpty();
     }
 }
