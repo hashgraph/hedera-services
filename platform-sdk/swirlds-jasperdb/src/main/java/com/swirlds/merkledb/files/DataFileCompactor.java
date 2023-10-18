@@ -328,7 +328,6 @@ public class DataFileCompactor {
         currentWriter.set(null);
         // Now include the file in future compactions
         currentReader.get().setFileCompleted();
-        currentReader.get().close();
         currentReader.set(null);
     }
 
@@ -445,7 +444,7 @@ public class DataFileCompactor {
                 newFilesCreated,
                 targetCompactionLevel,
                 dataFileCollection);
-        logger.warn(
+        logger.info(
                 MERKLE_DB.getMarker(),
                 "[{}] Finished compaction {} files / {} in {} ms",
                 storeName,
