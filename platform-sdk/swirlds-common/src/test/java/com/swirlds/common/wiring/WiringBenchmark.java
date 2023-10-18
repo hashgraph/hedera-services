@@ -32,6 +32,15 @@ import java.util.concurrent.ForkJoinPool;
 
 class WiringBenchmark {
 
+    /* Data flow for this benchmark:
+
+    gossip -> event verifier -> orphan buffer
+      ^                               |
+      |                               |
+      ---------------------------------
+
+     */
+
     static void basicBenchmark() throws InterruptedException {
 
         // We will use this executor for starting all threads. Maybe we should only use it for temporary threads?
@@ -49,36 +58,54 @@ class WiringBenchmark {
         // Ensures that we have no more than 10,000 events in the pipeline at any given time
         final ObjectCounter backpressure = new BackpressureObjectCounter(10_000, Duration.ZERO);
 
-        final Wire toVerifier = Wire.builder("verification")
+        final Wire<WiringBenchmarkEvent> verificationWire = Wire.builder("verification")
+                .withOutputType(WiringBenchmarkEvent.class)
                 .withPool(executor)
                 .withConcurrency(true)
                 .withOnRamp(backpressure)
                 .build();
 
-        final Wire toOrphanBuffer = Wire.builder("orphanBuffer")
+        final Wire<WiringBenchmarkEvent> orphanBufferWire = Wire.builder("orphanBuffer")
+                .withOutputType(WiringBenchmarkEvent.class)
                 .withPool(executor)
                 .withConcurrency(false)
                 .withOffRamp(backpressure)
                 .build();
-        final WiringBenchmarkEventPool eventPool = new WiringBenchmarkEventPool();
+
+        final Wire<Void> eventPoolWire = Wire.builder("eventPool")
+                .withOutputType(Void.class)
+                .withPool(executor)
+                .withConcurrency(false)
+                .build();
 
         // Step 2: create channels
+        final WireChannel<WiringBenchmarkEvent, WiringBenchmarkEvent> eventsToOrphanBuffer =
+                orphanBufferWire.createChannel();
 
-        final WireChannel<WiringBenchmarkEvent> orphanBufferChannel = toOrphanBuffer.createChannel();
-        final WireChannel<WiringBenchmarkEvent> verifierChannel = toVerifier.createChannel();
+        final WireChannel<WiringBenchmarkEvent, WiringBenchmarkEvent> eventsToBeVerified =
+                verificationWire.createChannel();
 
-        // Step 3: construct components
+        final WireChannel<WiringBenchmarkEvent, Void> eventsToInsertBackIntoEventPool = eventPoolWire.createChannel();
 
-        final WiringBenchmarkTopologicalEventSorter orphanBuffer = new WiringBenchmarkTopologicalEventSorter(eventPool);
-        final WiringBenchmarkEventVerifier verifier = new WiringBenchmarkEventVerifier(orphanBufferChannel::put);
-        final WiringBenchmarkGossip gossip = new WiringBenchmarkGossip(executor, eventPool, verifierChannel::put);
+        // Step 3: solder wire outputs to the channels that want that output
 
-        // Step 4: bind wires to components
+        verificationWire.solderTo(eventsToOrphanBuffer);
+        orphanBufferWire.solderTo(eventsToInsertBackIntoEventPool);
 
-        orphanBufferChannel.bind(orphanBuffer);
-        verifierChannel.bind(verifier);
+        // Step 4: construct components
 
-        // Step 5: run
+        final WiringBenchmarkEventPool eventPool = new WiringBenchmarkEventPool();
+        final WiringBenchmarkTopologicalEventSorter orphanBuffer = new WiringBenchmarkTopologicalEventSorter();
+        final WiringBenchmarkEventVerifier verifier = new WiringBenchmarkEventVerifier();
+        final WiringBenchmarkGossip gossip = new WiringBenchmarkGossip(executor, eventPool, eventsToBeVerified::put);
+
+        // Step 5: bind channels to components that will handle the data in the channels
+
+        eventsToOrphanBuffer.bind(orphanBuffer);
+        eventsToBeVerified.bind(verifier);
+        eventsToInsertBackIntoEventPool.bind(eventPool::checkin);
+
+        // Step 6: run
 
         // Create a user thread for running "gossip". It will continue to generate events until explicitly stopped.
         System.out.println("Starting gossip");

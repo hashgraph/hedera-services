@@ -18,10 +18,13 @@ package com.swirlds.common.wiring.internal;
 
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.WireChannel;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Semaphore;
@@ -30,8 +33,10 @@ import java.util.function.Consumer;
 
 /**
  * A {@link Wire} that guarantees that tasks are executed sequentially in the order they are received.
+ *
+ * @param <O> the output time of the wire (use {@link Void}) for a wire with no output type)
  */
-public class SequentialWire extends Wire {
+public class SequentialWire<O> extends Wire<O> {
     private final AtomicReference<SequentialTask> lastTask;
 
     private final ObjectCounter onRamp;
@@ -41,6 +46,7 @@ public class SequentialWire extends Wire {
     private final String name;
     private final UncaughtExceptionHandler uncaughtExceptionHandler;
     private final ForkJoinPool pool;
+    private final List<Consumer<O>> forwardingDestinations = new ArrayList<>();
 
     /**
      * Constructor.
@@ -142,6 +148,44 @@ public class SequentialWire extends Wire {
         }
     }
 
+    // TODO abstract class?
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public Wire<O> solderTo(@NonNull final WireChannel<O, ?> channel, final boolean inject) {
+        Objects.requireNonNull(channel);
+        if (inject) {
+            forwardingDestinations.add(channel::inject);
+        } else {
+            forwardingDestinations.add(channel::put);
+        }
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public Wire<O> solderTo(@NonNull final Consumer<O> handler) {
+        Objects.requireNonNull(handler);
+        forwardingDestinations.add(handler);
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void forwardOutput(@NonNull final O data) {
+        for (final Consumer<O> destination : forwardingDestinations) {
+            destination.accept(data);
+        }
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -156,6 +200,7 @@ public class SequentialWire extends Wire {
      */
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+        //        System.out.println("  on ramping " + data); // TODO
         onRamp.onRamp();
 
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are

@@ -17,18 +17,23 @@
 package com.swirlds.common.wiring.internal;
 
 import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.WireChannel;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
 /**
  * A {@link Wire} that permits parallel execution of tasks. Similar to {@link ConcurrentWire} but with extra metering.
+ *
+ * @param <O> the output time of the wire (use {@link Void}) for a wire with no output type)
  */
-public class ConcurrentWire extends Wire {
+public class ConcurrentWire<O> extends Wire<O> {
 
     private final ObjectCounter onRamp;
     private final ObjectCounter offRamp;
@@ -36,6 +41,7 @@ public class ConcurrentWire extends Wire {
     private final UncaughtExceptionHandler uncaughtExceptionHandler;
     private final ForkJoinPool pool;
     private final boolean flushEnabled;
+    private final List<Consumer<O>> forwardingDestinations = new ArrayList<>();
 
     /**
      * Constructor.
@@ -89,9 +95,48 @@ public class ConcurrentWire extends Wire {
             } catch (final Throwable t) {
                 uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
             } finally {
-                onRamp.offRamp();
+                //                System.out.println("off ramping " + data); // TODO
+                offRamp.offRamp();
             }
             return true;
+        }
+    }
+
+    // TODO abstract class?
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public Wire<O> solderTo(@NonNull final WireChannel<O, ?> channel, final boolean inject) {
+        Objects.requireNonNull(channel);
+        if (inject) {
+            forwardingDestinations.add(channel::inject);
+        } else {
+            forwardingDestinations.add(channel::put);
+        }
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public Wire<O> solderTo(@NonNull final Consumer<O> handler) {
+        Objects.requireNonNull(handler);
+        forwardingDestinations.add(handler);
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void forwardOutput(@NonNull final O data) {
+        for (final Consumer<O> destination : forwardingDestinations) {
+            destination.accept(data);
         }
     }
 

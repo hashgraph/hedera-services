@@ -38,8 +38,10 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * A builder for wires.
+ *
+ * @param <O> the output time of the wire (use {@link Void}) for a wire with no output type)
  */
-public class WireBuilder {
+public class WireBuilder<O> {
 
     private static final Logger logger = LogManager.getLogger(WireBuilder.class);
 
@@ -77,13 +79,26 @@ public class WireBuilder {
     }
 
     /**
+     * This is a convenience method for hinting to the compiler the generic type of this builder. This method is a no
+     * op.
+     *
+     * @param clazz the class of the output type
+     * @param <X>   the output type
+     * @return this
+     */
+    @SuppressWarnings("unchecked")
+    public <X> WireBuilder<X> withOutputType(@NonNull final Class<X> clazz) {
+        return (WireBuilder<X>) this;
+    }
+
+    /**
      * Set whether the wire should be concurrent or not. Default false.
      *
      * @param concurrent true if the wire should be concurrent, false otherwise
      * @return this
      */
     @NonNull
-    public WireBuilder withConcurrency(boolean concurrent) {
+    public WireBuilder<O> withConcurrency(boolean concurrent) {
         this.concurrent = concurrent;
         return this;
     }
@@ -95,7 +110,7 @@ public class WireBuilder {
      * @return this
      */
     @NonNull
-    public WireBuilder withUnhandledTaskCapacity(final long unhandledTaskCapacity) {
+    public WireBuilder<O> withUnhandledTaskCapacity(final long unhandledTaskCapacity) {
         this.unhandledTaskCapacity = unhandledTaskCapacity;
         return this;
     }
@@ -108,7 +123,7 @@ public class WireBuilder {
      * @return this
      */
     @NonNull
-    public WireBuilder withFlushingEnabled(final boolean requireFlushCapability) {
+    public WireBuilder<O> withFlushingEnabled(final boolean requireFlushCapability) {
         this.flushingEnabled = requireFlushCapability;
         return this;
     }
@@ -121,7 +136,7 @@ public class WireBuilder {
      * @return this
      */
     @NonNull
-    public WireBuilder withOnRamp(@NonNull final ObjectCounter onRamp) {
+    public WireBuilder<O> withOnRamp(@NonNull final ObjectCounter onRamp) {
         this.onRamp = Objects.requireNonNull(onRamp);
         return this;
     }
@@ -134,7 +149,7 @@ public class WireBuilder {
      * @return this
      */
     @NonNull
-    public WireBuilder withOffRamp(@NonNull final ObjectCounter offRamp) {
+    public WireBuilder<O> withOffRamp(@NonNull final ObjectCounter offRamp) {
         this.offRamp = Objects.requireNonNull(offRamp);
         return this;
     }
@@ -146,7 +161,7 @@ public class WireBuilder {
      * @return this
      */
     @NonNull
-    public WireBuilder withSleepDuration(@NonNull final Duration backpressureSleepDuration) {
+    public WireBuilder<O> withSleepDuration(@NonNull final Duration backpressureSleepDuration) {
         if (backpressureSleepDuration.isNegative()) {
             throw new IllegalArgumentException("Backpressure sleep duration must not be negative");
         }
@@ -161,7 +176,7 @@ public class WireBuilder {
      * @return this
      */
     @NonNull
-    public WireBuilder withMetricsBuilder(@NonNull final WireMetricsBuilder metricsBuilder) {
+    public WireBuilder<O> withMetricsBuilder(@NonNull final WireMetricsBuilder metricsBuilder) {
         this.metricsBuilder = Objects.requireNonNull(metricsBuilder);
         return this;
     }
@@ -173,7 +188,7 @@ public class WireBuilder {
      * @return this
      */
     @NonNull
-    public WireBuilder withPool(@NonNull final ForkJoinPool pool) {
+    public WireBuilder<O> withPool(@NonNull final ForkJoinPool pool) {
         this.pool = Objects.requireNonNull(pool);
         return this;
     }
@@ -186,7 +201,8 @@ public class WireBuilder {
      * @return this
      */
     @NonNull
-    public WireBuilder withUncaughtExceptionHandler(@NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
+    public WireBuilder<O> withUncaughtExceptionHandler(
+            @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
         return this;
     }
@@ -272,10 +288,10 @@ public class WireBuilder {
      * @return the wire
      */
     @NonNull
-    public Wire build() {
+    public Wire<O> build() {
         final Counters counters = buildCounters();
         if (concurrent) {
-            return new ConcurrentWire(
+            return new ConcurrentWire<>(
                     name,
                     pool,
                     buildUncaughtExceptionHandler(),
@@ -283,7 +299,7 @@ public class WireBuilder {
                     counters.offRamp(),
                     flushingEnabled);
         } else {
-            return new SequentialWire(
+            return new SequentialWire<>(
                     name,
                     pool,
                     buildUncaughtExceptionHandler(),

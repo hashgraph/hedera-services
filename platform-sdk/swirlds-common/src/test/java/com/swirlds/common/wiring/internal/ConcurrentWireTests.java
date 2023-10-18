@@ -52,8 +52,12 @@ class ConcurrentWireTests {
             }
         };
 
-        final Wire wire = Wire.builder("test").withConcurrency(true).build();
-        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
+                .withConcurrency(true)
+                .build();
+        final WireChannel<Integer, Void> channel =
+                wire.createChannel().withInputType(Integer.class).bind(handler);
 
         assertEquals(-1, wire.getUnprocessedTaskCount());
 
@@ -95,9 +99,12 @@ class ConcurrentWireTests {
             count.addAndGet(x.value);
         };
 
-        final Wire wire = Wire.builder("test").withConcurrency(true).build();
-        final WireChannel<Operation> channel =
-                wire.createChannel(Operation.class).bind(handler);
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
+                .withConcurrency(true)
+                .build();
+        final WireChannel<Operation, Void> channel =
+                wire.createChannel().withInputType(Operation.class).bind(handler);
 
         assertEquals(-1, wire.getUnprocessedTaskCount());
 

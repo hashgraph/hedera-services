@@ -46,6 +46,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -81,8 +82,12 @@ class SequentialWireTests {
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final Wire wire = Wire.builder("test").withConcurrency(false).build();
-        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
+                .withConcurrency(false)
+                .build();
+        final WireChannel<Integer, Void> channel =
+                wire.createChannel().withInputType(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -116,8 +121,12 @@ class SequentialWireTests {
             }
         };
 
-        final Wire wire = Wire.builder("test").withConcurrency(false).build();
-        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
+                .withConcurrency(false)
+                .build();
+        final WireChannel<Integer, Void> channel =
+                wire.createChannel().withInputType(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -145,8 +154,12 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final Wire wire = Wire.builder("test").withConcurrency(false).build();
-        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
+                .withConcurrency(false)
+                .build();
+        final WireChannel<Integer, Void> channel =
+                wire.createChannel().withInputType(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -204,8 +217,12 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final Wire wire = Wire.builder("test").withConcurrency(false).build();
-        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
+                .withConcurrency(false)
+                .build();
+        final WireChannel<Integer, Void> channel =
+                wire.createChannel().withInputType(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -270,8 +287,12 @@ class SequentialWireTests {
             }
         };
 
-        final Wire wire = Wire.builder("test").withConcurrency(false).build();
-        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
+                .withConcurrency(false)
+                .build();
+        final WireChannel<Integer, Void> channel =
+                wire.createChannel().withInputType(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -319,12 +340,14 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire wire = Wire.builder("test")
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics(), Time.getCurrent())
                         .withUnhandledTaskMetricEnabled(true))
                 .build();
-        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        final WireChannel<Integer, Void> channel =
+                wire.createChannel().withInputType(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -382,12 +405,14 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire wire = Wire.builder("test")
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .withSleepDuration(Duration.ofMillis(1))
                 .build();
-        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        final WireChannel<Integer, Void> channel =
+                wire.createChannel().withInputType(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -468,11 +493,13 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire wire = Wire.builder("test")
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .build();
-        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        final WireChannel<Integer, Void> channel =
+                wire.createChannel().withInputType(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -544,11 +571,13 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire wire = Wire.builder("test")
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .build();
-        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        final WireChannel<Integer, Void> channel =
+                wire.createChannel().withInputType(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -602,8 +631,12 @@ class SequentialWireTests {
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final Wire wire = Wire.builder("test").withConcurrency(false).build();
-        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
+                .withConcurrency(false)
+                .build();
+        final WireChannel<Integer, Void> channel =
+                wire.createChannel().withInputType(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -640,43 +673,55 @@ class SequentialWireTests {
         final AtomicInteger countC = new AtomicInteger();
         final AtomicInteger countD = new AtomicInteger();
 
-        final Wire wireToA = Wire.builder("wireToA").build();
-        final Wire wireToB = Wire.builder("wireToB").build();
-        final Wire wireToC = Wire.builder("wireToC").build();
-        final Wire wireToD = Wire.builder("wireToD").build();
+        final Wire<Integer> wireToA =
+                Wire.builder("wireToA").withOutputType(Integer.class).build();
+        final Wire<Integer> wireToB =
+                Wire.builder("wireToB").withOutputType(Integer.class).build();
+        final Wire<Integer> wireToC =
+                Wire.builder("wireToC").withOutputType(Integer.class).build();
+        final Wire<Integer> wireToD =
+                Wire.builder("wireToD").withOutputType(Integer.class).build();
 
-        final WireChannel<Integer> channelToA = wireToA.createChannel(Integer.class);
-        final WireChannel<Integer> channelToB = wireToB.createChannel(Integer.class);
-        final WireChannel<Integer> channelToC = wireToC.createChannel(Integer.class);
-        final WireChannel<Integer> channelToD = wireToD.createChannel(Integer.class);
+        final WireChannel<Integer, Integer> channelToA = wireToA.createChannel();
+        final WireChannel<Integer, Integer> channelToB = wireToB.createChannel();
+        final WireChannel<Integer, Integer> channelToC = wireToC.createChannel();
+        final WireChannel<Integer, Integer> channelToD = wireToD.createChannel();
 
-        final Consumer<Integer> handlerA = x -> {
+        final Function<Integer, Integer> handlerA = x -> {
             if (x > 0) {
                 countA.set(hash32(x, countA.get()));
-                channelToB.put(x);
+                return x;
             } else {
                 negativeCountA.set(hash32(x, negativeCountA.get()));
                 // negative values are values that have been passed around the loop
                 // Don't pass them on again or else we will get an infinite loop
+                return null;
             }
         };
 
-        final Consumer<Integer> handlerB = x -> {
+        final Function<Integer, Integer> handlerB = x -> {
             countB.set(hash32(x, countB.get()));
-            channelToC.put(x);
+            return x;
         };
 
-        final Consumer<Integer> handlerC = x -> {
+        final Function<Integer, Integer> handlerC = x -> {
             countC.set(hash32(x, countC.get()));
-            channelToD.put(x);
+            return x;
         };
 
-        final Consumer<Integer> handlerD = x -> {
+        final Function<Integer, Integer> handlerD = x -> {
             countD.set(hash32(x, countD.get()));
             if (x % 7 == 0) {
-                channelToA.put(-x);
+                return -x;
+            } else {
+                return null;
             }
         };
+
+        wireToA.solderTo(channelToB);
+        wireToB.solderTo(channelToC);
+        wireToC.solderTo(channelToD);
+        wireToD.solderTo(channelToA);
 
         channelToA.bind(handlerA);
         channelToB.bind(handlerB);
@@ -733,14 +778,17 @@ class SequentialWireTests {
         final Consumer<Boolean> booleanHandler = x -> wireValue.set((x ? -1 : 1) * wireValue.get());
         final Consumer<String> stringHandler = x -> wireValue.set(hash32(wireValue.get(), x.hashCode()));
 
-        final Wire wire = Wire.builder("test").withConcurrency(false).build();
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
+                .withConcurrency(false)
+                .build();
 
-        final WireChannel<Integer> integerChannel =
-                wire.createChannel(Integer.class).bind(integerHandler);
-        final WireChannel<Boolean> booleanChannel =
-                wire.createChannel(Boolean.class).bind(booleanHandler);
-        final WireChannel<String> stringChannel =
-                wire.createChannel(String.class).bind(stringHandler);
+        final WireChannel<Integer, Void> integerChannel =
+                wire.createChannel().withInputType(Integer.class).bind(integerHandler);
+        final WireChannel<Boolean, Void> booleanChannel =
+                wire.createChannel().withInputType(Boolean.class).bind(booleanHandler);
+        final WireChannel<String, Void> stringChannel =
+                wire.createChannel().withInputType(String.class).bind(stringHandler);
 
         assertEquals(-1, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
@@ -784,13 +832,16 @@ class SequentialWireTests {
 
         final Consumer<Integer> handler2 = x -> wireValue.set(hash32(wireValue.get(), -x));
 
-        final Wire wire = Wire.builder("test")
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .build();
 
-        final WireChannel<Integer> channel1 = wire.createChannel(Integer.class).bind(handler1);
-        final WireChannel<Integer> channel2 = wire.createChannel(Integer.class).bind(handler2);
+        final WireChannel<Integer, Void> channel1 =
+                wire.createChannel().withInputType(Integer.class).bind(handler1);
+        final WireChannel<Integer, Void> channel2 =
+                wire.createChannel().withInputType(Integer.class).bind(handler2);
 
         assertEquals(0, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
@@ -864,18 +915,20 @@ class SequentialWireTests {
 
         final ObjectCounter backpressure = new BackpressureObjectCounter(11, Duration.ofMillis(1));
 
-        final Wire wireA = Wire.builder("testA")
+        final Wire<Void> wireA = Wire.builder("testA")
+                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withOnRamp(backpressure)
                 .build();
 
-        final Wire wireB = Wire.builder("testB")
+        final Wire<Void> wireB = Wire.builder("testB")
+                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withOffRamp(backpressure)
                 .build();
 
-        final WireChannel<Integer> channelA = wireA.createChannel();
-        final WireChannel<Integer> channelB = wireB.createChannel();
+        final WireChannel<Integer, Void> channelA = wireA.createChannel();
+        final WireChannel<Integer, Void> channelB = wireB.createChannel();
 
         final Consumer<Integer> handlerA = x -> {
             wireValueA.set(hash32(wireValueA.get(), -x));
@@ -984,12 +1037,14 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire wire = Wire.builder("test")
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .withFlushingEnabled(true)
                 .build();
-        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        final WireChannel<Integer, Void> channel =
+                wire.createChannel().withInputType(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -1085,12 +1140,14 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire wire = Wire.builder("test")
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .withFlushingEnabled(true)
                 .build();
-        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        final WireChannel<Integer, Void> channel =
+                wire.createChannel().withInputType(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -1196,7 +1253,8 @@ class SequentialWireTests {
 
     @Test
     void flushDisabledTest() {
-        final Wire wire = Wire.builder("test")
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(10)
                 .build();
@@ -1217,11 +1275,13 @@ class SequentialWireTests {
 
         final AtomicInteger exceptionCount = new AtomicInteger();
 
-        final Wire wire = Wire.builder("test")
+        final Wire<Void> wire = Wire.builder("test")
+                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUncaughtExceptionHandler((t, e) -> exceptionCount.incrementAndGet())
                 .build();
-        final WireChannel<Integer> channel = wire.createChannel(Integer.class).bind(handler);
+        final WireChannel<Integer, Void> channel =
+                wire.createChannel().withInputType(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
         assertEquals("test", wire.getName());
 
@@ -1248,28 +1308,31 @@ class SequentialWireTests {
 
         // create 3 wires with the following bindings:
         // a -> b -> c -> latch
-        final Wire a = Wire.builder("a")
+        final Wire<Void> a = Wire.builder("a")
+                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build();
-        final Wire b = Wire.builder("b")
+        final Wire<Void> b = Wire.builder("b")
+                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build();
-        final Wire c = Wire.builder("c")
+        final Wire<Void> c = Wire.builder("c")
+                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build();
 
-        final WireChannel<Object> channelA = a.createChannel();
-        final WireChannel<Object> channelB = b.createChannel();
-        final WireChannel<Object> channelC = c.createChannel();
+        final WireChannel<Object, Void> channelA = a.createChannel();
+        final WireChannel<Object, Void> channelB = b.createChannel();
+        final WireChannel<Object, Void> channelC = c.createChannel();
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -1284,7 +1347,7 @@ class SequentialWireTests {
         });
 
         // each wire has a capacity of 1, so we can have 1 task waiting on each wire
-        // insert an task into C, which will start executing and waiting on the latch
+        // insert a task into C, which will start executing and waiting on the latch
         channelC.put(Object.class);
         // fill up the queues for each wire
         channelC.put(Object.class);
@@ -1305,4 +1368,6 @@ class SequentialWireTests {
 
         pool.shutdown();
     }
+
+    // TODO soldering tests
 }

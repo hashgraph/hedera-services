@@ -16,20 +16,19 @@
 
 package com.swirlds.common.wiring.components;
 
-import java.util.function.Consumer;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Function;
 
-public class WiringBenchmarkEventVerifier implements Consumer<WiringBenchmarkEvent> {
-    private final Consumer<WiringBenchmarkEvent> output;
+public class WiringBenchmarkEventVerifier implements Function<WiringBenchmarkEvent, WiringBenchmarkEvent> {
 
-    public WiringBenchmarkEventVerifier(Consumer<WiringBenchmarkEvent> output) {
-        this.output = output;
-    }
+    public WiringBenchmarkEventVerifier() {}
 
     @Override
-    public void accept(WiringBenchmarkEvent event) {
+    @NonNull
+    public WiringBenchmarkEvent apply(@NonNull final WiringBenchmarkEvent event) {
         // Pretend like we did verification by sleeping for a few microseconds
         busySleep(2000);
-        output.accept(event);
+        return event;
     }
 
     public static void busySleep(long nanos) {

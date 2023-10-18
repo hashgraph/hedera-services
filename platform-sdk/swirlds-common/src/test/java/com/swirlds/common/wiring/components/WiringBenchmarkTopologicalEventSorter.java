@@ -16,21 +16,21 @@
 
 package com.swirlds.common.wiring.components;
 
-import java.util.function.Consumer;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Function;
 
-public class WiringBenchmarkTopologicalEventSorter implements Consumer<WiringBenchmarkEvent> {
+public class WiringBenchmarkTopologicalEventSorter implements Function<WiringBenchmarkEvent, WiringBenchmarkEvent> {
     private static final int PRINT_FREQUENCY = 10_000_000;
-    private final WiringBenchmarkEventPool eventPool;
     private long lastTimestamp;
     private long checkSum;
 
-    public WiringBenchmarkTopologicalEventSorter(WiringBenchmarkEventPool eventPool) {
-        this.eventPool = eventPool;
+    public WiringBenchmarkTopologicalEventSorter() {
         this.checkSum = 0;
     }
 
+    @NonNull
     @Override
-    public void accept(WiringBenchmarkEvent event) {
+    public WiringBenchmarkEvent apply(@NonNull final WiringBenchmarkEvent event) {
         final long number = event.number();
         checkSum += number + 1; // make 0 contribute to the sum
         if (number % PRINT_FREQUENCY == 0) {
@@ -42,7 +42,7 @@ public class WiringBenchmarkTopologicalEventSorter implements Consumer<WiringBen
             }
             lastTimestamp = curTimestamp;
         }
-        eventPool.checkin(event);
+        return event;
     }
 
     public long getCheckSum() {

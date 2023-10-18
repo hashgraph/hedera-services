@@ -25,8 +25,10 @@ import java.util.function.Consumer;
 
 /**
  * Wires two or more components together.
+ *
+ * @param <O> the output time of the wire (use {@link Void}) for a wire with no output type)
  */
-public abstract class Wire {
+public abstract class Wire<O> {
 
     /**
      * Get a new wire builder.
@@ -35,8 +37,8 @@ public abstract class Wire {
      *             Must only contain alphanumeric characters, underscores, and hyphens (enforced by framework).
      * @return a new wire builder
      */
-    public static WireBuilder builder(@NonNull final String name) {
-        return new WireBuilder(name);
+    public static <O> WireBuilder<O> builder(@NonNull final String name) {
+        return new WireBuilder<>(name);
     }
 
     /**
@@ -72,30 +74,76 @@ public abstract class Wire {
     public abstract long getUnprocessedTaskCount();
 
     /**
-     * Get a wire channel for this wire. In order to use this channel, a handler must be bound via
+     * Get a wire channel for inserting data into this wire. In order to use this channel, a handler must be bound via
      * {@link WireChannel#bind(Consumer)}.
      *
-     * @param <T> the type of data handled by the handler
+     * @param <I> the type of data that is inserted into the channel
      * @return the channel
      */
     @NonNull
-    public final <T> WireChannel<T> createChannel() {
+    public final <I> WireChannel<I, O> createChannel() {
         return new WireChannel<>(this);
     }
 
+    // TODO perhaps rename to solder
+
     /**
-     * Get a wire channel for this wire. In order to use this channel, a handler must be bound via
-     * {@link WireChannel#bind(Consumer)}.
+     * Specify a channel where output data should be passed. This forwarding operation respects back pressure.
      *
-     * @param clazz the type of data handled by the handler, convenience argument for scenarios where the compiler can't
-     *              figure out generic types
-     * @param <T>   the type of data handled by the handler
-     * @return the channel
+     * <p>
+     * "Solder" in this context is pronounced "sodder". It rhymes with "odder". (Don't blame me, English is wierd.
+     * Anyways, we stole this word from the French.) Soldering is the act of connecting two wires together, usually by
+     * melting a metal alloy between them. See https://en.wikipedia.org/wiki/Soldering
+     *
+     * <p>
+     * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations
+     * after data has been inserted into the wire is not thread safe and has undefined behavior.
+     *
+     * @param channel the channel to forward output data to
+     * @return this
      */
     @NonNull
-    public final <T> WireChannel<T> createChannel(@NonNull final Class<T> clazz) {
-        return new WireChannel<>(this);
+    public final Wire<O> solderTo(@NonNull final WireChannel<O, ?> channel) { // TODO accept vararg array
+        return solderTo(channel, false);
     }
+
+    /**
+     * Specify a channel where output data should be forwarded.
+     *
+     * <p>
+     * "Solder" in this context is pronounced "sodder". It rhymes with "odder". (Don't blame me, English is wierd.
+     * Anyways, we stole this word from the French.) Soldering is the act of connecting two wires together, usually by
+     * melting a metal alloy between them. See https://en.wikipedia.org/wiki/Soldering
+     *
+     * <p>
+     * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations
+     * after data has been inserted into the wire is not thread safe and has undefined behavior.
+     *
+     * @param channel the channel to forward output data to
+     * @param inject  if true then the data is injected and ignores back pressure. If false then back pressure is
+     *                respected.
+     * @return this
+     */
+    @NonNull
+    public abstract Wire<O> solderTo(@NonNull final WireChannel<O, ?> channel, final boolean inject);
+
+    /**
+     * Specify a consumer where output data should be forwarded.
+     *
+     * <p>
+     * "Solder" in this context is pronounced "sodder". It rhymes with "odder". (Don't blame me, English is wierd.
+     * Anyways, we stole this word from the French.) Soldering is the act of connecting two wires together, usually by
+     * melting a metal alloy between them. See https://en.wikipedia.org/wiki/Soldering
+     *
+     * <p>
+     * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations
+     * after data has been inserted into the wire is not thread safe and has undefined behavior.
+     *
+     * @param handler the consumer to forward output data to
+     * @return this
+     */
+    @NonNull
+    public abstract Wire<O> solderTo(@NonNull final Consumer<O> handler);
 
     /**
      * Flush all data in the wire. Blocks until all data currently in flight has been processed.
@@ -132,6 +180,13 @@ public abstract class Wire {
      *                                       was unset, default is false)
      */
     public abstract void interruptableFlush() throws InterruptedException;
+
+    /**
+     * Forward output data to any channels that are listening for it.
+     *
+     * @param data the output data to forward
+     */
+    protected abstract void forwardOutput(@NonNull final O data);
 
     /**
      * Add a task to the wire. May block if back pressure is enabled. Similar to

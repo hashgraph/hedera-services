@@ -20,15 +20,17 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * An object that can insert work to be handled on a wire.
  *
- * @param <T> the type of object that the work handles
+ * @param <I> the type of data that passes into the channel
+ * @param <O> the type of data that comes out of the channel
  */
-public class WireChannel<T> {
+public class WireChannel<I, O> {
 
-    private final Wire wire;
+    private final Wire<O> wire;
     private Consumer<Object> handler;
 
     /**
@@ -36,8 +38,21 @@ public class WireChannel<T> {
      *
      * @param wire the wire to insert data into
      */
-    WireChannel(@NonNull final Wire wire) {
+    WireChannel(@NonNull final Wire<O> wire) {
         this.wire = Objects.requireNonNull(wire);
+    }
+
+    /**
+     * Convenience method for creating a channel with a specific input type. This method is useful for when the compiler
+     * can't figure out the generic type of the channel. This method is a no op.
+     *
+     * @param inputType the input type of the channel
+     * @param <X>       the input type of the channel
+     * @return this
+     */
+    @SuppressWarnings("unchecked")
+    public <X> WireChannel<X, O> withInputType(@NonNull final Class<X> inputType) {
+        return (WireChannel<X, O>) this;
     }
 
     /**
@@ -50,11 +65,35 @@ public class WireChannel<T> {
      */
     @SuppressWarnings("unchecked")
     @NonNull
-    public WireChannel<T> bind(@NonNull final Consumer<T> handler) {
+    public WireChannel<I, O> bind(@NonNull final Consumer<I> handler) {
         if (this.handler != null) {
             throw new IllegalStateException("Handler already bound");
         }
         this.handler = (Consumer<Object>) Objects.requireNonNull(handler);
+
+        return this;
+    }
+
+    /**
+     * Bind this inserter to a handler. A handler must be bound to this inserter prior to inserting data via any
+     * method.
+     *
+     * @param handler the handler to bind to this inserter
+     * @return this
+     * @throws IllegalStateException if a handler is already bound and this method is called a second time
+     */
+    @SuppressWarnings("unchecked")
+    @NonNull
+    public WireChannel<I, O> bind(@NonNull final Function<I, O> handler) {
+        if (this.handler != null) {
+            throw new IllegalStateException("Handler already bound");
+        }
+        this.handler = i -> {
+            final O output = handler.apply((I) i);
+            if (output != null) {
+                wire.forwardOutput(output);
+            }
+        };
 
         return this;
     }
@@ -65,7 +104,7 @@ public class WireChannel<T> {
      *
      * @param data the data to be processed by the wire
      */
-    public void put(@Nullable final T data) {
+    public void put(@Nullable final I data) {
         wire.put(handler, data);
     }
 
@@ -76,7 +115,7 @@ public class WireChannel<T> {
      * @param data the data to be processed by the wire
      * @throws InterruptedException if the thread is interrupted while waiting for capacity to become available
      */
-    public void interruptablePut(@Nullable final T data) throws InterruptedException {
+    public void interruptablePut(@Nullable final I data) throws InterruptedException {
         wire.interruptablePut(handler, data);
     }
 
@@ -87,7 +126,7 @@ public class WireChannel<T> {
      * @param data the data to be processed by the wire
      * @return true if the data was accepted, false otherwise
      */
-    public boolean offer(@Nullable final T data) {
+    public boolean offer(@Nullable final I data) {
         return wire.offer(handler, data);
     }
 
@@ -98,7 +137,7 @@ public class WireChannel<T> {
      *
      * @param data the data to be processed by the wire
      */
-    public void inject(@Nullable final T data) {
+    public void inject(@Nullable final I data) {
         wire.inject(handler, data);
     }
 }
