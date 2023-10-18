@@ -33,7 +33,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.Wire;
-import com.swirlds.common.wiring.WireBuilder;
 import com.swirlds.common.wiring.WireChannel;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -1251,19 +1250,19 @@ class SequentialWireTests {
         final Wire a = Wire.builder("a")
                 .withConcurrency(false)
                 .withScheduledTaskCapacity(1)
-                .withBackpressureSleepDuration(Duration.ofMillis(1))
+                .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build();
         final Wire b = Wire.builder("b")
                 .withConcurrency(false)
                 .withScheduledTaskCapacity(1)
-                .withBackpressureSleepDuration(Duration.ofMillis(1))
+                .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build();
         final Wire c = Wire.builder("c")
                 .withConcurrency(false)
                 .withScheduledTaskCapacity(1)
-                .withBackpressureSleepDuration(Duration.ofMillis(1))
+                .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build();
 
@@ -1275,7 +1274,7 @@ class SequentialWireTests {
 
         channelA.bind(channelB::put);
         channelB.bind(channelC::put);
-        channelC.bind(o-> {
+        channelC.bind(o -> {
             try {
                 latch.await();
             } catch (InterruptedException e) {
@@ -1292,7 +1291,7 @@ class SequentialWireTests {
         channelB.put(Object.class);
 
         completeBeforeTimeout(
-                ()->{
+                () -> {
                     // release the latch, that should allow all tasks to complete
                     latch.countDown();
                     // if tasks are completing, none of the wires should block
@@ -1301,7 +1300,8 @@ class SequentialWireTests {
                     channelC.put(Object.class);
                 },
                 Duration.ofSeconds(1),
-                "deadlock"
-        );
+                "deadlock");
+
+        pool.shutdown();
     }
 }
