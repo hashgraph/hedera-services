@@ -413,11 +413,11 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 .addBytesPerTransaction(baseSize)
                 .addRamByteSeconds((rbsDelta + slotRbsDelta) > 0 ? rbsDelta + slotRbsDelta : 0)
                 .calculate();
-        System.out.println("Fees.networkFee: " + fees.networkFee() + " txBody: " + body);
-        return fees;
-        //        return feeCalculator
-        //                .addBytesPerTransaction(baseSize)
-        //                .addRamByteSeconds((rbsDelta + slotRbsDelta) > 0 ? rbsDelta + slotRbsDelta : 0)
-        //                .calculate();
+        //        System.out.println("Fees.networkFee: " + fees.networkFee() + " txBody: " + body);
+        //        return fees;
+        return feeCalculator
+                .addBytesPerTransaction(baseSize)
+                .addRamByteSeconds((rbsDelta + slotRbsDelta) > 0 ? rbsDelta + slotRbsDelta : 0)
+                .calculate();
     }
 }
