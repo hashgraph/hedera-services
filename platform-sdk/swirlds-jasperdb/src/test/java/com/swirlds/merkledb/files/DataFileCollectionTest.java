@@ -389,7 +389,7 @@ class DataFileCollectionTest {
     @EnumSource(FilesTestType.class)
     void merge(final FilesTestType testType) throws Exception {
         final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
-        final DataFileCompactor fileCompactor = createFileCompactor("merge", fileCollection);
+        final DataFileCompactor fileCompactor = createFileCompactor("merge", fileCollection, testType);
         final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
         final AtomicBoolean mergeComplete = new AtomicBoolean(false);
         final int NUM_OF_KEYS = 1000;
@@ -555,7 +555,7 @@ class DataFileCollectionTest {
     @EnumSource(FilesTestType.class)
     void merge2(final FilesTestType testType) throws Exception {
         final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
-        final DataFileCompactor fileCompactor = createFileCompactor("merge2", fileCollection);
+        final DataFileCompactor fileCompactor = createFileCompactor("merge2", fileCollection, testType);
         final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
         final AtomicBoolean mergeComplete = new AtomicBoolean(false);
         // start compaction paused so that we can test pausing
@@ -636,8 +636,9 @@ class DataFileCollectionTest {
                 "unexpected # of files");
     }
 
-    private static DataFileCompactor createFileCompactor(String storeName, DataFileCollection<long[]> fileCollection) {
-        return new DataFileCompactor(storeName, fileCollection) {
+    private static DataFileCompactor createFileCompactor(
+            String storeName, DataFileCollection<long[]> fileCollection, FilesTestType testType) {
+        return new DataFileCompactor(storeName, fileCollection, storedOffsetsMap.get(testType), null, null, null) {
             @Override
             int getMinNumberOfFilesToCompact() {
                 return 2;
@@ -691,7 +692,8 @@ class DataFileCollectionTest {
         // reopen
         final DataFileCollection<long[]> fileCollection2 =
                 new DataFileCollection<>(dbDir, storeName, testType.dataItemSerializer, null);
-        final DataFileCompactor fileCompactor = new DataFileCompactor(storeName, fileCollection2);
+        final DataFileCompactor fileCompactor =
+                new DataFileCompactor(storeName, fileCollection2, storedOffsetsMap.get(testType), null, null, null);
         fileCollectionMap.put(testType, fileCollection2);
         // check 10 files were opened and data is correct
         assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files");
@@ -760,7 +762,8 @@ class DataFileCollectionTest {
         final DataFileCollection<long[]> fileCollection =
                 new DataFileCollection<>(dbDir, storeName, FilesTestType.fixed.dataItemSerializer, null);
         final LongListHeap storedOffsets = new LongListHeap(5000);
-        final DataFileCompactor compactor = new DataFileCompactor(storeName, fileCollection);
+        final DataFileCompactor compactor =
+                new DataFileCompactor(storeName, fileCollection, storedOffsets, null, null, null);
         populateDataFileCollection(FilesTestType.fixed, fileCollection, storedOffsets);
 
         // a flag to make sure that `compactFiles` th

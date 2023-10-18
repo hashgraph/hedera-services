@@ -17,6 +17,7 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.merkledb.collections.LongListOffHeap;
+import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -40,19 +41,20 @@ public class KeyValueStoreBench extends BaseBench {
 
     @Benchmark
     public void merge() throws Exception {
-        beforeTest("mergeBench");
+        String storeName = "mergeBench";
+        beforeTest(storeName);
 
         final BenchmarkRecord[] map = new BenchmarkRecord[verify ? maxKey : 0];
+        LongListOffHeap keyToDiskLocationIndex = new LongListOffHeap();
         final var store = new MemoryIndexDiskKeyValueStore<>(
                 getTestDir(),
-                "mergeBench",
+                storeName,
                 null,
                 new BenchmarkRecordSerializer(),
                 (key, dataLocation, dataValue) -> {},
-                new LongListOffHeap(),
-                null,
-                null,
-                null);
+                keyToDiskLocationIndex);
+        final DataFileCompactor compactor =
+                new DataFileCompactor(storeName, store.getFileCollection(), keyToDiskLocationIndex, null, null, null);
         System.out.println();
 
         // Write files
@@ -72,7 +74,7 @@ public class KeyValueStoreBench extends BaseBench {
 
         // Merge files
         start = System.currentTimeMillis();
-        store.compact();
+        compactor.compact();
         System.out.println("Compacted files in " + (System.currentTimeMillis() - start) + "ms");
 
         // Verify merged content

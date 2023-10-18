@@ -23,8 +23,9 @@ import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.merkledb.Compactible;
+import com.swirlds.merkledb.FileStatisticAware;
 import com.swirlds.merkledb.Snapshotable;
+import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
 import com.swirlds.merkledb.collections.LongListOffHeap;
@@ -32,7 +33,6 @@ import com.swirlds.merkledb.collections.OffHeapUser;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
-import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.DataFileReader;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
@@ -48,7 +48,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.BiConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
@@ -59,14 +58,15 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  * It maps a VirtualKey to a long value. This allows very large maps with minimal RAM usage and the
  * best performance profile as by using an in memory index we avoid the need for random disk writes.
  * Random disk writes are horrible performance wise in our testing.
- *
+ * <p>
  * This implementation depends on good hashCode() implementation on the keys, if there are too
  * many hash collisions the performance can get bad.
- *
+ * <p>
  * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
  * readers while writing is happening.</b>
  */
-public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Snapshotable, Compactible, OffHeapUser {
+public class HalfDiskHashMap<K extends VirtualKey>
+        implements AutoCloseable, Snapshotable, FileStatisticAware, OffHeapUser {
     private static final Logger logger = LogManager.getLogger(HalfDiskHashMap.class);
 
     /** The version number for format of current data files */
@@ -103,8 +103,6 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     /** DataFileCollection manages the files storing the buckets on disk */
     private final DataFileCollection<Bucket<K>> fileCollection;
 
-    /** DataFileCompactor manages the compaction of the data store files */
-    private final DataFileCompactor fileCompactor;
     /**
      * This is the number of buckets needed to store mapSize entries if we ere only LOADING_FACTOR
      * percent full
@@ -135,20 +133,6 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     /** MerkleDb settings */
     private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
-    /**
-     * A function that will be called to report the duration of the compaction
-     */
-    private final BiConsumer<Integer, Long> reportDurationMetricFunction;
-    /**
-     * A function that will be called to report the amount of space saved by the compaction
-     */
-    private final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction;
-
-    /**
-     * A function that updates statistics of total usage of disk space and off-heap space
-     */
-    private final Runnable updateStatsFunction;
-
     /** Executor for parallel bucket reads/updates in {@link #endWriting()} */
     private static final ExecutorService flushExecutor = Executors.newFixedThreadPool(
             config.getNumHalfDiskHashMapFlushThreads(),
@@ -175,9 +159,6 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
      *                                       possible. This will come with a significant performance cost, especially for writing. It
      *                                       is possible to load a data source that was written with memory index with disk based
      *                                       index and vice versa.
-     * @param reportDurationMetricFunction  A function that will be called to report the duration of the compaction
-     * @param reportSavedSpaceMetricFunction A function that will be called to report the amount of space saved by the compaction
-     * @param updateStatsFunction A function that updates statistics of total usage of disk space and off-heap space
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
     public HalfDiskHashMap(
@@ -186,16 +167,10 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
-            final boolean preferDiskBasedIndex,
-            @Nullable BiConsumer<Integer, Long> reportDurationMetricFunction,
-            @Nullable BiConsumer<Integer, Double> reportSavedSpaceMetricFunction,
-            @Nullable Runnable updateStatsFunction)
+            final boolean preferDiskBasedIndex)
             throws IOException {
         this.mapSize = mapSize;
         this.storeName = storeName;
-        this.reportDurationMetricFunction = reportDurationMetricFunction;
-        this.reportSavedSpaceMetricFunction = reportSavedSpaceMetricFunction;
-        this.updateStatsFunction = updateStatsFunction;
         Path indexFile = storeDir.resolve(storeName + BUCKET_INDEX_FILENAME_SUFFIX);
         // create bucket serializer
         this.bucketSerializer = new BucketSerializer<>(keySerializer);
@@ -270,7 +245,6 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
         // create file collection
         fileCollection =
                 new DataFileCollection<>(storeDir, storeName, legacyStoreName, bucketSerializer, loadedDataCallback);
-        fileCompactor = new DataFileCompactor(storeName, fileCollection);
     }
 
     /**
@@ -280,44 +254,6 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
      */
     public KeySerializer<K> getKeySerializer() {
         return bucketSerializer.getKeySerializer();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean doCompact() throws IOException, InterruptedException {
-        return fileCompactor.compact(
-                bucketIndexToBucketLocation, reportDurationMetricFunction, reportSavedSpaceMetricFunction);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Runnable getUpdateTotalStatsFunction() {
-        return updateStatsFunction;
-    }
-
-    /**
-     * Puts this store compaction on hold, if in progress, until {@link #resumeCompaction()} is called.
-     * If compaction is not in progress, calling this method will prevent new compactions from
-     * starting until resumed.
-     *
-     * @throws IOException If an I/O error occurs.
-     */
-    public void pauseCompaction() throws IOException {
-        fileCompactor.pauseCompaction();
-    }
-
-    /**
-     * Resumes this store compaction if it was in progress, or unblocks a new compaction if it was
-     * blocked to start because of {@link #pauseCompaction()}.
-     *
-     * @throws IOException If an I/O error occurs.
-     */
-    public void resumeCompaction() throws IOException {
-        fileCompactor.resumeCompaction();
     }
 
     /** {@inheritDoc} */
@@ -608,6 +544,14 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
             }
         }
         logger.info(MERKLE_DB.getMarker(), "========================================================");
+    }
+
+    public DataFileCollection<Bucket<K>> getFileCollection() {
+        return fileCollection;
+    }
+
+    public CASableLongIndex getBucketIndexToBucketLocation() {
+        return bucketIndexToBucketLocation;
     }
 
     // =================================================================================================================

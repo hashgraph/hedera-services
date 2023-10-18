@@ -96,16 +96,14 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
 
         // Collection of database files and index
         final var serializer = new ExampleFixedSizeDataSerializer();
-        final var index = new MemoryIndexDiskKeyValueStore<>(
+        LongListOffHeap storeIndex = new LongListOffHeap();
+        final var store = new MemoryIndexDiskKeyValueStore<>(
                 testDirectory.resolve("megaMergeHammerTest"),
                 "megaMergeHammerTest",
                 null,
                 serializer,
                 (key, dataLocation, dataValue) -> {},
-                new LongListOffHeap(),
-                null,
-                null,
-                null);
+                storeIndex);
 
         // This is just a nice little output that you can copy and paste to watch the database
         // directory do its thing
@@ -133,12 +131,12 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
         // at any time, or fails for some other reason, the failure reason will be extractable from
         // the future.
         final var modifier =
-                new FakeVirtualMap(index, chanceOfAddElement, chanceOfDeleteElement, numIterationsPerFlush);
+                new FakeVirtualMap(store, chanceOfAddElement, chanceOfDeleteElement, numIterationsPerFlush);
         final Future<Void> modifierFuture = executor.submit(modifier);
 
         // Start a thread for merging files together. The future will throw an exception if one
         // occurs on the thread.
-        final Compactor compactor = new Compactor(index);
+        final Compactor compactor = new Compactor(store, storeIndex);
         final Future<Void> mergeFuture = executor.submit(compactor);
 
         // We need to terminate the test if an error occurs in fail-fast manner. So we will keep a
@@ -175,7 +173,7 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
                 (ThrowingSupplier<Void>) modifierFuture::get, "Should not throw, something failed while modifying.");
         assertDoesNotThrow(
                 (ThrowingSupplier<Void>) mergeFuture::get, "Should not throw, something failed while merging.");
-        index.close();
+        store.close();
     }
 
     /**
@@ -467,17 +465,18 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
     /** Merges files together. */
     private static final class Compactor extends Worker {
         private int iteration = 1;
-        private final MemoryIndexDiskKeyValueStore<long[]> coll;
+        private final DataFileCompactor compactor;
 
-        Compactor(final MemoryIndexDiskKeyValueStore<long[]> coll) {
-            this.coll = coll;
+        Compactor(final MemoryIndexDiskKeyValueStore<long[]> coll, LongListOffHeap storeIndex) {
+            compactor = new DataFileCompactor(
+                    "megaMergeHammerTest", coll.getFileCollection(), storeIndex, null, null, null);
         }
 
         @Override
         protected void doWork() throws Exception {
 
             if (iteration % 5 == 0) {
-                coll.compact();
+                compactor.compact();
             }
             iteration++;
         }

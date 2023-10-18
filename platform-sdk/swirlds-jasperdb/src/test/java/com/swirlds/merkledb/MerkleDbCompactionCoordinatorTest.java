@@ -30,12 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
-import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
-import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.VirtualHashRecord;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.merkledb.files.DataFileCompactor;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -56,13 +51,13 @@ class MerkleDbCompactionCoordinatorTest {
     private MerkleDbStatisticsUpdater statisticsUpdater;
 
     @Mock
-    private HalfDiskHashMap<VirtualKey> objectKeyToPath;
+    private DataFileCompactor objectKeyToPath;
 
     @Mock
-    private MemoryIndexDiskKeyValueStore<VirtualHashRecord> hashStoreDisk;
+    private DataFileCompactor hashStoreDisk;
 
     @Mock
-    private MemoryIndexDiskKeyValueStore<VirtualLeafRecord<VirtualKey, VirtualValue>> pathToHashKeyValue;
+    private DataFileCompactor pathToHashKeyValue;
 
     private MerkleDbCompactionCoordinator coordinator;
 
@@ -175,9 +170,9 @@ class MerkleDbCompactionCoordinatorTest {
     void testCompactionCancelled() throws IOException, InterruptedException {
         CountDownLatch compactLatch = new CountDownLatch(1);
         CountDownLatch testLatch = new CountDownLatch(3);
-        initCompactibleMock(objectKeyToPath, nextBoolean(), testLatch, compactLatch);
-        initCompactibleMock(pathToHashKeyValue, nextBoolean(), testLatch, compactLatch);
-        initCompactibleMock(hashStoreDisk, nextBoolean(), testLatch, compactLatch);
+        initCompactorMock(objectKeyToPath, nextBoolean(), testLatch, compactLatch);
+        initCompactorMock(pathToHashKeyValue, nextBoolean(), testLatch, compactLatch);
+        initCompactorMock(hashStoreDisk, nextBoolean(), testLatch, compactLatch);
 
         coordinator.compactDiskStoreForObjectKeyToPathAsync();
         coordinator.compactDiskStoreForHashesAsync();
@@ -221,7 +216,7 @@ class MerkleDbCompactionCoordinatorTest {
 
         CountDownLatch compactLatch = new CountDownLatch(1);
         CountDownLatch testLatch = new CountDownLatch(1);
-        initCompactibleMock(pathToHashKeyValue, nextBoolean(), testLatch, compactLatch);
+        initCompactorMock(pathToHashKeyValue, nextBoolean(), testLatch, compactLatch);
 
         coordinator.compactPathToKeyValueAsync();
 
@@ -251,14 +246,14 @@ class MerkleDbCompactionCoordinatorTest {
     }
 
     private void testCompaction(
-            Compactible compactibleToTest,
+            DataFileCompactor compactorToTest,
             Runnable methodCall,
             boolean expectCompactionStarted,
             boolean compactionPassed)
             throws IOException, InterruptedException {
         CountDownLatch testLatch = new CountDownLatch(1);
         CountDownLatch compactLatch = new CountDownLatch(1);
-        initCompactibleMock(compactibleToTest, compactionPassed, testLatch, compactLatch);
+        initCompactorMock(compactorToTest, compactionPassed, testLatch, compactLatch);
 
         // run twice to make sure that the second call is discarded because one compaction is already in progress
         methodCall.run();
@@ -268,20 +263,20 @@ class MerkleDbCompactionCoordinatorTest {
         }
         compactLatch.countDown();
 
-        assertCompactable(compactibleToTest, expectCompactionStarted);
+        assertCompactable(compactorToTest, expectCompactionStarted);
 
         reset(objectKeyToPath, pathToHashKeyValue, hashStoreDisk, statisticsUpdater);
-        initCompactibleMock(compactibleToTest, compactionPassed, testLatch, compactLatch);
+        initCompactorMock(compactorToTest, compactionPassed, testLatch, compactLatch);
 
         // the second time it should succeed as well
         methodCall.run();
-        assertCompactable(compactibleToTest, expectCompactionStarted);
+        assertCompactable(compactorToTest, expectCompactionStarted);
     }
 
-    private void testCompactionFailed(Compactible compactibleToTest, Runnable methodCall)
+    private void testCompactionFailed(DataFileCompactor compactorToTest, Runnable methodCall)
             throws IOException, InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        when(compactibleToTest.compact()).thenAnswer(invocation -> {
+        when(compactorToTest.compact()).thenAnswer(invocation -> {
             assertAwait(latch);
             throw new RuntimeException("testCompactionFailed");
         });
@@ -292,7 +287,7 @@ class MerkleDbCompactionCoordinatorTest {
         assertEventuallyDoesNotThrow(
                 () -> {
                     try {
-                        verify(compactibleToTest).compact();
+                        verify(compactorToTest).compact();
                     } catch (IOException | InterruptedException e) {
                         throw new RuntimeException(e);
                     }
@@ -307,25 +302,25 @@ class MerkleDbCompactionCoordinatorTest {
     }
 
     @SuppressWarnings("unchecked")
-    private void initCompactibleMock(
-            Compactible compactibleToTest,
+    private void initCompactorMock(
+            DataFileCompactor compactorToTest,
             boolean compactionPassed,
             CountDownLatch testLatch,
             CountDownLatch compactLatch)
             throws IOException, InterruptedException {
-        when(compactibleToTest.compact()).thenAnswer(invocation -> {
+        when(compactorToTest.compact()).thenAnswer(invocation -> {
             testLatch.countDown();
             assertAwait(compactLatch);
             return compactionPassed;
         });
     }
 
-    private void assertCompactable(Compactible compactibleToTest, boolean expectCompactionStarted) {
+    private void assertCompactable(DataFileCompactor compactorToTest, boolean expectCompactionStarted) {
         assertEventuallyDoesNotThrow(
                 () -> {
                     VerificationMode compactionVerificationMode = expectCompactionStarted ? times(1) : never();
                     try {
-                        verify(compactibleToTest, compactionVerificationMode).compact();
+                        verify(compactorToTest, compactionVerificationMode).compact();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }

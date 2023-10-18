@@ -80,23 +80,19 @@ class CompactionInterruptTest {
         String tableName = "mergeThenInterrupt";
         final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
                 TestType.variable_variable.dataType().createDataSource(storeDir, tableName, COUNT, 0, false, true);
-        final MerkleDbCompactionCoordinator compactor = new MerkleDbCompactionCoordinator(
-                tableName,
-                dataSource.getObjectKeyToPath(),
-                dataSource.getHashStoreDisk(),
-                dataSource.getPathToKeyValue());
+        final MerkleDbCompactionCoordinator coordinator = dataSource.getCompactionCoordinator();
 
         try {
             // create some internal and leaf nodes in batches
             createData(dataSource);
-            compactor.enableBackgroundCompaction();
+            coordinator.enableBackgroundCompaction();
             // start compaction
-            compactor.compactDiskStoreForHashesAsync();
-            compactor.compactDiskStoreForObjectKeyToPathAsync();
-            compactor.compactPathToKeyValueAsync();
+            coordinator.compactDiskStoreForHashesAsync();
+            coordinator.compactDiskStoreForObjectKeyToPathAsync();
+            coordinator.compactPathToKeyValueAsync();
             // wait a small-time for merging to start
             MILLISECONDS.sleep(20);
-            stopCompactionAndVerifyItsStopped(tableName, compactor);
+            stopCompactionAndVerifyItsStopped(tableName, coordinator);
         } finally {
             dataSource.close();
         }
@@ -129,17 +125,13 @@ class CompactionInterruptTest {
         String tableName = "mergeWhileSnapshotting";
         final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
                 TestType.variable_variable.dataType().createDataSource(storeDir, tableName, COUNT, 0, false, true);
-        final MerkleDbCompactionCoordinator compactor = new MerkleDbCompactionCoordinator(
-                tableName,
-                dataSource.getObjectKeyToPath(),
-                dataSource.getHashStoreDisk(),
-                dataSource.getPathToKeyValue());
+        final MerkleDbCompactionCoordinator coordinator = dataSource.getCompactionCoordinator();
 
         final ExecutorService exec = Executors.newCachedThreadPool();
         try {
             // create some internal and leaf nodes in batches
             createData(dataSource);
-            compactor.enableBackgroundCompaction();
+            coordinator.enableBackgroundCompaction();
             // create a snapshot
             final Path snapshotDir = tmpFileDir.resolve("startMergeWhileSnapshottingThenInterruptImplSnapshot");
             exec.submit(() -> {
@@ -147,13 +139,13 @@ class CompactionInterruptTest {
                 return null;
             });
 
-            ThreadPoolExecutor compactingExecutor = (ThreadPoolExecutor) compactor.getCompactingExecutor();
+            ThreadPoolExecutor compactingExecutor = (ThreadPoolExecutor) coordinator.getCompactingExecutor();
             // we should take into account previous test runs
             long initTaskCount = compactingExecutor.getTaskCount();
             // start compaction for all three storages
-            compactor.compactDiskStoreForHashesAsync();
-            compactor.compactDiskStoreForObjectKeyToPathAsync();
-            compactor.compactPathToKeyValueAsync();
+            coordinator.compactDiskStoreForHashesAsync();
+            coordinator.compactDiskStoreForObjectKeyToPathAsync();
+            coordinator.compactPathToKeyValueAsync();
 
             assertEventuallyEquals(
                     initTaskCount + 3L,
@@ -162,7 +154,7 @@ class CompactionInterruptTest {
                     "Unexpected number of tasks " + compactingExecutor.getTaskCount());
             // wait a small-time for merging to start (or don't wait at all)
             Thread.sleep(delayMs);
-            stopCompactionAndVerifyItsStopped(tableName, compactor);
+            stopCompactionAndVerifyItsStopped(tableName, coordinator);
         } finally {
             dataSource.close();
             exec.shutdown();

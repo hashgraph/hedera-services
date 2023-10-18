@@ -91,11 +91,7 @@ public class HalfDiskVirtualKeySet<K extends VirtualKey> implements VirtualKeySe
                     tempDir,
                     "halfdiskvirtualkeyset",
                     "halfDiskVirtualKeySet",
-                    false,
-                    // this store is not compacted, so no metrics are required
-                    null,
-                    null,
-                    null);
+                    false);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }

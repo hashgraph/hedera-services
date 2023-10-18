@@ -76,6 +76,27 @@ public class DataFileCompactor {
     private final DataFileCollection<?> dataFileCollection;
 
     /**
+     * Index to update during compaction
+     */
+    private final CASableLongIndex index;
+    /**
+     * A function that will be called to report the duration of the compaction
+     */
+    @Nullable
+    private final BiConsumer<Integer, Long> reportDurationMetricFunction;
+    /**
+     * A function that will be called to report the amount of space saved by the compaction
+     */
+    @Nullable
+    private final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction;
+
+    /**
+     * A function that updates statistics of total usage of disk space and off-heap space
+     */
+    @Nullable
+    private final Runnable updateTotalStatsFunction;
+
+    /**
      * A lock used for synchronization between snapshots and compactions. While a compaction is in
      * progress, it runs on its own without any synchronization. However, a few critical sections
      * are protected with this lock: to create a new compaction writer/reader when compaction is
@@ -121,9 +142,29 @@ public class DataFileCompactor {
      */
     private final AtomicInteger compactionLevelInProgress = new AtomicInteger(0);
 
-    public DataFileCompactor(String storeName, final DataFileCollection<?> dataFileCollection) {
+    /**
+     *
+     * @param storeName name of the store to compact
+     * @param dataFileCollection data file collection to compact
+     * @param index index to update during compaction
+     * @param reportDurationMetricFunction   function to report how long compaction took, in ms
+     * @param reportSavedSpaceMetricFunction function to report how much space was compacted, in Mb
+     * @param updateTotalStatsFunction A function that updates statistics of total usage of disk space and off-heap space
+     *
+     */
+    public DataFileCompactor(
+            String storeName,
+            final DataFileCollection<?> dataFileCollection,
+            CASableLongIndex index,
+            @Nullable final BiConsumer<Integer, Long> reportDurationMetricFunction,
+            @Nullable final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction,
+            @Nullable Runnable updateTotalStatsFunction) {
         this.storeName = storeName;
         this.dataFileCollection = dataFileCollection;
+        this.index = index;
+        this.reportDurationMetricFunction = reportDurationMetricFunction;
+        this.reportSavedSpaceMetricFunction = reportSavedSpaceMetricFunction;
+        this.updateTotalStatsFunction = updateTotalStatsFunction;
     }
 
     /**
@@ -300,7 +341,7 @@ public class DataFileCompactor {
      * are created and no index entries are updated until compaction is resumed.
      * <p>
      * This method should not be called on the compaction thread.
-     *
+     * <p>
      * <b>This method must be always balanced with and called before {@link DataFileCompactor#resumeCompaction()}. If
      * there are more / less calls to resume compactions than to pause, or if they are called in a
      * wrong order, it will result in deadlocks.</b>
@@ -330,7 +371,7 @@ public class DataFileCompactor {
      * Resumes compaction previously put on hold with {@link #pauseCompaction()}. If there was no
      * compaction running at that moment, but new compaction was started (and blocked) since {@link
      * #pauseCompaction()}, this new compaction is resumed.
-     *
+     * <p>
      * <b>This method must be always balanced with and called after {@link #pauseCompaction()}. If
      * there are more / less calls to resume compactions than to pause, or if they are called in a
      * wrong order, it will result in deadlocks.</b>
@@ -352,18 +393,12 @@ public class DataFileCompactor {
     /**
      * Compact data files in the collection according to the compaction algorithm.
      *
-     * @param reportDurationMetricFunction   function to report how long compaction took, in ms
-     * @param reportSavedSpaceMetricFunction function to report how much space was compacted, in Mb
      * @throws IOException          if there was a problem merging
      * @throws InterruptedException if the merge thread was interrupted
      * @return true if compaction was performed, false otherwise
      */
     @SuppressWarnings("unchecked")
-    public boolean compact(
-            CASableLongIndex index,
-            @Nullable final BiConsumer<Integer, Long> reportDurationMetricFunction,
-            @Nullable final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction)
-            throws IOException, InterruptedException {
+    public boolean compact() throws IOException, InterruptedException {
 
         final List<? extends DataFileReader<?>> allCompactableFiles = dataFileCollection.getAllCompletedFiles();
         final List<DataFileReader<?>> filesToCompact = compactionPlan((List<DataFileReader<?>>) allCompactableFiles);
@@ -418,6 +453,10 @@ public class DataFileCompactor {
                 formatSizeBytes(filesToCompactSize),
                 tookMillis);
 
+        if (updateTotalStatsFunction != null) {
+            updateTotalStatsFunction.run();
+        }
+
         return true;
     }
 
@@ -455,15 +494,13 @@ public class DataFileCompactor {
             readersByLevel.get(reader.getMetadata().getCompactionLevel()).add(reader);
         }
 
-        final List<DataFileReader<?>> readersToCompact = new ArrayList<>();
-
         List<DataFileReader<?>> nonCompactedReaders = readersByLevel.get(INITIAL_COMPACTION_LEVEL);
         if (nonCompactedReaders.size() < getMinNumberOfFilesToCompact()) {
             return Collections.emptyList();
         }
 
         // we always compact files from level 0
-        readersToCompact.addAll(nonCompactedReaders);
+        final List<DataFileReader<?>> readersToCompact = new ArrayList<>(nonCompactedReaders);
 
         for (int i = 0; i <= maxCompactionLevel; i++) {
             final List<DataFileReader<?>> readers = readersByLevel.get(i);

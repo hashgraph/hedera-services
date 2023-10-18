@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.merkledb.ExampleLongKeyFixedSize;
+import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.FilesTestType;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -51,10 +52,7 @@ class HalfDiskHashMapTest {
                 tempDirPath.resolve(testType.name()),
                 "HalfDiskHashMapTest",
                 null,
-                false,
-                null,
-                null,
-                null);
+                false);
         map.printStats();
         return map;
     }
@@ -117,10 +115,7 @@ class HalfDiskHashMapTest {
                 tempSnapshotDir,
                 "HalfDiskHashMapTest",
                 null,
-                false,
-                null,
-                null,
-                null);
+                false);
         mapFromSnapshot.printStats();
         checkData(testType, mapFromSnapshot, 1, count, 1);
         // check deletion
@@ -147,6 +142,8 @@ class HalfDiskHashMapTest {
     void multipleWriteBatchesAndMerge(FilesTestType testType) throws Exception {
         // create map
         final HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, 10_000);
+        final DataFileCompactor dataFileCompactor = new DataFileCompactor(
+                "HalfDiskHashMapTest", map.getFileCollection(), map.getBucketIndexToBucketLocation(), null, null, null);
         // create some data
         createSomeData(testType, map, 1, 1111, 1);
         checkData(testType, map, 1, 1111, 1);
@@ -157,7 +154,7 @@ class HalfDiskHashMapTest {
         createSomeData(testType, map, 1111, 10_000, 1);
         checkData(testType, map, 1, 10_000, 1);
         // do a merge
-        map.compact();
+        dataFileCompactor.compact();
         // check all data after
         checkData(testType, map, 1, 10_000, 1);
     }

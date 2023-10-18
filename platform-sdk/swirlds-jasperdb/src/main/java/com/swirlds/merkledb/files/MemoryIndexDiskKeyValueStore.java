@@ -18,7 +18,7 @@ package com.swirlds.merkledb.files;
 
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 
-import com.swirlds.merkledb.Compactible;
+import com.swirlds.merkledb.FileStatisticAware;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
@@ -30,7 +30,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  * @param <D> type for data items
  */
 @SuppressWarnings({"DuplicatedCode"})
-public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshotable, Compactible {
+public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshotable, FileStatisticAware {
     private static final Logger logger = LogManager.getLogger(MemoryIndexDiskKeyValueStore.class);
 
     /**
@@ -57,7 +56,6 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /** On disk set of DataFiles that contain our key/value pairs */
     final DataFileCollection<D> fileCollection;
 
-    private final DataFileCompactor fileCompactor;
     /**
      * The name for the data store, this allows more than one data store in a single directory.
      * Also, useful for identifying what files are used by what part of the code.
@@ -74,17 +72,6 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     private final AtomicLong maxValidKey;
 
     /**
-     * A function that will be called to report the duration of the compaction, in ms
-     */
-    private final BiConsumer<Integer, Long> reportDurationMetricFunction;
-    /**
-     * A function that will be called to report the amount of space saved by the compaction, in Mb
-     */
-    private final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction;
-
-    private final Runnable updateStatsFunction;
-
-    /**
      * Construct a new MemoryIndexDiskKeyValueStore
      *
      * @param storeDir The directory to store data files in
@@ -94,9 +81,6 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * @param loadedDataCallback call back for handing loaded data from existing files on startup. Can be null if not needed.
      * @param keyToDiskLocationIndex The index to use for keys to disk locations. Having this passed in allows multiple MemoryIndexDiskKeyValueStore stores to share the same index if there
      * key ranges do not overlap. For example with internal node and leaf paths in a virtual map tree. It also lets the caller decide the LongList implementation to use. This does mean the caller is responsible for snapshot of the index.
-     * @param reportDurationMetricFunction A function that will be called to report the duration of the compaction
-     * @param reportSavedSpaceMetricFunction A function that will be called to report the amount of space saved by the compaction
-     * @param updateStatsFunction A function that updates statistics of total usage of disk space and off-heap space
      * @throws IOException If there was a problem opening data files
      */
     public MemoryIndexDiskKeyValueStore(
@@ -105,16 +89,10 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             final String legacyStoreName,
             final DataItemSerializer<D> dataItemSerializer,
             final LoadedDataCallback loadedDataCallback,
-            final LongList keyToDiskLocationIndex,
-            BiConsumer<Integer, Long> reportDurationMetricFunction,
-            BiConsumer<Integer, Double> reportSavedSpaceMetricFunction,
-            Runnable updateStatsFunction)
+            final LongList keyToDiskLocationIndex)
             throws IOException {
         this.storeName = storeName;
         index = keyToDiskLocationIndex;
-        this.reportDurationMetricFunction = reportDurationMetricFunction;
-        this.reportSavedSpaceMetricFunction = reportSavedSpaceMetricFunction;
-        this.updateStatsFunction = updateStatsFunction;
         final boolean indexIsEmpty = keyToDiskLocationIndex.size() == 0;
         // create store dir
         Files.createDirectories(storeDir);
@@ -135,53 +113,9 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         // create file collection
         fileCollection = new DataFileCollection<>(
                 storeDir, storeName, legacyStoreName, dataItemSerializer, combinedLoadedDataCallback);
-        fileCompactor = createFileCompactor();
         // no limits for the keys on init
         minValidKey = new AtomicLong(0);
         maxValidKey = new AtomicLong(Long.MAX_VALUE);
-    }
-
-    DataFileCompactor createFileCompactor() {
-        return new DataFileCompactor(storeName, fileCollection);
-    }
-
-    /**
-     * Compact data store files using the compaction algorithm.
-     *
-     * @throws IOException if there was a problem merging
-     * @throws InterruptedException if the merge thread was interupted
-     */
-    public boolean doCompact() throws IOException, InterruptedException {
-        return fileCompactor.compact(index, reportDurationMetricFunction, reportSavedSpaceMetricFunction);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Runnable getUpdateTotalStatsFunction() {
-        return updateStatsFunction;
-    }
-
-    /**
-     * Puts this store compaction on hold, if in progress, until {@link #resumeCompaction()} is called.
-     * If compaction is not in progress, calling this method will prevent new compactions from
-     * starting until resumed.
-     *
-     * @throws IOException If an I/O error occurs.
-     */
-    public void pauseCompaction() throws IOException {
-        fileCompactor.pauseCompaction();
-    }
-
-    /**
-     * Resumes this store compaction if it was in progress, or unblocks a new compaction if it was
-     * blocked to start because of {@link #pauseCompaction()}.
-     *
-     * @throws IOException If an I/O error occurs.
-     */
-    public void resumeCompaction() throws IOException {
-        fileCompactor.resumeCompaction();
     }
 
     /**
@@ -280,5 +214,9 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      */
     public LongSummaryStatistics getFilesSizeStatistics() {
         return fileCollection.getAllCompletedFilesSizeStatistics();
+    }
+
+    public DataFileCollection<D> getFileCollection() {
+        return fileCollection;
     }
 }

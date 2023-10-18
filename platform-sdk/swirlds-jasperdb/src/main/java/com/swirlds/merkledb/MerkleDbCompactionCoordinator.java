@@ -25,8 +25,10 @@ import static java.util.Objects.requireNonNull;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.merkledb.files.DataFileCompactor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -76,6 +78,15 @@ class MerkleDbCompactionCoordinator {
     private final CompactionTask hashesStoreDiskTask;
     private final CompactionTask pathToKeyValueTask;
 
+    @Nullable
+    private final DataFileCompactor objectKeyToPath;
+
+    @Nullable
+    private final DataFileCompactor hashesStoreDisk;
+
+    @NonNull
+    private final DataFileCompactor pathToKeyValue;
+
     /**
      * Creates a new instance of {@link MerkleDbCompactionCoordinator}.
      * @param tableName the name of the table
@@ -85,9 +96,12 @@ class MerkleDbCompactionCoordinator {
      */
     public MerkleDbCompactionCoordinator(
             @NonNull String tableName,
-            @Nullable Compactible objectKeyToPath,
-            @Nullable Compactible hashesStoreDisk,
-            @NonNull Compactible pathToKeyValue) {
+            @Nullable DataFileCompactor objectKeyToPath,
+            @Nullable DataFileCompactor hashesStoreDisk,
+            @NonNull DataFileCompactor pathToKeyValue) {
+        this.objectKeyToPath = objectKeyToPath;
+        this.hashesStoreDisk = hashesStoreDisk;
+        this.pathToKeyValue = pathToKeyValue;
         if (objectKeyToPath != null) {
             objectKeyToPathTask = new CompactionTask(tableName + OBJECT_KEY_TO_PATH_SUFFIX, objectKeyToPath);
         } else {
@@ -152,6 +166,36 @@ class MerkleDbCompactionCoordinator {
     }
 
     /**
+     * Pauses compaction of all data file compactors. It may not stop compaction
+     * immediately, but as soon as compaction process needs to update data source state, which is
+     * critical for snapshots (e.g. update an index), it will be stopped until {@link
+     * #resumeCompaction()}} is called.
+     */
+    public void pauseCompaction() throws IOException {
+        if (hashesStoreDisk != null) {
+            hashesStoreDisk.pauseCompaction();
+        }
+
+        pathToKeyValue.pauseCompaction();
+
+        if (objectKeyToPath != null) {
+            objectKeyToPath.pauseCompaction();
+        }
+    }
+    /** Resumes previously stopped data file collection compaction. */
+    public void resumeCompaction() throws IOException {
+        if (hashesStoreDisk != null) {
+            hashesStoreDisk.resumeCompaction();
+        }
+
+        pathToKeyValue.resumeCompaction();
+
+        if (objectKeyToPath != null) {
+            objectKeyToPath.resumeCompaction();
+        }
+    }
+
+    /**
      * Stops all compactions in progress and disables background compaction.
      * All subsequent calls to compacting methods will be ignored until {@link #enableBackgroundCompaction()} is called.
      */
@@ -210,19 +254,19 @@ class MerkleDbCompactionCoordinator {
 
         private static final Logger logger = LogManager.getLogger(CompactionTask.class);
         final String id;
-        private final Compactible compactible;
+        private final DataFileCompactor compactor;
 
-        public CompactionTask(@NonNull String id, @NonNull Compactible compactible) {
+        public CompactionTask(@NonNull String id, @NonNull DataFileCompactor compactor) {
             requireNonNull(id);
-            requireNonNull(compactible);
+            requireNonNull(compactor);
             this.id = id;
-            this.compactible = compactible;
+            this.compactor = compactor;
         }
 
         @Override
         public Boolean call() {
             try {
-                return compactible.compact();
+                return compactor.compact();
             } catch (final InterruptedException | ClosedByInterruptException e) {
                 logger.info(MERKLE_DB.getMarker(), "Interrupted while compacting, this is allowed.", e);
             } catch (Exception e) {

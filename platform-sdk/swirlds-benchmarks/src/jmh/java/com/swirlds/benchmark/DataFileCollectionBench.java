@@ -61,7 +61,7 @@ public class DataFileCollectionBench extends BaseBench {
                         return readDataItem(dataLocation);
                     }
                 };
-        final var compactor = new DataFileCompactor(storeName, store);
+        final var compactor = new DataFileCompactor(storeName, store, index, null, null, null);
         System.out.println();
 
         // Write files
@@ -82,7 +82,7 @@ public class DataFileCollectionBench extends BaseBench {
         // Merge files
         start = System.currentTimeMillis();
         final List<DataFileReader<BenchmarkRecord>> filesToMerge = store.getAllCompletedFiles();
-        compactor.compact(index, null, null);
+        compactor.compact();
         System.out.println(
                 "Merged " + filesToMerge.size() + " files in " + (System.currentTimeMillis() - start) + "ms");
 

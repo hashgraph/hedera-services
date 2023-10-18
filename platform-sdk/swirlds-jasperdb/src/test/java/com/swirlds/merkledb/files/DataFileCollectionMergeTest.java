@@ -67,12 +67,6 @@ class DataFileCollectionMergeTest {
         final var serializer = new ExampleFixedSizeDataSerializer();
         String storeName = "mergeTest";
         final var coll = new DataFileCollection<>(tempFileDir.resolve(storeName), storeName, serializer, null);
-        final var compactor = new DataFileCompactor(storeName, coll) {
-            @Override
-            int getMinNumberOfFilesToCompact() {
-                return 2;
-            }
-        };
 
         coll.startWriting();
         index.put(1L, coll.storeDataItem(new long[] {1, APPLE}));
@@ -118,6 +112,12 @@ class DataFileCollectionMergeTest {
                 }
             }
         };
+        final var compactor = new DataFileCompactor(storeName, coll, indexUpdater, null, null, null) {
+            @Override
+            int getMinNumberOfFilesToCompact() {
+                return 2;
+            }
+        };
         compactor.compactFiles(indexUpdater, getFilesToMerge(coll), 1);
 
         long prevKey = -1;
@@ -161,12 +161,6 @@ class DataFileCollectionMergeTest {
         final Path testDir = tempFileDir.resolve(storeName);
         final DataFileCollection<long[]> store =
                 new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
-        final DataFileCompactor compactor = new DataFileCompactor(storeName, store) {
-            @Override
-            int getMinNumberOfFilesToCompact() {
-                return 2;
-            }
-        };
 
         final int numFiles = 2;
         for (long i = 0; i < numFiles; i++) {
@@ -210,6 +204,14 @@ class DataFileCollectionMergeTest {
                             }
                         }
                     };
+
+                    final DataFileCompactor compactor =
+                            new DataFileCompactor(storeName, store, indexUpdater, null, null, null) {
+                                @Override
+                                int getMinNumberOfFilesToCompact() {
+                                    return 2;
+                                }
+                            };
 
                     try {
                         compactor.compactFiles(indexUpdater, filesToMerge, 1);
@@ -257,6 +259,15 @@ class DataFileCollectionMergeTest {
                     }
                 }
             };
+
+            final DataFileCompactor compactor =
+                    new DataFileCompactor(storeName, store, indexUpdater, null, null, null) {
+                        @Override
+                        int getMinNumberOfFilesToCompact() {
+                            return 2;
+                        }
+                    };
+
             compactor.compactFiles(indexUpdater, filesToMerge, 1);
         } finally {
             store2.close();
@@ -274,7 +285,7 @@ class DataFileCollectionMergeTest {
 
         final DataFileCollection<long[]> store =
                 new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
-        final DataFileCompactor compactor = new DataFileCompactor(storeName, store);
+
         try {
             for (long i = 0; i < 2 * NUM_UPDATES; i++) {
                 // Start writing a new copy
@@ -310,6 +321,8 @@ class DataFileCollectionMergeTest {
                 };
 
                 if (filesToMerge.size() > 1) {
+                    final DataFileCompactor compactor =
+                            new DataFileCompactor(storeName, store, indexUpdater, null, null, null);
                     try {
                         compactor.compactFiles(indexUpdater, filesToMerge, 1);
                     } catch (Exception ex) {
@@ -344,7 +357,6 @@ class DataFileCollectionMergeTest {
 
         final DataFileCollection<long[]> store =
                 new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
-        final DataFileCompactor compactor = new DataFileCompactor(storeName, store);
         try {
             // Initial values
             store.startWriting();
@@ -382,6 +394,8 @@ class DataFileCollectionMergeTest {
                 };
 
                 if (filesToMerge.size() > 1) {
+                    final DataFileCompactor compactor =
+                            new DataFileCompactor(storeName, store, indexUpdater, null, null, null);
                     try {
                         compactor.compactFiles(indexUpdater, filesToMerge, 1);
                     } catch (Exception ex) {
@@ -429,7 +443,7 @@ class DataFileCollectionMergeTest {
         final LongListOffHeap index = new LongListOffHeap();
         final DataFileCollection<long[]> store =
                 new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
-        final DataFileCompactor compactor = new DataFileCompactor(storeName, store);
+        final DataFileCompactor compactor = new DataFileCompactor(storeName, store, index, null, null, null);
         // Create a few files initially
         for (int i = 0; i < numFiles; i++) {
             store.startWriting();
@@ -546,7 +560,7 @@ class DataFileCollectionMergeTest {
         final Path testDir = tempFileDir.resolve(storeName);
         final DataFileCollection<long[]> store =
                 new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
-        final DataFileCompactor compactor = new DataFileCompactor(storeName, store);
+        final DataFileCompactor compactor = new DataFileCompactor(storeName, store, index, null, null, null);
 
         final int numFiles = 2;
         for (long i = 0; i < numFiles; i++) {
