@@ -27,13 +27,12 @@ import com.swirlds.common.wiring.components.WiringBenchmarkGossip;
 import com.swirlds.common.wiring.components.WiringBenchmarkTopologicalEventSorter;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import java.time.Duration;
 import java.util.concurrent.ForkJoinPool;
-import org.junit.jupiter.api.Test;
 
 class WiringBenchmark {
 
-    @Test
-    void basicBenchmark() throws InterruptedException {
+    static void basicBenchmark() throws InterruptedException {
 
         // We will use this executor for starting all threads. Maybe we should only use it for temporary threads?
         final ForkJoinPool executor = new ForkJoinPool(
@@ -48,7 +47,7 @@ class WiringBenchmark {
         // Step 1: construct wires
 
         // Ensures that we have no more than 10,000 events in the pipeline at any given time
-        final ObjectCounter backpressure = new BackpressureObjectCounter(10_000, null);
+        final ObjectCounter backpressure = new BackpressureObjectCounter(10_000, Duration.ZERO);
 
         final Wire toVerifier = Wire.builder("verification")
                 .withPool(executor)
@@ -99,7 +98,11 @@ class WiringBenchmark {
         assertTrue(success);
     }
 
-    public static void main(String[] args) throws Exception {
-        new WiringBenchmark().basicBenchmark();
+    public static void main(String[] args) {
+        try {
+            basicBenchmark();
+        } catch (final Throwable t) {
+            t.printStackTrace();
+        }
     }
 }
