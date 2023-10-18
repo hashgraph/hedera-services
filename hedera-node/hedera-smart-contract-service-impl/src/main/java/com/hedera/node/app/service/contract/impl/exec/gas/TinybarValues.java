@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.gas;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.FEE_SCHEDULE_UNITS_PER_TINYCENT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromTinycentsToTinybars;
+import static com.hedera.node.app.spi.workflows.FunctionalityResourcePrices.PREPAID_RESOURCE_PRICES;
 
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
@@ -26,7 +27,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * Provides tinybar-denominated resource prices for the current operation (coudl be either transaction or query).
+ * Provides tinybar-denominated resource prices for the current operation (could be either transaction or query).
  */
 public class TinybarValues {
     private final ExchangeRate exchangeRate;
@@ -35,7 +36,36 @@ public class TinybarValues {
     @Nullable
     private final FunctionalityResourcePrices childTransactionResourcePrices;
 
-    public TinybarValues(
+    /**
+     * Creates a new instance of {@link TinybarValues} for a query; this throws {@link IllegalStateException}
+     * if {@link #childTransactionTinybarGasPrice()} is called; and returns a zero top-level gas price because
+     * queries have their gas "pre-paid" via the query payment in the query header, and we don't want to try
+     * to charge it again when answering a {@code ContractCallLocal}.
+     *
+     * @param exchangeRate the current exchange rate
+     * @return a query-appropriate instance of {@link TinybarValues}
+     */
+    public static TinybarValues forQueryWith(@NonNull final ExchangeRate exchangeRate) {
+        return new TinybarValues(exchangeRate, PREPAID_RESOURCE_PRICES, null);
+    }
+
+    /**
+     * Creates a new instance of {@link TinybarValues} for a transaction; this is capable of computing
+     * gas costs for dispatching child transactions.
+     *
+     * @param exchangeRate the current exchange rate
+     * @param topLevelResourcePrices the current resource prices for the top-level transaction
+     * @param childTransactionResourcePrices the current resource prices for child transactions
+     * @return a transaction-appropriate instance of {@link TinybarValues}
+     */
+    public static TinybarValues forTransactionWith(
+            @NonNull final ExchangeRate exchangeRate,
+            @NonNull final FunctionalityResourcePrices topLevelResourcePrices,
+            @Nullable final FunctionalityResourcePrices childTransactionResourcePrices) {
+        return new TinybarValues(exchangeRate, topLevelResourcePrices, childTransactionResourcePrices);
+    }
+
+    private TinybarValues(
             @NonNull final ExchangeRate exchangeRate,
             @NonNull final FunctionalityResourcePrices topLevelResourcePrices,
             @Nullable final FunctionalityResourcePrices childTransactionResourcePrices) {
@@ -61,7 +91,7 @@ public class TinybarValues {
      *
      * @return the tinybar-denominated price of a unit of gas for the current operation
      */
-    public long topLevelServiceGasPrice() {
+    public long topLevelTinybarGasPrice() {
         return asTinybars(
                 topLevelResourcePrices.basePrices().servicedataOrThrow().gas()
                         / FEE_SCHEDULE_UNITS_PER_TINYCENT

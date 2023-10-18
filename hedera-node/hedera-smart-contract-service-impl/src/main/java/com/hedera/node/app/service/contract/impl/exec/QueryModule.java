@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
-import static com.hedera.node.app.spi.workflows.FunctionalityResourcePrices.PREPAID_RESOURCE_PRICES;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.ExchangeRate;
@@ -52,10 +51,7 @@ public interface QueryModule {
     @Provides
     @QueryScope
     static TinybarValues provideTinybarValues(@NonNull final ExchangeRate exchangeRate) {
-        // Use zeros for all resource prices, since they are "prepaid" via an independent
-        // CryptoTransfer in the query header; use null for the child transaction resource
-        // prices, since queries cannot have child transactions
-        return new TinybarValues(exchangeRate, PREPAID_RESOURCE_PRICES, null);
+        return TinybarValues.forQueryWith(exchangeRate);
     }
 
     @Provides

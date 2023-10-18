@@ -30,13 +30,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TinybarValuesTest {
+    private static final int CENTS_PER_HBAR = 7;
     private static final ExchangeRate RATE_TO_USE =
-            ExchangeRate.newBuilder().hbarEquiv(2).centEquiv(14).build();
-    private static final long RBH_FEE_SCHEDULE_RICE = 77_000L;
+            ExchangeRate.newBuilder().hbarEquiv(1).centEquiv(CENTS_PER_HBAR).build();
+    private static final long RBH_FEE_SCHEDULE_PRICE = 77_000L;
     private static final long TOP_LEVEL_GAS_FEE_SCHEDULE_PRICE = 777_000L;
     private static final long CHILD_TRANSACTION_GAS_FEE_SCHEDULE_PRICE = 777_777L;
     private static final FeeData TOP_LEVEL_PRICES_TO_USE = FeeData.newBuilder()
-            .servicedata(FeeComponents.newBuilder().rbh(RBH_FEE_SCHEDULE_RICE).gas(TOP_LEVEL_GAS_FEE_SCHEDULE_PRICE))
+            .servicedata(FeeComponents.newBuilder().rbh(RBH_FEE_SCHEDULE_PRICE).gas(TOP_LEVEL_GAS_FEE_SCHEDULE_PRICE))
             .build();
     private static final FeeData CHILD_TRANSACTION_PRICES_TO_USE = FeeData.newBuilder()
             .servicedata(FeeComponents.newBuilder().gas(CHILD_TRANSACTION_GAS_FEE_SCHEDULE_PRICE))
@@ -51,34 +52,34 @@ class TinybarValuesTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TinybarValues(RATE_TO_USE, resourcePrices, childResourcePrices);
+        subject = TinybarValues.forTransactionWith(RATE_TO_USE, resourcePrices, childResourcePrices);
     }
 
     @Test
     void computesExchangeRateAsExpected() {
         final var tinycents = 77L;
         withTransactionSubject();
-        assertEquals(tinycents / 7, subject.asTinybars(tinycents));
+        assertEquals(tinycents / CENTS_PER_HBAR, subject.asTinybars(tinycents));
     }
 
     @Test
     void computesExpectedRbhServicePrice() {
         withTransactionSubject();
-        final var expectedRbhPrice = RBH_FEE_SCHEDULE_RICE / (7 * 1000);
+        final var expectedRbhPrice = RBH_FEE_SCHEDULE_PRICE / (CENTS_PER_HBAR * 1000);
         assertEquals(expectedRbhPrice, subject.topLevelTinybarRbhPrice());
     }
 
     @Test
     void computesExpectedGasServicePrice() {
         withTransactionSubject();
-        final var expectedGasPrice = TOP_LEVEL_GAS_FEE_SCHEDULE_PRICE / (7 * 1000);
-        assertEquals(expectedGasPrice, subject.topLevelServiceGasPrice());
+        final var expectedGasPrice = TOP_LEVEL_GAS_FEE_SCHEDULE_PRICE / (CENTS_PER_HBAR * 1000);
+        assertEquals(expectedGasPrice, subject.topLevelTinybarGasPrice());
     }
 
     @Test
     void computesExpectedChildGasServicePrice() {
         withTransactionSubject();
-        final var expectedGasPrice = 2 * CHILD_TRANSACTION_GAS_FEE_SCHEDULE_PRICE / (7 * 1000);
+        final var expectedGasPrice = 2 * CHILD_TRANSACTION_GAS_FEE_SCHEDULE_PRICE / (CENTS_PER_HBAR * 1000);
         assertEquals(expectedGasPrice, subject.childTransactionTinybarGasPrice());
     }
 
@@ -89,10 +90,10 @@ class TinybarValuesTest {
     }
 
     private void withTransactionSubject() {
-        subject = new TinybarValues(RATE_TO_USE, resourcePrices, childResourcePrices);
+        subject = TinybarValues.forTransactionWith(RATE_TO_USE, resourcePrices, childResourcePrices);
     }
 
     private void withQuerySubject() {
-        subject = new TinybarValues(RATE_TO_USE, resourcePrices, null);
+        subject = TinybarValues.forQueryWith(RATE_TO_USE);
     }
 }

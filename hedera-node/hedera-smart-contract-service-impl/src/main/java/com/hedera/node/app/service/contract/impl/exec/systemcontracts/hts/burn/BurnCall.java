@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hed
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 
+import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
@@ -59,6 +60,7 @@ public interface BurnCall extends HtsCall {
     default @NonNull PricedResult executeBurn(
             @Nullable final TokenID tokenId,
             @NonNull final AccountID senderId,
+            @NonNull final TupleType outputs,
             @NonNull final DispatchType dispatchType,
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategy verificationStrategy,
@@ -77,11 +79,9 @@ public interface BurnCall extends HtsCall {
                 systemContractOperations.dispatch(body, verificationStrategy, spenderId, TokenBurnRecordBuilder.class);
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
             return gasOnly(revertResult(recordBuilder.status(), gasRequirement));
-        } else {
-            final var encodedOutput = BurnTranslator.BURN_TOKEN_V1
-                    .getOutputs()
-                    .encodeElements((long) ResponseCodeEnum.SUCCESS.protoOrdinal(), recordBuilder.getNewTotalSupply());
-            return gasOnly(successResult(encodedOutput, gasRequirement));
         }
+        final var encodedOutput = outputs.encodeElements(
+                (long) ResponseCodeEnum.SUCCESS.protoOrdinal(), recordBuilder.getNewTotalSupply());
+        return gasOnly(successResult(encodedOutput, gasRequirement));
     }
 }

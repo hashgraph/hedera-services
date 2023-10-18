@@ -167,7 +167,7 @@ class HandleHederaOperationsTest {
 
     @Test
     void gasPriceInTinybarsDelegates() {
-        given(tinybarValues.topLevelServiceGasPrice()).willReturn(1234L);
+        given(tinybarValues.topLevelTinybarGasPrice()).willReturn(1234L);
         assertEquals(1234L, subject.gasPriceInTinybars());
     }
 

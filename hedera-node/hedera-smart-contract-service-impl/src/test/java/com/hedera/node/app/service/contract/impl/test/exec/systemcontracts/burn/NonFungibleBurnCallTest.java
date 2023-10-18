@@ -42,7 +42,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-public class NonFungibleBurnCallTest extends HtsCallTestBase {
+class NonFungibleBurnCallTest extends HtsCallTestBase {
     private static final long NEW_TOTAL_SUPPLY = 666L;
 
     private static final org.hyperledger.besu.datatypes.Address FRAME_SENDER_ADDRESS = EIP_1014_ADDRESS;
@@ -125,6 +125,7 @@ public class NonFungibleBurnCallTest extends HtsCallTestBase {
                 gasCalculator,
                 mockEnhancement(),
                 NON_FUNGIBLE_TOKEN_ID,
+                BURN_TOKEN_V1.getOutputs(),
                 verificationStrategy,
                 SENDER_ID,
                 FRAME_SENDER_ADDRESS,

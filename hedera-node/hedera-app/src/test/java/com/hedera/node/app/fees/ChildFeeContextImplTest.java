@@ -106,7 +106,7 @@ class ChildFeeContextImplTest {
     }
 
     @Test
-    void propagatesInvalidBodyAsIse() {
+    void propagatesInvalidBodyAsIllegalStateException() {
         subject = new ChildFeeContextImpl(feeManager, context, TransactionBody.DEFAULT, PAYER_ID);
         assertThrows(
                 IllegalStateException.class,

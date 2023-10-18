@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.gas.DispatchType.BURN_NFT;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
@@ -38,22 +39,27 @@ public class NonFungibleBurnCall extends AbstractHtsCall implements BurnCall {
 
     private final List<Long> serialNo;
     private final TokenID tokenId;
+    private final TupleType outputs;
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategy verificationStrategy;
     private final AccountID senderId;
     private final org.hyperledger.besu.datatypes.Address sender;
 
+    // too may parameters
+    @SuppressWarnings("java:S107")
     public NonFungibleBurnCall(
             final List<Long> serialNo,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final TokenID tokenId,
+            @NonNull final TupleType outputs,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final AccountID senderId,
             @NonNull final Address sender,
             @NonNull final AddressIdConverter addressIdConverter) {
         super(gasCalculator, enhancement);
         this.tokenId = requireNonNull(tokenId);
+        this.outputs = requireNonNull(outputs);
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.sender = requireNonNull(sender);
         this.addressIdConverter = requireNonNull(addressIdConverter);
@@ -66,6 +72,7 @@ public class NonFungibleBurnCall extends AbstractHtsCall implements BurnCall {
         return executeBurn(
                 tokenId,
                 senderId,
+                outputs,
                 BURN_NFT,
                 addressIdConverter,
                 verificationStrategy,

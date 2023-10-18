@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.gas.DispatchType.BURN_FUNGIBLE;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
@@ -31,6 +32,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.hyperledger.besu.datatypes.Address;
 
 public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
 
@@ -38,6 +40,8 @@ public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
 
     @Nullable
     private final TokenID tokenId;
+
+    private final TupleType outputs;
 
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategy verificationStrategy;
@@ -51,13 +55,15 @@ public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final TokenID tokenId,
+            @NonNull final TupleType outputs,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final AccountID senderId,
-            @NonNull final org.hyperledger.besu.datatypes.Address sender,
+            @NonNull final Address sender,
             @NonNull final AddressIdConverter addressIdConverter) {
         super(gasCalculator, enhancement);
         this.amount = amount;
         this.tokenId = tokenId;
+        this.outputs = requireNonNull(outputs);
         this.sender = requireNonNull(sender);
         this.senderId = requireNonNull(senderId);
         this.verificationStrategy = requireNonNull(verificationStrategy);
@@ -69,6 +75,7 @@ public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
         return executeBurn(
                 tokenId,
                 senderId,
+                outputs,
                 BURN_FUNGIBLE,
                 addressIdConverter,
                 verificationStrategy,

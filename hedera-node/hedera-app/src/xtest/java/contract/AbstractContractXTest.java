@@ -214,7 +214,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             @NonNull final org.apache.tuweni.bytes.Bytes input,
             @NonNull final Consumer<HtsCall.PricedResult> resultAssertions) {
         final var context = component.txnContextFactory().apply(PLACEHOLDER_CALL_BODY);
-        final var tinybarValues = new TinybarValues(
+        final var tinybarValues = TinybarValues.forTransactionWith(
                 context.exchangeRateInfo().activeRate(Instant.now()),
                 context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT),
                 context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT));

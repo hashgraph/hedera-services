@@ -94,6 +94,8 @@ public class SystemContractGasCalculator {
 
     private long asGasRequirement(final long tinybarPrice) {
         final var gasPrice = tinybarValues.childTransactionTinybarGasPrice();
+        // We round up to the nearest gas unit, and then add 20% to account for the premium
+        // of doing a HAPI operation from inside the EVM
         final var gasRequirement = (tinybarPrice + gasPrice - 1) / gasPrice;
         return gasRequirement + (gasRequirement / 5);
     }

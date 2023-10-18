@@ -68,7 +68,7 @@ public interface TransactionModule {
             @TopLevelResourcePrices @NonNull final FunctionalityResourcePrices topLevelResourcePrices,
             @ChildTransactionResourcePrices @NonNull final FunctionalityResourcePrices childTransactionResourcePrices,
             @NonNull final ExchangeRate exchangeRate) {
-        return new TinybarValues(exchangeRate, topLevelResourcePrices, childTransactionResourcePrices);
+        return TinybarValues.forTransactionWith(exchangeRate, topLevelResourcePrices, childTransactionResourcePrices);
     }
 
     @Provides
