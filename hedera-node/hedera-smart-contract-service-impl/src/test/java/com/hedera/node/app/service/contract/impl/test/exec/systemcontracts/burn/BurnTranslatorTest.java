@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,9 +36,11 @@ public class BurnTranslatorTest {
 
     private BurnTranslator subject;
 
+    private final BurnDecoder decoder = new BurnDecoder();
+
     @BeforeEach
     void setUp() {
-        subject = new BurnTranslator();
+        subject = new BurnTranslator(decoder);
     }
 
     @Test

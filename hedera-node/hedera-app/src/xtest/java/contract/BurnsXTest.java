@@ -55,6 +55,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import java.math.BigInteger;
@@ -88,28 +89,37 @@ public class BurnsXTest extends AbstractContractXTest {
                 assertSuccess());
 
         // should revert when token has no supplyKey
-        runHtsCallAndExpectRevert(
+        runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
                         .encodeCallWithArgs(A_TOKEN_ADDRESS, BigInteger.valueOf(TOKENS_TO_BURN), new long[] {})
                         .array()),
-                TOKEN_HAS_NO_SUPPLY_KEY);
+                output -> assertEquals(
+                        Bytes.wrap(
+                                ReturnTypes.encodedRc(TOKEN_HAS_NO_SUPPLY_KEY).array()),
+                        output));
 
         // should revert when token is not associated to account
-        runHtsCallAndExpectRevert(
+        runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
                         .encodeCallWithArgs(B_TOKEN_ADDRESS, BigInteger.valueOf(TOKENS_TO_BURN), new long[] {})
                         .array()),
-                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+                output -> assertEquals(
+                        Bytes.wrap(
+                                ReturnTypes.encodedRc(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT).array()),
+                        output));
 
-        // should revert on totalSupply < amountToBurn
-        runHtsCallAndExpectRevert(
+//        // should revert on totalSupply < amountToBurn
+        runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(BurnTranslator.BURN_TOKEN_V1
-                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, BigInteger.valueOf(TOKEN_BALANCE + 1), new long[] {})
+                        .encodeCallWithArgs(ERC20_TOKEN_ADDRESS, BigInteger.valueOf(TOKEN_BALANCE + 1), new long[]{})
                         .array()),
-                INVALID_TOKEN_BURN_AMOUNT);
+                output -> assertEquals(
+                        Bytes.wrap(
+                                ReturnTypes.encodedRc(INVALID_TOKEN_BURN_AMOUNT).array()),
+                        output));
 
         // should successfully burn NFT with V1
         runHtsCallAndExpectOnSuccess(
