@@ -16,10 +16,10 @@
 
 package com.swirlds.common.wiring.counters;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
-import edu.umd.cs.findbugs.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinPool.ManagedBlocker;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -28,19 +28,18 @@ import java.util.concurrent.atomic.AtomicLong;
 public class StandardObjectCounter extends ObjectCounter {
 
     private final AtomicLong count = new AtomicLong(0);
-    private final long sleepNanos;
+    private final ManagedBlocker waitUntilEmptyBlocker;
+    private final ManagedBlocker interruptableWaitUntilEmptyBlocker;
 
     /**
      * Constructor.
      *
      * @param sleepDuration when a method needs to block, the duration to sleep while blocking
      */
-    public StandardObjectCounter(@Nullable final Duration sleepDuration) {
-        if (sleepDuration == null) {
-            sleepNanos = -1;
-        } else {
-            sleepNanos = sleepDuration.toNanos();
-        }
+    public StandardObjectCounter(@NonNull final Duration sleepDuration) {
+        final int sleepNanos = (int) sleepDuration.toNanos();
+        waitUntilEmptyBlocker = new EmptyBlocker(count, sleepNanos, false);
+        interruptableWaitUntilEmptyBlocker = new EmptyBlocker(count, sleepNanos, true);
     }
 
     /**
@@ -97,22 +96,16 @@ public class StandardObjectCounter extends ObjectCounter {
      */
     @Override
     public void waitUntilEmpty() {
-        boolean interrupted = false;
-
-        while (count.get() > 0) {
-            if (sleepNanos > 0) {
-                try {
-                    NANOSECONDS.sleep(sleepNanos);
-                } catch (final InterruptedException ex) {
-                    interrupted = true;
-                }
-            } else if (sleepNanos == 0) {
-                Thread.yield();
-            }
+        if (count.get() == 0) {
+            return;
         }
 
-        if (interrupted) {
+        try {
+            ForkJoinPool.managedBlock(waitUntilEmptyBlocker);
+        } catch (final InterruptedException e) {
+            // This should be impossible.
             Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while blocking on an waitUntilEmpty()");
         }
     }
 
@@ -121,12 +114,9 @@ public class StandardObjectCounter extends ObjectCounter {
      */
     @Override
     public void interruptableWaitUntilEmpty() throws InterruptedException {
-        while (count.get() > 0 && !Thread.currentThread().isInterrupted()) {
-            if (sleepNanos > 0) {
-                NANOSECONDS.sleep(sleepNanos);
-            } else if (sleepNanos == 0) {
-                Thread.yield();
-            }
+        if (count.get() == 0) {
+            return;
         }
+        ForkJoinPool.managedBlock(interruptableWaitUntilEmptyBlocker);
     }
 }

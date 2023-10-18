@@ -16,9 +16,7 @@
 
 package com.swirlds.common.wiring.counters;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
-import edu.umd.cs.findbugs.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ManagedBlocker;
@@ -33,15 +31,12 @@ public class BackpressureObjectCounter extends ObjectCounter {
 
     private final AtomicLong count = new AtomicLong(0);
     private final LongUnaryOperator increment;
-    private final long sleepNanos;
+    private final int sleepNanos;
 
     private final ManagedBlocker onRampBlocker;
     private final ManagedBlocker interruptableOnRampBlocker;
-    //    private final ManagedBlocker waitUntilEmptyBlocker;
-
-    private static class NoCapacityException extends RuntimeException {
-        public NoCapacityException() {}
-    }
+    private final ManagedBlocker waitUntilEmptyBlocker;
+    private final ManagedBlocker interruptableWaitUntilEmptyBlocker;
 
     /**
      * Constructor.
@@ -50,18 +45,12 @@ public class BackpressureObjectCounter extends ObjectCounter {
      *                      being used to monitor before backpressure is applied
      * @param sleepDuration when a method needs to block, the duration to sleep while blocking
      */
-    public BackpressureObjectCounter(final long capacity, @Nullable final Duration sleepDuration) {
+    public BackpressureObjectCounter(final long capacity, @NonNull final Duration sleepDuration) {
         if (capacity <= 0) {
             throw new IllegalArgumentException("Capacity must be greater than zero");
         }
 
-        if (sleepDuration == null) {
-            sleepNanos = -1;
-        } else {
-            sleepNanos = sleepDuration.toNanos();
-        }
-
-        // TODO move lambdas out of constructor
+        sleepNanos = (int) sleepDuration.toNanos();
 
         increment = count -> {
             if (count >= capacity) {
@@ -70,71 +59,10 @@ public class BackpressureObjectCounter extends ObjectCounter {
             return count + 1;
         };
 
-        onRampBlocker = new ManagedBlocker() {
-            /**
-             * Blocks for a while (if configured to do so).
-             */
-            @Override
-            public boolean block() {
-                if (sleepNanos >= 0) {
-                    try {
-                        NANOSECONDS.sleep(sleepNanos);
-                    } catch (final InterruptedException e) {
-                        // Don't throw an interrupted exception, but allow the thread
-                        // to maintain its interrupted status;
-                        Thread.currentThread().interrupt();
-                    }
-                }
-                return false;
-            }
-
-            /**
-             * Returns true if blocking is unnecessary.
-             */
-            @Override
-            public boolean isReleasable() {
-                // Make an attempt to reserve capacity.
-
-                try {
-                    count.updateAndGet(increment);
-                    // Capacity was reserved, no need to block.
-                    return true;
-                } catch (final NoCapacityException e) {
-                    // We were unable to reserve capacity, so blocking will be necessary.
-                    return false;
-                }
-            }
-        };
-
-        interruptableOnRampBlocker = new ManagedBlocker() {
-            /**
-             * Blocks for a while (if configured to do so).
-             */
-            @Override
-            public boolean block() throws InterruptedException {
-                if (sleepNanos >= 0) {
-                    NANOSECONDS.sleep(sleepNanos);
-                }
-                return false;
-            }
-
-            /**
-             * Returns true if blocking is unnecessary.
-             */
-            @Override
-            public boolean isReleasable() {
-                // Make an attempt to reserve capacity.
-
-                try {
-                    count.updateAndGet(increment);
-                    // Capacity was reserved, no need to block.
-                    return true;
-                } catch (final NoCapacityException e) {
-                    // We were unable to reserve capacity, so blocking will be necessary.
-                    return false;
-                }
-            }
-        };
+        onRampBlocker = new BackpressureBlocker(count, increment, sleepNanos, false);
+        interruptableOnRampBlocker = new BackpressureBlocker(count, increment, sleepNanos, true);
+        waitUntilEmptyBlocker = new EmptyBlocker(count, sleepNanos, false);
+        interruptableWaitUntilEmptyBlocker = new EmptyBlocker(count, sleepNanos, true);
     }
 
     /**
@@ -153,7 +81,7 @@ public class BackpressureObjectCounter extends ObjectCounter {
             } catch (final InterruptedException ex) {
                 // This should be impossible.
                 Thread.currentThread().interrupt();
-                throw new IllegalStateException("Interrupted while blocking on an onRamp");
+                throw new IllegalStateException("Interrupted while blocking on an onRamp()");
             }
         }
     }
@@ -216,22 +144,16 @@ public class BackpressureObjectCounter extends ObjectCounter {
      */
     @Override
     public void waitUntilEmpty() {
-        boolean interrupted = false;
-
-        while (count.get() > 0) {
-            if (sleepNanos > 0) {
-                try {
-                    NANOSECONDS.sleep(sleepNanos);
-                } catch (final InterruptedException ex) {
-                    interrupted = true;
-                }
-            } else if (sleepNanos == 0) {
-                Thread.yield();
-            }
+        if (count.get() == 0) {
+            return;
         }
 
-        if (interrupted) {
+        try {
+            ForkJoinPool.managedBlock(waitUntilEmptyBlocker);
+        } catch (final InterruptedException e) {
+            // This should be impossible.
             Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while blocking on an waitUntilEmpty()");
         }
     }
 
@@ -240,12 +162,9 @@ public class BackpressureObjectCounter extends ObjectCounter {
      */
     @Override
     public void interruptableWaitUntilEmpty() throws InterruptedException {
-        while (count.get() > 0 && !Thread.currentThread().isInterrupted()) {
-            if (sleepNanos > 0) {
-                NANOSECONDS.sleep(sleepNanos);
-            } else if (sleepNanos == 0) {
-                Thread.yield();
-            }
+        if (count.get() == 0) {
+            return;
         }
+        ForkJoinPool.managedBlock(interruptableWaitUntilEmptyBlocker);
     }
 }

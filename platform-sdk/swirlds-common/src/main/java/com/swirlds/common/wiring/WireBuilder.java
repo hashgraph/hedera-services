@@ -27,7 +27,6 @@ import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import com.swirlds.common.wiring.internal.ConcurrentWire;
 import com.swirlds.common.wiring.internal.SequentialWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.Objects;
@@ -151,16 +150,14 @@ public class WireBuilder {
     }
 
     /**
-     * If a method needs to block, this is the amount of time that is slept while waiting for the needed condition. If
-     * set to a sleep time of 0 then {@link Thread#yield()} is invoked in a loop while blocking is needed. If null
-     * then the thread will sit in a busy loop while blocking is needed. Default 100 nanoseconds.
+     * If a method needs to block, this is the amount of time that is slept while waiting for the needed condition.
      *
      * @param backpressureSleepDuration the length of time to sleep when backpressure needs to be applied
      * @return this
      */
     @NonNull
-    public WireBuilder withSleepDuration(@Nullable final Duration backpressureSleepDuration) {
-        if (backpressureSleepDuration != null && backpressureSleepDuration.isNegative()) {
+    public WireBuilder withSleepDuration(@NonNull final Duration backpressureSleepDuration) {
+        if (backpressureSleepDuration.isNegative()) {
             throw new IllegalArgumentException("Backpressure sleep duration must not be negative");
         }
         this.sleepDuration = backpressureSleepDuration;
