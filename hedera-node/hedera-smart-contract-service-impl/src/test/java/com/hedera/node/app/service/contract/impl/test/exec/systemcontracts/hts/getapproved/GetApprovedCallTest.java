@@ -17,7 +17,13 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.getapproved;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CIVILIAN_OWNED_NFT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OPERATOR;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,8 +41,8 @@ public class GetApprovedCallTest extends HtsCallTestBase {
     private GetApprovedCall subject;
 
     @Test
-    void revertsWithFungibleToken() {
-        subject = new GetApprovedCall(mockEnhancement(), FUNGIBLE_TOKEN, 123L, true);
+    void revertsWithFungibleTokenStaticCall() {
+        subject = new GetApprovedCall(mockEnhancement(), FUNGIBLE_TOKEN, 123L, true, true);
 
         final var result = subject.execute().fullResult().result();
 
@@ -45,8 +51,18 @@ public class GetApprovedCallTest extends HtsCallTestBase {
     }
 
     @Test
+    void revertsWithFungibleToken() {
+        subject = new GetApprovedCall(mockEnhancement(), FUNGIBLE_TOKEN, 123L, true, false);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.REVERT, result.getState());
+        assertEquals(revertOutputFor(INVALID_TOKEN_NFT_SERIAL_NUMBER), result.getOutput());
+    }
+
+    @Test
     void getApprovedErc() {
-        subject = new GetApprovedCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, 123L, true);
+        subject = new GetApprovedCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, 123L, true, false);
         given(nativeOperations.getNft(9898L, 123)).willReturn(CIVILIAN_OWNED_NFT);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 
@@ -62,7 +78,7 @@ public class GetApprovedCallTest extends HtsCallTestBase {
 
     @Test
     void getApprovedHapi() {
-        subject = new GetApprovedCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, 123L, false);
+        subject = new GetApprovedCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, 123L, false, false);
         given(nativeOperations.getNft(9898L, 123)).willReturn(CIVILIAN_OWNED_NFT);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 

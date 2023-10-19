@@ -28,6 +28,14 @@ import java.util.stream.LongStream;
  * Utility class for generating "synthetic" snapshots
  */
 public final class SyntheticSnapshot {
+    /** genesis snapshot, when loaded by consensus, it will start from genesis */
+    private static final ConsensusSnapshot GENESIS_SNAPSHOT = new ConsensusSnapshot(
+            ConsensusConstants.ROUND_FIRST,
+            List.of(),
+            List.of(new MinGenInfo(ConsensusConstants.ROUND_FIRST, GraphGenerations.FIRST_GENERATION)),
+            ConsensusConstants.FIRST_CONSENSUS_NUMBER,
+            Instant.EPOCH);
+
     /** Utility class, should not be instantiated */
     private SyntheticSnapshot() {}
 
@@ -62,5 +70,12 @@ public final class SyntheticSnapshot {
                 minGenInfos,
                 lastConsensusOrder + 1,
                 ConsensusUtils.calcMinTimestampForNextEvent(roundTimestamp));
+    }
+
+    /**
+     * @return the genesis snapshot
+     */
+    public static @NonNull ConsensusSnapshot getGenesisSnapshot() {
+        return GENESIS_SNAPSHOT;
     }
 }

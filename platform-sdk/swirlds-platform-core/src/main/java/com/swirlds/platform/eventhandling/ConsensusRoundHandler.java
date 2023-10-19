@@ -41,6 +41,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.common.threading.framework.QueueThread;
+import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -194,7 +195,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 .setHandler(this::applyConsensusRoundToState)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName(THREAD_CONS_NAME)
-                .setStopBehavior(swirldStateManager.getStopBehavior())
+                .setStopBehavior(Stoppable.StopBehavior.BLOCKING)
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                 .setMetricsConfiguration(
                         new QueueThreadMetricsConfiguration(platformContext.getMetrics()).enableBusyTimeMetric())

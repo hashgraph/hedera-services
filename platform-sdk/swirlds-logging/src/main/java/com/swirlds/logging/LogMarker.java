@@ -68,16 +68,6 @@ public enum LogMarker {
     STARTUP(LogMarkerType.INFO),
 
     /**
-     * log all the steps of a sync
-     */
-    SYNC(LogMarkerType.INFO),
-
-    /**
-     * about to sync
-     */
-    SYNC_START(LogMarkerType.INFO),
-
-    /**
      * Relevant information about each step of the sync without too much logging
      */
     SYNC_INFO(LogMarkerType.INFO),
@@ -86,11 +76,6 @@ public enum LogMarker {
      * All network related
      */
     NETWORK(LogMarkerType.INFO),
-
-    /**
-     * log each new event created (not received)
-     */
-    CREATE_EVENT(LogMarkerType.INFO),
 
     /**
      * log each event as it's added to the hashgraph
@@ -111,23 +96,10 @@ public enum LogMarker {
      */
     INTAKE_EVENT(LogMarkerType.INFO),
 
-    /** logs which throttles are preventing event creation */
-    EVENT_CREATION_THROTTLE(LogMarkerType.INFO),
-
     /**
      * log when threads are being stopped and/or joined
      */
     THREADS(LogMarkerType.INFO),
-
-    /**
-     * log the sending and receiving of the heartbeats from SyncHeartbeat to SyncListener
-     */
-    HEARTBEAT(LogMarkerType.INFO),
-
-    /**
-     * logs info related to event signatures
-     */
-    EVENT_SIG(LogMarkerType.INFO),
 
     /**
      * logs the certificates either loaded of created
@@ -169,11 +141,6 @@ public enum LogMarker {
     SIGNED_STATE(LogMarkerType.INFO),
 
     /**
-     * logs related to state recovery
-     */
-    EVENT_PARSER(LogMarkerType.INFO),
-
-    /**
      * logs events related to reconnect
      */
     RECONNECT(LogMarkerType.INFO),
@@ -187,9 +154,6 @@ public enum LogMarker {
      * logs related to stale events
      */
     STALE_EVENTS(LogMarkerType.INFO),
-
-    // Crypto
-    ADV_CRYPTO_SYSTEM(LogMarkerType.INFO),
 
     /**
      * log all platform status changes
@@ -208,11 +172,6 @@ public enum LogMarker {
 
     /** logs related to network protocol negotiation */
     PROTOCOL_NEGOTIATION(LogMarkerType.INFO),
-
-    /**
-     * logs related to port forwarding
-     */
-    PORT_FORWARDING(LogMarkerType.INFO),
 
     /**
      * detailed logs related to consensus voting, very verbose, should be used only for debugging

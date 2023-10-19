@@ -21,6 +21,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
+import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -33,7 +34,7 @@ import java.util.Queue;
  * Store a list of transactions created by self, both system and non-system, for wrapping in the next event to be
  * created.
  */
-public class TransactionPool implements TransactionSupplier {
+public class TransactionPool implements TransactionSupplier, Clearable {
 
     /**
      * A list of transactions created by this node waiting to be put into a self-event.
@@ -226,6 +227,7 @@ public class TransactionPool implements TransactionSupplier {
     /**
      * Clear all the transactions
      */
+    @Override
     public synchronized void clear() {
         bufferedTransactions.clear();
         priorityBufferedTransactions.clear();

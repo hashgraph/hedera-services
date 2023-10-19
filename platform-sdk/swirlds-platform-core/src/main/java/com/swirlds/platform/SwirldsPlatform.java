@@ -27,6 +27,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.event.creation.EventCreationManagerFactory.buildEventCreationManager;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
+import static com.swirlds.platform.state.iss.ConsensusHashManager.DO_NOT_IGNORE_ROUNDS;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
@@ -84,6 +85,7 @@ import com.swirlds.platform.components.transaction.system.PreconsensusSystemTran
 import com.swirlds.platform.components.wiring.ManualWiring;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
@@ -113,6 +115,7 @@ import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.Gossip;
 import com.swirlds.platform.gossip.GossipFactory;
@@ -132,6 +135,7 @@ import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.metrics.RuntimeMetrics;
+import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
@@ -217,6 +221,8 @@ public class SwirldsPlatform implements Platform {
 
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
     private final ConsensusRoundHandler consensusRoundHandler;
+
+    private final TransactionPool transactionPool;
     /** Handles all interaction with {@link SwirldState} */
     private final SwirldStateManager swirldStateManager;
     /** Checks the validity of transactions and submits valid ones to the transaction pool */
@@ -405,14 +411,15 @@ public class SwirldsPlatform implements Platform {
 
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
+        final long roundToIgnore = stateConfig.validateInitialState() ? DO_NOT_IGNORE_ROUNDS : initialState.getRound();
         final ConsensusHashManager consensusHashManager = components.add(new ConsensusHashManager(
+                platformContext,
                 Time.getCurrent(),
                 dispatchBuilder,
                 currentAddressBook,
-                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                stateConfig,
                 epochHash,
-                appVersion));
+                appVersion,
+                roundToIgnore));
 
         components.add(new IssHandler(
                 Time.getCurrent(),
@@ -427,7 +434,7 @@ public class SwirldsPlatform implements Platform {
         components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
 
         stateManagementComponent = wiring.wireStateManagementComponent(
-                PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
+                new PlatformSigner(crypto.getKeysAndCerts()),
                 actualMainClassName,
                 selfId,
                 swirldName,
@@ -486,24 +493,33 @@ public class SwirldsPlatform implements Platform {
         final TransactionConfig transactionConfig =
                 platformContext.getConfiguration().getConfigData(TransactionConfig.class);
 
+        transactionPool = new TransactionPool(platformContext);
+
         // This object makes a copy of the state. After this point, initialState becomes immutable.
-        swirldStateManager = PlatformConstructor.swirldStateManager(
+        swirldStateManager = new SwirldStateManager(
                 platformContext,
                 currentAddressBook,
                 selfId,
                 preconsensusSystemTransactionManager,
                 consensusSystemTransactionManager,
+                new SwirldStateMetrics(platformContext.getMetrics()),
                 platformStatusManager,
                 initialState.getState(),
                 appVersion);
 
-        stateHashSignQueue = components.add(PlatformConstructor.stateHashSignQueue(
-                threadManager, selfId, stateManagementComponent::newSignedStateFromTransactions, metrics));
+        stateHashSignQueue = components.add(new QueueThreadConfiguration<ReservedSignedState>(threadManager)
+                .setNodeId(selfId)
+                .setComponent(PLATFORM_THREAD_POOL_NAME)
+                .setThreadName("state-hash-sign")
+                .setHandler(stateManagementComponent::newSignedStateFromTransactions)
+                .setCapacity(1)
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
+                .build());
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
                 metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
-        consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
+        consensusRoundHandler = components.add(new ConsensusRoundHandler(
                 platformContext,
                 threadManager,
                 selfId,
@@ -617,7 +633,7 @@ public class SwirldsPlatform implements Platform {
                 currentAddressBook,
                 selfId,
                 appVersion,
-                swirldStateManager.getTransactionPool(),
+                transactionPool,
                 intakeQueue,
                 eventObserverDispatcher,
                 platformStatusManager::getCurrentStatus,
@@ -627,7 +643,7 @@ public class SwirldsPlatform implements Platform {
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,
                 transactionConfig,
-                swirldStateManager::submitTransaction,
+                transaction -> transactionPool.submitTransaction(transaction, false),
                 new TransactionMetrics(metrics));
 
         final boolean startedFromGenesis = initialState.isGenesisState();
@@ -699,7 +715,7 @@ public class SwirldsPlatform implements Platform {
                         Pair.of(gossip, "gossip"),
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
-                        Pair.of(swirldStateManager, "swirldStateManager")));
+                        Pair.of(transactionPool, "transactionPool")));
 
         // To be removed once the GUI component is better integrated with the platform.
         GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
@@ -731,7 +747,7 @@ public class SwirldsPlatform implements Platform {
     private boolean createSystemTransaction(
             @NonNull final SystemTransaction systemTransaction, final boolean priority) {
         Objects.requireNonNull(systemTransaction);
-        return swirldStateManager.submitTransaction(systemTransaction, priority);
+        return transactionPool.submitTransaction(systemTransaction, priority);
     }
 
     /**

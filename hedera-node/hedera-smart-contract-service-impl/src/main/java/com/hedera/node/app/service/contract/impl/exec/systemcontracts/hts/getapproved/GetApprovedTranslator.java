@@ -43,7 +43,7 @@ public class GetApprovedTranslator extends AbstractHtsCallTranslator {
      * {@inheritDoc}
      */
     @Override
-    public boolean matches(@NonNull HtsCallAttempt attempt) {
+    public boolean matches(@NonNull final HtsCallAttempt attempt) {
         return (attempt.isTokenRedirect() && matchesErcSelector(attempt.selector()))
                 || (!attempt.isTokenRedirect() && matchesClassicSelector(attempt.selector()));
     }
@@ -52,15 +52,20 @@ public class GetApprovedTranslator extends AbstractHtsCallTranslator {
      * {@inheritDoc}
      */
     @Override
-    public GetApprovedCall callFrom(@NonNull HtsCallAttempt attempt) {
+    public GetApprovedCall callFrom(@NonNull final HtsCallAttempt attempt) {
         if (matchesErcSelector(attempt.selector())) {
             final var args = ERC_GET_APPROVED.decodeCall(attempt.input().toArrayUnsafe());
             return new GetApprovedCall(
-                    attempt.enhancement(), attempt.redirectToken(), asExactLongValueOrZero(args.get(0)), true);
+                    attempt.enhancement(),
+                    attempt.redirectToken(),
+                    asExactLongValueOrZero(args.get(0)),
+                    true,
+                    attempt.isStaticCall());
         } else {
             final var args = HAPI_GET_APPROVED.decodeCall(attempt.input().toArrayUnsafe());
             final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
-            return new GetApprovedCall(attempt.enhancement(), token, asExactLongValueOrZero(args.get(1)), false);
+            return new GetApprovedCall(
+                    attempt.enhancement(), token, asExactLongValueOrZero(args.get(1)), false, attempt.isStaticCall());
         }
     }
 

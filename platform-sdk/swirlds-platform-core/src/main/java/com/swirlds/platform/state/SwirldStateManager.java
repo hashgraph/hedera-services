@@ -16,22 +16,115 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
+
+import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.threading.framework.Stoppable;
-import com.swirlds.common.utility.Clearable;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.platform.FreezePeriodChecker;
-import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
+import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.uptime.UptimeTracker;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * The methods used to interact with instances of {@link SwirldState}.
+ * Manages all interactions with the state object required by {@link SwirldState}.
  */
-public interface SwirldStateManager extends FreezePeriodChecker, Clearable, LoadableFromSignedState {
+public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSignedState {
+
+    /**
+     * Stats relevant to SwirldState operations.
+     */
+    private final SwirldStateMetrics stats;
+
+    /**
+     * reference to the state that reflects all known consensus transactions
+     */
+    private final AtomicReference<State> stateRef = new AtomicReference<>();
+
+    /**
+     * The most recent immutable state. No value until the first fast copy is created.
+     */
+    private final AtomicReference<State> latestImmutableState = new AtomicReference<>();
+
+    /**
+     * Handle transactions by applying them to a state
+     */
+    private final TransactionHandler transactionHandler;
+
+    /**
+     * Tracks and reports node uptime.
+     */
+    private final UptimeTracker uptimeTracker;
+
+    /**
+     * Handles system transactions pre-consensus
+     */
+    private final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager;
+
+    /**
+     * Handles system transactions post-consensus
+     */
+    private final ConsensusSystemTransactionManager consensusSystemTransactionManager;
+
+    /**
+     * The current software version.
+     */
+    private final SoftwareVersion softwareVersion;
+
+    /**
+     * Creates a new instance with the provided state.
+     *
+     * @param platformContext                      the platform context
+     * @param addressBook                          the address book
+     * @param selfId                               this node's id
+     * @param preconsensusSystemTransactionManager the manager for pre-consensus system transactions
+     * @param consensusSystemTransactionManager    the manager for post-consensus system transactions
+     * @param swirldStateMetrics                   metrics related to SwirldState
+     * @param statusActionSubmitter                enables submitting platform status actions
+     * @param state                                the genesis state
+     * @param softwareVersion                      the current software version
+     */
+    public SwirldStateManager(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId,
+            @NonNull final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager,
+            @NonNull final ConsensusSystemTransactionManager consensusSystemTransactionManager,
+            @NonNull final SwirldStateMetrics swirldStateMetrics,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
+            @NonNull final State state,
+            @NonNull final SoftwareVersion softwareVersion) {
+
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(selfId);
+        this.preconsensusSystemTransactionManager = Objects.requireNonNull(preconsensusSystemTransactionManager);
+        this.consensusSystemTransactionManager = Objects.requireNonNull(consensusSystemTransactionManager);
+        this.stats = Objects.requireNonNull(swirldStateMetrics);
+        Objects.requireNonNull(statusActionSubmitter);
+        Objects.requireNonNull(state);
+        this.softwareVersion = Objects.requireNonNull(softwareVersion);
+
+        this.transactionHandler = new TransactionHandler(selfId, stats);
+        this.uptimeTracker =
+                new UptimeTracker(platformContext, addressBook, statusActionSubmitter, selfId, Time.getCurrent());
+        initialState(state);
+    }
 
     /**
      * Invokes the pre-handle method. Called after the event has been verified but before
@@ -40,7 +133,18 @@ public interface SwirldStateManager extends FreezePeriodChecker, Clearable, Load
      * @param event
      * 		the event to handle
      */
-    void preHandle(final EventImpl event);
+    public void preHandle(final EventImpl event) {
+        final long startTime = System.nanoTime();
+
+        State immutableState = latestImmutableState.get();
+        while (!immutableState.tryReserve()) {
+            immutableState = latestImmutableState.get();
+        }
+        transactionHandler.preHandle(event, immutableState.getSwirldState());
+        immutableState.release();
+
+        stats.preHandleTime(startTime, System.nanoTime());
+    }
 
     /**
      * Handles an event before it reaches consensus..
@@ -48,14 +152,13 @@ public interface SwirldStateManager extends FreezePeriodChecker, Clearable, Load
      * @param event
      * 		the event to handle
      */
-    void handlePreConsensusEvent(final EventImpl event);
+    public void handlePreConsensusEvent(final EventImpl event) {
+        final long startTime = System.nanoTime();
 
-    /**
-     * Provides the transaction pool used to store transactions submitted by this node.
-     *
-     * @return the transaction pool
-     */
-    TransactionPool getTransactionPool();
+        preconsensusSystemTransactionManager.handleEvent(event);
+
+        stats.preConsensusHandleTime(startTime, System.nanoTime());
+    }
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking {@link
@@ -64,7 +167,111 @@ public interface SwirldStateManager extends FreezePeriodChecker, Clearable, Load
      * @param round
      * 		the round to handle
      */
-    void handleConsensusRound(final ConsensusRound round);
+    public void handleConsensusRound(final ConsensusRound round) {
+        final State state = stateRef.get();
+
+        uptimeTracker.handleRound(
+                round,
+                state.getPlatformDualState().getMutableUptimeData(),
+                state.getPlatformState().getAddressBook());
+        transactionHandler.handleRound(round, state);
+        consensusSystemTransactionManager.handleRound(state, round);
+        updateEpoch();
+    }
+
+    /**
+     * Returns the consensus state. The consensus state could become immutable at any time. Modifications must
+     * not be made to the returned state.
+     */
+    public State getConsensusState() {
+        return stateRef.get();
+    }
+
+    /**
+     * Invoked when a signed state is about to be created for the current freeze period.
+     * <p>
+     * Invoked only by the consensus handling thread, so there is no chance of the state being modified by a
+     * concurrent thread.
+     * </p>
+     */
+    public void savedStateInFreezePeriod() {
+        // set current DualState's lastFrozenTime to be current freezeTime
+        stateRef.get().getPlatformDualState().setLastFrozenTimeToBeCurrentFreezeTime();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void loadFromSignedState(final SignedState signedState) {
+        final State state = signedState.getState();
+
+        state.throwIfDestroyed("state must not be destroyed");
+        state.throwIfImmutable("state must be mutable");
+
+        fastCopyAndUpdateRefs(state);
+    }
+
+    private void initialState(final State state) {
+        state.throwIfDestroyed("state must not be destroyed");
+        state.throwIfImmutable("state must be mutable");
+
+        if (stateRef.get() != null) {
+            throw new IllegalStateException("Attempt to set initial state when there is already a state reference.");
+        }
+
+        // Create a fast copy so there is always an immutable state to
+        // invoke handleTransaction on for pre-consensus transactions
+        fastCopyAndUpdateRefs(state);
+    }
+
+    private void fastCopyAndUpdateRefs(final State state) {
+        final State consState = fastCopy(state, stats, softwareVersion);
+
+        // Set latest immutable first to prevent the newly immutable state from being deleted between setting the
+        // stateRef and the latestImmutableState
+        setLatestImmutableState(state);
+        setState(consState);
+    }
+
+    /**
+     * Sets the consensus state to the state provided. Must be mutable and have a reference count of at least 1.
+     *
+     * @param state the new mutable state
+     */
+    private void setState(final State state) {
+        final State currVal = stateRef.get();
+        if (currVal != null) {
+            currVal.release();
+        }
+        // Do not increment the reference count because the state provided already has a reference count of at least
+        // one to represent this reference and to prevent it from being deleted before this reference is set.
+        stateRef.set(state);
+    }
+
+    private void setLatestImmutableState(final State immutableState) {
+        final State currVal = latestImmutableState.get();
+        if (currVal != null) {
+            currVal.release();
+        }
+        immutableState.reserve();
+        latestImmutableState.set(immutableState);
+    }
+
+    private void updateEpoch() {
+        final PlatformState platformState = stateRef.get().getPlatformState();
+        if (platformState != null) {
+            platformState.getPlatformData().updateEpochHash();
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isInFreezePeriod(final Instant timestamp) {
+        return SwirldStateManagerUtils.isInFreezePeriod(timestamp, getConsensusState());
+    }
 
     /**
      * <p>Updates the state to a fast copy of itself and returns a reference to the previous state to be used for
@@ -78,69 +285,8 @@ public interface SwirldStateManager extends FreezePeriodChecker, Clearable, Load
      * @return a copy of the state to use for the next signed state
      * @see State#copy()
      */
-    State getStateForSigning();
-
-    /**
-     * Invoked when a signed state is about to be created for the current freeze period.
-     * <p>
-     * Invoked only by the consensus handling thread, so there is no chance of the state being modified by a
-     * concurrent thread.
-     * </p>
-     */
-    void savedStateInFreezePeriod();
-
-    /**
-     * Return the current state of the app. It changes frequently, so this needs to be called frequently. This
-     * method also guarantees that the state will not be deleted until {@link #releaseCurrentSwirldState()} is invoked.
-     *
-     * @return the current app state
-     */
-    SwirldState getCurrentSwirldState();
-
-    /**
-     * Returns the consensus state. The consensus state could become immutable at any time. Modifications must
-     * not be made to the returned state.
-     */
-    State getConsensusState();
-
-    /**
-     * Releases the state that was previously returned, so that another one can be obtained from {@link
-     * #getCurrentSwirldState()}, and deletes it if it's not the current state being used.
-     */
-    default void releaseCurrentSwirldState() {
-        // default is NO-OP
-    }
-
-    /**
-     * <p>Submits a self transaction for any necessary processing separate from the transaction's propagation to the
-     * network. A transaction must only be submitted here if it is also submitted for network propagation in {@link
-     * TransactionPool}.</p>
-     *
-     * @param transaction
-     * 		the transaction to submit
-     */
-    default boolean submitTransaction(final ConsensusTransactionImpl transaction) {
-        return submitTransaction(transaction, false);
-    }
-
-    /**
-     * Submits a self transaction (i.e. a transaction created by this node and put into a self event).
-     * Implementations must submit this transaction for network propagation in {@link TransactionPool}.
-     *
-     * @param transaction
-     * 		the transaction to submit
-     * @param priority
-     * 		if true, then this transaction will be added to a future event before other
-     * 		non-priority transactions
-     */
-    boolean submitTransaction(ConsensusTransactionImpl transaction, boolean priority);
-
-    /**
-     * Gets the stop behavior of the threads applying transactions to the state
-     *
-     * @return the type of stop behavior of the threads applying transactions to the state
-     */
-    default Stoppable.StopBehavior getStopBehavior() {
-        return Stoppable.StopBehavior.BLOCKING;
+    public State getStateForSigning() {
+        fastCopyAndUpdateRefs(stateRef.get());
+        return latestImmutableState.get();
     }
 }
