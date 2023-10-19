@@ -33,6 +33,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.file.FileService;
@@ -56,7 +57,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,10 +74,14 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
     private SystemFileUpdateFacility subject;
 
+    @Mock
     private ThrottleManager throttleManager;
 
     @Mock
     private ExchangeRateManager exchangeRateManager;
+
+    @Mock
+    private FeeManager feeManager;
 
     @Mock
     private MonoMultiplierSources monoMultiplierSources;
@@ -101,11 +105,11 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1L));
 
-        throttleManager = new ThrottleManager();
         subject = new SystemFileUpdateFacility(
                 configProvider,
                 throttleManager,
                 exchangeRateManager,
+                feeManager,
                 monoMultiplierSources,
                 throttleAccumulator,
                 synchronizedThrottleAccumulator);
@@ -123,6 +127,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         null,
                         throttleManager,
                         exchangeRateManager,
+                        feeManager,
                         monoMultiplierSources,
                         throttleAccumulator,
                         synchronizedThrottleAccumulator))
@@ -131,6 +136,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         configProvider,
                         null,
                         exchangeRateManager,
+                        feeManager,
                         monoMultiplierSources,
                         throttleAccumulator,
                         synchronizedThrottleAccumulator))
@@ -139,6 +145,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         configProvider,
                         throttleManager,
                         null,
+                        feeManager,
                         monoMultiplierSources,
                         throttleAccumulator,
                         synchronizedThrottleAccumulator))
@@ -148,6 +155,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         throttleManager,
                         exchangeRateManager,
                         null,
+                        monoMultiplierSources,
                         throttleAccumulator,
                         synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
@@ -155,6 +163,16 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         configProvider,
                         throttleManager,
                         exchangeRateManager,
+                        feeManager,
+                        null,
+                        throttleAccumulator,
+                        synchronizedThrottleAccumulator))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new SystemFileUpdateFacility(
+                        configProvider,
+                        throttleManager,
+                        exchangeRateManager,
+                        feeManager,
                         monoMultiplierSources,
                         null,
                         synchronizedThrottleAccumulator))
@@ -163,6 +181,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         configProvider,
                         throttleManager,
                         exchangeRateManager,
+                        feeManager,
                         monoMultiplierSources,
                         throttleAccumulator,
                         null))
@@ -233,17 +252,8 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .transactionID(TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(50L).build())
                         .build())
-                .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
+                .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
-
-        throttleManager = Mockito.mock(ThrottleManager.class);
-        subject = new SystemFileUpdateFacility(
-                configProvider,
-                throttleManager,
-                exchangeRateManager,
-                monoMultiplierSources,
-                throttleAccumulator,
-                synchronizedThrottleAccumulator);
 
         // when
         subject.handleTxBody(state, txBody.build());
@@ -264,7 +274,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .transactionID(TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(50L).build())
                         .build())
-                .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
+                .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
@@ -275,5 +285,27 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .update(
                         FileUtilities.getFileContent(state, fileID),
                         AccountID.newBuilder().accountNum(50L).build());
+    }
+
+    @Test
+    void feeManagerUpdatedOnFileUpdate() {
+        // given
+        final var configuration = configProvider.getConfiguration();
+        final var config = configuration.getConfigData(FilesConfig.class);
+
+        final var fileNum = config.feeSchedules();
+        final var fileID = FileID.newBuilder().fileNum(fileNum).build();
+        final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .build())
+                .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
+        files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
+
+        // when
+        subject.handleTxBody(state, txBody.build());
+
+        // then
+        verify(feeManager, times(1)).update(FileUtilities.getFileContent(state, fileID));
     }
 }

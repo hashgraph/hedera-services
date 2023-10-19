@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.HederaState;
@@ -47,6 +48,7 @@ public class SystemFileUpdateFacility {
     private final ConfigProviderImpl configProvider;
     private final ThrottleManager throttleManager;
     private final ExchangeRateManager exchangeRateManager;
+    private final FeeManager feeManager;
     private final MonoMultiplierSources monoMultiplierSources;
     private final ThrottleAccumulator backendThrottle;
     private final ThrottleAccumulator frontendThrottle;
@@ -60,12 +62,14 @@ public class SystemFileUpdateFacility {
             @NonNull final ConfigProviderImpl configProvider,
             @NonNull final ThrottleManager throttleManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final FeeManager feeManager,
             @NonNull final MonoMultiplierSources monoMultiplierSources,
             @NonNull final ThrottleAccumulator backendThrottle,
             @NonNull final ThrottleAccumulator frontendThrottle) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.throttleManager = requireNonNull(throttleManager, " throttleManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
+        this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.monoMultiplierSources = requireNonNull(monoMultiplierSources, "multiplierSources must not be null");
         this.backendThrottle = requireNonNull(backendThrottle, "backendThrottle must not be null");
         this.frontendThrottle = requireNonNull(frontendThrottle, "frontendThrottle must not be null");
@@ -105,12 +109,8 @@ public class SystemFileUpdateFacility {
         // We load the file only, if there is an updater for it.
         final var config = configuration.getConfigData(FilesConfig.class);
         try {
-            if (fileNum == config.addressBook()) {
-                logger.error("Update of address book not implemented");
-            } else if (fileNum == config.nodeDetails()) {
-                logger.error("Update of node details not implemented");
-            } else if (fileNum == config.feeSchedules()) {
-                logger.error("Update of fee schedules not implemented");
+            if (fileNum == config.feeSchedules()) {
+                feeManager.update(FileUtilities.getFileContent(state, fileID));
             } else if (fileNum == config.exchangeRates()) {
                 exchangeRateManager.update(FileUtilities.getFileContent(state, fileID), payer);
             } else if (fileNum == config.networkProperties()) {
@@ -130,8 +130,6 @@ public class SystemFileUpdateFacility {
 
                 // Updating the multiplier source to use the new throttle definitions
                 monoMultiplierSources.resetExpectations();
-            } else if (fileNum == config.upgradeFileNumber()) {
-                logger.error("Update of file number not implemented");
             }
         } catch (HandleException e) {
             // handle exception suppose to propagate the exception to the caller

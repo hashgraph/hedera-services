@@ -28,6 +28,7 @@ import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
@@ -103,6 +104,7 @@ class IngestComponentTest {
                 new ThrottleMultiplierSource(null, null, null, null, null, null, null));
 
         final var exchangeRateManager = new ExchangeRateManager(configProvider);
+        final var feeManager = new FeeManager(exchangeRateManager);
 
         final var throttleManager = new ThrottleManager();
         app = DaggerHederaInjectionComponent.builder()
@@ -115,6 +117,7 @@ class IngestComponentTest {
                         configProvider,
                         throttleManager,
                         exchangeRateManager,
+                        feeManager,
                         monoMultiplierSources,
                         handleThrottling,
                         synchronizedThrottleAccumulator))

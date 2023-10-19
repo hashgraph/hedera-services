@@ -30,6 +30,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
 import com.hedera.node.app.ids.EntityIdService;
@@ -160,6 +161,10 @@ public final class Hedera implements SwirldMain {
      * The exchange rate manager
      */
     private ExchangeRateManager exchangeRateManager;
+    /**
+     * The fee manager
+     */
+    private FeeManager feeManager;
     /** The class responsible for remembering objects created in genesis cases */
     private final GenesisRecordsBuilder genesisRecordsBuilder;
     /**
@@ -683,6 +688,9 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ExchangeRateManager");
         exchangeRateManager = new ExchangeRateManager(configProvider);
 
+        logger.info("Initializing FeeManager");
+        feeManager = new FeeManager(exchangeRateManager);
+
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null);
 
@@ -692,8 +700,8 @@ public final class Hedera implements SwirldMain {
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
         // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
         // from information held in state (especially those in special files).
-        initializeFeeManager(state);
         initializeExchangeRateManager(state);
+        initializeFeeManager(state);
         initializeThrottles(state);
     }
 
@@ -766,6 +774,9 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ExchangeRateManager");
         exchangeRateManager = new ExchangeRateManager(configProvider);
 
+        logger.info("Initializing FeeManager");
+        feeManager = new FeeManager(exchangeRateManager);
+
         // Create all the nodes in the merkle tree for all the services
         // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
         //       the config provider to the migration code and let it get the right version of config as it goes.
@@ -777,8 +788,8 @@ public final class Hedera implements SwirldMain {
         // And now that the entire dependency graph has been initialized, and we have config, and all migration has
         // been completed, we are prepared to initialize in-memory data structures. These specifically are loaded
         // from information held in state (especially those in special files).
-        initializeFeeManager(state);
         initializeExchangeRateManager(state);
+        initializeFeeManager(state);
         initializeThrottles(state);
         // TODO We may need to update the config with the latest version in file 121
     }
@@ -810,10 +821,12 @@ public final class Hedera implements SwirldMain {
                     .configuration(configProvider)
                     .throttleManager(throttleManager)
                     .exchangeRateManager(exchangeRateManager)
+                    .feeManager(feeManager)
                     .systemFileUpdateFacility(new SystemFileUpdateFacility(
                             configProvider,
                             throttleManager,
                             exchangeRateManager,
+                            feeManager,
                             monoMultiplierSources,
                             backendThrottle,
                             frontendThrottle))
