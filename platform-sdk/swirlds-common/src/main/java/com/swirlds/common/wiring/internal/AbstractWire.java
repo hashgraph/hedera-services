@@ -77,11 +77,13 @@ public abstract class AbstractWire<O> extends Wire<O> {
     /**
      * {@inheritDoc}
      */
+    @SafeVarargs
     @NonNull
     @Override
-    public final Wire<O> solderTo(@NonNull final Consumer<O> handler) {
-        Objects.requireNonNull(handler);
-        forwardingDestinations.add(handler);
+    public final Wire<O> solderTo(@NonNull final Consumer<O>... handlers) {
+        for (final Consumer<O> handler : handlers) {
+            forwardingDestinations.add(Objects.requireNonNull(handler));
+        }
         return this;
     }
 

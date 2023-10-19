@@ -140,11 +140,12 @@ public abstract class Wire<O> {
      * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations
      * after data has been inserted into the wire is not thread safe and has undefined behavior.
      *
-     * @param handler the consumer to forward output data to
+     * @param handlers the consumers to forward output data to
      * @return this
      */
+    @SuppressWarnings("unchecked")
     @NonNull
-    public abstract Wire<O> solderTo(@NonNull final Consumer<O> handler);
+    public abstract Wire<O> solderTo(@NonNull final Consumer<O>... handlers);
 
     /**
      * Flush all data in the wire. Blocks until all data currently in flight has been processed.
