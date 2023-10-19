@@ -16,6 +16,8 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static contract.CreatesXTestConstants.DECIMALS;
 import static contract.CreatesXTestConstants.DECIMALS_BIG_INT;
@@ -38,7 +40,7 @@ import static contract.CreatesXTestConstants.TOKEN_KEY_TWO;
 import static contract.CreatesXTestConstants.hederaTokenFactory;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
-import static contract.XTestConstants.INVALID_SENDER_HEADLONG_ADDRESS;
+import static contract.XTestConstants.INVALID_ACCOUNT_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
@@ -51,7 +53,6 @@ import static contract.XTestConstants.assertSuccess;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
@@ -80,7 +81,7 @@ public class CreatesXTest extends AbstractContractXTest {
     private static final Tuple INVALID_ACCOUNT_ID_HEDERA_TOKEN = hederaTokenFactory(
             NAME,
             SYMBOL,
-            INVALID_SENDER_HEADLONG_ADDRESS,
+            INVALID_ACCOUNT_HEADLONG_ADDRESS,
             MEMO,
             true,
             MAX_SUPPLY,
@@ -154,7 +155,7 @@ public class CreatesXTest extends AbstractContractXTest {
                                 INITIAL_TOTAL_SUPPLY_BIG_INT,
                                 DECIMALS_BIG_INT)
                         .array()),
-                ResponseCodeEnum.INVALID_ADMIN_KEY);
+                INVALID_ADMIN_KEY);
 
         // should revert with autoRenewPeriod less than 2592000
         runHtsCallAndExpectRevert(
@@ -174,7 +175,7 @@ public class CreatesXTest extends AbstractContractXTest {
                                 INITIAL_TOTAL_SUPPLY_BIG_INT,
                                 DECIMALS_BIG_INT)
                         .array()),
-                ResponseCodeEnum.INVALID_RENEWAL_PERIOD);
+                INVALID_RENEWAL_PERIOD);
 
         // should successfully create fungible token with custom fees v1
         runHtsCallAndExpectOnSuccess(
@@ -269,7 +270,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
-        // should throw `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
         // account
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
@@ -279,7 +280,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
-        // should throw `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
         // account
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
@@ -295,7 +296,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
-        // should throw `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
         // account
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
@@ -304,7 +305,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
-        // should throw `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
         // account
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
