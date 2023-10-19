@@ -22,6 +22,9 @@ plugins {
 publishing {
     publications {
         named<MavenPublication>("maven") {
+            groupId = "com.hedera.evm"
+            artifactId = "hedera-evm"
+
             pom.developers {
                 developer {
                     name.set("Hedera Base Team")
