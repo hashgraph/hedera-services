@@ -371,7 +371,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      * @param configuration the {@link Configuration}
      * @return the calculated fees
      */
-    public static Fees cryptoUpdateFees(
+    private Fees cryptoUpdateFees(
             final TransactionBody body,
             final FeeCalculator feeCalculator,
             final ReadableAccountStore accountStore,
