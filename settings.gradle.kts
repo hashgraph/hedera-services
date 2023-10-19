@@ -148,12 +148,15 @@ gitRepositories {
     checkoutsDirectory.set(File(rootDir, "hedera-node/hapi"))
     // check branch in repo for updates every second
     refreshIntervalMillis.set(1000)
-    include("hedera-protobufs") {
-        uri.set("https://github.com/hashgraph/hedera-protobufs.git")
-        // HAPI repo version
-        tag.set(hapiProtoBranchOrTag)
-        // do not load project from repo
-        autoInclude.set(false)
+
+    if (!gradle.startParameter.isOffline) {
+        include("hedera-protobufs") {
+            uri.set("https://github.com/hashgraph/hedera-protobufs.git")
+            // HAPI repo version
+            tag.set(hapiProtoBranchOrTag)
+            // do not load project from repo
+            autoInclude.set(false)
+        }
     }
 }
 
