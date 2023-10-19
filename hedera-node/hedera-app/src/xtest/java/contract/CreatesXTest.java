@@ -16,6 +16,7 @@
 
 package contract;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static contract.CreatesXTestConstants.DECIMALS;
 import static contract.CreatesXTestConstants.DECIMALS_BIG_INT;
 import static contract.CreatesXTestConstants.DECIMALS_LONG;
@@ -37,9 +38,9 @@ import static contract.CreatesXTestConstants.TOKEN_KEY_TWO;
 import static contract.CreatesXTestConstants.hederaTokenFactory;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
+import static contract.XTestConstants.INVALID_SENDER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
-import static contract.XTestConstants.INVALID_ACCOUNT_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
@@ -79,7 +80,7 @@ public class CreatesXTest extends AbstractContractXTest {
     private static final Tuple INVALID_ACCOUNT_ID_HEDERA_TOKEN = hederaTokenFactory(
             NAME,
             SYMBOL,
-            INVALID_ACCOUNT_HEADLONG_ADDRESS,
+            INVALID_SENDER_HEADLONG_ADDRESS,
             MEMO,
             true,
             MAX_SUPPLY,
@@ -268,13 +269,50 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
-        // should successfully create fungible token v1
-        /*runHtsCallAndExpectOnSuccess(
+        // should throw `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
+        // account
+        runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
-                        .encodeCallWithArgs(INVALID_ACCOUNT_ID_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_BIG_INT)
+                        .encodeCallWithArgs(
+                                INVALID_ACCOUNT_ID_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_BIG_INT)
                         .array()),
-                assertSuccess());*/
+                INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+
+        // should throw `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
+        // account
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
+                        .encodeCallWithArgs(
+                                INVALID_ACCOUNT_ID_HEDERA_TOKEN,
+                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+                                DECIMALS_BIG_INT,
+                                // FixedFee
+                                new Tuple[] {FIXED_FEE},
+                                // FractionalFee
+                                new Tuple[] {FRACTIONAL_FEE})
+                        .array()),
+                INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+
+        // should throw `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
+        // account
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+                        .encodeCallWithArgs(INVALID_ACCOUNT_ID_HEDERA_TOKEN)
+                        .array()),
+                INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+
+        // should throw `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
+        // account
+        runHtsCallAndExpectRevert(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
+                        .encodeCallWithArgs(
+                                INVALID_ACCOUNT_ID_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+                        .array()),
+                INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
     }
 
     @Override
