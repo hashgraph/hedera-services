@@ -18,7 +18,6 @@ package com.swirlds.platform.network.connectivity;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
-import static com.swirlds.logging.LogMarker.SYNC;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.SocketConfig;
@@ -156,7 +155,6 @@ public class InboundConnectionHandler {
                     clientSocket.getInetAddress().toString(),
                     acceptTime == 0 ? "N/A" : (System.currentTimeMillis() - acceptTime),
                     e);
-            logger.error(SYNC.getMarker(), "Listener {} hearing {} had general Exception:", selfId, otherId, e);
             NetworkUtils.close(dis, dos, clientSocket);
         }
     }

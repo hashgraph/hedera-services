@@ -17,8 +17,11 @@
 package com.hedera.node.app.service.contract.impl.test;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.typedKeyTupleFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
@@ -28,6 +31,7 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERA
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
@@ -36,6 +40,7 @@ import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
@@ -66,6 +71,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerifi
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.TokenKeyType;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -104,7 +110,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
 public class TestHelpers {
-
+    public static final String LEDGER_ID = "01";
     public static final Bytes ETH_WITH_CALL_DATA = Bytes.fromHex(
             "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792");
     public static final Bytes ETH_WITH_TO_ADDRESS = Bytes.fromHex(
@@ -206,15 +212,6 @@ public class TestHelpers {
             .tokenType(TokenType.FUNGIBLE_COMMON)
             .build();
 
-    public static final Token UNREASONABLY_DIVISIBLE_TOKEN = Token.newBuilder()
-            .tokenId(FUNGIBLE_TOKEN_ID)
-            .name("Odd")
-            .symbol("ODD")
-            .decimals(Integer.MAX_VALUE)
-            .totalSupply(666666L)
-            .tokenType(TokenType.FUNGIBLE_COMMON)
-            .build();
-
     public static final CustomFee FIXED_HBAR_FEES = CustomFee.newBuilder()
             .fixedFee(FixedFee.newBuilder().amount(2).build())
             .feeCollectorAccountId(SENDER_ID)
@@ -301,6 +298,42 @@ public class TestHelpers {
             .feeScheduleKey(FEE_SCHEDULE_KEY)
             .pauseKey(PAUSE_KEY)
             .build();
+    public static final List<Tuple> EXPECTED_FIXED_CUSTOM_FEES = List.of(
+            Tuple.of(2L, headlongAddressOf(ZERO_TOKEN_ID), true, false, headlongAddressOf(SENDER_ID)),
+            Tuple.of(3L, headlongAddressOf(FUNGIBLE_TOKEN_ID), false, false, headlongAddressOf(SENDER_ID)));
+    public static final List<Tuple> EXPECTED_FRACTIONAL_CUSTOM_FEES =
+            List.of(Tuple.of(1L, 100L, 2L, 4L, true, headlongAddressOf(SENDER_ID)));
+    public static final List<Tuple> EXPECTED_ROYALTY_CUSTOM_FEES = List.of(
+            Tuple.of(2L, 50L, 0L, headlongAddressOf(ZERO_TOKEN_ID), true, headlongAddressOf(SENDER_ID)),
+            Tuple.of(2L, 50L, 5L, headlongAddressOf(FUNGIBLE_TOKEN_ID), false, headlongAddressOf(SENDER_ID)));
+
+    public static final List<Tuple> EXPECTE_KEYLIST = List.of(
+            typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), ADMIN_KEY),
+            typedKeyTupleFor(TokenKeyType.KYC_KEY.bigIntegerValue(), KYC_KEY),
+            typedKeyTupleFor(TokenKeyType.FREEZE_KEY.bigIntegerValue(), FREEZE_KEY),
+            typedKeyTupleFor(TokenKeyType.WIPE_KEY.bigIntegerValue(), WIPE_KEY),
+            typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), SUPPLY_KEY),
+            typedKeyTupleFor(TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), FEE_SCHEDULE_KEY),
+            typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), PAUSE_KEY));
+
+    public static final List<Tuple> EXPECTE_DEFAULT_KEYLIST = List.of(
+            typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), Key.DEFAULT),
+            typedKeyTupleFor(TokenKeyType.KYC_KEY.bigIntegerValue(), Key.DEFAULT),
+            typedKeyTupleFor(TokenKeyType.FREEZE_KEY.bigIntegerValue(), Key.DEFAULT),
+            typedKeyTupleFor(TokenKeyType.WIPE_KEY.bigIntegerValue(), Key.DEFAULT),
+            typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), Key.DEFAULT),
+            typedKeyTupleFor(TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), Key.DEFAULT),
+            typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), Key.DEFAULT));
+
+    public static final Token UNREASONABLY_DIVISIBLE_TOKEN = Token.newBuilder()
+            .tokenId(FUNGIBLE_TOKEN_ID)
+            .name("Odd")
+            .symbol("ODD")
+            .decimals(Integer.MAX_VALUE)
+            .totalSupply(666666L)
+            .tokenType(TokenType.FUNGIBLE_COMMON)
+            .build();
+
     public static final long NFT_SERIAL_NO = 666L;
 
     public static final long[] NFT_SERIAL_NUMBERS = {41L, 42L, 43L};
@@ -336,6 +369,7 @@ public class TestHelpers {
             .nftId(NftID.newBuilder().tokenId(NON_FUNGIBLE_TOKEN_ID).serialNumber(NFT_SERIAL_NO))
             .ownerId(A_NEW_ACCOUNT_ID)
             .spenderId(B_NEW_ACCOUNT_ID)
+            .mintTime(Timestamp.newBuilder().seconds(1000000L).build())
             .build();
     public static final org.apache.tuweni.bytes.Bytes SOME_REVERT_REASON =
             org.apache.tuweni.bytes.Bytes.wrap("I prefer not to".getBytes());

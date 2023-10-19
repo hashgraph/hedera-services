@@ -16,13 +16,32 @@
 
 package contract;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static contract.HtsErc721TransferXTestConstants.APPROVED_ID;
 import static contract.HtsErc721TransferXTestConstants.UNAUTHORIZED_SPENDER_ID;
 import static contract.MiscClassicTransfersXTestConstants.INITIAL_RECEIVER_AUTO_ASSOCIATIONS;
 import static contract.MiscClassicTransfersXTestConstants.NEXT_ENTITY_NUM;
-import static contract.XTestConstants.*;
+import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
+import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
+import static contract.XTestConstants.ERC721_TOKEN_ID;
+import static contract.XTestConstants.OWNER_ADDRESS;
+import static contract.XTestConstants.OWNER_BESU_ADDRESS;
+import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
+import static contract.XTestConstants.OWNER_ID;
+import static contract.XTestConstants.RECEIVER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.RECEIVER_ID;
+import static contract.XTestConstants.SENDER_ADDRESS;
+import static contract.XTestConstants.SENDER_BESU_ADDRESS;
+import static contract.XTestConstants.SENDER_CONTRACT_ID_KEY;
+import static contract.XTestConstants.SENDER_ID;
+import static contract.XTestConstants.SN_1234;
+import static contract.XTestConstants.SN_1234_METADATA;
+import static contract.XTestConstants.SN_2345;
+import static contract.XTestConstants.SN_2345_METADATA;
+import static contract.XTestConstants.addErc721Relation;
+import static contract.XTestConstants.assertSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -47,8 +66,12 @@ import org.apache.tuweni.bytes.Bytes;
  * <ol>
  *     <li>Transfer {@code ERC721_TOKEN} serial 1234 from SENDER to RECEIVER.</li>*
  *     <li>Revoke KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#REVOKE_KYC}.</li>
+ *     <li>Revoke KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#REVOKE_KYC}. This should fail with status INVALID_ACCOUNT_ID.</li>
+ *     <li>Revoke KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#REVOKE_KYC}. This should fail with status INVALID_TOKEN_ID</li>
  *     <li>Transfer {@code ERC721_TOKEN} serial 2345 from SENDER to RECEIVER.  This should fail with code ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN</li>*
  *     <li>Grant KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#GRANT_KYC}.</li>
+ *     <li>Grant KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#GRANT_KYC}. This should fail with status INVALID_ACCOUNT_ID.</li>
+ *     <li>Grant KYC {@code ERC721_TOKEN} via {@link GrantRevokeKycTranslator#GRANT_KYC}.This should fail with status INVALID_TOKEN_ID.</li>
  *     <li>Transfer {@code ERC721_TOKEN} serial 2345 from SENDER to RECEIVER.  This should now succeed</li>*
  * </ol>
  */
@@ -76,6 +99,24 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
+        // REVOKE_KYC WITH INVALID ACCOUNT
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(GrantRevokeKycTranslator.REVOKE_KYC
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, ERC721_TOKEN_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()), output));
+
+        // REVOKE_KYC WITH INVALID TOKEN
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(GrantRevokeKycTranslator.REVOKE_KYC
+                        .encodeCallWithArgs(RECEIVER_HEADLONG_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
+
         // Transfer series 2345 of ERC721_TOKEN to RECEIVER - should fail with ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN
         runHtsCallAndExpectOnSuccess(
                 SENDER_BESU_ADDRESS,
@@ -98,6 +139,24 @@ public class GrantRevokeKycXTest extends AbstractContractXTest {
                         .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
                         .array()),
                 assertSuccess());
+
+        // GRANT_KYC INVALID ACCOUNT
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(GrantRevokeKycTranslator.GRANT_KYC
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, ERC20_TOKEN_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_ACCOUNT_ID).array()), output));
+
+        // GRANT_KYC INVALID TOKEN
+        runHtsCallAndExpectOnSuccess(
+                OWNER_BESU_ADDRESS,
+                Bytes.wrap(GrantRevokeKycTranslator.GRANT_KYC
+                        .encodeCallWithArgs(RECEIVER_HEADLONG_ADDRESS, RECEIVER_HEADLONG_ADDRESS)
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
 
         // Transfer series 2345 of ERC721_TOKEN to RECEIVER - should succeed now.
         runHtsCallAndExpectOnSuccess(

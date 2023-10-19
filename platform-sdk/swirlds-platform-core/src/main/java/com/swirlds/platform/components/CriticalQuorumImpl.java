@@ -149,6 +149,10 @@ public class CriticalQuorumImpl implements CriticalQuorum {
         handleRoundBoundary(event);
 
         final NodeId nodeId = event.getCreatorId();
+        if (!addressBook.contains(nodeId)) {
+            // No need to consider events from nodes not in the address book
+            return;
+        }
         final long totalWeight = addressBook.getTotalWeight();
 
         // Increase the event count

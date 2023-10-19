@@ -46,7 +46,7 @@ public final class ParameterProvider {
      *
      * @param parameters the command line parameters
      */
-    synchronized void setParameters(@Nullable final String[] parameters) {
+    public synchronized void setParameters(@Nullable final String[] parameters) {
         this.parameters = parameters;
     }
 

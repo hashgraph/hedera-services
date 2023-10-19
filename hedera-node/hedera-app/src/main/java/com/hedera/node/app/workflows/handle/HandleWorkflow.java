@@ -244,8 +244,9 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-        // Get the consensus timestamp
-        final Instant consensusNow = platformTxn.getConsensusTimestamp();
+        // Get the consensus timestamp. FUTURE We want this to exactly match the consensus timestamp from the hashgraph,
+        // but for compatibility with the current implementation, we adjust it as follows.
+        final Instant consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 + 3L);
 
         // handle user transaction
         handleUserTransaction(consensusNow, state, dualState, platformEvent, creator, platformTxn);
@@ -260,8 +261,8 @@ public class HandleWorkflow {
             @NonNull final ConsensusTransaction platformTxn) {
         // Setup record builder list
         blockRecordManager.startUserTransaction(consensusNow, state);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
-        final var recordListBuilder = new RecordListBuilder(recordBuilder);
+        final var recordListBuilder = new RecordListBuilder(consensusNow);
+        final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
 
         // Setup helpers
         final var configuration = configProvider.getConfiguration();
@@ -370,7 +371,7 @@ public class HandleWorkflow {
                     fees,
                     platformEvent.getCreatorId().id());
 
-            networkUtilizationManager.resetFrom(state);
+            networkUtilizationManager.resetFrom(stack);
 
             if (validationResult.status() != SO_FAR_SO_GOOD) {
                 final var sigVerificationFailed = validationResult.responseCodeEnum() == INVALID_SIGNATURE;
@@ -379,7 +380,7 @@ public class HandleWorkflow {
                     // Note this is how it's implemented in mono (TopLevelTransition.java#L93), in future we may want to
                     // not trackFeePayments() only for INVALID_SIGNATURE but for any preCheckResult.status() !=
                     // SO_FAR_SO_GOOD
-                    networkUtilizationManager.trackFeePayments(payer, consensusNow, state);
+                    networkUtilizationManager.trackFeePayments(payer, consensusNow, stack);
                 }
                 recordBuilder.status(validationResult.responseCodeEnum());
                 try {
@@ -405,7 +406,7 @@ public class HandleWorkflow {
                 }
 
             } else {
-                networkUtilizationManager.trackTxn(transactionInfo, consensusNow, state);
+                networkUtilizationManager.trackTxn(transactionInfo, consensusNow, stack);
                 if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)) {
                     // privileged transactions are not charged fees
                     feeAccumulator.chargeFees(payer, creator.accountId(), fees);
@@ -461,7 +462,7 @@ public class HandleWorkflow {
             }
         }
 
-        networkUtilizationManager.saveTo(state);
+        networkUtilizationManager.saveTo(stack);
         transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext);
 
         // Commit all state changes
@@ -469,12 +470,9 @@ public class HandleWorkflow {
 
         // store all records at once, build() records end of transaction to log
         final var recordListResult = recordListBuilder.build();
-        recordCache.add(
-                creator.nodeId(),
-                payer,
-                recordListResult.userTransactionRecord().transactionRecord(),
-                consensusNow);
-        blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
+        recordCache.add(creator.nodeId(), payer, recordListResult.records());
+
+        blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
     }
 
     @NonNull
@@ -599,7 +597,7 @@ public class HandleWorkflow {
         stack.rollbackFullStack();
         final var userTransactionRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
         userTransactionRecordBuilder.status(status);
-        recordListBuilder.revertChildRecordBuilders(userTransactionRecordBuilder);
+        recordListBuilder.revertChildrenOf(userTransactionRecordBuilder);
     }
 
     /*

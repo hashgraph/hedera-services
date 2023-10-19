@@ -90,6 +90,7 @@ public class CreateOperationSuite extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec factoryAndSelfDestructInConstructorContract() {
         final var contract = "FactorySelfDestructConstructor";
 
@@ -128,6 +129,7 @@ public class CreateOperationSuite extends HapiSuite {
                                                                 List.of(eventSignatureOf("ChildDeleted()"))))))));
     }
 
+    @HapiTest
     private HapiSpec inheritanceOfNestedCreatedContracts() {
         final var contract = "NestedChildren";
         return defaultHapiSpec("InheritanceOfNestedCreatedContracts")
@@ -143,6 +145,7 @@ public class CreateOperationSuite extends HapiSuite {
                         contractListWithPropertiesInheritedFrom("ctorChildCreateResult", 3, PARENT_INFO));
     }
 
+    @HapiTest
     HapiSpec simpleFactoryWorks() {
         return defaultHapiSpec("simpleFactoryWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -163,6 +166,7 @@ public class CreateOperationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     HapiSpec stackedFactoryWorks() {
         return defaultHapiSpec("StackedFactoryWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -183,6 +187,7 @@ public class CreateOperationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     HapiSpec resetOnFactoryFailureWorks() {
         return defaultHapiSpec("ResetOnFactoryFailureWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -214,6 +219,7 @@ public class CreateOperationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     HapiSpec resetOnFactoryFailureAfterDeploymentWorks() {
         return defaultHapiSpec("ResetOnFactoryFailureAfterDeploymentWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -245,6 +251,7 @@ public class CreateOperationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     HapiSpec resetOnStackedFactoryFailureWorks() {
         return defaultHapiSpec("ResetOnStackedFactoryFailureWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -276,6 +283,7 @@ public class CreateOperationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec contractCreateWithNewOpInConstructorAbandoningParent() {
         final var contract = "AbandoningParent";
         return defaultHapiSpec("contractCreateWithNewOpInConstructorAbandoningParent")

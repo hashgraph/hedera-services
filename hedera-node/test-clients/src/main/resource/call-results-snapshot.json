@@ -1,11 +1,11 @@
 {
   "staticCallResults" : {
     "getNonFungibleTokenInfo" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
+      "INVALID_NFT_ID_FAILURE" : {
         "status" : "CONTRACT_REVERT_EXECUTED",
         "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
       },
-      "INVALID_NFT_ID_FAILURE" : {
+      "INVALID_TOKEN_ID_FAILURE" : {
         "status" : "CONTRACT_REVERT_EXECUTED",
         "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
       }
@@ -20,24 +20,24 @@
         "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
       }
     },
-    "getTokenInfo" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "status" : "CONTRACT_REVERT_EXECUTED",
-        "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
-      }
-    },
     "getTokenDefaultFreezeStatus" : {
       "INVALID_TOKEN_ID_FAILURE" : {
         "status" : "CONTRACT_REVERT_EXECUTED",
         "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
       }
     },
-    "allowance" : {
+    "getTokenInfo" : {
       "INVALID_TOKEN_ID_FAILURE" : {
         "status" : "CONTRACT_REVERT_EXECUTED",
         "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
-      },
+      }
+    },
+    "allowance" : {
       "INVALID_ACCOUNT_ID_FAILURE" : {
+        "status" : "CONTRACT_REVERT_EXECUTED",
+        "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
         "status" : "CONTRACT_REVERT_EXECUTED",
         "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
       }
@@ -64,17 +64,17 @@
         "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
       }
     },
-    "isKyc" : {
+    "getFungibleTokenInfo" : {
       "INVALID_TOKEN_ID_FAILURE" : {
-        "status" : "CONTRACT_REVERT_EXECUTED",
-        "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
-      },
-      "INVALID_ACCOUNT_ID_FAILURE" : {
         "status" : "CONTRACT_REVERT_EXECUTED",
         "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
       }
     },
-    "getFungibleTokenInfo" : {
+    "isKyc" : {
+      "INVALID_ACCOUNT_ID_FAILURE" : {
+        "status" : "CONTRACT_REVERT_EXECUTED",
+        "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
+      },
       "INVALID_TOKEN_ID_FAILURE" : {
         "status" : "CONTRACT_REVERT_EXECUTED",
         "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
@@ -86,22 +86,28 @@
         "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
       }
     },
-    "isFrozen" : {
+    "getTokenCustomFees" : {
       "INVALID_TOKEN_ID_FAILURE" : {
+        "status" : "OK",
+        "errorMessage" : ""
+      }
+    },
+    "isApprovedForAll" : {
+      "INVALID_ACCOUNT_ID_FAILURE" : {
         "status" : "CONTRACT_REVERT_EXECUTED",
         "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
       },
-      "INVALID_ACCOUNT_ID_FAILURE" : {
+      "INVALID_TOKEN_ID_FAILURE" : {
         "status" : "CONTRACT_REVERT_EXECUTED",
         "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
       }
     },
-    "isApprovedForAll" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
+    "isFrozen" : {
+      "INVALID_ACCOUNT_ID_FAILURE" : {
         "status" : "CONTRACT_REVERT_EXECUTED",
         "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
       },
-      "INVALID_ACCOUNT_ID_FAILURE" : {
+      "INVALID_TOKEN_ID_FAILURE" : {
         "status" : "CONTRACT_REVERT_EXECUTED",
         "errorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001"
       }
@@ -138,41 +144,35 @@
         "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
-    "transferFrom" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
-        "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
-      "INVALID_ACCOUNT_ID_FAILURE" : {
-        "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
-        "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
-        "childStatus" : "INVALID_ALIAS_KEY",
-        "childErrorMessage" : "INVALID_ALIAS_KEY"
-      }
-    },
     "dissociateTokens" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "TOKEN_NOT_ASSOCIATED_TO_ACCOUNT",
-        "childErrorMessage" : "TOKEN_NOT_ASSOCIATED_TO_ACCOUNT"
-      },
       "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "INVALID_ACCOUNT_ID",
         "childErrorMessage" : "INVALID_ACCOUNT_ID"
-      }
-    },
-    "cryptoTransfer" : {
+      },
       "INVALID_TOKEN_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
+        "childStatus" : "TOKEN_NOT_ASSOCIATED_TO_ACCOUNT",
+        "childErrorMessage" : "TOKEN_NOT_ASSOCIATED_TO_ACCOUNT"
+      }
+    },
+    "transferFrom" : {
+      "INVALID_ACCOUNT_ID_FAILURE" : {
+        "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
+        "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
+        "childStatus" : "INVALID_ALIAS_KEY",
+        "childErrorMessage" : "INVALID_ALIAS_KEY"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
+        "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
         "childStatus" : "INVALID_TOKEN_ID",
         "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
+      }
+    },
+    "cryptoTransfer" : {
       "INVALID_NFT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
@@ -184,9 +184,23 @@
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
         "childStatus" : "INVALID_ALIAS_KEY",
         "childErrorMessage" : "INVALID_ALIAS_KEY"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
     "mintToken" : {
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
+      }
+    },
+    "getTokenInfo" : {
       "INVALID_TOKEN_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
@@ -202,14 +216,6 @@
         "childErrorMessage" : "FAIL_INVALID"
       }
     },
-    "getTokenInfo" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      }
-    },
     "createNonFungibleTokenWithCustomFees" : {
       "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
@@ -219,12 +225,6 @@
       }
     },
     "approveNFT" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
-        "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
-        "childStatus" : null,
-        "childErrorMessage" : null
-      },
       "INVALID_NFT_ID_FAILURE" : {
         "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
@@ -236,14 +236,12 @@
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
         "childStatus" : "SENDER_DOES_NOT_OWN_NFT_SERIAL_NO",
         "childErrorMessage" : "SENDER_DOES_NOT_OWN_NFT_SERIAL_NO"
-      }
-    },
-    "deleteToken" : {
+      },
       "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
+        "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
+        "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
+        "childStatus" : null,
+        "childErrorMessage" : null
       }
     },
     "redirectForToken" : {
@@ -252,6 +250,14 @@
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
         "childStatus" : null,
         "childErrorMessage" : null
+      }
+    },
+    "deleteToken" : {
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
     "createFungibleTokenWithCustomFees" : {
@@ -285,13 +291,13 @@
       }
     },
     "getApproved" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
+      "INVALID_NFT_ID_FAILURE" : {
         "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
         "childStatus" : "INVALID_TOKEN_NFT_SERIAL_NUMBER",
         "childErrorMessage" : "INVALID_TOKEN_NFT_SERIAL_NUMBER"
       },
-      "INVALID_NFT_ID_FAILURE" : {
+      "INVALID_TOKEN_ID_FAILURE" : {
         "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
         "childStatus" : "INVALID_TOKEN_NFT_SERIAL_NUMBER",
@@ -299,12 +305,6 @@
       }
     },
     "transferNFT" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
       "INVALID_NFT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
@@ -316,6 +316,12 @@
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
         "childStatus" : "INVALID_ALIAS_KEY",
         "childErrorMessage" : "INVALID_ALIAS_KEY"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
     "getTokenKey" : {
@@ -327,31 +333,31 @@
       }
     },
     "transferTokens" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
       "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
         "childStatus" : "INVALID_ALIAS_KEY",
         "childErrorMessage" : "INVALID_ALIAS_KEY"
-      }
-    },
-    "isKyc" : {
+      },
       "INVALID_TOKEN_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "INVALID_TOKEN_ID",
         "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
+      }
+    },
+    "isKyc" : {
       "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "INVALID_ACCOUNT_ID",
         "childErrorMessage" : "INVALID_ACCOUNT_ID"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
     "getTokenExpiryInfo" : {
@@ -371,101 +377,101 @@
       }
     },
     "isFrozen" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
       "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "INVALID_ACCOUNT_ID",
         "childErrorMessage" : "INVALID_ACCOUNT_ID"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
     "associateToken" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
       "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "INVALID_ACCOUNT_ID",
         "childErrorMessage" : "INVALID_ACCOUNT_ID"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
     "dissociateToken" : {
+      "INVALID_ACCOUNT_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_ACCOUNT_ID",
+        "childErrorMessage" : "INVALID_ACCOUNT_ID"
+      },
       "INVALID_TOKEN_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "TOKEN_NOT_ASSOCIATED_TO_ACCOUNT",
         "childErrorMessage" : "TOKEN_NOT_ASSOCIATED_TO_ACCOUNT"
-      },
-      "INVALID_ACCOUNT_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_ACCOUNT_ID",
-        "childErrorMessage" : "INVALID_ACCOUNT_ID"
-      }
-    },
-    "revokeTokenKyc" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
-      "INVALID_ACCOUNT_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_ACCOUNT_ID",
-        "childErrorMessage" : "INVALID_ACCOUNT_ID"
       }
     },
     "getNonFungibleTokenInfo" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
       "INVALID_NFT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "INVALID_TOKEN_NFT_SERIAL_NUMBER",
         "childErrorMessage" : "INVALID_TOKEN_NFT_SERIAL_NUMBER"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
+      }
+    },
+    "revokeTokenKyc" : {
+      "INVALID_ACCOUNT_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_ACCOUNT_ID",
+        "childErrorMessage" : "INVALID_ACCOUNT_ID"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
     "wipeTokenAccount" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
       "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "INVALID_ACCOUNT_ID",
         "childErrorMessage" : "INVALID_ACCOUNT_ID"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
     "grantTokenKyc" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
       "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "INVALID_ACCOUNT_ID",
         "childErrorMessage" : "INVALID_ACCOUNT_ID"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
     "createNonFungibleToken" : {
@@ -477,27 +483,27 @@
       }
     },
     "setApprovalForAll" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
       "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
         "childStatus" : "TOKEN_NOT_ASSOCIATED_TO_ACCOUNT",
         "childErrorMessage" : "TOKEN_NOT_ASSOCIATED_TO_ACCOUNT"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
     "allowance" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
+      "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "SUCCESS",
         "childErrorMessage" : ""
       },
-      "INVALID_ACCOUNT_ID_FAILURE" : {
+      "INVALID_TOKEN_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "SUCCESS",
@@ -513,45 +519,45 @@
       }
     },
     "freezeToken" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
       "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "INVALID_ACCOUNT_ID",
         "childErrorMessage" : "INVALID_ACCOUNT_ID"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
     "unfreezeToken" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
       "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "INVALID_ACCOUNT_ID",
         "childErrorMessage" : "INVALID_ACCOUNT_ID"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
     "associateTokens" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
       "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "INVALID_ACCOUNT_ID",
         "childErrorMessage" : "INVALID_ACCOUNT_ID"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
     "pauseToken" : {
@@ -571,17 +577,17 @@
       }
     },
     "approve" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
-        "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
-        "childStatus" : null,
-        "childErrorMessage" : null
-      },
       "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
         "childStatus" : "TOKEN_NOT_ASSOCIATED_TO_ACCOUNT",
         "childErrorMessage" : "TOKEN_NOT_ASSOCIATED_TO_ACCOUNT"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
+        "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
+        "childStatus" : null,
+        "childErrorMessage" : null
       }
     },
     "getFungibleTokenInfo" : {
@@ -593,26 +599,28 @@
       }
     },
     "updateTokenInfo" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
+      "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
         "childStatus" : null,
         "childErrorMessage" : null
       },
-      "INVALID_ACCOUNT_ID_FAILURE" : {
+      "INVALID_TOKEN_ID_FAILURE" : {
         "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
         "childStatus" : null,
         "childErrorMessage" : null
       }
     },
-    "transferNFTs" : {
+    "getTokenCustomFees" : {
       "INVALID_TOKEN_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "INVALID_TOKEN_ID",
         "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
+      }
+    },
+    "transferNFTs" : {
       "INVALID_NFT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
@@ -624,15 +632,15 @@
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
         "childStatus" : "INVALID_ALIAS_KEY",
         "childErrorMessage" : "INVALID_ALIAS_KEY"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     },
     "transferFromNFT" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
-        "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
-        "childStatus" : "INVALID_TOKEN_NFT_SERIAL_NUMBER",
-        "childErrorMessage" : "INVALID_TOKEN_NFT_SERIAL_NUMBER"
-      },
       "INVALID_NFT_ID_FAILURE" : {
         "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
@@ -644,16 +652,22 @@
         "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
         "childStatus" : "INVALID_ALIAS_KEY",
         "childErrorMessage" : "INVALID_ALIAS_KEY"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "CONTRACT_REVERT_EXECUTED",
+        "topLevelErrorMessage" : "0x4e487b710000000000000000000000000000000000000000000000000000000000000001",
+        "childStatus" : "INVALID_TOKEN_NFT_SERIAL_NUMBER",
+        "childErrorMessage" : "INVALID_TOKEN_NFT_SERIAL_NUMBER"
       }
     },
     "isApprovedForAll" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
+      "INVALID_ACCOUNT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "SUCCESS",
         "childErrorMessage" : ""
       },
-      "INVALID_ACCOUNT_ID_FAILURE" : {
+      "INVALID_TOKEN_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
         "childStatus" : "SUCCESS",
@@ -661,12 +675,6 @@
       }
     },
     "wipeTokenAccountNFT" : {
-      "INVALID_TOKEN_ID_FAILURE" : {
-        "topLevelStatus" : "SUCCESS",
-        "topLevelErrorMessage" : "",
-        "childStatus" : "INVALID_TOKEN_ID",
-        "childErrorMessage" : "INVALID_TOKEN_ID"
-      },
       "INVALID_NFT_ID_FAILURE" : {
         "topLevelStatus" : "SUCCESS",
         "topLevelErrorMessage" : "",
@@ -678,6 +686,12 @@
         "topLevelErrorMessage" : "",
         "childStatus" : "INVALID_ACCOUNT_ID",
         "childErrorMessage" : "INVALID_ACCOUNT_ID"
+      },
+      "INVALID_TOKEN_ID_FAILURE" : {
+        "topLevelStatus" : "SUCCESS",
+        "topLevelErrorMessage" : "",
+        "childStatus" : "INVALID_TOKEN_ID",
+        "childErrorMessage" : "INVALID_TOKEN_ID"
       }
     }
   }

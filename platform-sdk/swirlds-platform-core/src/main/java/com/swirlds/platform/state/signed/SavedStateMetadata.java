@@ -186,7 +186,7 @@ public record SavedStateMetadata(
                 signedState.getRound(),
                 signedState.getState().getHash(),
                 signedState.getState().getHash().toMnemonic(),
-                platformData.getNumEventsCons(),
+                platformData.getSnapshot().nextConsensusNumber(),
                 signedState.getConsensusTimestamp(),
                 platformData.getHashEventsCons(),
                 platformData.getHashEventsCons().toMnemonic(),

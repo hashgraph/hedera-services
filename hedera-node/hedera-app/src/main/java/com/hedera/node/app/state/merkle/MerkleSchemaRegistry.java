@@ -29,6 +29,7 @@ import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
@@ -143,6 +144,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param currentVersion The current version. Never null. Must be newer than {@code
      *     previousVersion}.
      * @param config The system configuration to use at the time of migration
+     * @param networkInfo The network information to use at the time of migration
+     * @param handleThrottling The handle throttle accumulator to use at the time of migration
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void migrate(
@@ -150,11 +153,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @Nullable final SemanticVersion previousVersion,
             @NonNull final SemanticVersion currentVersion,
             @NonNull final Configuration config,
-            @NonNull final NetworkInfo networkInfo) {
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final HandleThrottleParser handleThrottling) {
         requireNonNull(hederaState);
         requireNonNull(currentVersion);
         requireNonNull(config);
         requireNonNull(networkInfo);
+        requireNonNull(handleThrottling);
 
         // Figure out which schemas need to be applied based on the previous and current versions, and then for each
         // of those schemas, create the new states and remove the old states and migrate the data.
@@ -216,8 +221,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             remainingStates.removeAll(statesToRemove);
             final var newStates = new FilteredWritableStates(writeableStates, remainingStates);
 
-            final var migrationContext =
-                    new MigrationContextImpl(previousStates, newStates, config, networkInfo, genesisRecordsBuilder);
+            final var migrationContext = new MigrationContextImpl(
+                    previousStates, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling);
             if (updateInsteadOfMigrate) {
                 schema.restart(migrationContext);
             } else {
