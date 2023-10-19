@@ -109,7 +109,7 @@ public class WireChannel<I, O> {
         this.handler = i -> {
             final O output = handler.apply((I) i);
             if (output != null) {
-                wire.forwardOutput(output);
+                wire.forward(output);
             }
         };
 

@@ -16,8 +16,10 @@
 
 package com.swirlds.common.wiring.transformers;
 
+import com.swirlds.common.wiring.wires.Solderable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -26,7 +28,7 @@ import java.util.function.Function;
  * @param <A> the input type
  * @param <B> the output type
  */
-public class WireTransformer<A, B> extends AbstractWireTransformer<A, B, WireTransformer<A, B>> {
+public class WireTransformer<A, B> extends Solderable<B, WireTransformer<A, B>> implements Consumer<A> {
 
     private final Function<A, B> transformer;
 

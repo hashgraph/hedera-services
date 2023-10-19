@@ -33,7 +33,7 @@ import java.util.function.Consumer;
  *
  * @param <O> the output time of the wire (use {@link Void}) for a wire with no output type)
  */
-public class SequentialWire<O> extends AbstractWire<O> {
+public class SequentialWire<O> extends Wire<O> {
 
     private final AtomicReference<SequentialTask> lastTask;
     private final ObjectCounter onRamp;

@@ -16,8 +16,10 @@
 
 package com.swirlds.common.wiring.transformers;
 
+import com.swirlds.common.wiring.wires.Solderable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.function.Consumer;
 
 // TODO test
 
@@ -25,7 +27,7 @@ import java.util.List;
  * Transforms a list of items to a sequence of individual items. Expects that there will not be any null values in the
  * collection.
  */
-public class WireListSplitter<T> extends AbstractWireTransformer<List<T>, T, WireListSplitter<T>> {
+public class WireListSplitter<T> extends Solderable<T, WireListSplitter<T>> implements Consumer<List<T>> {
 
     /**
      * {@inheritDoc}
