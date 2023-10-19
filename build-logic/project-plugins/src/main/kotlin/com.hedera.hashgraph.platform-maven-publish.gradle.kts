@@ -114,6 +114,16 @@ publishing {
     }
 }
 
+tasks.register("releaseMavenCentral") {
+    group = "release"
+    dependsOn(tasks.named("publishMavenPublicationToSonatypeRepository"))
+}
+
+tasks.register("releaseMavenCentralSnapshot") {
+    group = "release"
+    dependsOn(tasks.named("publishMavenPublicationToSonatypeSnapshotRepository"))
+}
+
 tasks.register("releaseDevelopSnapshot") {
     group = "release"
     dependsOn(tasks.named("publishMavenPublicationToDevelopSnapshotRepository"))
