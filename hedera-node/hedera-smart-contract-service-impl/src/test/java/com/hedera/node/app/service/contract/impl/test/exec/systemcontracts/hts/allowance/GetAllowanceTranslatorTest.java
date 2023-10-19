@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.allowance.GetAllowanceCall;
@@ -42,6 +43,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class GetAllowanceTranslatorTest {
     @Mock
     private HtsCallAttempt attempt;
+
+    @Mock
+    private SystemContractGasCalculator gasCalculator;
 
     @Mock
     private AddressIdConverter addressIdConverter;
@@ -85,6 +89,7 @@ public class GetAllowanceTranslatorTest {
         given(attempt.inputBytes()).willReturn(inputBytes.toArray());
         given(attempt.enhancement()).willReturn(enhancement);
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
+        given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(GetAllowanceCall.class);
@@ -98,6 +103,7 @@ public class GetAllowanceTranslatorTest {
         given(attempt.inputBytes()).willReturn(inputBytes.toArray());
         given(attempt.enhancement()).willReturn(enhancement);
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
+        given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(GetAllowanceCall.class);

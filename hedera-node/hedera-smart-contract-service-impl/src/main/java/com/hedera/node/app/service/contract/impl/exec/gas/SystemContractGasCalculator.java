@@ -16,10 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.gas;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.function.ToLongBiFunction;
 
 /**
@@ -36,9 +37,9 @@ public class SystemContractGasCalculator {
             @NonNull final TinybarValues tinybarValues,
             @NonNull final CanonicalDispatchPrices dispatchPrices,
             @NonNull final ToLongBiFunction<TransactionBody, AccountID> feeCalculator) {
-        this.tinybarValues = Objects.requireNonNull(tinybarValues);
-        this.dispatchPrices = Objects.requireNonNull(dispatchPrices);
-        this.feeCalculator = Objects.requireNonNull(feeCalculator);
+        this.tinybarValues = requireNonNull(tinybarValues);
+        this.dispatchPrices = requireNonNull(dispatchPrices);
+        this.feeCalculator = requireNonNull(feeCalculator);
     }
 
     /**
@@ -54,6 +55,8 @@ public class SystemContractGasCalculator {
             @NonNull final TransactionBody body,
             @NonNull final DispatchType dispatchType,
             @NonNull final AccountID payer) {
+        requireNonNull(body);
+        requireNonNull(dispatchType);
         return gasRequirement(body, payer, canonicalPriceInTinybars(dispatchType));
     }
 
@@ -104,6 +107,7 @@ public class SystemContractGasCalculator {
      * @return the canonical price for that dispatch type
      */
     public long canonicalPriceInTinybars(@NonNull final DispatchType dispatchType) {
+        requireNonNull(dispatchType);
         return tinybarValues.asTinybars(dispatchPrices.canonicalPriceInTinycents(dispatchType));
     }
 

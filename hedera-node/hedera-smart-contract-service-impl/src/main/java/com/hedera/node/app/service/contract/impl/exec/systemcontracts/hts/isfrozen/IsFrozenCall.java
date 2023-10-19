@@ -63,8 +63,8 @@ public class IsFrozenCall extends AbstractNonRevertibleTokenViewCall {
         }
         var tokenRel = nativeOperations()
                 .getTokenRelation(accountNum, token.tokenIdOrThrow().tokenNum());
-        var result = tokenRel == null ? false : tokenRel.frozen();
-        return fullResultsFor(SUCCESS, 0L, result);
+        var result = tokenRel != null && tokenRel.frozen();
+        return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), result);
     }
 
     @Override
@@ -77,7 +77,7 @@ public class IsFrozenCall extends AbstractNonRevertibleTokenViewCall {
             @NonNull final ResponseCodeEnum status, final long gasRequirement, final boolean isFrozen) {
         // @Future remove to revert #9063 after modularization is completed
         if (isStaticCall && status != SUCCESS) {
-            return revertResult(status, 0);
+            return revertResult(status, gasRequirement);
         }
         return successResult(
                 DEFAULT_FREEZE_STATUS.getOutputs().encodeElements(status.protoOrdinal(), isFrozen), gasRequirement);

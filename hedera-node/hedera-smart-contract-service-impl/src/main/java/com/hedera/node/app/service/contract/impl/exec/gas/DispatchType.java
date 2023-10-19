@@ -24,6 +24,8 @@ import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_C
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Enumerates the types of child transactions that can be dispatched to the HTS system contract.
@@ -58,9 +60,9 @@ public enum DispatchType {
     private final HederaFunctionality functionality;
     private final SubType subtype;
 
-    DispatchType(final HederaFunctionality functionality, final SubType subtype) {
-        this.functionality = functionality;
-        this.subtype = subtype;
+    DispatchType(@NonNull final HederaFunctionality functionality, @NonNull final SubType subtype) {
+        this.functionality = Objects.requireNonNull(functionality);
+        this.subtype = Objects.requireNonNull(subtype);
     }
 
     public HederaFunctionality functionality() {

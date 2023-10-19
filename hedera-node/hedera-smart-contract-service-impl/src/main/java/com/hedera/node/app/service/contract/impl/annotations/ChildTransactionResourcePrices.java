@@ -26,6 +26,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
+/**
+ * Identifies the resource prices to be used for child transactions.
+ */
 @Target({METHOD, PARAMETER, TYPE})
 @Retention(RUNTIME)
 @Documented

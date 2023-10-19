@@ -37,6 +37,10 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
 public class ClassicCreatesCall extends AbstractHtsCall {
+    /**
+     * The mono-service stipulated minimum gas requirement for a token creation.
+     */
+    private static final long MINIMUM_TINYBAR_PRICE = 100_000L;
 
     @NonNull
     final TransactionBody syntheticCreate;
@@ -69,9 +73,9 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         final var tokenType =
                 ((TokenCreateTransactionBody) syntheticCreate.data().value()).tokenType();
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder.status(), 0L));
+            return gasOnly(revertResult(recordBuilder.status(), MINIMUM_TINYBAR_PRICE));
         } else {
-            final var isFungible = tokenType == TokenType.FUNGIBLE_COMMON ? true : false;
+            final var isFungible = tokenType == TokenType.FUNGIBLE_COMMON;
             ByteBuffer encodedOutput;
 
             if (isFungible && customFees.size() == 0) {
@@ -91,9 +95,8 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
             }
-
-            // @TODO zero should not be hardcoded
-            return gasOnly(successResult(encodedOutput, 0L));
+            final long gasRequirement = gasCalculator.gasRequirement(syntheticCreate, spenderId, MINIMUM_TINYBAR_PRICE);
+            return gasOnly(successResult(encodedOutput, gasRequirement));
         }
     }
 }

@@ -71,7 +71,9 @@ public class GetApprovedCall extends AbstractRevertibleTokenViewCall {
         final var spenderNum = nft.spenderId().accountNumOrThrow();
         final var spender = nativeOperations().getAccount(spenderNum);
         return isErcCall
-                ? successResult(ERC_GET_APPROVED.getOutputs().encodeElements(headlongAddressOf(spender)), 0L)
+                ? successResult(
+                        ERC_GET_APPROVED.getOutputs().encodeElements(headlongAddressOf(spender)),
+                        gasCalculator.viewGasRequirement())
                 : successResult(
                         HAPI_GET_APPROVED.getOutputs().encodeElements(SUCCESS.getNumber(), headlongAddressOf(spender)),
                         gasCalculator.viewGasRequirement());

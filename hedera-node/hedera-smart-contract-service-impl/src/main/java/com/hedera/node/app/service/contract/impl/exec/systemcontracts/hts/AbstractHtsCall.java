@@ -41,7 +41,7 @@ public abstract class AbstractHtsCall implements HtsCall {
     protected AbstractHtsCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement) {
-        this.gasCalculator = gasCalculator;
+        this.gasCalculator = requireNonNull(gasCalculator);
         this.enhancement = requireNonNull(enhancement);
     }
 
