@@ -140,13 +140,17 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             @NonNull final AccountID payerId) {
         final var op = body.cryptoTransferOrThrow();
         final var hasCustomFees = enhancement.nativeOperations().checkForCustomFees(op);
-        final var baseHbarAdjustTinybarPrice =
-                systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.TRANSFER_HBAR) / 2;
+        // For fungible there are always at least two operations, so only charge half for each
+        // operation
         final var baseUnitAdjustTinybarPrice = systemContractGasCalculator.canonicalPriceInTinybars(
                         hasCustomFees ? DispatchType.TRANSFER_FUNGIBLE_CUSTOM_FEES : DispatchType.TRANSFER_FUNGIBLE)
                 / 2;
+        // NFTs are atomic, one line can do it.
         final var baseNftTransferTinybarPrice = systemContractGasCalculator.canonicalPriceInTinybars(
                 hasCustomFees ? DispatchType.TRANSFER_NFT_CUSTOM_FEES : DispatchType.TRANSFER_NFT);
+        // Hbar transfer is similar to fungible tokens so only charge half for each operation
+        final var baseHbarAdjustTinybarPrice =
+                systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.TRANSFER_HBAR) / 2;
         final var baseLazyCreationPrice =
                 systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.CRYPTO_CREATE)
                         + systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.CRYPTO_UPDATE);
