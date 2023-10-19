@@ -1960,6 +1960,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     public HapiSpec collectorIsChargedFractionalFeeUnlessExempt() {
         return defaultHapiSpec("CollectorIsChargedFractionalFeeUnlessExempt")
                 .given(

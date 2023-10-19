@@ -99,6 +99,13 @@ public class CustomFractionalFeeAssessor {
             if (filteredCredits.isEmpty()) {
                 continue;
             }
+
+            boolean cont = false;
+            for (final var acc : effectivePayerAccounts) {
+                if (isPayerExempt(feeMeta, fee, acc)) cont = true;
+            }
+            if (cont) continue;
+
             // calculate amount that should be paid for fractional custom fee
             var assessedAmount = amountOwed(unitsLeft, fractionalFee);
 
