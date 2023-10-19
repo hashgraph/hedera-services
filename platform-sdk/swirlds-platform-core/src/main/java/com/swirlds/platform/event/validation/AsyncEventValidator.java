@@ -159,6 +159,15 @@ public class AsyncEventValidator implements Startable, Stoppable {
     }
 
     /**
+     * Update the address books.
+     *
+     * @param addressBookUpdate the address book update record
+     */
+    public void updateAddressBooks(@NonNull final AddressBookUpdate addressBookUpdate) throws InterruptedException {
+        addressBookUpdateInserter.put(addressBookUpdate);
+    }
+
+    /**
      * Flush the queue thread.
      */
     public void flush() throws InterruptedException {
