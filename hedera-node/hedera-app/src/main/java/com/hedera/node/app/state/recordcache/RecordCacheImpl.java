@@ -16,8 +16,7 @@
 
 package com.hedera.node.app.state.recordcache;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
-import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
+import static com.hedera.node.app.spi.HapiUtils.TIMESTAMP_COMPARATOR;
 import static com.hedera.node.app.spi.HapiUtils.isBefore;
 import static com.hedera.node.app.spi.HapiUtils.minus;
 import static com.hedera.node.app.state.recordcache.RecordCacheService.NAME;
@@ -26,20 +25,21 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.state.ReadableQueueState;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -48,6 +48,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link HederaRecordCache}
@@ -55,7 +57,7 @@ import javax.inject.Singleton;
  * <p>This implementation stores all records in a time-ordered queue of {@link TransactionRecord}s, where records are
  * ordered by <strong>consensus timestamp</strong> and kept for {@code maxTxnDuration} seconds before expiry. These
  * records are stored in state because they must be deterministic across all nodes in the network, and therefore must
- * also be part of reconnect, and state saving and loading. Use a queue provides superior performance to a map in this
+ * also be part of reconnect, and state saving and loading. A queue provides superior performance to a map in this
  * particular case because all items removed from the queue are always removed from the head, and all items added to
  * the queue are always added to the end.
  *
@@ -63,42 +65,64 @@ import javax.inject.Singleton;
  * reason, in-memory data structures are used to provide efficient access to the data. These data structures are rebuilt
  * after reconnect or restart, and kept in sync with the data in state.
  *
+ * <p>Some transactions produce additional "child" transactions or "preceding" transactions. For example, when an
+ * account is to be auto-created due to a crypto transfer to an unknown alias, we create a preceding transaction. Or,
+ * a smart contract call may create child transactions when working with HTS. In all cases, each of these transactions
+ * are treated as separate transactions, in that they are individually added to the queue, in the appropriate order, and
+ * individually added to the history. However, child transactions are always included in the history of the user
+ * transaction that triggered them, because they need to be available to the user when querying for all records for a
+ * given transaction ID, or for a given payer, while preceding trnasactions are treated as their own top level
+ * transactions.
+ *
  * <p>Mutation methods must be called during startup, reconnect, or on the "handle" thread. Getters may be called from
  * any thread.
  */
 @Singleton
 public class RecordCacheImpl implements HederaRecordCache {
+    private static final Logger logger = LogManager.getLogger(RecordCacheImpl.class);
     /**
-     * An item stored in the {@link #histories} cache. These histories are stored in a map keyed by transaction ID.
-     *
-     * @param nodeIds The IDs of every node that submitted a transaction with the txId that came to consensus and was
-     *                handled.
-     * @param records Every {@link TransactionRecord} handled for every transaction that came to consensus with the txId
+     * This empty History is returned whenever a transaction is known to the deduplication cache, but not yet
+     * added to this cache.
      */
-    private record History(@NonNull Set<Long> nodeIds, @NonNull List<TransactionRecord> records) {
-        History() {
-            this(new HashSet<>(), new ArrayList<>());
-        }
-    }
+    private static final History EMPTY_HISTORY = new History();
 
     /** Gives access to the current working state. */
     private final WorkingStateAccessor workingStateAccessor;
-    /** Used for looking up the max transaction duration window. */
+    /** Used for looking up the max valid duration window for a transaction. This must be looked up dynamically. */
     private final ConfigProvider configProvider;
-    /** Used for answering queries about receipts to include those that have not been handled but are known */
+    /**
+     * Every record added to the cache has a unique transaction ID. Each of these must be recorded in the dedupe cache
+     * to help avoid duplicate transactions being ingested. And, when a history is looked up, if the transaction ID is
+     * known to the deduplication cache, but unknown to this record cache, then we return an empty history rather than
+     * null.
+     */
     private final DeduplicationCache deduplicationCache;
     /**
-     * A map of transaction IDs to the histories of all transactions that came to consensus with that ID. This data
-     * structure is rebuilt during reconnect or restart.
+     * A map of transaction IDs to the histories of all transactions that came to consensus with that ID, or their child
+     * transactions. This data structure is rebuilt during reconnect or restart. Using a non-deterministic, map is
+     * perfectly acceptable, as the order of these histories is not important.
      */
     private final Map<TransactionID, History> histories;
     /**
-     * A secondary index that maps from an AccountID of the payer account to a set of transaction IDs that were
-     * submitted by this payer. This is only needed for answering such queries. Ideally such queries would exist on the
-     * mirror node instead.
+     * A secondary index that maps from the AccountID of the payer account to a set of transaction IDs that were
+     * submitted by this payer. This is only needed for answering queries. Ideally such queries would exist on the
+     * mirror node instead. The answer to this query will include child records that were created as a consequence
+     * of the original user transaction, but not any preceding records triggered by it.
      */
     private final Map<AccountID, Set<TransactionID>> payerToTransactionIndex = new ConcurrentHashMap<>();
 
+    /**
+     * Called once during startup to create this singleton. Rebuilds the in-memory data structures based on the current
+     * working state at the moment of startup. The size of these data structures is fixed based on the length of time
+     * the node was configured to keep records for. In other words, the amount of time it takes to rebuild this
+     * data structure is not dependent on the size of state, but rather, the number of transactions that had occurred
+     * within a 3-minute window prior to the node stopping.
+     *
+     * @param deduplicationCache   A cache containing known {@link TransactionID}s, used for deduplication
+     * @param workingStateAccessor Gives access to the current working state, needed at startup, but also any time
+     *                             records must be saved in state or read from state.
+     * @param configProvider       Used for looking up the max valid duration window for a transaction dynamically
+     */
     @Inject
     public RecordCacheImpl(
             @NonNull final DeduplicationCache deduplicationCache,
@@ -114,11 +138,14 @@ public class RecordCacheImpl implements HederaRecordCache {
 
     /**
      * Rebuild the internal data structures based on the current working state. Called during startup and during
-     * reconnect.
+     * reconnect. The amount of time it takes to rebuild this data structure is not dependent on the size of state, but
+     * rather, the number of transactions in the queue (which is capped by configuration at 3 minutes by default).
      */
     public void rebuild() {
         histories.clear();
         payerToTransactionIndex.clear();
+        // FUTURE: It doesn't hurt to clear the dedupe cache here, but is also probably not the best place to do it. The
+        // system should clear the dedupe cache directly and not indirectly through this call.
         deduplicationCache.clear();
 
         final var queue = getReadableQueue();
@@ -139,16 +166,28 @@ public class RecordCacheImpl implements HederaRecordCache {
     public void add(
             final long nodeId,
             @NonNull final AccountID payerAccountId,
-            @NonNull final TransactionRecord transactionRecord,
-            @NonNull final Instant consensusTimestamp) {
+            @NonNull final List<SingleTransactionRecord> transactionRecords) {
         requireNonNull(payerAccountId);
-        requireNonNull(transactionRecord);
-        requireNonNull(consensusTimestamp);
-        addToInMemoryCache(nodeId, payerAccountId, transactionRecord);
+        requireNonNull(transactionRecords);
 
+        // This really shouldn't ever happen. If it does, we'll log a warning and bail.
+        if (transactionRecords.isEmpty()) {
+            logger.warn("Received an empty list of transaction records. This should never happen");
+            return;
+        }
+
+        // To avoid having a background thread cleaning out this queue, we spend a little time when adding to the queue
+        // to also remove from the queue any transactions that have expired.
         final var queue = getQueue();
-        removeExpiredTransactions(queue, consensusTimestamp);
-        queue.add(new TransactionRecordEntry(nodeId, payerAccountId, transactionRecord));
+        final var firstRecord = transactionRecords.get(0);
+        removeExpiredTransactions(queue, firstRecord.transactionRecord().consensusTimestampOrElse(Timestamp.DEFAULT));
+
+        // For each transaction, in order, add to the queue and to the in-memory data structures.
+        for (final var singleTransactionRecord : transactionRecords) {
+            final var rec = singleTransactionRecord.transactionRecord();
+            addToInMemoryCache(nodeId, payerAccountId, rec);
+            queue.add(new TransactionRecordEntry(nodeId, payerAccountId, rec));
+        }
     }
 
     @NonNull
@@ -163,22 +202,45 @@ public class RecordCacheImpl implements HederaRecordCache {
     }
 
     /**
-     * Called during {@link #rebuild()} or {@link #add(long, AccountID, TransactionRecord, Instant)}, this method adds
-     * the given {@link TransactionRecord} to the internal lookup data structures.
+     * Called during {@link #rebuild()} or {@link #add(long, AccountID, List)}, this method adds the given
+     * {@link TransactionRecord} to the internal lookup data structures.
      *
      * @param nodeId The ID of the node that submitted the transaction.
+     * @param payerAccountId The {@link AccountID} of the payer of the transaction, so we can look up transactions by
+     *                      payer later, if needed.
      * @param transactionRecord The record to add.
      */
     private void addToInMemoryCache(
             final long nodeId,
             @NonNull final AccountID payerAccountId,
             @NonNull final TransactionRecord transactionRecord) {
-        // Add to the main histories cache
+        // The transaction may be a preceding transaction, user transaction, or child transaction. The user transaction,
+        // alone, has a nonce of 0 in the transaction ID. Preceding transactions have no parent consensus timestamp,
+        // while child transactions have a parent consensus timestamp (the consensus timestamp of the user transaction).
+        //
+        // If the transaction is a user transaction or a preceding transaction, then it gets its own History. If the
+        // transaction is a child transaction, then it does not get its own preceding transaction, but instead is added
+        // to the History of the user transaction.
+        //
+        // And all transactions, regardless of the type, are added to the payer-reverse-index, so that queries of
+        // the payer account ID will return all transactions they paid for.
         final var txId = transactionRecord.transactionIDOrThrow();
-        final var cacheItem = histories.computeIfAbsent(txId, ignored -> new History());
-        cacheItem.nodeIds().add(nodeId);
-        cacheItem.records().add(transactionRecord);
-        // Add to the payer to transaction index
+        final var isChildTx = transactionRecord.hasParentConsensusTimestamp();
+        final var userTxId = isChildTx ? txId.copyBuilder().nonce(0).build() : txId;
+
+        // Get or create the history for this transaction ID.
+        // One interesting tidbit -- at genesis, the records will piggyback on the first transaction, so whatever node
+        // sent the first transaction will get "credit" for all the genesis records. But it will be deterministic, and
+        // doesn't actually matter.
+        final var history = histories.computeIfAbsent(userTxId, ignored -> new History());
+        history.nodeIds().add(nodeId);
+
+        // Either we add this tx to the main records list if it is a user/preceding transaction, or to the child
+        // transactions list of its parent
+        final var listToAddTo = isChildTx ? history.childRecords() : history.records();
+        listToAddTo.add(transactionRecord);
+
+        // Add to the payer-to-transaction index
         final var transactionIDs = payerToTransactionIndex.computeIfAbsent(payerAccountId, ignored -> new HashSet<>());
         transactionIDs.add(txId);
     }
@@ -188,11 +250,10 @@ public class RecordCacheImpl implements HederaRecordCache {
      */
     private void removeExpiredTransactions(
             @NonNull final WritableQueueState<TransactionRecordEntry> queue,
-            @NonNull final Instant consensusTimestamp) {
+            @NonNull final Timestamp consensusTimestamp) {
         // Compute the earliest valid start timestamp that is still within the max transaction duration window.
-        final var now = asTimestamp(consensusTimestamp);
         final var config = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-        final var earliestValidState = minus(now, config.transactionMaxValidDuration());
+        final var earliestValidState = minus(consensusTimestamp, config.transactionMaxValidDuration());
 
         // Loop in order and expunge every entry where the timestamp is before the current time. Also remove from the
         // in memory data structures.
@@ -223,11 +284,11 @@ public class RecordCacheImpl implements HederaRecordCache {
     // Implementation methods of RecordCache
     // ---------------------------------------------------------------------------------------------------------------
 
-    @NonNull
+    @Nullable
     @Override
-    public List<TransactionRecord> getRecords(@NonNull final TransactionID transactionID) {
+    public History getHistory(@NonNull TransactionID transactionID) {
         final var history = histories.get(transactionID);
-        return history == null ? emptyList() : history.records();
+        return history != null ? history : (deduplicationCache.contains(transactionID) ? EMPTY_HISTORY : null);
     }
 
     @NonNull
@@ -250,23 +311,17 @@ public class RecordCacheImpl implements HederaRecordCache {
         for (final var transactionID : transactionIDs) {
             final var history = histories.get(transactionID);
             if (history != null) {
-                final var recs = history.records();
+                final var recs = history.orderedRecords();
                 records.addAll(recs.size() > maxRemaining ? recs.subList(0, maxRemaining) : recs);
                 maxRemaining -= recs.size();
                 if (maxRemaining <= 0) break;
             }
         }
 
-        return records;
-    }
+        records.sort((a, b) -> TIMESTAMP_COMPARATOR.compare(
+                a.consensusTimestampOrElse(Timestamp.DEFAULT), b.consensusTimestampOrElse(Timestamp.DEFAULT)));
 
-    @NonNull
-    @Override
-    public List<TransactionReceipt> getReceipts(@NonNull final TransactionID transactionID) {
-        final var records = getRecords(transactionID);
-        return records.isEmpty() && deduplicationCache.contains(transactionID)
-                ? List.of(TransactionReceipt.newBuilder().status(UNKNOWN).build())
-                : records.stream().map(TransactionRecord::receipt).toList();
+        return records;
     }
 
     /** Utility method that get the writable queue from the working state */

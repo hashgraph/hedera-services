@@ -123,7 +123,7 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
      * @param tokenId token id of the nft
      * @param nft nft to be transferred
      */
-    private void validateSpenderHasAllowance(
+    static void validateSpenderHasAllowance(
             final Account owner, final AccountID spender, final TokenID tokenId, final Nft nft) {
         final var approveForAllAllowances = owner.approveForAllNftAllowances();
         final var allowance = AccountApprovalForAllAllowance.newBuilder()
