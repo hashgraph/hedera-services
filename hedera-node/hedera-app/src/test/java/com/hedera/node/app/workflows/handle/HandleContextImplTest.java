@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -148,6 +149,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
     @Mock
     private Authorizer authorizer;
+
+    @Mock
+    private SignatureVerification verification;
 
     @BeforeEach
     void setup() {
@@ -452,7 +456,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testVerificationForKey(@Mock SignatureVerification verification) {
+        void testVerificationForKey() {
             // given
             when(verifier.verificationFor(Key.DEFAULT)).thenReturn(verification);
             final var context = createContext(defaultTransactionBody());
@@ -465,7 +469,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testVerificationForAlias(@Mock SignatureVerification verification) {
+        void testVerificationForAlias() {
             // given
             when(verifier.verificationFor(ERIN.account().alias())).thenReturn(verification);
             final var context = createContext(defaultTransactionBody());
@@ -824,6 +828,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @MethodSource("createContextDispatchers")
         void testDispatchSucceeds(Consumer<HandleContext> contextDispatcher) throws PreCheckException {
             // given
+            when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
+            when(verifier.verificationFor((Key) any())).thenReturn(verification);
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
                     .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
@@ -873,6 +879,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @MethodSource("createContextDispatchers")
         void testDispatchHandleFails(Consumer<HandleContext> contextDispatcher) {
             // given
+            when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
+            when(verifier.verificationFor((Key) any())).thenReturn(verification);
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
                     .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
