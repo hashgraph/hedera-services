@@ -267,6 +267,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
+    @HapiTest
     private HapiSpec associateWithMissingEvmAddressHasSaneTxnAndRecord() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final var missingAddress =
@@ -291,6 +292,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                 .then(getTxnRecord(txn).andAllChildRecords().logged());
     }
 
+    @HapiTest
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     private HapiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
         return defaultHapiSpec("invalidSingleAbiCallConsumesAllProvidedGas")
