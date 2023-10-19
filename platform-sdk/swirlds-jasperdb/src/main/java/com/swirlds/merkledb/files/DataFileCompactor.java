@@ -35,7 +35,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -43,6 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -486,14 +486,9 @@ public class DataFileCompactor {
         if (dataFileReaders.isEmpty()) {
             return dataFileReaders;
         }
-        final Map<Integer, List<DataFileReader<?>>> readersByLevel = new HashMap<>();
-        for (int i = 0; i <= maxCompactionLevel; i++) {
-            readersByLevel.put(i, new ArrayList<>());
-        }
 
-        for (DataFileReader<?> reader : dataFileReaders) {
-            readersByLevel.get(reader.getMetadata().getCompactionLevel()).add(reader);
-        }
+        Map<Integer, List<DataFileReader<?>>> readersByLevel = dataFileReaders.stream()
+                .collect(Collectors.groupingBy(r -> r.getMetadata().getCompactionLevel()));
 
         List<DataFileReader<?>> nonCompactedReaders = readersByLevel.get(INITIAL_COMPACTION_LEVEL);
         if (nonCompactedReaders.size() < minNumberOfFilesToCompact) {

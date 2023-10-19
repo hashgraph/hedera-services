@@ -35,6 +35,11 @@ import java.util.Objects;
  */
 @SuppressWarnings("unused")
 public final class DataFileMetadata {
+
+    /**
+     * Maximum level of compaction for storage files.
+     */
+    public static final int MAX_COMPACTION_LEVEL = 127;
     /**
      * The file format version, this is ready in case we need to change file format and support
      * multiple versions.
@@ -94,7 +99,7 @@ public final class DataFileMetadata {
         this.index = index;
         this.creationDate = creationDate;
         this.serializationVersion = serializationVersion;
-        assert compactionLevel >= 0 && compactionLevel < 127;
+        assert compactionLevel >= 0 && compactionLevel < MAX_COMPACTION_LEVEL;
         this.compactionLevel = (byte) compactionLevel;
     }
 
