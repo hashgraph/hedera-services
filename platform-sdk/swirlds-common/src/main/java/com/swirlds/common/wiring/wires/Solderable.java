@@ -49,6 +49,7 @@ public abstract class Solderable<O, C> {
      * @param data the output data to forward
      */
     protected void forward(@NonNull final O data) {
+        // TODO catch exceptions and do something sensible
         for (final Consumer<O> destination : forwardingDestinations) {
             destination.accept(data);
         }
