@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.internal;
+package com.swirlds.common.wiring.wires;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
