@@ -124,27 +124,27 @@ public class StandaloneEventValidator {
      * @param time                   a time object, for rate limiting loggers
      * @param signatureVerifier      a verifier for checking event signatures
      * @param currentSoftwareVersion the current software version
-     * @param intakeEventCounter     keeps track of the number of events in the intake pipeline from each peer
-     * @param eventConsumer          deduplicated events are passed to this consumer
      * @param previousAddressBook    the previous address book
      * @param currentAddressBook     the current address book
+     * @param eventConsumer          deduplicated events are passed to this consumer
+     * @param intakeEventCounter     keeps track of the number of events in the intake pipeline from each peer
      */
     public StandaloneEventValidator(
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final IntakeEventCounter intakeEventCounter,
-            @NonNull final Consumer<GossipEvent> eventConsumer,
             @Nullable final AddressBook previousAddressBook,
-            @NonNull final AddressBook currentAddressBook) {
+            @NonNull final AddressBook currentAddressBook,
+            @NonNull final Consumer<GossipEvent> eventConsumer,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
-        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
-        this.eventConsumer = Objects.requireNonNull(eventConsumer);
         this.previousAddressBook = previousAddressBook;
         this.currentAddressBook = Objects.requireNonNull(currentAddressBook);
+        this.eventConsumer = Objects.requireNonNull(eventConsumer);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         this.generationLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.timeCreatedLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
@@ -196,20 +196,12 @@ public class StandaloneEventValidator {
     }
 
     /**
-     * Set the previous address book.
+     * Set the previous and current address books
      *
-     * @param previousAddressBook the previous address book
+     * @param addressBookUpdate the new address books
      */
-    public void setPreviousAddressBook(@NonNull final AddressBook previousAddressBook) {
-        this.previousAddressBook = previousAddressBook;
-    }
-
-    /**
-     * Set the current address book.
-     *
-     * @param currentAddressBook the current address book
-     */
-    public void setCurrentAddressBook(@NonNull final AddressBook currentAddressBook) {
-        this.currentAddressBook = currentAddressBook;
+    public void updateAddressBooks(@NonNull final AddressBookUpdate addressBookUpdate) {
+        this.previousAddressBook = addressBookUpdate.previousAddressBook();
+        this.currentAddressBook = addressBookUpdate.currentAddressBook();
     }
 }
