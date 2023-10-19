@@ -30,7 +30,9 @@ import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -114,7 +116,9 @@ public class SystemFileUpdateFacility {
             } else if (fileNum == config.exchangeRates()) {
                 exchangeRateManager.update(FileUtilities.getFileContent(state, fileID), payer);
             } else if (fileNum == config.networkProperties()) {
-                configProvider.update(FileUtilities.getFileContent(state, fileID));
+                final var networkProperties = FileUtilities.getFileContent(state, fileID);
+                final var permissions = FileUtilities.getFileContent(state, createFileID(config.hapiPermissions(), configuration));
+                configProvider.update(networkProperties, permissions);
                 backendThrottle.applyGasConfig();
                 frontendThrottle.applyGasConfig();
 
@@ -122,7 +126,9 @@ public class SystemFileUpdateFacility {
                 // values that are coming from the network properties
                 monoMultiplierSources.resetExpectations();
             } else if (fileNum == config.hapiPermissions()) {
-                logger.error("Update of HAPI permissions not implemented");
+                final var networkProperties = FileUtilities.getFileContent(state, createFileID(config.networkProperties(), configuration));
+                final var permissions = FileUtilities.getFileContent(state, fileID);
+                configProvider.update(networkProperties, permissions);
             } else if (fileNum == config.throttleDefinitions()) {
                 throttleManager.update(FileUtilities.getFileContent(state, fileID));
                 backendThrottle.rebuildFor(throttleManager.throttleDefinitions());
@@ -140,5 +146,10 @@ public class SystemFileUpdateFacility {
                     fileID,
                     e);
         }
+    }
+
+    private FileID createFileID(final long fileNum, @NonNull final Configuration configuration) {
+        final var hederaConfig = configuration.getConfigData(HederaConfig.class);
+        return FileID.newBuilder().realmNum(hederaConfig.realm()).shardNum(hederaConfig.shard()).fileNum(fileNum).build();
     }
 }

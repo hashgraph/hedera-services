@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,6 +47,7 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -101,6 +103,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .withConverter(new BytesConverter())
                 .withConverter(new LongPairConverter())
                 .withConfigDataType(FilesConfig.class)
+                .withConfigDataType(HederaConfig.class)
                 .withConfigDataType(LedgerConfig.class)
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1L));
@@ -205,39 +208,95 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
     }
 
     @Test
-    void testUpdateConfigFile() {
+    void testUpdateNetworkPropertiesFile() {
         // given
-        final var fileID = FileID.newBuilder().fileNum(121L).build();
+        final var configuration = configProvider.getConfiguration();
+        final var config = configuration.getConfigData(FilesConfig.class);
+        final var fileID = FileID.newBuilder().fileNum(config.networkProperties()).build();
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(50L).build())
                         .build())
                 .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
+        final var permissionFileID = FileID.newBuilder().fileNum(config.hapiPermissions()).build();
+        final var permissionContent = Bytes.wrap("Good-bye World");
+        files.put(permissionFileID, File.newBuilder().contents(permissionContent).build());
 
         // when
         subject.handleTxBody(state, txBody.build());
 
         // then
-        verify(configProvider).update(FILE_BYTES);
+        verify(configProvider).update(eq(FILE_BYTES), eq(permissionContent));
     }
 
     @Test
-    void testAppendConfigFile() {
+    void testAppendNetworkPropertiesFile() {
         // given
-        final var fileID = FileID.newBuilder().fileNum(121L).build();
+        final var configuration = configProvider.getConfiguration();
+        final var config = configuration.getConfigData(FilesConfig.class);
+        final var fileID = FileID.newBuilder().fileNum(config.networkProperties()).build();
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(50L).build())
                         .build())
                 .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
+        final var permissionFileID = FileID.newBuilder().fileNum(config.hapiPermissions()).build();
+        final var permissionContent = Bytes.wrap("Good-bye World");
+        files.put(permissionFileID, File.newBuilder().contents(permissionContent).build());
 
         // when
         subject.handleTxBody(state, txBody.build());
 
         // then
-        verify(configProvider).update(FILE_BYTES);
+        verify(configProvider).update(eq(FILE_BYTES), eq(permissionContent));
+    }
+
+    @Test
+    void testUpdatePermissionsFile() {
+        // given
+        final var configuration = configProvider.getConfiguration();
+        final var config = configuration.getConfigData(FilesConfig.class);
+        final var fileID = FileID.newBuilder().fileNum(config.hapiPermissions()).build();
+        final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .build())
+                .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
+        files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
+        final var networkPropertiesFileID = FileID.newBuilder().fileNum(config.networkProperties()).build();
+        final var networkPropertiesContent = Bytes.wrap("Good-bye World");
+        files.put(networkPropertiesFileID, File.newBuilder().contents(networkPropertiesContent).build());
+
+        // when
+        subject.handleTxBody(state, txBody.build());
+
+        // then
+        verify(configProvider).update(eq(networkPropertiesContent), eq(FILE_BYTES));
+    }
+
+    @Test
+    void testAppendPermissionsFile() {
+        // given
+        final var configuration = configProvider.getConfiguration();
+        final var config = configuration.getConfigData(FilesConfig.class);
+        final var fileID = FileID.newBuilder().fileNum(config.hapiPermissions()).build();
+        final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .build())
+                .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
+        files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
+        final var networkPropertiesFileID = FileID.newBuilder().fileNum(config.networkProperties()).build();
+        final var networkPropertiesContent = Bytes.wrap("Good-bye World");
+        files.put(networkPropertiesFileID, File.newBuilder().contents(networkPropertiesContent).build());
+
+        // when
+        subject.handleTxBody(state, txBody.build());
+
+        // then
+        verify(configProvider).update(eq(networkPropertiesContent), eq(FILE_BYTES));
     }
 
     @Test

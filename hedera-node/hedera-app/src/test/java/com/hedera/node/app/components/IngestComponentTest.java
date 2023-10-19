@@ -123,6 +123,7 @@ class IngestComponentTest {
                         synchronizedThrottleAccumulator))
                 .networkUtilizationManager(new NetworkUtilizationManagerImpl(handleThrottling, monoMultiplierSources))
                 .throttleManager(throttleManager)
+                .feeManager(feeManager)
                 .self(selfNodeInfo)
                 .maxSignedTxnSize(1024)
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
