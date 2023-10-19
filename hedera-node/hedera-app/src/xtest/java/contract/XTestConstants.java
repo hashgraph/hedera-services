@@ -94,7 +94,10 @@ class XTestConstants {
             .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
             .build();
     static final Key AN_ECDSA_KEY = Key.newBuilder()
-            .ecdsa384(Bytes.fromHex("1010101010101010101010101010101010101010101010101010101010101010"))
+            .ecdsaSecp256k1(Bytes.wrap(new byte[] {
+                2, 64, 59, -126, 81, -22, 0, 35, 67, -70, 110, 96, 109, 2, -8, 111, -112, -100, -87, -85, 66, 36, 37,
+                -97, 19, 68, -87, -110, -13, -115, 74, 86, 90
+            }))
             .build();
 
     public static void addErc721Relation(

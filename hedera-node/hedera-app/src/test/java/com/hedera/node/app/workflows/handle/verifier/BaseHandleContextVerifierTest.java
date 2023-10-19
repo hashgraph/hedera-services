@@ -16,14 +16,14 @@
 
 package com.hedera.node.app.workflows.handle.verifier;
 
+import static com.hedera.node.app.fixtures.workflows.prehandle.FakeSignatureVerificationFuture.badFuture;
+import static com.hedera.node.app.fixtures.workflows.prehandle.FakeSignatureVerificationFuture.goodFuture;
 import static com.hedera.node.app.spi.fixtures.Scenarios.ALICE;
 import static com.hedera.node.app.spi.fixtures.Scenarios.BOB;
 import static com.hedera.node.app.spi.fixtures.Scenarios.CAROL;
 import static com.hedera.node.app.spi.fixtures.Scenarios.ERIN;
 import static com.hedera.node.app.spi.fixtures.Scenarios.FAKE_ECDSA_KEY_INFOS;
 import static com.hedera.node.app.spi.fixtures.Scenarios.FAKE_ED25519_KEY_INFOS;
-import static com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture.badFuture;
-import static com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture.goodFuture;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -41,11 +41,11 @@ import com.google.common.collect.Streams;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.node.app.fixtures.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.VerificationAssistant;
-import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -80,7 +80,6 @@ class BaseHandleContextVerifierTest {
     @Mock
     VerificationAssistant verificationAssistant;
 
-    @SuppressWarnings("ConstantConditions")
     @Test
     void testMethodsWithInvalidArguments() {
         // given
@@ -230,7 +229,7 @@ class BaseHandleContextVerifierTest {
             });
         }
 
-        private Map<Key, SignatureVerificationFuture> verificationResults(Map<Key, Boolean> keysAndPassFail) {
+        private Map<Key, SignatureVerificationFuture> verificationResults(final Map<Key, Boolean> keysAndPassFail) {
             final var results = new HashMap<Key, SignatureVerificationFuture>();
             for (final var entry : keysAndPassFail.entrySet()) {
                 results.put(
@@ -249,14 +248,14 @@ class BaseHandleContextVerifierTest {
             final var keyList = KeyList.newBuilder()
                     .keys(ECDSA_X2, ECDSA_X2, ECDSA_X1, ED25519_X2, ED25519_X2, ED25519_X1)
                     .build();
-            var key = Key.newBuilder().keyList(keyList).build();
-            var verificationResults = verificationResults(Map.of(
+            final var key = Key.newBuilder().keyList(keyList).build();
+            final var verificationResults = verificationResults(Map.of(
                     ECDSA_X1, true,
                     ECDSA_X2, true,
                     ED25519_X1, true,
                     ED25519_X2, true));
             // When we pre handle
-            var result = createVerifier(verificationResults);
+            final var result = createVerifier(verificationResults);
             // Then we find the verification results are passing because we have all keys signed
             assertThat(result.verificationFor(key))
                     .extracting(SignatureVerification::passed)
@@ -860,7 +859,7 @@ class BaseHandleContextVerifierTest {
                     FAKE_ED25519_KEY_INFOS[0].publicKey(), goodFuture(FAKE_ED25519_KEY_INFOS[0].publicKey()));
 
             // When we pre handle
-            var result = createVerifier(verificationResults);
+            final var result = createVerifier(verificationResults);
 
             // Then we find the verification results will pass
             assertThat(result.verificationFor(key))
@@ -1165,7 +1164,9 @@ class BaseHandleContextVerifierTest {
 
         /** Similar to the above, except we fail verifications instead of removing them. */
         private static void failVerificationsIn(
-                @NonNull final Key key, @NonNull Map<Key, SignatureVerificationFuture> map, boolean failTooMany) {
+                @NonNull final Key key,
+                @NonNull final Map<Key, SignatureVerificationFuture> map,
+                final boolean failTooMany) {
             switch (key.key().kind()) {
                 case KEY_LIST -> {
                     // A Key list cannot have ANY failed and still pass. So we only fail a single key's worth of
@@ -1221,7 +1222,7 @@ class BaseHandleContextVerifierTest {
         void failToVerifyIfHollowAccountIsNotInVerificationResults() {
             // Given a hollow account and no verification results
             final var alias = ERIN.account().alias();
-            Map<Key, SignatureVerificationFuture> verificationResults = Map.of(
+            final Map<Key, SignatureVerificationFuture> verificationResults = Map.of(
                     ALICE.keyInfo().publicKey(), goodFuture(ALICE.keyInfo().publicKey()),
                     BOB.keyInfo().publicKey(), goodFuture(BOB.keyInfo().publicKey()),
                     CAROL.keyInfo().publicKey(), goodFuture(CAROL.keyInfo().publicKey(), CAROL.account()));
@@ -1239,7 +1240,7 @@ class BaseHandleContextVerifierTest {
         void failToVerifyIfHollowAccountIsNotInVerificationResults(final boolean passes) {
             // Given a hollow account and no verification results
             final var alias = ERIN.account().alias();
-            Map<Key, SignatureVerificationFuture> verificationResults = Map.of(
+            final Map<Key, SignatureVerificationFuture> verificationResults = Map.of(
                     ALICE.keyInfo().publicKey(),
                     goodFuture(ALICE.keyInfo().publicKey()),
                     BOB.keyInfo().publicKey(),
@@ -1264,12 +1265,12 @@ class BaseHandleContextVerifierTest {
     }
 
     /** Convenience method for creating a key list */
-    private static Key keyList(Key... keys) {
+    private static Key keyList(final Key... keys) {
         return Key.newBuilder().keyList(KeyList.newBuilder().keys(keys)).build();
     }
 
     /** Convenience method for creating a threshold key */
-    private static Key thresholdKey(int threshold, Key... keys) {
+    private static Key thresholdKey(final int threshold, final Key... keys) {
         return Key.newBuilder()
                 .thresholdKey(ThresholdKey.newBuilder()
                         .keys(KeyList.newBuilder().keys(keys))

@@ -21,7 +21,6 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.authorization.AuthorizerImpl;
@@ -29,6 +28,7 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.workflows.handle.verifier.FakeHandleContextVerifier;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
@@ -45,6 +45,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalcul
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -65,7 +66,7 @@ import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
-import com.hedera.node.app.workflows.handle.verifier.BaseHandleContextVerifier;
+import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
 import com.hedera.node.app.workflows.prehandle.DummyPreHandleDispatcher;
 import com.hedera.node.app.workflows.query.QueryContextImpl;
 import com.hedera.node.config.ConfigProvider;
@@ -83,7 +84,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.time.Instant;
-import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.inject.Singleton;
@@ -114,6 +114,13 @@ public interface BaseScaffoldingModule {
     @Singleton
     static NetworkInfo provideNetworkInfo() {
         return new FakeNetworkInfo();
+    }
+
+    @Provides
+    @Singleton
+    static HandleContextVerifier providesContextVerifier(@NonNull final ConfigProvider configProvider) {
+        final var config = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        return new FakeHandleContextVerifier(config);
     }
 
     @Binds
@@ -214,7 +221,8 @@ public interface BaseScaffoldingModule {
             @NonNull final HederaState state,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
-            @NonNull final Authorizer authorizer) {
+            @NonNull final Authorizer authorizer,
+            @NonNull final HandleContextVerifier verifier) {
         final var consensusTime = Instant.now();
         final var parentRecordBuilder = new SingleTransactionRecordBuilderImpl(consensusTime);
         return body -> {
@@ -222,7 +230,7 @@ public interface BaseScaffoldingModule {
             final HederaFunctionality function;
             try {
                 function = functionOf(body);
-            } catch (UnknownHederaFunctionality e) {
+            } catch (final UnknownHederaFunctionality e) {
                 throw new RuntimeException(e);
             }
             return new HandleContextImpl(
@@ -230,13 +238,13 @@ public interface BaseScaffoldingModule {
                     function,
                     0,
                     body.transactionIDOrThrow().accountIDOrThrow(),
-                    Key.DEFAULT,
+                    Scenarios.ALICE.account().key(),
                     networkInfo,
                     USER,
                     parentRecordBuilder,
                     new SavepointStackImpl(state),
                     configuration,
-                    new BaseHandleContextVerifier(configuration.getConfigData(HederaConfig.class), Map.of()),
+                    verifier,
                     new RecordListBuilder(parentRecordBuilder),
                     new TransactionChecker(6192, AccountID.DEFAULT, configProvider, metrics),
                     dispatcher,

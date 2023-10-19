@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.prehandle;
+package com.hedera.node.app.fixtures.workflows.prehandle;
 
 import static java.util.Objects.requireNonNull;
 
