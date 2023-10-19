@@ -34,8 +34,8 @@ import java.util.function.Consumer;
  * @param <O> the output time of the wire (use {@link Void}) for a wire with no output type)
  */
 public class SequentialWire<O> extends AbstractWire<O> {
-    private final AtomicReference<SequentialTask> lastTask;
 
+    private final AtomicReference<SequentialTask> lastTask;
     private final ObjectCounter onRamp;
     private final ObjectCounter offRamp;
     private final FractionalTimer busyTimer;

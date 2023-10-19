@@ -97,12 +97,14 @@ public abstract class Wire<O> {
      * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations
      * after data has been inserted into the wire is not thread safe and has undefined behavior.
      *
-     * @param channel the channel to forward output data to
+     * @param channels the channels to forward output data to
      * @return this
      */
+    @SuppressWarnings("UnusedReturnValue")
+    @SafeVarargs
     @NonNull
-    public final Wire<O> solderTo(@NonNull final WireChannel<O, ?> channel) { // TODO accept vararg array
-        return solderTo(channel, false);
+    public final Wire<O> solderTo(@NonNull final WireChannel<O, ?>... channels) {
+        return solderTo(false, channels);
     }
 
     /**
@@ -117,13 +119,14 @@ public abstract class Wire<O> {
      * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations
      * after data has been inserted into the wire is not thread safe and has undefined behavior.
      *
-     * @param channel the channel to forward output data to
      * @param inject  if true then the data is injected and ignores back pressure. If false then back pressure is
      *                respected.
+     * @param channels the channels to forward output data to
      * @return this
      */
+    @SuppressWarnings("unchecked")
     @NonNull
-    public abstract Wire<O> solderTo(@NonNull final WireChannel<O, ?> channel, final boolean inject);
+    public abstract Wire<O> solderTo(final boolean inject, @NonNull final WireChannel<O, ?>... channels);
 
     /**
      * Specify a consumer where output data should be forwarded.

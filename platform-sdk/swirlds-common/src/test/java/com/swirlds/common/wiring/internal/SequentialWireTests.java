@@ -1369,5 +1369,230 @@ class SequentialWireTests {
         pool.shutdown();
     }
 
-    // TODO soldering tests
+    /**
+     * Solder together a simple sequence of wires.
+     */
+    @Test
+    void simpleSolderingTest() {
+        final Wire<Integer> wireA =
+                Wire.builder("A").withOutputType(Integer.class).build();
+        final Wire<Integer> wireB =
+                Wire.builder("A").withOutputType(Integer.class).build();
+        final Wire<Integer> wireC =
+                Wire.builder("A").withOutputType(Integer.class).build();
+        final Wire<Void> wireD = Wire.builder("A").withOutputType(Void.class).build();
+
+        final WireChannel<Integer, Integer> inputA = wireA.createChannel();
+        final WireChannel<Integer, Integer> inputB = wireB.createChannel();
+        final WireChannel<Integer, Integer> inputC = wireC.createChannel();
+        final WireChannel<Integer, Void> inputD = wireD.createChannel();
+
+        wireA.solderTo(inputB);
+        wireB.solderTo(inputC);
+        wireC.solderTo(inputD);
+
+        final AtomicInteger countA = new AtomicInteger();
+        final AtomicInteger countB = new AtomicInteger();
+        final AtomicInteger countC = new AtomicInteger();
+        final AtomicInteger countD = new AtomicInteger();
+
+        inputA.bind(x -> {
+            countA.set(hash32(countA.get(), x));
+            return x;
+        });
+
+        inputB.bind(x -> {
+            countB.set(hash32(countB.get(), x));
+            return x;
+        });
+
+        inputC.bind(x -> {
+            countC.set(hash32(countC.get(), x));
+            return x;
+        });
+
+        inputD.bind(x -> {
+            countD.set(hash32(countD.get(), x));
+        });
+
+        int expectedCount = 0;
+
+        for (int i = 0; i < 100; i++) {
+            inputA.put(i);
+            expectedCount = hash32(expectedCount, i);
+        }
+
+        assertEventuallyEquals(
+                expectedCount, countD::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEquals(expectedCount, countA.get());
+        assertEquals(expectedCount, countB.get());
+        assertEquals(expectedCount, countC.get());
+    }
+
+    /**
+     * Test soldering to a lambda function.
+     */
+    @Test
+    void lambdaSolderingTest() {
+        final Wire<Integer> wireA =
+                Wire.builder("A").withOutputType(Integer.class).build();
+        final Wire<Integer> wireB =
+                Wire.builder("B").withOutputType(Integer.class).build();
+        final Wire<Integer> wireC =
+                Wire.builder("C").withOutputType(Integer.class).build();
+        final Wire<Void> wireD = Wire.builder("D").withOutputType(Void.class).build();
+
+        final WireChannel<Integer, Integer> inputA = wireA.createChannel();
+        final WireChannel<Integer, Integer> inputB = wireB.createChannel();
+        final WireChannel<Integer, Integer> inputC = wireC.createChannel();
+        final WireChannel<Integer, Void> inputD = wireD.createChannel();
+
+        wireA.solderTo(inputB);
+        wireB.solderTo(inputC);
+        wireC.solderTo(inputD);
+
+        final AtomicInteger countA = new AtomicInteger();
+        final AtomicInteger countB = new AtomicInteger();
+        final AtomicInteger countC = new AtomicInteger();
+        final AtomicInteger countD = new AtomicInteger();
+
+        final AtomicInteger lambdaSum = new AtomicInteger();
+        wireB.solderTo(lambdaSum::getAndAdd);
+
+        inputA.bind(x -> {
+            countA.set(hash32(countA.get(), x));
+            return x;
+        });
+
+        inputB.bind(x -> {
+            countB.set(hash32(countB.get(), x));
+            return x;
+        });
+
+        inputC.bind(x -> {
+            countC.set(hash32(countC.get(), x));
+            return x;
+        });
+
+        inputD.bind(x -> {
+            countD.set(hash32(countD.get(), x));
+        });
+
+        int expectedCount = 0;
+
+        int sum = 0;
+        for (int i = 0; i < 100; i++) {
+            inputA.put(i);
+            expectedCount = hash32(expectedCount, i);
+            sum += i;
+        }
+
+        assertEventuallyEquals(
+                expectedCount, countD::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEquals(expectedCount, countA.get());
+        assertEquals(expectedCount, countB.get());
+        assertEquals(sum, lambdaSum.get());
+        assertEquals(expectedCount, countC.get());
+    }
+
+    /**
+     * Solder the output of a wire to the inputs of multiple other wires.
+     */
+    @Test
+    void multiWireSolderingTest() {
+        // A passes data to X, Y, and Z
+        // X, Y, and Z pass data to B
+
+        final Wire<Integer> wireA =
+                Wire.builder("A").withOutputType(Integer.class).build();
+        final WireChannel<Integer, Integer> addNewValueToA = wireA.createChannel();
+        final WireChannel<Boolean, Integer> setInversionBitInA = wireA.createChannel();
+
+        final Wire<Integer> wireX =
+                Wire.builder("X").withOutputType(Integer.class).build();
+        final WireChannel<Integer, Integer> inputX = wireX.createChannel();
+
+        final Wire<Integer> wireY =
+                Wire.builder("Y").withOutputType(Integer.class).build();
+        final WireChannel<Integer, Integer> inputY = wireY.createChannel();
+
+        final Wire<Integer> wireZ =
+                Wire.builder("Z").withOutputType(Integer.class).build();
+        final WireChannel<Integer, Integer> inputZ = wireZ.createChannel();
+
+        final Wire<Void> wireB = Wire.builder("B").withOutputType(Void.class).build();
+        final WireChannel<Integer, Void> inputB = wireB.createChannel();
+
+        wireA.solderTo(inputX, inputY, inputZ);
+        wireX.solderTo(inputB);
+        wireY.solderTo(inputB);
+        wireZ.solderTo(inputB);
+
+        final AtomicInteger countA = new AtomicInteger();
+        final AtomicBoolean invertA = new AtomicBoolean();
+        addNewValueToA.bind(x -> {
+            final int possiblyInvertedValue = x * (invertA.get() ? -1 : 1);
+            countA.set(hash32(countA.get(), possiblyInvertedValue));
+            return possiblyInvertedValue;
+        });
+        setInversionBitInA.bind(x -> {
+            invertA.set(x);
+            return null;
+        });
+
+        final AtomicInteger countX = new AtomicInteger();
+        inputX.bind(x -> {
+            countX.set(hash32(countX.get(), x));
+            return x;
+        });
+
+        final AtomicInteger countY = new AtomicInteger();
+        inputY.bind(x -> {
+            countY.set(hash32(countY.get(), x));
+            return x;
+        });
+
+        final AtomicInteger countZ = new AtomicInteger();
+        inputZ.bind(x -> {
+            countZ.set(hash32(countZ.get(), x));
+            return x;
+        });
+
+        final AtomicInteger sumB = new AtomicInteger();
+        inputB.bind(x -> {
+            sumB.getAndAdd(x);
+        });
+
+        int expectedCount = 0;
+        boolean expectedInversionBit = false;
+        int expectedSum = 0;
+
+        for (int i = 0; i < 100; i++) {
+            if (i % 7 == 0) {
+                expectedInversionBit = !expectedInversionBit;
+                setInversionBitInA.put(expectedInversionBit);
+            }
+            addNewValueToA.put(i);
+
+            final int possiblyInvertedValue = i * (expectedInversionBit ? -1 : 1);
+
+            expectedCount = hash32(expectedCount, possiblyInvertedValue);
+            expectedSum = expectedSum + 3 * possiblyInvertedValue;
+        }
+
+        assertEventuallyEquals(
+                expectedSum,
+                sumB::get,
+                Duration.ofSeconds(1),
+                "Wire sum did not match expected sum, " + expectedSum + " vs " + sumB.get());
+        assertEquals(expectedCount, countA.get());
+        assertEquals(expectedCount, countX.get());
+        assertEquals(expectedCount, countY.get());
+        assertEquals(expectedCount, countZ.get());
+        assertEventuallyEquals(
+                expectedInversionBit,
+                invertA::get,
+                Duration.ofSeconds(1),
+                "Wire inversion bit did not match expected value");
+    }
 }

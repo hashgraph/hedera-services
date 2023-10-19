@@ -57,15 +57,20 @@ public abstract class AbstractWire<O> extends Wire<O> {
     /**
      * {@inheritDoc}
      */
+    @SafeVarargs
     @NonNull
     @Override
-    public final Wire<O> solderTo(@NonNull final WireChannel<O, ?> channel, final boolean inject) {
-        Objects.requireNonNull(channel);
-        if (inject) {
-            forwardingDestinations.add(channel::inject);
-        } else {
-            forwardingDestinations.add(channel::put);
+    public final Wire<O> solderTo(final boolean inject, @NonNull final WireChannel<O, ?>... channels) {
+        Objects.requireNonNull(channels);
+
+        for (final WireChannel<O, ?> channel : channels) {
+            if (inject) {
+                forwardingDestinations.add(channel::inject);
+            } else {
+                forwardingDestinations.add(channel::put);
+            }
         }
+
         return this;
     }
 
