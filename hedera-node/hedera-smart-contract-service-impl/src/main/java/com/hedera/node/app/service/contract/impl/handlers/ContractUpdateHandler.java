@@ -21,9 +21,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.EXPIRATION_REDUCTION_NO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -33,10 +33,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
-import com.hedera.hapi.node.contract.ContractUpdateTransactionBody.StakedIdOneOfType;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Account.Builder;
-import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -45,7 +42,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.LedgerConfig;
-import com.hedera.pbj.runtime.OneOf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -124,101 +120,44 @@ public class ContractUpdateHandler implements TransactionHandler {
         context.serviceApi(TokenServiceApi.class).updateContract(changed);
     }
 
-    private enum ExtensionType {
-        NO_EXTENSION,
-        VALID_EXTENSION,
-        INVALID_EXTENSION
-    }
-
     public Account update(
             @NonNull final Account contract,
-            @NonNull final HandleContext context, // TODO: should I pass the HandleContext or be mre specific?
+            @NonNull final HandleContext context,
             @NonNull final ContractUpdateTransactionBody op) {
-        final var customizer = new HederaAccountCustomizer(); // TODO: delete
+
+        validate(contract, context, op);
+
         final var builder = contract.copyBuilder();
-
-        var expiryExtension = ExtensionType.NO_EXTENSION;
-        if (op.hasExpirationTime()) {
-            // TODO: refactor
-            boolean isValid = true;
-            try {
-                // TODO: seconds?
-                context.attributeValidator().validateExpiry(op.expirationTime().seconds());
-            } catch (Exception e) {
-                isValid = false;
-            }
-
-            expiryExtension = isValid ? ExtensionType.VALID_EXTENSION : ExtensionType.INVALID_EXTENSION;
-        }
-        if (contract.expiredAndPendingRemoval()) {
-            if (expiryExtension == ExtensionType.VALID_EXTENSION) {
-                // customizer.isExpiredAndPendingRemoval(false); ??
+        if (op.hasAdminKey()) {
+            if (IMMUTABILITY_SENTINEL_KEY.equals(op.adminKey())) {
+                builder.key(contract.key());
             } else {
-                throw new HandleException(CONTRACT_EXPIRED_AND_PENDING_REMOVAL);
+                builder.key(op.adminKey());
             }
         }
-
-        if (!onlyAffectsExpiry(op) && !isMutable(contract)) {
-            throw new HandleException(MODIFYING_IMMUTABLE_CONTRACT);
-        }
-
-        if (reducesExpiry(op, contract.expirationSecond())) {
-            throw new HandleException(EXPIRATION_REDUCTION_NOT_ALLOWED);
-        }
-
-        var cid = op.contractID();
-        if (op.hasAdminKey() && processAdminKey(op, contract, builder)) {
-            throw new HandleException(INVALID_ADMIN_KEY);
+        if (op.hasExpirationTime()) {
+            if (contract.expiredAndPendingRemoval()) {
+                builder.expiredAndPendingRemoval(false);
+            }
+            builder.expirationSecond(op.expirationTime().seconds());
         }
         if (op.hasAutoRenewPeriod()) {
             builder.autoRenewSeconds(op.autoRenewPeriod().seconds());
         }
-        if (expiryExtension == ExtensionType.INVALID_EXTENSION) {
-            throw new HandleException(INVALID_EXPIRATION_TIME);
-        }
-        if (expiryExtension == ExtensionType.VALID_EXTENSION) {
-            builder.expirationSecond(op.expirationTime().seconds());
-        }
-
-        // TODO: refactor: new method
-        final var newMemo = op.hasMemoWrapper() ? op.memoWrapper() : op.memo();
-        context.attributeValidator().validateMemo(newMemo);
         if (affectsMemo(op)) {
-            processMemo(op, builder);
+            final var newMemo = op.hasMemoWrapper() ? op.memoWrapper() : op.memo();
+            context.attributeValidator().validateMemo(newMemo);
+            builder.memo(newMemo);
         }
-        // TODO:
-        //        if (op.stakedAccountId() != null) { // TOOD:?
-        //            builder.stakedAccountId(op.stakedAccountId());
-        //            //customizer.customizeStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(),
-        // op.getStakedNodeId());
-        //        }
-
-        //        switch (op.stakedId().kind()) {
-        //            case STAKED_NODE_ID -> builder.stakedNodeId(op.stakedNodeId())
-        //        }
-
-        //        if (op.stakedAccountId() != null) {
-        //            builder.stakedAccountId(op.stakedAccountId());
-        //        }
-
-        if (op.stakedId().kind() != StakedIdOneOfType.UNSET) {
-            // final var stakedId = getStakedId(op.stakedId(), op.stakedAccountId(), op.stakedNodeId());
-            // builder.stakedNodeId(stakedId);
-            if (op.stakedAccountId() != null) {
-                builder.stakedAccountId(
-                        AccountID.newBuilder().accountNum(op.stakedAccountId().accountNum()));
+        if (op.hasStakedAccountId()) {
+            if (SENTINEL_ACCOUNT_ID.equals(op.stakedAccountId())) {
+                builder.stakedAccountId((AccountID) null);
+            } else {
+                builder.stakedAccountId(op.stakedAccountId());
             }
-            if (op.stakedNodeId() != null) {
-                builder.stakedNodeId(op.stakedNodeId());
-            }
-
-            // customizer.customizeStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
+        } else if (op.hasStakedNodeId()) {
+            builder.stakedNodeId(op.stakedNodeId());
         }
-
-        //        if (op.stakedNodeId() != null) {
-        //            builder.stakedNodeId(op.stakedNodeId());
-        //        }
-
         if (op.hasDeclineReward()) {
             builder.declineReward(op.declineReward());
         }
@@ -232,62 +171,34 @@ public class ContractUpdateHandler implements TransactionHandler {
             }
             builder.maxAutoAssociations(op.maxAutomaticTokenAssociations());
         }
-
         return builder.build();
     }
 
-    // TODO: order
+    private void validate(Account contract, HandleContext context, ContractUpdateTransactionBody op) {
+        // TODO: I couldn't implement processAdminKey because I couldn't find JKey implementation in mod.
+        //  Any idea what's the alternative in the new code?
+        //        if (op.hasAdminKey() && processAdminKey(op, contract, builder)) {
+        //            throw new HandleException(INVALID_ADMIN_KEY);
+        //        }
 
-    /**
-     * Gets the stakedId from the provided staked_account_id or staked_node_id.
-     *
-     * @param stakedAccountId given staked_account_id
-     * @param stakedNodeId given staked_node_id
-     * @return valid staked id
-     */
-    static long getStakedId(
-            final OneOf<StakedIdOneOfType> stakedId, final AccountID stakedAccountId, final Long stakedNodeId) {
-        if (stakedId.kind() == StakedIdOneOfType.STAKED_ACCOUNT_ID) {
-            return stakedAccountId.accountNum();
-        } else {
-            // return a number less than the given node Id, in order to recognize the if nodeId 0 is
-            // set
-            return -stakedNodeId - 1;
+        if (op.hasExpirationTime()) {
+            try {
+                context.attributeValidator().validateExpiry(op.expirationTime().seconds());
+            } catch (HandleException e) {
+                if (contract.expiredAndPendingRemoval()) {
+                    throw new HandleException(CONTRACT_EXPIRED_AND_PENDING_REMOVAL);
+                }
+                throw e;
+            }
         }
-    }
 
-    public static final String STAKED_ID_NOT_SET_CASE = "STAKEDID_NOT_SET";
-
-    public static boolean hasStakedId(final String idCase) {
-        return !idCase.equals(STAKED_ID_NOT_SET_CASE);
-    }
-
-    private void processMemo(final ContractUpdateTransactionBody op, final Builder builder) {
-        final var newMemo = op.hasMemoWrapper() ? op.memoWrapper() : op.memo();
-        builder.memo(newMemo);
-    }
-
-    // TODO: I butchered this method because I couldn't find JKey implementation in mod
-    private boolean processAdminKey(
-            final ContractUpdateTransactionBody updateOp, final Account contract, final Builder builder) {
-        if (IMMUTABILITY_SENTINEL_KEY.equals(updateOp.adminKey())) {
-            builder.key(contract.key());
-        } else {
-            builder.key(updateOp.adminKey());
-            // TODO:
-            //            var resolution = keyIfAcceptable(updateOp.adminKey());
-            //            if (resolution.isEmpty()) {
-            //                return true;
-            //            }
-            //            builder.key(resolution.get());
-            // builder.key() TODO?
-            // customizer.key(resolution.get());
+        if (!onlyAffectsExpiry(op) && !isMutable(contract)) {
+            throw new HandleException(MODIFYING_IMMUTABLE_CONTRACT);
         }
-        return false;
-    }
 
-    private boolean reducesExpiry(ContractUpdateTransactionBody op, long curExpiry) {
-        return op.hasExpirationTime() && op.expirationTime().seconds() < curExpiry;
+        if (reducesExpiry(op, contract.expirationSecond())) {
+            throw new HandleException(EXPIRATION_REDUCTION_NOT_ALLOWED);
+        }
     }
 
     boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {
@@ -308,31 +219,7 @@ public class ContractUpdateHandler implements TransactionHandler {
                 .orElse(false);
     }
 
-    //    private Optional<JKey> keyIfAcceptable(Key candidate) {
-    //        return Optional.empty();
-    //    }
-    //
-    //    private Optional<JKey> keyIfAcceptable(Key candidate) {
-    //        var key = MiscUtils.asUsableFcKey(candidate);
-    //        if (key.isEmpty() || key.get() instanceof JContractIDKey) {
-    //            return Optional.empty();
-    //        }
-    //        return key;
-    //    }
-    //
-    //    public static Optional<JKey> asUsableFcKey(final Key key) {
-    //        if (key.getKeyCase() == com.hederahashgraph.api.proto.java.Key.KeyCase.KEY_NOT_SET) {
-    //            return Optional.empty();
-    //        }
-    //        try {
-    //            final var fcKey = JKey.mapKey(key);
-    //            if (!fcKey.isValid()) {
-    //                return Optional.empty();
-    //            }
-    //            return Optional.of(fcKey);
-    //        } catch (final InvalidKeyException ignore) {
-    //            return Optional.empty();
-    //        }
-    //    }
-
+    private boolean reducesExpiry(ContractUpdateTransactionBody op, long curExpiry) {
+        return op.hasExpirationTime() && op.expirationTime().seconds() < curExpiry;
+    }
 }

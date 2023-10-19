@@ -336,6 +336,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
 
     @Override
     public void updateContract(Account contract) {
+        // TODO: recordBuilder?
         accountStore.put(contract);
     }
 
