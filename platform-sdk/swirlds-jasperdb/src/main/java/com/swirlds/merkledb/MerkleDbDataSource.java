@@ -289,7 +289,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
         statisticsUpdater = new MerkleDbStatisticsUpdater(this);
 
-        Runnable updateTotalStatsFunction = () -> {
+        final Runnable updateTotalStatsFunction = () -> {
             statisticsUpdater.updateStoreFileStats();
             statisticsUpdater.updateOffHeapStats();
         };
@@ -364,7 +364,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
 
         // Create path to key/value store, this will create new or load if files exist
-        String storeName = tableName + "_pathtohashkeyvalue";
+        final String storeName = tableName + "_pathtohashkeyvalue";
         pathToKeyValue = new MemoryIndexDiskKeyValueStore<>(
                 dbPaths.pathToKeyValueDirectory,
                 storeName,
@@ -1078,7 +1078,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         });
 
         if (hasDiskStoreForHashes) {
-            DataFileReader<VirtualHashRecord> newHashesFile = hashStoreDisk.endWriting();
+            final DataFileReader<VirtualHashRecord> newHashesFile = hashStoreDisk.endWriting();
             statisticsUpdater.setFlushHashesStoreFileSize(newHashesFile);
             compactionCoordinator.compactDiskStoreForHashesAsync();
         }
@@ -1145,11 +1145,11 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         });
 
         // end writing
-        DataFileReader<VirtualLeafRecord<K, V>> pathToKeyValueReader = pathToKeyValue.endWriting();
+        final DataFileReader<VirtualLeafRecord<K, V>> pathToKeyValueReader = pathToKeyValue.endWriting();
         statisticsUpdater.setFlushLeavesStoreFileSize(pathToKeyValueReader);
         compactionCoordinator.compactPathToKeyValueAsync();
         if (!isLongKeyMode) {
-            DataFileReader<Bucket<K>> objectKeyToPathReader = objectKeyToPath.endWriting();
+            final DataFileReader<Bucket<K>> objectKeyToPathReader = objectKeyToPath.endWriting();
             statisticsUpdater.setFlushLeafKeysStoreFileSize(objectKeyToPathReader);
             compactionCoordinator.compactDiskStoreForObjectKeyToPathAsync();
         }

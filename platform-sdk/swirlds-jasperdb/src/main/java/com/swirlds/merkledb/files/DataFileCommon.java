@@ -261,7 +261,7 @@ public final class DataFileCommon {
      * @param filePaths collection of paths to files
      * @return total number of bytes take for all the files in filePaths
      */
-    public static long getSizeOfFiles(final Iterable<DataFileReader<?>> filePaths) {
+    public static long getSizeOfFiles(final Iterable<? extends DataFileReader<?>> filePaths) {
         long totalSize = 0;
         for (final DataFileReader<?> dataFileReader : filePaths) {
             totalSize += dataFileReader.getSize();
@@ -309,7 +309,7 @@ public final class DataFileCommon {
     public static void logCompactStats(
             final String storeName,
             final double tookMillis,
-            final Collection<DataFileReader<?>> filesToMerge,
+            final Collection<? extends DataFileReader<?>> filesToMerge,
             final long filesToMergeSize,
             final List<Path> mergedFiles,
             int targetCompactionLevel,

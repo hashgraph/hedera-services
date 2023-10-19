@@ -216,7 +216,7 @@ class MerkleDbCompactionCoordinator {
             return;
         }
 
-        ExecutorService executor = getCompactingExecutor();
+        final ExecutorService executor = getCompactingExecutor();
 
         synchronized (compactionFuturesByName) {
             if (compactionFuturesByName.containsKey(task.id)) {

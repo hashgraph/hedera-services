@@ -181,7 +181,9 @@ public class DataFileCompactor {
      */
     // visible for testing
     synchronized List<Path> compactFiles(
-            final CASableLongIndex index, final List<DataFileReader<?>> filesToCompact, int targetCompactionLevel)
+            final CASableLongIndex index,
+            final List<? extends DataFileReader<?>> filesToCompact,
+            int targetCompactionLevel)
             throws IOException, InterruptedException {
         if (filesToCompact.size() < getMinNumberOfFilesToCompact()) {
             // nothing to do we have merged since the last data update
@@ -396,14 +398,11 @@ public class DataFileCompactor {
      * @throws InterruptedException if the merge thread was interrupted
      * @return true if compaction was performed, false otherwise
      */
-    @SuppressWarnings("unchecked")
     public boolean compact() throws IOException, InterruptedException {
 
         final List<? extends DataFileReader<?>> allCompactableFiles = dataFileCollection.getAllCompletedFiles();
-        final List<DataFileReader<?>> filesToCompact = compactionPlan(
-                (List<DataFileReader<?>>) allCompactableFiles,
-                getMinNumberOfFilesToCompact(),
-                config.maxCompactionLevel());
+        final List<? extends DataFileReader<?>> filesToCompact =
+                compactionPlan(allCompactableFiles, getMinNumberOfFilesToCompact(), config.maxCompactionLevel());
         if (filesToCompact.isEmpty()) {
             logger.debug(MERKLE_DB.getMarker(), "[{}] No need to compact, as the compaction plan is empty", storeName);
             return false;
@@ -468,7 +467,7 @@ public class DataFileCompactor {
      *  - To ensure a reasonably predictable frequency for full compactions, even for data that changes infrequently.
      *  - We maintain metrics for each level, and there should be a cap on the number of these metrics.
      */
-    private static int getTargetCompactionLevel(List<DataFileReader<?>> filesToCompact, int filesCount) {
+    private static int getTargetCompactionLevel(List<? extends DataFileReader<?>> filesToCompact, int filesCount) {
         int highestExistingCompactionLevel =
                 filesToCompact.get(filesCount - 1).getMetadata().getCompactionLevel();
 
@@ -482,8 +481,8 @@ public class DataFileCompactor {
      * then this level and the levels above it are not included in the plan.
      * @return filter creating a compaction plan
      */
-    static List<DataFileReader<?>> compactionPlan(
-            List<DataFileReader<?>> dataFileReaders, int minNumberOfFilesToCompact, int maxCompactionLevel) {
+    static List<? extends DataFileReader<?>> compactionPlan(
+            List<? extends DataFileReader<?>> dataFileReaders, int minNumberOfFilesToCompact, int maxCompactionLevel) {
         if (dataFileReaders.isEmpty()) {
             return dataFileReaders;
         }

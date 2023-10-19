@@ -86,7 +86,7 @@ class DataFileCompactorTest {
 
     @Test
     void testCompactionPlanInitialOnly() {
-        List<DataFileReader<?>> result =
+        List<? extends DataFileReader<?>> result =
                 compactionPlan(Arrays.asList(initialLevel1, initialLevel2, initialLevel3), 2, 5);
         assertEquals(3, result.size());
         assertEquals(initialLevel1, result.get(0));
@@ -96,7 +96,7 @@ class DataFileCompactorTest {
 
     @Test
     void testCompactionPlanMultiLevel_notEnoughLevel1Readers() {
-        List<DataFileReader<?>> result =
+        List<? extends DataFileReader<?>> result =
                 compactionPlan(Arrays.asList(initialLevel1, initialLevel2, initialLevel3, firstLevel1), 3, 5);
         assertEquals(3, result.size());
         assertEquals(initialLevel1, result.get(0));
@@ -106,7 +106,7 @@ class DataFileCompactorTest {
 
     @Test
     void testCompactionPlanMultiLevel() {
-        List<DataFileReader<?>> result = compactionPlan(
+        List<? extends DataFileReader<?>> result = compactionPlan(
                 Arrays.asList(initialLevel1, initialLevel2, initialLevel3, firstLevel1, firstLevel2), 3, 5);
         assertEquals(5, result.size());
         assertEquals(initialLevel1, result.get(0));
@@ -118,7 +118,7 @@ class DataFileCompactorTest {
 
     @Test
     void testCompactionPlanMultiLevel_threeLevels() {
-        List<DataFileReader<?>> result = compactionPlan(
+        List<? extends DataFileReader<?>> result = compactionPlan(
                 Arrays.asList(
                         initialLevel1,
                         initialLevel2,
@@ -141,7 +141,7 @@ class DataFileCompactorTest {
 
     @Test
     void testCompactionPlanMultiLevel_notEnoughFilesOnMidLevel() {
-        List<DataFileReader<?>> result = compactionPlan(
+        List<? extends DataFileReader<?>> result = compactionPlan(
                 Arrays.asList(initialLevel1, initialLevel2, initialLevel3, firstLevel1, secondLevel1, secondLevel2),
                 3,
                 5);
