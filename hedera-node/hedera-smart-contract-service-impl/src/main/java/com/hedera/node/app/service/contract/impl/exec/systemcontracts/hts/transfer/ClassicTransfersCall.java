@@ -18,22 +18,28 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.trans
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Implements the "classic" HTS transfer calls, which differ from the ERC redirects in three notable ways:
@@ -116,25 +122,68 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         return completionWith(recordBuilder.status(), 0L);
     }
 
+    /**
+     * Simulates the mono-service gas calculation for a classic transfer, which is significantly complicated by our
+     * current strategy for setting the minimum tinybar price based on the canonical prices of various operations.
+     *
+     * @param body the transaction body to be dispatched
+     * @param systemContractGasCalculator the gas calculator to use
+     * @param enhancement the enhancement to use
+     * @param payerId the payer of the transaction
+     * @return the gas requirement for the transaction to be dispatched
+     */
     public static long classicTransferGasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final AccountID payerId) {
-        throw new AssertionError("Not implemented");
+        final var op = body.cryptoTransferOrThrow();
+        final var hasCustomFees = enhancement.nativeOperations().checkForCustomFees(op);
+        final var baseHbarAdjustTinybarPrice =
+                systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.TRANSFER_HBAR) / 2;
+        final var baseUnitAdjustTinybarPrice = systemContractGasCalculator.canonicalPriceInTinybars(
+                        hasCustomFees ? DispatchType.TRANSFER_FUNGIBLE_CUSTOM_FEES : DispatchType.TRANSFER_FUNGIBLE)
+                / 2;
+        final var baseNftTransferTinybarPrice = systemContractGasCalculator.canonicalPriceInTinybars(
+                hasCustomFees ? DispatchType.TRANSFER_NFT_CUSTOM_FEES : DispatchType.TRANSFER_NFT);
+        final var lazyCreationPrice = systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.CRYPTO_CREATE)
+                + systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.CRYPTO_UPDATE);
 
-        //        final var op = body.cryptoTransfer();
-        //        final var hasCustomFees = enhancement.nativeOperations().checkForCustomFees(op);
-        //        // Follow mono-service here
-        //        final var baseHbarAdjustTinybarPrice =
-        // systemContractGasCalculator.canonicalGasRequirement(DispatchType.TRANSFER_HBAR) / 2;
-        //        final var baseUnitAdjustTinybarPrice = systemContractGasCalculator.canonicalGasRequirement(
-        //                hasCustomFees ? DispatchType.TRANSFER_FUNGIBLE_CUSTOM_FEES : DispatchType.TRANSFER_FUNGIBLE) /
-        // 2;
-        //        final var baseNftTransferTinybarPrice = systemContractGasCalculator.canonicalGasRequirement(
-        //                hasCustomFees ? DispatchType.TRANSFER_NFT_CUSTOM_FEES : DispatchType.TRANSFER_NFT);
-        //        final var extantAccounts = enhancement.nativeOperations().readableAccountStore();
+        final var extantAccounts = enhancement.nativeOperations().readableAccountStore();
+        long minimumTinybarPrice = 0L;
+        final var numHbarAdjusts = op.transfersOrElse(TransferList.DEFAULT)
+                .accountAmountsOrElse(emptyList())
+                .size();
+        minimumTinybarPrice += numHbarAdjusts * baseHbarAdjustTinybarPrice;
+        final Set<Bytes> aliasesToLazyCreate = new HashSet<>();
+        for (final var tokenTransfers : op.tokenTransfersOrElse(emptyList())) {
+            final var unitAdjusts = tokenTransfers.transfersOrElse(emptyList());
+            minimumTinybarPrice += unitAdjusts.size() * baseUnitAdjustTinybarPrice;
+            for (final var unitAdjust : unitAdjusts) {
+                if (unitAdjust.amount() > 0
+                        && unitAdjust.accountIDOrElse(AccountID.DEFAULT).hasAlias()) {
+                    final var alias = unitAdjust.accountIDOrThrow().aliasOrThrow();
+                    final var extantAccount = extantAccounts.getAccountIDByAlias(alias);
+                    if (extantAccount == null) {
+                        aliasesToLazyCreate.add(alias);
+                    }
+                }
+            }
+            final var nftTransfers = tokenTransfers.nftTransfersOrElse(emptyList());
+            minimumTinybarPrice += nftTransfers.size() * baseNftTransferTinybarPrice;
+            for (final var nftTransfer : nftTransfers) {
+                if (nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT).hasAlias()) {
+                    final var alias = nftTransfer.receiverAccountIDOrThrow().aliasOrThrow();
+                    final var extantAccount = extantAccounts.getAccountIDByAlias(alias);
+                    if (extantAccount == null) {
+                        aliasesToLazyCreate.add(alias);
+                    }
+                }
+            }
+        }
+        minimumTinybarPrice += aliasesToLazyCreate.size() * lazyCreationPrice;
 
+        return systemContractGasCalculator.gasRequirement(body, payerId, minimumTinybarPrice);
     }
 
     private boolean shouldRetryWithApprovals() {

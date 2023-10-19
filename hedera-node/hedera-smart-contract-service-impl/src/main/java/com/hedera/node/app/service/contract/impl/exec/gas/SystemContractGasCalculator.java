@@ -58,6 +58,22 @@ public class SystemContractGasCalculator {
     }
 
     /**
+     * Given a transaction body whose dispatch gas requirement must be at least equivalent to a given minimum
+     * amount of tinybars, returns the gas requirement for the transaction to be dispatched.
+     *
+     * @param body the transaction body to be dispatched
+     * @param payer the payer of the transaction
+     * @param minimumPriceInTinybars the minimum equivalent tinybar cost of the dispatch
+     * @return the gas requirement for the transaction to be dispatched
+     */
+    public long gasRequirement(
+            @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinybars) {
+        final var nominalPriceInTinybars = feeCalculator.applyAsLong(body, payer);
+        final var priceInTinybars = Math.max(minimumPriceInTinybars, nominalPriceInTinybars);
+        return asGasRequirement(priceInTinybars);
+    }
+
+    /**
      * Given a dispatch type, returns the canonical gas requirement for that dispatch type.
      * Useful when providing a ballpark gas requirement in the absence of a valid
      * transaction body for the dispatch type.
@@ -91,13 +107,12 @@ public class SystemContractGasCalculator {
         return tinybarValues.asTinybars(dispatchPrices.canonicalPriceInTinycents(dispatchType));
     }
 
-    private long gasRequirement(
-            @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinybars) {
-        final var nominalPriceInTinybars = feeCalculator.applyAsLong(body, payer);
-        final var priceInTinybars = Math.max(minimumPriceInTinybars, nominalPriceInTinybars);
-        return asGasRequirement(priceInTinybars);
-    }
-
+    /**
+     * Given a tinybar price, returns the equivalent gas requirement at the current gas price.
+     *
+     * @param tinybarPrice the tinybar price
+     * @return the equivalent gas requirement at the current gas price
+     */
     private long asGasRequirement(final long tinybarPrice) {
         final var gasPrice = tinybarValues.childTransactionTinybarGasPrice();
         // We round up to the nearest gas unit, and then add 20% to account for the premium

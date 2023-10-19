@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.transfer;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -57,35 +57,55 @@ class ClassicTransfersGasCalcTest extends HtsCallTestBase {
 
     @Test
     void chargesForPerceivedLazyCreations() {
-        //        givenTokensUseCustomFees();
-        //        givenPretendLazyCreationPrices();
-        //        givenPretendPricesWithCustomFees();
-        //        given(nativeOperations.readableAccountStore()).willReturn(accountStore);
+        givenTokensUseCustomFees();
+        givenPretendLazyCreationPrices();
+        givenPretendPricesWithCustomFees();
+        given(nativeOperations.readableAccountStore()).willReturn(accountStore);
 
-        final var expectedNftMinimumPrice = PRETEND_NFT_TRANSFER_CUSTOM_FEES_TINYBAR_PRICE;
         final var expectedFtMinimumPrice = PRETEND_FUNGIBLE_TRANSFER_CUSTOM_FEES_TINYBAR_PRICE / 2;
         final var expectedHbarMinimumPrice = PRETEND_HBAR_TRANSFER_TINYBAR_PRICE / 2;
-        final var expectedTotalTinybarPrice = expectedNftMinimumPrice
+        final var expectedTotalTinybarPrice = PRETEND_NFT_TRANSFER_CUSTOM_FEES_TINYBAR_PRICE
                 + 2 * expectedFtMinimumPrice
                 + 2 * expectedHbarMinimumPrice
                 + PRETEND_LAZY_CREATION_TINYBAR_PRICE;
+        final var expectedGasRequirement = 666L;
+        final var body = TransactionBody.newBuilder().cryptoTransfer(op).build();
+        given(systemContractGasCalculator.gasRequirement(body, AccountID.DEFAULT, expectedTotalTinybarPrice))
+                .willReturn(expectedGasRequirement);
 
-        assertThrows(
-                AssertionError.class,
-                () -> ClassicTransfersCall.classicTransferGasRequirement(
-                        TransactionBody.newBuilder().cryptoTransfer(op).build(),
-                        systemContractGasCalculator,
-                        mockEnhancement(),
-                        AccountID.DEFAULT));
+        final var actualGasRequirement = ClassicTransfersCall.classicTransferGasRequirement(
+                body, systemContractGasCalculator, mockEnhancement(), AccountID.DEFAULT);
+        assertEquals(expectedGasRequirement, actualGasRequirement);
+    }
+
+    @Test
+    void doesNotChargeForExtantAliases() {
+        givenPretendPricesWithoutCustomFees();
+        given(nativeOperations.readableAccountStore()).willReturn(accountStore);
+        given(accountStore.getAccountIDByAlias(TestHelpers.ALIASED_RECEIVER_ID.aliasOrThrow()))
+                .willReturn(AccountID.DEFAULT);
+
+        final var expectedFtMinimumPrice = PRETEND_FUNGIBLE_TRANSFER_TINYBAR_PRICE / 2;
+        final var expectedHbarMinimumPrice = PRETEND_HBAR_TRANSFER_TINYBAR_PRICE / 2;
+        final var expectedTotalTinybarPrice =
+                PRETEND_NFT_TRANSFER_TINYBAR_PRICE + 2 * expectedFtMinimumPrice + 2 * expectedHbarMinimumPrice;
+        final var expectedGasRequirement = 666L;
+        final var body = TransactionBody.newBuilder().cryptoTransfer(op).build();
+        given(systemContractGasCalculator.gasRequirement(body, AccountID.DEFAULT, expectedTotalTinybarPrice))
+                .willReturn(expectedGasRequirement);
+
+        final var actualGasRequirement = ClassicTransfersCall.classicTransferGasRequirement(
+                body, systemContractGasCalculator, mockEnhancement(), AccountID.DEFAULT);
+        assertEquals(expectedGasRequirement, actualGasRequirement);
     }
 
     private void givenPretendPricesWithCustomFees() {
         given(systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.TRANSFER_HBAR))
                 .willReturn(PRETEND_HBAR_TRANSFER_TINYBAR_PRICE);
         given(systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.TRANSFER_NFT_CUSTOM_FEES))
-                .willReturn(PRETEND_NFT_TRANSFER_TINYBAR_PRICE);
+                .willReturn(PRETEND_NFT_TRANSFER_CUSTOM_FEES_TINYBAR_PRICE);
         given(systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.TRANSFER_FUNGIBLE_CUSTOM_FEES))
-                .willReturn(PRETEND_FUNGIBLE_TRANSFER_TINYBAR_PRICE);
+                .willReturn(PRETEND_FUNGIBLE_TRANSFER_CUSTOM_FEES_TINYBAR_PRICE);
     }
 
     private void givenPretendPricesWithoutCustomFees() {
