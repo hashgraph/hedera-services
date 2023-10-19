@@ -5,16 +5,17 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.hedera.node.app.workflows.handle.verifier;
+package com.hedera.node.app.signature;
 
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.failedVerification;
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.passedVerification;
@@ -25,25 +26,25 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.workflows.VerificationAssistant;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Predicate;
 
 /**
- * A {@link HandleContextVerifier} that delegates resolves complex keys and passes checks for primitive keys
+ * A {@link KeyVerifier} that delegates resolves complex keys and passes checks for primitive keys
  * to a provided {@link Predicate}-verifier.
  */
-public class DelegateHandleContextVerifier implements HandleContextVerifier {
+public class DelegateKeyVerifier implements KeyVerifier {
 
     private final Predicate<Key> baseVerifier;
 
     /**
-     * Constructs a {@link DelegateHandleContextVerifier}
+     * Constructs a {@link DelegateKeyVerifier}
      *
      * @param baseVerifier the base verifier
      */
-    public DelegateHandleContextVerifier(@NonNull final Predicate<Key> baseVerifier) {
+    public DelegateKeyVerifier(@NonNull final Predicate<Key> baseVerifier) {
         this.baseVerifier = requireNonNull(baseVerifier, "baseVerifier must not be null");
     }
 

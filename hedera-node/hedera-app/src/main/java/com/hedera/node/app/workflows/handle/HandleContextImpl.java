@@ -57,7 +57,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
-import com.hedera.node.app.spi.workflows.VerificationAssistant;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -69,8 +69,8 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
-import com.hedera.node.app.workflows.handle.verifier.DelegateHandleContextVerifier;
-import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
+import com.hedera.node.app.signature.DelegateKeyVerifier;
+import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -98,7 +98,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final SingleTransactionRecordBuilderImpl recordBuilder;
     private final SavepointStackImpl stack;
     private final Configuration configuration;
-    private final HandleContextVerifier verifier;
+    private final KeyVerifier verifier;
     private final RecordListBuilder recordListBuilder;
     private final TransactionChecker checker;
     private final TransactionDispatcher dispatcher;
@@ -132,7 +132,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param recordBuilder         The main {@link SingleTransactionRecordBuilderImpl}
      * @param stack                 The {@link SavepointStackImpl} used to manage savepoints
      * @param configuration         The current {@link Configuration}
-     * @param verifier              The {@link HandleContextVerifier} used to verify signatures and hollow accounts
+     * @param verifier              The {@link KeyVerifier} used to verify signatures and hollow accounts
      * @param recordListBuilder     The {@link RecordListBuilder} used to build the record stream
      * @param checker               The {@link TransactionChecker} used to check dispatched transaction
      * @param dispatcher            The {@link TransactionDispatcher} used to dispatch child transactions
@@ -153,7 +153,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final SavepointStackImpl stack,
             @NonNull final Configuration configuration,
-            @NonNull final HandleContextVerifier verifier,
+            @NonNull final KeyVerifier verifier,
             @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final TransactionChecker checker,
             @NonNull final TransactionDispatcher dispatcher,
@@ -538,7 +538,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             return;
         }
 
-        final var childVerifier = new DelegateHandleContextVerifier(callback);
+        final var childVerifier = new DelegateKeyVerifier(callback);
 
         Key childPayerKey = null;
         if (transactionID != null) {

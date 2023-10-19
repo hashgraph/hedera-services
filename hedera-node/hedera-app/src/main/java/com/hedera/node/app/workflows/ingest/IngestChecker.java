@@ -47,13 +47,12 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.signature.DefaultKeyVerifier;
+import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -184,7 +183,7 @@ public final class IngestChecker {
         }
 
         // 6. Verify payer's signatures
-        verifyPayerSignature(txInfo, payerKey);
+        verifyPayerSignature(txInfo, payerKey, configuration);
 
         // 7. Check payer solvency
         final FeeContext feeContext = new FeeContextImpl(
@@ -195,43 +194,22 @@ public final class IngestChecker {
         return txInfo;
     }
 
-    private void verifyPayerSignature(@NonNull final TransactionInfo txInfo, @NonNull final Key payerKey)
+    private void verifyPayerSignature(@NonNull final TransactionInfo txInfo, @NonNull final Key payerKey, @NonNull final Configuration configuration)
             throws PreCheckException {
+        final var hederaConfig = configuration.getConfigData(HederaConfig.class);
+
         // Expand the signatures
         final var expandedSigs = new HashSet<ExpandedSignaturePair>();
         signatureExpander.expand(payerKey, txInfo.signatureMap().sigPairOrThrow(), expandedSigs);
 
         // Verify the signatures
         final var results = signatureVerifier.verify(txInfo.signedBytes(), expandedSigs);
-        final var future = results.get(payerKey);
+        final var verifier = new DefaultKeyVerifier(hederaConfig, results);
+        final var payerKeyVerification = verifier.verificationFor(payerKey);
 
         // This can happen if the signature map was missing a signature for the payer account.
-        if (future == null) {
+        if (payerKeyVerification.failed()) {
             throw new PreCheckException(INVALID_SIGNATURE);
-        }
-
-        // Wait for the verification to complete. We have a timeout here of 1 second, which is WAY more time
-        // than it should take (maybe three orders of magnitude more time). Even if this happens spuriously
-        // (like, for example, if there was a really long GC pause), the worst case is the client will get an
-        // internal error and retry. We just want to log it.
-        try {
-            final var verificationResult = future.get(1, TimeUnit.SECONDS);
-            if (!verificationResult.passed()) {
-                throw new PreCheckException(INVALID_SIGNATURE);
-            }
-        } catch (TimeoutException e) {
-            // FUTURE: Have an alert and metric in our monitoring tools to make sure we are aware if this happens
-            logger.warn("Signature verification timed out during ingest");
-            throw new RuntimeException(e);
-        } catch (ExecutionException e) {
-            // FUTURE: Have an alert and metric in our monitoring tools to make sure we are aware if this happens
-            logger.warn("Signature verification failed during ingest", e);
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            // This might not be a warn / error situation, if we were interrupted, it means that someone
-            // is trying to shut down the server. So we can just throw and get out of here.
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
         }
     }
 }

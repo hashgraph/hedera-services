@@ -64,7 +64,7 @@ import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
-import com.hedera.node.app.workflows.handle.verifier.BaseHandleContextVerifier;
+import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.workflows.prehandle.DummyPreHandleDispatcher;
 import com.hedera.node.app.workflows.query.QueryContextImpl;
 import com.hedera.node.config.ConfigProvider;
@@ -236,7 +236,7 @@ public interface BaseScaffoldingModule {
                     parentRecordBuilder,
                     new SavepointStackImpl(state),
                     configuration,
-                    new BaseHandleContextVerifier(configuration.getConfigData(HederaConfig.class), Map.of()),
+                    new DefaultKeyVerifier(configuration.getConfigData(HederaConfig.class), Map.of()),
                     recordListBuilder,
                     new TransactionChecker(6192, AccountID.DEFAULT, configProvider, metrics),
                     dispatcher,

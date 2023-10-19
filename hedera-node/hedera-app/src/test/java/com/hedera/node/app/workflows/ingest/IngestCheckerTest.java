@@ -244,7 +244,7 @@ class IngestCheckerTest extends AppTestBase {
                 tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
         final var verificationResultFuture = mock(SignatureVerificationFuture.class);
         final var verificationResult = mock(SignatureVerification.class);
-        when(verificationResult.passed()).thenReturn(true);
+        when(verificationResult.failed()).thenReturn(false);
         when(verificationResultFuture.get(anyLong(), any())).thenReturn(verificationResult);
         when(signatureVerifier.verify(any(), any()))
                 .thenReturn(Map.of(ALICE.account().keyOrThrow(), verificationResultFuture));
@@ -434,7 +434,7 @@ class IngestCheckerTest extends AppTestBase {
         private void givenValidPayerSignature() throws ExecutionException, InterruptedException, TimeoutException {
             final var verificationResultFuture = mock(SignatureVerificationFuture.class);
             final var verificationResult = mock(SignatureVerification.class);
-            when(verificationResult.passed()).thenReturn(true);
+            when(verificationResult.failed()).thenReturn(false);
             when(verificationResultFuture.get(anyLong(), any())).thenReturn(verificationResult);
             when(signatureVerifier.verify(any(), any()))
                     .thenReturn(Map.of(ALICE.account().keyOrThrow(), verificationResultFuture));
@@ -463,7 +463,7 @@ class IngestCheckerTest extends AppTestBase {
         void payerVerificationFails() throws Exception {
             final var verificationResultFuture = mock(SignatureVerificationFuture.class);
             final var verificationResult = mock(SignatureVerification.class);
-            when(verificationResult.passed()).thenReturn(false);
+            when(verificationResult.failed()).thenReturn(true);
             when(verificationResultFuture.get(anyLong(), any())).thenReturn(verificationResult);
             when(signatureVerifier.verify(any(), any()))
                     .thenReturn(Map.of(ALICE.account().keyOrThrow(), verificationResultFuture));

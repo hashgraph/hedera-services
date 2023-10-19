@@ -5,16 +5,17 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.hedera.node.app.workflows.handle.verifier;
+package com.hedera.node.app.signature;
 
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.failedVerification;
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.passedVerification;
@@ -25,7 +26,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.node.app.spi.workflows.VerificationAssistant;
+import com.hedera.node.app.signature.DelegateKeyVerifier;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -40,7 +42,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class DelegateHandleContextVerifierTest {
+class DelegateKeyVerifierTest {
 
     private static final Key KEY = ALICE.keyInfo().publicKey();
     private static final Bytes ALIAS = ERIN.account().alias();
@@ -51,7 +53,7 @@ class DelegateHandleContextVerifierTest {
     @Mock
     private VerificationAssistant childCallback;
 
-    private DelegateHandleContextVerifier subject;
+    private DelegateKeyVerifier subject;
 
     private static Stream<Arguments> getVerificationResults() {
         return Stream.of(
@@ -63,13 +65,13 @@ class DelegateHandleContextVerifierTest {
 
     @BeforeEach
     void setup() {
-        subject = new DelegateHandleContextVerifier(parentCallback);
+        subject = new DelegateKeyVerifier(parentCallback);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testMethodsWithInvalidArguments() {
-        assertThatThrownBy(() -> new DelegateHandleContextVerifier(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new DelegateKeyVerifier(null)).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> subject.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.verificationFor(null, childCallback)).isInstanceOf(NullPointerException.class);

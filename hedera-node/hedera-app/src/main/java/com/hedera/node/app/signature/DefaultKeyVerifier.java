@@ -5,16 +5,17 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.hedera.node.app.workflows.handle.verifier;
+package com.hedera.node.app.signature;
 
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.failedVerification;
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.passedVerification;
@@ -24,9 +25,8 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
-import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.workflows.VerificationAssistant;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,21 +42,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Base implementation of {@link HandleContextVerifier}
+ * Base implementation of {@link KeyVerifier}
  */
-public class BaseHandleContextVerifier implements HandleContextVerifier {
+public class DefaultKeyVerifier implements KeyVerifier {
 
-    private static final Logger logger = LoggerFactory.getLogger(BaseHandleContextVerifier.class);
+    private static final Logger logger = LoggerFactory.getLogger(DefaultKeyVerifier.class);
 
     private final long timeout;
     private final Map<Key, SignatureVerificationFuture> keyVerifications;
 
     /**
-     * Creates a {@link BaseHandleContextVerifier}
+     * Creates a {@link DefaultKeyVerifier}
      *
      * @param keyVerifications A {@link Map} with all data to verify signatures
      */
-    public BaseHandleContextVerifier(
+    public DefaultKeyVerifier(
             @NonNull final HederaConfig config, @NonNull final Map<Key, SignatureVerificationFuture> keyVerifications) {
         this.timeout = requireNonNull(config, "config must not be null").workflowVerificationTimeoutMS();
         this.keyVerifications = requireNonNull(keyVerifications, "keyVerifications must not be null");
