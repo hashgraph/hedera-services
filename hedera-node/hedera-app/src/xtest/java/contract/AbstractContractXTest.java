@@ -31,6 +31,7 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
@@ -125,6 +126,17 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             handler.handle(context);
             ((SavepointStackImpl) context.savepointStack()).commitFullStack();
         }
+    }
+
+    protected TransactionID transactionIdWith(@NonNull final AccountID payerId) {
+        final var startTime = Instant.now();
+        return TransactionID.newBuilder()
+                .accountID(payerId)
+                .transactionValidStart(Timestamp.newBuilder()
+                        .seconds(startTime.getEpochSecond())
+                        .nanos(startTime.getNano())
+                        .build())
+                .build();
     }
 
     protected void runHtsCallAndExpectOnSuccess(

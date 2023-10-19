@@ -116,6 +116,27 @@ public class ClassicTransfersCall extends AbstractHtsCall {
         return completionWith(recordBuilder.status(), 0L);
     }
 
+    public static long classicTransferGasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final AccountID payerId) {
+        throw new AssertionError("Not implemented");
+
+        //        final var op = body.cryptoTransfer();
+        //        final var hasCustomFees = enhancement.nativeOperations().checkForCustomFees(op);
+        //        // Follow mono-service here
+        //        final var baseHbarAdjustTinybarPrice =
+        // systemContractGasCalculator.canonicalGasRequirement(DispatchType.TRANSFER_HBAR) / 2;
+        //        final var baseUnitAdjustTinybarPrice = systemContractGasCalculator.canonicalGasRequirement(
+        //                hasCustomFees ? DispatchType.TRANSFER_FUNGIBLE_CUSTOM_FEES : DispatchType.TRANSFER_FUNGIBLE) /
+        // 2;
+        //        final var baseNftTransferTinybarPrice = systemContractGasCalculator.canonicalGasRequirement(
+        //                hasCustomFees ? DispatchType.TRANSFER_NFT_CUSTOM_FEES : DispatchType.TRANSFER_NFT);
+        //        final var extantAccounts = enhancement.nativeOperations().readableAccountStore();
+
+    }
+
     private boolean shouldRetryWithApprovals() {
         return approvalSwitchHelper != null;
     }

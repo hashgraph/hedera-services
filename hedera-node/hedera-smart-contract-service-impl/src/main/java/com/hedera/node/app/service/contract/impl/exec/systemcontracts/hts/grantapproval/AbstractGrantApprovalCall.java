@@ -39,7 +39,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
     protected final BigInteger amount;
     protected final TokenType tokenType;
 
-    // too may parameters
+    // too many parameters
     @SuppressWarnings("java:S107")
     protected AbstractGrantApprovalCall(
             @NonNull final SystemContractGasCalculator gasCalculator,

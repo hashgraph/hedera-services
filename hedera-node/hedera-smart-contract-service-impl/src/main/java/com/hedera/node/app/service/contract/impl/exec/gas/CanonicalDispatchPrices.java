@@ -24,6 +24,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigDecimal;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,6 +40,7 @@ import javax.inject.Singleton;
 @Singleton
 public class CanonicalDispatchPrices {
     private final Map<DispatchType, Long> pricesMap = new EnumMap<>(DispatchType.class);
+    public static final BigDecimal USD_TO_TINYCENTS = BigDecimal.valueOf(100 * 100_000_000L);
 
     @Inject
     public CanonicalDispatchPrices(@NonNull final AssetsLoader assetsLoader) {
@@ -49,7 +51,9 @@ public class CanonicalDispatchPrices {
                             entry -> PbjConverter.toPbj(entry.getKey()), entry -> entry.getValue().entrySet().stream()
                                     .collect(toMap(
                                             subEntry -> PbjConverter.toPbj(subEntry.getKey()),
-                                            subEntry -> subEntry.getValue().longValue()))));
+                                            subEntry -> subEntry.getValue()
+                                                    .multiply(USD_TO_TINYCENTS)
+                                                    .longValue()))));
             Arrays.stream(DispatchType.class.getEnumConstants())
                     .map(dispatchType -> new AbstractMap.SimpleImmutableEntry<>(
                             dispatchType,

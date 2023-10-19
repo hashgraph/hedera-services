@@ -536,20 +536,20 @@ public class TestHelpers {
     public static final Bytes UNAUTHORIZED_SPENDER_ADDRESS = Bytes.fromHex("b284224b8b83a724438cc3cc7c0d333a2b6b3222");
     public static final com.esaulpaugh.headlong.abi.Address UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS =
             asHeadlongAddress(UNAUTHORIZED_SPENDER_ADDRESS.toByteArray());
-    public static final Address UNAUTHORIZED_SPENDER_BESU_ADDRESS = pbjToBesuAddress(UNAUTHORIZED_SPENDER_ADDRESS);
     public static final AccountID APPROVED_ID =
             AccountID.newBuilder().accountNum(8888888L).build();
     public static final Bytes APPROVED_ADDRESS = Bytes.fromHex("aa1e6a49898ea7a44e81599a7c0deeeaa969e990");
     public static final com.esaulpaugh.headlong.abi.Address APPROVED_HEADLONG_ADDRESS =
             asHeadlongAddress(APPROVED_ADDRESS.toByteArray());
-    public static final Address APPROVED_BESU_ADDRESS = pbjToBesuAddress(APPROVED_ADDRESS);
 
     public static final AccountID RECEIVER_ID =
             AccountID.newBuilder().accountNum(7773777L).build();
     public static final Bytes RECEIVER_ADDRESS = Bytes.fromHex("3b1ef340808e37344e8150037c0deee33060e123");
-    public static final com.esaulpaugh.headlong.abi.Address RECEIVER_HEADLONG_ADDRESS =
-            asHeadlongAddress(RECEIVER_ADDRESS.toByteArray());
-    public static final Address RECEIVER_BESU_ADDRESS = pbjToBesuAddress(RECEIVER_ADDRESS);
+    public static final AccountID ALIASED_RECEIVER_ID =
+            AccountID.newBuilder().alias(RECEIVER_ADDRESS).build();
+
+    public static final Account ALIASED_RECEIVER =
+            Account.newBuilder().accountId(RECEIVER_ID).alias(RECEIVER_ADDRESS).build();
 
     public static void assertSameResult(
             final Operation.OperationResult expected, final Operation.OperationResult actual) {

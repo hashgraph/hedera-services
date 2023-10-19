@@ -81,15 +81,21 @@ public class SystemContractGasCalculator {
         return FIXED_VIEW_GAS_COST;
     }
 
+    /**
+     * Given a dispatch type, returns the canonical price for that dispatch type.
+     *
+     * @param dispatchType the dispatch type
+     * @return the canonical price for that dispatch type
+     */
+    public long canonicalPriceInTinybars(@NonNull final DispatchType dispatchType) {
+        return tinybarValues.asTinybars(dispatchPrices.canonicalPriceInTinycents(dispatchType));
+    }
+
     private long gasRequirement(
             @NonNull final TransactionBody body, @NonNull final AccountID payer, final long minimumPriceInTinybars) {
         final var nominalPriceInTinybars = feeCalculator.applyAsLong(body, payer);
         final var priceInTinybars = Math.max(minimumPriceInTinybars, nominalPriceInTinybars);
         return asGasRequirement(priceInTinybars);
-    }
-
-    private long canonicalPriceInTinybars(@NonNull final DispatchType dispatchType) {
-        return tinybarValues.asTinybars(dispatchPrices.canonicalPriceInTinycents(dispatchType));
     }
 
     private long asGasRequirement(final long tinybarPrice) {

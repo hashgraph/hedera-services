@@ -45,7 +45,7 @@ public class NonFungibleBurnCall extends AbstractHtsCall implements BurnCall {
     private final AccountID senderId;
     private final org.hyperledger.besu.datatypes.Address sender;
 
-    // too may parameters
+    // too many parameters
     @SuppressWarnings("java:S107")
     public NonFungibleBurnCall(
             final List<Long> serialNo,

@@ -211,7 +211,7 @@ public class CustomFeeAssessmentStep {
      * @param assessedTxns - list of assessed cryptoTransfer transactions
      * @param assessedCustomFees - list of assessed custom fees
      */
-    private record CustomFeeAssessmentResult(
+    public record CustomFeeAssessmentResult(
             List<CryptoTransferTransactionBody> assessedTxns, List<AssessedCustomFee> assessedCustomFees) {}
 
     private void validateTotalAdjustments(final CryptoTransferTransactionBody op, final int maxTransfersDepth) {

@@ -26,7 +26,9 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
@@ -471,7 +473,17 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     public @NonNull Fees dispatchComputeFees(@NonNull final TransactionBody txBody, @NonNull final AccountID payerId) {
-        return dispatcher.dispatchComputeFees(new ChildFeeContextImpl(feeManager, this, txBody, payerId));
+        var bodyToDispatch = txBody;
+        if (!txBody.hasTransactionID()) {
+            // Legacy mono fee calculators frequently estimate an entity's lifetime using the epoch second of the
+            // transaction id/ valid start as the current consensus time; ensure those will behave sensibly here
+            bodyToDispatch = txBody.copyBuilder()
+                    .transactionID(TransactionID.newBuilder()
+                            .transactionValidStart(Timestamp.newBuilder()
+                                    .seconds(consensusNow().getEpochSecond())))
+                    .build();
+        }
+        return dispatcher.dispatchComputeFees(new ChildFeeContextImpl(feeManager, this, bodyToDispatch, payerId));
     }
 
     @NonNull

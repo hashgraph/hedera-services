@@ -48,7 +48,7 @@ public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
     private final AccountID senderId;
     private final org.hyperledger.besu.datatypes.Address sender;
 
-    // too may parameters
+    // too many parameters
     @SuppressWarnings("java:S107")
     public FungibleBurnCall(
             final long amount,

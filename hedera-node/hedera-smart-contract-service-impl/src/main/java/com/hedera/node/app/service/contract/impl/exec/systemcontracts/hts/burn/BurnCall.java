@@ -55,7 +55,7 @@ public interface BurnCall extends HtsCall {
      * @return the result of the call
      */
 
-    // too may parameters
+    // too many parameters
     @SuppressWarnings("java:S107")
     default @NonNull PricedResult executeBurn(
             @Nullable final TokenID tokenId,

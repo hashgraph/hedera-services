@@ -46,6 +46,9 @@ class CanonicalDispatchPricesTest {
         for (DispatchType dispatchType : DispatchType.values()) {
             assertDoesNotThrow(() -> subject.canonicalPriceInTinycents(dispatchType), "No price for " + dispatchType);
         }
+        // Spot check for TokenAssociate ($0.05)
+        final long expectedTokenAssociateTinycentPrice = 5 * 100_000_000;
+        assertEquals(expectedTokenAssociateTinycentPrice, subject.canonicalPriceInTinycents(DispatchType.ASSOCIATE));
     }
 
     @Test
