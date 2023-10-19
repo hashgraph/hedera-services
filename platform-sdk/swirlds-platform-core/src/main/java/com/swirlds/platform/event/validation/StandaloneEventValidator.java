@@ -18,7 +18,6 @@ package com.swirlds.platform.event.validation;
 
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.platform.event.validation.EventValidationChecks.areParentsValid;
-import static com.swirlds.platform.event.validation.EventValidationChecks.isGenerationValid;
 import static com.swirlds.platform.event.validation.EventValidationChecks.isSignatureValid;
 import static com.swirlds.platform.event.validation.EventValidationChecks.isValidTimeCreated;
 
@@ -88,7 +87,6 @@ public class StandaloneEventValidator {
      */
     private final IntakeEventCounter intakeEventCounter;
 
-    private final RateLimitedLogger generationLogger;
     private final RateLimitedLogger timeCreatedLogger;
     private final RateLimitedLogger parentLogger;
     private final RateLimitedLogger signatureLogger;
@@ -148,7 +146,6 @@ public class StandaloneEventValidator {
         this.eventConsumer = Objects.requireNonNull(eventConsumer);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
-        this.generationLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.timeCreatedLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.parentLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.signatureLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
@@ -167,7 +164,7 @@ public class StandaloneEventValidator {
      * @param event the event to validate
      */
     public void handleEvent(@NonNull final EventImpl event) {
-        if (isGenerationValid(event.getBaseEvent(), minimumGenerationNonAncient, generationLogger)
+        if (event.getGeneration() >= minimumGenerationNonAncient
                 && isValidTimeCreated(event, timeCreatedLogger, invalidTimeCreatedAccumulator)
                 && areParentsValid(event, currentAddressBook.getSize() == 1, parentLogger, invalidParentsAccumulator)
                 && isSignatureValid(

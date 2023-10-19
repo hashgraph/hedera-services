@@ -20,7 +20,6 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
 import static com.swirlds.platform.event.validation.EventValidationChecks.areParentsValid;
-import static com.swirlds.platform.event.validation.EventValidationChecks.isGenerationValid;
 import static com.swirlds.platform.event.validation.EventValidationChecks.isValidTimeCreated;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,7 +31,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -77,24 +75,6 @@ class EventValidationChecksTests {
         when(hashedData.getOtherParentGen()).thenReturn(otherParentGen);
 
         return hashedData;
-    }
-
-    @Test
-    @DisplayName("Test isGenerationValid")
-    void testGenerationValid() {
-        final long minGenNonAncient = 11;
-
-        final GossipEvent ancientEvent = mock(GossipEvent.class);
-        when(ancientEvent.getGeneration()).thenReturn(5L);
-        assertFalse(isGenerationValid(ancientEvent, minGenNonAncient, logger));
-
-        final GossipEvent almostAncientEvent = mock(GossipEvent.class);
-        when(almostAncientEvent.getGeneration()).thenReturn(11L);
-        assertTrue(isGenerationValid(almostAncientEvent, minGenNonAncient, logger));
-
-        final GossipEvent nonAncientEvent = mock(GossipEvent.class);
-        when(nonAncientEvent.getGeneration()).thenReturn(15L);
-        assertTrue(isGenerationValid(nonAncientEvent, minGenNonAncient, logger));
     }
 
     @Test

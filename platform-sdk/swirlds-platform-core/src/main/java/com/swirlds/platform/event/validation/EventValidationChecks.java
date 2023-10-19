@@ -44,34 +44,6 @@ public class EventValidationChecks {
     private EventValidationChecks() {}
 
     /**
-     * Determine whether a given event has a valid generation.
-     * <p>
-     * This validation method doesn't include metrics, since ancient events are shed throughout the intake process, not
-     * just during validation.
-     *
-     * @param event                       the event to be validated
-     * @param minimumGenerationNonAncient the minimum generation for non-ancient events
-     * @param logger                      a logger for validation errors
-     * @return true if the event has a valid generation, otherwise false
-     */
-    public static boolean isGenerationValid(
-            @NonNull final GossipEvent event,
-            final long minimumGenerationNonAncient,
-            @NonNull final RateLimitedLogger logger) {
-
-        final boolean generationValid = event.getGeneration() >= minimumGenerationNonAncient;
-        if (!generationValid) {
-            logger.error(
-                    INVALID_EVENT_ERROR.getMarker(),
-                    "Event generation is invalid. Event: {}, Minimum Generation non ancient: {}",
-                    event,
-                    minimumGenerationNonAncient);
-        }
-
-        return generationValid;
-    }
-
-    /**
      * Determine whether a given event has a valid creation time.
      *
      * @param event             the event to be validated
@@ -123,7 +95,7 @@ public class EventValidationChecks {
 
         // If a parent hash is missing, then the generation must also be invalid.
         // If a parent hash is not missing, then the generation must be valid.
-        if (selfParentHash == null != selfParentGeneration < FIRST_GENERATION) {
+        if ((selfParentHash == null) != (selfParentGeneration < FIRST_GENERATION)) {
             logger.error(INVALID_EVENT_ERROR.getMarker(), "Self parent hash / generation mismatch: {}", event);
             metricAccumulator.update(1);
             return false;
@@ -132,13 +104,13 @@ public class EventValidationChecks {
         final Hash otherParentHash = hashedData.getOtherParentHash();
         final long otherParentGeneration = hashedData.getOtherParentGen();
 
-        if (otherParentHash == null != otherParentGeneration < FIRST_GENERATION) {
+        if ((otherParentHash == null) != (otherParentGeneration < FIRST_GENERATION)) {
             logger.error(INVALID_EVENT_ERROR.getMarker(), "Other parent hash / generation mismatch: {}", event);
             metricAccumulator.update(1);
             return false;
         }
 
-        if (!singleNodeNetwork && selfParentHash != null && selfParentHash.equals(otherParentHash)) {
+        if (!singleNodeNetwork && (selfParentHash != null) && selfParentHash.equals(otherParentHash)) {
             logger.error(INVALID_EVENT_ERROR.getMarker(), "Both parents have the same hash: {} ", event);
             metricAccumulator.update(1);
             return false;
