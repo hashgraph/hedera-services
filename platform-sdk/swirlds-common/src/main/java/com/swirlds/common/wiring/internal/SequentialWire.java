@@ -18,13 +18,10 @@ package com.swirlds.common.wiring.internal;
 
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.wiring.Wire;
-import com.swirlds.common.wiring.WireChannel;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Semaphore;
@@ -36,17 +33,14 @@ import java.util.function.Consumer;
  *
  * @param <O> the output time of the wire (use {@link Void}) for a wire with no output type)
  */
-public class SequentialWire<O> extends Wire<O> {
+public class SequentialWire<O> extends AbstractWire<O> {
     private final AtomicReference<SequentialTask> lastTask;
 
     private final ObjectCounter onRamp;
     private final ObjectCounter offRamp;
-    private final boolean flushEnabled;
     private final FractionalTimer busyTimer;
-    private final String name;
     private final UncaughtExceptionHandler uncaughtExceptionHandler;
     private final ForkJoinPool pool;
-    private final List<Consumer<O>> forwardingDestinations = new ArrayList<>();
 
     /**
      * Constructor.
@@ -71,16 +65,18 @@ public class SequentialWire<O> extends Wire<O> {
             @NonNull final FractionalTimer busyTimer,
             final boolean flushEnabled) {
 
+        super(name, flushEnabled);
+
         this.pool = Objects.requireNonNull(pool);
-        this.name = Objects.requireNonNull(name);
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
         this.onRamp = Objects.requireNonNull(onRamp);
         this.offRamp = Objects.requireNonNull(offRamp);
         this.busyTimer = Objects.requireNonNull(busyTimer);
-        this.flushEnabled = flushEnabled;
 
         this.lastTask = new AtomicReference<>(new SequentialTask(1));
     }
+
+    // TODO pull this out of this file
 
     /**
      * A task in a sequential wire.
@@ -148,124 +144,53 @@ public class SequentialWire<O> extends Wire<O> {
         }
     }
 
-    // TODO abstract class?
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public Wire<O> solderTo(@NonNull final WireChannel<O, ?> channel, final boolean inject) {
-        Objects.requireNonNull(channel);
-        if (inject) {
-            forwardingDestinations.add(channel::inject);
-        } else {
-            forwardingDestinations.add(channel::put);
-        }
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public Wire<O> solderTo(@NonNull final Consumer<O> handler) {
-        Objects.requireNonNull(handler);
-        forwardingDestinations.add(handler);
-        return this;
-    }
-
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void forwardOutput(@NonNull final O data) {
-        for (final Consumer<O> destination : forwardingDestinations) {
-            destination.accept(data);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
-        //        System.out.println("  on ramping " + data); // TODO
+    protected void put(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
         onRamp.onRamp();
-
-        // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
-        // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
-        // from task to task, such that each task depends on the previous task.
-
-        final SequentialTask nextTask = new SequentialTask(2);
-        SequentialTask currentTask;
-        do {
-            currentTask = lastTask.get();
-        } while (!lastTask.compareAndSet(currentTask, nextTask));
-        currentTask.send(nextTask, handler, data);
+        scheduleTask(handler, data);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void interruptablePut(@NonNull final Consumer<Object> handler, @NonNull final Object data)
+    protected void interruptablePut(@NonNull final Consumer<Object> handler, @Nullable final Object data)
             throws InterruptedException {
         onRamp.interruptableOnRamp();
-
-        // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
-        // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
-        // from task to task, such that each task depends on the previous task.
-
-        final SequentialTask nextTask = new SequentialTask(2);
-        SequentialTask currentTask;
-        do {
-            currentTask = lastTask.get();
-        } while (!lastTask.compareAndSet(currentTask, nextTask));
-        currentTask.send(nextTask, handler, data);
+        scheduleTask(handler, data);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    protected boolean offer(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
         final boolean accepted = onRamp.attemptOnRamp();
-        if (!accepted) {
-            return false;
+        if (accepted) {
+            scheduleTask(handler, data);
         }
-
-        // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
-        // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
-        // from task to task, such that each task depends on the previous task.
-
-        final SequentialTask nextTask = new SequentialTask(2);
-        SequentialTask currentTask;
-        do {
-            currentTask = lastTask.get();
-        } while (!lastTask.compareAndSet(currentTask, nextTask));
-        currentTask.send(nextTask, handler, data);
-
-        return true;
+        return accepted;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    protected void inject(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
         onRamp.forceOnRamp();
+        scheduleTask(handler, data);
+    }
 
+    /**
+     * Schedule a task to be handled. This should only be called after successfully on-ramping (one way or another).
+     *
+     * @param handler the method that will be called when this task is executed
+     * @param data    the data to be passed to the consumer for this task
+     */
+    private void scheduleTask(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
         // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
@@ -291,26 +216,8 @@ public class SequentialWire<O> extends Wire<O> {
      */
     @Override
     public void flush() {
-        if (!flushEnabled) {
-            // We intentionally throw this to make wire implementations more predictable. Even though there is no
-            // overhead if we enable flushing on a sequential wire but do not use it, some wire implementations
-            // may have overhead if flushing is enabled.
-            throw new UnsupportedOperationException("Flushing is not enabled for this wire");
-        }
-
-        onRamp.forceOnRamp();
-
-        final Semaphore semaphore = new Semaphore(1);
-        semaphore.acquireUninterruptibly();
-
-        final SequentialTask nextTask = new SequentialTask(2);
-        SequentialTask currentTask;
-        do {
-            currentTask = lastTask.get();
-        } while (!lastTask.compareAndSet(currentTask, nextTask));
-        currentTask.send(nextTask, x -> semaphore.release(), null);
-
-        semaphore.acquireUninterruptibly();
+        throwIfFlushDisabled();
+        flushWithSemaphore().acquireUninterruptibly();
     }
 
     /**
@@ -318,17 +225,20 @@ public class SequentialWire<O> extends Wire<O> {
      */
     @Override
     public void interruptableFlush() throws InterruptedException {
-        if (!flushEnabled) {
-            // We intentionally throw this to make wire implementations more predictable. Even though there is no
-            // overhead if we enable flushing on a sequential wire but do not use it, some wire implementations
-            // may have overhead if flushing is enabled.
-            throw new UnsupportedOperationException("Flushing is not enabled for this wire");
-        }
+        throwIfFlushDisabled();
+        flushWithSemaphore().acquire();
+    }
 
+    /**
+     * Start a flush operation with a semaphore. The flush is completed when the semaphore can be acquired.
+     *
+     * @return the semaphore that will be released when the flush is complete
+     */
+    @NonNull
+    private Semaphore flushWithSemaphore() {
         onRamp.forceOnRamp();
-
         final Semaphore semaphore = new Semaphore(1);
-        semaphore.acquire();
+        semaphore.acquireUninterruptibly();
 
         final SequentialTask nextTask = new SequentialTask(2);
         SequentialTask currentTask;
@@ -337,6 +247,6 @@ public class SequentialWire<O> extends Wire<O> {
         } while (!lastTask.compareAndSet(currentTask, nextTask));
         currentTask.send(nextTask, x -> semaphore.release(), null);
 
-        semaphore.acquire();
+        return semaphore;
     }
 }

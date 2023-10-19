@@ -17,13 +17,10 @@
 package com.swirlds.common.wiring.internal;
 
 import com.swirlds.common.wiring.Wire;
-import com.swirlds.common.wiring.WireChannel;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
@@ -33,15 +30,12 @@ import java.util.function.Consumer;
  *
  * @param <O> the output time of the wire (use {@link Void}) for a wire with no output type)
  */
-public class ConcurrentWire<O> extends Wire<O> {
+public class ConcurrentWire<O> extends AbstractWire<O> {
 
     private final ObjectCounter onRamp;
     private final ObjectCounter offRamp;
-    private final String name;
     private final UncaughtExceptionHandler uncaughtExceptionHandler;
     private final ForkJoinPool pool;
-    private final boolean flushEnabled;
-    private final List<Consumer<O>> forwardingDestinations = new ArrayList<>();
 
     /**
      * Constructor.
@@ -63,12 +57,13 @@ public class ConcurrentWire<O> extends Wire<O> {
             @NonNull final ObjectCounter onRamp,
             @NonNull final ObjectCounter offRamp,
             final boolean flushEnabled) {
-        this.name = Objects.requireNonNull(name);
+
+        super(name, flushEnabled);
+
         this.pool = Objects.requireNonNull(pool);
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
         this.onRamp = Objects.requireNonNull(onRamp);
         this.offRamp = Objects.requireNonNull(offRamp);
-        this.flushEnabled = flushEnabled;
     }
 
     private class ConcurrentTask extends AbstractTask {
@@ -102,53 +97,6 @@ public class ConcurrentWire<O> extends Wire<O> {
         }
     }
 
-    // TODO abstract class?
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public Wire<O> solderTo(@NonNull final WireChannel<O, ?> channel, final boolean inject) {
-        Objects.requireNonNull(channel);
-        if (inject) {
-            forwardingDestinations.add(channel::inject);
-        } else {
-            forwardingDestinations.add(channel::put);
-        }
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public Wire<O> solderTo(@NonNull final Consumer<O> handler) {
-        Objects.requireNonNull(handler);
-        forwardingDestinations.add(handler);
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void forwardOutput(@NonNull final O data) {
-        for (final Consumer<O> destination : forwardingDestinations) {
-            destination.accept(data);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public String getName() {
-        return name;
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -174,11 +122,10 @@ public class ConcurrentWire<O> extends Wire<O> {
     @Override
     protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
         boolean accepted = onRamp.attemptOnRamp();
-        if (!accepted) {
-            return false;
+        if (accepted) {
+            new ConcurrentTask(handler, data).send();
         }
-        new ConcurrentTask(handler, data).send();
-        return true;
+        return accepted;
     }
 
     /**
@@ -203,10 +150,7 @@ public class ConcurrentWire<O> extends Wire<O> {
      */
     @Override
     public void flush() {
-        if (!flushEnabled) {
-            throw new UnsupportedOperationException("Flushing is not enabled for this wire");
-        }
-
+        throwIfFlushDisabled();
         onRamp.waitUntilEmpty();
     }
 
@@ -215,10 +159,7 @@ public class ConcurrentWire<O> extends Wire<O> {
      */
     @Override
     public void interruptableFlush() throws InterruptedException {
-        if (!flushEnabled) {
-            throw new UnsupportedOperationException("Flushing is not enabled for this wire");
-        }
-
+        throwIfFlushDisabled();
         onRamp.interruptableWaitUntilEmpty();
     }
 }
