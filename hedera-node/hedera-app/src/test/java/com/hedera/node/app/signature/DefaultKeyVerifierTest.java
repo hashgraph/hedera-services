@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.signature;
@@ -42,9 +41,6 @@ import com.google.common.collect.Streams;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
-import com.hedera.node.app.signature.DefaultKeyVerifier;
-import com.hedera.node.app.signature.KeyVerifier;
-import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
@@ -94,8 +90,7 @@ class DefaultKeyVerifierTest {
         // then
         assertThatThrownBy(() -> new DefaultKeyVerifier(null, keyVerifications))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new DefaultKeyVerifier(HEDERA_CONFIG, null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new DefaultKeyVerifier(HEDERA_CONFIG, null)).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> verifier.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> verifier.verificationFor(null, verificationAssistant))

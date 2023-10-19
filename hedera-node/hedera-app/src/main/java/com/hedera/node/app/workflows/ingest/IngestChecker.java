@@ -33,6 +33,7 @@ import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.info.CurrentPlatformStatus;
+import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerifier;
@@ -47,7 +48,6 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -194,7 +194,10 @@ public final class IngestChecker {
         return txInfo;
     }
 
-    private void verifyPayerSignature(@NonNull final TransactionInfo txInfo, @NonNull final Key payerKey, @NonNull final Configuration configuration)
+    private void verifyPayerSignature(
+            @NonNull final TransactionInfo txInfo,
+            @NonNull final Key payerKey,
+            @NonNull final Configuration configuration)
             throws PreCheckException {
         final var hederaConfig = configuration.getConfigData(HederaConfig.class);
 
