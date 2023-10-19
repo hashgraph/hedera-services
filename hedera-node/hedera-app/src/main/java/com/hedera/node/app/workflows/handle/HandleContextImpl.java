@@ -612,7 +612,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         try {
             transactionKeys = allKeysForTransaction(txBody, payer);
         } catch (PreCheckException e) {
-            return new ValidationResult(PRE_HANDLE_FAILURE, KEY_NOT_PROVIDED);
+            return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode());
         }
 
         // Check if the payer has the required permissions
