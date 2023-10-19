@@ -117,7 +117,8 @@ public class SystemFileUpdateFacility {
                 exchangeRateManager.update(FileUtilities.getFileContent(state, fileID), payer);
             } else if (fileNum == config.networkProperties()) {
                 final var networkProperties = FileUtilities.getFileContent(state, fileID);
-                final var permissions = FileUtilities.getFileContent(state, createFileID(config.hapiPermissions(), configuration));
+                final var permissions =
+                        FileUtilities.getFileContent(state, createFileID(config.hapiPermissions(), configuration));
                 configProvider.update(networkProperties, permissions);
                 backendThrottle.applyGasConfig();
                 frontendThrottle.applyGasConfig();
@@ -126,7 +127,8 @@ public class SystemFileUpdateFacility {
                 // values that are coming from the network properties
                 monoMultiplierSources.resetExpectations();
             } else if (fileNum == config.hapiPermissions()) {
-                final var networkProperties = FileUtilities.getFileContent(state, createFileID(config.networkProperties(), configuration));
+                final var networkProperties =
+                        FileUtilities.getFileContent(state, createFileID(config.networkProperties(), configuration));
                 final var permissions = FileUtilities.getFileContent(state, fileID);
                 configProvider.update(networkProperties, permissions);
             } else if (fileNum == config.throttleDefinitions()) {
@@ -150,6 +152,10 @@ public class SystemFileUpdateFacility {
 
     private FileID createFileID(final long fileNum, @NonNull final Configuration configuration) {
         final var hederaConfig = configuration.getConfigData(HederaConfig.class);
-        return FileID.newBuilder().realmNum(hederaConfig.realm()).shardNum(hederaConfig.shard()).fileNum(fileNum).build();
+        return FileID.newBuilder()
+                .realmNum(hederaConfig.realm())
+                .shardNum(hederaConfig.shard())
+                .fileNum(fileNum)
+                .build();
     }
 }

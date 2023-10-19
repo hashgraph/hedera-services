@@ -212,16 +212,19 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         // given
         final var configuration = configProvider.getConfiguration();
         final var config = configuration.getConfigData(FilesConfig.class);
-        final var fileID = FileID.newBuilder().fileNum(config.networkProperties()).build();
+        final var fileID =
+                FileID.newBuilder().fileNum(config.networkProperties()).build();
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(50L).build())
                         .build())
                 .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
-        final var permissionFileID = FileID.newBuilder().fileNum(config.hapiPermissions()).build();
+        final var permissionFileID =
+                FileID.newBuilder().fileNum(config.hapiPermissions()).build();
         final var permissionContent = Bytes.wrap("Good-bye World");
-        files.put(permissionFileID, File.newBuilder().contents(permissionContent).build());
+        files.put(
+                permissionFileID, File.newBuilder().contents(permissionContent).build());
 
         // when
         subject.handleTxBody(state, txBody.build());
@@ -235,16 +238,19 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         // given
         final var configuration = configProvider.getConfiguration();
         final var config = configuration.getConfigData(FilesConfig.class);
-        final var fileID = FileID.newBuilder().fileNum(config.networkProperties()).build();
+        final var fileID =
+                FileID.newBuilder().fileNum(config.networkProperties()).build();
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(50L).build())
                         .build())
                 .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
-        final var permissionFileID = FileID.newBuilder().fileNum(config.hapiPermissions()).build();
+        final var permissionFileID =
+                FileID.newBuilder().fileNum(config.hapiPermissions()).build();
         final var permissionContent = Bytes.wrap("Good-bye World");
-        files.put(permissionFileID, File.newBuilder().contents(permissionContent).build());
+        files.put(
+                permissionFileID, File.newBuilder().contents(permissionContent).build());
 
         // when
         subject.handleTxBody(state, txBody.build());
@@ -265,9 +271,12 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         .build())
                 .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
-        final var networkPropertiesFileID = FileID.newBuilder().fileNum(config.networkProperties()).build();
+        final var networkPropertiesFileID =
+                FileID.newBuilder().fileNum(config.networkProperties()).build();
         final var networkPropertiesContent = Bytes.wrap("Good-bye World");
-        files.put(networkPropertiesFileID, File.newBuilder().contents(networkPropertiesContent).build());
+        files.put(
+                networkPropertiesFileID,
+                File.newBuilder().contents(networkPropertiesContent).build());
 
         // when
         subject.handleTxBody(state, txBody.build());
@@ -288,9 +297,12 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         .build())
                 .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
-        final var networkPropertiesFileID = FileID.newBuilder().fileNum(config.networkProperties()).build();
+        final var networkPropertiesFileID =
+                FileID.newBuilder().fileNum(config.networkProperties()).build();
         final var networkPropertiesContent = Bytes.wrap("Good-bye World");
-        files.put(networkPropertiesFileID, File.newBuilder().contents(networkPropertiesContent).build());
+        files.put(
+                networkPropertiesFileID,
+                File.newBuilder().contents(networkPropertiesContent).build());
 
         // when
         subject.handleTxBody(state, txBody.build());
