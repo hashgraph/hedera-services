@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-import com.hedera.hashgraph.gradlebuild.rules.IoGrpcDependencyMetadataRule
-import com.hedera.hashgraph.gradlebuild.rules.IoGrpcMetadataRule
-import com.hedera.hashgraph.gradlebuild.rules.IoNettyNativeEpollMetadataRule
-import com.hedera.hashgraph.gradlebuild.rules.IoPrometheusSimpleclientMetadataRule
-import com.hedera.hashgraph.gradlebuild.rules.RemoveFindbugsAnnotationsMetadataRule
+import com.hedera.hashgraph.gradlebuild.rules.*
 
 plugins {
     id("org.gradlex.java-ecosystem-capabilities")
@@ -204,6 +200,7 @@ extraJavaModuleInfo {
     knownModule("org.apache.logging.log4j:log4j-jul", "org.apache.logging.log4j.jul")
     knownModule("org.jetbrains.kotlin:kotlin-stdlib-jdk8", "kotlin.stdlib.jdk8")
     knownModule("org.slf4j:slf4j-api", "org.slf4j")
+    knownModule("jakarta.inject:jakarta.inject-api", "jakarta.inject")
 
     // Kotlin has to be automatic modules because of split package mess
     automaticModule("org.jetbrains.kotlin:kotlin-stdlib-common", "kotlin.stdlib.common")

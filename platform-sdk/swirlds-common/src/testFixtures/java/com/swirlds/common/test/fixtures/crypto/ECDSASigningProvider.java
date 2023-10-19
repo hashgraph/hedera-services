@@ -19,11 +19,7 @@ package com.swirlds.common.test.fixtures.crypto;
 import static com.swirlds.common.test.fixtures.crypto.EcdsaUtils.asRawEcdsaSecp256k1Key;
 import static com.swirlds.common.test.fixtures.crypto.EcdsaUtils.signDigestWithEcdsaSecp256k1;
 
-import java.security.InvalidAlgorithmParameterException;
-import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SignatureException;
+import java.security.*;
 import java.security.interfaces.ECPublicKey;
 
 public class ECDSASigningProvider implements SigningProvider {
@@ -34,8 +30,14 @@ public class ECDSASigningProvider implements SigningProvider {
      */
     private boolean algorithmAvailable = false;
 
+    /**
+     * An instance of the Keccak digest algorithm used to hash the message to be signed.
+     */
+    private final MessageDigest keccakDigest;
+
     public ECDSASigningProvider() {
         generateActiveKeyPair();
+        this.keccakDigest = createKeccakDigest();
     }
 
     /**
@@ -43,7 +45,7 @@ public class ECDSASigningProvider implements SigningProvider {
      */
     @Override
     public byte[] sign(byte[] msg) throws SignatureException {
-        return signDigestWithEcdsaSecp256k1(activeKp.getPrivate(), msg);
+        return signDigestWithEcdsaSecp256k1(activeKp.getPrivate(), keccak256(msg));
     }
 
     /**
@@ -88,5 +90,26 @@ public class ECDSASigningProvider implements SigningProvider {
         } catch (final NoSuchAlgorithmException | InvalidAlgorithmParameterException | NoSuchProviderException fatal) {
             throw new IllegalStateException("Tests cannot be trusted without working key-pair generation", fatal);
         }
+    }
+
+    private MessageDigest createKeccakDigest() {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("KECCAK-256");
+        } catch (NoSuchAlgorithmException ignored) {
+            try {
+                digest = MessageDigest.getInstance("SHA3-256");
+            } catch (NoSuchAlgorithmException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        return digest;
+    }
+
+    private byte[] keccak256(final byte[] bytes) {
+        keccakDigest.reset();
+        keccakDigest.update(bytes);
+        return keccakDigest.digest();
     }
 }
