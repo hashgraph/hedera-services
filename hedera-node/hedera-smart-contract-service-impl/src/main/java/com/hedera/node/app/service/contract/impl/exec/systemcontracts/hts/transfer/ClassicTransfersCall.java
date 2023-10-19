@@ -31,6 +31,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -97,15 +98,16 @@ public class ClassicTransfersCall extends AbstractHtsCall {
      */
     @Override
     public @NonNull PricedResult execute() {
+        final var gasRequirement =
+                classicTransferGasRequirement(syntheticTransfer, gasCalculator, enhancement, spenderId);
         // https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol
-        // TODO - gas calculation
         if (systemAccountCreditScreen.creditsToSystemAccount(syntheticTransfer.cryptoTransferOrThrow())) {
             // TODO - externalize the invalid synthetic transfer without dispatching it
-            return reversionWith(INVALID_RECEIVING_NODE_ACCOUNT, 0L);
+            return reversionWith(INVALID_RECEIVING_NODE_ACCOUNT, gasRequirement);
         }
         if (executionIsNotSupported()) {
             // TODO - externalize the unsupported synthetic transfer without dispatching it
-            return completionWith(NOT_SUPPORTED, 0L);
+            return completionWith(NOT_SUPPORTED, gasRequirement);
         }
         final var transferToDispatch = shouldRetryWithApprovals()
                 ? syntheticTransfer
@@ -119,7 +121,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 : syntheticTransfer;
         final var recordBuilder = systemContractOperations()
                 .dispatch(transferToDispatch, verificationStrategy, spenderId, CryptoTransferRecordBuilder.class);
-        return completionWith(recordBuilder.status(), 0L);
+        return completionWith(recordBuilder.status(), gasRequirement);
     }
 
     /**
@@ -146,10 +148,28 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 / 2;
         final var baseNftTransferTinybarPrice = systemContractGasCalculator.canonicalPriceInTinybars(
                 hasCustomFees ? DispatchType.TRANSFER_NFT_CUSTOM_FEES : DispatchType.TRANSFER_NFT);
-        final var lazyCreationPrice = systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.CRYPTO_CREATE)
-                + systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.CRYPTO_UPDATE);
+        final var baseLazyCreationPrice =
+                systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.CRYPTO_CREATE)
+                        + systemContractGasCalculator.canonicalPriceInTinybars(DispatchType.CRYPTO_UPDATE);
 
         final var extantAccounts = enhancement.nativeOperations().readableAccountStore();
+        final long minimumTinybarPrice = minimumTinybarPriceGiven(
+                op,
+                baseUnitAdjustTinybarPrice,
+                baseHbarAdjustTinybarPrice,
+                baseNftTransferTinybarPrice,
+                baseLazyCreationPrice,
+                extantAccounts);
+        return systemContractGasCalculator.gasRequirement(body, payerId, minimumTinybarPrice);
+    }
+
+    private static long minimumTinybarPriceGiven(
+            @NonNull final CryptoTransferTransactionBody op,
+            final long baseUnitAdjustTinybarPrice,
+            final long baseHbarAdjustTinybarPrice,
+            final long baseNftTransferTinybarPrice,
+            final long baseLazyCreationPrice,
+            @NonNull final ReadableAccountStore extantAccounts) {
         long minimumTinybarPrice = 0L;
         final var numHbarAdjusts = op.transfersOrElse(TransferList.DEFAULT)
                 .accountAmountsOrElse(emptyList())
@@ -181,9 +201,8 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                 }
             }
         }
-        minimumTinybarPrice += aliasesToLazyCreate.size() * lazyCreationPrice;
-
-        return systemContractGasCalculator.gasRequirement(body, payerId, minimumTinybarPrice);
+        minimumTinybarPrice += aliasesToLazyCreate.size() * baseLazyCreationPrice;
+        return minimumTinybarPrice;
     }
 
     private boolean shouldRetryWithApprovals() {
