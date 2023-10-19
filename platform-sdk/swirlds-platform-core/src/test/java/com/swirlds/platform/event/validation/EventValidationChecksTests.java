@@ -34,6 +34,7 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +54,29 @@ class EventValidationChecksTests {
         logger = mock(RateLimitedLogger.class);
         metricAccumulator = mock(LongAccumulator.class);
         random = getRandomPrintSeed();
+    }
+
+    /**
+     * Generate a mock hashed data object with the given parameters.
+     *
+     * @param selfParentHash  the self parent hash
+     * @param otherParentHash the other parent hash
+     * @param selfParentGen   the self parent generation
+     * @param otherParentGen  the other parent generation
+     * @return a mock hashed data object with the given parameters
+     */
+    private BaseEventHashedData generateMockHashedData(
+            @Nullable final Hash selfParentHash,
+            @Nullable final Hash otherParentHash,
+            final long selfParentGen,
+            final long otherParentGen) {
+        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
+        when(hashedData.getSelfParentHash()).thenReturn(selfParentHash);
+        when(hashedData.getOtherParentHash()).thenReturn(otherParentHash);
+        when(hashedData.getSelfParentGen()).thenReturn(selfParentGen);
+        when(hashedData.getOtherParentGen()).thenReturn(otherParentGen);
+
+        return hashedData;
     }
 
     @Test
@@ -104,96 +128,58 @@ class EventValidationChecksTests {
 
     @Test
     @DisplayName("Test areParentsValid with invalid self parent")
-    void invalidSelfParent() {
+    void invalidParents() {
         final EventImpl child = mock(EventImpl.class);
 
-        final BaseEventHashedData nullHashParent = mock(BaseEventHashedData.class);
-        when(nullHashParent.getSelfParentHash()).thenReturn(null);
-        when(nullHashParent.getSelfParentGen()).thenReturn(10L);
-        when(nullHashParent.getOtherParentHash()).thenReturn(randomHash(random));
-        when(nullHashParent.getOtherParentGen()).thenReturn(11L);
         // this event is normal, except its self parent hash is null
-        when(child.getHashedData()).thenReturn(nullHashParent);
+        when(child.getHashedData()).thenReturn(generateMockHashedData(null, randomHash(random), 10L, 11L));
         assertFalse(areParentsValid(child, false, logger, metricAccumulator));
 
-        final BaseEventHashedData invalidGenParent = mock(BaseEventHashedData.class);
-        when(invalidGenParent.getSelfParentHash()).thenReturn(randomHash(random));
-        when(invalidGenParent.getSelfParentGen()).thenReturn(-1L);
-        when(invalidGenParent.getOtherParentHash()).thenReturn(randomHash(random));
-        when(invalidGenParent.getOtherParentGen()).thenReturn(11L);
         // this event is normal, except its self parent generation is invalid
-        when(child.getHashedData()).thenReturn(invalidGenParent);
+        when(child.getHashedData())
+                .thenReturn(generateMockHashedData(randomHash(random), randomHash(random), -1L, 11L));
         assertFalse(areParentsValid(child, false, logger, metricAccumulator));
-    }
 
-    @Test
-    @DisplayName("Test areParentsValid with invalid other parent")
-    void invalidOtherParent() {
-        final EventImpl child = mock(EventImpl.class);
-
-        final BaseEventHashedData nullHashParent = mock(BaseEventHashedData.class);
-        when(nullHashParent.getSelfParentHash()).thenReturn(randomHash(random));
-        when(nullHashParent.getSelfParentGen()).thenReturn(10L);
-        when(nullHashParent.getOtherParentHash()).thenReturn(null);
-        when(nullHashParent.getOtherParentGen()).thenReturn(11L);
         // this event is normal, except its other parent hash is null
-        when(child.getHashedData()).thenReturn(nullHashParent);
+        when(child.getHashedData()).thenReturn(generateMockHashedData(randomHash(random), null, 10L, 11L));
         assertFalse(areParentsValid(child, false, logger, metricAccumulator));
 
-        final BaseEventHashedData invalidGenParent = mock(BaseEventHashedData.class);
-        when(invalidGenParent.getSelfParentHash()).thenReturn(randomHash(random));
-        when(invalidGenParent.getSelfParentGen()).thenReturn(11L);
-        when(invalidGenParent.getOtherParentHash()).thenReturn(randomHash(random));
-        when(invalidGenParent.getOtherParentGen()).thenReturn(-1L);
         // this event is normal, except its other parent generation is invalid
-        when(child.getHashedData()).thenReturn(invalidGenParent);
+        when(child.getHashedData())
+                .thenReturn(generateMockHashedData(randomHash(random), randomHash(random), 11L, -1L));
         assertFalse(areParentsValid(child, false, logger, metricAccumulator));
     }
 
     @Test
     @DisplayName("Test areParentsValid with no parents")
     void genesisEvent() {
-        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        when(hashedData.getSelfParentGen()).thenReturn(-1L);
-        when(hashedData.getSelfParentHash()).thenReturn(null);
-        when(hashedData.getOtherParentGen()).thenReturn(-1L);
-        when(hashedData.getOtherParentHash()).thenReturn(null);
-        // this simulates a genesis event
         final EventImpl child = mock(EventImpl.class);
-        when(child.getHashedData()).thenReturn(hashedData);
 
+        // this simulates a genesis event
+        when(child.getHashedData()).thenReturn(generateMockHashedData(null, null, -1L, -1L));
         assertTrue(areParentsValid(child, false, logger, metricAccumulator));
     }
 
     @Test
     @DisplayName("Test areParentsValid with parents from the first valid generation")
     void genesisParents() {
-        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        when(hashedData.getSelfParentHash()).thenReturn(randomHash(random));
-        when(hashedData.getSelfParentGen()).thenReturn(FIRST_GENERATION);
-        when(hashedData.getOtherParentHash()).thenReturn(randomHash(random));
-        when(hashedData.getOtherParentGen()).thenReturn(FIRST_GENERATION);
-        // this simulates an event whose parents are genesis events
         final EventImpl child = mock(EventImpl.class);
-        when(child.getHashedData()).thenReturn(hashedData);
 
+        // this simulates an event whose parents are genesis events
+        when(child.getHashedData())
+                .thenReturn(generateMockHashedData(
+                        randomHash(random), randomHash(random), FIRST_GENERATION, FIRST_GENERATION));
         assertTrue(areParentsValid(child, false, logger, metricAccumulator));
     }
 
     @Test
     @DisplayName("Test areParentsValid with an event where self and other parent are the same")
     void singleParent() {
+        final EventImpl child = mock(EventImpl.class);
+
         final Hash hash = randomHash(random);
         final long generation = 10L;
-
-        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        when(hashedData.getSelfParentHash()).thenReturn(hash);
-        when(hashedData.getOtherParentHash()).thenReturn(hash);
-        when(hashedData.getSelfParentGen()).thenReturn(generation);
-        when(hashedData.getOtherParentGen()).thenReturn(generation);
-
-        final EventImpl child = mock(EventImpl.class);
-        when(child.getHashedData()).thenReturn(hashedData);
+        when(child.getHashedData()).thenReturn(generateMockHashedData(hash, hash, generation, generation));
 
         assertTrue(
                 areParentsValid(child, true, logger, metricAccumulator),
@@ -206,14 +192,9 @@ class EventValidationChecksTests {
     @Test
     @DisplayName("Test areParentsValid with valid parents")
     void validParents() {
-        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        when(hashedData.getSelfParentHash()).thenReturn(randomHash(random));
-        when(hashedData.getSelfParentGen()).thenReturn(10L);
-        when(hashedData.getOtherParentHash()).thenReturn(randomHash(random));
-        when(hashedData.getOtherParentGen()).thenReturn(11L);
-
         final EventImpl child = mock(EventImpl.class);
-        when(child.getHashedData()).thenReturn(hashedData);
+        when(child.getHashedData())
+                .thenReturn(generateMockHashedData(randomHash(random), randomHash(random), 10L, 11L));
 
         assertTrue(areParentsValid(child, false, logger, metricAccumulator));
     }

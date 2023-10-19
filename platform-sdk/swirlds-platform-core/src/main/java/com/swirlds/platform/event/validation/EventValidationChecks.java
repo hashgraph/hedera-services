@@ -91,10 +91,10 @@ public class EventValidationChecks {
         if (!validTimeCreated) {
             logger.error(
                     INVALID_EVENT_ERROR.getMarker(),
-                    "Event timeCreated is invalid. Event: {}, Time created: {}, Parent created: %s",
+                    "Event timeCreated is invalid. Event: {}, Time created: {}, Parent created: {}",
                     event.toMediumString(),
-                    event.getTimeCreated().toString(),
-                    selfParent.getTimeCreated().toString());
+                    event.getTimeCreated(),
+                    selfParent.getTimeCreated());
             metricAccumulator.update(1);
         }
 

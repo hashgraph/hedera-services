@@ -126,7 +126,7 @@ public class StandaloneEventValidator {
      * @param currentSoftwareVersion the current software version
      * @param previousAddressBook    the previous address book
      * @param currentAddressBook     the current address book
-     * @param eventConsumer          deduplicated events are passed to this consumer
+     * @param eventConsumer          validated events are passed to this consumer
      * @param intakeEventCounter     keeps track of the number of events in the intake pipeline from each peer
      */
     public StandaloneEventValidator(
@@ -138,6 +138,8 @@ public class StandaloneEventValidator {
             @NonNull final AddressBook currentAddressBook,
             @NonNull final Consumer<GossipEvent> eventConsumer,
             @NonNull final IntakeEventCounter intakeEventCounter) {
+
+        Objects.requireNonNull(time);
 
         this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
@@ -161,8 +163,6 @@ public class StandaloneEventValidator {
      * Validate an event.
      * <p>
      * If the event is determined to be valid, it is passed to the event consumer.
-     * <p>
-     * This method is threadsafe, and may be called concurrently from multiple threads.
      *
      * @param event the event to validate
      */
