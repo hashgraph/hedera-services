@@ -43,12 +43,21 @@ public class UpdateDecoder {
     // below values correspond to  tuples' indexes
     private static final int TOKEN_ADDRESS = 0;
     private static final int HEDERA_TOKEN = 1;
+
     private static final int EXPIRY = 1;
+    private static final int TOKEN_KEYS = 1;
+
+    private static final int KEY_TYPE = 0;
+    private static final int KEY_VALUE = 1;
+
+    private static final int INHERIT_ACCOUNT_KEY = 0;
+    private static final int CONTRACT_ID = 1;
+    private static final int ED25519 = 2;
+    private static final int ECDSA_SECP_256K1 = 3;
+    private static final int DELEGATABLE_CONTRACT_ID = 4;
 
     @Inject
-    public UpdateDecoder() {
-        // Dagger2
-    }
+    public UpdateDecoder() {}
 
     /**
      * Decodes a call to {@link UpdateTranslator#TOKEN_UPDATE_INFO_FUNCTION} into a synthetic {@link TransactionBody}.
@@ -153,6 +162,20 @@ public class UpdateDecoder {
         return checkTokenKeysTypeAndBuild(tokenKeys, txnBodyBuilder);
     }
 
+    public TransactionBody decodeTokenUpdateKeys(@NonNull final HtsCallAttempt attempt) {
+        final var call = UpdateKeysTranslator.TOKEN_UPDATE_KEYS_FUNCTION.decodeCall(
+                attempt.input().toArrayUnsafe());
+
+        final var tokenId = ConversionUtils.asTokenId(call.get(TOKEN_ADDRESS));
+        final var tokenKeys = decodeTokenKeys(call.get(TOKEN_KEYS), attempt.addressIdConverter());
+
+        // Build the transaction body
+        final var txnBodyBuilder = TokenUpdateTransactionBody.newBuilder();
+        txnBodyBuilder.token(tokenId);
+
+        return checkTokenKeysTypeAndBuild(tokenKeys, txnBodyBuilder);
+    }
+
     private TransactionBody checkTokenKeysTypeAndBuild(
             final List<TokenKeyWrapper> tokenKeys, final TokenUpdateTransactionBody.Builder builder) {
         tokenKeys.forEach(tokenKeyWrapper -> {
@@ -211,13 +234,14 @@ public class UpdateDecoder {
             @NonNull final Tuple[] tokenKeysTuples, @NonNull final AddressIdConverter addressIdConverter) {
         final List<TokenKeyWrapper> tokenKeys = new ArrayList<>(tokenKeysTuples.length);
         for (final var tokenKeyTuple : tokenKeysTuples) {
-            final var keyType = ((BigInteger) tokenKeyTuple.get(0)).intValue();
-            final Tuple keyValueTuple = tokenKeyTuple.get(1);
-            final var inheritAccountKey = (Boolean) keyValueTuple.get(0);
-            final var contractId = asNumericContractId(addressIdConverter.convert(keyValueTuple.get(1)));
-            final var ed25519 = (byte[]) keyValueTuple.get(2);
-            final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3);
-            final var delegatableContractId = asNumericContractId(addressIdConverter.convert(keyValueTuple.get(4)));
+            final var keyType = ((BigInteger) tokenKeyTuple.get(KEY_TYPE)).intValue();
+            final Tuple keyValueTuple = tokenKeyTuple.get(KEY_VALUE);
+            final var inheritAccountKey = (Boolean) keyValueTuple.get(INHERIT_ACCOUNT_KEY);
+            final var contractId = asNumericContractId(addressIdConverter.convert(keyValueTuple.get(CONTRACT_ID)));
+            final var ed25519 = (byte[]) keyValueTuple.get(ED25519);
+            final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(ECDSA_SECP_256K1);
+            final var delegatableContractId =
+                    asNumericContractId(addressIdConverter.convert(keyValueTuple.get(DELEGATABLE_CONTRACT_ID)));
 
             tokenKeys.add(new TokenKeyWrapper(
                     keyType,
