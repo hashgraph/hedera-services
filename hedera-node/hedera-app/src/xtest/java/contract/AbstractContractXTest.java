@@ -20,8 +20,8 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CO
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -68,7 +68,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayDeque;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -294,12 +293,11 @@ public abstract class AbstractContractXTest extends AbstractXTest {
     }
 
     protected Consumer<Response> assertingCallLocalResultIs(@NonNull final ByteBuffer expectedResult) {
-        return response -> assertTrue(Arrays.equals(
-                expectedResult.array(),
-                response.contractCallLocalOrThrow()
+        return response -> assertThat(expectedResult.array())
+                .isEqualTo(response.contractCallLocalOrThrow()
                         .functionResultOrThrow()
                         .contractCallResult()
-                        .toByteArray()));
+                        .toByteArray());
     }
 
     private Consumer<HtsCall.PricedResult> resultOnlyAssertion(
