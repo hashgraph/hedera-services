@@ -17,22 +17,22 @@
 package com.swirlds.common.wiring.transformers;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Collection;
+import java.util.List;
 
 // TODO test
 
 /**
- * Transforms a collection of items to a sequence of individual items. Expects that there will not be any null values in
- * the collection.
+ * Transforms a list of items to a sequence of individual items. Expects that there will not be any null values in the
+ * collection.
  */
-public class WireCollectionSplitter<T> extends AbstractWireTransformer<Collection<T>, T, WireCollectionSplitter<T>> {
+public class WireListSplitter<T> extends AbstractWireTransformer<List<T>, T, WireListSplitter<T>> {
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void accept(@NonNull final Collection<T> collection) {
-        for (final T t : collection) {
+    public void accept(@NonNull final List<T> list) {
+        for (final T t : list) {
             forward(t);
         }
     }

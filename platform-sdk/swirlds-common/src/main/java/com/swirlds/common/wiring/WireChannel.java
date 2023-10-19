@@ -43,6 +43,24 @@ public class WireChannel<I, O> {
     }
 
     /**
+     * Cast this wire channel into whatever a variable is expecting. Sometimes the compiler gets confused with generics,
+     * and path of least resistance is to just cast to the proper data type.
+     *
+     * <p>
+     * Warning: this will appease the compiler, but it is possible to cast a wire into a data type that will cause
+     * runtime exceptions. Use with appropriate caution.
+     *
+     * @param <A> the input type to cast to
+     * @param <B> the output type to cast to
+     * @return this, cast into whatever type is requested
+     */
+    @NonNull
+    @SuppressWarnings("unchecked")
+    public final <A, B> WireChannel<A, B> cast() {
+        return (WireChannel<A, B>) this;
+    }
+
+    /**
      * Convenience method for creating a channel with a specific input type. This method is useful for when the compiler
      * can't figure out the generic type of the channel. This method is a no op.
      *

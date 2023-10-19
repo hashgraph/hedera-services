@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.wires;
+package com.swirlds.common.wiring.counters;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
@@ -24,8 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.common.wiring.counters.StandardObjectCounter;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;

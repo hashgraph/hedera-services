@@ -39,13 +39,12 @@ abstract class AbstractWireTransformer<A, B, T extends AbstractWireTransformer<A
     /**
      * Specify a channel where output data should be passed. This forwarding operation respects back pressure.
      *
-     * @param channels the channels to forward output data to
+     * @param channel the channel to forward output data to
      * @return this
      */
-    @SafeVarargs
     @NonNull
-    public final T solderTo(@NonNull final WireChannel<B, ?>... channels) {
-        return solderTo(false, channels);
+    public final T solderTo(@NonNull final WireChannel<B, ?> channel) {
+        return solderTo(false, channel);
     }
 
     /**
@@ -53,18 +52,16 @@ abstract class AbstractWireTransformer<A, B, T extends AbstractWireTransformer<A
      *
      * @param inject   if true then the data is injected and ignores back pressure. If false then back pressure is
      *                 respected.
-     * @param channels the channels to forward output data to
+     * @param channel the channel to forward output data to
      * @return this
      */
     @SuppressWarnings("unchecked")
     @NonNull
-    public final T solderTo(final boolean inject, @NonNull final WireChannel<B, ?>... channels) {
-        for (final WireChannel<B, ?> channel : channels) {
-            if (inject) {
-                forwardingDestinations.add(channel::inject);
-            } else {
-                forwardingDestinations.add(channel::put);
-            }
+    public final T solderTo(final boolean inject, @NonNull final WireChannel<B, ?> channel) {
+        if (inject) {
+            forwardingDestinations.add(channel::inject);
+        } else {
+            forwardingDestinations.add(channel::put);
         }
         return (T) this;
     }
@@ -72,15 +69,13 @@ abstract class AbstractWireTransformer<A, B, T extends AbstractWireTransformer<A
     /**
      * Specify a consumer where output data should be forwarded.
      *
-     * @param handlers the consumers to forward output data to
+     * @param handler the consumer to forward output data to
      * @return this
      */
     @SuppressWarnings("unchecked")
     @NonNull
-    public final T solderTo(@NonNull final Consumer<B> handlers) {
-        for (final Consumer<B> handler : forwardingDestinations) {
-            forwardingDestinations.add(Objects.requireNonNull(handler));
-        }
+    public final T solderTo(@NonNull final Consumer<B> handler) {
+        forwardingDestinations.add(Objects.requireNonNull(handler));
         return (T) this;
     }
 

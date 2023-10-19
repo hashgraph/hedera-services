@@ -19,9 +19,14 @@ package com.swirlds.common.wiring;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.transformers.WireFilter;
+import com.swirlds.common.wiring.transformers.WireListSplitter;
+import com.swirlds.common.wiring.transformers.WireTransformer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Wires two or more components together.
@@ -54,6 +59,23 @@ public abstract class Wire<O> {
     }
 
     /**
+     * Cast this wire into whatever a variable is expecting. Sometimes the compiler gets confused with generics, and
+     * path of least resistance is to just cast to the proper data type.
+     *
+     * <p>
+     * Warning: this will appease the compiler, but it is possible to cast a wire into a data type that will cause
+     * runtime exceptions. Use with appropriate caution.
+     *
+     * @param <X> the type to cast to
+     * @return this, cast into whatever type is requested
+     */
+    @NonNull
+    @SuppressWarnings("unchecked")
+    public final <X> Wire<X> cast() {
+        return (Wire<X>) this;
+    }
+
+    /**
      * Get the name of the wire.
      *
      * @return the name of the wire
@@ -81,7 +103,7 @@ public abstract class Wire<O> {
      * @return the channel
      */
     @NonNull
-    public final <I> WireChannel<I, O> createChannel() {
+    public final <I> WireChannel<I, O> buildChannel() {
         return new WireChannel<>(this);
     }
 
@@ -97,14 +119,12 @@ public abstract class Wire<O> {
      * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations
      * after data has been inserted into the wire is not thread safe and has undefined behavior.
      *
-     * @param channels the channels to forward output data to
+     * @param channel the channel to forward output data to
      * @return this
      */
-    @SuppressWarnings("UnusedReturnValue")
-    @SafeVarargs
     @NonNull
-    public final Wire<O> solderTo(@NonNull final WireChannel<O, ?>... channels) {
-        return solderTo(false, channels);
+    public final Wire<O> solderTo(@NonNull final WireChannel<O, ?> channel) {
+        return solderTo(false, channel);
     }
 
     /**
@@ -121,12 +141,11 @@ public abstract class Wire<O> {
      *
      * @param inject  if true then the data is injected and ignores back pressure. If false then back pressure is
      *                respected.
-     * @param channels the channels to forward output data to
+     * @param channel the channel to forward output data to
      * @return this
      */
-    @SuppressWarnings("unchecked")
     @NonNull
-    public abstract Wire<O> solderTo(final boolean inject, @NonNull final WireChannel<O, ?>... channels);
+    public abstract Wire<O> solderTo(final boolean inject, @NonNull final WireChannel<O, ?> channel);
 
     /**
      * Specify a consumer where output data should be forwarded.
@@ -140,12 +159,51 @@ public abstract class Wire<O> {
      * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations
      * after data has been inserted into the wire is not thread safe and has undefined behavior.
      *
-     * @param handlers the consumers to forward output data to
+     * @param handler the consumer to forward output data to
      * @return this
      */
-    @SuppressWarnings("unchecked")
     @NonNull
-    public abstract Wire<O> solderTo(@NonNull final Consumer<O>... handlers);
+    public abstract Wire<O> solderTo(@NonNull final Consumer<O> handler);
+
+    /**
+     * Build a {@link WireFilter} that is soldered to the output of this wire.
+     *
+     * @param predicate the predicate that filters the output of this wire
+     * @return the filter
+     */
+    @NonNull
+    public abstract WireFilter<O> buildFilter(@NonNull final Predicate<O> predicate);
+
+    /**
+     * Build a {@link WireListSplitter} that is soldered to the output of this wire. Creating a splitter for wires
+     * without a list output type will cause to runtime exceptions.
+     *
+     * @param <T> the type of the list elements
+     * @return the splitter
+     */
+    @NonNull
+    public abstract <T> WireListSplitter<T> buildSplitter();
+
+    /**
+     * Build a {@link WireListSplitter} that is soldered to the output of this wire. Creating a splitter for wires
+     * without a list output type will cause to runtime exceptions.
+     *
+     * @param clazz the class of the list elements, convince parameter for hinting generic type to the compiler
+     * @param <T> the type of the list elements
+     * @return the splitter
+     */
+    @NonNull
+    public abstract <T> WireListSplitter<T> buildSplitter(@NonNull Class<T> clazz);
+
+    /**
+     * Build a {@link WireTransformer} that is soldered to the output of this wire.
+     *
+     * @param transform the function that transforms the output of this wire into the output of the transformer
+     * @param <T>       the output type of the transformer
+     * @return the transformer
+     */
+    @NonNull
+    public abstract <T> WireTransformer<O, T> buildTransformer(@NonNull Function<O, T> transform);
 
     /**
      * Flush all data in the wire. Blocks until all data currently in flight has been processed.

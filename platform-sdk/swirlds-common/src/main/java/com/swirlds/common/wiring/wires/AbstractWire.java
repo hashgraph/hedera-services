@@ -18,11 +18,16 @@ package com.swirlds.common.wiring.wires;
 
 import com.swirlds.common.wiring.Wire;
 import com.swirlds.common.wiring.WireChannel;
+import com.swirlds.common.wiring.transformers.WireFilter;
+import com.swirlds.common.wiring.transformers.WireListSplitter;
+import com.swirlds.common.wiring.transformers.WireTransformer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Boilerplate implementation for wires. This is intentionally not included in Wire.java for the sake of keeping the API
@@ -57,18 +62,15 @@ public abstract class AbstractWire<O> extends Wire<O> {
     /**
      * {@inheritDoc}
      */
-    @SafeVarargs
     @NonNull
     @Override
-    public final Wire<O> solderTo(final boolean inject, @NonNull final WireChannel<O, ?>... channels) {
-        Objects.requireNonNull(channels);
+    public final Wire<O> solderTo(final boolean inject, @NonNull final WireChannel<O, ?> channel) {
+        Objects.requireNonNull(channel);
 
-        for (final WireChannel<O, ?> channel : channels) {
-            if (inject) {
-                forwardingDestinations.add(channel::inject);
-            } else {
-                forwardingDestinations.add(channel::put);
-            }
+        if (inject) {
+            forwardingDestinations.add(channel::inject);
+        } else {
+            forwardingDestinations.add(channel::put);
         }
 
         return this;
@@ -77,14 +79,54 @@ public abstract class AbstractWire<O> extends Wire<O> {
     /**
      * {@inheritDoc}
      */
-    @SafeVarargs
     @NonNull
     @Override
-    public final Wire<O> solderTo(@NonNull final Consumer<O>... handlers) {
-        for (final Consumer<O> handler : handlers) {
-            forwardingDestinations.add(Objects.requireNonNull(handler));
-        }
+    public final Wire<O> solderTo(@NonNull final Consumer<O> handler) {
+        forwardingDestinations.add(Objects.requireNonNull(handler));
         return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public WireFilter<O> buildFilter(@NonNull final Predicate<O> predicate) {
+        final WireFilter<O> filter = new WireFilter<>(Objects.requireNonNull(predicate));
+        solderTo(filter);
+        return filter;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @SuppressWarnings("unchecked")
+    @NonNull
+    @Override
+    public <T> WireListSplitter<T> buildSplitter() {
+        final WireListSplitter<T> splitter = new WireListSplitter<>();
+        solderTo((Consumer<O>) splitter);
+        return splitter;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public <T> WireListSplitter<T> buildSplitter(@NonNull final Class<T> clazz) {
+        return buildSplitter();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public <T> WireTransformer<O, T> buildTransformer(@NonNull final Function<O, T> transform) {
+        final WireTransformer<O, T> transformer = new WireTransformer<>(transform);
+        solderTo(transformer);
+        return transformer;
     }
 
     /**

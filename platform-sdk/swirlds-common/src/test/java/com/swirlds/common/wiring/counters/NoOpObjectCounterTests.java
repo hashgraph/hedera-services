@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.wires;
+package com.swirlds.common.wiring.counters;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.wiring.counters.NoOpObjectCounter;
 import org.junit.jupiter.api.Test;
 
 class NoOpObjectCounterTests {

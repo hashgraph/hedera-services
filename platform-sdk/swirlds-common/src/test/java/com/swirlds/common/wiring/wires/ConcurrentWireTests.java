@@ -57,7 +57,7 @@ class ConcurrentWireTests {
                 .withConcurrency(true)
                 .build();
         final WireChannel<Integer, Void> channel =
-                wire.createChannel().withInputType(Integer.class).bind(handler);
+                wire.buildChannel().withInputType(Integer.class).bind(handler);
 
         assertEquals(-1, wire.getUnprocessedTaskCount());
 
@@ -104,7 +104,7 @@ class ConcurrentWireTests {
                 .withConcurrency(true)
                 .build();
         final WireChannel<Operation, Void> channel =
-                wire.createChannel().withInputType(Operation.class).bind(handler);
+                wire.buildChannel().withInputType(Operation.class).bind(handler);
 
         assertEquals(-1, wire.getUnprocessedTaskCount());
 
