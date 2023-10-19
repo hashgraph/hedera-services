@@ -20,7 +20,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
-import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -39,7 +38,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,19 +52,34 @@ import org.apache.logging.log4j.Logger;
  */
 class MerkleDbCompactionCoordinator {
 
+    private static final Logger logger = LogManager.getLogger(MerkleDbCompactionCoordinator.class);
+
     /**
      * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
      * application classes that might instantiate a data source, the {@link ConfigurationHolder}
      * holder will have been configured by the time this static initializer runs.
      */
     private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-
     /**
-     * A thread pool to run compaction tasks.
+     * An executor service to run compaction tasks.
      */
-    private static final AtomicReference<ExecutorService> compactionExecutorServiceRef = new AtomicReference<>();
+    private static final ExecutorService compactionExecutor;
 
-    private static final Logger logger = LogManager.getLogger(MerkleDbCompactionCoordinator.class);
+    static {
+        compactionExecutor = new ThreadPoolExecutor(
+                config.compactionThreads(),
+                config.compactionThreads(),
+                50L,
+                TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(),
+                new ThreadConfiguration(getStaticThreadManager())
+                        .setThreadGroup(new ThreadGroup("Compaction"))
+                        .setComponent(MERKLEDB_COMPONENT)
+                        .setThreadName("Compacting")
+                        .setExceptionHandler(
+                                (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during merging", ex))
+                        .buildFactory());
+    }
 
     public static final String HASH_STORE_DISK_SUFFIX = "HashStoreDisk";
     public static final String OBJECT_KEY_TO_PATH_SUFFIX = "ObjectKeyToPath";
@@ -113,22 +126,6 @@ class MerkleDbCompactionCoordinator {
             hashesStoreDiskTask = null;
         }
         this.pathToKeyValueTask = new CompactionTask(tableName + PATH_TO_KEY_VALUE_SUFFIX, pathToKeyValue);
-
-        ExecutorService executorService = new ThreadPoolExecutor(
-                config.compactionThreads(),
-                config.compactionThreads(),
-                50L,
-                TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(),
-                new ThreadConfiguration(getStaticThreadManager())
-                        .setThreadGroup(new ThreadGroup("Compaction"))
-                        .setComponent(MERKLEDB_COMPONENT)
-                        .setThreadName("Compacting")
-                        .setExceptionHandler(
-                                (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during merging", ex))
-                        .buildFactory());
-
-        compactionExecutorServiceRef.set(executorService);
     }
 
     /**
@@ -240,7 +237,7 @@ class MerkleDbCompactionCoordinator {
      * @return a thread pool for compaction tasks
      */
     ExecutorService getCompactingExecutor() {
-        return compactionExecutorServiceRef.get();
+        return compactionExecutor;
     }
 
     boolean isCompactionEnabled() {
@@ -250,18 +247,9 @@ class MerkleDbCompactionCoordinator {
     /**
      * A helper class representing a task to run compaction for a specific storage type.
      */
-    private static class CompactionTask implements Callable<Boolean> {
-
+    private record CompactionTask(@NonNull String id, @NonNull DataFileCompactor compactor)
+            implements Callable<Boolean> {
         private static final Logger logger = LogManager.getLogger(CompactionTask.class);
-        final String id;
-        private final DataFileCompactor compactor;
-
-        public CompactionTask(@NonNull String id, @NonNull DataFileCompactor compactor) {
-            requireNonNull(id);
-            requireNonNull(compactor);
-            this.id = id;
-            this.compactor = compactor;
-        }
 
         @Override
         public Boolean call() {
