@@ -67,7 +67,11 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         final var tokenType =
                 ((TokenCreateTransactionBody) syntheticCreate.data().value()).tokenType();
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder.status(), 0L));
+            ResponseCodeEnum status = recordBuilder.status();
+            if (recordBuilder.status() == ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN) {
+                status = null;
+            }
+            return gasOnly(revertResult(status, 0L));
         } else {
             final var isFungible = tokenType == TokenType.FUNGIBLE_COMMON ? true : false;
             ByteBuffer encodedOutput;

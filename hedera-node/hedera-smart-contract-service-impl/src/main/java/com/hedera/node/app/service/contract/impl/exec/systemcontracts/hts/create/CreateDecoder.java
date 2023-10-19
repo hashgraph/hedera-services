@@ -357,7 +357,7 @@ public class CreateDecoder {
                 isFungible,
                 tokenName,
                 tokenSymbol,
-                tokenTreasury.accountNum() != 0 ? tokenTreasury : null,
+                tokenTreasury,
                 memo,
                 isSupplyTypeFinite,
                 initSupply,

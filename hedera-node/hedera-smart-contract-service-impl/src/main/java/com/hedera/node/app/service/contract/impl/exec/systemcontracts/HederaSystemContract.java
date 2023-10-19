@@ -51,11 +51,14 @@ public interface HederaSystemContract extends PrecompiledContract {
         }
 
         public static FullResult revertResult(@NonNull final ResponseCodeEnum reason, final long gasRequirement) {
-            requireNonNull(reason);
-            return new FullResult(
-                    PrecompileContractResult.revert(
-                            Bytes.wrap(reason.protoName().getBytes())),
-                    gasRequirement);
+            if (reason == null) {
+                return new FullResult(PrecompileContractResult.revert(null), gasRequirement);
+            } else {
+                return new FullResult(
+                        PrecompileContractResult.revert(
+                                Bytes.wrap(reason.protoName().getBytes())),
+                        gasRequirement);
+            }
         }
 
         public static FullResult haltResult(@NonNull final ExceptionalHaltReason reason, final long gasRequirement) {

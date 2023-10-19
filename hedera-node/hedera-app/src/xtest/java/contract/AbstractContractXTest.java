@@ -184,8 +184,9 @@ public abstract class AbstractContractXTest extends AbstractXTest {
                     MessageFrame.State.REVERT,
                     result.getState(),
                     Optional.ofNullable(context).orElse("An unspecified operation") + " should have reverted");
-            final var actualReason =
-                    ResponseCodeEnum.fromString(new String(result.getOutput().toArrayUnsafe()));
+            final var actualReason = result.getOutput() != null
+                    ? ResponseCodeEnum.fromString(new String(result.getOutput().toArrayUnsafe()))
+                    : null;
             assertEquals(status, actualReason);
         }));
     }

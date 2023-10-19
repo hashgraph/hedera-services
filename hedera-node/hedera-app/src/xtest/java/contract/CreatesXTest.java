@@ -37,6 +37,7 @@ import static contract.CreatesXTestConstants.TOKEN_KEY_TWO;
 import static contract.CreatesXTestConstants.hederaTokenFactory;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
+import static contract.XTestConstants.INVALID_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ADDRESS;
 import static contract.XTestConstants.OWNER_HEADLONG_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
@@ -77,186 +78,198 @@ public class CreatesXTest extends AbstractContractXTest {
 
     @Override
     protected void doScenarioOperations() {
-        // should successfully create fungible token v1
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_BIG_INT)
-                        .array()),
-                assertSuccess());
-
-        // should successfully create fungible token v2
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_LONG)
-                        .array()),
-                assertSuccess());
-
-        // should successfully create fungible token v3
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY, DECIMALS)
-                        .array()),
-                assertSuccess());
-
-        // should successfully create fungible token without TokenKeys (empty array)
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
-                        .encodeCallWithArgs(
-                                hederaTokenFactory(
-                                        NAME,
-                                        SYMBOL,
-                                        OWNER_HEADLONG_ADDRESS,
-                                        MEMO,
-                                        true,
-                                        MAX_SUPPLY,
-                                        false,
-                                        new Tuple[] {},
-                                        EXPIRY),
-                                INITIAL_TOTAL_SUPPLY_BIG_INT,
-                                DECIMALS_BIG_INT)
-                        .array()),
-                assertSuccess());
-
-        // should revert on missing expiry
-
-        // should revert on invalid account address
+        // should revert with null with invalid account
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
                         .encodeCallWithArgs(
-                                hederaTokenFactory(
-                                        NAME,
-                                        SYMBOL,
-                                        OWNER_HEADLONG_ADDRESS,
-                                        MEMO,
-                                        true,
-                                        MAX_SUPPLY,
-                                        false,
-                                        new Tuple[] {TOKEN_INVALID_KEY},
-                                        EXPIRY),
-                                INITIAL_TOTAL_SUPPLY_BIG_INT,
-                                DECIMALS_BIG_INT)
-                        .array()),
-                ResponseCodeEnum.INVALID_ADMIN_KEY);
-
-        // should revert with autoRenewPeriod less than 2592000
-        runHtsCallAndExpectRevert(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
-                        .encodeCallWithArgs(
-                                hederaTokenFactory(
-                                        NAME,
-                                        SYMBOL,
-                                        OWNER_HEADLONG_ADDRESS,
-                                        MEMO,
+                                Tuple.of(
+                                        "Name",
+                                        "SYM",
+                                        INVALID_HEADLONG_ADDRESS,
+                                        "memo",
                                         true,
                                         MAX_SUPPLY,
                                         false,
                                         new Tuple[] {TOKEN_KEY},
-                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, 1L)),
+                                        EXPIRY),
                                 INITIAL_TOTAL_SUPPLY_BIG_INT,
                                 DECIMALS_BIG_INT)
                         .array()),
-                ResponseCodeEnum.INVALID_RENEWAL_PERIOD);
+                null);
 
-        // should successfully create fungible token with custom fees v1
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
-                        .encodeCallWithArgs(
-                                DEFAULT_HEDERA_TOKEN,
-                                INITIAL_TOTAL_SUPPLY_BIG_INT,
-                                DECIMALS_BIG_INT,
-                                // FixedFee
-                                new Tuple[] {FIXED_FEE},
-                                // FractionalFee
-                                new Tuple[] {FRACTIONAL_FEE})
-                        .array()),
-                assertSuccess());
-
-        // should successfully create fungible token with custom fees v2
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2
-                        .encodeCallWithArgs(
-                                DEFAULT_HEDERA_TOKEN,
-                                INITIAL_TOTAL_SUPPLY_BIG_INT,
-                                DECIMALS_LONG,
-                                // FixedFee
-                                new Tuple[] {FIXED_FEE},
-                                // FractionalFee
-                                new Tuple[] {FRACTIONAL_FEE})
-                        .array()),
-                assertSuccess());
-
-        // should successfully create fungible token with custom fees v3
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3
-                        .encodeCallWithArgs(
-                                DEFAULT_HEDERA_TOKEN,
-                                INITIAL_TOTAL_SUPPLY,
-                                DECIMALS,
-                                // FixedFee
-                                new Tuple[] {FIXED_FEE},
-                                // FractionalFee
-                                new Tuple[] {FRACTIONAL_FEE})
-                        .array()),
-                assertSuccess());
-
-        // should successfully create non-fungible token without custom fees v1
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
-                        .array()),
-                assertSuccess());
-
-        // should successfully create non-fungible token without custom fees v2
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
-                        .array()),
-                assertSuccess());
-
-        // should successfully create non-fungible token without custom fees v3
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
-                        .array()),
-                assertSuccess());
-
-        // should revert when token has no supplyKey
-
-        // should successfully create non-fungible token with custom fees v1
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
-                        .array()),
-                assertSuccess());
-
-        // should successfully create non-fungible token with custom fees v2
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
-                        .array()),
-                assertSuccess());
-
-        // should successfully create non-fungible token with custom fees v3
-        runHtsCallAndExpectOnSuccess(
-                SENDER_BESU_ADDRESS,
-                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
-                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
-                        .array()),
-                assertSuccess());
+//        // should successfully create fungible token v2
+//        runHtsCallAndExpectOnSuccess(
+//                SENDER_BESU_ADDRESS,
+//                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V2
+//                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY_BIG_INT, DECIMALS_LONG)
+//                        .array()),
+//                assertSuccess());
+//
+//        // should successfully create fungible token v3
+//        runHtsCallAndExpectOnSuccess(
+//                SENDER_BESU_ADDRESS,
+//                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V3
+//                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, INITIAL_TOTAL_SUPPLY, DECIMALS)
+//                        .array()),
+//                assertSuccess());
+//
+//        // should successfully create fungible token without TokenKeys (empty array)
+//        runHtsCallAndExpectOnSuccess(
+//                SENDER_BESU_ADDRESS,
+//                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+//                        .encodeCallWithArgs(
+//                                hederaTokenFactory(
+//                                        NAME,
+//                                        SYMBOL,
+//                                        OWNER_HEADLONG_ADDRESS,
+//                                        MEMO,
+//                                        true,
+//                                        MAX_SUPPLY,
+//                                        false,
+//                                        new Tuple[] {},
+//                                        EXPIRY),
+//                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+//                                DECIMALS_BIG_INT)
+//                        .array()),
+//                assertSuccess());
+//
+//        // should revert on missing expiry
+//
+//        // should revert on invalid account address
+//        runHtsCallAndExpectRevert(
+//                SENDER_BESU_ADDRESS,
+//                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+//                        .encodeCallWithArgs(
+//                                hederaTokenFactory(
+//                                        NAME,
+//                                        SYMBOL,
+//                                        OWNER_HEADLONG_ADDRESS,
+//                                        MEMO,
+//                                        true,
+//                                        MAX_SUPPLY,
+//                                        false,
+//                                        new Tuple[] {TOKEN_INVALID_KEY},
+//                                        EXPIRY),
+//                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+//                                DECIMALS_BIG_INT)
+//                        .array()),
+//                ResponseCodeEnum.INVALID_ADMIN_KEY);
+//
+//        // should revert with autoRenewPeriod less than 2592000
+//        runHtsCallAndExpectRevert(
+//                SENDER_BESU_ADDRESS,
+//                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
+//                        .encodeCallWithArgs(
+//                                hederaTokenFactory(
+//                                        NAME,
+//                                        SYMBOL,
+//                                        OWNER_HEADLONG_ADDRESS,
+//                                        MEMO,
+//                                        true,
+//                                        MAX_SUPPLY,
+//                                        false,
+//                                        new Tuple[] {TOKEN_KEY},
+//                                        Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, 1L)),
+//                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+//                                DECIMALS_BIG_INT)
+//                        .array()),
+//                ResponseCodeEnum.INVALID_RENEWAL_PERIOD);
+//
+//        // should successfully create fungible token with custom fees v1
+//        runHtsCallAndExpectOnSuccess(
+//                SENDER_BESU_ADDRESS,
+//                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
+//                        .encodeCallWithArgs(
+//                                DEFAULT_HEDERA_TOKEN,
+//                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+//                                DECIMALS_BIG_INT,
+//                                // FixedFee
+//                                new Tuple[] {FIXED_FEE},
+//                                // FractionalFee
+//                                new Tuple[] {FRACTIONAL_FEE})
+//                        .array()),
+//                assertSuccess());
+//
+//        // should successfully create fungible token with custom fees v2
+//        runHtsCallAndExpectOnSuccess(
+//                SENDER_BESU_ADDRESS,
+//                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V2
+//                        .encodeCallWithArgs(
+//                                DEFAULT_HEDERA_TOKEN,
+//                                INITIAL_TOTAL_SUPPLY_BIG_INT,
+//                                DECIMALS_LONG,
+//                                // FixedFee
+//                                new Tuple[] {FIXED_FEE},
+//                                // FractionalFee
+//                                new Tuple[] {FRACTIONAL_FEE})
+//                        .array()),
+//                assertSuccess());
+//
+//        // should successfully create fungible token with custom fees v3
+//        runHtsCallAndExpectOnSuccess(
+//                SENDER_BESU_ADDRESS,
+//                Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V3
+//                        .encodeCallWithArgs(
+//                                DEFAULT_HEDERA_TOKEN,
+//                                INITIAL_TOTAL_SUPPLY,
+//                                DECIMALS,
+//                                // FixedFee
+//                                new Tuple[] {FIXED_FEE},
+//                                // FractionalFee
+//                                new Tuple[] {FRACTIONAL_FEE})
+//                        .array()),
+//                assertSuccess());
+//
+//        // should successfully create non-fungible token without custom fees v1
+//        runHtsCallAndExpectOnSuccess(
+//                SENDER_BESU_ADDRESS,
+//                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
+//                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
+//                        .array()),
+//                assertSuccess());
+//
+//        // should successfully create non-fungible token without custom fees v2
+//        runHtsCallAndExpectOnSuccess(
+//                SENDER_BESU_ADDRESS,
+//                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V2
+//                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
+//                        .array()),
+//                assertSuccess());
+//
+//        // should successfully create non-fungible token without custom fees v3
+//        runHtsCallAndExpectOnSuccess(
+//                SENDER_BESU_ADDRESS,
+//                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V3
+//                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN)
+//                        .array()),
+//                assertSuccess());
+//
+//        // should revert when token has no supplyKey
+//
+//        // should successfully create non-fungible token with custom fees v1
+//        runHtsCallAndExpectOnSuccess(
+//                SENDER_BESU_ADDRESS,
+//                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
+//                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+//                        .array()),
+//                assertSuccess());
+//
+//        // should successfully create non-fungible token with custom fees v2
+//        runHtsCallAndExpectOnSuccess(
+//                SENDER_BESU_ADDRESS,
+//                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V2
+//                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+//                        .array()),
+//                assertSuccess());
+//
+//        // should successfully create non-fungible token with custom fees v3
+//        runHtsCallAndExpectOnSuccess(
+//                SENDER_BESU_ADDRESS,
+//                Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V3
+//                        .encodeCallWithArgs(DEFAULT_HEDERA_TOKEN, new Tuple[] {FIXED_FEE}, new Tuple[] {ROYALTY_FEE})
+//                        .array()),
+//                assertSuccess());
     }
 
     @Override

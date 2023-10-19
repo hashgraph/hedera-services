@@ -97,6 +97,9 @@ class XTestConstants {
     static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
     static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
             asHeadlongAddress(OWNER_ADDRESS.toByteArray());
+    static final Bytes INVALID_ADDRESS = Bytes.fromHex("0000f00000040000f00000007fffffffffffffff");
+    static final com.esaulpaugh.headlong.abi.Address INVALID_HEADLONG_ADDRESS =
+            asHeadlongAddress(INVALID_ADDRESS.toByteArray());
     static final Bytes INVALID_ACCOUNT_ADDRESS = Bytes.wrap(asEvmAddress(INVALID_ID.accountNumOrThrow()));
     static final com.esaulpaugh.headlong.abi.Address INVALID_ACCOUNT_HEADLONG_ADDRESS =
             asHeadlongAddress(asEvmAddress(INVALID_ID.accountNumOrThrow()));
