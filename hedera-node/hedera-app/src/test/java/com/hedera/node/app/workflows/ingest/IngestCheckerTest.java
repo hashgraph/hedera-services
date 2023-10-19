@@ -482,13 +482,30 @@ class IngestCheckerTest extends AppTestBase {
             // given
             final var accountID = AccountID.newBuilder().accountNum(42).build();
             final var key = Key.newBuilder()
-                    .keyList(KeyList.newBuilder().keys(ALICE.account().key(), BOB.account().key()))
+                    .keyList(KeyList.newBuilder()
+                            .keys(ALICE.account().key(), BOB.account().key()))
                     .build();
-            final var account = Account.newBuilder().accountId(accountID).key(key).build();
-            final var myTxBody = txBody.copyBuilder().transactionID(txBody.transactionID().copyBuilder().accountID(accountID).build()).build();
-            final var myTx = tx.copyBuilder().signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, SignedTransaction.newBuilder().bodyBytes(asBytes(TransactionBody.PROTOBUF, myTxBody)).build())).build();
+            final var account =
+                    Account.newBuilder().accountId(accountID).key(key).build();
+            final var myTxBody = txBody.copyBuilder()
+                    .transactionID(txBody.transactionID()
+                            .copyBuilder()
+                            .accountID(accountID)
+                            .build())
+                    .build();
+            final var myTx = tx.copyBuilder()
+                    .signedTransactionBytes(asBytes(
+                            SignedTransaction.PROTOBUF,
+                            SignedTransaction.newBuilder()
+                                    .bodyBytes(asBytes(TransactionBody.PROTOBUF, myTxBody))
+                                    .build()))
+                    .build();
             final var myTransactionInfo = new TransactionInfo(
-                    myTx, myTxBody, MOCK_SIGNATURE_MAP, myTx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
+                    myTx,
+                    myTxBody,
+                    MOCK_SIGNATURE_MAP,
+                    myTx.signedTransactionBytes(),
+                    HederaFunctionality.UNCHECKED_SUBMIT);
             when(transactionChecker.check(myTx)).thenReturn(myTransactionInfo);
             when(solvencyPreCheck.getPayerAccount(any(), eq(accountID))).thenReturn(account);
             final var verificationResultFutureAlice = mock(SignatureVerificationFuture.class);
@@ -517,13 +534,30 @@ class IngestCheckerTest extends AppTestBase {
             // given
             final var accountID = AccountID.newBuilder().accountNum(42).build();
             final var key = Key.newBuilder()
-                    .keyList(KeyList.newBuilder().keys(ALICE.account().key(), BOB.account().key()))
+                    .keyList(KeyList.newBuilder()
+                            .keys(ALICE.account().key(), BOB.account().key()))
                     .build();
-            final var account = Account.newBuilder().accountId(accountID).key(key).build();
-            final var myTxBody = txBody.copyBuilder().transactionID(txBody.transactionID().copyBuilder().accountID(accountID).build()).build();
-            final var myTx = tx.copyBuilder().signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, SignedTransaction.newBuilder().bodyBytes(asBytes(TransactionBody.PROTOBUF, myTxBody)).build())).build();
+            final var account =
+                    Account.newBuilder().accountId(accountID).key(key).build();
+            final var myTxBody = txBody.copyBuilder()
+                    .transactionID(txBody.transactionID()
+                            .copyBuilder()
+                            .accountID(accountID)
+                            .build())
+                    .build();
+            final var myTx = tx.copyBuilder()
+                    .signedTransactionBytes(asBytes(
+                            SignedTransaction.PROTOBUF,
+                            SignedTransaction.newBuilder()
+                                    .bodyBytes(asBytes(TransactionBody.PROTOBUF, myTxBody))
+                                    .build()))
+                    .build();
             final var myTransactionInfo = new TransactionInfo(
-                    myTx, myTxBody, MOCK_SIGNATURE_MAP, myTx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
+                    myTx,
+                    myTxBody,
+                    MOCK_SIGNATURE_MAP,
+                    myTx.signedTransactionBytes(),
+                    HederaFunctionality.UNCHECKED_SUBMIT);
             when(transactionChecker.check(myTx)).thenReturn(myTransactionInfo);
             when(solvencyPreCheck.getPayerAccount(any(), eq(accountID))).thenReturn(account);
             final var verificationResultFutureAlice = mock(SignatureVerificationFuture.class);
@@ -545,23 +579,38 @@ class IngestCheckerTest extends AppTestBase {
                     .has(responseCode(INVALID_SIGNATURE));
         }
 
-
         @Test
         @DisplayName("Check payer with threshold key successfully")
         void testThresholdKeyVerificationSucceeds() throws Exception {
             // given
             final var accountID = AccountID.newBuilder().accountNum(42).build();
             final var key = Key.newBuilder()
-                    .thresholdKey(
-                            ThresholdKey.newBuilder()
-                                    .keys(KeyList.newBuilder().keys(ALICE.account().key(), BOB.account().key()))
-                                    .threshold(1))
+                    .thresholdKey(ThresholdKey.newBuilder()
+                            .keys(KeyList.newBuilder()
+                                    .keys(ALICE.account().key(), BOB.account().key()))
+                            .threshold(1))
                     .build();
-            final var account = Account.newBuilder().accountId(accountID).key(key).build();
-            final var myTxBody = txBody.copyBuilder().transactionID(txBody.transactionID().copyBuilder().accountID(accountID).build()).build();
-            final var myTx = tx.copyBuilder().signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, SignedTransaction.newBuilder().bodyBytes(asBytes(TransactionBody.PROTOBUF, myTxBody)).build())).build();
+            final var account =
+                    Account.newBuilder().accountId(accountID).key(key).build();
+            final var myTxBody = txBody.copyBuilder()
+                    .transactionID(txBody.transactionID()
+                            .copyBuilder()
+                            .accountID(accountID)
+                            .build())
+                    .build();
+            final var myTx = tx.copyBuilder()
+                    .signedTransactionBytes(asBytes(
+                            SignedTransaction.PROTOBUF,
+                            SignedTransaction.newBuilder()
+                                    .bodyBytes(asBytes(TransactionBody.PROTOBUF, myTxBody))
+                                    .build()))
+                    .build();
             final var myTransactionInfo = new TransactionInfo(
-                    myTx, myTxBody, MOCK_SIGNATURE_MAP, myTx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
+                    myTx,
+                    myTxBody,
+                    MOCK_SIGNATURE_MAP,
+                    myTx.signedTransactionBytes(),
+                    HederaFunctionality.UNCHECKED_SUBMIT);
             when(transactionChecker.check(myTx)).thenReturn(myTransactionInfo);
             when(solvencyPreCheck.getPayerAccount(any(), eq(accountID))).thenReturn(account);
             final var verificationResultFutureAlice = mock(SignatureVerificationFuture.class);
@@ -590,16 +639,32 @@ class IngestCheckerTest extends AppTestBase {
             // given
             final var accountID = AccountID.newBuilder().accountNum(42).build();
             final var key = Key.newBuilder()
-                    .thresholdKey(
-                            ThresholdKey.newBuilder()
-                                    .keys(KeyList.newBuilder().keys(ALICE.account().key(), BOB.account().key()))
-                                    .threshold(1))
+                    .thresholdKey(ThresholdKey.newBuilder()
+                            .keys(KeyList.newBuilder()
+                                    .keys(ALICE.account().key(), BOB.account().key()))
+                            .threshold(1))
                     .build();
-            final var account = Account.newBuilder().accountId(accountID).key(key).build();
-            final var myTxBody = txBody.copyBuilder().transactionID(txBody.transactionID().copyBuilder().accountID(accountID).build()).build();
-            final var myTx = tx.copyBuilder().signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, SignedTransaction.newBuilder().bodyBytes(asBytes(TransactionBody.PROTOBUF, myTxBody)).build())).build();
+            final var account =
+                    Account.newBuilder().accountId(accountID).key(key).build();
+            final var myTxBody = txBody.copyBuilder()
+                    .transactionID(txBody.transactionID()
+                            .copyBuilder()
+                            .accountID(accountID)
+                            .build())
+                    .build();
+            final var myTx = tx.copyBuilder()
+                    .signedTransactionBytes(asBytes(
+                            SignedTransaction.PROTOBUF,
+                            SignedTransaction.newBuilder()
+                                    .bodyBytes(asBytes(TransactionBody.PROTOBUF, myTxBody))
+                                    .build()))
+                    .build();
             final var myTransactionInfo = new TransactionInfo(
-                    myTx, myTxBody, MOCK_SIGNATURE_MAP, myTx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
+                    myTx,
+                    myTxBody,
+                    MOCK_SIGNATURE_MAP,
+                    myTx.signedTransactionBytes(),
+                    HederaFunctionality.UNCHECKED_SUBMIT);
             when(transactionChecker.check(myTx)).thenReturn(myTransactionInfo);
             when(solvencyPreCheck.getPayerAccount(any(), eq(accountID))).thenReturn(account);
             final var verificationResultFutureAlice = mock(SignatureVerificationFuture.class);
