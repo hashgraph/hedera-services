@@ -23,15 +23,17 @@ module com.hedera.node.test.clients {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.github.docker.java.api;
+    requires com.swirlds.base;
+    requires com.swirlds.config.api;
     requires com.swirlds.platform.core;
     requires grpc.netty;
     requires io.netty.handler;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j.core;
     requires org.bouncycastle.provider;
-    requires org.hyperledger.besu.internal.crypto;
     requires org.hyperledger.besu.datatypes;
     requires org.hyperledger.besu.evm;
+    requires org.hyperledger.besu.internal.crypto;
     requires org.json;
     requires org.opentest4j;
     requires tuweni.units;
