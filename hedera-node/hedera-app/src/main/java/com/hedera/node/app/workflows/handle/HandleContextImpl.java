@@ -607,9 +607,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             AccountID payer,
             Key payerKey) {
 
-        TransactionKeys transactionKeys;
+        PreHandleContextImpl preHandleContext;
         try {
-            transactionKeys = allKeysForTransaction(txBody, payer);
+            preHandleContext = new PreHandleContextImpl(
+                    readableStoreFactory(), txBody, payer, configuration(), dispatcher);
+            dispatcher.dispatchPreHandle(preHandleContext);
         } catch (PreCheckException e) {
             return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode());
         }
@@ -638,14 +640,14 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         // verify all the keys
-        for (final var key : transactionKeys.requiredNonPayerKeys()) {
+        for (final var key : preHandleContext.requiredNonPayerKeys()) {
             final var verification = verifier.verificationFor(key);
             if (verification.failed()) {
                 return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
             }
         }
         // If there are any hollow accounts whose signatures need to be verified, verify them
-        for (final var hollowAccount : transactionKeys.requiredHollowAccounts()) {
+        for (final var hollowAccount : preHandleContext.requiredHollowAccounts()) {
             final var verification = verifier.verificationFor(hollowAccount.alias());
             if (verification.failed()) {
                 return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE);
