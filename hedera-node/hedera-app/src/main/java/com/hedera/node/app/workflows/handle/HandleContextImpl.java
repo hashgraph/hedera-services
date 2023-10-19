@@ -609,8 +609,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         PreHandleContextImpl preHandleContext;
         try {
-            preHandleContext = new PreHandleContextImpl(
-                    readableStoreFactory(), txBody, payer, configuration(), dispatcher);
+            preHandleContext =
+                    new PreHandleContextImpl(readableStoreFactory(), txBody, payer, configuration(), dispatcher);
             dispatcher.dispatchPreHandle(preHandleContext);
         } catch (PreCheckException e) {
             return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode());
