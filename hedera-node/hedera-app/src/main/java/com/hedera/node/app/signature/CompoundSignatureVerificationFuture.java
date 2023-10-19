@@ -205,7 +205,7 @@ final class CompoundSignatureVerificationFuture implements SignatureVerification
             // remaining on the next iteration.
             final var now = System.currentTimeMillis();
             final var verification = future.get(deadline - now, TimeUnit.MILLISECONDS);
-            if (!verification.passed() && (failCount++ >= numCanFail)) {
+            if (verification.failed() && (failCount++ >= numCanFail)) {
                 return new SignatureVerificationImpl(key, evmAlias, false);
             }
         }
