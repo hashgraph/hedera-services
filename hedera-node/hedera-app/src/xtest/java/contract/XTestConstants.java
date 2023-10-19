@@ -104,6 +104,11 @@ class XTestConstants {
             .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
             .build();
 
+    static final TokenID INVALID_TOKEN_ID =
+            TokenID.newBuilder().tokenNum(Long.MAX_VALUE).build();
+    static final com.esaulpaugh.headlong.abi.Address INVALID_TOKEN_ADDRESS = AbstractContractXTest.asHeadlongAddress(
+            asLongZeroAddress(INVALID_TOKEN_ID.tokenNum()).toArray());
+
     public static void addErc721Relation(
             final Map<EntityIDPair, TokenRelation> tokenRelationships, final AccountID accountID, final long balance) {
         tokenRelationships.put(
