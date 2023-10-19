@@ -42,7 +42,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @SuppressWarnings("unused")
-class DataFileCollectionMergeTest {
+class DataFileCollectionCompactionTest {
 
     // Would be nice to add a test to make sure files get deleted
 

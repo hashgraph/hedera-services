@@ -400,7 +400,10 @@ public class DataFileCompactor {
     public boolean compact() throws IOException, InterruptedException {
 
         final List<? extends DataFileReader<?>> allCompactableFiles = dataFileCollection.getAllCompletedFiles();
-        final List<DataFileReader<?>> filesToCompact = compactionPlan((List<DataFileReader<?>>) allCompactableFiles);
+        final List<DataFileReader<?>> filesToCompact = compactionPlan(
+                (List<DataFileReader<?>>) allCompactableFiles,
+                getMinNumberOfFilesToCompact(),
+                config.maxCompactionLevel());
         if (filesToCompact.isEmpty()) {
             logger.debug(MERKLE_DB.getMarker(), "[{}] No need to compact, as the compaction plan is empty", storeName);
             return false;
@@ -479,12 +482,12 @@ public class DataFileCompactor {
      * then this level and the levels above it are not included in the plan.
      * @return filter creating a compaction plan
      */
-    List<DataFileReader<?>> compactionPlan(List<DataFileReader<?>> dataFileReaders) {
+    static List<DataFileReader<?>> compactionPlan(
+            List<DataFileReader<?>> dataFileReaders, int minNumberOfFilesToCompact, int maxCompactionLevel) {
         if (dataFileReaders.isEmpty()) {
             return dataFileReaders;
         }
         final Map<Integer, List<DataFileReader<?>>> readersByLevel = new HashMap<>();
-        int maxCompactionLevel = config.maxCompactionLevel();
         for (int i = 0; i <= maxCompactionLevel; i++) {
             readersByLevel.put(i, new ArrayList<>());
         }
@@ -494,22 +497,18 @@ public class DataFileCompactor {
         }
 
         List<DataFileReader<?>> nonCompactedReaders = readersByLevel.get(INITIAL_COMPACTION_LEVEL);
-        if (nonCompactedReaders.size() < getMinNumberOfFilesToCompact()) {
+        if (nonCompactedReaders.size() < minNumberOfFilesToCompact) {
             return Collections.emptyList();
         }
 
-        // we always compact files from level 0
+        // we always compact files from level 0 if we have enough files
         final List<DataFileReader<?>> readersToCompact = new ArrayList<>(nonCompactedReaders);
 
-        for (int i = 0; i <= maxCompactionLevel; i++) {
+        for (int i = 1; i <= maxCompactionLevel; i++) {
             final List<DataFileReader<?>> readers = readersByLevel.get(i);
-            // initial level is the special case, it doesn't have previous levels
-            final int minRequiredAtLevel = (i == INITIAL_COMPACTION_LEVEL)
-                    ? getMinNumberOfFilesToCompact()
-                    : getMinNumberOfFilesToCompact() - 1;
             // Presumably, one file comes from the compaction of the previous level.
             // If, counting this file in, it still doesn't have enough, then it stops collecting.
-            if (readers.size() < minRequiredAtLevel) {
+            if (readers.size() < minNumberOfFilesToCompact - 1) {
                 break;
             }
             readersToCompact.addAll(readers);

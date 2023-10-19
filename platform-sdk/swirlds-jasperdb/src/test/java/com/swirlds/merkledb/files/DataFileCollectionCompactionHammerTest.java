@@ -46,9 +46,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Hammer the merging subsystem with as many small merges as possible to try to overwhelm it.
+ * Hammer the compaction subsystem with as many small compactions as possible to try to overwhelm it.
  */
-class DataFileCollectionMergeHammerTest {
+class DataFileCollectionCompactionHammerTest {
 
     @BeforeAll
     public static void setup() {
@@ -65,7 +65,7 @@ class DataFileCollectionMergeHammerTest {
     @MethodSource("provideForBenchmark")
     @Tags({@Tag("Speed")})
     void benchmark(int numFiles, int maxEntriesPerFile) throws IOException {
-        final Path tempFileDir = TemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionMergeHammerTest");
+        final Path tempFileDir = TemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
         assertDoesNotThrow(() -> {
             final LongListHeap index = new LongListHeap();
             final var serializer = new ExampleFixedSizeDataSerializer();
@@ -123,7 +123,7 @@ class DataFileCollectionMergeHammerTest {
     @Test
     @Tags({@Tag(TestTypeTags.HAMMER)})
     void hammer() throws IOException, InterruptedException, ExecutionException {
-        final Path tempFileDir = TemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionMergeHammerTest");
+        final Path tempFileDir = TemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
         final LongListHeap index = new LongListHeap();
         final var serializer = new ExampleFixedSizeDataSerializer();
         String storeName = "hammer";
