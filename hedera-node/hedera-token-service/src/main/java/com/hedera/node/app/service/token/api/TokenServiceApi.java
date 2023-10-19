@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.api;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -176,4 +177,7 @@ public interface TokenServiceApi {
      * @return the number of storage slots used by the given account before any changes were made
      */
     long originalKvUsageFor(@NonNull AccountID id);
+
+    // TODO: docs
+    void updateContract(Account contract);
 }
