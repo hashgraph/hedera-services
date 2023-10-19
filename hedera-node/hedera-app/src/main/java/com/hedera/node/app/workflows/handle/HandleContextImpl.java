@@ -466,13 +466,14 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
             @NonNull final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayer) {
+            @NonNull final AccountID syntheticPayerId) {
         final var childRecordBuilder = recordListBuilder.addChild(configuration());
-        return doDispatchChildTransaction(syntheticPayer, txBody, childRecordBuilder, recordBuilderClass, callback);
+        return doDispatchChildTransaction(syntheticPayerId, txBody, childRecordBuilder, recordBuilderClass, callback);
     }
 
     @Override
-    public @NonNull Fees dispatchComputeFees(@NonNull final TransactionBody txBody, @NonNull final AccountID payerId) {
+    public @NonNull Fees dispatchComputeFees(
+            @NonNull final TransactionBody txBody, @NonNull final AccountID syntheticPayerId) {
         var bodyToDispatch = txBody;
         if (!txBody.hasTransactionID()) {
             // Legacy mono fee calculators frequently estimate an entity's lifetime using the epoch second of the
@@ -480,10 +481,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             bodyToDispatch = txBody.copyBuilder()
                     .transactionID(TransactionID.newBuilder()
                             .transactionValidStart(Timestamp.newBuilder()
-                                    .seconds(consensusNow().getEpochSecond())))
+                                    .seconds(consensusNow().getEpochSecond())
+                                    .nanos(consensusNow().getNano())))
                     .build();
         }
-        return dispatcher.dispatchComputeFees(new ChildFeeContextImpl(feeManager, this, bodyToDispatch, payerId));
+        return dispatcher.dispatchComputeFees(
+                new ChildFeeContextImpl(feeManager, this, bodyToDispatch, syntheticPayerId));
     }
 
     @NonNull
@@ -492,9 +495,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
             @NonNull final Predicate<Key> callback,
-            @NonNull final AccountID payer) {
+            @NonNull final AccountID syntheticPayerId) {
         final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
-        return doDispatchChildTransaction(payer, txBody, childRecordBuilder, recordBuilderClass, callback);
+        return doDispatchChildTransaction(syntheticPayerId, txBody, childRecordBuilder, recordBuilderClass, callback);
     }
 
     @NonNull

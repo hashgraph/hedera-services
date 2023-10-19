@@ -87,7 +87,9 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -100,6 +102,14 @@ public class ClassicViewsXTest extends AbstractContractXTest {
     protected void doScenarioOperations() {
         handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
         doClassicQueries();
+    }
+
+    @Override
+    protected Configuration configuration() {
+        return HederaTestConfigBuilder.create()
+                .withValue("contracts.chainId", "298")
+                .withValue("ledger.id", "03")
+                .getOrCreateConfig();
     }
 
     private void doClassicQueries() {
