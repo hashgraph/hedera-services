@@ -25,6 +25,7 @@ import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.VirtualKey;
@@ -178,11 +179,14 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     /** Get the size of this bucket in bytes, including header */
     public int sizeInBytes() {
         int size = 0;
-        if (bucketIndex.get() > 0) {
-            size += ProtoUtils.sizeOfTag(FIELD_BUCKET_INDEX, ProtoUtils.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
-        }
+//        if (bucketIndex.get() > 0) {
+//            size += ProtoUtils.sizeOfTag(FIELD_BUCKET_INDEX, ProtoUtils.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
+//        }
+        size += Integer.BYTES; // bucket index
+        size += Integer.BYTES; // entries count
         for (final BucketEntry entry : entries) {
-            size += ProtoUtils.sizeOfDelimited(FIELD_BUCKET_ENTRIES, entry.sizeInBytes());
+//            size += ProtoUtils.sizeOfDelimited(FIELD_BUCKET_ENTRIES, entry.sizeInBytes());
+            size += entry.sizeInBytes();
         }
         return size;
     }
@@ -243,25 +247,28 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
 
     public void readFrom(final ReadableSequentialData in) {
         // defaults
-        bucketIndex.set(0);
-        entries.clear();
+//        bucketIndex.set(0);
 
-        int entriesCount = 0;
-        while (in.hasRemaining()) {
-            final int tag = in.readVarInt(false);
-            final int fieldNum = tag >> TAG_FIELD_OFFSET;
-            if (fieldNum == FIELD_BUCKET_INDEX.number()) {
-                bucketIndex.set(in.readInt());
-            } else if (fieldNum == FIELD_BUCKET_ENTRIES.number()) {
-                final int entryBytesSize = in.readVarInt(false);
-                final long oldLimit = in.limit();
-                in.limit(in.position() + entryBytesSize);
-                entries.add(new BucketEntry(in));
-                in.limit(oldLimit);
-                entriesCount++;
-            } else {
-                throw new IllegalArgumentException("Unknown bucket field: " + fieldNum);
-            }
+        bucketIndex.set(in.readInt());
+        entries.clear();
+        final int entriesCount = in.readInt();
+//        while (in.hasRemaining()) {
+        for (int i = 0; i < entriesCount; i++) {
+//            final int tag = in.readVarInt(false);
+//            final int fieldNum = tag >> TAG_FIELD_OFFSET;
+//            if (fieldNum == FIELD_BUCKET_INDEX.number()) {
+//                bucketIndex.set(in.readInt());
+//            } else if (fieldNum == FIELD_BUCKET_ENTRIES.number()) {
+//                final int entryBytesSize = in.readVarInt(false);
+//                final long oldLimit = in.limit();
+//                in.limit(in.position() + entryBytesSize);
+//                entries.add(new BucketEntry(in));
+//                in.limit(oldLimit);
+//                entriesCount++;
+//            } else {
+//                throw new IllegalArgumentException("Unknown bucket field: " + fieldNum);
+//            }
+            entries.add(new BucketEntry(in));
         }
 
         checkLargestBucket(entriesCount);
@@ -270,6 +277,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     void readFrom(final ByteBuffer buffer) throws IOException {
         bucketIndex.set(buffer.getInt());
         buffer.getInt(); // skip the size
+        entries.clear();
         final int entriesCount = buffer.getInt();
         for (int i = 0; i < entriesCount; i++) {
             entries.add(new BucketEntry(buffer));
@@ -277,13 +285,17 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     }
 
     public void writeTo(final WritableSequentialData out) {
-        if (bucketIndex.get() > 0) {
-            ProtoUtils.writeTag(out, FIELD_BUCKET_INDEX);
-            out.writeInt(bucketIndex.get());
-        }
-        for (final BucketEntry entry : entries) {
-            ProtoUtils.writeTag(out, FIELD_BUCKET_ENTRIES);
-            out.writeVarInt(entry.sizeInBytes(), false);
+//        if (bucketIndex.get() > 0) {
+//            ProtoUtils.writeTag(out, FIELD_BUCKET_INDEX);
+//            out.writeInt(bucketIndex.get());
+//        }
+        out.writeInt(bucketIndex.get());
+        out.writeInt(entries.size());
+        for (int i = 0; i < entries.size(); i++) {
+            final BucketEntry entry = entries.get(i);
+//            ProtoUtils.writeTag(out, FIELD_BUCKET_ENTRIES);
+//            out.writeVarInt(entry.sizeInBytes(), false);
+//            entry.writeTo(out);
             entry.writeTo(out);
         }
     }
@@ -370,23 +382,30 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             key = null;
 
             // read fields
-            while (entryData.hasRemaining()) {
-                final int tag = entryData.readVarInt(false);
-                final int fieldNum = tag >> TAG_FIELD_OFFSET;
-                if (fieldNum == FIELD_BUCKETENTRY_HASHCODE.number()) {
-                    hashCode = entryData.readInt();
-                } else if (fieldNum == FIELD_BUCKETENTRY_VALUE.number()) {
-                    value = entryData.readLong();
-                } else if (fieldNum == FIELD_BUCKETENTRY_KEYBYTES.number()) {
-                    final int bytesSize = entryData.readVarInt(false);
-                    long oldLimit = entryData.limit();
-                    entryData.limit(entryData.position() + bytesSize);
-                    key = keySerializer.deserialize(entryData);
-                    entryData.limit(oldLimit);
-                } else {
-                    throw new IllegalArgumentException("Unknown bucket entry field: " + fieldNum);
-                }
-            }
+//            while (entryData.hasRemaining()) {
+//                final int tag = entryData.readVarInt(false);
+//                final int fieldNum = tag >> TAG_FIELD_OFFSET;
+//                if (fieldNum == FIELD_BUCKETENTRY_HASHCODE.number()) {
+//                    hashCode = entryData.readInt();
+//                } else if (fieldNum == FIELD_BUCKETENTRY_VALUE.number()) {
+//                    value = entryData.readLong();
+//                } else if (fieldNum == FIELD_BUCKETENTRY_KEYBYTES.number()) {
+//                    final int bytesSize = entryData.readVarInt(false);
+//                    long oldLimit = entryData.limit();
+//                    entryData.limit(entryData.position() + bytesSize);
+//                    key = keySerializer.deserialize(entryData);
+//                    entryData.limit(oldLimit);
+//                } else {
+//                    throw new IllegalArgumentException("Unknown bucket entry field: " + fieldNum);
+//                }
+//            }
+            hashCode = entryData.readInt();
+            value = entryData.readLong();
+            final int keySize = entryData.readInt();
+            final long oldLimit = entryData.limit();
+            entryData.limit(entryData.position() + keySize);
+            key = keySerializer.deserialize(entryData);
+            entryData.limit(oldLimit);
 
             // check required fields
             if (key == null) {
@@ -423,22 +442,30 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
 
         public int sizeInBytes() {
             int size = 0;
-            size += ProtoUtils.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoUtils.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
-            if (value != 0) {
-                size += ProtoUtils.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoUtils.WIRE_TYPE_FIXED_64_BIT) + Long.BYTES;
-            }
-            size += ProtoUtils.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySerializer.getSerializedSize(key));
+//            size += ProtoUtils.sizeOfTag(FIELD_BUCKETENTRY_HASHCODE, ProtoUtils.WIRE_TYPE_FIXED_32_BIT) + Integer.BYTES;
+            size += Integer.BYTES;
+//            if (value != 0) {
+//                size += ProtoUtils.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoUtils.WIRE_TYPE_FIXED_64_BIT) + Long.BYTES;
+//            }
+            size += Long.BYTES;
+//            size += ProtoUtils.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, keySerializer.getSerializedSize(key));
+            size += Integer.BYTES;
+            size += keySerializer.getSerializedSize(key);
             return size;
         }
 
         public void writeTo(final WritableSequentialData out) {
-            ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_HASHCODE);
+//            ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_HASHCODE);
+//            out.writeInt(hashCode);
+//            if (value != 0) {
+//                ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_VALUE);
+//                out.writeLong(value);
+//            }
+//            ProtoUtils.writeBytes(out, FIELD_BUCKETENTRY_KEYBYTES, sizeInBytes(), o -> keySerializer.serialize(key, o));
             out.writeInt(hashCode);
-            if (value != 0) {
-                ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_VALUE);
-                out.writeLong(value);
-            }
-            ProtoUtils.writeBytes(out, FIELD_BUCKETENTRY_KEYBYTES, sizeInBytes(), o -> keySerializer.serialize(key, o));
+            out.writeLong(value);
+            out.writeInt(keySerializer.getSerializedSize(key));
+            keySerializer.serialize(key, out);
         }
     }
 }
