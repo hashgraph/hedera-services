@@ -89,7 +89,7 @@ public class AsyncEventValidator implements Startable, Stoppable {
      * @param currentSoftwareVersion the current software version
      * @param previousAddressBook    the previous address book
      * @param currentAddressBook     the current address book
-     * @param eventConsumer          deduplicated events are passed to this method
+     * @param eventConsumer          validated events are passed to this method
      * @param intakeEventCounter     keeps track of the number of events in the intake pipeline from each peer
      */
     public AsyncEventValidator(
