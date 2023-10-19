@@ -286,14 +286,18 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         return Address.wrap(Address.toChecksumAddress(new BigInteger(1, address.toByteArray())));
     }
 
-    protected Consumer<Response> assertingCallLocalResultIs(@NonNull final Bytes expectedResult) {
+    protected Consumer<Response> assertingCallLocalResultIsBuffer(
+            @NonNull final Bytes expectedResult, @NonNull final String orElseMessage) {
         return response -> assertEquals(
                 expectedResult,
-                response.contractCallLocalOrThrow().functionResultOrThrow().contractCallResult());
+                response.contractCallLocalOrThrow().functionResultOrThrow().contractCallResult(),
+                orElseMessage);
     }
 
-    protected Consumer<Response> assertingCallLocalResultIs(@NonNull final ByteBuffer expectedResult) {
+    protected Consumer<Response> assertingCallLocalResultIsBuffer(
+            @NonNull final ByteBuffer expectedResult, @NonNull final String orElseMessage) {
         return response -> assertThat(expectedResult.array())
+                .withFailMessage(orElseMessage)
                 .isEqualTo(response.contractCallLocalOrThrow()
                         .functionResultOrThrow()
                         .contractCallResult()

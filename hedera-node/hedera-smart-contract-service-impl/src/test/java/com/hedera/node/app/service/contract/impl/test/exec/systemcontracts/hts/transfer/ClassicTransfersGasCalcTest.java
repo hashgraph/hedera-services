@@ -73,7 +73,7 @@ class ClassicTransfersGasCalcTest extends HtsCallTestBase {
         given(systemContractGasCalculator.gasRequirement(body, AccountID.DEFAULT, expectedTotalTinybarPrice))
                 .willReturn(expectedGasRequirement);
 
-        final var actualGasRequirement = ClassicTransfersCall.classicTransferGasRequirement(
+        final var actualGasRequirement = ClassicTransfersCall.transferGasRequirement(
                 body, systemContractGasCalculator, mockEnhancement(), AccountID.DEFAULT);
         assertEquals(expectedGasRequirement, actualGasRequirement);
     }
@@ -94,7 +94,7 @@ class ClassicTransfersGasCalcTest extends HtsCallTestBase {
         given(systemContractGasCalculator.gasRequirement(body, AccountID.DEFAULT, expectedTotalTinybarPrice))
                 .willReturn(expectedGasRequirement);
 
-        final var actualGasRequirement = ClassicTransfersCall.classicTransferGasRequirement(
+        final var actualGasRequirement = ClassicTransfersCall.transferGasRequirement(
                 body, systemContractGasCalculator, mockEnhancement(), AccountID.DEFAULT);
         assertEquals(expectedGasRequirement, actualGasRequirement);
     }

@@ -98,8 +98,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
      */
     @Override
     public @NonNull PricedResult execute() {
-        final var gasRequirement =
-                classicTransferGasRequirement(syntheticTransfer, gasCalculator, enhancement, spenderId);
+        final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, spenderId);
         // https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol
         if (systemAccountCreditScreen.creditsToSystemAccount(syntheticTransfer.cryptoTransferOrThrow())) {
             // TODO - externalize the invalid synthetic transfer without dispatching it
@@ -134,7 +133,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
      * @param payerId the payer of the transaction
      * @return the gas requirement for the transaction to be dispatched
      */
-    public static long classicTransferGasRequirement(
+    public static long transferGasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,

@@ -315,6 +315,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsErc721TransferFromRedirectToNonfungible() {
         given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
                 .willReturn(NON_FUNGIBLE_TOKEN);
+        given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         final var input = TestHelpers.bytesForRedirect(
                 Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM
                         .encodeCallWithArgs(
@@ -343,6 +344,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsErc20TransferFromRedirectToFungible() {
         given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
                 .willReturn(FUNGIBLE_TOKEN);
+        given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         final var input = TestHelpers.bytesForRedirect(
                 Erc20TransfersTranslator.ERC_20_TRANSFER_FROM
                         .encodeCallWithArgs(
@@ -371,6 +373,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsErc20TransferRedirectToFungible() {
         given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
                 .willReturn(FUNGIBLE_TOKEN);
+        given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         final var input = TestHelpers.bytesForRedirect(
                 Erc20TransfersTranslator.ERC_20_TRANSFER
                         .encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS), BigInteger.TWO)
