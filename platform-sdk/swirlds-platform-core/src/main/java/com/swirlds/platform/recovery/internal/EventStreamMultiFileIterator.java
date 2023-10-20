@@ -114,7 +114,7 @@ public class EventStreamMultiFileIterator implements IOIterator<DetailedConsensu
 
             final Path nextFile = fileIterator.next();
             fileCount++;
-            final boolean toleratePartialFile = !fileIterator.hasNext();
+            final boolean toleratePartialFile = true;
             if (eventIterator != null) {
                 // if we are done with the previous file, close it
                 byteCount += eventIterator.getBytesRead();

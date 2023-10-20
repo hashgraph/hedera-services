@@ -269,14 +269,14 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
         final BaseEventHashedData that = (BaseEventHashedData) o;
 
-        return (Objects.equals(creatorId, that.creatorId))
+        return Objects.equals(creatorId, that.creatorId)
                 && (selfParentGen == that.selfParentGen)
                 && (otherParentGen == that.otherParentGen)
                 && Objects.equals(selfParentHash, that.selfParentHash)
                 && Objects.equals(otherParentHash, that.otherParentHash)
                 && Objects.equals(timeCreated, that.timeCreated)
                 && Arrays.equals(transactions, that.transactions)
-                && Objects.equals(softwareVersion, that.softwareVersion);
+                && softwareVersion.compareTo(that.softwareVersion) == 0;
     }
 
     @Override
