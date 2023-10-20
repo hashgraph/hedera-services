@@ -150,4 +150,13 @@ class DataFileCompactorTest {
         assertEquals(initialLevel2, result.get(1));
         assertEquals(initialLevel3, result.get(2));
     }
+
+    @Test
+    void testCompactionPlanMultiLevel_noInitialLevelFiles() {
+        List<? extends DataFileReader<?>> result = compactionPlan(
+                Arrays.asList(firstLevel1, secondLevel1, secondLevel2),
+                3,
+                5);
+        assertEquals(0, result.size());
+    }
 }

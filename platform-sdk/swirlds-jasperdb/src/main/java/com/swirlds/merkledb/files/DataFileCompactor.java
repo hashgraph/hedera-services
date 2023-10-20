@@ -491,7 +491,7 @@ public class DataFileCompactor {
                 .collect(Collectors.groupingBy(r -> r.getMetadata().getCompactionLevel()));
 
         List<DataFileReader<?>> nonCompactedReaders = readersByLevel.get(INITIAL_COMPACTION_LEVEL);
-        if (nonCompactedReaders.size() < minNumberOfFilesToCompact) {
+        if (nonCompactedReaders == null || nonCompactedReaders.size() < minNumberOfFilesToCompact) {
             return Collections.emptyList();
         }
 
