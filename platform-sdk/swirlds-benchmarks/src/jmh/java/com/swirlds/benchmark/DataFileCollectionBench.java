@@ -44,8 +44,8 @@ public class DataFileCollectionBench extends BaseBench {
     }
 
     @Benchmark
-    public void merge() throws Exception {
-        String storeName = "mergeBench";
+    public void compaction() throws Exception {
+        String storeName = "compactionBench";
         beforeTest(storeName);
 
         final LongListOffHeap index = new LongListOffHeap();

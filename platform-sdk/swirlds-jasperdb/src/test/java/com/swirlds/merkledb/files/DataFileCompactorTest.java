@@ -153,10 +153,8 @@ class DataFileCompactorTest {
 
     @Test
     void testCompactionPlanMultiLevel_noInitialLevelFiles() {
-        List<? extends DataFileReader<?>> result = compactionPlan(
-                Arrays.asList(firstLevel1, secondLevel1, secondLevel2),
-                3,
-                5);
+        List<? extends DataFileReader<?>> result =
+                compactionPlan(Arrays.asList(firstLevel1, secondLevel1, secondLevel2), 3, 5);
         assertEquals(0, result.size());
     }
 }
