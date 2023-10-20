@@ -24,27 +24,33 @@ import static contract.ClassicViewsXTestConstants.CLASSIC_QUERIES_X_TEST_ID;
 import static contract.ClassicViewsXTestConstants.CLASSIC_VIEWS_INITCODE_FILE_ID;
 import static contract.ClassicViewsXTestConstants.CUSTOM_FEES;
 import static contract.ClassicViewsXTestConstants.EXPECTED_CUSTOM_FEES;
+import static contract.ClassicViewsXTestConstants.EXPECTED_FUNGIBLE_TOKEN_INFO;
+import static contract.ClassicViewsXTestConstants.EXPECTED_NON_FUNGIBLE_TOKEN_INFO;
 import static contract.ClassicViewsXTestConstants.EXPECTED_TOKEN_EXPIRY;
+import static contract.ClassicViewsXTestConstants.EXPECTED_TOKEN_INFO;
 import static contract.ClassicViewsXTestConstants.EXPIRATION_SECONDS;
 import static contract.ClassicViewsXTestConstants.FEE_SCHEDULE_KEY;
 import static contract.ClassicViewsXTestConstants.FREEZE_KEY;
 import static contract.ClassicViewsXTestConstants.GET_DEFAULT_FREEZE_STATUS;
 import static contract.ClassicViewsXTestConstants.GET_DEFAULT_KYC_STATUS;
+import static contract.ClassicViewsXTestConstants.GET_FUNGIBLE_TOKEN_INFO;
 import static contract.ClassicViewsXTestConstants.GET_IS_FROZEN;
 import static contract.ClassicViewsXTestConstants.GET_IS_KYC;
 import static contract.ClassicViewsXTestConstants.GET_IS_TOKEN;
+import static contract.ClassicViewsXTestConstants.GET_NON_FUNGIBLE_TOKEN_INFO;
 import static contract.ClassicViewsXTestConstants.GET_TOKEN_CUSTOM_FEES;
 import static contract.ClassicViewsXTestConstants.GET_TOKEN_EXPIRY;
+import static contract.ClassicViewsXTestConstants.GET_TOKEN_INFO;
 import static contract.ClassicViewsXTestConstants.GET_TOKEN_KEY;
 import static contract.ClassicViewsXTestConstants.GET_TOKEN_TYPE;
 import static contract.ClassicViewsXTestConstants.KYC_KEY;
 import static contract.ClassicViewsXTestConstants.PAUSE_KEY;
 import static contract.ClassicViewsXTestConstants.SUPPLY_KEY;
-import static contract.ClassicViewsXTestConstants.TOKEN_DEFAULT_FREEZE_STATUS;
-import static contract.ClassicViewsXTestConstants.TOKEN_DEFAULT_KYC_STATUS;
+import static contract.ClassicViewsXTestConstants.TOKEN_FROZEN_STATUS;
 import static contract.ClassicViewsXTestConstants.TOKEN_IS_FROZEN;
 import static contract.ClassicViewsXTestConstants.TOKEN_IS_KYC;
 import static contract.ClassicViewsXTestConstants.TOKEN_IS_TOKEN;
+import static contract.ClassicViewsXTestConstants.TOKEN_KYC_GRANTED_STATUS;
 import static contract.ClassicViewsXTestConstants.TOKEN_TYPE_FUNGIBLE;
 import static contract.ClassicViewsXTestConstants.WIPE_KEY;
 import static contract.ClassicViewsXTestConstants.returnExpectedKey;
@@ -57,6 +63,7 @@ import static contract.MiscViewsXTestConstants.OPERATOR_ID;
 import static contract.MiscViewsXTestConstants.RAW_ERC_USER_ADDRESS;
 import static contract.MiscViewsXTestConstants.SECRET;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
+import static contract.XTestConstants.ERC721_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC721_TOKEN_ID;
 
 import com.esaulpaugh.headlong.abi.Function;
@@ -65,6 +72,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
@@ -79,7 +87,9 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -94,84 +104,108 @@ public class ClassicViewsXTest extends AbstractContractXTest {
         doClassicQueries();
     }
 
+    @Override
+    protected Configuration configuration() {
+        return HederaTestConfigBuilder.create()
+                .withValue("contracts.chainId", "298")
+                .withValue("ledger.id", "03")
+                .getOrCreateConfig();
+    }
+
     private void doClassicQueries() {
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_IS_FROZEN, ERC20_TOKEN_ADDRESS, ERC_USER_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(TOKEN_IS_FROZEN));
+                assertingCallLocalResultIsBuffer(TOKEN_IS_FROZEN, "GET_IS_FROZEN"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_IS_KYC, ERC20_TOKEN_ADDRESS, ERC_USER_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(TOKEN_IS_KYC));
+                assertingCallLocalResultIsBuffer(TOKEN_IS_KYC, "GET_IS_KYC"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_IS_TOKEN, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(TOKEN_IS_TOKEN));
+                assertingCallLocalResultIsBuffer(TOKEN_IS_TOKEN, "GET_IS_TOKEN"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_TYPE, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(TOKEN_TYPE_FUNGIBLE));
+                assertingCallLocalResultIsBuffer(TOKEN_TYPE_FUNGIBLE, "GET_TOKEN_TYPE"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_DEFAULT_FREEZE_STATUS, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(TOKEN_DEFAULT_FREEZE_STATUS));
+                assertingCallLocalResultIsBuffer(TOKEN_FROZEN_STATUS, "GET_DEFAULT_FREEZE_STATUS"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_DEFAULT_KYC_STATUS, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(TOKEN_DEFAULT_KYC_STATUS));
+                assertingCallLocalResultIsBuffer(TOKEN_KYC_GRANTED_STATUS, "GET_DEFAULT_KYC_STATUS"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_EXPIRY, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(EXPECTED_TOKEN_EXPIRY));
+                assertingCallLocalResultIsBuffer(EXPECTED_TOKEN_EXPIRY, "GET_TOKEN_EXPIRY"));
         // Token Keys
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(1L)),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(returnExpectedKey(ADMIN_KEY)));
+                assertingCallLocalResultIsBuffer(returnExpectedKey(ADMIN_KEY), "GET_TOKEN_KEY (ADMIN_KEY)"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(2L)),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(returnExpectedKey(KYC_KEY)));
+                assertingCallLocalResultIsBuffer(returnExpectedKey(KYC_KEY), "GET_TOKEN_KEY (KYC_KEY)"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(4L)),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(returnExpectedKey(FREEZE_KEY)));
+                assertingCallLocalResultIsBuffer(returnExpectedKey(FREEZE_KEY), "GET_TOKEN_KEY (FREEZE_KEY)"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(8L)),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(returnExpectedKey(WIPE_KEY)));
+                assertingCallLocalResultIsBuffer(returnExpectedKey(WIPE_KEY), "GET_TOKEN_KEY (WIPE_KEY)"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(16L)),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(returnExpectedKey(SUPPLY_KEY)));
+                assertingCallLocalResultIsBuffer(returnExpectedKey(SUPPLY_KEY), "GET_TOKEN_KEY (SUPPLY_KEY)"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(32L)),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(returnExpectedKey(FEE_SCHEDULE_KEY)));
+                assertingCallLocalResultIsBuffer(
+                        returnExpectedKey(FEE_SCHEDULE_KEY), "GET_TOKEN_KEY (FEE_SCHEDULE_KEY)"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(64L)),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(returnExpectedKey(PAUSE_KEY)));
+                assertingCallLocalResultIsBuffer(returnExpectedKey(PAUSE_KEY), "GET_TOKEN_KEY (PAUSE_KEY)"));
 
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_CUSTOM_FEES, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(EXPECTED_CUSTOM_FEES));
+                assertingCallLocalResultIsBuffer(EXPECTED_CUSTOM_FEES, "GET_TOKEN_CUSTOM_FEES"));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_TOKEN_INFO, ERC20_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIsBuffer(EXPECTED_TOKEN_INFO, "GET_TOKEN_INFO"));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_FUNGIBLE_TOKEN_INFO, ERC20_TOKEN_ADDRESS),
+                ERC_USER_ID,
+                assertingCallLocalResultIsBuffer(EXPECTED_FUNGIBLE_TOKEN_INFO, "GET_FUNGIBLE_TOKEN_INFO"));
+        answerSingleQuery(
+                CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
+                miscViewsQuery(GET_NON_FUNGIBLE_TOKEN_INFO, ERC721_TOKEN_ADDRESS, 1L),
+                ERC_USER_ID,
+                assertingCallLocalResultIsBuffer(EXPECTED_NON_FUNGIBLE_TOKEN_INFO, "GET_NON_FUNGIBLE_TOKEN_INFO"));
     }
 
     private Query miscViewsQuery(@NonNull final Function function, @NonNull final Object... args) {
@@ -299,6 +333,7 @@ public class ClassicViewsXTest extends AbstractContractXTest {
         final var erc20Memo = "20 Coin Memo";
         final var erc20Decimals = 2;
         final var erc20TotalSupply = 888L;
+        final var erc20MaxSupply = 999L;
         final var erc721Symbol = "SYM721";
         final var erc721Name = "721 Unique Things";
         final var erc721Memo = "721 Unique Things Memo";
@@ -311,6 +346,7 @@ public class ClassicViewsXTest extends AbstractContractXTest {
                         .symbol(erc20Symbol)
                         .decimals(erc20Decimals)
                         .totalSupply(erc20TotalSupply)
+                        .maxSupply(erc20MaxSupply)
                         .tokenType(TokenType.FUNGIBLE_COMMON)
                         .expirationSecond(EXPIRATION_SECONDS)
                         .autoRenewSeconds(AUTORENEW_SECONDS)
@@ -323,6 +359,10 @@ public class ClassicViewsXTest extends AbstractContractXTest {
                         .feeScheduleKey(FEE_SCHEDULE_KEY)
                         .pauseKey(PAUSE_KEY)
                         .customFees(CUSTOM_FEES)
+                        .accountsFrozenByDefault(true)
+                        .accountsKycGrantedByDefault(true)
+                        .paused(true)
+                        .supplyType(TokenSupplyType.FINITE)
                         .build());
         tokens.put(
                 ERC721_TOKEN_ID,
@@ -332,6 +372,24 @@ public class ClassicViewsXTest extends AbstractContractXTest {
                         .name(erc721Name)
                         .symbol(erc721Symbol)
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .totalSupply(erc20TotalSupply)
+                        .maxSupply(erc20MaxSupply)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .expirationSecond(EXPIRATION_SECONDS)
+                        .autoRenewSeconds(AUTORENEW_SECONDS)
+                        .autoRenewAccountId(OPERATOR_ID)
+                        .adminKey(ADMIN_KEY)
+                        .kycKey(KYC_KEY)
+                        .freezeKey(FREEZE_KEY)
+                        .wipeKey(WIPE_KEY)
+                        .supplyKey(SUPPLY_KEY)
+                        .feeScheduleKey(FEE_SCHEDULE_KEY)
+                        .pauseKey(PAUSE_KEY)
+                        .customFees(CUSTOM_FEES)
+                        .accountsFrozenByDefault(true)
+                        .accountsKycGrantedByDefault(true)
+                        .paused(true)
+                        .supplyType(TokenSupplyType.FINITE)
                         .build());
         return tokens;
     }

@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenkey.TokenKeyCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenkey.TokenKeyTranslator;
@@ -37,6 +38,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenKeyTranslatorTest {
     @Mock
     private HtsCallAttempt attempt;
+
+    @Mock
+    private SystemContractGasCalculator gasCalculator;
 
     @Mock
     private Enhancement enhancement;
@@ -61,6 +65,7 @@ class TokenKeyTranslatorTest {
         final Bytes inputBytes = Bytes.wrapByteBuffer(TokenKeyTranslator.TOKEN_KEY.encodeCall(tuple));
         given(attempt.input()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(enhancement);
+        given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(TokenKeyCall.class);

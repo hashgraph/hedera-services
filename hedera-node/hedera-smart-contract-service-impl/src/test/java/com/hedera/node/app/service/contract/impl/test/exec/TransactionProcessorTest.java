@@ -61,6 +61,7 @@ import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
@@ -98,6 +99,9 @@ class TransactionProcessorTest {
 
     @Mock
     private CustomMessageCallProcessor messageCallProcessor;
+
+    @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
 
     @Mock
     private ContractCreationProcessor contractCreationProcessor;
@@ -190,7 +194,7 @@ class TransactionProcessorTest {
                 MAX_GAS_ALLOWANCE,
                 null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
-        final var context = wellKnownContextWith(blocks, tinybarValues);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
                 .willReturn(CHARGING_RESULT);
         given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
@@ -242,7 +246,7 @@ class TransactionProcessorTest {
         givenSenderAccount();
         givenRelayerAccount();
 
-        final var context = wellKnownContextWith(blocks, tinybarValues);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
         final var transaction = wellKnownRelayedHapiCreate();
 
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
@@ -314,7 +318,7 @@ class TransactionProcessorTest {
 
         givenSenderAccount();
 
-        final var context = wellKnownContextWith(blocks, tinybarValues);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
         final var transaction = wellKnownHapiCreate();
 
         given(gasCharging.chargeForGas(senderAccount, null, context, worldUpdater, transaction))
@@ -382,7 +386,7 @@ class TransactionProcessorTest {
         givenRelayerAccount();
         givenReceiverAccount();
 
-        final var context = wellKnownContextWith(blocks, tinybarValues);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
         final var transaction = wellKnownRelayedHapiCall(0);
 
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
@@ -452,7 +456,7 @@ class TransactionProcessorTest {
         givenReceiverAccount();
         givenFeeOnlyParties();
 
-        final var context = wellKnownContextWith(blocks, tinybarValues);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
         final var transaction = wellKnownRelayedHapiCall(0);
 
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
@@ -499,7 +503,7 @@ class TransactionProcessorTest {
         givenReceiverAccount();
         givenFeeOnlyParties();
 
-        final var context = wellKnownContextWith(blocks, tinybarValues);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
         final var transaction = wellKnownRelayedHapiCall(0);
 
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
@@ -553,7 +557,7 @@ class TransactionProcessorTest {
                         transaction,
                         worldUpdater,
                         () -> feesOnlyUpdater,
-                        wellKnownContextWith(blocks, tinybarValues),
+                        wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                         tracer,
                         config));
     }

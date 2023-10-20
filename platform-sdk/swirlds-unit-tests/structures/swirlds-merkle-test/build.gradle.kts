@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.mock-release-tasks")
-}
+plugins { id("com.hedera.hashgraph.sdk.conventions") }
 
 testModuleInfo {
     requires("com.swirlds.test.framework")

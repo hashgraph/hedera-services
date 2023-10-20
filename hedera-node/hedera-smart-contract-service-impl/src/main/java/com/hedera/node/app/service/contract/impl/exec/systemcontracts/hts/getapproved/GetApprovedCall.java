@@ -28,6 +28,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -41,12 +42,13 @@ public class GetApprovedCall extends AbstractRevertibleTokenViewCall {
     private final boolean isStaticCall;
 
     public GetApprovedCall(
-            @NonNull final HederaWorldUpdater.Enhancement enhancement,
-            @Nullable final Token token,
+            @NonNull final SystemContractGasCalculator gasCalculator,
+            @NonNull HederaWorldUpdater.Enhancement enhancement,
+            @Nullable Token token,
             final long serialNo,
             final boolean isErcCall,
             final boolean isStaticCall) {
-        super(enhancement, token);
+        super(gasCalculator, enhancement, token);
         this.serialNo = serialNo;
         this.isErcCall = isErcCall;
         this.isStaticCall = isStaticCall;
@@ -55,24 +57,25 @@ public class GetApprovedCall extends AbstractRevertibleTokenViewCall {
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
-        // TODO - gas calculation
         if (token.tokenType() != TokenType.NON_FUNGIBLE_UNIQUE) {
             if (!isStaticCall) {
-                return revertResult(INVALID_TOKEN_NFT_SERIAL_NUMBER, 0L);
+                return revertResult(INVALID_TOKEN_NFT_SERIAL_NUMBER, gasCalculator.viewGasRequirement());
             } else {
-                return revertResult(INVALID_TOKEN_ID, 0L);
+                return revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
             }
         }
         final var nft = nativeOperations().getNft(token.tokenId().tokenNum(), serialNo);
         if (nft == null || !nft.hasNftId()) {
-            return revertResult(INVALID_TOKEN_NFT_SERIAL_NUMBER, 0L);
+            return revertResult(INVALID_TOKEN_NFT_SERIAL_NUMBER, gasCalculator.viewGasRequirement());
         }
         final var spenderNum = nft.spenderId().accountNumOrThrow();
         final var spender = nativeOperations().getAccount(spenderNum);
         return isErcCall
-                ? successResult(ERC_GET_APPROVED.getOutputs().encodeElements(headlongAddressOf(spender)), 0L)
+                ? successResult(
+                        ERC_GET_APPROVED.getOutputs().encodeElements(headlongAddressOf(spender)),
+                        gasCalculator.viewGasRequirement())
                 : successResult(
                         HAPI_GET_APPROVED.getOutputs().encodeElements(SUCCESS.getNumber(), headlongAddressOf(spender)),
-                        0L);
+                        gasCalculator.viewGasRequirement());
     }
 }

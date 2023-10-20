@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.typedKeyTupleFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
@@ -39,6 +40,7 @@ import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
@@ -63,12 +65,14 @@ import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.TokenKeyType;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -107,7 +111,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
 public class TestHelpers {
-
+    public static final String LEDGER_ID = "01";
     public static final Bytes ETH_WITH_CALL_DATA = Bytes.fromHex(
             "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792");
     public static final Bytes ETH_WITH_TO_ADDRESS = Bytes.fromHex(
@@ -295,7 +299,6 @@ public class TestHelpers {
             .feeScheduleKey(FEE_SCHEDULE_KEY)
             .pauseKey(PAUSE_KEY)
             .build();
-
     public static final List<Tuple> EXPECTED_FIXED_CUSTOM_FEES = List.of(
             Tuple.of(2L, headlongAddressOf(ZERO_TOKEN_ID), true, false, headlongAddressOf(SENDER_ID)),
             Tuple.of(3L, headlongAddressOf(FUNGIBLE_TOKEN_ID), false, false, headlongAddressOf(SENDER_ID)));
@@ -304,6 +307,24 @@ public class TestHelpers {
     public static final List<Tuple> EXPECTED_ROYALTY_CUSTOM_FEES = List.of(
             Tuple.of(2L, 50L, 0L, headlongAddressOf(ZERO_TOKEN_ID), true, headlongAddressOf(SENDER_ID)),
             Tuple.of(2L, 50L, 5L, headlongAddressOf(FUNGIBLE_TOKEN_ID), false, headlongAddressOf(SENDER_ID)));
+
+    public static final List<Tuple> EXPECTE_KEYLIST = List.of(
+            typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), ADMIN_KEY),
+            typedKeyTupleFor(TokenKeyType.KYC_KEY.bigIntegerValue(), KYC_KEY),
+            typedKeyTupleFor(TokenKeyType.FREEZE_KEY.bigIntegerValue(), FREEZE_KEY),
+            typedKeyTupleFor(TokenKeyType.WIPE_KEY.bigIntegerValue(), WIPE_KEY),
+            typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), SUPPLY_KEY),
+            typedKeyTupleFor(TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), FEE_SCHEDULE_KEY),
+            typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), PAUSE_KEY));
+
+    public static final List<Tuple> EXPECTE_DEFAULT_KEYLIST = List.of(
+            typedKeyTupleFor(TokenKeyType.ADMIN_KEY.bigIntegerValue(), Key.DEFAULT),
+            typedKeyTupleFor(TokenKeyType.KYC_KEY.bigIntegerValue(), Key.DEFAULT),
+            typedKeyTupleFor(TokenKeyType.FREEZE_KEY.bigIntegerValue(), Key.DEFAULT),
+            typedKeyTupleFor(TokenKeyType.WIPE_KEY.bigIntegerValue(), Key.DEFAULT),
+            typedKeyTupleFor(TokenKeyType.SUPPLY_KEY.bigIntegerValue(), Key.DEFAULT),
+            typedKeyTupleFor(TokenKeyType.FEE_SCHEDULE_KEY.bigIntegerValue(), Key.DEFAULT),
+            typedKeyTupleFor(TokenKeyType.PAUSE_KEY.bigIntegerValue(), Key.DEFAULT));
 
     public static final Token UNREASONABLY_DIVISIBLE_TOKEN = Token.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
@@ -349,6 +370,7 @@ public class TestHelpers {
             .nftId(NftID.newBuilder().tokenId(NON_FUNGIBLE_TOKEN_ID).serialNumber(NFT_SERIAL_NO))
             .ownerId(A_NEW_ACCOUNT_ID)
             .spenderId(B_NEW_ACCOUNT_ID)
+            .mintTime(Timestamp.newBuilder().seconds(1000000L).build())
             .build();
     public static final org.apache.tuweni.bytes.Bytes SOME_REVERT_REASON =
             org.apache.tuweni.bytes.Bytes.wrap("I prefer not to".getBytes());
@@ -535,20 +557,20 @@ public class TestHelpers {
     public static final Bytes UNAUTHORIZED_SPENDER_ADDRESS = Bytes.fromHex("b284224b8b83a724438cc3cc7c0d333a2b6b3222");
     public static final com.esaulpaugh.headlong.abi.Address UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS =
             asHeadlongAddress(UNAUTHORIZED_SPENDER_ADDRESS.toByteArray());
-    public static final Address UNAUTHORIZED_SPENDER_BESU_ADDRESS = pbjToBesuAddress(UNAUTHORIZED_SPENDER_ADDRESS);
     public static final AccountID APPROVED_ID =
             AccountID.newBuilder().accountNum(8888888L).build();
     public static final Bytes APPROVED_ADDRESS = Bytes.fromHex("aa1e6a49898ea7a44e81599a7c0deeeaa969e990");
     public static final com.esaulpaugh.headlong.abi.Address APPROVED_HEADLONG_ADDRESS =
             asHeadlongAddress(APPROVED_ADDRESS.toByteArray());
-    public static final Address APPROVED_BESU_ADDRESS = pbjToBesuAddress(APPROVED_ADDRESS);
 
     public static final AccountID RECEIVER_ID =
             AccountID.newBuilder().accountNum(7773777L).build();
     public static final Bytes RECEIVER_ADDRESS = Bytes.fromHex("3b1ef340808e37344e8150037c0deee33060e123");
-    public static final com.esaulpaugh.headlong.abi.Address RECEIVER_HEADLONG_ADDRESS =
-            asHeadlongAddress(RECEIVER_ADDRESS.toByteArray());
-    public static final Address RECEIVER_BESU_ADDRESS = pbjToBesuAddress(RECEIVER_ADDRESS);
+    public static final AccountID ALIASED_RECEIVER_ID =
+            AccountID.newBuilder().alias(RECEIVER_ADDRESS).build();
+
+    public static final Account ALIASED_RECEIVER =
+            Account.newBuilder().accountId(RECEIVER_ID).alias(RECEIVER_ADDRESS).build();
 
     public static void assertSameResult(
             final Operation.OperationResult expected, final Operation.OperationResult actual) {
@@ -648,13 +670,18 @@ public class TestHelpers {
     }
 
     public static HederaEvmContext wellKnownContextWith(
-            @NonNull final HederaEvmBlocks blocks, TinybarValues tinybarValues) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, false, blocks, tinybarValues);
+            @NonNull final HederaEvmBlocks blocks,
+            @NonNull final TinybarValues tinybarValues,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator) {
+        return new HederaEvmContext(NETWORK_GAS_PRICE, false, blocks, tinybarValues, systemContractGasCalculator);
     }
 
     public static HederaEvmContext wellKnownContextWith(
-            @NonNull final HederaEvmBlocks blocks, final boolean staticCall, TinybarValues tinybarValues) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, staticCall, blocks, tinybarValues);
+            @NonNull final HederaEvmBlocks blocks,
+            final boolean staticCall,
+            @NonNull final TinybarValues tinybarValues,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator) {
+        return new HederaEvmContext(NETWORK_GAS_PRICE, staticCall, blocks, tinybarValues, systemContractGasCalculator);
     }
 
     public static void assertFailsWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {

@@ -148,7 +148,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long gasPriceInTinybars() {
-        return tinybarValues.serviceGasPrice();
+        return tinybarValues.topLevelTinybarGasPrice();
     }
 
     /**
@@ -216,7 +216,7 @@ public class HandleHederaOperations implements HederaOperations {
                 number,
                 synthAccountCreationFromHapi(
                         ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation),
-                null);
+                parent.autoRenewAccountId());
     }
 
     /**
