@@ -27,6 +27,7 @@ import static contract.CreatesXTestConstants.FIXED_FEE;
 import static contract.CreatesXTestConstants.FRACTIONAL_FEE;
 import static contract.CreatesXTestConstants.INITIAL_TOTAL_SUPPLY;
 import static contract.CreatesXTestConstants.INITIAL_TOTAL_SUPPLY_BIG_INT;
+import static contract.CreatesXTestConstants.INVALID_EXPIRY;
 import static contract.CreatesXTestConstants.MAX_SUPPLY;
 import static contract.CreatesXTestConstants.MEMO;
 import static contract.CreatesXTestConstants.NAME;
@@ -87,7 +88,7 @@ public class CreatesXTest extends AbstractContractXTest {
             MAX_SUPPLY,
             false,
             new Tuple[] {TOKEN_KEY, TOKEN_KEY_TWO},
-            EXPIRY);
+            INVALID_EXPIRY);
 
     @Override
     protected void doScenarioOperations() {
