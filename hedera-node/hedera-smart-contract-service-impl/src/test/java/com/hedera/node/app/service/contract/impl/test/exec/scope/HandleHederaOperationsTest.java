@@ -255,7 +255,7 @@ class HandleHederaOperationsTest {
                 .dispatchChildTransaction(
                         eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID));
         verify(tokenServiceApi)
-                .markAsContract(AccountID.newBuilder().accountNum(666L).build(), null);
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }
 
     @Test
