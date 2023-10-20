@@ -31,7 +31,7 @@ public record LedgerConfig(
         @ConfigProperty(defaultValue = "5000") @NetworkProperty int maxAutoAssociations,
         @ConfigProperty(defaultValue = "100") int numSystemAccounts,
         @ConfigProperty(defaultValue = "5000000000000000000") @Min(0) long totalTinyBarFloat,
-        @ConfigProperty(defaultValue = "0x03") Bytes id,
+        @ConfigProperty(defaultValue = "0x00") Bytes id,
         @ConfigProperty(value = "changeHistorian.memorySecs", defaultValue = "20") @NetworkProperty
                 int changeHistorianMemorySecs,
         @ConfigProperty(value = "autoRenewPeriod.maxDuration", defaultValue = "8000001") @NetworkProperty

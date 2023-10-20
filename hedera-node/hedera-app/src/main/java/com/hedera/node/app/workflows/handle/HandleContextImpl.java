@@ -580,7 +580,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             childStack.commitFullStack();
         } catch (HandleException e) {
             childRecordBuilder.status(e.getStatus());
-            recordListBuilder.revertChildRecordBuilders(childRecordBuilder);
+            recordListBuilder.revertChildrenOf(childRecordBuilder);
         }
     }
 

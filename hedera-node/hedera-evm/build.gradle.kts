@@ -31,3 +31,12 @@ testModuleInfo {
     requires("org.mockito.junit.jupiter")
     runtimeOnly("org.mockito.inline")
 }
+
+publishing {
+    publications {
+        named<MavenPublication>("maven") {
+            groupId = "com.hedera.evm"
+            artifactId = "hedera-evm"
+        }
+    }
+}
