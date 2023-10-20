@@ -271,8 +271,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 assertSuccess());
 
-        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
-        // account
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_TOKEN_V1
@@ -281,8 +280,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
-        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
-        // account
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_FUNGIBLE_WITH_CUSTOM_FEES_V1
@@ -297,8 +295,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
-        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
-        // account
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_V1
@@ -306,8 +303,7 @@ public class CreatesXTest extends AbstractContractXTest {
                         .array()),
                 INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
-        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` as we are passing an invalid address for the treasury
-        // account
+        // should revert with `INVALID_TREASURY_ACCOUNT_FOR_TOKEN` when passing invalid address for the treasury account
         runHtsCallAndExpectRevert(
                 SENDER_BESU_ADDRESS,
                 Bytes.wrap(CreateTranslator.CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_V1
