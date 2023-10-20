@@ -16,107 +16,123 @@
 
 package com.swirlds.platform.event.validation;
 
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
-import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
 
-import com.swirlds.common.crypto.Hash;
+import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;
+import java.time.Duration;
+import java.util.Objects;
+import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * A collection of static methods for validating events
+ * Verifies event signatures.
+ * <p>
+ * This class was written to be compatible with the new intake pipeline. The previous signature validator
+ * {@link SignatureValidator} has been left unchanged, to be used by the legacy intake monolith.
  */
-public class EventValidationChecks {
-    /**
-     * Hidden constructor
-     */
-    private EventValidationChecks() {}
+public class EventSignatureValidator {
+    private static final Logger logger = LogManager.getLogger(EventSignatureValidator.class);
 
     /**
-     * Determine whether a given event has a valid creation time.
+     * The minimum period between log messages reporting a specific type of validation failure
+     */
+    private static final Duration MINIMUM_LOG_PERIOD = Duration.ofMinutes(1);
+
+    /**
+     * A verifier for checking event signatures.
+     */
+    private final SignatureVerifier signatureVerifier;
+
+    /**
+     * Events with valid signature are passed to this consumer.
+     */
+    private final Consumer<GossipEvent> eventConsumer;
+
+    /**
+     * The previous address book. May be null.
+     */
+    private AddressBook previousAddressBook;
+
+    /**
+     * The current address book.
+     */
+    private AddressBook currentAddressBook;
+
+    /**
+     * The current software version.
+     */
+    private final SoftwareVersion currentSoftwareVersion;
+
+    /**
+     * The current minimum generation required for an event to be non-ancient.
+     */
+    private long minimumGenerationNonAncient = 0;
+
+    /**
+     * Keeps track of the number of events in the intake pipeline from each peer
+     */
+    private final IntakeEventCounter intakeEventCounter;
+
+    /**
+     * A logger for validation errors
+     */
+    private final RateLimitedLogger rateLimitedLogger;
+
+    private static final LongAccumulator.Config INVALID_SIGNATURE_CONFIG = new LongAccumulator.Config(
+                    PLATFORM_CATEGORY, "eventsWithInvalidSignature")
+            .withDescription("Events received with invalid signature")
+            .withUnit("events");
+    private final LongAccumulator invalidSignatureAccumulator;
+
+    /**
+     * Constructor
      *
-     * @param event             the event to be validated
-     * @param logger            a logger for validation errors
-     * @param metricAccumulator for counting occurrences of invalid event creation times
-     * @return true if the creation time of the event is strictly after the creation time of its self-parent, otherwise false
+     * @param platformContext        the platform context
+     * @param time                   a time object, for rate limiting loggers
+     * @param signatureVerifier      a verifier for checking event signatures
+     * @param currentSoftwareVersion the current software version
+     * @param previousAddressBook    the previous address book
+     * @param currentAddressBook     the current address book
+     * @param eventConsumer          validated events are passed to this consumer
+     * @param intakeEventCounter     keeps track of the number of events in the intake pipeline from each peer
      */
-    public static boolean isValidTimeCreated(
-            @NonNull final EventImpl event,
-            @NonNull final RateLimitedLogger logger,
-            @NonNull final LongAccumulator metricAccumulator) {
-        final EventImpl selfParent = event.getSelfParent();
+    public EventSignatureValidator(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Time time,
+            @NonNull final SignatureVerifier signatureVerifier,
+            @NonNull final SoftwareVersion currentSoftwareVersion,
+            @Nullable final AddressBook previousAddressBook,
+            @NonNull final AddressBook currentAddressBook,
+            @NonNull final Consumer<GossipEvent> eventConsumer,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
-        final boolean validTimeCreated =
-                selfParent == null || event.getTimeCreated().isAfter(selfParent.getTimeCreated());
+        Objects.requireNonNull(time);
 
-        if (!validTimeCreated) {
-            logger.error(
-                    INVALID_EVENT_ERROR.getMarker(),
-                    "Event timeCreated is invalid. Event: {}, Time created: {}, Parent created: {}",
-                    event.toMediumString(),
-                    event.getTimeCreated(),
-                    selfParent.getTimeCreated());
-            metricAccumulator.update(1);
-        }
+        this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
+        this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
+        this.previousAddressBook = previousAddressBook;
+        this.currentAddressBook = Objects.requireNonNull(currentAddressBook);
+        this.eventConsumer = Objects.requireNonNull(eventConsumer);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
-        return validTimeCreated;
-    }
+        this.rateLimitedLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
 
-    /**
-     * Determine whether a given event has valid parents.
-     *
-     * @param event             the event to be validated
-     * @param singleNodeNetwork true if the network is a single node network, otherwise false
-     * @param logger            a logger for validation errors
-     * @param metricAccumulator for counting occurrences of invalid event parents
-     * @return true if the event has valid parents, otherwise false
-     */
-    public static boolean areParentsValid(
-            @NonNull final EventImpl event,
-            final boolean singleNodeNetwork,
-            @NonNull final RateLimitedLogger logger,
-            @NonNull final LongAccumulator metricAccumulator) {
-
-        final BaseEventHashedData hashedData = event.getHashedData();
-
-        final Hash selfParentHash = hashedData.getSelfParentHash();
-        final long selfParentGeneration = hashedData.getSelfParentGen();
-
-        // If a parent hash is missing, then the generation must also be invalid.
-        // If a parent hash is not missing, then the generation must be valid.
-        if ((selfParentHash == null) != (selfParentGeneration < FIRST_GENERATION)) {
-            logger.error(INVALID_EVENT_ERROR.getMarker(), "Self parent hash / generation mismatch: {}", event);
-            metricAccumulator.update(1);
-            return false;
-        }
-
-        final Hash otherParentHash = hashedData.getOtherParentHash();
-        final long otherParentGeneration = hashedData.getOtherParentGen();
-
-        if ((otherParentHash == null) != (otherParentGeneration < FIRST_GENERATION)) {
-            logger.error(INVALID_EVENT_ERROR.getMarker(), "Other parent hash / generation mismatch: {}", event);
-            metricAccumulator.update(1);
-            return false;
-        }
-
-        if (!singleNodeNetwork && (selfParentHash != null) && selfParentHash.equals(otherParentHash)) {
-            logger.error(INVALID_EVENT_ERROR.getMarker(), "Both parents have the same hash: {} ", event);
-            metricAccumulator.update(1);
-            return false;
-        }
-
-        return true;
+        this.invalidSignatureAccumulator = platformContext.getMetrics().getOrCreate(INVALID_SIGNATURE_CONFIG);
     }
 
     /**
@@ -179,7 +195,7 @@ public class EventValidationChecks {
      * @param metricAccumulator      for counting occurrences of invalid event signatures
      * @return true if the event has a valid signature, otherwise false
      */
-    public static boolean isSignatureValid(
+    private static boolean isSignatureValid(
             @NonNull final GossipEvent event,
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final SoftwareVersion currentSoftwareVersion,
@@ -236,5 +252,52 @@ public class EventValidationChecks {
         }
 
         return isSignatureValid;
+    }
+
+    /**
+     * Verify event signature
+     *
+     * @param event the event to verify the signature of
+     */
+    public void handleEvent(@NonNull final GossipEvent event) {
+        if (event.getGeneration() < minimumGenerationNonAncient) {
+            // ancient events can be safely ignored
+            intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
+            return;
+        }
+
+        if (isSignatureValid(
+                event,
+                signatureVerifier,
+                currentSoftwareVersion,
+                previousAddressBook,
+                currentAddressBook,
+                rateLimitedLogger,
+                invalidSignatureAccumulator)) {
+
+            eventConsumer.accept(event);
+        } else {
+            intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
+            invalidSignatureAccumulator.update(1);
+        }
+    }
+
+    /**
+     * Set the minimum generation required for an event to be non-ancient.
+     *
+     * @param minimumGenerationNonAncient the minimum generation required for an event to be non-ancient
+     */
+    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+    }
+
+    /**
+     * Set the previous and current address books
+     *
+     * @param addressBookUpdate the new address books
+     */
+    public void updateAddressBooks(@NonNull final AddressBookUpdate addressBookUpdate) {
+        this.previousAddressBook = addressBookUpdate.previousAddressBook();
+        this.currentAddressBook = addressBookUpdate.currentAddressBook();
     }
 }
