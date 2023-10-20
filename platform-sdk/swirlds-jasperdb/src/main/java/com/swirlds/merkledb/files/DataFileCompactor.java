@@ -502,7 +502,7 @@ public class DataFileCompactor {
             final List<DataFileReader<?>> readers = readersByLevel.get(i);
             // Presumably, one file comes from the compaction of the previous level.
             // If, counting this file in, it still doesn't have enough, then it stops collecting.
-            if (readers.size() < minNumberOfFilesToCompact - 1) {
+            if (readers == null || readers.size() < minNumberOfFilesToCompact - 1) {
                 break;
             }
             readersToCompact.addAll(readers);
