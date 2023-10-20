@@ -589,7 +589,7 @@ jobs:
           OSSRH_PASSWORD: ${{ secrets.svcs-ossrh-password }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: ":app-service-evm:releaseEvmMavenCentral --scan -PpublishSigningEnabled=true"
+          arguments: "releaseEvmMavenCentral --scan -PpublishSigningEnabled=true"
 
       - name: Gradle Maven Central Snapshot
         uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
@@ -599,7 +599,7 @@ jobs:
           OSSRH_PASSWORD: ${{ secrets.svcs-ossrh-password }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: ":app-service-evm:releaseEvmMavenCentralSnapshot --scan -PpublishSigningEnabled=true"
+          arguments: "releaseEvmMavenCentralSnapshot --scan -PpublishSigningEnabled=true"
 
   sdk-publish:
     name: Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GCP Registry' }}
@@ -825,7 +825,7 @@ jobs:
                           },
                           {
                             "type": "mrkdwn",
-                            "text": ${{ steps.parameters.outputs.artifact-registry }}"
+                            "text": "${{ steps.parameters.outputs.artifact-registry }}"
                           },
                           {
                             "type": "mrkdwn",
