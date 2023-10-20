@@ -825,7 +825,7 @@ jobs:
                           },
                           {
                             "type": "mrkdwn",
-                            "text": ${{ steps.parameters.outputs.artifact-registry }}"
+                            "text": "${{ steps.parameters.outputs.artifact-registry }}"
                           },
                           {
                             "type": "mrkdwn",

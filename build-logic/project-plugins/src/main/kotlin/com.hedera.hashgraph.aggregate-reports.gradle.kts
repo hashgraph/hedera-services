@@ -35,7 +35,10 @@ sonarqube {
             "sonar.projectDescription",
             "Hedera Services (crypto, file, contract, consensus) on the Platform"
         )
-        property("sonar.projectVersion", layout.projectDirectory.versionTxt().asFile.readText())
+        property(
+            "sonar.projectVersion",
+            layout.projectDirectory.versionTxt().asFile.readText().trim()
+        )
         property("sonar.links.homepage", "https://github.com/hashgraph/hedera-services")
         property("sonar.links.ci", "https://github.com/hashgraph/hedera-services/actions")
         property("sonar.links.issue", "https://github.com/hashgraph/hedera-services/issues")
