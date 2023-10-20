@@ -28,7 +28,7 @@ import java.util.function.Function;
  * @param <A> the input type
  * @param <B> the output type
  */
-public class WireTransformer<A, B> extends OutputChannel<B, WireTransformer<A, B>> implements Consumer<A> {
+public class WireTransformer<A, B> extends OutputChannel<B> implements Consumer<A> {
 
     private final Function<A, B> transformer;
 

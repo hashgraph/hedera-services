@@ -27,7 +27,7 @@ import java.util.function.Consumer;
  * Transforms a list of items to a sequence of individual items. Expects that there will not be any null values in the
  * collection.
  */
-public class WireListSplitter<T> extends OutputChannel<T, WireListSplitter<T>> implements Consumer<List<T>> {
+public class WireListSplitter<T> extends OutputChannel<T> implements Consumer<List<T>> {
 
     /**
      * {@inheritDoc}

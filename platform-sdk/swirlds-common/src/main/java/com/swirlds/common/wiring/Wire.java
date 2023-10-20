@@ -29,7 +29,7 @@ import java.util.function.Consumer;
  *
  * @param <O> the output time of the wire (use {@link Void}) for a wire with no output type)
  */
-public abstract class Wire<O> extends OutputChannel<O, Wire<O>> {
+public abstract class Wire<O> extends OutputChannel<O> {
 
     private final String name;
     private final boolean flushEnabled;

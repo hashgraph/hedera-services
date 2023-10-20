@@ -27,7 +27,7 @@ import java.util.function.Predicate;
 /**
  * Filters out data, allowing some objects to pass and blocking others.
  */
-public class WireFilter<T> extends OutputChannel<T, WireFilter<T>> implements Consumer<T> {
+public class WireFilter<T> extends OutputChannel<T> implements Consumer<T> {
 
     private final Predicate<T> predicate;
 

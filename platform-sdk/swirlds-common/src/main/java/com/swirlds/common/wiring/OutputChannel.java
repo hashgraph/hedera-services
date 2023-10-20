@@ -28,12 +28,11 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * A class that can have its output soldered to wires/consumers.
+ * Describes the output of a wire (or wire-like object). Can be soldered to wire input channels or lambdas.
  *
  * @param <O> the output type of the object
- * @param <C> the type of the implementing class (i.e. the type of this)
  */
-public abstract class OutputChannel<O, C> {
+public abstract class OutputChannel<O> {
 
     private final List<Consumer<O>> forwardingDestinations = new ArrayList<>();
 
@@ -70,7 +69,7 @@ public abstract class OutputChannel<O, C> {
      * @return this
      */
     @NonNull
-    public final C solderTo(@NonNull final InputChannel<O, ?> channel) {
+    public final OutputChannel<O> solderTo(@NonNull final InputChannel<O, ?> channel) {
         return solderTo(channel, false);
     }
 
@@ -93,13 +92,13 @@ public abstract class OutputChannel<O, C> {
      */
     @SuppressWarnings("unchecked")
     @NonNull
-    public C solderTo(@NonNull final InputChannel<O, ?> channel, final boolean inject) {
+    public OutputChannel<O> solderTo(@NonNull final InputChannel<O, ?> channel, final boolean inject) {
         if (inject) {
             forwardingDestinations.add(channel::inject);
         } else {
             forwardingDestinations.add(channel::put);
         }
-        return (C) this;
+        return this;
     }
 
     /**
@@ -117,11 +116,10 @@ public abstract class OutputChannel<O, C> {
      * @param handler the consumer to forward output data to
      * @return this
      */
-    @SuppressWarnings("unchecked")
     @NonNull
-    public C solderTo(@NonNull final Consumer<O> handler) {
+    public OutputChannel<O> solderTo(@NonNull final Consumer<O> handler) {
         forwardingDestinations.add(Objects.requireNonNull(handler));
-        return (C) this;
+        return this;
     }
 
     /**
@@ -131,7 +129,7 @@ public abstract class OutputChannel<O, C> {
      * @return the filter
      */
     @NonNull
-    public WireFilter<O> buildFilter(@NonNull final Predicate<O> predicate) {
+    public OutputChannel<O> buildFilter(@NonNull final Predicate<O> predicate) {
         final WireFilter<O> filter = new WireFilter<>(Objects.requireNonNull(predicate));
         solderTo(filter);
         return filter;
@@ -146,7 +144,7 @@ public abstract class OutputChannel<O, C> {
      */
     @SuppressWarnings("unchecked")
     @NonNull
-    public <E> WireListSplitter<E> buildSplitter() {
+    public <E> OutputChannel<E> buildSplitter() {
         final WireListSplitter<E> splitter = new WireListSplitter<>();
         solderTo((Consumer<O>) splitter);
         return splitter;
@@ -161,7 +159,7 @@ public abstract class OutputChannel<O, C> {
      * @return the splitter
      */
     @NonNull
-    public <T> WireListSplitter<T> buildSplitter(@NonNull Class<T> clazz) {
+    public <T> OutputChannel<T> buildSplitter(@NonNull Class<T> clazz) {
         return buildSplitter();
     }
 
@@ -173,7 +171,7 @@ public abstract class OutputChannel<O, C> {
      * @return the transformer
      */
     @NonNull
-    public <T> WireTransformer<O, T> buildTransformer(@NonNull Function<O, T> transform) {
+    public <T> OutputChannel<T> buildTransformer(@NonNull Function<O, T> transform) {
         final WireTransformer<O, T> transformer = new WireTransformer<>(transform);
         solderTo(transformer);
         return transformer;
