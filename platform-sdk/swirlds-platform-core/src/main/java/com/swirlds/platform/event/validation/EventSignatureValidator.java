@@ -94,11 +94,11 @@ public class EventSignatureValidator {
      */
     private final RateLimitedLogger rateLimitedLogger;
 
-    private static final LongAccumulator.Config INVALID_SIGNATURE_CONFIG = new LongAccumulator.Config(
-                    PLATFORM_CATEGORY, "eventsWithInvalidSignature")
-            .withDescription("Events received with invalid signature")
+    private static final LongAccumulator.Config VALIDATION_FAILED_CONFIG = new LongAccumulator.Config(
+                    PLATFORM_CATEGORY, "eventsFailedSignatureValidation")
+            .withDescription("Events for which signature validation failed")
             .withUnit("events");
-    private final LongAccumulator invalidSignatureAccumulator;
+    private final LongAccumulator validationFailedAccumulator;
 
     /**
      * Constructor
@@ -133,7 +133,7 @@ public class EventSignatureValidator {
 
         this.rateLimitedLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
 
-        this.invalidSignatureAccumulator = platformContext.getMetrics().getOrCreate(INVALID_SIGNATURE_CONFIG);
+        this.validationFailedAccumulator = platformContext.getMetrics().getOrCreate(VALIDATION_FAILED_CONFIG);
     }
 
     /**
@@ -167,7 +167,6 @@ public class EventSignatureValidator {
                         currentSoftwareVersion);
                 return null;
             }
-
             return previousAddressBook;
         } else {
             // current software version is equal to event software version
@@ -182,15 +181,13 @@ public class EventSignatureValidator {
      * @return true if the event has a valid signature, otherwise false
      */
     private boolean isSignatureValid(@NonNull final GossipEvent event) {
-        final NodeId eventCreatorId = event.getHashedData().getCreatorId();
-
         final AddressBook applicableAddressBook = determineApplicableAddressBook(event);
-
         if (applicableAddressBook == null) {
             // this occurrence was already logged while attempting to determine the applicable address book
-            invalidSignatureAccumulator.update(1);
             return false;
         }
+
+        final NodeId eventCreatorId = event.getHashedData().getCreatorId();
 
         if (!applicableAddressBook.contains(eventCreatorId)) {
             rateLimitedLogger.error(
@@ -198,17 +195,14 @@ public class EventSignatureValidator {
                     "Node {} doesn't exist in applicable address book. Event: {}",
                     eventCreatorId,
                     event);
-            invalidSignatureAccumulator.update(1);
             return false;
         }
 
         final PublicKey publicKey =
                 applicableAddressBook.getAddress(eventCreatorId).getSigPublicKey();
-
         if (publicKey == null) {
             rateLimitedLogger.error(
                     EXCEPTION.getMarker(), "Cannot find publicKey for creator with ID: {}", eventCreatorId);
-            invalidSignatureAccumulator.update(1);
             return false;
         }
 
@@ -224,7 +218,6 @@ public class EventSignatureValidator {
                     event,
                     CommonUtils.hex(event.getUnhashedData().getSignature()),
                     event.getHashedData().getHash());
-            invalidSignatureAccumulator.update(1);
         }
 
         return isSignatureValid;
@@ -246,7 +239,7 @@ public class EventSignatureValidator {
             eventConsumer.accept(event);
         } else {
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
-            invalidSignatureAccumulator.update(1);
+            validationFailedAccumulator.update(1);
         }
     }
 
