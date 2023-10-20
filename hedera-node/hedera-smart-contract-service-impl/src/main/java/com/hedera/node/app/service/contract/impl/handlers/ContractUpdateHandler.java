@@ -31,11 +31,13 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -175,11 +177,10 @@ public class ContractUpdateHandler implements TransactionHandler {
     }
 
     private void validate(Account contract, HandleContext context, ContractUpdateTransactionBody op) {
-        // TODO: I couldn't implement processAdminKey because I couldn't find JKey implementation in mod.
-        //  Any idea what's the alternative in the new code?
-        //        if (op.hasAdminKey() && processAdminKey(op, contract, builder)) {
-        //            throw new HandleException(INVALID_ADMIN_KEY);
-        //        }
+        if (op.hasAdminKey()
+            && (op.adminKey().key().kind() == KeyOneOfType.UNSET || !KeyUtils.isValid(op.adminKey()))) {
+            throw new HandleException(INVALID_ADMIN_KEY);
+        }
 
         if (op.hasExpirationTime()) {
             try {
