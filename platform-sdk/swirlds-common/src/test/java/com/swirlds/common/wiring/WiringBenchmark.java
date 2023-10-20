@@ -69,13 +69,13 @@ class WiringBenchmark {
                 .withOutputType(WiringBenchmarkEvent.class)
                 .withPool(executor)
                 .withConcurrency(false)
-                .withOffRamp(backpressure)
                 .build();
 
         final Wire<Void> eventPoolWire = Wire.builder("eventPool")
                 .withOutputType(Void.class)
                 .withPool(executor)
                 .withConcurrency(false)
+                .withOffRamp(backpressure)
                 .build();
 
         // Step 2: create channels
