@@ -31,7 +31,8 @@ plugins {
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
 }
 
-version = providers.fileContents(rootProject.layout.projectDirectory.versionTxt()).asText.get()
+version =
+    providers.fileContents(rootProject.layout.projectDirectory.versionTxt()).asText.get().trim()
 
 java {
     toolchain {
