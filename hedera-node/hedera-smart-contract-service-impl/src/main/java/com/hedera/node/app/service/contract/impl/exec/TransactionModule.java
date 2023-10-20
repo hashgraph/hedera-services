@@ -21,8 +21,12 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.ExchangeRate;
+import com.hedera.node.app.service.contract.impl.annotations.ChildTransactionResourcePrices;
 import com.hedera.node.app.service.contract.impl.annotations.InitialState;
+import com.hedera.node.app.service.contract.impl.annotations.TopLevelResourcePrices;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
@@ -60,9 +64,22 @@ import java.util.function.Supplier;
 public interface TransactionModule {
     @Provides
     @TransactionScope
-    static TinybarValues provideTinybarResourcePrices(
-            @NonNull final FunctionalityResourcePrices resourcePrices, @NonNull final ExchangeRate exchangeRate) {
-        return new TinybarValues(exchangeRate, resourcePrices);
+    static TinybarValues provideTinybarValues(
+            @TopLevelResourcePrices @NonNull final FunctionalityResourcePrices topLevelResourcePrices,
+            @ChildTransactionResourcePrices @NonNull final FunctionalityResourcePrices childTransactionResourcePrices,
+            @NonNull final ExchangeRate exchangeRate) {
+        return TinybarValues.forTransactionWith(exchangeRate, topLevelResourcePrices, childTransactionResourcePrices);
+    }
+
+    @Provides
+    @TransactionScope
+    static SystemContractGasCalculator provideSystemContractGasCalculator(
+            @NonNull final HandleContext context,
+            @NonNull final CanonicalDispatchPrices canonicalDispatchPrices,
+            @NonNull final TinybarValues tinybarValues) {
+        return new SystemContractGasCalculator(
+                tinybarValues, canonicalDispatchPrices, (body, payerId) -> context.dispatchComputeFees(body, payerId)
+                        .totalFee());
     }
 
     @Provides
@@ -73,9 +90,17 @@ public interface TransactionModule {
 
     @Provides
     @TransactionScope
-    static FunctionalityResourcePrices provideResourcePrices(
+    @TopLevelResourcePrices
+    static FunctionalityResourcePrices provideTopLevelResourcePrices(
             @NonNull final HederaFunctionality functionality, @NonNull final HandleContext context) {
         return context.resourcePricesFor(functionality, SubType.DEFAULT);
+    }
+
+    @Provides
+    @TransactionScope
+    @ChildTransactionResourcePrices
+    static FunctionalityResourcePrices provideChildTransactionResourcePrices(@NonNull final HandleContext context) {
+        return context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT);
     }
 
     @Provides
@@ -108,9 +133,15 @@ public interface TransactionModule {
     @TransactionScope
     static HederaEvmContext provideHederaEvmContext(
             @NonNull final TinybarValues tinybarValues,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaOperations hederaOperations,
             @NonNull final HederaEvmBlocks hederaEvmBlocks) {
-        return new HederaEvmContext(hederaOperations.gasPriceInTinybars(), false, hederaEvmBlocks, tinybarValues);
+        return new HederaEvmContext(
+                hederaOperations.gasPriceInTinybars(),
+                false,
+                hederaEvmBlocks,
+                tinybarValues,
+                systemContractGasCalculator);
     }
 
     @Provides
@@ -159,15 +190,16 @@ public interface TransactionModule {
 
     @Binds
     @TransactionScope
-    HederaOperations bindExtWorldScope(HandleHederaOperations handleExtWorldScope);
+    HederaOperations bindHederaOperations(HandleHederaOperations handleExtWorldScope);
 
     @Binds
     @TransactionScope
-    HederaNativeOperations bindExtFrameScope(HandleHederaNativeOperations handleExtFrameScope);
+    HederaNativeOperations bindHederaNativeOperations(HandleHederaNativeOperations handleExtFrameScope);
 
     @Binds
     @TransactionScope
-    SystemContractOperations bindExtSystemContractScope(HandleSystemContractOperations handleSystemContractOperations);
+    SystemContractOperations bindSystemContractOperations(
+            HandleSystemContractOperations handleSystemContractOperations);
 
     @Binds
     @TransactionScope

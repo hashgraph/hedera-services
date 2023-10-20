@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.fungibletokeninfo.FungibleTokenInfoCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.fungibletokeninfo.FungibleTokenInfoTranslator;
@@ -40,6 +41,9 @@ class FungibleTokenInfoTranslatorTest {
 
     @Mock
     private Enhancement enhancement;
+
+    @Mock
+    private SystemContractGasCalculator gasCalculator;
 
     @Mock
     Configuration configuration;
@@ -65,6 +69,7 @@ class FungibleTokenInfoTranslatorTest {
                 Bytes.wrapByteBuffer(FungibleTokenInfoTranslator.FUNGIBLE_TOKEN_INFO.encodeCall(tuple));
         given(attempt.input()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(enhancement);
+        given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
         given(attempt.configuration()).willReturn(configuration);
 
         final var call = subject.callFrom(attempt);

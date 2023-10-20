@@ -24,6 +24,17 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContrac
  * Encapsulates a call to the HTS system contract.
  */
 public interface HtsCall {
+    /**
+     * Encapsulates the result of a call to the HTS system contract. There are two elements,
+     * <ol>
+     *     <li>The "full result" of the call, including both its EVM-standard {@link PrecompileContractResult}
+     *     and gas requirement (which is often difficult to compute without executing the call).</li>
+     *     <li>Any additional cost <i>beyond</i> the gas requirement.</li>
+     * </ol>
+     *
+     * @param fullResult the full result of the call
+     * @param nonGasCost any additional cost beyond the gas requirement
+     */
     record PricedResult(HederaSystemContract.FullResult fullResult, long nonGasCost) {
         public static PricedResult gasOnly(HederaSystemContract.FullResult result) {
             return new PricedResult(result, 0L);

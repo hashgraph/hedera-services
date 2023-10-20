@@ -148,7 +148,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long gasPriceInTinybars() {
-        return tinybarValues.serviceGasPrice();
+        return tinybarValues.topLevelTinybarGasPrice();
     }
 
     /**

@@ -27,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNonRevertibleTokenViewCall;
@@ -39,11 +40,12 @@ public class IsFrozenCall extends AbstractNonRevertibleTokenViewCall {
     private final boolean isStaticCall;
 
     public IsFrozenCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             final boolean isStaticCall,
             @Nullable final Token token,
             @NonNull final Address account) {
-        super(enhancement, token);
+        super(gasCalculator, enhancement, token);
         this.account = requireNonNull(account);
         this.isStaticCall = isStaticCall;
     }
@@ -54,16 +56,15 @@ public class IsFrozenCall extends AbstractNonRevertibleTokenViewCall {
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
-        // TODO - gas calculation
 
         final var accountNum = accountNumberForEvmReference(account, nativeOperations());
         if (accountNum < 0) {
-            return fullResultsFor(INVALID_ACCOUNT_ID, 0L, false);
+            return fullResultsFor(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement(), false);
         }
         var tokenRel = nativeOperations()
                 .getTokenRelation(accountNum, token.tokenIdOrThrow().tokenNum());
-        var result = tokenRel == null ? false : tokenRel.frozen();
-        return fullResultsFor(SUCCESS, 0L, result);
+        var result = tokenRel != null && tokenRel.frozen();
+        return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), result);
     }
 
     @Override
@@ -76,7 +77,7 @@ public class IsFrozenCall extends AbstractNonRevertibleTokenViewCall {
             @NonNull final ResponseCodeEnum status, final long gasRequirement, final boolean isFrozen) {
         // @Future remove to revert #9063 after modularization is completed
         if (isStaticCall && status != SUCCESS) {
-            return revertResult(status, 0);
+            return revertResult(status, gasRequirement);
         }
         return successResult(
                 DEFAULT_FREEZE_STATUS.getOutputs().encodeElements(status.protoOrdinal(), isFrozen), gasRequirement);
