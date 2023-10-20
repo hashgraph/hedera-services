@@ -31,28 +31,36 @@ configurations.getByName("mainRuntimeClasspath") {
 gitProperties { keys = listOf("git.build.version", "git.commit.id", "git.commit.id.abbrev") }
 
 // !!! Remove the following once 'test' tasks are allowed to run in parallel ===
-val allProjects =
+val allPlatformSdkProjects =
     rootProject.subprojects
+        .filter { it.projectDir.absolutePath.contains("/platform-sdk/") }
         .map { it.name }
         .filter {
             it !in
                 listOf(
                     "swirlds",
                     "swirlds-benchmarks",
+                    "swirlds-platform",
                     "swirlds-sign-tool"
                 ) // these are application/benchmark projects
         }
         .sorted()
-val myIndex = allProjects.indexOf(name)
+val allHederaNodeCheckTasks =
+    rootProject.subprojects
+        .filter { it.projectDir.absolutePath.contains("/hedera-node/") }
+        .map { "${it.path}:check" }
+val myIndex = allPlatformSdkProjects.indexOf(name)
 
 if (myIndex > 0) {
-    val predecessorProject = allProjects[myIndex - 1]
+    val predecessorProject = allPlatformSdkProjects[myIndex - 1]
     tasks.test {
         mustRunAfter(":$predecessorProject:test")
         mustRunAfter(":$predecessorProject:hammerTest")
+        mustRunAfter(allHederaNodeCheckTasks)
     }
     tasks.named("hammerTest") {
         mustRunAfter(tasks.test)
         mustRunAfter(":$predecessorProject:hammerTest")
+        mustRunAfter(allHederaNodeCheckTasks)
     }
 }

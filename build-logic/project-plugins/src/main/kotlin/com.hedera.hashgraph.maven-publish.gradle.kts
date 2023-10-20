@@ -77,13 +77,3 @@ signing {
 tasks.withType<Sign>().configureEach {
     onlyIf { providers.gradleProperty("publishSigningEnabled").getOrElse("false").toBoolean() }
 }
-
-tasks.register("releaseMavenCentral") {
-    group = "release"
-    dependsOn(tasks.named("publishMavenPublicationToSonatypeRepository"))
-}
-
-tasks.register("releaseMavenCentralSnapshot") {
-    group = "release"
-    dependsOn(tasks.named("publishMavenPublicationToSonatypeSnapshotRepository"))
-}
