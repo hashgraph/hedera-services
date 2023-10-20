@@ -41,8 +41,8 @@ import io.grpc.stub.StreamObserver;
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Convenient builder API for constructing gRPC Service definitions. The {@link GrpcServiceBuilder}
@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
 /*@NotThreadSafe*/
 final class GrpcServiceBuilder {
     /** Logger */
-    private static final Logger logger = LoggerFactory.getLogger(GrpcServiceBuilder.class);
+    private static final Logger logger = LogManager.getLogger(GrpcServiceBuilder.class);
 
     /**
      * Create a single JVM-wide Marshaller instance that simply reads/writes byte arrays to/from
