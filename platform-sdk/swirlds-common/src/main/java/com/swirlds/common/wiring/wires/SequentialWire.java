@@ -73,75 +73,8 @@ public class SequentialWire<O> extends Wire<O> {
         this.offRamp = Objects.requireNonNull(offRamp);
         this.busyTimer = Objects.requireNonNull(busyTimer);
 
-        this.lastTask = new AtomicReference<>(new SequentialTask(1));
-    }
-
-    // TODO pull this out of this file
-
-    /**
-     * A task in a sequential wire.
-     */
-    private class SequentialTask extends AbstractTask {
-        private Consumer<Object> handler;
-        private Object data;
-        private SequentialTask nextTask;
-
-        /**
-         * Constructor.
-         *
-         * @param dependencyCount the number of dependencies that must be satisfied before this task is eligible for
-         *                        execution. The first task in a sequence has a dependency count of 1 (data must be
-         *                        provided), and subsequent tasks have a dependency count of 2 (the previous task must
-         *                        be executed and data must be provided).
-         */
-        SequentialTask(final int dependencyCount) {
-            super(pool, dependencyCount);
-        }
-
-        /**
-         * Provide a reference to the next task and the data that will be processed during the handling of this task.
-         *
-         * @param nextTask the task that will execute after this task
-         * @param handler  the method that will be called when this task is executed
-         * @param data     the data to be passed to the consumer for this task
-         */
-        void send(
-                @NonNull final SequentialTask nextTask,
-                @NonNull final Consumer<Object> handler,
-                @Nullable final Object data) {
-            this.nextTask = nextTask;
-            this.handler = handler;
-            this.data = data;
-
-            // This method provides us with the data we intend to send to the consumer
-            // when this task is executed, thus resolving one of the two dependencies
-            // required for the task to be executed. This call will decrement the
-            // dependency count. If this causes the dependency count to reach 0
-            // (i.e. if the previous task has already been executed), then this call
-            // will cause this task to be immediately eligible for execution.
-            send();
-        }
-
-        /**
-         * Execute this task.
-         */
-        @Override
-        public boolean exec() {
-            busyTimer.activate();
-            try {
-                handler.accept(data);
-            } catch (final Throwable t) {
-                uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
-            } finally {
-                offRamp.offRamp();
-                busyTimer.deactivate();
-
-                // Reduce the dependency count of the next task. If the next task already has its data, then this
-                // method will cause the next task to be immediately eligible for execution.
-                nextTask.send();
-            }
-            return true;
-        }
+        this.lastTask =
+                new AtomicReference<>(new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, 1));
     }
 
     /**
@@ -195,7 +128,7 @@ public class SequentialWire<O> extends Wire<O> {
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
 
-        final SequentialTask nextTask = new SequentialTask(2);
+        final SequentialTask nextTask = new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, 2);
         SequentialTask currentTask;
         do {
             currentTask = lastTask.get();
@@ -240,7 +173,7 @@ public class SequentialWire<O> extends Wire<O> {
         final Semaphore semaphore = new Semaphore(1);
         semaphore.acquireUninterruptibly();
 
-        final SequentialTask nextTask = new SequentialTask(2);
+        final SequentialTask nextTask = new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, 2);
         SequentialTask currentTask;
         do {
             currentTask = lastTask.get();

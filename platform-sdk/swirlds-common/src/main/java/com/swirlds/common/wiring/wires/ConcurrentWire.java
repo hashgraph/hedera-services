@@ -66,63 +66,33 @@ public class ConcurrentWire<O> extends Wire<O> {
         this.offRamp = Objects.requireNonNull(offRamp);
     }
 
-    private class ConcurrentTask extends AbstractTask {
-
-        private final Consumer<Object> handler;
-        private final Object data;
-
-        /**
-         * Constructor.
-         *
-         * @param handler the method that will be called when this task is executed
-         * @param data    the data to be passed to the consumer for this task
-         */
-        protected ConcurrentTask(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
-            super(pool, 0);
-            this.handler = handler;
-            this.data = data;
-        }
-
-        @Override
-        protected boolean exec() {
-            try {
-                handler.accept(data);
-            } catch (final Throwable t) {
-                uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
-            } finally {
-                offRamp.offRamp();
-            }
-            return true;
-        }
-    }
-
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void put(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    protected void put(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
         onRamp.onRamp();
-        new ConcurrentTask(handler, data).send();
+        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void interruptablePut(@NonNull final Consumer<Object> handler, @NonNull final Object data)
+    protected void interruptablePut(@NonNull final Consumer<Object> handler, @Nullable final Object data)
             throws InterruptedException {
         onRamp.interruptableOnRamp();
-        new ConcurrentTask(handler, data).send();
+        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected boolean offer(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    protected boolean offer(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
         boolean accepted = onRamp.attemptOnRamp();
         if (accepted) {
-            new ConcurrentTask(handler, data).send();
+            new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
         }
         return accepted;
     }
@@ -131,9 +101,9 @@ public class ConcurrentWire<O> extends Wire<O> {
      * {@inheritDoc}
      */
     @Override
-    protected void inject(@NonNull final Consumer<Object> handler, @NonNull final Object data) {
+    protected void inject(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
         onRamp.forceOnRamp();
-        new ConcurrentTask(handler, data).send();
+        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }
 
     /**

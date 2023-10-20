@@ -277,9 +277,11 @@ public class WireBuilder<O> {
     private FractionalTimer buildBusyTimer() {
         if (metricsBuilder == null || !metricsBuilder.isBusyFractionMetricEnabled()) {
             return NoOpFractionalTimer.getInstance();
-        } else {
-            return metricsBuilder.buildBusyTimer();
         }
+        if (concurrent) {
+            throw new IllegalStateException("Busy fraction metric is not compatible with concurrent wires");
+        }
+        return metricsBuilder.buildBusyTimer();
     }
 
     /**
@@ -290,6 +292,7 @@ public class WireBuilder<O> {
     @NonNull
     public Wire<O> build() {
         final Counters counters = buildCounters();
+        final FractionalTimer busyFractionTimer = buildBusyTimer();
 
         if (metricsBuilder != null) {
             metricsBuilder.registerMetrics(name, counters.onRamp());
@@ -310,7 +313,7 @@ public class WireBuilder<O> {
                     buildUncaughtExceptionHandler(),
                     counters.onRamp(),
                     counters.offRamp(),
-                    buildBusyTimer(),
+                    busyFractionTimer,
                     flushingEnabled);
         }
     }
