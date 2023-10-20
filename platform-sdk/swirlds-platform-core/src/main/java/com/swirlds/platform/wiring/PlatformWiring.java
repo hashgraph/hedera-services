@@ -40,9 +40,10 @@ public class PlatformWiring {
      * @param time            provides wall clock time
      */
     public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
-
         orphanBufferWire = new OrphanBufferWire(platformContext, time);
         eventSignatureValidationWire = new EventSignatureValidationWire(platformContext, time);
+
+        wire();
     }
 
     /**
@@ -50,7 +51,6 @@ public class PlatformWiring {
      */
     private void wire() {
         eventSignatureValidationWire.getEventOutput().solderTo(orphanBufferWire.getEventInput());
-
         // FUTURE WORK: solder all the things!
     }
 
@@ -60,7 +60,6 @@ public class PlatformWiring {
      * @param orphanBuffer the orphan buffer to bind
      */
     public void bind(@NonNull final EventValidator eventValidator, @NonNull final OrphanBuffer orphanBuffer) {
-
         eventSignatureValidationWire.bind(eventValidator);
         orphanBufferWire.bind(orphanBuffer);
     }
