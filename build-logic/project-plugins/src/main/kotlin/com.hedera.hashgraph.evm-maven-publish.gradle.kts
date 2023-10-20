@@ -78,6 +78,10 @@ tasks.register("releaseEvmMavenCentral") {
 
 tasks.register("releaseEvmMavenCentralSnapshot") {
     group = "release"
-    dependsOn(project(":swirlds-common").tasks.named("publishMavenPublicationToSonatypeSnapshotRepository"))
+    dependsOn(
+        project(":swirlds-common")
+            .tasks
+            .named("publishMavenPublicationToSonatypeSnapshotRepository")
+    )
     dependsOn(tasks.named("publishMavenPublicationToSonatypeSnapshotRepository"))
 }
