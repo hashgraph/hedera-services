@@ -177,9 +177,13 @@ public class ContractUpdateHandler implements TransactionHandler {
     }
 
     private void validate(Account contract, HandleContext context, ContractUpdateTransactionBody op) {
-        if (op.hasAdminKey()
-            && (op.adminKey().key().kind() == KeyOneOfType.UNSET || !KeyUtils.isValid(op.adminKey()))) {
-            throw new HandleException(INVALID_ADMIN_KEY);
+        if (op.hasAdminKey()) {
+            boolean keyNotSentinel = !IMMUTABILITY_SENTINEL_KEY.equals(op.adminKey());
+            boolean keyIsUnset = op.adminKey().key().kind() == KeyOneOfType.UNSET;
+            boolean keyIsNotValid = !KeyUtils.isValid(op.adminKey());
+            if (keyNotSentinel && (keyIsUnset || keyIsNotValid)) {
+                throw new HandleException(INVALID_ADMIN_KEY);
+            }
         }
 
         if (op.hasExpirationTime()) {
