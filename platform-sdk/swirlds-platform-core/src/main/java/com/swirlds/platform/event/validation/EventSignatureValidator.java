@@ -23,6 +23,7 @@ import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.LongAccumulator;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
@@ -140,38 +141,29 @@ public class EventSignatureValidator {
      * <p>
      * Logs an error and returns null if an applicable address book cannot be selected
      *
-     * @param event                  the event to be validated
-     * @param currentSoftwareVersion the current software version
-     * @param previousAddressBook    the previous address book
-     * @param currentAddressBook     the current address book
-     * @param logger                 a logger for validation errors
+     * @param event the event to be validated
      * @return the applicable address book, or null if an applicable address book cannot be selected
      */
     @Nullable
-    private static AddressBook determineApplicableAddressBook(
-            @NonNull final GossipEvent event,
-            @NonNull final SoftwareVersion currentSoftwareVersion,
-            @Nullable final AddressBook previousAddressBook,
-            @NonNull final AddressBook currentAddressBook,
-            @NonNull final RateLimitedLogger logger) {
+    private AddressBook determineApplicableAddressBook(@NonNull final GossipEvent event) {
+        final SoftwareVersion eventVersion = event.getHashedData().getSoftwareVersion();
 
-        final int softwareComparison =
-                currentSoftwareVersion.compareTo(event.getHashedData().getSoftwareVersion());
+        final int softwareComparison = currentSoftwareVersion.compareTo(eventVersion);
         if (softwareComparison < 0) {
             // current software version is less than event software version
-            logger.error(
+            rateLimitedLogger.error(
                     EXCEPTION.getMarker(),
                     "Cannot validate events for software version {} that is greater than the current software version {}",
-                    event.getHashedData().getSoftwareVersion(),
+                    eventVersion,
                     currentSoftwareVersion);
             return null;
         } else if (softwareComparison > 0) {
             // current software version is greater than event software version
             if (previousAddressBook == null) {
-                logger.error(
+                rateLimitedLogger.error(
                         EXCEPTION.getMarker(),
                         "Cannot validate events for software version {} that is less than the current software version {} without a previous address book",
-                        event.getHashedData().getSoftwareVersion(),
+                        eventVersion,
                         currentSoftwareVersion);
                 return null;
             }
@@ -186,53 +178,37 @@ public class EventSignatureValidator {
     /**
      * Determine whether a given event has a valid signature.
      *
-     * @param event                  the event to be validated
-     * @param signatureVerifier      a signature verifier
-     * @param currentSoftwareVersion the current software version
-     * @param previousAddressBook    the previous address book
-     * @param currentAddressBook     the current address book
-     * @param logger                 a logger for validation errors
-     * @param metricAccumulator      for counting occurrences of invalid event signatures
+     * @param event the event to be validated
      * @return true if the event has a valid signature, otherwise false
      */
-    private static boolean isSignatureValid(
-            @NonNull final GossipEvent event,
-            @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final SoftwareVersion currentSoftwareVersion,
-            @Nullable final AddressBook previousAddressBook,
-            @NonNull final AddressBook currentAddressBook,
-            @NonNull final RateLimitedLogger logger,
-            @NonNull final LongAccumulator metricAccumulator) {
+    private boolean isSignatureValid(@NonNull final GossipEvent event) {
+        final NodeId eventCreatorId = event.getHashedData().getCreatorId();
 
-        final AddressBook applicableAddressBook = determineApplicableAddressBook(
-                event, currentSoftwareVersion, previousAddressBook, currentAddressBook, logger);
+        final AddressBook applicableAddressBook = determineApplicableAddressBook(event);
 
         if (applicableAddressBook == null) {
             // this occurrence was already logged while attempting to determine the applicable address book
-            metricAccumulator.update(1);
+            invalidSignatureAccumulator.update(1);
             return false;
         }
 
-        if (!applicableAddressBook.contains(event.getHashedData().getCreatorId())) {
-            logger.error(
+        if (!applicableAddressBook.contains(eventCreatorId)) {
+            rateLimitedLogger.error(
                     EXCEPTION.getMarker(),
                     "Node {} doesn't exist in applicable address book. Event: {}",
-                    event.getHashedData().getCreatorId(),
+                    eventCreatorId,
                     event);
-            metricAccumulator.update(1);
+            invalidSignatureAccumulator.update(1);
             return false;
         }
 
-        final PublicKey publicKey = applicableAddressBook
-                .getAddress(event.getHashedData().getCreatorId())
-                .getSigPublicKey();
+        final PublicKey publicKey =
+                applicableAddressBook.getAddress(eventCreatorId).getSigPublicKey();
 
         if (publicKey == null) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Cannot find publicKey for creator with ID: {}",
-                    event.getHashedData().getCreatorId());
-            metricAccumulator.update(1);
+            rateLimitedLogger.error(
+                    EXCEPTION.getMarker(), "Cannot find publicKey for creator with ID: {}", eventCreatorId);
+            invalidSignatureAccumulator.update(1);
             return false;
         }
 
@@ -242,13 +218,13 @@ public class EventSignatureValidator {
                 publicKey);
 
         if (!isSignatureValid) {
-            logger.error(
+            rateLimitedLogger.error(
                     INVALID_EVENT_ERROR.getMarker(),
                     "Event failed signature check. Event: {}, Signature: {}, Hash: {}",
                     event,
                     CommonUtils.hex(event.getUnhashedData().getSignature()),
                     event.getHashedData().getHash());
-            metricAccumulator.update(1);
+            invalidSignatureAccumulator.update(1);
         }
 
         return isSignatureValid;
@@ -266,15 +242,7 @@ public class EventSignatureValidator {
             return;
         }
 
-        if (isSignatureValid(
-                event,
-                signatureVerifier,
-                currentSoftwareVersion,
-                previousAddressBook,
-                currentAddressBook,
-                rateLimitedLogger,
-                invalidSignatureAccumulator)) {
-
+        if (isSignatureValid(event)) {
             eventConsumer.accept(event);
         } else {
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
