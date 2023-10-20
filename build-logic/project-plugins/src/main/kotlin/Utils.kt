@@ -39,7 +39,7 @@ class Utils {
         @JvmStatic
         fun generateProjectVersionReport(rootProject: Project, ostream: OutputStream) {
             val writer = PrintStream(ostream, false, Charsets.UTF_8)
-            val version = rootProject.layout.projectDirectory.versionTxt().asFile.readText()
+            val version = rootProject.layout.projectDirectory.versionTxt().asFile.readText().trim()
 
             ostream.use {
                 writer.use {
