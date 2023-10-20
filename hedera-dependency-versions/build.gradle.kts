@@ -26,7 +26,7 @@ val eclipseCollectionsVersion = "10.4.0"
 val grpcVersion = "1.54.1"
 val helidonVersion = "3.2.1"
 val jacksonVersion = "2.13.5"
-val log4jVersion = "2.17.2"
+val log4jVersion = "2.20.0"
 val mockitoVersion = "4.11.0"
 val nettyVersion = "4.1.87.Final"
 val prometheusVersion = "0.16.0"
@@ -37,6 +37,9 @@ val tuweniVersion = "2.3.1"
 
 dependencies {
     api(enforcedPlatform("io.netty:netty-bom:$nettyVersion"))
+
+    // forward logging from modules using SLF4J (e.g. 'org.hyperledger.besu.evm') to Log4J
+    runtime(javaModuleDependencies.gav("org.apache.logging.log4j.slf4j"))
 }
 
 moduleInfo {
@@ -82,7 +85,7 @@ moduleInfo {
     version("org.apache.commons.math3", "3.2")
     version("org.apache.logging.log4j", log4jVersion)
     version("org.apache.logging.log4j.core", log4jVersion)
-    version("org.apache.logging.log4j.jul", log4jVersion)
+    version("org.apache.logging.log4j.slf4j", log4jVersion)
     version("org.assertj.core", "3.23.1")
     version("org.bouncycastle.pkix", bouncycastleVersion)
     version("org.bouncycastle.provider", bouncycastleVersion)
@@ -93,7 +96,7 @@ moduleInfo {
     version("org.hyperledger.besu.datatypes", besuVersion)
     version("org.hyperledger.besu.evm", besuVersion)
     version("org.hyperledger.besu.secp256k1", besuNativeVersion)
-    version("org.json", "20230227")
+    version("org.json", "20231013")
     version("org.junit.jupiter.api", "5.9.1")
     version("org.junit.platform.engine", "1.9.1")
     version("org.junitpioneer", "2.0.1")
@@ -101,7 +104,6 @@ moduleInfo {
     version("org.mockito.inline", mockitoVersion)
     version("org.mockito.junit.jupiter", mockitoVersion)
     version("org.opentest4j", "1.2.0")
-    version("org.slf4j", "2.0.3")
     version("org.testcontainers", testContainersVersion)
     version("org.testcontainers.junit.jupiter", testContainersVersion)
     version("org.yaml.snakeyaml", "1.33")

@@ -196,8 +196,6 @@ extraJavaModuleInfo {
     knownModule("junit:junit", "junit")
     knownModule("org.apache.logging.log4j:log4j-api", "org.apache.logging.log4j")
     knownModule("org.apache.logging.log4j:log4j-core", "org.apache.logging.log4j.core")
-    knownModule("org.apache.logging.log4j:log4j-slf4j", "org.apache.logging.log4j.slf4j")
-    knownModule("org.apache.logging.log4j:log4j-jul", "org.apache.logging.log4j.jul")
     knownModule("org.jetbrains.kotlin:kotlin-stdlib-jdk8", "kotlin.stdlib.jdk8")
     knownModule("org.slf4j:slf4j-api", "org.slf4j")
     knownModule("jakarta.inject:jakarta.inject-api", "jakarta.inject")

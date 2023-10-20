@@ -34,6 +34,7 @@ import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
+import com.swirlds.platform.test.consensus.framework.ConsensusTestNode;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestOrchestrator;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestUtils;
 import com.swirlds.platform.test.consensus.framework.OrchestratorBuilder;
@@ -631,5 +632,22 @@ public final class ConsensusTestDefinitions {
         orchestrator.generateEvents(0.5);
         orchestrator.validate(
                 Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.8)));
+    }
+
+    /**
+     * Tests loading a genesis snapshot and continuing consensus from there
+     */
+    public static void genesisSnapshotTest(@NonNull final TestInput input) {
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        for (final ConsensusTestNode node : orchestrator.getNodes()) {
+            node.getIntake().loadSnapshot(SyntheticSnapshot.getGenesisSnapshot());
+        }
+
+        orchestrator
+                .generateAllEvents()
+                .validateAndClear(Validations.standard()
+                        .ratios(EventRatioValidation.standard()
+                                .setMinimumConsensusRatio(0.9 - (0.05 * input.numberOfNodes()))));
     }
 }
