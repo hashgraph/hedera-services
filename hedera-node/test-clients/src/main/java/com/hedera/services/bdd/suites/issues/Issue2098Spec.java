@@ -78,7 +78,7 @@ public class Issue2098Spec extends HapiSuite {
                         .payingWith(ADDRESS_BOOK_CONTROL)
                         .erasingProps(Set.of(GET_TOPIC_INFO)))
                 .then(
-                        getTopicInfo("misc").payingWith(CIVILIAN).hasCostAnswerPrecheck(NOT_SUPPORTED),
+                        getTopicInfo("misc").payingWith(CIVILIAN).hasAnswerOnlyPrecheck(NOT_SUPPORTED),
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of(GET_TOPIC_INFO, "0-*")),
@@ -92,7 +92,7 @@ public class Issue2098Spec extends HapiSuite {
                         .payingWith(ADDRESS_BOOK_CONTROL)
                         .erasingProps(Set.of(GET_TOPIC_INFO)))
                 .then(
-                        getTopicInfo("misc").payingWith(CIVILIAN).hasCostAnswerPrecheck(NOT_SUPPORTED),
+                        getTopicInfo("misc").payingWith(CIVILIAN).hasAnswerOnlyPrecheck(NOT_SUPPORTED),
                         getTopicInfo("misc"),
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)

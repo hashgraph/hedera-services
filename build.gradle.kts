@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.umbrella") }
+plugins { id("com.hedera.hashgraph.root") }
