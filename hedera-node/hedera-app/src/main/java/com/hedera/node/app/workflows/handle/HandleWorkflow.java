@@ -58,6 +58,7 @@ import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -678,12 +679,15 @@ public class HandleWorkflow {
 
         // prepare signature verification
         final var verifications = new HashMap<Key, SignatureVerificationFuture>();
-        final var payerKey = previousResult.payerKey();
-        verifications.put(payerKey, previousResult.verificationResults().get(payerKey));
+        final var payer = solvencyPreCheck.getPayerAccount(storeFactory, previousResult.payer());
+        final var payerKey = payer.key();
 
         // expand all keys
         final var expanded = new HashSet<ExpandedSignaturePair>();
         signatureExpander.expand(sigPairs, expanded);
+        if (payerKey != null && !HapiUtils.isHollow(payer)) {
+            signatureExpander.expand(payerKey, sigPairs, expanded);
+        }
         signatureExpander.expand(currentRequiredPayerKeys, sigPairs, expanded);
         signatureExpander.expand(currentOptionalPayerKeys, sigPairs, expanded);
 

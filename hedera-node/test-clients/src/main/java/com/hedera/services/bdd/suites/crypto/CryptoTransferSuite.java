@@ -1755,6 +1755,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_ACCOUNT_ID)));
     }
 
+    @HapiTest
     private HapiSpec complexKeyAcctPaysForOwnTransfer() {
         SigControl enoughUniqueSigs = SigControl.threshSigs(
                 2,

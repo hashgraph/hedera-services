@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
@@ -29,6 +30,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.fees.FeeManager;
@@ -53,6 +55,7 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.List;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -183,7 +186,7 @@ public final class IngestChecker {
         }
 
         // 6. Verify payer's signatures
-        verifyPayerSignature(txInfo, payerKey, configuration);
+        verifyPayerSignature(txInfo, payer, payerKey, configuration);
 
         // 7. Check payer solvency
         final FeeContext feeContext = new FeeContextImpl(
@@ -196,14 +199,19 @@ public final class IngestChecker {
 
     private void verifyPayerSignature(
             @NonNull final TransactionInfo txInfo,
+            @NonNull final Account payer,
             @NonNull final Key payerKey,
             @NonNull final Configuration configuration)
             throws PreCheckException {
         final var hederaConfig = configuration.getConfigData(HederaConfig.class);
+        final var sigPairs = txInfo.signatureMap().sigPairOrElse(List.of());
 
         // Expand the signatures
         final var expandedSigs = new HashSet<ExpandedSignaturePair>();
-        signatureExpander.expand(payerKey, txInfo.signatureMap().sigPairOrThrow(), expandedSigs);
+        signatureExpander.expand(sigPairs, expandedSigs);
+        if (!isHollow(payer)) {
+            signatureExpander.expand(payerKey, sigPairs, expandedSigs);
+        }
 
         // Verify the signatures
         final var results = signatureVerifier.verify(txInfo.signedBytes(), expandedSigs);
