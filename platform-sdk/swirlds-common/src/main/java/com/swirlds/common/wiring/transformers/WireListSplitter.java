@@ -21,8 +21,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Consumer;
 
-// TODO test
-
 /**
  * Transforms a list of items to a sequence of individual items. Expects that there will not be any null values in the
  * collection.

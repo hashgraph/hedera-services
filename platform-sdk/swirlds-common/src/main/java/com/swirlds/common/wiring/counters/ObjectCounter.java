@@ -58,8 +58,6 @@ public abstract class ObjectCounter {
      */
     public abstract long getCount();
 
-    // TODO test these methods
-
     /**
      * Blocks until the number of objects off-ramped is equal to the number of objects on-ramped.
      */

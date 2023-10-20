@@ -16,6 +16,8 @@
 
 package com.swirlds.common.wiring;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+
 import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.transformers.WireListSplitter;
 import com.swirlds.common.wiring.transformers.WireTransformer;
@@ -26,6 +28,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Describes the output of a wire (or wire-like object). Can be soldered to wire input channels or lambdas.
@@ -33,6 +37,8 @@ import java.util.function.Predicate;
  * @param <O> the output type of the object
  */
 public abstract class OutputChannel<O> {
+
+    private static final Logger logger = LogManager.getLogger(OutputChannel.class);
 
     private final List<Consumer<O>> forwardingDestinations = new ArrayList<>();
 
@@ -47,9 +53,13 @@ public abstract class OutputChannel<O> {
      * @param data the output data to forward
      */
     protected void forward(@NonNull final O data) {
-        // TODO catch exceptions and do something sensible
         for (final Consumer<O> destination : forwardingDestinations) {
-            destination.accept(data);
+            try {
+                destination.accept(data);
+            } catch (final Exception e) {
+                // TODO it would be nice if we had a name to go along with this
+                logger.error(EXCEPTION.getMarker(), "Exception thrown while forwarding data {}", data, e);
+            }
         }
     }
 
@@ -57,9 +67,8 @@ public abstract class OutputChannel<O> {
      * Specify a channel where output data should be passed. This forwarding operation respects back pressure.
      *
      * <p>
-     * "Solder" in this context is pronounced "sodder". It rhymes with "odder". (Don't blame me, English is wierd.
-     * Anyways, we stole this word from the French.) Soldering is the act of connecting two wires together, usually by
-     * melting a metal alloy between them. See https://en.wikipedia.org/wiki/Soldering
+     * Soldering is the act of connecting two wires together, usually by melting a metal alloy between them. See
+     * https://en.wikipedia.org/wiki/Soldering
      *
      * <p>
      * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations
@@ -77,9 +86,8 @@ public abstract class OutputChannel<O> {
      * Specify a channel where output data should be forwarded.
      *
      * <p>
-     * "Solder" in this context is pronounced "sodder". It rhymes with "odder". (Don't blame me, English is wierd.
-     * Anyways, we stole this word from the French.) Soldering is the act of connecting two wires together, usually by
-     * melting a metal alloy between them. See https://en.wikipedia.org/wiki/Soldering
+     * Soldering is the act of connecting two wires together, usually by melting a metal alloy between them. See
+     * https://en.wikipedia.org/wiki/Soldering
      *
      * <p>
      * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations
@@ -105,9 +113,8 @@ public abstract class OutputChannel<O> {
      * Specify a consumer where output data should be forwarded.
      *
      * <p>
-     * "Solder" in this context is pronounced "sodder". It rhymes with "odder". (Don't blame me, English is wierd.
-     * Anyways, we stole this word from the French.) Soldering is the act of connecting two wires together, usually by
-     * melting a metal alloy between them. See https://en.wikipedia.org/wiki/Soldering
+     * Soldering is the act of connecting two wires together, usually by melting a metal alloy between them. See
+     * https://en.wikipedia.org/wiki/Soldering
      *
      * <p>
      * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations

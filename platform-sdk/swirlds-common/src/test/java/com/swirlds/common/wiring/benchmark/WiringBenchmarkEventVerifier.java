@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.components;
+package com.swirlds.common.wiring.benchmark;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;

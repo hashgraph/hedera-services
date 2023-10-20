@@ -128,10 +128,7 @@ public class BackpressureObjectCounter extends ObjectCounter {
      */
     @Override
     public void offRamp() {
-        final long value = count.decrementAndGet(); // TODO
-        if (value < 0) {
-            throw new IllegalStateException("Count cannot be negative");
-        }
+        count.decrementAndGet();
     }
 
     /**

@@ -90,7 +90,6 @@ public class ConcurrentWire<O> extends Wire<O> {
             } catch (final Throwable t) {
                 uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
             } finally {
-                //                System.out.println("off ramping " + data); // TODO
                 offRamp.offRamp();
             }
             return true;

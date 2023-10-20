@@ -1595,4 +1595,266 @@ class SequentialWireTests {
                 Duration.ofSeconds(1),
                 "Wire inversion bit did not match expected value");
     }
+
+    /**
+     * Validate that a wire soldered to another using injection ignores backpressure constraints.
+     */
+    @Test
+    void injectionSolderingTest() throws InterruptedException {
+
+        // In this test, wires A and B are connected to the input of wire C, which has a maximum capacity.
+        // Wire A respects back pressure, but wire B uses injection and can ignore it.
+
+        final Wire<Integer> wireA = Wire.builder("A").build().cast();
+        final InputChannel<Integer, Integer> inA = wireA.buildInputChannel();
+
+        final Wire<Integer> wireB = Wire.builder("B").build().cast();
+        final InputChannel<Integer, Integer> inB = wireB.buildInputChannel();
+
+        final Wire<Void> wireC =
+                Wire.builder("C").withUnhandledTaskCapacity(10).build().cast();
+        final InputChannel<Integer, Void> inC = wireC.buildInputChannel();
+
+        wireA.solderTo(inC, false); // respects capacity
+        wireB.solderTo(inC, true); // ignores capacity
+
+        final AtomicInteger countA = new AtomicInteger();
+        inA.bind(x -> {
+            countA.set(hash32(countA.get(), x));
+            return x;
+        });
+
+        final AtomicInteger countB = new AtomicInteger();
+        inB.bind(x -> {
+            countB.set(hash32(countB.get(), x));
+            return x;
+        });
+
+        final AtomicInteger sumC = new AtomicInteger();
+        final CountDownLatch latch = new CountDownLatch(1);
+        inC.bind(x -> {
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            sumC.getAndAdd(x);
+        });
+
+        // Add 5 elements to A and B. This will completely fill C's capacity.
+        int expectedCount = 0;
+        int expectedSum = 0;
+        for (int i = 0; i < 5; i++) {
+            inA.put(i);
+            inB.put(i);
+            expectedCount = hash32(expectedCount, i);
+            expectedSum += 2 * i;
+        }
+
+        // Eventually, C should have 10 things that have not yet been fully processed.
+        assertEventuallyEquals(
+                10L,
+                wireC::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "C should have 10 unprocessed tasks, currently has " + wireC.getUnprocessedTaskCount());
+
+        assertEquals(expectedCount, countA.get());
+        assertEquals(expectedCount, countB.get());
+
+        // Push some more data into A and B. A will get stuck trying to push it to C.
+        inA.put(5);
+        inB.put(5);
+        expectedCount = hash32(expectedCount, 5);
+        expectedSum += 2 * 5;
+
+        assertEventuallyEquals(expectedCount, countA::get, Duration.ofSeconds(1), "A should have processed task");
+        assertEventuallyEquals(expectedCount, countB::get, Duration.ofSeconds(1), "B should have processed task");
+
+        // If we wait some time, the task from B should have increased C's count to 11, but the task from A
+        // should have been unable to increase C's count.
+        MILLISECONDS.sleep(50);
+        assertEquals(11, wireC.getUnprocessedTaskCount());
+
+        // Push some more data into A and B. A will be unable to process it because it's still
+        // stuck pushing the previous value.
+        inA.put(6);
+        inB.put(6);
+        final int expectedCountAfterHandling6 = hash32(expectedCount, 6);
+        expectedSum += 2 * 6;
+
+        assertEventuallyEquals(
+                expectedCountAfterHandling6, countB::get, Duration.ofSeconds(1), "B should have processed task");
+
+        // Even if we wait, A should not have been able to process the task.
+        MILLISECONDS.sleep(50);
+        assertEquals(expectedCount, countA.get());
+        assertEquals(12, wireC.getUnprocessedTaskCount());
+
+        // Releasing the latch should allow data to flow through C.
+        latch.countDown();
+        assertEventuallyEquals(expectedSum, sumC::get, Duration.ofSeconds(1), "C should have processed all tasks");
+        assertEquals(expectedCountAfterHandling6, countA.get());
+    }
+
+    /**
+     * When a handler returns null, the wire should not forward the null value to the next wire.
+     */
+    @Test
+    void squelchNullValuesInWiresTest() {
+        final Wire<Integer> wireA =
+                Wire.builder("A").withOutputType(Integer.class).build();
+        final Wire<Integer> wireB =
+                Wire.builder("A").withOutputType(Integer.class).build();
+        final Wire<Integer> wireC =
+                Wire.builder("A").withOutputType(Integer.class).build();
+        final Wire<Void> wireD = Wire.builder("A").withOutputType(Void.class).build();
+
+        final InputChannel<Integer, Integer> inputA = wireA.buildInputChannel();
+        final InputChannel<Integer, Integer> inputB = wireB.buildInputChannel();
+        final InputChannel<Integer, Integer> inputC = wireC.buildInputChannel();
+        final InputChannel<Integer, Void> inputD = wireD.buildInputChannel();
+
+        wireA.solderTo(inputB);
+        wireB.solderTo(inputC);
+        wireC.solderTo(inputD);
+
+        final AtomicInteger countA = new AtomicInteger();
+        final AtomicInteger countB = new AtomicInteger();
+        final AtomicInteger countC = new AtomicInteger();
+        final AtomicInteger countD = new AtomicInteger();
+
+        inputA.bind(x -> {
+            countA.set(hash32(countA.get(), x));
+            if (x % 3 == 0) {
+                return null;
+            }
+            return x;
+        });
+
+        inputB.bind(x -> {
+            countB.set(hash32(countB.get(), x));
+            if (x % 5 == 0) {
+                return null;
+            }
+            return x;
+        });
+
+        inputC.bind(x -> {
+            countC.set(hash32(countC.get(), x));
+            if (x % 7 == 0) {
+                return null;
+            }
+            return x;
+        });
+
+        inputD.bind(x -> {
+            countD.set(hash32(countD.get(), x));
+        });
+
+        int expectedCountA = 0;
+        int expectedCountB = 0;
+        int expectedCountC = 0;
+        int expectedCountD = 0;
+
+        for (int i = 0; i < 100; i++) {
+            inputA.put(i);
+            expectedCountA = hash32(expectedCountA, i);
+            if (i % 3 == 0) {
+                continue;
+            }
+            expectedCountB = hash32(expectedCountB, i);
+            if (i % 5 == 0) {
+                continue;
+            }
+            expectedCountC = hash32(expectedCountC, i);
+            if (i % 7 == 0) {
+                continue;
+            }
+            expectedCountD = hash32(expectedCountD, i);
+        }
+
+        assertEventuallyEquals(
+                expectedCountD, countD::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEquals(expectedCountA, countA.get());
+        assertEquals(expectedCountB, countB.get());
+        assertEquals(expectedCountC, countC.get());
+    }
+
+    /**
+     * Make sure we don't crash when metrics are enabled. Might be nice to eventually validate the metrics, but right
+     * now the metrics framework makes it complex to do so.
+     */
+    @Test
+    void metricsEnabledTest() {
+        final Wire<Integer> wireA = Wire.builder("A")
+                .withOutputType(Integer.class)
+                .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics(), Time.getCurrent())
+                        .withBusyFractionMetricsEnabled(true)
+                        .withUnhandledTaskMetricEnabled(true))
+                .build();
+        final Wire<Integer> wireB = Wire.builder("B")
+                .withOutputType(Integer.class)
+                .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics(), Time.getCurrent())
+                        .withBusyFractionMetricsEnabled(true)
+                        .withUnhandledTaskMetricEnabled(false))
+                .build();
+        final Wire<Integer> wireC = Wire.builder("C")
+                .withOutputType(Integer.class)
+                .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics(), Time.getCurrent())
+                        .withBusyFractionMetricsEnabled(false)
+                        .withUnhandledTaskMetricEnabled(true))
+                .build();
+        final Wire<Void> wireD = Wire.builder("D")
+                .withOutputType(Void.class)
+                .withMetricsBuilder(Wire.metricsBuilder(new NoOpMetrics(), Time.getCurrent())
+                        .withBusyFractionMetricsEnabled(false)
+                        .withUnhandledTaskMetricEnabled(false))
+                .build();
+
+        final InputChannel<Integer, Integer> inputA = wireA.buildInputChannel();
+        final InputChannel<Integer, Integer> inputB = wireB.buildInputChannel();
+        final InputChannel<Integer, Integer> inputC = wireC.buildInputChannel();
+        final InputChannel<Integer, Void> inputD = wireD.buildInputChannel();
+
+        wireA.solderTo(inputB);
+        wireB.solderTo(inputC);
+        wireC.solderTo(inputD);
+
+        final AtomicInteger countA = new AtomicInteger();
+        final AtomicInteger countB = new AtomicInteger();
+        final AtomicInteger countC = new AtomicInteger();
+        final AtomicInteger countD = new AtomicInteger();
+
+        inputA.bind(x -> {
+            countA.set(hash32(countA.get(), x));
+            return x;
+        });
+
+        inputB.bind(x -> {
+            countB.set(hash32(countB.get(), x));
+            return x;
+        });
+
+        inputC.bind(x -> {
+            countC.set(hash32(countC.get(), x));
+            return x;
+        });
+
+        inputD.bind(x -> {
+            countD.set(hash32(countD.get(), x));
+        });
+
+        int expectedCount = 0;
+
+        for (int i = 0; i < 100; i++) {
+            inputA.put(i);
+            expectedCount = hash32(expectedCount, i);
+        }
+
+        assertEventuallyEquals(
+                expectedCount, countD::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
+        assertEquals(expectedCount, countA.get());
+        assertEquals(expectedCount, countB.get());
+        assertEquals(expectedCount, countC.get());
+    }
 }

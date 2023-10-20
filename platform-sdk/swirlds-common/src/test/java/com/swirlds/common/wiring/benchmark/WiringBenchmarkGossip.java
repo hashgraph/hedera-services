@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.components;
+package com.swirlds.common.wiring.benchmark;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;

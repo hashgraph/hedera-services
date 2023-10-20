@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.components;
+package com.swirlds.common.wiring.benchmark;
 
 public final class WiringBenchmarkEvent {
     private long number = -1; // We'll let the orphan buffer assign this, although I think consensus actually does

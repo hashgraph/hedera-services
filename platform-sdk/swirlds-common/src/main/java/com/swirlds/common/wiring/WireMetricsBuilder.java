@@ -73,7 +73,7 @@ public class WireMetricsBuilder {
     public WireMetricsBuilder withBusyFractionMetricsEnabled(final boolean enabled) {
         this.busyFractionMetricEnabled = enabled;
         return this;
-    } // TODO test
+    }
 
     /**
      * Check if the scheduled task count metric is enabled.
@@ -111,15 +111,14 @@ public class WireMetricsBuilder {
     /**
      * Register all configured metrics.
      *
-     * @param scheduledTaskCounter the counter that is used to track the number of scheduled tasks
+     * @param unhandledTaskCounter the counter that is used to track the number of scheduled tasks
      */
-    void registerMetrics(@NonNull final String wireName, @Nullable final ObjectCounter scheduledTaskCounter) {
-
+    void registerMetrics(@NonNull final String wireName, @Nullable final ObjectCounter unhandledTaskCounter) {
         if (unhandledTaskMetricEnabled) {
-            Objects.requireNonNull(scheduledTaskCounter);
+            Objects.requireNonNull(unhandledTaskCounter);
 
             final FunctionGauge.Config<Long> config = new FunctionGauge.Config<>(
-                            "platform", wireName + "_unhandled_task_count", Long.class, scheduledTaskCounter::getCount)
+                            "platform", wireName + "_unhandled_task_count", Long.class, unhandledTaskCounter::getCount)
                     .withDescription(
                             "The number of scheduled tasks that have not been fully handled for the wire " + wireName);
             metrics.getOrCreate(config);

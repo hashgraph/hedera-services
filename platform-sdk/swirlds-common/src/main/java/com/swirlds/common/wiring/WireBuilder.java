@@ -290,6 +290,11 @@ public class WireBuilder<O> {
     @NonNull
     public Wire<O> build() {
         final Counters counters = buildCounters();
+
+        if (metricsBuilder != null) {
+            metricsBuilder.registerMetrics(name, counters.onRamp());
+        }
+
         if (concurrent) {
             return new ConcurrentWire<>(
                     name,

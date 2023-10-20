@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring;
+package com.swirlds.common.wiring.benchmark;
 
 import static java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.wiring.components.WiringBenchmarkEvent;
-import com.swirlds.common.wiring.components.WiringBenchmarkEventPool;
-import com.swirlds.common.wiring.components.WiringBenchmarkEventVerifier;
-import com.swirlds.common.wiring.components.WiringBenchmarkGossip;
-import com.swirlds.common.wiring.components.WiringBenchmarkTopologicalEventSorter;
+import com.swirlds.common.wiring.InputChannel;
+import com.swirlds.common.wiring.Wire;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import java.time.Duration;

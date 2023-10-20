@@ -22,8 +22,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-// TODO test
-
 /**
  * Filters out data, allowing some objects to pass and blocking others.
  */
