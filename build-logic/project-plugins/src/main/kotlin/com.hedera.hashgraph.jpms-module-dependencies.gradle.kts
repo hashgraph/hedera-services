@@ -53,7 +53,7 @@ javaModuleDependencies {
     moduleNameToGA.put("io.perfmark", "io.perfmark:perfmark-api")
     moduleNameToGA.put(
         "org.apache.logging.log4j.slf4j",
-        "org.apache.logging.log4j:log4j-slf4j-impl"
+        "org.apache.logging.log4j:log4j-slf4j2-impl"
     )
     moduleNameToGA.put("org.bouncycastle.util", "org.bouncycastle:bcutil-jdk15on")
     moduleNameToGA.put(

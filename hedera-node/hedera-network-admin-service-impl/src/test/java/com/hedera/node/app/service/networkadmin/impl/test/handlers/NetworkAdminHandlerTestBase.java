@@ -18,6 +18,7 @@ package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
@@ -28,6 +29,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
@@ -50,6 +52,7 @@ import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
@@ -76,7 +79,7 @@ public class NetworkAdminHandlerTestBase {
     private static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
             new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
 
-    protected final Bytes ledgerId = Bytes.wrap(new byte[] {3});
+    protected final Bytes ledgerId = Bytes.wrap(new byte[] {0});
 
     protected final AccountID accountId = AccountID.newBuilder().accountNum(3).build();
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
@@ -126,12 +129,19 @@ public class NetworkAdminHandlerTestBase {
     protected static final AccountID PAYER_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(1001).build();
 
-    protected TransactionID transactionID = transactionID(0);
+    protected TransactionID transactionID;
+    protected TransactionID otherNonceOneTransactionID;
+    protected TransactionID otherNonceTwoTransactionID;
+    protected TransactionID otherNonceThreeTransactionID;
+    protected TransactionID transactionIDNotInCache;
 
-    protected TransactionID otherNonceOneTransactionID = transactionID(1);
-    protected TransactionID otherNonceTwoTransactionID = transactionID(2);
-    protected TransactionID otherNonceThreeTransactionID = transactionID(3);
-    protected TransactionID transactionIDNotInCache = transactionID(5);
+    protected TransactionRecord primaryRecord;
+    protected TransactionRecord duplicate1;
+    protected TransactionRecord duplicate2;
+    protected TransactionRecord duplicate3;
+    protected TransactionRecord recordOne;
+    protected TransactionRecord recordTwo;
+    protected TransactionRecord recordThree;
 
     private static final int MAX_QUERYABLE_PER_ACCOUNT = 10;
 
@@ -169,6 +179,13 @@ public class NetworkAdminHandlerTestBase {
 
     @BeforeEach
     void commonSetUp() {
+        final var validStartTime = Instant.ofEpochMilli(123456789L); // aligned to millisecond boundary for convenience.
+        transactionID = transactionID(validStartTime, 0);
+        otherNonceOneTransactionID = transactionID(validStartTime.plusNanos(1), 1);
+        otherNonceTwoTransactionID = transactionID(validStartTime.plusNanos(2), 2);
+        otherNonceThreeTransactionID = transactionID(validStartTime.plusNanos(3), 3);
+        transactionIDNotInCache = transactionID(validStartTime.plusNanos(5), 5);
+
         givenValidAccount(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
         refreshStoresWithEntitiesOnlyInReadable();
         refreshRecordCache();
@@ -218,33 +235,60 @@ public class NetworkAdminHandlerTestBase {
 
     private void givenRecordCacheState() {
         cache = emptyRecordCacheBuilder();
+        final var consensusTimestamp = Instant.ofEpochSecond(123456789L).plusNanos(1000);
         final var receipt = TransactionReceipt.newBuilder()
                 .accountID(accountId)
                 .status(ResponseCodeEnum.UNKNOWN)
                 .build();
-        final var primaryRecord = TransactionRecord.newBuilder()
+        primaryRecord = TransactionRecord.newBuilder()
                 .transactionID(transactionID)
                 .receipt(receipt)
+                .consensusTimestamp(asTimestamp(consensusTimestamp))
                 .build();
-        final var recordOne = TransactionRecord.newBuilder()
+        duplicate1 = TransactionRecord.newBuilder()
+                .transactionID(transactionID)
+                .receipt(receipt)
+                .consensusTimestamp(asTimestamp(consensusTimestamp.plusMillis(1)))
+                .build();
+        duplicate2 = TransactionRecord.newBuilder()
+                .transactionID(transactionID)
+                .receipt(receipt)
+                .consensusTimestamp(asTimestamp(consensusTimestamp.plusMillis(2)))
+                .build();
+        duplicate3 = TransactionRecord.newBuilder()
+                .transactionID(transactionID)
+                .receipt(receipt)
+                .consensusTimestamp(asTimestamp(consensusTimestamp.plusMillis(3)))
+                .build();
+        recordOne = TransactionRecord.newBuilder()
                 .transactionID(otherNonceOneTransactionID)
                 .receipt(receipt)
+                .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(1)))
+                .parentConsensusTimestamp(asTimestamp(consensusTimestamp))
                 .build();
-        final var recordTwo = TransactionRecord.newBuilder()
+        recordTwo = TransactionRecord.newBuilder()
                 .transactionID(otherNonceTwoTransactionID)
                 .receipt(receipt)
+                .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(2)))
+                .parentConsensusTimestamp(asTimestamp(consensusTimestamp))
                 .build();
-        final var recordThree = TransactionRecord.newBuilder()
+        recordThree = TransactionRecord.newBuilder()
                 .transactionID(otherNonceThreeTransactionID)
                 .receipt(receipt)
+                .consensusTimestamp(asTimestamp(consensusTimestamp.plusNanos(3)))
+                .parentConsensusTimestamp(asTimestamp(consensusTimestamp))
                 .build();
-        cache.add(0, PAYER_ACCOUNT_ID, primaryRecord, Instant.now());
-        cache.add(1, PAYER_ACCOUNT_ID, primaryRecord, Instant.now());
-        cache.add(2, PAYER_ACCOUNT_ID, primaryRecord, Instant.now());
-        cache.add(3, PAYER_ACCOUNT_ID, primaryRecord, Instant.now());
-        cache.add(0, PAYER_ACCOUNT_ID, recordOne, Instant.now());
-        cache.add(0, PAYER_ACCOUNT_ID, recordTwo, Instant.now());
-        cache.add(0, PAYER_ACCOUNT_ID, recordThree, Instant.now());
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(primaryRecord)));
+        cache.add(1, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate1)));
+        cache.add(2, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate2)));
+        cache.add(3, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(duplicate3)));
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordOne)));
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordTwo)));
+        cache.add(0, PAYER_ACCOUNT_ID, List.of(singleTransactionRecord(recordThree)));
+    }
+
+    private SingleTransactionRecord singleTransactionRecord(TransactionRecord record) {
+        return new SingleTransactionRecord(Transaction.DEFAULT, record, List.of());
     }
 
     protected MapReadableKVState<AccountID, Account> readableAccountState() {
@@ -402,15 +446,15 @@ public class NetworkAdminHandlerTestBase {
                 .build();
     }
 
-    private TransactionID transactionID(int nonce) {
-        return transactionID(0, nonce);
+    private TransactionID transactionID(Instant validStartTime, int nonce) {
+        return transactionID(validStartTime, 0, nonce);
     }
 
-    private TransactionID transactionID(int nanos, int nonce) {
-        final var now = Instant.now();
+    private TransactionID transactionID(Instant validStartTime, int nanos, int nonce) {
         return TransactionID.newBuilder()
-                .transactionValidStart(
-                        Timestamp.newBuilder().seconds(now.getEpochSecond()).nanos(nanos))
+                .transactionValidStart(Timestamp.newBuilder()
+                        .seconds(validStartTime.getEpochSecond())
+                        .nanos(nanos))
                 .accountID(PAYER_ACCOUNT_ID)
                 .nonce(nonce)
                 .build();

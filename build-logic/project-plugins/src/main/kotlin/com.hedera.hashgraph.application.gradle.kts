@@ -17,7 +17,6 @@
 plugins {
     id("application")
     id("com.hedera.hashgraph.java")
-    id("com.hedera.hashgraph.dependency-analysis")
     id("com.gorylenko.gradle-git-properties")
 }
 

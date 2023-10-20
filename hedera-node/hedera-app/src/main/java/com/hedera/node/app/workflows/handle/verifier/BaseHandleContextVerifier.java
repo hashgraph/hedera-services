@@ -38,15 +38,15 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Base implementation of {@link HandleContextVerifier}
  */
 public class BaseHandleContextVerifier implements HandleContextVerifier {
 
-    private static final Logger logger = LoggerFactory.getLogger(BaseHandleContextVerifier.class);
+    private static final Logger logger = LogManager.getLogger(BaseHandleContextVerifier.class);
 
     private final long timeout;
     private final Map<Key, SignatureVerificationFuture> keyVerifications;
