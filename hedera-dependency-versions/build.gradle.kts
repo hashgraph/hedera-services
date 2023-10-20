@@ -93,7 +93,7 @@ moduleInfo {
     version("org.hyperledger.besu.datatypes", besuVersion)
     version("org.hyperledger.besu.evm", besuVersion)
     version("org.hyperledger.besu.secp256k1", besuNativeVersion)
-    version("org.json", "20230227")
+    version("org.json", "20231013")
     version("org.junit.jupiter.api", "5.9.1")
     version("org.junit.platform.engine", "1.9.1")
     version("org.junitpioneer", "2.0.1")
