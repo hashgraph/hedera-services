@@ -16,7 +16,7 @@
 
 package com.swirlds.common.wiring.transformers;
 
-import com.swirlds.common.wiring.wires.Solderable;
+import com.swirlds.common.wiring.OutputChannel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -27,7 +27,7 @@ import java.util.function.Predicate;
 /**
  * Filters out data, allowing some objects to pass and blocking others.
  */
-public class WireFilter<T> extends Solderable<T, WireFilter<T>> implements Consumer<T> {
+public class WireFilter<T> extends OutputChannel<T, WireFilter<T>> implements Consumer<T> {
 
     private final Predicate<T> predicate;
 

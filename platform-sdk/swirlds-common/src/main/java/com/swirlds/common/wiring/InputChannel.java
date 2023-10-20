@@ -28,7 +28,7 @@ import java.util.function.Function;
  * @param <I> the type of data that passes into the channel
  * @param <O> the type of data that comes out of the channel
  */
-public class WireChannel<I, O> {
+public class InputChannel<I, O> {
 
     private final Wire<O> wire;
     private Consumer<Object> handler;
@@ -38,7 +38,7 @@ public class WireChannel<I, O> {
      *
      * @param wire the wire to insert data into
      */
-    WireChannel(@NonNull final Wire<O> wire) {
+    InputChannel(@NonNull final Wire<O> wire) {
         this.wire = Objects.requireNonNull(wire);
     }
 
@@ -56,8 +56,8 @@ public class WireChannel<I, O> {
      */
     @NonNull
     @SuppressWarnings("unchecked")
-    public final <A, B> WireChannel<A, B> cast() {
-        return (WireChannel<A, B>) this;
+    public final <A, B> InputChannel<A, B> cast() {
+        return (InputChannel<A, B>) this;
     }
 
     /**
@@ -69,8 +69,8 @@ public class WireChannel<I, O> {
      * @return this
      */
     @SuppressWarnings("unchecked")
-    public <X> WireChannel<X, O> withInputType(@NonNull final Class<X> inputType) {
-        return (WireChannel<X, O>) this;
+    public <X> InputChannel<X, O> withInputType(@NonNull final Class<X> inputType) {
+        return (InputChannel<X, O>) this;
     }
 
     /**
@@ -83,7 +83,7 @@ public class WireChannel<I, O> {
      */
     @SuppressWarnings("unchecked")
     @NonNull
-    public WireChannel<I, O> bind(@NonNull final Consumer<I> handler) {
+    public InputChannel<I, O> bind(@NonNull final Consumer<I> handler) {
         if (this.handler != null) {
             throw new IllegalStateException("Handler already bound");
         }
@@ -102,7 +102,7 @@ public class WireChannel<I, O> {
      */
     @SuppressWarnings("unchecked")
     @NonNull
-    public WireChannel<I, O> bind(@NonNull final Function<I, O> handler) {
+    public InputChannel<I, O> bind(@NonNull final Function<I, O> handler) {
         if (this.handler != null) {
             throw new IllegalStateException("Handler already bound");
         }

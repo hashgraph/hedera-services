@@ -22,8 +22,8 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.common.wiring.InputChannel;
 import com.swirlds.common.wiring.Wire;
-import com.swirlds.common.wiring.WireChannel;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Random;
@@ -56,8 +56,8 @@ class ConcurrentWireTests {
                 .withOutputType(Void.class)
                 .withConcurrency(true)
                 .build();
-        final WireChannel<Integer, Void> channel =
-                wire.buildChannel().withInputType(Integer.class).bind(handler);
+        final InputChannel<Integer, Void> channel =
+                wire.buildInputChannel().withInputType(Integer.class).bind(handler);
 
         assertEquals(-1, wire.getUnprocessedTaskCount());
 
@@ -103,8 +103,8 @@ class ConcurrentWireTests {
                 .withOutputType(Void.class)
                 .withConcurrency(true)
                 .build();
-        final WireChannel<Operation, Void> channel =
-                wire.buildChannel().withInputType(Operation.class).bind(handler);
+        final InputChannel<Operation, Void> channel =
+                wire.buildInputChannel().withInputType(Operation.class).bind(handler);
 
         assertEquals(-1, wire.getUnprocessedTaskCount());
 

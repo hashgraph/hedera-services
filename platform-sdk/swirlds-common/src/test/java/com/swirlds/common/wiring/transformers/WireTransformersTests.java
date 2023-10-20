@@ -19,8 +19,8 @@ package com.swirlds.common.wiring.transformers;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 
+import com.swirlds.common.wiring.InputChannel;
 import com.swirlds.common.wiring.Wire;
-import com.swirlds.common.wiring.WireChannel;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,16 +44,16 @@ class WireTransformersTests {
         // Components B and C want individual integers. Component D wants the full list of integers.
 
         final Wire<List<Integer>> wireA = Wire.builder("A").build().cast();
-        final WireChannel<Integer, List<Integer>> wireAIn = wireA.buildChannel();
+        final InputChannel<Integer, List<Integer>> wireAIn = wireA.buildInputChannel();
 
         final Wire<Void> wireB = Wire.builder("B").build().cast();
-        final WireChannel<Integer, Void> wireBIn = wireB.buildChannel();
+        final InputChannel<Integer, Void> wireBIn = wireB.buildInputChannel();
 
         final Wire<Void> wireC = Wire.builder("C").build().cast();
-        final WireChannel<Integer, Void> wireCIn = wireC.buildChannel();
+        final InputChannel<Integer, Void> wireCIn = wireC.buildInputChannel();
 
         final Wire<Void> wireD = Wire.builder("D").build().cast();
-        final WireChannel<List<Integer>, Void> wireDIn = wireD.buildChannel();
+        final InputChannel<List<Integer>, Void> wireDIn = wireD.buildInputChannel();
 
         wireA.buildSplitter(Integer.class).solderTo(wireBIn).solderTo(wireCIn);
         wireA.solderTo(wireDIn);

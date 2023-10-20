@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.wires;
+package com.swirlds.common.wiring;
 
-import com.swirlds.common.wiring.WireChannel;
 import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.transformers.WireListSplitter;
 import com.swirlds.common.wiring.transformers.WireTransformer;
@@ -34,14 +33,14 @@ import java.util.function.Predicate;
  * @param <O> the output type of the object
  * @param <C> the type of the implementing class (i.e. the type of this)
  */
-public abstract class Solderable<O, C> {
+public abstract class OutputChannel<O, C> {
 
     private final List<Consumer<O>> forwardingDestinations = new ArrayList<>();
 
     /**
      * Constructor.
      */
-    protected Solderable() {}
+    protected OutputChannel() {}
 
     /**
      * Forward output data to any channels/consumers that are listening for it.
@@ -71,7 +70,7 @@ public abstract class Solderable<O, C> {
      * @return this
      */
     @NonNull
-    public final C solderTo(@NonNull final WireChannel<O, ?> channel) {
+    public final C solderTo(@NonNull final InputChannel<O, ?> channel) {
         return solderTo(channel, false);
     }
 
@@ -94,7 +93,7 @@ public abstract class Solderable<O, C> {
      */
     @SuppressWarnings("unchecked")
     @NonNull
-    public C solderTo(@NonNull final WireChannel<O, ?> channel, final boolean inject) {
+    public C solderTo(@NonNull final InputChannel<O, ?> channel, final boolean inject) {
         if (inject) {
             forwardingDestinations.add(channel::inject);
         } else {

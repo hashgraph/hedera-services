@@ -19,7 +19,6 @@ package com.swirlds.common.wiring;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.common.wiring.wires.Solderable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -30,7 +29,7 @@ import java.util.function.Consumer;
  *
  * @param <O> the output time of the wire (use {@link Void}) for a wire with no output type)
  */
-public abstract class Wire<O> extends Solderable<O, Wire<O>> {
+public abstract class Wire<O> extends OutputChannel<O, Wire<O>> {
 
     private final String name;
     private final boolean flushEnabled;
@@ -89,14 +88,14 @@ public abstract class Wire<O> extends Solderable<O, Wire<O>> {
 
     /**
      * Get a wire channel for inserting data into this wire. In order to use this channel, a handler must be bound via
-     * {@link WireChannel#bind(Consumer)}.
+     * {@link InputChannel#bind(Consumer)}.
      *
      * @param <I> the type of data that is inserted into the channel
      * @return the channel
      */
     @NonNull
-    public final <I> WireChannel<I, O> buildChannel() {
-        return new WireChannel<>(this);
+    public final <I> InputChannel<I, O> buildInputChannel() {
+        return new InputChannel<>(this);
     }
 
     /**

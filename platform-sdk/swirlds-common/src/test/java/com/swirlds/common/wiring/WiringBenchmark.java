@@ -79,13 +79,14 @@ class WiringBenchmark {
                 .build();
 
         // Step 2: create channels
-        final WireChannel<WiringBenchmarkEvent, WiringBenchmarkEvent> eventsToOrphanBuffer =
-                orphanBufferWire.buildChannel();
+        final InputChannel<WiringBenchmarkEvent, WiringBenchmarkEvent> eventsToOrphanBuffer =
+                orphanBufferWire.buildInputChannel();
 
-        final WireChannel<WiringBenchmarkEvent, WiringBenchmarkEvent> eventsToBeVerified =
-                verificationWire.buildChannel();
+        final InputChannel<WiringBenchmarkEvent, WiringBenchmarkEvent> eventsToBeVerified =
+                verificationWire.buildInputChannel();
 
-        final WireChannel<WiringBenchmarkEvent, Void> eventsToInsertBackIntoEventPool = eventPoolWire.buildChannel();
+        final InputChannel<WiringBenchmarkEvent, Void> eventsToInsertBackIntoEventPool =
+                eventPoolWire.buildInputChannel();
 
         // Step 3: solder wire outputs to the channels that want that output
 
