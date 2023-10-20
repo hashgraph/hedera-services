@@ -23,7 +23,7 @@ import java.util.Objects;
  * This object counter combines multiple counters into a single counter. Every time a method on this object is called,
  * the same method is also called on all child counters.
  */
-public class MultiObjectCounter extends ObjectCounter { // TODO test
+public class MultiObjectCounter extends ObjectCounter {
 
     private final ObjectCounter[] counters;
 

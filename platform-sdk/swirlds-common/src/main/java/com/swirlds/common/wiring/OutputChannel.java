@@ -57,7 +57,7 @@ public abstract class OutputChannel<O> {
             try {
                 destination.accept(data);
             } catch (final Exception e) {
-                // TODO it would be nice if we had a name to go along with this
+                // Future work: if we ever add a name to output channels, include that name in this log message.
                 logger.error(EXCEPTION.getMarker(), "Exception thrown while forwarding data {}", data, e);
             }
         }

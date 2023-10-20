@@ -28,15 +28,6 @@ import org.junit.jupiter.api.Test;
 
 class WireTransformersTests {
 
-    // TODO
-    //  - WireCollectionSplitter
-    //  - WireFilter
-    //  - WireTransformer
-    //  - soldering to a lambda
-    //  - injection soldering
-
-    // TODO consider changing "withType()" methods into "cast()" methods
-
     @Test
     void wireListSplitterTest() {
 

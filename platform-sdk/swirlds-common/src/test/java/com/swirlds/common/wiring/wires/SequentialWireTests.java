@@ -1857,4 +1857,6 @@ class SequentialWireTests {
         assertEquals(expectedCount, countB.get());
         assertEquals(expectedCount, countC.get());
     }
+
+    // TODO write test for wire that has multiple counters
 }
