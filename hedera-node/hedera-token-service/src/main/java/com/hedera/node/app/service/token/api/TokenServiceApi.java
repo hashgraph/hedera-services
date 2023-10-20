@@ -178,6 +178,9 @@ public interface TokenServiceApi {
      */
     long originalKvUsageFor(@NonNull AccountID id);
 
-    // TODO: docs
+    /**
+     * Updates the passed contract
+     * @param contract the contract that is updated
+     */
     void updateContract(Account contract);
 }
