@@ -21,6 +21,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.model.StandardWiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A wiring model is a collection of wires. It can be used to analyze the wiring of a system and to generate diagrams.
@@ -91,9 +92,10 @@ public abstract class WiringModel {
      * Generate a mermaid style wiring diagram.
      *
      * @return a mermaid style wiring diagram
+     * @param groups optional groupings of vertices
      */
     @NonNull
-    public abstract String generateWiringDiagram();
+    public abstract String generateWiringDiagram(@NonNull final Set<ModelGroup> groups);
 
     /**
      * Reserved for internal framework use. Do not call this method directly.

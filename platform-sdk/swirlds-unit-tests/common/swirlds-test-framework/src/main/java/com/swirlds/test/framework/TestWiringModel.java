@@ -17,9 +17,11 @@
 package com.swirlds.test.framework;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.wiring.ModelGroup;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /**
  * A simple version of a wiring model for scenarios where the wiring model is not needed.
@@ -58,7 +60,7 @@ public class TestWiringModel extends WiringModel {
      */
     @NonNull
     @Override
-    public String generateWiringDiagram() {
+    public String generateWiringDiagram(@NonNull final Set<ModelGroup> modelGroups) {
         return "do it yourself";
     }
 

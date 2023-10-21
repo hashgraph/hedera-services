@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.model;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.wiring.ModelGroup;
 import com.swirlds.common.wiring.WiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
@@ -64,8 +65,8 @@ public class StandardWiringModel extends WiringModel {
      */
     @NonNull
     @Override
-    public String generateWiringDiagram() {
-        return WiringFlowchart.generateWiringDiagram(vertices, edges);
+    public String generateWiringDiagram(@NonNull final Set<ModelGroup> groups) {
+        return WiringFlowchart.generateWiringDiagram(vertices, edges, groups);
     }
 
     /**

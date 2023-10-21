@@ -20,10 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.wiring.InputChannel;
+import com.swirlds.common.wiring.ModelGroup;
 import com.swirlds.common.wiring.Wire;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ModelTests {
@@ -52,8 +55,15 @@ class ModelTests {
         final boolean cycleDetected = model.checkForCyclicalBackpressure();
         assertEquals(cycleExpected, cycleDetected);
 
+        final Set<ModelGroup> groups = new HashSet<>();
+
+        // TODO create PCLI tool for drawing this type of diagram for the platform
+        //        groups.add(new ModelGroup("foo", Set.of("A", "B", "C"), false));
+        //        groups.add(new ModelGroup("bar", Set.of("D", "E", "F", "G"), false));
+        //        groups.add(new ModelGroup("baz", Set.of("H", "I", "J"), false));
+
         // Should not throw.
-        final String diagram = model.generateWiringDiagram();
+        final String diagram = model.generateWiringDiagram(groups);
         if (printMermaidDiagram) {
             System.out.println(diagram);
         }
