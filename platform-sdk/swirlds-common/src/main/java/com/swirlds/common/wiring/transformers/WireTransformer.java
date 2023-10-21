@@ -37,13 +37,15 @@ public class WireTransformer<A, B> extends OutputChannel<B> implements Consumer<
      * Constructor.
      *
      * @param model       the wiring model containing this output channel
+     * @param name        the name of the output channel
      * @param transformer an object that transforms from type A to type B. If this method returns null then no data is
      *                    forwarded. This method must be very fast. Putting large amounts of work into this transformer
      *                    violates the intended usage pattern of the wiring framework and may result in very poor system
      *                    performance.
      */
-    public WireTransformer(@NonNull final WiringModel model, @NonNull final Function<A, B> transformer) {
-        super(model);
+    public WireTransformer(
+            @NonNull final WiringModel model, @NonNull final String name, @NonNull final Function<A, B> transformer) {
+        super(model, name);
         this.transformer = Objects.requireNonNull(transformer);
     }
 

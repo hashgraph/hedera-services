@@ -21,6 +21,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.WiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -61,7 +62,8 @@ public class StandardWiringModel extends WiringModel {
      * {@inheritDoc}
      */
     @Override
-    protected void registerVertex(@NonNull final String vertexName) {
+    public void registerVertex(@NonNull final String vertexName) {
+        Objects.requireNonNull(vertexName);
         final boolean unique = vertices.add(vertexName);
         if (!unique) {
             throw new IllegalArgumentException("Duplicate vertex name: " + vertexName);
@@ -72,6 +74,6 @@ public class StandardWiringModel extends WiringModel {
      * {@inheritDoc}
      */
     @Override
-    protected void registerEdge(
+    public void registerEdge(
             @NonNull final String originVertex, @NonNull final String destinationVertex, @NonNull final String label) {}
 }

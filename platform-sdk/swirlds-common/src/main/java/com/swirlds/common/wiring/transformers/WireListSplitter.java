@@ -32,9 +32,10 @@ public class WireListSplitter<T> extends OutputChannel<T> implements Consumer<Li
      * Constructor.
      *
      * @param model the wiring model containing this output channel
+     * @param name  the name of the output channel
      */
-    public WireListSplitter(@NonNull final WiringModel model) {
-        super(model);
+    public WireListSplitter(@NonNull final WiringModel model, @NonNull final String name) {
+        super(model, name);
     }
 
     /**

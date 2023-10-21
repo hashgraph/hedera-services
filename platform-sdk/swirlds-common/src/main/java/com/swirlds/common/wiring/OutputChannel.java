@@ -41,6 +41,7 @@ public abstract class OutputChannel<O> {
     private static final Logger logger = LogManager.getLogger(OutputChannel.class);
 
     private final WiringModel model;
+    private final String name;
     private final List<Consumer<O>> forwardingDestinations = new ArrayList<>();
 
     /**
@@ -48,8 +49,11 @@ public abstract class OutputChannel<O> {
      *
      * @param model the wiring model containing this output channel
      */
-    protected OutputChannel(@NonNull final WiringModel model) {
+    protected OutputChannel(@NonNull final WiringModel model, @NonNull final String name) {
         this.model = Objects.requireNonNull(model);
+        this.name = Objects.requireNonNull(name);
+
+        model.registerVertex(name);
     }
 
     /**
@@ -60,6 +64,16 @@ public abstract class OutputChannel<O> {
     @NonNull
     protected WiringModel getModel() { // TODO is this needed?
         return model;
+    } // TODO necessary?
+
+    /**
+     * Get the name of this output channel. If this object is a wire, this is the same as the name of the wire.
+     *
+     * @return the name
+     */
+    @NonNull
+    public String getName() {
+        return name;
     }
 
     /**
@@ -147,12 +161,14 @@ public abstract class OutputChannel<O> {
     /**
      * Build a {@link WireFilter} that is soldered to the output of this wire.
      *
+     * @param name      the name of the filter
      * @param predicate the predicate that filters the output of this wire
      * @return the filter
      */
     @NonNull
-    public OutputChannel<O> buildFilter(@NonNull final Predicate<O> predicate) {
-        final WireFilter<O> filter = new WireFilter<>(model, Objects.requireNonNull(predicate));
+    public OutputChannel<O> buildFilter(@NonNull final String name, @NonNull final Predicate<O> predicate) {
+        final WireFilter<O> filter =
+                new WireFilter<>(model, Objects.requireNonNull(name), Objects.requireNonNull(predicate));
         solderTo(filter);
         return filter;
     }
@@ -167,7 +183,7 @@ public abstract class OutputChannel<O> {
     @SuppressWarnings("unchecked")
     @NonNull
     public <E> OutputChannel<E> buildSplitter() {
-        final WireListSplitter<E> splitter = new WireListSplitter<>(model);
+        final WireListSplitter<E> splitter = new WireListSplitter<>(model, name + "_splitter");
         solderTo((Consumer<O>) splitter);
         return splitter;
     }
@@ -188,13 +204,15 @@ public abstract class OutputChannel<O> {
     /**
      * Build a {@link WireTransformer} that is soldered to the output of this wire.
      *
+     * @param name      the name of the transformer
      * @param transform the function that transforms the output of this wire into the output of the transformer
      * @param <T>       the output type of the transformer
      * @return the transformer
      */
     @NonNull
-    public <T> OutputChannel<T> buildTransformer(@NonNull Function<O, T> transform) {
-        final WireTransformer<O, T> transformer = new WireTransformer<>(model, transform);
+    public <T> OutputChannel<T> buildTransformer(@NonNull final String name, @NonNull Function<O, T> transform) {
+        final WireTransformer<O, T> transformer =
+                new WireTransformer<>(model, Objects.requireNonNull(name), Objects.requireNonNull(transform));
         solderTo(transformer);
         return transformer;
     }

@@ -117,7 +117,9 @@ class WireTransformersTests {
         final AtomicInteger countLambda = new AtomicInteger(0);
 
         wireA.solderTo(inB);
-        wireA.buildFilter(x -> x % 2 == 0).solderTo(inC).solderTo(x -> countLambda.set(hash32(countLambda.get(), x)));
+        wireA.buildFilter("onlyEven", x -> x % 2 == 0)
+                .solderTo(inC)
+                .solderTo(x -> countLambda.set(hash32(countLambda.get(), x)));
 
         inA.bind(x -> {
             countA.set(hash32(countA.get(), x));
@@ -171,8 +173,8 @@ class WireTransformersTests {
         final InputChannel<Boolean, Void> inD = wireD.buildInputChannel("D in");
 
         wireA.solderTo(inB);
-        wireA.buildTransformer(TestData::value).solderTo(inC);
-        wireA.buildTransformer(TestData::invert).solderTo(inD);
+        wireA.buildTransformer("getValue", TestData::value).solderTo(inC);
+        wireA.buildTransformer("getInvert", TestData::invert).solderTo(inD);
 
         final AtomicInteger countA = new AtomicInteger(0);
         inA.bind(x -> {

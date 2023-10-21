@@ -19,7 +19,6 @@ package com.swirlds.common.wiring;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -29,7 +28,6 @@ import java.util.function.Consumer;
  */
 public abstract class Wire<O> extends OutputChannel<O> {
 
-    private final String name;
     private final boolean flushEnabled;
 
     /**
@@ -41,12 +39,8 @@ public abstract class Wire<O> extends OutputChannel<O> {
      *                     they will throw.
      */
     protected Wire(@NonNull final WiringModel model, @NonNull final String name, final boolean flushEnabled) {
-        super(model);
-
-        this.name = Objects.requireNonNull(name);
+        super(model, name);
         this.flushEnabled = flushEnabled;
-
-        model.registerVertex(name);
     }
 
     /**
@@ -77,14 +71,6 @@ public abstract class Wire<O> extends OutputChannel<O> {
     @NonNull
     public final <I> InputChannel<I, O> buildInputChannel(@NonNull final String name) {
         return new InputChannel<>(this, name);
-    }
-
-    /**
-     * Get the name of this wire.
-     */
-    @NonNull
-    public final String getName() {
-        return name;
     }
 
     /**

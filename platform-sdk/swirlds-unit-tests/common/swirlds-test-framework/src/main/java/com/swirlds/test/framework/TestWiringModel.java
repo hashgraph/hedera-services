@@ -66,12 +66,12 @@ public class TestWiringModel extends WiringModel {
      * {@inheritDoc}
      */
     @Override
-    protected void registerVertex(@NonNull final String vertexName) {}
+    public void registerVertex(@NonNull final String vertexName) {}
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void registerEdge(
+    public void registerEdge(
             @NonNull final String originVertex, @NonNull final String destinationVertex, @NonNull final String label) {}
 }

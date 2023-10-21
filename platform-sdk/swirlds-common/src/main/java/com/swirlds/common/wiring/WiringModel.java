@@ -96,21 +96,25 @@ public abstract class WiringModel {
     public abstract String generateWiringDiagram();
 
     /**
+     * Reserved for internal framework use. Do not call this method directly.
+     * <p>
      * Register a vertex in the wiring model. These are either Wires or WireTransformers. Vertexes always have a single
      * Java object output type, although there may be many consumers of that output. Vertexes may have many input
      * types.
      *
      * @param vertexName the name of the vertex
      */
-    protected abstract void registerVertex(@NonNull String vertexName);
+    public abstract void registerVertex(@NonNull String vertexName);
 
     /**
+     * Reserved for internal framework use. Do not call this method directly.
+     * <p>
      * Register an edge between two vertices.
      *
      * @param originVertex      the origin vertex
      * @param destinationVertex the destination vertex
      * @param label             the label of the edge
      */
-    protected abstract void registerEdge(
+    public abstract void registerEdge(
             @NonNull String originVertex, @NonNull String destinationVertex, @NonNull String label);
 }

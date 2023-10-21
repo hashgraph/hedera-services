@@ -34,13 +34,14 @@ public class WireFilter<T> extends OutputChannel<T> implements Consumer<T> {
      * Constructor.
      *
      * @param model     the wiring model containing this output channel
+     * @param name      the name of the output channel
      * @param predicate only data that causes this method to return true is forwarded. This method must be very fast.
      *                  Putting large amounts of work into this transformer violates the intended usage pattern of the
      *                  wiring framework and may result in very poor system performance.
      */
-    public WireFilter(@NonNull final WiringModel model, @NonNull final Predicate<T> predicate) {
-        super(model);
-
+    public WireFilter(
+            @NonNull final WiringModel model, @NonNull final String name, @NonNull final Predicate<T> predicate) {
+        super(model, name);
         this.predicate = Objects.requireNonNull(predicate);
     }
 
