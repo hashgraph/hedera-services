@@ -73,5 +73,8 @@ public class TestWiringModel extends WiringModel {
      */
     @Override
     public void registerEdge(
-            @NonNull final String originVertex, @NonNull final String destinationVertex, @NonNull final String label) {}
+            @NonNull final String originVertex,
+            @NonNull final String destinationVertex,
+            @NonNull final String label,
+            final boolean injection) {}
 }

@@ -111,36 +111,30 @@ public abstract class OutputChannel<O> {
      */
     @NonNull
     public final OutputChannel<O> solderTo(@NonNull final InputChannel<O, ?> channel) {
-        model.registerEdge(name, channel.getWireName(), channel.getName());
-        return solderTo(channel, false);
+        model.registerEdge(name, channel.getWireName(), channel.getName(), false);
+        forwardingDestinations.add(channel::put);
+        return this;
     }
 
     /**
-     * Specify a channel where output data should be forwarded.
+     * Specify a channel where output data should be forwarded via injection. Injection ignores back pressure at the
+     * destination.
      *
      * <p>
      * Soldering is the act of connecting two wires together, usually by melting a metal alloy between them. See
-     * https://en.wikipedia.org/wiki/Soldering
+     * <a href="https://en.wikipedia.org/wiki/Soldering">wikipedia's entry on soldering</a>.
      *
      * <p>
      * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations
      * after data has been inserted into the wire is not thread safe and has undefined behavior.
      *
      * @param channel the channel to forward output data to
-     * @param inject  if true then the data is injected and ignores back pressure. If false then back pressure is
-     *                respected.
      * @return this
      */
-    @SuppressWarnings("unchecked")
     @NonNull
-    public OutputChannel<O> solderTo(@NonNull final InputChannel<O, ?> channel, final boolean inject) {
-        model.registerEdge(name, channel.getWireName(), channel.getName());
-        // TODO capture injection in the model
-        if (inject) {
-            forwardingDestinations.add(channel::inject);
-        } else {
-            forwardingDestinations.add(channel::put);
-        }
+    public OutputChannel<O> injectionSolderTo(@NonNull final InputChannel<O, ?> channel) {
+        model.registerEdge(name, channel.getWireName(), channel.getName(), true);
+        forwardingDestinations.add(channel::inject);
         return this;
     }
 
@@ -149,7 +143,7 @@ public abstract class OutputChannel<O> {
      *
      * <p>
      * Soldering is the act of connecting two wires together, usually by melting a metal alloy between them. See
-     * https://en.wikipedia.org/wiki/Soldering
+     * <a href="https://en.wikipedia.org/wiki/Soldering">wikipedia's entry on soldering</a>.
      *
      * <p>
      * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations
@@ -161,7 +155,7 @@ public abstract class OutputChannel<O> {
      */
     @NonNull
     public OutputChannel<O> solderTo(@NonNull final String handlerName, @NonNull final Consumer<O> handler) {
-        model.registerEdge(name, handlerName, "");
+        model.registerEdge(name, handlerName, "", false);
         forwardingDestinations.add(Objects.requireNonNull(handler));
         return this;
     }

@@ -25,12 +25,12 @@ import java.util.Objects;
 /**
  * A vertex in a wiring model.
  */
-public class ModelVertex implements Iterable<ModelVertex> {
+public class ModelVertex implements Iterable<ModelEdge> {
 
     private final String name;
     private final boolean insertionIsBlocking;
 
-    private final List<ModelVertex> outgoingEdges = new ArrayList<>();
+    private final List<ModelEdge> outgoingEdges = new ArrayList<>();
 
     /**
      * Constructor.
@@ -65,9 +65,9 @@ public class ModelVertex implements Iterable<ModelVertex> {
     /**
      * Add an outgoing edge to this vertex.
      *
-     * @param vertex the vertex to connect to
+     * @param vertex the edge to connect to
      */
-    public void connectToVertex(@NonNull final ModelVertex vertex) {
+    public void connectToEdge(@NonNull final ModelEdge vertex) {
         outgoingEdges.add(Objects.requireNonNull(vertex));
     }
 
@@ -78,7 +78,7 @@ public class ModelVertex implements Iterable<ModelVertex> {
      */
     @Override
     @NonNull
-    public Iterator<ModelVertex> iterator() {
+    public Iterator<ModelEdge> iterator() {
         return outgoingEdges.iterator();
     }
 
@@ -96,5 +96,14 @@ public class ModelVertex implements Iterable<ModelVertex> {
     @Override
     public boolean equals(Object obj) {
         return (obj instanceof ModelVertex) && name.equals(((ModelVertex) obj).name);
+    }
+
+    @Override
+    public String toString() {
+        if (insertionIsBlocking) {
+            return "[" + name + "]";
+        } else {
+            return "(" + name + ")";
+        }
     }
 }

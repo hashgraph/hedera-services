@@ -1622,8 +1622,8 @@ class SequentialWireTests {
                 model.wireBuilder("C").withUnhandledTaskCapacity(10).build().cast();
         final InputChannel<Integer, Void> inC = wireC.buildInputChannel("inC");
 
-        wireA.solderTo(inC, false); // respects capacity
-        wireB.solderTo(inC, true); // ignores capacity
+        wireA.solderTo(inC); // respects capacity
+        wireB.injectionSolderTo(inC); // ignores capacity
 
         final AtomicInteger countA = new AtomicInteger();
         inA.bind(x -> {

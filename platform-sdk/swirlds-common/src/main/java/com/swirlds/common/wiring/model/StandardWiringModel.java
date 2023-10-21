@@ -56,7 +56,7 @@ public class StandardWiringModel extends WiringModel {
      */
     @Override
     public boolean checkForCyclicalBackpressure() {
-        return false;
+        return CycleFinder.checkForCyclicalBackPressure(vertices.values());
     }
 
     /**
@@ -100,13 +100,17 @@ public class StandardWiringModel extends WiringModel {
      */
     @Override
     public void registerEdge(
-            @NonNull final String originVertex, @NonNull final String destinationVertex, @NonNull final String label) {
+            @NonNull final String originVertex,
+            @NonNull final String destinationVertex,
+            @NonNull final String label,
+            final boolean injection) {
 
         final ModelVertex origin = getVertex(originVertex);
         final ModelVertex destination = getVertex(destinationVertex);
-        final ModelEdge edge = new ModelEdge(origin, destination, label);
+        final boolean blocking = !injection && destination.isInsertionIsBlocking();
 
-        origin.connectToVertex(destination);
+        final ModelEdge edge = new ModelEdge(origin, destination, label, blocking);
+        origin.connectToEdge(edge);
 
         final boolean unique = edges.add(edge);
         if (!unique) {

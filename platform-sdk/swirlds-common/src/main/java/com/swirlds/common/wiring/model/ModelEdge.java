@@ -16,13 +16,41 @@
 
 package com.swirlds.common.wiring.model;
 
+import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A directed edge between to vertices.
  *
- * @param source      the source vertex
- * @param destination the destination vertex
- * @param label       the label of the edge, if a label is not needed for an edge then holds the value ""
+ * @param source              the source vertex
+ * @param destination         the destination vertex
+ * @param label               the label of the edge, if a label is not needed for an edge then holds the value ""
+ * @param insertionIsBlocking true if the insertion of this edge may block until capacity is available
  */
-public record ModelEdge(@NonNull ModelVertex source, @NonNull ModelVertex destination, @NonNull String label) {}
+public record ModelEdge(
+        @NonNull ModelVertex source,
+        @NonNull ModelVertex destination,
+        @NonNull String label,
+        boolean insertionIsBlocking) {
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof ModelEdge that) {
+            return this.source.equals(that.source)
+                    && this.destination.equals(that.destination)
+                    && this.label.equals(that.label);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return hash32(source.hashCode(), destination.hashCode(), label.hashCode());
+    }
+
+    @Override
+    public String toString() {
+        return source + " --" + label + "-->" + (insertionIsBlocking ? "" : ">") + " " + destination;
+    }
+}
