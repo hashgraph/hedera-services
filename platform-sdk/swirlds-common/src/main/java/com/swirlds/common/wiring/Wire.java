@@ -16,8 +16,6 @@
 
 package com.swirlds.common.wiring;
 
-import com.swirlds.base.time.Time;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -33,29 +31,6 @@ public abstract class Wire<O> extends OutputChannel<O> {
 
     private final String name;
     private final boolean flushEnabled;
-
-    /**
-     * Get a new wire builder.
-     *
-     * @param name the name of the wire. Used for metrics and debugging. Must be unique (not enforced by framework).
-     *             Must only contain alphanumeric characters, underscores, and hyphens (enforced by framework).
-     * @return a new wire builder
-     */
-    public static <O> WireBuilder<O> builder(@NonNull final String name) {
-        return new WireBuilder<>(name);
-    }
-
-    /**
-     * Get a new wire metrics builder. Can be passed to {@link WireBuilder#withMetricsBuilder(WireMetricsBuilder)} to
-     * add metrics to the wire.
-     *
-     * @param metrics the metrics framework
-     * @param time    provides wall clock time
-     * @return a new wire metrics builder
-     */
-    public static WireMetricsBuilder metricsBuilder(@NonNull final Metrics metrics, @NonNull final Time time) {
-        return new WireMetricsBuilder(metrics, time);
-    }
 
     /**
      * Constructor.
@@ -90,12 +65,13 @@ public abstract class Wire<O> extends OutputChannel<O> {
      * Get a wire channel for inserting data into this wire. In order to use this channel, a handler must be bound via
      * {@link InputChannel#bind(Consumer)}.
      *
-     * @param <I> the type of data that is inserted into the channel
+     * @param name the name of the input channel
+     * @param <I>  the type of data that is inserted into the channel
      * @return the channel
      */
     @NonNull
-    public final <I> InputChannel<I, O> buildInputChannel() {
-        return new InputChannel<>(this);
+    public final <I> InputChannel<I, O> buildInputChannel(@NonNull final String name) {
+        return new InputChannel<>(this, name);
     }
 
     /**

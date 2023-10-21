@@ -18,6 +18,7 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.validation.EventValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,8 +31,11 @@ public class PlatformWiring {
     // Note: this class is currently a placeholder; it's not functional in its current form.
     //       As we migrate the platform into the new framework, we should expand this class.
 
+    private final WiringModel model;
+
     private final EventSignatureValidationWire eventSignatureValidationWire;
     private final OrphanBufferWire orphanBufferWire;
+    private final boolean cyclicalBackpressurePresent;
 
     /**
      * Constructor.
@@ -40,10 +44,35 @@ public class PlatformWiring {
      * @param time            provides wall clock time
      */
     public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
-        orphanBufferWire = new OrphanBufferWire(platformContext, time);
-        eventSignatureValidationWire = new EventSignatureValidationWire(platformContext, time);
+        model = WiringModel.create(platformContext, time);
+
+        orphanBufferWire = new OrphanBufferWire(model);
+        eventSignatureValidationWire = new EventSignatureValidationWire(model);
 
         wire();
+
+        // Logs if there is cyclical back pressure.
+        // Do not throw -- in theory we might survive this, so no need to crash.
+        cyclicalBackpressurePresent = model.checkForCyclicalBackpressure();
+    }
+
+    /**
+     * Get the wiring model.
+     *
+     * @return the wiring model
+     */
+    @NonNull
+    public WiringModel getModel() {
+        return model;
+    }
+
+    /**
+     * Check if cyclical backpressure is present in the model.
+     *
+     * @return true if cyclical backpressure is present, false otherwise
+     */
+    public boolean isCyclicalBackpressurePresent() {
+        return cyclicalBackpressurePresent;
     }
 
     /**

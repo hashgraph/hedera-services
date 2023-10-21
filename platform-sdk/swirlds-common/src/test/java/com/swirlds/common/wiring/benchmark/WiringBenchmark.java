@@ -20,10 +20,14 @@ import static java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFacto
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.InputChannel;
 import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.util.concurrent.ForkJoinPool;
 
@@ -50,25 +54,29 @@ class WiringBenchmark {
                 },
                 true);
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
+
         // Step 1: construct wires
 
         // Ensures that we have no more than 10,000 events in the pipeline at any given time
         final ObjectCounter backpressure = new BackpressureObjectCounter(10_000, Duration.ZERO);
 
-        final Wire<WiringBenchmarkEvent> verificationWire = Wire.builder("verification")
+        final Wire<WiringBenchmarkEvent> verificationWire = model.wireBuilder("verification")
                 .withOutputType(WiringBenchmarkEvent.class)
                 .withPool(executor)
                 .withConcurrency(true)
                 .withOnRamp(backpressure)
                 .build();
 
-        final Wire<WiringBenchmarkEvent> orphanBufferWire = Wire.builder("orphanBuffer")
+        final Wire<WiringBenchmarkEvent> orphanBufferWire = model.wireBuilder("orphanBuffer")
                 .withOutputType(WiringBenchmarkEvent.class)
                 .withPool(executor)
                 .withConcurrency(false)
                 .build();
 
-        final Wire<Void> eventPoolWire = Wire.builder("eventPool")
+        final Wire<Void> eventPoolWire = model.wireBuilder("eventPool")
                 .withOutputType(Void.class)
                 .withPool(executor)
                 .withConcurrency(false)
@@ -77,13 +85,13 @@ class WiringBenchmark {
 
         // Step 2: create channels
         final InputChannel<WiringBenchmarkEvent, WiringBenchmarkEvent> eventsToOrphanBuffer =
-                orphanBufferWire.buildInputChannel();
+                orphanBufferWire.buildInputChannel("unordered events");
 
         final InputChannel<WiringBenchmarkEvent, WiringBenchmarkEvent> eventsToBeVerified =
-                verificationWire.buildInputChannel();
+                verificationWire.buildInputChannel("unverified events");
 
         final InputChannel<WiringBenchmarkEvent, Void> eventsToInsertBackIntoEventPool =
-                eventPoolWire.buildInputChannel();
+                eventPoolWire.buildInputChannel("verified events");
 
         // Step 3: solder wire outputs to the channels that want that output
 

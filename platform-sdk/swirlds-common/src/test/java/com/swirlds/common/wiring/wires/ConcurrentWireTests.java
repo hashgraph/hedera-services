@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.wiring.InputChannel;
 import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.test.framework.TestWiringModel;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Random;
@@ -34,6 +36,8 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
 class ConcurrentWireTests {
+
+    private static final WiringModel model = TestWiringModel.getInstance();
 
     /**
      * Add a bunch of operations to a wire and ensure that they are all eventually handled.
@@ -52,12 +56,12 @@ class ConcurrentWireTests {
             }
         };
 
-        final Wire<Void> wire = Wire.builder("test")
+        final Wire<Void> wire = model.wireBuilder("test")
                 .withOutputType(Void.class)
                 .withConcurrency(true)
                 .build();
         final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel().withInputType(Integer.class).bind(handler);
+                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
 
         assertEquals(-1, wire.getUnprocessedTaskCount());
 
@@ -99,12 +103,12 @@ class ConcurrentWireTests {
             count.addAndGet(x.value);
         };
 
-        final Wire<Void> wire = Wire.builder("test")
+        final Wire<Void> wire = model.wireBuilder("test")
                 .withOutputType(Void.class)
                 .withConcurrency(true)
                 .build();
         final InputChannel<Operation, Void> channel =
-                wire.buildInputChannel().withInputType(Operation.class).bind(handler);
+                wire.buildInputChannel("channel").withInputType(Operation.class).bind(handler);
 
         assertEquals(-1, wire.getUnprocessedTaskCount());
 

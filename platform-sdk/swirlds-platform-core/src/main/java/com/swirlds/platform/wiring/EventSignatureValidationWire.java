@@ -16,11 +16,10 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.base.time.Time;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.InputChannel;
 import com.swirlds.common.wiring.OutputChannel;
 import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.validation.EventValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,18 +34,22 @@ public class EventSignatureValidationWire {
     private final InputChannel<GossipEvent, GossipEvent> eventInput;
     private final InputChannel<Long, GossipEvent> minimumGenerationNonAncientInput;
 
-    public EventSignatureValidationWire(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
-        wire = Wire.builder("eventSignatureValidator")
+    /**
+     * Constructor.
+     *
+     * @param model the wiring model
+     */
+    public EventSignatureValidationWire(@NonNull final WiringModel model) {
+        wire = model.wireBuilder("eventSignatureValidator")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
-                .withMetricsBuilder(
-                        Wire.metricsBuilder(platformContext.getMetrics(), time).withUnhandledTaskMetricEnabled(true))
+                .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                 .build()
                 .cast();
 
-        eventInput = wire.buildInputChannel();
-        minimumGenerationNonAncientInput = wire.buildInputChannel();
+        eventInput = wire.buildInputChannel("unvalidated events");
+        minimumGenerationNonAncientInput = wire.buildInputChannel("minimum generation non ancient");
     }
 
     /**

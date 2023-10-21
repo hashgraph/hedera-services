@@ -16,11 +16,10 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.base.time.Time;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.InputChannel;
 import com.swirlds.common.wiring.OutputChannel;
 import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,21 +43,19 @@ public class OrphanBufferWire {
     /**
      * Constructor.
      *
-     * @param platformContext the platform context
-     * @param time            provides wall clock time
+     * @param model the wiring model
      */
-    public OrphanBufferWire(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
-        wire = Wire.builder("orphanBuffer")
+    public OrphanBufferWire(@NonNull final WiringModel model) {
+        wire = model.wireBuilder("orphanBuffer")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
-                .withMetricsBuilder(
-                        Wire.metricsBuilder(platformContext.getMetrics(), time).withUnhandledTaskMetricEnabled(true))
+                .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                 .build()
                 .cast();
 
-        eventInput = wire.buildInputChannel();
-        minimumGenerationNonAncientInput = wire.buildInputChannel();
+        eventInput = wire.buildInputChannel("unordered events");
+        minimumGenerationNonAncientInput = wire.buildInputChannel("minimum generation non ancient");
 
         eventOutput = wire.buildSplitter();
     }

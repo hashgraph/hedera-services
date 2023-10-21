@@ -32,14 +32,17 @@ public class InputChannel<I, O> {
 
     private final Wire<O> wire;
     private Consumer<Object> handler;
+    private String name;
 
     /**
      * Constructor.
      *
      * @param wire the wire to insert data into
+     * @param name the name of the input channel
      */
-    InputChannel(@NonNull final Wire<O> wire) {
+    InputChannel(@NonNull final Wire<O> wire, @NonNull final String name) {
         this.wire = Objects.requireNonNull(wire);
+        this.name = Objects.requireNonNull(name); // TODO formatting checks on name
     }
 
     /**
