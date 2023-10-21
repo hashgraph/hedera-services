@@ -19,14 +19,11 @@ package com.swirlds.common.wiring.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.common.wiring.InputChannel;
 import com.swirlds.common.wiring.Wire;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.file.Path;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 class ModelTests {
@@ -36,13 +33,14 @@ class ModelTests {
      */
     private static final boolean printMermaidDiagram = false;
 
-    @BeforeAll
-    public static void beforeAll() throws InterruptedException {
-        // TODO remove
-        Log4jSetup.startLoggingFramework(
-                        Path.of("/Users/codylittley/ws/hedera-services/platform-sdk/swirlds-cli/log4j2-stdout.xml"))
-                .await();
-    }
+    //    @BeforeAll
+    //    public static void beforeAll() throws InterruptedException {
+    //        // TODO remove
+    //        Log4jSetup.startLoggingFramework(
+    //
+    // Path.of("/Users/codylittley/ws/hedera-services/platform-sdk/swirlds-cli/log4j2-stdout.xml"))
+    //                .await();
+    //    }
 
     /**
      * Validate the model.
@@ -583,7 +581,7 @@ class ModelTests {
 
         final Wire<Integer> wireJ =
                 model.wireBuilder("J").withUnhandledTaskCapacity(1).build().cast();
-        final InputChannel<Integer, Integer> inputJ = wireJ.buildInputChannel("inputJ");
+        final InputChannel<Integer, Integer> inputJ = wireJ.buildInputChannel("");
 
         wireA.solderTo(inputB);
         wireB.solderTo(inputC);
@@ -920,4 +918,6 @@ class ModelTests {
 
         validateModel(model, false);
     }
+
+    // TODO test with transformers
 }

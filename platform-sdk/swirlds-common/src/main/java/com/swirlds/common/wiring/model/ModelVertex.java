@@ -25,7 +25,7 @@ import java.util.Objects;
 /**
  * A vertex in a wiring model.
  */
-public class ModelVertex implements Iterable<ModelEdge> {
+public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex> {
 
     private final String name;
     private final boolean insertionIsBlocking;
@@ -83,6 +83,16 @@ public class ModelVertex implements Iterable<ModelEdge> {
     }
 
     /**
+     * Get the outgoing edges of this vertex.
+     *
+     * @return the outgoing edges of this vertex
+     */
+    @NonNull
+    public List<ModelEdge> getOutgoingEdges() {
+        return outgoingEdges;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -98,6 +108,9 @@ public class ModelVertex implements Iterable<ModelEdge> {
         return (obj instanceof ModelVertex) && name.equals(((ModelVertex) obj).name);
     }
 
+    /**
+     * Makes the vertex nicer to look at in a debugger.
+     */
     @Override
     public String toString() {
         if (insertionIsBlocking) {
@@ -105,5 +118,13 @@ public class ModelVertex implements Iterable<ModelEdge> {
         } else {
             return "(" + name + ")";
         }
+    }
+
+    /**
+     * Sorts vertices by alphabetical order.
+     */
+    @Override
+    public int compareTo(@NonNull final ModelVertex that) {
+        return name.compareTo(that.name);
     }
 }

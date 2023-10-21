@@ -65,7 +65,7 @@ public class StandardWiringModel extends WiringModel {
     @NonNull
     @Override
     public String generateWiringDiagram() {
-        return "TODO";
+        return WiringFlowchart.generateWiringDiagram(vertices, edges);
     }
 
     /**

@@ -32,7 +32,8 @@ public record ModelEdge(
         @NonNull ModelVertex source,
         @NonNull ModelVertex destination,
         @NonNull String label,
-        boolean insertionIsBlocking) {
+        boolean insertionIsBlocking)
+        implements Comparable<ModelEdge> {
 
     @Override
     public boolean equals(Object obj) {
@@ -49,8 +50,25 @@ public record ModelEdge(
         return hash32(source.hashCode(), destination.hashCode(), label.hashCode());
     }
 
+    /**
+     * Useful for looking at a model in a debugger.
+     */
     @Override
     public String toString() {
         return source + " --" + label + "-->" + (insertionIsBlocking ? "" : ">") + " " + destination;
+    }
+
+    /**
+     * Sorts first by source, then by destination, then by label.
+     */
+    @Override
+    public int compareTo(@NonNull final ModelEdge that) {
+        if (!this.source.equals(that.source)) {
+            return this.source.compareTo(that.source);
+        }
+        if (!this.destination.equals(that.destination)) {
+            return this.destination.compareTo(that.destination);
+        }
+        return this.label.compareTo(that.label);
     }
 }
