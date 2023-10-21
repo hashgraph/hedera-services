@@ -46,6 +46,26 @@ public class InputChannel<I, O> {
     }
 
     /**
+     * Get the name of this input channel.
+     *
+     * @return the name of this input channel
+     */
+    @NonNull
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * Get the name of the wire this input channel is bound to.
+     *
+     * @return the name of the wire this input channel is bound to
+     */
+    @NonNull
+    public String getWireName() {
+        return wire.getName();
+    }
+
+    /**
      * Cast this wire channel into whatever a variable is expecting. Sometimes the compiler gets confused with generics,
      * and path of least resistance is to just cast to the proper data type.
      *

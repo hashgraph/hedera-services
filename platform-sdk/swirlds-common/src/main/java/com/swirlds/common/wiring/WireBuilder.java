@@ -302,6 +302,9 @@ public class WireBuilder<O> {
             metricsBuilder.registerMetrics(name, counters.onRamp());
         }
 
+        // TODO add a way to signal back pressure that is external to the wire
+        final boolean insertionIsBlocking = unhandledTaskCapacity != UNLIMITED_CAPACITY;
+
         if (concurrent) {
             return new ConcurrentWire<>(
                     model,
@@ -310,7 +313,8 @@ public class WireBuilder<O> {
                     buildUncaughtExceptionHandler(),
                     counters.onRamp(),
                     counters.offRamp(),
-                    flushingEnabled);
+                    flushingEnabled,
+                    insertionIsBlocking);
         } else {
             return new SequentialWire<>(
                     model,
@@ -320,7 +324,8 @@ public class WireBuilder<O> {
                     counters.onRamp(),
                     counters.offRamp(),
                     busyFractionTimer,
-                    flushingEnabled);
+                    flushingEnabled,
+                    insertionIsBlocking);
         }
     }
 }

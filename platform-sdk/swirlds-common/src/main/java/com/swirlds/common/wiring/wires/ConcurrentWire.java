@@ -51,6 +51,7 @@ public class ConcurrentWire<O> extends Wire<O> {
      *                                 if null
      * @param flushEnabled             if true, then {@link #flush()} and {@link #interruptableFlush()} will be enabled,
      *                                 otherwise they will throw.
+     * @param insertionIsBlocking      when data is inserted into this wire, will it block until capacity is available?
      */
     public ConcurrentWire(
             @NonNull final WiringModel model,
@@ -59,9 +60,10 @@ public class ConcurrentWire<O> extends Wire<O> {
             @NonNull UncaughtExceptionHandler uncaughtExceptionHandler,
             @NonNull final ObjectCounter onRamp,
             @NonNull final ObjectCounter offRamp,
-            final boolean flushEnabled) {
+            final boolean flushEnabled,
+            final boolean insertionIsBlocking) {
 
-        super(model, name, flushEnabled);
+        super(model, name, flushEnabled, insertionIsBlocking);
 
         this.pool = Objects.requireNonNull(pool);
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);

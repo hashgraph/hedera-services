@@ -45,7 +45,7 @@ public class WireTransformer<A, B> extends OutputChannel<B> implements Consumer<
      */
     public WireTransformer(
             @NonNull final WiringModel model, @NonNull final String name, @NonNull final Function<A, B> transformer) {
-        super(model, name);
+        super(model, name, true);
         this.transformer = Objects.requireNonNull(transformer);
     }
 

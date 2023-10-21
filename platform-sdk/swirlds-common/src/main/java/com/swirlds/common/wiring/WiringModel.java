@@ -102,9 +102,10 @@ public abstract class WiringModel {
      * Java object output type, although there may be many consumers of that output. Vertexes may have many input
      * types.
      *
-     * @param vertexName the name of the vertex
+     * @param vertexName          the name of the vertex
+     * @param insertionIsBlocking if true then insertion may block until capacity is available
      */
-    public abstract void registerVertex(@NonNull String vertexName);
+    public abstract void registerVertex(@NonNull String vertexName, final boolean insertionIsBlocking);
 
     /**
      * Reserved for internal framework use. Do not call this method directly.

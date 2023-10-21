@@ -1463,7 +1463,7 @@ class SequentialWireTests {
         final AtomicInteger countD = new AtomicInteger();
 
         final AtomicInteger lambdaSum = new AtomicInteger();
-        wireB.solderTo(lambdaSum::getAndAdd);
+        wireB.solderTo("lambda", lambdaSum::getAndAdd);
 
         inputA.bind(x -> {
             countA.set(hash32(countA.get(), x));

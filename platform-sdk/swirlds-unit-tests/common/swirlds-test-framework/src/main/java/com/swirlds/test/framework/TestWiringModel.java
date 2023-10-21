@@ -66,7 +66,7 @@ public class TestWiringModel extends WiringModel {
      * {@inheritDoc}
      */
     @Override
-    public void registerVertex(@NonNull final String vertexName) {}
+    public void registerVertex(@NonNull final String vertexName, final boolean insertionIsBlocking) {}
 
     /**
      * {@inheritDoc}

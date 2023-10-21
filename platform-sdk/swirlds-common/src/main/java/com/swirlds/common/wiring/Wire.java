@@ -33,13 +33,18 @@ public abstract class Wire<O> extends OutputChannel<O> {
     /**
      * Constructor.
      *
-     * @param model        the wiring model containing this wire
-     * @param name         the name of the wire
-     * @param flushEnabled if true, then {@link #flush()} and {@link #interruptableFlush()} will be enabled, otherwise
-     *                     they will throw.
+     * @param model               the wiring model containing this wire
+     * @param name                the name of the wire
+     * @param flushEnabled        if true, then {@link #flush()} and {@link #interruptableFlush()} will be enabled,
+     *                            otherwise they will throw.
+     * @param insertionIsBlocking when data is inserted into this wire, will it block until capacity is available?
      */
-    protected Wire(@NonNull final WiringModel model, @NonNull final String name, final boolean flushEnabled) {
-        super(model, name);
+    protected Wire(
+            @NonNull final WiringModel model,
+            @NonNull final String name,
+            final boolean flushEnabled,
+            final boolean insertionIsBlocking) {
+        super(model, name, insertionIsBlocking);
         this.flushEnabled = flushEnabled;
     }
 

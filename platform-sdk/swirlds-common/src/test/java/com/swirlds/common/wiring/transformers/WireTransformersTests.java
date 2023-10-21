@@ -119,7 +119,7 @@ class WireTransformersTests {
         wireA.solderTo(inB);
         wireA.buildFilter("onlyEven", x -> x % 2 == 0)
                 .solderTo(inC)
-                .solderTo(x -> countLambda.set(hash32(countLambda.get(), x)));
+                .solderTo("lambda", x -> countLambda.set(hash32(countLambda.get(), x)));
 
         inA.bind(x -> {
             countA.set(hash32(countA.get(), x));

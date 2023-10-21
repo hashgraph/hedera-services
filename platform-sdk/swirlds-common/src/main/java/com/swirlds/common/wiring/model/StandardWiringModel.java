@@ -20,7 +20,9 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.WiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -29,7 +31,15 @@ import java.util.Set;
  */
 public class StandardWiringModel extends WiringModel {
 
-    private final Set<String> vertices = new HashSet<>();
+    /**
+     * A map of vertex names to vertices.
+     */
+    private final Map<String, ModelVertex> vertices = new HashMap<>();
+
+    /**
+     * A set of all edges in the model.
+     */
+    private final Set<ModelEdge> edges = new HashSet<>();
 
     /**
      * Constructor.
@@ -55,19 +65,34 @@ public class StandardWiringModel extends WiringModel {
     @NonNull
     @Override
     public String generateWiringDiagram() {
-        return null;
+        return "TODO";
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void registerVertex(@NonNull final String vertexName) {
+    public void registerVertex(@NonNull final String vertexName, final boolean insertionIsBlocking) {
         Objects.requireNonNull(vertexName);
-        final boolean unique = vertices.add(vertexName);
+        final boolean unique = vertices.put(vertexName, new ModelVertex(vertexName, insertionIsBlocking)) == null;
         if (!unique) {
             throw new IllegalArgumentException("Duplicate vertex name: " + vertexName);
         }
+    }
+
+    /**
+     * Find an existing vertex
+     *
+     * @param vertexName the name of the vertex
+     * @return the vertex
+     */
+    @NonNull
+    private ModelVertex getVertex(@NonNull final String vertexName) {
+        final ModelVertex vertex = vertices.get(vertexName);
+        if (vertex == null) {
+            throw new IllegalArgumentException("Unknown vertex name: " + vertexName);
+        }
+        return vertex;
     }
 
     /**
@@ -75,5 +100,18 @@ public class StandardWiringModel extends WiringModel {
      */
     @Override
     public void registerEdge(
-            @NonNull final String originVertex, @NonNull final String destinationVertex, @NonNull final String label) {}
+            @NonNull final String originVertex, @NonNull final String destinationVertex, @NonNull final String label) {
+
+        final ModelVertex origin = getVertex(originVertex);
+        final ModelVertex destination = getVertex(destinationVertex);
+        final ModelEdge edge = new ModelEdge(origin, destination, label);
+
+        origin.connectToVertex(destination);
+
+        final boolean unique = edges.add(edge);
+        if (!unique) {
+            throw new IllegalArgumentException(
+                    "Duplicate edge: " + originVertex + " -> " + destinationVertex + ", label = " + label);
+        }
+    }
 }

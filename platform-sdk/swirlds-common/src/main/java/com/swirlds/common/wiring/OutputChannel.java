@@ -47,13 +47,16 @@ public abstract class OutputChannel<O> {
     /**
      * Constructor.
      *
-     * @param model the wiring model containing this output channel
+     * @param model               the wiring model containing this output channel
+     * @param name                the name of the output channel
+     * @param insertionIsBlocking when data is inserted into this channel, will it block until capacity is available?
      */
-    protected OutputChannel(@NonNull final WiringModel model, @NonNull final String name) {
+    protected OutputChannel(
+            @NonNull final WiringModel model, @NonNull final String name, final boolean insertionIsBlocking) {
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
 
-        model.registerVertex(name);
+        model.registerVertex(name, insertionIsBlocking);
     }
 
     /**
@@ -108,6 +111,7 @@ public abstract class OutputChannel<O> {
      */
     @NonNull
     public final OutputChannel<O> solderTo(@NonNull final InputChannel<O, ?> channel) {
+        model.registerEdge(name, channel.getWireName(), channel.getName());
         return solderTo(channel, false);
     }
 
@@ -130,6 +134,8 @@ public abstract class OutputChannel<O> {
     @SuppressWarnings("unchecked")
     @NonNull
     public OutputChannel<O> solderTo(@NonNull final InputChannel<O, ?> channel, final boolean inject) {
+        model.registerEdge(name, channel.getWireName(), channel.getName());
+        // TODO capture injection in the model
         if (inject) {
             forwardingDestinations.add(channel::inject);
         } else {
@@ -149,11 +155,13 @@ public abstract class OutputChannel<O> {
      * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations
      * after data has been inserted into the wire is not thread safe and has undefined behavior.
      *
-     * @param handler the consumer to forward output data to
+     * @param handlerName the name of the consumer
+     * @param handler     the consumer to forward output data to
      * @return this
      */
     @NonNull
-    public OutputChannel<O> solderTo(@NonNull final Consumer<O> handler) {
+    public OutputChannel<O> solderTo(@NonNull final String handlerName, @NonNull final Consumer<O> handler) {
+        model.registerEdge(name, handlerName, "");
         forwardingDestinations.add(Objects.requireNonNull(handler));
         return this;
     }
@@ -169,7 +177,7 @@ public abstract class OutputChannel<O> {
     public OutputChannel<O> buildFilter(@NonNull final String name, @NonNull final Predicate<O> predicate) {
         final WireFilter<O> filter =
                 new WireFilter<>(model, Objects.requireNonNull(name), Objects.requireNonNull(predicate));
-        solderTo(filter);
+        solderTo(filter.getName(), filter);
         return filter;
     }
 
@@ -184,7 +192,7 @@ public abstract class OutputChannel<O> {
     @NonNull
     public <E> OutputChannel<E> buildSplitter() {
         final WireListSplitter<E> splitter = new WireListSplitter<>(model, name + "_splitter");
-        solderTo((Consumer<O>) splitter);
+        solderTo(splitter.getName(), (Consumer<O>) splitter);
         return splitter;
     }
 
@@ -213,7 +221,7 @@ public abstract class OutputChannel<O> {
     public <T> OutputChannel<T> buildTransformer(@NonNull final String name, @NonNull Function<O, T> transform) {
         final WireTransformer<O, T> transformer =
                 new WireTransformer<>(model, Objects.requireNonNull(name), Objects.requireNonNull(transform));
-        solderTo(transformer);
+        solderTo(transformer.getName(), transformer);
         return transformer;
     }
 }
