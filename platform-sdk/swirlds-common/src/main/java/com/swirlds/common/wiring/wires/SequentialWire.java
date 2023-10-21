@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.wires;
 
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -45,6 +46,7 @@ public class SequentialWire<O> extends Wire<O> {
     /**
      * Constructor.
      *
+     * @param model                    the wiring model containing this wire
      * @param name                     the name of the wire
      * @param pool                     the fork join pool that will execute tasks on this wire
      * @param uncaughtExceptionHandler the uncaught exception handler
@@ -57,6 +59,7 @@ public class SequentialWire<O> extends Wire<O> {
      *                                 otherwise they will throw.
      */
     public SequentialWire(
+            @NonNull final WiringModel model,
             @NonNull final String name,
             @NonNull ForkJoinPool pool,
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
@@ -65,7 +68,7 @@ public class SequentialWire<O> extends Wire<O> {
             @NonNull final FractionalTimer busyTimer,
             final boolean flushEnabled) {
 
-        super(name, flushEnabled);
+        super(model, name, flushEnabled);
 
         this.pool = Objects.requireNonNull(pool);
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);

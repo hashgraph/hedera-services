@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring.transformers;
 
 import com.swirlds.common.wiring.OutputChannel;
+import com.swirlds.common.wiring.WiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Consumer;
@@ -26,6 +27,15 @@ import java.util.function.Consumer;
  * collection.
  */
 public class WireListSplitter<T> extends OutputChannel<T> implements Consumer<List<T>> {
+
+    /**
+     * Constructor.
+     *
+     * @param model the wiring model containing this output channel
+     */
+    public WireListSplitter(@NonNull final WiringModel model) {
+        super(model);
+    }
 
     /**
      * {@inheritDoc}

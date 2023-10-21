@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring.transformers;
 
 import com.swirlds.common.wiring.OutputChannel;
+import com.swirlds.common.wiring.WiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -35,12 +36,14 @@ public class WireTransformer<A, B> extends OutputChannel<B> implements Consumer<
     /**
      * Constructor.
      *
+     * @param model       the wiring model containing this output channel
      * @param transformer an object that transforms from type A to type B. If this method returns null then no data is
      *                    forwarded. This method must be very fast. Putting large amounts of work into this transformer
      *                    violates the intended usage pattern of the wiring framework and may result in very poor system
      *                    performance.
      */
-    public WireTransformer(@NonNull final Function<A, B> transformer) {
+    public WireTransformer(@NonNull final WiringModel model, @NonNull final Function<A, B> transformer) {
+        super(model);
         this.transformer = Objects.requireNonNull(transformer);
     }
 

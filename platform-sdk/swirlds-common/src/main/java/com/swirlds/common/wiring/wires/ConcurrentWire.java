@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring.wires;
 
 import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -40,6 +41,7 @@ public class ConcurrentWire<O> extends Wire<O> {
     /**
      * Constructor.
      *
+     * @param model                    the wiring model containing this wire
      * @param name                     the name of the wire
      * @param pool                     the fork join pool that will execute tasks on this wire
      * @param uncaughtExceptionHandler the handler for uncaught exceptions
@@ -51,6 +53,7 @@ public class ConcurrentWire<O> extends Wire<O> {
      *                                 otherwise they will throw.
      */
     public ConcurrentWire(
+            @NonNull final WiringModel model,
             @NonNull final String name,
             @NonNull ForkJoinPool pool,
             @NonNull UncaughtExceptionHandler uncaughtExceptionHandler,
@@ -58,7 +61,7 @@ public class ConcurrentWire<O> extends Wire<O> {
             @NonNull final ObjectCounter offRamp,
             final boolean flushEnabled) {
 
-        super(name, flushEnabled);
+        super(model, name, flushEnabled);
 
         this.pool = Objects.requireNonNull(pool);
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);

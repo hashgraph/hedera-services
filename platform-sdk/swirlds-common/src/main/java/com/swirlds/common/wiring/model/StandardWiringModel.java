@@ -20,11 +20,15 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.WiringModel;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * A standard implementation of a wiring model.
  */
 public class StandardWiringModel extends WiringModel {
+
+    private final Set<String> vertices = new HashSet<>();
 
     /**
      * Constructor.
@@ -57,7 +61,12 @@ public class StandardWiringModel extends WiringModel {
      * {@inheritDoc}
      */
     @Override
-    protected void registerVertex(@NonNull final String vertexName) {}
+    protected void registerVertex(@NonNull final String vertexName) {
+        final boolean unique = vertices.add(vertexName);
+        if (!unique) {
+            throw new IllegalArgumentException("Duplicate vertex name: " + vertexName);
+        }
+    }
 
     /**
      * {@inheritDoc}

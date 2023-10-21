@@ -62,7 +62,7 @@ public abstract class WiringModel {
      */
     @NonNull
     public final <O> WireBuilder<O> wireBuilder(@NonNull final String name) {
-        return new WireBuilder<>(name);
+        return new WireBuilder<>(this, name);
     }
 
     /**

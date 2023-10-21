@@ -47,6 +47,8 @@ public class WireBuilder<O> {
 
     public static final long UNLIMITED_CAPACITY = -1;
 
+    private final WiringModel model;
+
     private boolean concurrent = false;
     private final String name;
     private WireMetricsBuilder metricsBuilder;
@@ -62,10 +64,12 @@ public class WireBuilder<O> {
     /**
      * Constructor.
      *
-     * @param name the name of the wire. Used for metrics and debugging. Must be unique (not enforced by framework).
-     *             Must only contain alphanumeric characters and underscores (enforced by framework).
+     * @param name the name of the wire. Used for metrics and debugging. Must be unique. Must only contain alphanumeric
+     *             characters and underscores.
      */
-    WireBuilder(@NonNull final String name) {
+    WireBuilder(@NonNull final WiringModel model, @NonNull final String name) {
+        this.model = Objects.requireNonNull(model);
+
         // The reason why wire names have a restricted character set is because downstream consumers of metrics
         // are very fussy about what characters are allowed in metric names.
         if (!name.matches("^[a-zA-Z0-9_]*$")) {
@@ -300,6 +304,7 @@ public class WireBuilder<O> {
 
         if (concurrent) {
             return new ConcurrentWire<>(
+                    model,
                     name,
                     pool,
                     buildUncaughtExceptionHandler(),
@@ -308,6 +313,7 @@ public class WireBuilder<O> {
                     flushingEnabled);
         } else {
             return new SequentialWire<>(
+                    model,
                     name,
                     pool,
                     buildUncaughtExceptionHandler(),

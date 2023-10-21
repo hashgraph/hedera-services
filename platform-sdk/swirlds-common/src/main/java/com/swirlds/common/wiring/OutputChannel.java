@@ -40,12 +40,27 @@ public abstract class OutputChannel<O> {
 
     private static final Logger logger = LogManager.getLogger(OutputChannel.class);
 
+    private final WiringModel model;
     private final List<Consumer<O>> forwardingDestinations = new ArrayList<>();
 
     /**
      * Constructor.
+     *
+     * @param model the wiring model containing this output channel
      */
-    protected OutputChannel() {}
+    protected OutputChannel(@NonNull final WiringModel model) {
+        this.model = Objects.requireNonNull(model);
+    }
+
+    /**
+     * Get the wiring model containing this output channel.
+     *
+     * @return the wiring model
+     */
+    @NonNull
+    protected WiringModel getModel() { // TODO is this needed?
+        return model;
+    }
 
     /**
      * Forward output data to any channels/consumers that are listening for it.
@@ -137,7 +152,7 @@ public abstract class OutputChannel<O> {
      */
     @NonNull
     public OutputChannel<O> buildFilter(@NonNull final Predicate<O> predicate) {
-        final WireFilter<O> filter = new WireFilter<>(Objects.requireNonNull(predicate));
+        final WireFilter<O> filter = new WireFilter<>(model, Objects.requireNonNull(predicate));
         solderTo(filter);
         return filter;
     }
@@ -152,7 +167,7 @@ public abstract class OutputChannel<O> {
     @SuppressWarnings("unchecked")
     @NonNull
     public <E> OutputChannel<E> buildSplitter() {
-        final WireListSplitter<E> splitter = new WireListSplitter<>();
+        final WireListSplitter<E> splitter = new WireListSplitter<>(model);
         solderTo((Consumer<O>) splitter);
         return splitter;
     }
@@ -179,7 +194,7 @@ public abstract class OutputChannel<O> {
      */
     @NonNull
     public <T> OutputChannel<T> buildTransformer(@NonNull Function<O, T> transform) {
-        final WireTransformer<O, T> transformer = new WireTransformer<>(transform);
+        final WireTransformer<O, T> transformer = new WireTransformer<>(model, transform);
         solderTo(transformer);
         return transformer;
     }
