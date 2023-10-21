@@ -60,16 +60,6 @@ public abstract class OutputChannel<O> {
     }
 
     /**
-     * Get the wiring model containing this output channel.
-     *
-     * @return the wiring model
-     */
-    @NonNull
-    protected WiringModel getModel() { // TODO is this needed?
-        return model;
-    } // TODO necessary?
-
-    /**
      * Get the name of this output channel. If this object is a wire, this is the same as the name of the wire.
      *
      * @return the name

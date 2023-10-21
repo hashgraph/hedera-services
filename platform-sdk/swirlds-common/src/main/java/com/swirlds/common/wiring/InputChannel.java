@@ -42,7 +42,7 @@ public class InputChannel<I, O> {
      */
     InputChannel(@NonNull final Wire<O> wire, @NonNull final String name) {
         this.wire = Objects.requireNonNull(wire);
-        this.name = Objects.requireNonNull(name); // TODO formatting checks on name
+        this.name = Objects.requireNonNull(name);
     }
 
     /**
