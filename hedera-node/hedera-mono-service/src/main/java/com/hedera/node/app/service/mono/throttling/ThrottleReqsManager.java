@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.throttling;
 
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
+import com.hedera.node.app.hapi.utils.throttles.BucketThrottle;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -39,6 +40,29 @@ public class ThrottleReqsManager {
 
     public boolean allReqsMetAt(Instant now, int nTransactions, ScaleFactor scaleFactor) {
         return allVerboseReqsMetAt(now, nTransactions, scaleFactor);
+    }
+
+    /**
+     * Given a number of logical transactions that had their requirements satisfied by this manager
+     * at an earlier time, undoes the claimed capacity for those transactions.
+     *
+     * <p>We need this to support "reclaiming" capacity in the frontend throttles after an expensive
+     * operation (like a {@link com.hedera.hapi.node.base.HederaFunctionality#CRYPTO_TRANSFER} that
+     * does an auto-creation):
+     * <ol>
+     *     <li>Passes the frontend throttle check, using capacity in the buckets there; and,</li>
+     *     <li>Fails at consensus, thus <I>not</I> using network capacity for the expensive operation in the end.</li>
+     * </ol>
+     *
+     * @param nTransactions the number of transactions to undo
+     */
+    public void undoClaimedReqsFor(int nTransactions) {
+        for (int i = 0; i < passedReq.length; i++) {
+            var req = allReqs.get(i);
+            var opsRequired = req.getRight();
+            final var bucket = req.getLeft();
+            bucket.leakCapacity(nTransactions * opsRequired * BucketThrottle.capacityUnitsPerTxn());
+        }
     }
 
     private boolean allVerboseReqsMetAt(Instant now, int nTransactions, ScaleFactor scaleFactor) {

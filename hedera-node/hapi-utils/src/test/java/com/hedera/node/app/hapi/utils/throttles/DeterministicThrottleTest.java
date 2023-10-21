@@ -241,6 +241,22 @@ class DeterministicThrottleTest {
     }
 
     @Test
+    void canLeakSpecificAmounts() {
+        final int mtps = 333;
+        final int burstPeriod = 6;
+        final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
+        final var subject = DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
+        final var capacity = subject.capacity();
+
+        subject.allow(1, originalDecision);
+        final var preLeakState = subject.usageSnapshot();
+        subject.leakCapacity(preLeakState.used() / 2);
+        ;
+        final var postLeakState = subject.usageSnapshot();
+        assertEquals(preLeakState.used() / 2, postLeakState.used());
+    }
+
+    @Test
     void returnsExpectedInstantaneousState() {
         final int mtps = 333;
         final int burstPeriod = 666;
