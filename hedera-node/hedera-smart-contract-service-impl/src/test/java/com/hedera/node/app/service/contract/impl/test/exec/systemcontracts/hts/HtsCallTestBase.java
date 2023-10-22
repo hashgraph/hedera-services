@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts;
 
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
@@ -34,6 +35,9 @@ public class HtsCallTestBase {
 
     @Mock
     protected SystemContractOperations systemContractOperations;
+
+    @Mock
+    protected SystemContractGasCalculator gasCalculator;
 
     protected HederaWorldUpdater.Enhancement mockEnhancement() {
         return new HederaWorldUpdater.Enhancement(operations, nativeOperations, systemContractOperations);

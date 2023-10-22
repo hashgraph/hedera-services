@@ -25,6 +25,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
@@ -205,4 +206,12 @@ public interface HederaNativeOperations {
      * @param beneficiaryNumber the number of the beneficiary
      */
     void trackDeletion(long deletedNumber, final long beneficiaryNumber);
+
+    /**
+     * Checks if the given transfer operation uses custom fees.
+     *
+     * @param op the transfer operation check
+     * @return true if the given transaction body has custom fees, false otherwise
+     */
+    boolean checkForCustomFees(@NonNull CryptoTransferTransactionBody op);
 }

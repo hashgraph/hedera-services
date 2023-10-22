@@ -149,6 +149,7 @@ public class CreateTranslator extends AbstractHtsCallTranslator {
     @Override
     public ClassicCreatesCall callFrom(@NonNull HtsCallAttempt attempt) {
         return new ClassicCreatesCall(
+                attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 nominalBodyFor(attempt),
                 attempt.defaultVerificationStrategy(),

@@ -292,6 +292,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     private final TokenCreateReqs.Factory tokenCreateReqsFactory;
     private TokenCreateWrapper tokenCreateOp;
 
+    // too may parameters
+    @SuppressWarnings("java:S107")
     public TokenCreatePrecompile(
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
