@@ -1756,7 +1756,8 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .signedBy(DEFAULT_PAYER)
                                 .hasKnownStatus(INVALID_ACCOUNT_ID)));
     }
-//    @HapiTest  will be enabled in https://github.com/hashgraph/hedera-services/pull/9351
+
+    @HapiTest
     private HapiSpec complexKeyAcctPaysForOwnTransfer() {
         SigControl enoughUniqueSigs = SigControl.threshSigs(
                 2,
@@ -1774,7 +1775,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         .numPayerSigs(14)
                         .fee(ONE_HUNDRED_HBARS));
     }
-//    @HapiTest // will be enabled in https://github.com/hashgraph/hedera-services/pull/9351
+    @HapiTest
     private HapiSpec twoComplexKeysRequired() {
         SigControl payerShape = threshOf(2, threshOf(1, 7), threshOf(3, 7));
         SigControl receiverShape = SigControl.threshSigs(3, threshOf(2, 2), threshOf(3, 5), ON);

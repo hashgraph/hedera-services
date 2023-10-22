@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.verifier;
+package com.hedera.node.app.signature;
 
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
-import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -206,7 +205,7 @@ final class CompoundSignatureVerificationFuture implements SignatureVerification
             // remaining on the next iteration.
             final var now = System.currentTimeMillis();
             final var verification = future.get(deadline - now, TimeUnit.MILLISECONDS);
-            if (!verification.passed() && (failCount++ >= numCanFail)) {
+            if (verification.failed() && (failCount++ >= numCanFail)) {
                 return new SignatureVerificationImpl(key, evmAlias, false);
             }
         }
