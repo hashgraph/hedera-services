@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
@@ -470,6 +471,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
+    @HapiTest
     private HapiSpec canUseEip1014AliasesForXfers() {
         final var partyCreation2 = "partyCreation2";
         final var counterCreation2 = "counterCreation2";
@@ -1378,7 +1380,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                                         relationshipWith(secondFungible)
                                                                 .balance(exchangeAmount / 15)))));
     }
-
+    @HapiTest
     private HapiSpec royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots() {
         final var uniqueWithRoyalty = "uniqueWithRoyalty";
         final var someFungible = "firstFungible";
@@ -1388,23 +1390,23 @@ public class CryptoTransferSuite extends HapiSuite {
         final var multipurpose = MULTI_KEY;
         final var hodlXfer = HODL_XFER;
 
-        return defaultHapiSpec("royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots")
+        return onlyDefaultHapiSpec("royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots")
                 .given(
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(royaltyCollectorNoSlots),
-                        cryptoCreate(party).maxAutomaticTokenAssociations(123),
-                        cryptoCreate(counterparty).maxAutomaticTokenAssociations(123),
+                        cryptoCreate(TOKEN_TREASURY), //1001
+                        cryptoCreate(royaltyCollectorNoSlots),//1002
+                        cryptoCreate(party).maxAutomaticTokenAssociations(123),//1003
+                        cryptoCreate(counterparty).maxAutomaticTokenAssociations(123),//1004
                         newKeyNamed(multipurpose),
                         getAccountInfo(party).savingSnapshot(party),
                         getAccountInfo(counterparty).savingSnapshot(counterparty),
                         getAccountInfo(royaltyCollectorNoSlots).savingSnapshot(royaltyCollectorNoSlots))
                 .when(
-                        tokenCreate(someFungible)
+                        tokenCreate(someFungible) //1005
                                 .treasury(TOKEN_TREASURY)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .initialSupply(123456789),
                         cryptoTransfer(moving(1000, someFungible).between(TOKEN_TREASURY, counterparty)),
-                        tokenCreate(uniqueWithRoyalty)
+                        tokenCreate(uniqueWithRoyalty)//1006
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
                                 .supplyKey(multipurpose)
@@ -1754,7 +1756,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .signedBy(DEFAULT_PAYER)
                                 .hasKnownStatus(INVALID_ACCOUNT_ID)));
     }
-
+//    @HapiTest  will be enabled in https://github.com/hashgraph/hedera-services/pull/9351
     private HapiSpec complexKeyAcctPaysForOwnTransfer() {
         SigControl enoughUniqueSigs = SigControl.threshSigs(
                 2,
@@ -1772,7 +1774,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         .numPayerSigs(14)
                         .fee(ONE_HUNDRED_HBARS));
     }
-
+//    @HapiTest // will be enabled in https://github.com/hashgraph/hedera-services/pull/9351
     private HapiSpec twoComplexKeysRequired() {
         SigControl payerShape = threshOf(2, threshOf(1, 7), threshOf(3, 7));
         SigControl receiverShape = SigControl.threshSigs(3, threshOf(2, 2), threshOf(3, 5), ON);
