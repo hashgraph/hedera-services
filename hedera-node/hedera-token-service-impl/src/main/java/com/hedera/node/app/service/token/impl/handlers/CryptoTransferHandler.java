@@ -31,6 +31,7 @@ import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.LONG_ACC
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.isAlias;
+import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
@@ -284,7 +285,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // then we also fail with the same error. It should be that being credited value DOES NOT require
                 // a key, unless `receiverSigRequired` is true.
                 final var accountKey = account.key();
-                if ((isEmpty(accountKey)) && (isDebit || isCredit && !hbarTransfer)) {
+                if ((isEmpty(accountKey)) && (isDebit || isCredit && !hbarTransfer) && !isHollow(account)) {
                     // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
                     throw new PreCheckException(INVALID_ACCOUNT_ID);
                 }
@@ -294,7 +295,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // is set on the transaction, then we defer to the token transfer logic to determine if all
                 // signing requirements were met ("isApproval" is a way for the client to say "I don't need a key
                 // because I'm approved which you will see when you handle this transaction").
-                if (isDebit && !accountAmount.isApproval()) {
+                if (isDebit && !accountAmount.isApproval() && !isHollow(account)) {
                     // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
                     ctx.requireKeyOrThrow(account.key(), INVALID_ACCOUNT_ID);
                 } else if (isCredit && account.receiverSigRequired()) {
@@ -305,7 +306,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // allow auto-creation of "hollow accounts" if you transfer value into an account *by alias* that
                 // didn't previously exist. If that is not the case, then we fail because we couldn't find the
                 // destination account.
-                if (!isCredit || !isAlias(accountId)) {
+                if (!isCredit && !isHollow(account)) {
                     // Interestingly, this means that if the transfer amount is exactly 0 and the account has a
                     // non-existent alias, then we fail.
                     throw new PreCheckException(INVALID_ACCOUNT_ID);

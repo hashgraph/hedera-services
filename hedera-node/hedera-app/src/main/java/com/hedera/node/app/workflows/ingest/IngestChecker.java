@@ -210,16 +210,16 @@ public final class IngestChecker {
         signatureExpander.expand(sigPairs, expandedSigs);
         if (!isHollow(payer)) {
             signatureExpander.expand(payerKey, sigPairs, expandedSigs);
-        }
 
-        // Verify the signatures
-        final var results = signatureVerifier.verify(txInfo.signedBytes(), expandedSigs);
-        final var verifier = new DefaultKeyVerifier(hederaConfig, results);
-        final var payerKeyVerification = verifier.verificationFor(payerKey);
+            // Verify the signatures
+            final var results = signatureVerifier.verify(txInfo.signedBytes(), expandedSigs);
+            final var verifier = new DefaultKeyVerifier(hederaConfig, results);
+            final var payerKeyVerification = verifier.verificationFor(payerKey);
 
-        // This can happen if the signature map was missing a signature for the payer account.
-        if (payerKeyVerification.failed()) {
-            throw new PreCheckException(INVALID_SIGNATURE);
+            // This can happen if the signature map was missing a signature for the payer account.
+            if (payerKeyVerification.failed()) {
+                throw new PreCheckException(INVALID_SIGNATURE);
+            }
         }
     }
 }
