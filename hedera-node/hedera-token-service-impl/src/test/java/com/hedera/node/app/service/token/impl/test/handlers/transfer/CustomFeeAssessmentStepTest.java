@@ -510,8 +510,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                         .accountId(payerId)
                         .tokenId(fungibleTokenId)
                         .balance(1000)
-                        .build()
-                );
+                        .build());
 
         when(handleContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
 
