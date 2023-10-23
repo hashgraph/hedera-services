@@ -45,7 +45,7 @@ class OwnerOfCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithMissingToken() {
-        subject = new OwnerOfCall(mockEnhancement(), null, NFT_SERIAL_NO);
+        subject = new OwnerOfCall(gasCalculator, mockEnhancement(), null, NFT_SERIAL_NO);
 
         final var result = subject.execute().fullResult().result();
 
@@ -55,7 +55,7 @@ class OwnerOfCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithMissingNft() {
-        subject = new OwnerOfCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, NFT_SERIAL_NO);
+        subject = new OwnerOfCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, NFT_SERIAL_NO);
 
         final var result = subject.execute().fullResult().result();
 
@@ -65,7 +65,7 @@ class OwnerOfCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithMissingOwner() {
-        subject = new OwnerOfCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, NFT_SERIAL_NO);
+        subject = new OwnerOfCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, NFT_SERIAL_NO);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), NFT_SERIAL_NO))
                 .willReturn(CIVILIAN_OWNED_NFT);
 
@@ -77,7 +77,7 @@ class OwnerOfCallTest extends HtsCallTestBase {
 
     @Test
     void returnsUnaliasedOwnerLongZeroForPresentTokenAndNonTreasuryNft() {
-        subject = new OwnerOfCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, NFT_SERIAL_NO);
+        subject = new OwnerOfCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, NFT_SERIAL_NO);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), NFT_SERIAL_NO))
                 .willReturn(CIVILIAN_OWNED_NFT);
         final long ownerNum = CIVILIAN_OWNED_NFT.ownerIdOrThrow().accountNumOrThrow();
@@ -96,7 +96,7 @@ class OwnerOfCallTest extends HtsCallTestBase {
 
     @Test
     void returnsAliasedOwnerLongZeroForPresentTokenAndTreasuryNft() {
-        subject = new OwnerOfCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, NFT_SERIAL_NO);
+        subject = new OwnerOfCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, NFT_SERIAL_NO);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), NFT_SERIAL_NO))
                 .willReturn(TREASURY_OWNED_NFT);
         final long ownerNum = NON_FUNGIBLE_TOKEN.treasuryAccountIdOrThrow().accountNumOrThrow();

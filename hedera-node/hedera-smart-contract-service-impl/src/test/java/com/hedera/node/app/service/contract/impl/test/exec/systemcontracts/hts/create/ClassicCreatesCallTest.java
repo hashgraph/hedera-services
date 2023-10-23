@@ -30,6 +30,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.ClassicCreatesCall;
@@ -50,6 +51,9 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
     @Mock
     private AddressIdConverter addressIdConverter;
+
+    @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
 
     @Mock
     private CryptoCreateRecordBuilder recordBuilder;
@@ -253,6 +257,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
     private void commonGivens() {
         subject = new ClassicCreatesCall(
+                systemContractGasCalculator,
                 mockEnhancement(),
                 PRETEND_CREATE_TOKEN,
                 verificationStrategy,

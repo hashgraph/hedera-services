@@ -60,8 +60,9 @@ public class Erc721TransferFromTranslator extends AbstractHtsCallTranslator {
                 call.get(1),
                 requireNonNull(attempt.redirectToken()).tokenIdOrThrow(),
                 attempt.defaultVerificationStrategy(),
-                attempt.senderAddress(),
                 attempt.enhancement(),
+                attempt.systemContractGasCalculator(),
+                attempt.senderId(),
                 attempt.addressIdConverter());
     }
 }

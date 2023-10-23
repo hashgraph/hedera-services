@@ -47,6 +47,7 @@ public class TotalSupplyTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public TotalSupplyCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        return new TotalSupplyCall(attempt.enhancement(), attempt.redirectToken());
+        return new TotalSupplyCall(
+                attempt.systemContractGasCalculator(), attempt.enhancement(), attempt.redirectToken());
     }
 }

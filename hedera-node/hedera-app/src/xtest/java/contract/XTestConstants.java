@@ -44,6 +44,7 @@ import org.hyperledger.besu.datatypes.Address;
  */
 class XTestConstants {
 
+    static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     static final AccountID MISC_PAYER_ID =
             AccountID.newBuilder().accountNum(950L).build();
 

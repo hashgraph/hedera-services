@@ -16,8 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.api;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessmentStep;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.api.ServiceApiProvider;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -40,6 +45,19 @@ public enum TokenServiceApiProvider implements ServiceApiProvider<TokenServiceAp
     @Override
     public TokenServiceApi newInstance(
             @NonNull final Configuration configuration, @NonNull final WritableStates writableStates) {
-        return new TokenServiceApiImpl(configuration, stakingValidator, writableStates);
+        return new TokenServiceApiImpl(configuration, stakingValidator, writableStates, op -> {
+            final var assessor = new CustomFeeAssessmentStep(op);
+            try {
+                final var result = assessor.assessFees(
+                        new ReadableTokenStoreImpl(writableStates),
+                        new ReadableTokenRelationStoreImpl(writableStates),
+                        configuration,
+                        new ReadableAccountStoreImpl(writableStates),
+                        AccountID::hasAlias);
+                return !result.assessedCustomFees().isEmpty();
+            } catch (Exception ignore) {
+                return false;
+            }
+        });
     }
 }

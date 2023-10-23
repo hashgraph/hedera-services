@@ -26,9 +26,12 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
@@ -46,6 +49,7 @@ import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
@@ -279,6 +283,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
+    public Instant currentTime() {
+        return consensusNow();
+    }
+
+    @Override
     @NonNull
     public BlockRecordInfo blockRecordInfo() {
         return blockRecordInfo;
@@ -457,9 +466,27 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
             @NonNull final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayer) {
+            @NonNull final AccountID syntheticPayerId) {
         final var childRecordBuilder = recordListBuilder.addChild(configuration());
-        return doDispatchChildTransaction(syntheticPayer, txBody, childRecordBuilder, recordBuilderClass, callback);
+        return doDispatchChildTransaction(syntheticPayerId, txBody, childRecordBuilder, recordBuilderClass, callback);
+    }
+
+    @Override
+    public @NonNull Fees dispatchComputeFees(
+            @NonNull final TransactionBody txBody, @NonNull final AccountID syntheticPayerId) {
+        var bodyToDispatch = txBody;
+        if (!txBody.hasTransactionID()) {
+            // Legacy mono fee calculators frequently estimate an entity's lifetime using the epoch second of the
+            // transaction id/ valid start as the current consensus time; ensure those will behave sensibly here
+            bodyToDispatch = txBody.copyBuilder()
+                    .transactionID(TransactionID.newBuilder()
+                            .transactionValidStart(Timestamp.newBuilder()
+                                    .seconds(consensusNow().getEpochSecond())
+                                    .nanos(consensusNow().getNano())))
+                    .build();
+        }
+        return dispatcher.dispatchComputeFees(
+                new ChildFeeContextImpl(feeManager, this, bodyToDispatch, syntheticPayerId));
     }
 
     @NonNull
@@ -468,9 +495,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
             @NonNull final Predicate<Key> callback,
-            @NonNull final AccountID payer) {
+            @NonNull final AccountID syntheticPayerId) {
         final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
-        return doDispatchChildTransaction(payer, txBody, childRecordBuilder, recordBuilderClass, callback);
+        return doDispatchChildTransaction(syntheticPayerId, txBody, childRecordBuilder, recordBuilderClass, callback);
     }
 
     @NonNull
