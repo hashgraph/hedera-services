@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.system.NodeId;
@@ -32,7 +33,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.merkle.util.PairedStreams;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.SocketConnection;
@@ -42,7 +42,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.test.framework.TestTypeTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.security.PublicKey;
@@ -69,7 +68,8 @@ import org.junit.jupiter.api.Test;
 final class ReconnectTest {
 
     private static final Duration RECONNECT_SOCKET_TIMEOUT = Duration.of(1_000, ChronoUnit.MILLIS);
-    private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+    private final PlatformContext platformContext =
+            TestPlatformContextBuilder.create().build();
 
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {
@@ -123,14 +123,16 @@ final class ReconnectTest {
 
             final ReconnectLearner receiver = buildReceiver(
                     signedState.getState(),
-                    new DummyConnection(pairedStreams.getLearnerInput(), pairedStreams.getLearnerOutput()),
+                    new DummyConnection(
+                            platformContext, pairedStreams.getLearnerInput(), pairedStreams.getLearnerOutput()),
                     reconnectMetrics);
 
             final Thread thread = new Thread(() -> {
                 try {
                     final ReconnectTeacher sender = buildSender(
                             signedState.reserve("test"),
-                            new DummyConnection(pairedStreams.getTeacherInput(), pairedStreams.getTeacherOutput()),
+                            new DummyConnection(
+                                    platformContext, pairedStreams.getTeacherInput(), pairedStreams.getTeacherOutput()),
                             reconnectMetrics);
                     sender.execute(signedState);
                 } catch (final IOException ex) {
@@ -174,7 +176,7 @@ final class ReconnectTest {
                 lastRoundReceived,
                 () -> false,
                 reconnectMetrics,
-                configuration);
+                platformContext.getConfiguration());
     }
 
     private ReconnectLearner buildReceiver(

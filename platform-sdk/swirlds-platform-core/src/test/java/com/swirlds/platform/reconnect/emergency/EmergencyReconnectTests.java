@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -251,11 +252,15 @@ class EmergencyReconnectTests {
     }
 
     private void executeReconnect() {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         try (final PairedStreams pairedStreams = new PairedStreams()) {
             executor.doParallel(
                     doTeacher(
                             teacherProtocol,
                             new DummyConnection(
+                                    platformContext,
                                     teacherId,
                                     learnerId,
                                     pairedStreams.getTeacherInput(),
@@ -263,6 +268,7 @@ class EmergencyReconnectTests {
                     doLearner(
                             learnerProtocol,
                             new DummyConnection(
+                                    platformContext,
                                     learnerId,
                                     teacherId,
                                     pairedStreams.getLearnerInput(),
