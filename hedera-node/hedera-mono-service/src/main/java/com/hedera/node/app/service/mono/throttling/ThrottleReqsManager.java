@@ -58,8 +58,8 @@ public class ThrottleReqsManager {
      */
     public void undoClaimedReqsFor(int nTransactions) {
         for (int i = 0; i < passedReq.length; i++) {
-            var req = allReqs.get(i);
-            var opsRequired = req.getRight();
+            final var req = allReqs.get(i);
+            final var opsRequired = req.getRight();
             final var bucket = req.getLeft();
             bucket.leakCapacity(nTransactions * opsRequired * BucketThrottle.capacityUnitsPerTxn());
         }

@@ -146,9 +146,6 @@ public class TransferLogic {
                 break;
             }
         }
-        if (failedAutoCreation && txnCtx.isSelfSubmitted()) {
-            cryptoCreateThrottleReclaimer.accept(txnCtx.numImplicitCreations());
-        }
 
         if (validity == OK && autoCreationFee > 0) {
             updatedPayerBalance = (updatedPayerBalance == Long.MIN_VALUE)
@@ -169,6 +166,9 @@ public class TransferLogic {
             dropTokenChanges(sideEffectsTracker, nftsLedger, accountsLedger, tokenRelsLedger);
             if (autoCreationLogic != null && autoCreationLogic.reclaimPendingAliases()) {
                 accountsLedger.undoCreations();
+            }
+            if (failedAutoCreation && txnCtx.isSelfSubmitted()) {
+                cryptoCreateThrottleReclaimer.accept(txnCtx.numImplicitCreations());
             }
             throw new InvalidTransactionException(validity);
         }

@@ -251,7 +251,6 @@ class DeterministicThrottleTest {
         subject.allow(1, originalDecision);
         final var preLeakState = subject.usageSnapshot();
         subject.leakCapacity(preLeakState.used() / 2);
-        ;
         final var postLeakState = subject.usageSnapshot();
         assertEquals(preLeakState.used() / 2, postLeakState.used());
     }
