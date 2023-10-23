@@ -265,7 +265,6 @@ public final class PlatformBuilder {
                     appName,
                     swirldName,
                     softwareVersion,
-                    softwareUpgrade,
                     initialState.get(),
                     emergencyRecoveryManager);
 
