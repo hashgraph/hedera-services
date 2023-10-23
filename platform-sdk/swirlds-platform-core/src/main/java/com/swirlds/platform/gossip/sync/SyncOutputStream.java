@@ -59,20 +59,22 @@ public class SyncOutputStream extends SerializableDataOutputStream {
                 .getConfigData(SocketConfig.class)
                 .gzipCompression();
 
+        final OutputStream meteredStream = extendOutputStream(out, connectionByteCounter);
+
         final OutputStream wrappedStream;
         if (compress) {
             try {
-                wrappedStream = new GZIPOutputStream(out, bufferSize, true);
+                wrappedStream = new GZIPOutputStream(meteredStream, bufferSize, true);
             } catch (final IOException e) {
                 throw new UncheckedIOException("unable to create gzip output stream", e);
             }
         } else {
-            wrappedStream = new BufferedOutputStream(out, bufferSize);
+            wrappedStream = new BufferedOutputStream(meteredStream, bufferSize);
         }
 
         // we write the data to the buffer first, for efficiency
         return new SyncOutputStream(
-                extendOutputStream(wrappedStream, syncByteCounter, connectionByteCounter),
+                wrappedStream,
                 syncByteCounter,
                 connectionByteCounter);
     }

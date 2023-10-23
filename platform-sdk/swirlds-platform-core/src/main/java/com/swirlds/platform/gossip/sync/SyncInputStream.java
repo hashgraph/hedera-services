@@ -57,18 +57,20 @@ public class SyncInputStream extends SerializableDataInputStream {
                 .getConfigData(SocketConfig.class)
                 .gzipCompression();
 
+        final InputStream meteredStream = extendInputStream(in, syncCounter);
+
         final InputStream wrappedStream;
         if (compress) {
             try {
-                wrappedStream = new GZIPInputStream(in, bufferSize);
+                wrappedStream = new GZIPInputStream(meteredStream, bufferSize);
             } catch (final IOException e) {
                 throw new UncheckedIOException("unable to create gzip input stream", e);
             }
         } else {
-            wrappedStream = new BufferedInputStream(in, bufferSize);
+            wrappedStream = new BufferedInputStream(meteredStream, bufferSize);
         }
 
-        return new SyncInputStream(extendInputStream(wrappedStream, syncCounter), syncCounter);
+        return new SyncInputStream(wrappedStream, syncCounter);
     }
 
     public CountingStreamExtension getSyncByteCounter() {
