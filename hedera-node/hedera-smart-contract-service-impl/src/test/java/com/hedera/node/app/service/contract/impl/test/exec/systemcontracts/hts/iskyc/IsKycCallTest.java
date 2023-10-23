@@ -41,7 +41,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class IsKycCallTest extends HtsCallTestBase {
     @Test
     void returnsIsKycForPresentToken() {
-        final var subject = new IsKycCall(mockEnhancement(), false, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject =
+                new IsKycCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
@@ -62,7 +63,8 @@ class IsKycCallTest extends HtsCallTestBase {
 
     @Test
     void returnsIsKycForMissingToken() {
-        final var subject = new IsKycCall(mockEnhancement(), false, null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject =
+                new IsKycCall(gasCalculator, mockEnhancement(), false, null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
@@ -83,7 +85,8 @@ class IsKycCallTest extends HtsCallTestBase {
 
     @Test
     void returnsIsFrozenForMissingAccount() {
-        final var subject = new IsKycCall(mockEnhancement(), false, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject =
+                new IsKycCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
@@ -104,7 +107,8 @@ class IsKycCallTest extends HtsCallTestBase {
 
     @Test
     void returnsIsKycForMissingTokenStaticCall() {
-        final var subject = new IsKycCall(mockEnhancement(), true, null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject =
+                new IsKycCall(gasCalculator, mockEnhancement(), true, null, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic
@@ -120,7 +124,8 @@ class IsKycCallTest extends HtsCallTestBase {
 
     @Test
     void returnsIsFrozenForMissingAccountStaticCall() {
-        final var subject = new IsKycCall(mockEnhancement(), true, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
+        final var subject =
+                new IsKycCall(gasCalculator, mockEnhancement(), true, FUNGIBLE_TOKEN, FUNGIBLE_TOKEN_HEADLONG_ADDRESS);
 
         final MockedStatic<ConversionUtils> conversionUtilsMockStatic = mockStatic(ConversionUtils.class);
         conversionUtilsMockStatic

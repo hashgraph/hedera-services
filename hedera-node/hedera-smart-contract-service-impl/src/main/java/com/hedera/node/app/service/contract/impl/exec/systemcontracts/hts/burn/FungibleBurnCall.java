@@ -17,24 +17,22 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
+import static com.hedera.node.app.service.contract.impl.exec.gas.DispatchType.BURN_FUNGIBLE;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.math.BigInteger;
+import org.hyperledger.besu.datatypes.Address;
 
 public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
 
@@ -43,45 +41,49 @@ public class FungibleBurnCall extends AbstractHtsCall implements BurnCall {
     @Nullable
     private final TokenID tokenId;
 
+    private final TupleType outputs;
+
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategy verificationStrategy;
-    private final org.hyperledger.besu.datatypes.Address spender;
+    private final AccountID senderId;
+    private final org.hyperledger.besu.datatypes.Address sender;
 
+    // too many parameters
+    @SuppressWarnings("java:S107")
     public FungibleBurnCall(
             final long amount,
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final TokenID tokenId,
+            @NonNull final TupleType outputs,
             @NonNull final VerificationStrategy verificationStrategy,
-            @NonNull final org.hyperledger.besu.datatypes.Address spender,
+            @NonNull final AccountID senderId,
+            @NonNull final Address sender,
             @NonNull final AddressIdConverter addressIdConverter) {
-        super(enhancement);
+        super(gasCalculator, enhancement);
         this.amount = amount;
         this.tokenId = tokenId;
+        this.outputs = requireNonNull(outputs);
+        this.sender = requireNonNull(sender);
+        this.senderId = requireNonNull(senderId);
         this.verificationStrategy = requireNonNull(verificationStrategy);
-        this.spender = requireNonNull(spender);
         this.addressIdConverter = requireNonNull(addressIdConverter);
     }
 
     @Override
     public @NonNull PricedResult execute() {
-        if (tokenId == null) {
-            return reversionWith(INVALID_TOKEN_ID, 0L);
-        }
-        final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
-        final var recordBuilder = systemContractOperations()
-                .dispatch(
-                        syntheticBurnUnits(tokenId, amount),
-                        verificationStrategy,
-                        spenderId,
-                        TokenBurnRecordBuilder.class);
-        if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder.status(), 0L));
-        } else {
-            final var encodedOutput = BurnTranslator.BURN_TOKEN_V1
-                    .getOutputs()
-                    .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
-            return gasOnly(successResult(encodedOutput, recordBuilder.getNewTotalSupply()));
-        }
+        return executeBurn(
+                tokenId,
+                senderId,
+                outputs,
+                BURN_FUNGIBLE,
+                addressIdConverter,
+                verificationStrategy,
+                gasCalculator,
+                () -> syntheticBurnUnits(requireNonNull(tokenId), amount),
+                sender,
+                systemContractOperations(),
+                gasRequirement -> reversionWith(INVALID_TOKEN_ID, gasRequirement));
     }
 
     private TransactionBody syntheticBurnUnits(@NonNull final TokenID tokenId, final long amount) {

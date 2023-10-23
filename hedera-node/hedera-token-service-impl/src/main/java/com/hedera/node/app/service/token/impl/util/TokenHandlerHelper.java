@@ -199,6 +199,7 @@ public class TokenHandlerHelper {
         requireNonNull(tokenRelStore);
 
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
+
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
         validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
 
