@@ -59,7 +59,7 @@ public class TransactionRateMultiplier {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
     }
 
-    public long currentMultiplier(TransactionInfo txnInfo, SavepointStackImpl stack) {
+    public long currentMultiplier(@NonNull final TransactionInfo txnInfo, @NonNull final SavepointStackImpl stack) {
         final var throttleMultiplier = delegate.currentMultiplier();
         final var configuration = configProvider.getConfiguration();
         final var entityScaleFactors =
@@ -97,7 +97,7 @@ public class TransactionRateMultiplier {
         };
     }
 
-    private int roundedAccountPercentUtil(SavepointStackImpl stack) {
+    private int roundedAccountPercentUtil(@NonNull final SavepointStackImpl stack) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfAccounts =
                 configuration.getConfigData(AccountsConfig.class).maxNumber();
@@ -114,7 +114,7 @@ public class TransactionRateMultiplier {
         return maxNumOfAccounts == 0 ? 100 : (int) ((100 * numAccounts) / maxNumOfAccounts);
     }
 
-    private int roundedContractPercentUtil(SavepointStackImpl stack) {
+    private int roundedContractPercentUtil(@NonNull final SavepointStackImpl stack) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfContracts =
                 configuration.getConfigData(ContractsConfig.class).maxNumber();
@@ -126,7 +126,7 @@ public class TransactionRateMultiplier {
         return maxNumOfContracts == 0 ? 100 : (int) ((100 * numContracts) / maxNumOfContracts);
     }
 
-    private int roundedFilePercentUtil(SavepointStackImpl stack) {
+    private int roundedFilePercentUtil(@NonNull final SavepointStackImpl stack) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfFiles = configuration.getConfigData(FilesConfig.class).maxNumber();
 
@@ -137,7 +137,7 @@ public class TransactionRateMultiplier {
         return maxNumOfFiles == 0 ? 100 : (int) ((100 * numOfFiles) / maxNumOfFiles);
     }
 
-    private int roundedNftPercentUtil(SavepointStackImpl stack) {
+    private int roundedNftPercentUtil(@NonNull final SavepointStackImpl stack) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfNfts = configuration.getConfigData(TokensConfig.class).nftsMaxAllowedMints();
 
@@ -148,7 +148,7 @@ public class TransactionRateMultiplier {
         return maxNumOfNfts == 0 ? 100 : (int) ((100 * numOfNfts) / maxNumOfNfts);
     }
 
-    private int roundedTokenPercentUtil(SavepointStackImpl stack) {
+    private int roundedTokenPercentUtil(@NonNull final SavepointStackImpl stack) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfTokens =
                 configuration.getConfigData(TokensConfig.class).maxNumber();
@@ -160,7 +160,7 @@ public class TransactionRateMultiplier {
         return maxNumOfTokens == 0 ? 100 : (int) ((100 * numOfTokens) / maxNumOfTokens);
     }
 
-    private int roundedTokenRelPercentUtil(SavepointStackImpl stack) {
+    private int roundedTokenRelPercentUtil(@NonNull final SavepointStackImpl stack) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumOfTokenRels =
                 configuration.getConfigData(TokensConfig.class).maxAggregateRels();
@@ -172,7 +172,7 @@ public class TransactionRateMultiplier {
         return maxNumOfTokenRels == 0 ? 100 : (int) ((100 * numOfTokensRels) / maxNumOfTokenRels);
     }
 
-    private int roundedTopicPercentUtil(SavepointStackImpl stack) {
+    private int roundedTopicPercentUtil(@NonNull final SavepointStackImpl stack) {
         final var configuration = configProvider.getConfiguration();
         final var maxNumberOfTopics =
                 configuration.getConfigData(TopicsConfig.class).maxNumber();
@@ -184,7 +184,7 @@ public class TransactionRateMultiplier {
         return maxNumberOfTopics == 0 ? 100 : (int) ((100 * numOfTopics) / maxNumberOfTopics);
     }
 
-    public void updateMultiplier(Instant consensusNow) {
+    public void updateMultiplier(@NonNull final Instant consensusNow) {
         delegate.updateMultiplier(consensusNow);
     }
 
@@ -192,10 +192,11 @@ public class TransactionRateMultiplier {
         delegate.resetExpectations();
     }
 
-    public void resetCongestionLevelStarts(Instant[] savedStartTimes) {
+    public void resetCongestionLevelStarts(@NonNull final Instant[] savedStartTimes) {
         delegate.resetCongestionLevelStarts(savedStartTimes);
     }
 
+    @NonNull
     public Instant[] congestionLevelStarts() {
         return delegate.congestionLevelStarts();
     }

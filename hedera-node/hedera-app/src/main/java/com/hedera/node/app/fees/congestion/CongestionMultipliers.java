@@ -39,7 +39,7 @@ public class CongestionMultipliers {
         genericFeeMultiplier.updateMultiplier(consensusTime);
     }
 
-    public long maxCurrentMultiplier(TransactionInfo txnInfo, SavepointStackImpl stack) {
+    public long maxCurrentMultiplier(@NonNull final TransactionInfo txnInfo, @NonNull final SavepointStackImpl stack) {
         return Math.max(gasFeeMultiplier.currentMultiplier(), genericFeeMultiplier.currentMultiplier(txnInfo, stack));
     }
 

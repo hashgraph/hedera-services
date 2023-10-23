@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.fees.congestion;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.hapi.utils.throttles.CongestibleThrottle;
 import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -46,23 +49,24 @@ public class ThrottleMultiplier {
     private Instant[] congestionLevelStarts = NO_CONGESTION_STARTS;
 
     public ThrottleMultiplier(
-            final String usageType,
-            final String abbrevUsageType,
-            final String congestionType,
-            final Logger log,
-            final LongSupplier minCongestionPeriodSupplier,
-            final Supplier<CongestionMultipliers> multiplierSupplier,
-            final Supplier<List<? extends CongestibleThrottle>> throttleSource) {
-        this.usageType = usageType;
-        this.abbrevUsageType = abbrevUsageType;
-        this.congestionType = congestionType;
-        this.log = log;
-        this.minCongestionPeriodSupplier = minCongestionPeriodSupplier;
-        this.multiplierSupplier = multiplierSupplier;
-        this.throttleSource = throttleSource;
+            @NonNull final String usageType,
+            @NonNull final String abbrevUsageType,
+            @NonNull final String congestionType,
+            @NonNull final Logger log,
+            @NonNull final LongSupplier minCongestionPeriodSupplier,
+            @NonNull final Supplier<CongestionMultipliers> multiplierSupplier,
+            @NonNull final Supplier<List<? extends CongestibleThrottle>> throttleSource) {
+        this.usageType = requireNonNull(usageType, "usageType must not be null");
+        this.abbrevUsageType = requireNonNull(abbrevUsageType, "abbrevUsageType must not be null");
+        this.congestionType = requireNonNull(congestionType, "congestionType must not be null");
+        this.log = requireNonNull(log, "log must not be null");
+        this.minCongestionPeriodSupplier =
+                requireNonNull(minCongestionPeriodSupplier, "minCongestionPeriodSupplier must not be null");
+        this.multiplierSupplier = requireNonNull(multiplierSupplier, "multiplierSupplier must not be null");
+        this.throttleSource = requireNonNull(throttleSource, "throttleSource must not be null");
     }
 
-    public void updateMultiplier(final Instant consensusNow) {
+    public void updateMultiplier(@NonNull final Instant consensusNow) {
         if (ensureConfigUpToDate()) {
             rebuildState();
         }
@@ -94,15 +98,17 @@ public class ThrottleMultiplier {
         rebuildState();
     }
 
-    public void resetCongestionLevelStarts(final Instant[] savedStartTimes) {
+    public void resetCongestionLevelStarts(@NonNull final Instant[] savedStartTimes) {
         congestionLevelStarts = savedStartTimes.clone();
     }
 
+    @NonNull
     public Instant[] congestionLevelStarts() {
         return congestionLevelStarts.clone();
     }
 
     @Override
+    @NonNull
     public String toString() {
         if (activeConfig == NO_CONFIG) {
             return " <N/A>";
@@ -130,6 +136,7 @@ public class ThrottleMultiplier {
         return sb.toString();
     }
 
+    @NonNull
     private String readableTpsCutoffFor(long capacityCutoff, long mtps, long capacity) {
         return String.format("%.2f", (capacityCutoff * 1.0) / capacity * mtps / 1000.0);
     }
@@ -162,7 +169,7 @@ public class ThrottleMultiplier {
         logReadableCutoffs();
     }
 
-    private long maxMultiplierOfActiveConfig(final long[] multipliers) {
+    private long maxMultiplierOfActiveConfig(@NonNull final long[] multipliers) {
         long max = DEFAULT_MULTIPLIER;
         for (int i = 0; i < activeTriggerValues.length; i++) {
             long used = activeThrottles.get(i).used();
@@ -175,7 +182,8 @@ public class ThrottleMultiplier {
         return max;
     }
 
-    private void updateCongestionLevelStartsWith(final long[] multipliers, long x, Instant consensusNow) {
+    private void updateCongestionLevelStartsWith(
+            @NonNull final long[] multipliers, long x, @NonNull final Instant consensusNow) {
         for (int i = 0; i < multipliers.length; i++) {
             if (x < multipliers[i]) {
                 congestionLevelStarts[i] = null;
@@ -188,7 +196,7 @@ public class ThrottleMultiplier {
     /* Use the highest multiplier whose congestion level we have
     stayed above for at least the minimum number of seconds. */
     private long highestMultiplierNotShorterThan(
-            final long[] multipliers, final long period, final Instant consensusNow) {
+            @NonNull final long[] multipliers, final long period, @NonNull final Instant consensusNow) {
         multiplier = DEFAULT_MULTIPLIER;
         for (int i = multipliers.length - 1; i >= 0; i--) {
             var levelStart = congestionLevelStarts[i];
