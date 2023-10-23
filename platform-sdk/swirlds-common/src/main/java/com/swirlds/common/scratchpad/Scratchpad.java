@@ -105,8 +105,6 @@ public interface Scratchpad<K extends Enum<K> & ScratchpadType> {
      */
     void atomicOperation(@NonNull final Consumer<Map<K, SelfSerializable>> operation);
 
-    // TODO test
-
     /**
      * Perform an arbitrary atomic operation on the scratchpad. This operation is atomic with respect to reads, writes,
      * and other calls to this method.

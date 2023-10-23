@@ -355,6 +355,144 @@ class ScratchpadTests {
     }
 
     @Test
+    void optionalAtomicOperationTest() {
+        final Random random = getRandomPrintSeed();
+
+        final Scratchpad<TestScratchpadType> scratchpad =
+                Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "test");
+        scratchpad.logContents();
+
+        final Path scratchpadDirectory =
+                testDirectory.resolve("scratchpad").resolve("0").resolve("test");
+
+        // No scratchpad file will exist until we write the first value
+        assertFalse(scratchpadDirectory.toFile().exists());
+
+        // Values are null by default
+        assertNull(scratchpad.get(FOO));
+        assertNull(scratchpad.get(BAR));
+        assertNull(scratchpad.get(BAZ));
+
+        // Write a value for the first time
+
+        final Hash hash1 = randomHash(random);
+        final SerializableLong long1 = new SerializableLong(random.nextLong());
+        final NodeId nodeId1 = new NodeId(random.nextInt(0, 1000));
+
+        scratchpad.atomicOperation(map -> {
+            assertNull(map.put(FOO, hash1));
+            assertNull(map.put(BAR, long1));
+            assertNull(map.put(BAZ, nodeId1));
+
+            return true;
+        });
+
+        // Should have no effect.
+        scratchpad.atomicOperation(map -> false);
+
+        assertEquals(1, scratchpadDirectory.toFile().listFiles().length);
+
+        assertEquals(hash1, scratchpad.get(FOO));
+        assertEquals(long1, scratchpad.get(BAR));
+        assertEquals(nodeId1, scratchpad.get(BAZ));
+
+        // Overwrite an existing value
+
+        final Hash hash2 = randomHash(random);
+        final SerializableLong long2 = new SerializableLong(random.nextLong());
+        final NodeId nodeId2 = new NodeId(random.nextInt(1001, 2000));
+
+        scratchpad.atomicOperation(map -> {
+            assertEquals(hash1, map.put(FOO, hash2));
+            assertEquals(long1, map.put(BAR, long2));
+            assertEquals(nodeId1, map.put(BAZ, nodeId2));
+
+            return true;
+        });
+
+        // Should have no effect.
+        scratchpad.atomicOperation(map -> false);
+
+        assertEquals(1, scratchpadDirectory.toFile().listFiles().length);
+
+        assertEquals(hash2, scratchpad.get(FOO));
+        assertEquals(long2, scratchpad.get(BAR));
+        assertEquals(nodeId2, scratchpad.get(BAZ));
+
+        // Clear the scratchpad
+
+        scratchpad.clear();
+        assertNull(scratchpadDirectory.toFile().listFiles());
+
+        scratchpad.atomicOperation(map -> {
+            assertNull(scratchpad.get(FOO));
+            assertNull(scratchpad.get(BAR));
+            assertNull(scratchpad.get(BAZ));
+
+            return true;
+        });
+
+        // Should have no effect.
+        scratchpad.atomicOperation(map -> false);
+
+        assertNull(scratchpad.get(FOO));
+        assertNull(scratchpad.get(BAR));
+        assertNull(scratchpad.get(BAZ));
+
+        // Write after a clear
+
+        final Hash hash3 = randomHash(random);
+        final SerializableLong long3 = new SerializableLong(random.nextLong());
+        final NodeId nodeId3 = new NodeId(random.nextInt(2001, 3000));
+
+        scratchpad.atomicOperation(map -> {
+            assertNull(map.put(FOO, hash3));
+            assertNull(map.put(BAR, long3));
+            assertNull(map.put(BAZ, nodeId3));
+
+            return true;
+        });
+
+        // Should have no effect.
+        scratchpad.atomicOperation(map -> false);
+
+        assertEquals(1, scratchpadDirectory.toFile().listFiles().length);
+
+        assertEquals(hash3, scratchpad.get(FOO));
+        assertEquals(long3, scratchpad.get(BAR));
+        assertEquals(nodeId3, scratchpad.get(BAZ));
+
+        // Simulate a restart
+        final Scratchpad<TestScratchpadType> scratcphad2 =
+                Scratchpad.create(platformContext, selfId, TestScratchpadType.class, "test");
+        scratchpad.logContents();
+
+        assertEquals(1, scratchpadDirectory.toFile().listFiles().length);
+
+        scratcphad2.atomicOperation(map -> {
+            assertEquals(hash3, map.get(FOO));
+            assertEquals(long3, map.get(BAR));
+            assertEquals(nodeId3, map.get(BAZ));
+
+            return true;
+        });
+
+        // Should have no effect.
+        scratchpad.atomicOperation(map -> false);
+
+        assertEquals(hash3, scratcphad2.get(FOO));
+        assertEquals(long3, scratcphad2.get(BAR));
+        assertEquals(nodeId3, scratcphad2.get(BAZ));
+
+        // Should have no effect.
+        scratchpad.atomicOperation(map -> false);
+
+        assertEquals(hash3, scratcphad2.get(FOO));
+        assertEquals(long3, scratcphad2.get(BAR));
+        assertEquals(nodeId3, scratcphad2.get(BAZ));
+    }
+
+    @Test
     @DisplayName("Illegal Scratchpad Id Test")
     void illegalScratchpadIdTest() {
         assertThrows(
