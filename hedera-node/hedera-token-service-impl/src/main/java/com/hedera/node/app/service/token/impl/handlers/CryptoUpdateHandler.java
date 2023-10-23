@@ -409,7 +409,6 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 Math.max(explicitAutoAssocSlotLifetime, oldLifetime),
                 newSlotsUsage,
                 Math.max(explicitAutoAssocSlotLifetime, newLifetime));
-        System.out.println("rbsDelta = " + rbsDelta + ", slotRbsDelta = " + slotRbsDelta + "baseSize = " + baseSize);
         return feeCalculator
                 .addBytesPerTransaction(baseSize)
                 .addRamByteSeconds(rbsDelta > 0 ? rbsDelta : 0)
