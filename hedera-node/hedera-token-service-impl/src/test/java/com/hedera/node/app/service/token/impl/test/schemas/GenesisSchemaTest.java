@@ -22,8 +22,6 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -338,7 +336,7 @@ final class GenesisSchemaTest {
 
         schema.migrate(migrationContext);
 
-        verify(genesisRecordsBuilder, never()).blocklistAccounts(anyMap());
+        verify(genesisRecordsBuilder).blocklistAccounts(emptyMap());
     }
 
     @Test
@@ -612,7 +610,7 @@ final class GenesisSchemaTest {
                 .withValue("accounts.stakingRewardAccount", 800L)
                 .withValue("accounts.nodeRewardAccount", 801L)
                 .withValue("accounts.blocklist.enabled", blocklistEnabled)
-                .withValue("accounts.blocklist.resource", "blocklist-parsing/test-evm-addresses-blocklist.csv")
+                .withValue("accounts.blocklist.path", "blocklist-parsing/test-evm-addresses-blocklist.csv")
                 // Bootstrap Config
                 .withValue("bootstrap.genesisPublicKey", "0x" + GENESIS_KEY)
                 .withValue("bootstrap.system.entityExpiry", EXPECTED_ENTITY_EXPIRY)

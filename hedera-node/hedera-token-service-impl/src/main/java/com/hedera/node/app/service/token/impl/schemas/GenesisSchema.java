@@ -223,6 +223,7 @@ public class GenesisSchema extends Schema {
                 accounts.modifiedKeys().size());
 
         // ---------- Create blocklist accounts (if enabled) -------------------------
+        final Map<Account, CryptoCreateTransactionBody.Builder> blocklistAccts = new HashMap<>();
         if (accountsConfig.blocklistEnabled()) {
             final var blocklistResourceName = accountsConfig.blocklistResource();
             final var blocklist = blocklistParser.parse(blocklistResourceName);
@@ -238,7 +239,6 @@ public class GenesisSchema extends Schema {
                     .filter(blockedAccount -> aliases.get(blockedAccount.evmAddress()) == null)
                     .toList();
 
-            final Map<Account, CryptoCreateTransactionBody.Builder> blocklistAccts = new HashMap<>();
             for (final var blockedInfo : blockedToCreate) {
                 final var newId = ctx.newEntityNum();
                 final var account = blockedAccountWith(blockedInfo, bootstrapConfig)
@@ -248,8 +248,9 @@ public class GenesisSchema extends Schema {
                 accounts.put(account.accountIdOrThrow(), account);
                 aliases.put(account.alias(), account.accountIdOrThrow());
             }
-            recordsKeeper.blocklistAccounts(blocklistAccts);
         }
+        recordsKeeper.blocklistAccounts(blocklistAccts);
+        log.info("Created {} blocklist accounts", blocklistAccts.size());
     }
 
     /**

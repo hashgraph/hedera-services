@@ -33,6 +33,7 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.NetworkInfoImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
@@ -94,7 +95,9 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -234,16 +237,17 @@ public final class Hedera implements SwirldMain {
 
         // Create all the service implementations
         logger.info("Registering services");
+
         // FUTURE: Use the service loader framework to load these services!
         this.servicesRegistry = new ServicesRegistryImpl(constructableRegistry, genesisRecordsBuilder);
         Set.of(
+                        new EntityIdService(),
                         new ConsensusServiceImpl(),
                         CONTRACT_SERVICE,
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new NetworkServiceImpl(),
                         new ScheduleServiceImpl(),
-                        new EntityIdService(),
                         new TokenServiceImpl(),
                         new UtilServiceImpl(),
                         new RecordCacheService(),
@@ -412,19 +416,52 @@ public final class Hedera implements SwirldMain {
         final var nodeAddress = platform.getAddressBook().getAddress(selfId);
         final var selfNodeInfo = SelfNodeInfoImpl.of(nodeAddress, version);
         final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platform, bootstrapConfigProvider);
-        for (final var registration : servicesRegistry.registrations()) {
+
+        logger.info("Migrating Entity ID Service as pre-requisite for other services");
+        final var entityIdRegistration = servicesRegistry.registrations().stream()
+                .filter(service -> EntityIdService.NAME.equals(service.service().getServiceName()))
+                .findFirst()
+                .orElseThrow();
+        final var entityIdRegistry = (MerkleSchemaRegistry) entityIdRegistration.registry();
+        entityIdRegistry.migrate(
+                state,
+                previousVersion,
+                currentVersion,
+                configProvider.getConfiguration(),
+                networkInfo,
+                backendThrottle,
+                // We call with null here because we're migrating the entity ID service itself
+                null);
+        // Now that the Entity ID Service is migrated, migrate the remaining services
+        for (final var registration : servicesRegistry.registrations().stream()
+                .filter(r -> !Objects.equals(entityIdRegistration, r))
+                .collect(Collectors.toSet())) {
             // FUTURE We should have metrics here to keep track of how long it takes to migrate each service
             final var service = registration.service();
             final var serviceName = service.getServiceName();
             logger.info("Migrating Service {}", serviceName);
             final var registry = (MerkleSchemaRegistry) registration.registry();
+
+            // The token service has a dependency on the entity ID service during genesis migrations, so we CAREFULLY
+            // create a different WritableStates specific to the entity ID service. The different WritableStates
+            // instances won't be able to see the changes made by each other, but there shouldn't be any conflicting
+            // changes. We'll inject this into the MigrationContext below to enable generation of entity IDs.
+            final var entityIdWritableStates = state.createWritableStates(EntityIdService.NAME);
+            final var entityIdStore = new WritableEntityIdStore(entityIdWritableStates);
+
             registry.migrate(
                     state,
                     previousVersion,
                     currentVersion,
                     configProvider.getConfiguration(),
                     networkInfo,
-                    backendThrottle);
+                    backendThrottle,
+                    requireNonNull(entityIdStore));
+            // Now commit any changes that were made to the entity ID state (since other service entities could depend
+            // on newly-generated entity IDs)
+            if (entityIdWritableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
+                mws.commit();
+            }
         }
         logger.info("Migration complete");
     }

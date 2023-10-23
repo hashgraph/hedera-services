@@ -20,7 +20,6 @@ import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.Service;
@@ -156,7 +155,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final SemanticVersion currentVersion,
             @NonNull final Configuration config,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final HandleThrottleParser handleThrottling) {
+            @NonNull final HandleThrottleParser handleThrottling,
+            @Nullable final WritableEntityIdStore entityIdStore) {
         requireNonNull(hederaState);
         requireNonNull(currentVersion);
         requireNonNull(config);
@@ -167,6 +167,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // of those schemas, create the new states and remove the old states and migrate the data.
         final var schemasToApply = computeApplicableSchemas(previousVersion, currentVersion);
         final var updateInsteadOfMigrate = isSameVersion(previousVersion, currentVersion);
+
         for (final var schema : schemasToApply) {
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
@@ -223,16 +224,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             remainingStates.removeAll(statesToRemove);
             final var newStates = new FilteredWritableStates(writeableStates, remainingStates);
 
-            // The token service has a dependency on the entity ID service during genesis migrations, so we CAREFULLY
-            // create a different WritableStates specific to the entity ID service. The different WritableStates
-            // instances won't be able to see the changes made by each other, but as long as we commit entity IDs first
-            // – since token service's changes may depend on these entity IDs – there shouldn't be any conflicting
-            // changes. We'll inject this into the MigrationContext below to enable generation of entity IDs. This is an
-            // ugly hack, but we'll make it work for now and find a better solution later
-            final var entityIdWritableStates = hederaState.createWritableStates(EntityIdService.ENTITY_ID_STATE_KEY);
-            final var entityIdStore =
-                    (WritableEntityIdStore) entityIdWritableStates.get(EntityIdService.ENTITY_ID_STATE_KEY);
-
             // For any changes to state that depend on other services outside the current service, we need a reference
             // to the overall state that we can pass into the context. This reference to overall state will be strictly
             // controlled via the MigrationContext API so that only changes explicitly specified in the interface can be
@@ -251,12 +242,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             } else {
                 schema.migrate(migrationContext);
             }
-            // Now commit any changes that were made to the entity ID state FIRST (since other service entities could
-            // depend on newly-generated entity IDs)
-            if (entityIdWritableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
-                mws.commit();
-            }
-            // And commit all the service-specific changes made during this service's update or migration
+            // Now commit all the service-specific changes made during this service's update or migration
             if (writeableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
                 mws.commit();
             }

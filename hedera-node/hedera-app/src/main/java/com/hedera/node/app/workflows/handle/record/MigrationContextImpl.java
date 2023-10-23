@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * An implementation of {@link MigrationContext}.
@@ -36,7 +37,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param configuration The configuration to use
  * @param genesisRecordsBuilder The instance responsible for genesis records
  * @param handleThrottling The instance responsible for handle throttling
- * @param writableEntityIdStore The instance responsible for generating new entity IDs (ONLY during migrations)
+ * @param writableEntityIdStore The instance responsible for generating new entity IDs (ONLY during
+ *                              migrations). Note that this is nullable only because it cannot exist
+ *                              when the entity ID service itself is being migrated
  */
 public record MigrationContextImpl(
         @NonNull ReadableStates previousStates,
@@ -45,7 +48,7 @@ public record MigrationContextImpl(
         @NonNull NetworkInfo networkInfo,
         @NonNull GenesisRecordsBuilder genesisRecordsBuilder,
         @NonNull HandleThrottleParser handleThrottling,
-        @NonNull WritableEntityIdStore writableEntityIdStore)
+        @Nullable WritableEntityIdStore writableEntityIdStore)
         implements MigrationContext {
 
     public MigrationContextImpl {
@@ -55,11 +58,11 @@ public record MigrationContextImpl(
         requireNonNull(networkInfo);
         requireNonNull(genesisRecordsBuilder);
         requireNonNull(handleThrottling);
-        requireNonNull(writableEntityIdStore);
     }
 
     @Override
     public long newEntityNum() {
-        return writableEntityIdStore.incrementAndGet();
+        return requireNonNull(writableEntityIdStore, "Entity ID store needs to exist first")
+                .incrementAndGet();
     }
 }
