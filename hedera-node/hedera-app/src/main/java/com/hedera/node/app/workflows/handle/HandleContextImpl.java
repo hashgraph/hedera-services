@@ -663,7 +663,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         // Skip payer verification when dispatching a child transaction
-        if (txCategory.equals(CHILD)) {
+        if (!txCategory.equals(CHILD)) {
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var payerKeyVerification = verifier.verificationFor(payerKey);
             if (payerKeyVerification.failed()) {
