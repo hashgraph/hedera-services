@@ -75,6 +75,7 @@ public class ClassicTransfersTranslator extends AbstractHtsCallTranslator {
     public ClassicTransfersCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var selector = attempt.selector();
         return new ClassicTransfersCall(
+                attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 selector,
                 attempt.senderId(),

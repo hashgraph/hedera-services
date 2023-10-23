@@ -167,7 +167,7 @@ class HandleHederaOperationsTest {
 
     @Test
     void gasPriceInTinybarsDelegates() {
-        given(tinybarValues.serviceGasPrice()).willReturn(1234L);
+        given(tinybarValues.topLevelTinybarGasPrice()).willReturn(1234L);
         assertEquals(1234L, subject.gasPriceInTinybars());
     }
 
@@ -255,7 +255,7 @@ class HandleHederaOperationsTest {
                 .dispatchChildTransaction(
                         eq(synthTxn), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID));
         verify(tokenServiceApi)
-                .markAsContract(AccountID.newBuilder().accountNum(666L).build(), null);
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }
 
     @Test
