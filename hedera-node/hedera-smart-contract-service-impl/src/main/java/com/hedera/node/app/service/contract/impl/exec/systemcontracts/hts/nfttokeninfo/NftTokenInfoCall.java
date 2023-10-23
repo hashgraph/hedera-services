@@ -28,6 +28,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNonRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -42,12 +43,13 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
     private final long serialNumber;
 
     public NftTokenInfoCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             final boolean isStaticCall,
             @Nullable final Token token,
             final long serialNumber,
             @NonNull final Configuration configuration) {
-        super(enhancement, token);
+        super(gasCalculator, enhancement, token);
         this.configuration = requireNonNull(configuration);
         this.serialNumber = serialNumber;
         this.isStaticCall = isStaticCall;
@@ -59,9 +61,7 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
     @Override
     protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
-        // TODO - gas calculation
-
-        return fullResultsFor(SUCCESS, 0L, token);
+        return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), token);
     }
 
     @Override
@@ -82,7 +82,7 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
                 .getNft(token.tokenIdOrElse(ZERO_TOKEN_ID).tokenNum(), serialNumber);
         // @Future remove to revert #9074 after modularization is completed
         if (isStaticCall && (status != SUCCESS || nft == null)) {
-            return revertResult(status, 0);
+            return revertResult(status, gasCalculator.viewGasRequirement());
         }
 
         final var nonNullNft = nft != null ? nft : Nft.DEFAULT;

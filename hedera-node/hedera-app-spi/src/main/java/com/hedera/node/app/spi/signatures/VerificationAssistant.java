@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.workflows;
+package com.hedera.node.app.spi.signatures;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
 import java.util.function.BiPredicate;
 
 /**

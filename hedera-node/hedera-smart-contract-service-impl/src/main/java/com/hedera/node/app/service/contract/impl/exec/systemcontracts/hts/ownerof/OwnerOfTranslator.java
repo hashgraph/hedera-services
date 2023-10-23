@@ -56,6 +56,7 @@ public class OwnerOfTranslator extends AbstractHtsCallTranslator {
         // will be a revert with INVALID_NFT_ID as reason
         final var serialNo = asExactLongValueOrZero(
                 OWNER_OF.decodeCall(attempt.input().toArrayUnsafe()).get(0));
-        return new OwnerOfCall(attempt.enhancement(), attempt.redirectToken(), serialNo);
+        return new OwnerOfCall(
+                attempt.systemContractGasCalculator(), attempt.enhancement(), attempt.redirectToken(), serialNo);
     }
 }

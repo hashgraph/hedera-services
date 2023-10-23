@@ -24,6 +24,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isfrozen.IsFrozenCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isfrozen.IsFrozenTranslator;
@@ -39,6 +40,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class IsFrozenTranslatorTest {
     @Mock
     private HtsCallAttempt attempt;
+
+    @Mock
+    private SystemContractGasCalculator gasCalculator;
 
     @Mock
     private Token token;
@@ -68,6 +72,7 @@ class IsFrozenTranslatorTest {
         given(attempt.linkedToken(fromHeadlongAddress(FUNGIBLE_TOKEN_HEADLONG_ADDRESS)))
                 .willReturn(token);
         given(attempt.enhancement()).willReturn(enhancement);
+        given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(IsFrozenCall.class);
