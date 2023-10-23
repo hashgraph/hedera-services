@@ -49,14 +49,23 @@ public abstract class OutputChannel<O> {
      *
      * @param model               the wiring model containing this output channel
      * @param name                the name of the output channel
+     * @param registerWithModel   if true, then this output channel will be registered with the wiring model. Every time
+     *                            a new wire is created it should be registered with the wiring model. Secondary output
+     *                            channels should not be registered with the wiring model.
      * @param insertionIsBlocking when data is inserted into this channel, will it block until capacity is available?
      */
     protected OutputChannel(
-            @NonNull final WiringModel model, @NonNull final String name, final boolean insertionIsBlocking) {
+            @NonNull final WiringModel model,
+            @NonNull final String name,
+            final boolean registerWithModel,
+            final boolean insertionIsBlocking) {
+
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
 
-        model.registerVertex(name, insertionIsBlocking);
+        if (registerWithModel) {
+            model.registerVertex(name, insertionIsBlocking);
+        }
     }
 
     /**
@@ -67,6 +76,15 @@ public abstract class OutputChannel<O> {
     @NonNull
     public String getName() {
         return name;
+    }
+
+    /**
+     * Get the wiring model that contains this output channel.
+     *
+     * @return the wiring model
+     */
+    protected WiringModel getModel() {
+        return model;
     }
 
     /**
@@ -149,6 +167,8 @@ public abstract class OutputChannel<O> {
         forwardingDestinations.add(Objects.requireNonNull(handler));
         return this;
     }
+
+    // TODO consider changing terminology of these things to being called a secondary output channel
 
     /**
      * Build a {@link WireFilter} that is soldered to the output of this wire.

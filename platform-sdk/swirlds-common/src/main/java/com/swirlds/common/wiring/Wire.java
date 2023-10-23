@@ -44,7 +44,7 @@ public abstract class Wire<O> extends OutputChannel<O> {
             @NonNull final String name,
             final boolean flushEnabled,
             final boolean insertionIsBlocking) {
-        super(model, name, insertionIsBlocking);
+        super(model, name, true, insertionIsBlocking);
         this.flushEnabled = flushEnabled;
     }
 
@@ -127,6 +127,23 @@ public abstract class Wire<O> extends OutputChannel<O> {
     public abstract void interruptableFlush() throws InterruptedException;
 
     /**
+     * By default a component has a single output channel (i.e. the primary output channel). This method allows
+     * additional output channels to be created.
+     *
+     * <p>
+     * Unlike primary channels, secondary channels need to be passed to a component's constructor. It is considered a
+     * violation of convention to push data into a secondary output channel from any code that is not executing within
+     * this wire.
+     *
+     * @param <T> the type of data that is transmitted over this channel
+     * @return the secondary output channel
+     */
+    @NonNull
+    public <T> SecondaryOutputChannel<T> buildSecondaryOutputChanel() {
+        return new SecondaryOutputChannel<>(getModel(), getName(), true);
+    }
+
+    /**
      * Add a task to the wire. May block if back pressure is enabled. Similar to
      * {@link #interruptablePut(Consumer, Object)} except that it cannot be interrupted and can block forever if
      * backpressure is enabled.
@@ -175,6 +192,9 @@ public abstract class Wire<O> extends OutputChannel<O> {
 
     /**
      * {@inheritDoc}
+     * <p>
+     * This method is implemented here to allow classes in this package to call forward(), which otherwise would not be
+     * visible.
      */
     @Override
     protected final void forward(@NonNull O data) {

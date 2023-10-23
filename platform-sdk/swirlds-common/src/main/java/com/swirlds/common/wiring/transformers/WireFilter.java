@@ -41,7 +41,7 @@ public class WireFilter<T> extends OutputChannel<T> implements Consumer<T> {
      */
     public WireFilter(
             @NonNull final WiringModel model, @NonNull final String name, @NonNull final Predicate<T> predicate) {
-        super(model, name, true);
+        super(model, name, true, true);
         this.predicate = Objects.requireNonNull(predicate);
     }
 

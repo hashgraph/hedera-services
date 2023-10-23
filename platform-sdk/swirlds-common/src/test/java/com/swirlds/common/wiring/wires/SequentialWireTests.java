@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.InputChannel;
+import com.swirlds.common.wiring.SecondaryOutputChannel;
 import com.swirlds.common.wiring.Wire;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
@@ -1864,6 +1865,60 @@ class SequentialWireTests {
         assertEquals(expectedCount, countA.get());
         assertEquals(expectedCount, countB.get());
         assertEquals(expectedCount, countC.get());
+    }
+
+    @Test
+    void multipleOutputChannelsTest() {
+        final Wire<Integer> wireA = model.wireBuilder("A").build().cast();
+        final InputChannel<Integer, Integer> aIn = wireA.buildInputChannel("aIn");
+        final SecondaryOutputChannel<Boolean> aOutBoolean = wireA.buildSecondaryOutputChanel();
+        final SecondaryOutputChannel<String> aOutString = wireA.buildSecondaryOutputChanel();
+
+        final Wire<Void> wireB = model.wireBuilder("A").build().cast();
+        final InputChannel<Integer, Void> bInInteger = wireB.buildInputChannel("bIn1");
+        final InputChannel<Boolean, Void> bInBoolean = wireB.buildInputChannel("bIn2");
+        final InputChannel<String, Void> bInString = wireB.buildInputChannel("bIn3");
+
+        wireA.solderTo(bInInteger);
+        aOutBoolean.solderTo(bInBoolean);
+        aOutString.solderTo(bInString);
+
+        aIn.bind(x -> {
+            if (x % 2 == 0) {
+                aOutBoolean.forward(x % 3 == 0);
+            }
+
+            if (x % 5 == 0) {
+                aOutString.forward(Integer.toString(x));
+            }
+
+            return x;
+        });
+
+        final AtomicInteger count = new AtomicInteger();
+        bInBoolean.bind(x -> {
+            count.set(hash32(count.get(), x ? 1 : 0));
+        });
+        bInString.bind(x -> {
+            count.set(hash32(count.get(), x.hashCode()));
+        });
+        bInInteger.bind(x -> {
+            count.set(hash32(count.get(), x));
+        });
+
+        int expectedCount = 0;
+        for (int i = 0; i < 100; i++) {
+            aIn.put(i);
+            if (i % 2 == 0) {
+                expectedCount = hash32(expectedCount, i % 3 == 0 ? 1 : 0);
+            }
+            if (i % 5 == 0) {
+                expectedCount = hash32(expectedCount, Integer.toString(i).hashCode());
+            }
+            expectedCount = hash32(expectedCount, i);
+        }
+
+        assertEventuallyEquals(expectedCount, count::get, Duration.ofSeconds(1), "Wire count did not match expected");
     }
 
     // TODO write test for wire that has multiple counters
