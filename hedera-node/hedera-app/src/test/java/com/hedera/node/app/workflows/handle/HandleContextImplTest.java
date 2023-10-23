@@ -23,10 +23,12 @@ import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -43,6 +45,7 @@ import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
@@ -54,6 +57,8 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -99,6 +104,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -578,6 +584,38 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @Test
         void exposesGivenNetworkInfo() {
             assertSame(networkInfo, context.networkInfo());
+        }
+    }
+
+    @Nested
+    @DisplayName("Dispatching fee computation")
+    final class FeeDispatchTest {
+
+        private HandleContext context;
+
+        @BeforeEach
+        void setup() {
+            when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
+            when(stack.createWritableStates(TokenService.NAME))
+                    .thenReturn(MapWritableStates.builder()
+                            .state(MapWritableKVState.builder("ACCOUNTS").build())
+                            .state(MapWritableKVState.builder("ALIASES").build())
+                            .build());
+
+            context = createContext(defaultTransactionBody());
+        }
+
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void invokesComputeFeesDispatchWithChildFeeContextImpl() {
+            final var fees = new Fees(1L, 2L, 3L);
+            given(dispatcher.dispatchComputeFees(any())).willReturn(fees);
+            final var captor = ArgumentCaptor.forClass(FeeContext.class);
+            final var result = context.dispatchComputeFees(defaultTransactionBody(), account1002);
+            verify(dispatcher).dispatchComputeFees(captor.capture());
+            final var feeContext = captor.getValue();
+            assertInstanceOf(ChildFeeContextImpl.class, feeContext);
+            assertSame(fees, result);
         }
     }
 

@@ -24,18 +24,24 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Minimal implementation support for an {@link HtsCall} that needs an {@link HederaWorldUpdater.Enhancement}.
+ * Minimal implementation support for an {@link HtsCall} that needs an {@link HederaWorldUpdater.Enhancement}
+ * and {@link SystemContractGasCalculator}.
  */
 public abstract class AbstractHtsCall implements HtsCall {
+    protected final SystemContractGasCalculator gasCalculator;
     protected final HederaWorldUpdater.Enhancement enhancement;
 
-    protected AbstractHtsCall(@NonNull final HederaWorldUpdater.Enhancement enhancement) {
+    protected AbstractHtsCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement) {
+        this.gasCalculator = requireNonNull(gasCalculator);
         this.enhancement = requireNonNull(enhancement);
     }
 

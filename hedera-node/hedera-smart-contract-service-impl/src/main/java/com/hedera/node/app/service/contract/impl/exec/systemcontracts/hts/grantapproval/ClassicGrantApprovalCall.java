@@ -25,6 +25,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
@@ -35,38 +37,40 @@ import java.math.BigInteger;
 public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
 
     public ClassicGrantApprovalCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final Enhancement enhancement,
             @NonNull final VerificationStrategy verificationStrategy,
-            @NonNull final AccountID sender,
+            @NonNull final AccountID senderId,
             @NonNull final TokenID token,
             @NonNull final AccountID spender,
             @NonNull final BigInteger amount,
             @NonNull final TokenType tokenType) {
-        super(enhancement, verificationStrategy, sender, token, spender, amount, tokenType);
+        super(gasCalculator, enhancement, verificationStrategy, senderId, token, spender, amount, tokenType);
     }
 
     @NonNull
     @Override
     public PricedResult execute() {
-        // TODO: gas calculation
         if (token == null) {
-            return reversionWith(INVALID_TOKEN_ID, 0L);
+            return reversionWith(INVALID_TOKEN_ID, gasCalculator.canonicalGasRequirement(DispatchType.APPROVE));
         }
+        final var body = callGrantApproval();
         final var recordBuilder = systemContractOperations()
-                .dispatch(callGrantApproval(), verificationStrategy, sender, SingleTransactionRecordBuilder.class);
+                .dispatch(body, verificationStrategy, senderId, SingleTransactionRecordBuilder.class);
         final var status = recordBuilder.status();
+        final var gasRequirement = gasCalculator.gasRequirement(body, DispatchType.APPROVE, senderId);
         if (status != ResponseCodeEnum.SUCCESS) {
             if (status.equals(INVALID_ALLOWANCE_SPENDER_ID)) {
-                return reversionWith(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, 0L);
+                return reversionWith(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, gasRequirement);
             } else {
-                return reversionWith(status, 0L);
+                return reversionWith(status, gasRequirement);
             }
         } else {
             final var encodedOutput = tokenType.equals(TokenType.FUNGIBLE_COMMON)
                     ? GrantApprovalTranslator.GRANT_APPROVAL.getOutputs().encodeElements((long) status.protoOrdinal())
                     : GrantApprovalTranslator.GRANT_APPROVAL_NFT.getOutputs().encodeElements((long)
                             status.protoOrdinal());
-            return gasOnly(FullResult.successResult(encodedOutput, 0L));
+            return gasOnly(FullResult.successResult(encodedOutput, gasRequirement));
         }
     }
 }

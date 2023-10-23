@@ -203,6 +203,7 @@ public class MintsXTest extends AbstractContractXTest {
         accounts.put(
                 OWNER_ID,
                 Account.newBuilder()
+                        .key(AN_ED25519_KEY)
                         .accountId(OWNER_ID)
                         .numberOwnedNfts(NUMBER_OWNED_NFTS)
                         .alias(OWNER_ADDRESS)
