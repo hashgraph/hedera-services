@@ -52,6 +52,7 @@ public class DefaultFreezeStatusTranslator extends AbstractHtsCallTranslator {
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var args = DEFAULT_FREEZE_STATUS.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
-        return new DefaultFreezeStatusCall(attempt.enhancement(), attempt.isStaticCall(), token);
+        return new DefaultFreezeStatusCall(
+                attempt.systemContractGasCalculator(), attempt.enhancement(), attempt.isStaticCall(), token);
     }
 }

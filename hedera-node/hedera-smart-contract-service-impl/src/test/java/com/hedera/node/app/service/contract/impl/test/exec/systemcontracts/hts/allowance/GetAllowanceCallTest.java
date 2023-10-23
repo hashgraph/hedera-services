@@ -39,7 +39,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-public class GetAllowanceCallTest extends HtsCallTestBase {
+class GetAllowanceCallTest extends HtsCallTestBase {
     private GetAllowanceCall subject;
 
     @Mock
@@ -49,6 +49,7 @@ public class GetAllowanceCallTest extends HtsCallTestBase {
     void revertsWithFungibleToken() {
         subject = new GetAllowanceCall(
                 addressIdConverter,
+                gasCalculator,
                 mockEnhancement(),
                 NON_FUNGIBLE_TOKEN,
                 OWNER_HEADLONG_ADDRESS,
@@ -66,6 +67,7 @@ public class GetAllowanceCallTest extends HtsCallTestBase {
     void ERCGetAllowance() {
         subject = new GetAllowanceCall(
                 addressIdConverter,
+                gasCalculator,
                 mockEnhancement(),
                 FUNGIBLE_TOKEN,
                 OWNER_HEADLONG_ADDRESS,
@@ -89,6 +91,7 @@ public class GetAllowanceCallTest extends HtsCallTestBase {
     void getAllowance() {
         subject = new GetAllowanceCall(
                 addressIdConverter,
+                gasCalculator,
                 mockEnhancement(),
                 FUNGIBLE_TOKEN,
                 OWNER_HEADLONG_ADDRESS,

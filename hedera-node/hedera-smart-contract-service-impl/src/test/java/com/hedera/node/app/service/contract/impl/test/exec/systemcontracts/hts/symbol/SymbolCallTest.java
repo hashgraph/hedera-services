@@ -34,7 +34,7 @@ class SymbolCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithMissingToken() {
-        subject = new SymbolCall(mockEnhancement(), null);
+        subject = new SymbolCall(gasCalculator, mockEnhancement(), null);
 
         final var result = subject.execute().fullResult().result();
 
@@ -44,7 +44,7 @@ class SymbolCallTest extends HtsCallTestBase {
 
     @Test
     void returnsSymbolForPresentToken() {
-        subject = new SymbolCall(mockEnhancement(), FUNGIBLE_TOKEN);
+        subject = new SymbolCall(gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 
