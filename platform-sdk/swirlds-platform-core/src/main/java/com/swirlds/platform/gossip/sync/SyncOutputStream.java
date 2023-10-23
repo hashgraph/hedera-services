@@ -63,7 +63,6 @@ public class SyncOutputStream extends SerializableDataOutputStream {
         if (compress) {
             try {
                 wrappedStream = new GZIPOutputStream(out, bufferSize, true);
-                wrappedStream.flush(); // TODO needed?
             } catch (final IOException e) {
                 throw new UncheckedIOException("unable to create gzip output stream", e);
             }
