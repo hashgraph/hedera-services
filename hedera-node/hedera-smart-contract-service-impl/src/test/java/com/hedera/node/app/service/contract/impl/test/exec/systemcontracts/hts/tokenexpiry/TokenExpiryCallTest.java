@@ -39,7 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenExpiryCallTest extends HtsCallTestBase {
     @Test
     void returnsValidTokenExpiryStatusForPresentToken() {
-        final var subject = new TokenExpiryCall(mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN);
+        final var subject = new TokenExpiryCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 
@@ -54,7 +54,7 @@ class TokenExpiryCallTest extends HtsCallTestBase {
 
     @Test
     void returnsTokenExpiryStatusForMissingToken() {
-        final var subject = new TokenExpiryCall(mockEnhancement(), false, null);
+        final var subject = new TokenExpiryCall(gasCalculator, mockEnhancement(), false, null);
 
         final var result = subject.execute().fullResult().result();
 
@@ -70,7 +70,7 @@ class TokenExpiryCallTest extends HtsCallTestBase {
 
     @Test
     void returnsTokenExpiryStatusForMissingTokenStaticCall() {
-        final var subject = new TokenExpiryCall(mockEnhancement(), true, null);
+        final var subject = new TokenExpiryCall(gasCalculator, mockEnhancement(), true, null);
 
         final var result = subject.execute().fullResult().result();
 

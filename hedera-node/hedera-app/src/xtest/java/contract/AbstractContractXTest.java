@@ -17,6 +17,7 @@
 package contract;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static contract.XTestConstants.PLACEHOLDER_CALL_BODY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,11 +31,15 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
@@ -120,6 +125,17 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             handler.handle(context);
             ((SavepointStackImpl) context.savepointStack()).commitFullStack();
         }
+    }
+
+    protected TransactionID transactionIdWith(@NonNull final AccountID payerId) {
+        final var startTime = Instant.now();
+        return TransactionID.newBuilder()
+                .accountID(payerId)
+                .transactionValidStart(Timestamp.newBuilder()
+                        .seconds(startTime.getEpochSecond())
+                        .nanos(startTime.getNano())
+                        .build())
+                .build();
     }
 
     protected void runHtsCallAndExpectOnSuccess(
@@ -209,8 +225,9 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             @NonNull final org.apache.tuweni.bytes.Bytes input,
             @NonNull final Consumer<HtsCall.PricedResult> resultAssertions) {
         final var context = component.txnContextFactory().apply(PLACEHOLDER_CALL_BODY);
-        final var tinybarValues = new TinybarValues(
+        final var tinybarValues = TinybarValues.forTransactionWith(
                 context.exchangeRateInfo().activeRate(Instant.now()),
+                context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT),
                 context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT));
         final var enhancement = new HederaWorldUpdater.Enhancement(
                 new HandleHederaOperations(
@@ -225,6 +242,12 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         given(frame.getSenderAddress()).willReturn(sender);
         final Deque<MessageFrame> stack = new ArrayDeque<>();
         given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(component.config());
+        final var systemContractGasCalculator = new SystemContractGasCalculator(
+                tinybarValues,
+                new CanonicalDispatchPrices(new AssetsLoader()),
+                (body, payerId) -> context.dispatchComputeFees(body, payerId).totalFee());
+        given(initialFrame.getContextVariable(SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE))
+                .willReturn(systemContractGasCalculator);
         stack.push(initialFrame);
         stack.addFirst(frame);
         given(frame.getMessageFrameStack()).willReturn(stack);
@@ -263,14 +286,18 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         return Address.wrap(Address.toChecksumAddress(new BigInteger(1, address.toByteArray())));
     }
 
-    protected Consumer<Response> assertingCallLocalResultIs(@NonNull final Bytes expectedResult) {
+    protected Consumer<Response> assertingCallLocalResultIsBuffer(
+            @NonNull final Bytes expectedResult, @NonNull final String orElseMessage) {
         return response -> assertEquals(
                 expectedResult,
-                response.contractCallLocalOrThrow().functionResultOrThrow().contractCallResult());
+                response.contractCallLocalOrThrow().functionResultOrThrow().contractCallResult(),
+                orElseMessage);
     }
 
-    protected Consumer<Response> assertingCallLocalResultIs(@NonNull final ByteBuffer expectedResult) {
+    protected Consumer<Response> assertingCallLocalResultIsBuffer(
+            @NonNull final ByteBuffer expectedResult, @NonNull final String orElseMessage) {
         return response -> assertThat(expectedResult.array())
+                .withFailMessage(orElseMessage)
                 .isEqualTo(response.contractCallLocalOrThrow()
                         .functionResultOrThrow()
                         .contractCallResult()

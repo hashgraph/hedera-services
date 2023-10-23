@@ -51,6 +51,6 @@ public class DecimalsTranslator extends AbstractHtsCallTranslator {
      */
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        return new DecimalsCall(attempt.enhancement(), attempt.redirectToken());
+        return new DecimalsCall(attempt.enhancement(), attempt.systemContractGasCalculator(), attempt.redirectToken());
     }
 }

@@ -261,6 +261,19 @@ public final class PbjConverter {
         }
     }
 
+    public static @NonNull SubType toPbj(@NonNull com.hederahashgraph.api.proto.java.SubType subType) {
+        requireNonNull(subType);
+        return switch (subType) {
+            case DEFAULT -> SubType.DEFAULT;
+            case TOKEN_FUNGIBLE_COMMON -> SubType.TOKEN_FUNGIBLE_COMMON;
+            case TOKEN_NON_FUNGIBLE_UNIQUE -> SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+            case TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES -> SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
+            case TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES -> SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+            case SCHEDULE_CREATE_CONTRACT_CALL -> SubType.SCHEDULE_CREATE_CONTRACT_CALL;
+            case UNRECOGNIZED -> throw new IllegalArgumentException("Unknown subType UNRECOGNIZED");
+        };
+    }
+
     public static @NonNull HederaFunctionality toPbj(
             @NonNull com.hederahashgraph.api.proto.java.HederaFunctionality function) {
         requireNonNull(function);

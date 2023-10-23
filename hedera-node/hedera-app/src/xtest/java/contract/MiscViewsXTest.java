@@ -100,7 +100,7 @@ public class MiscViewsXTest extends AbstractContractXTest {
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_SECRET),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(UNCOVERED_SECRET));
+                assertingCallLocalResultIsBuffer(UNCOVERED_SECRET, "GET_SECRET"));
         doPrngQuery();
         doExchangeRateQuery();
         doErc20Queries();
@@ -112,7 +112,7 @@ public class MiscViewsXTest extends AbstractContractXTest {
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_PRNG_SEED),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(PRNG_SEED));
+                assertingCallLocalResultIsBuffer(PRNG_SEED, "GET_PRNG_SEED"));
     }
 
     private void doExchangeRateQuery() {
@@ -120,7 +120,7 @@ public class MiscViewsXTest extends AbstractContractXTest {
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TINYCENTS_EQUIV, TINYBARS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(EQUIV_TINYCENTS));
+                assertingCallLocalResultIsBuffer(EQUIV_TINYCENTS, "GET_TINYCENTS_EQUIV"));
     }
 
     private void doErc20Queries() {
@@ -128,27 +128,27 @@ public class MiscViewsXTest extends AbstractContractXTest {
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_ERC_20_BALANCE, ERC20_TOKEN_ADDRESS, ERC_USER_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(ERC20_USER_BALANCE));
+                assertingCallLocalResultIsBuffer(ERC20_USER_BALANCE, "GET_ERC_20_BALANCE"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_ERC_20_SUPPLY, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(ERC20_SUPPLY));
+                assertingCallLocalResultIsBuffer(ERC20_SUPPLY, "GET_ERC_20_SUPPLY"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_ERC_20_NAME, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(ERC20_NAME));
+                assertingCallLocalResultIsBuffer(ERC20_NAME, "GET_ERC_20_NAME"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_ERC_20_SYMBOL, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(ERC20_SYMBOL));
+                assertingCallLocalResultIsBuffer(ERC20_SYMBOL, "GET_ERC_20_SYMBOL"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_ERC_20_DECIMALS, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(ERC20_DECIMALS));
+                assertingCallLocalResultIsBuffer(ERC20_DECIMALS, "GET_ERC_20_DECIMALS"));
     }
 
     private void doErc721Queries() {
@@ -156,32 +156,32 @@ public class MiscViewsXTest extends AbstractContractXTest {
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_ERC_721_NAME, ERC721_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(ERC721_NAME));
+                assertingCallLocalResultIsBuffer(ERC721_NAME, "GET_ERC_721_NAME"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_ERC_721_SYMBOL, ERC721_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(ERC721_SYMBOL));
+                assertingCallLocalResultIsBuffer(ERC721_SYMBOL, "GET_ERC_721_SYMBOL"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_ERC_721_TOKEN_URI, ERC721_TOKEN_ADDRESS, BigInteger.TWO),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(ERC721_SN2_METADATA));
+                assertingCallLocalResultIsBuffer(ERC721_SN2_METADATA, "GET_ERC_721_TOKEN_URI"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_ERC_721_BALANCE, ERC721_TOKEN_ADDRESS, ERC_USER_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(ERC721_USER_BALANCE));
+                assertingCallLocalResultIsBuffer(ERC721_USER_BALANCE, "GET_ERC_721_BALANCE"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_ERC_721_OWNER, ERC721_TOKEN_ADDRESS, BigInteger.ONE),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(ERC721_SN1_OWNER));
+                assertingCallLocalResultIsBuffer(ERC721_SN1_OWNER, "GET_ERC_721_OWNER"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_ERC721_IS_OPERATOR, ERC721_TOKEN_ADDRESS, ERC_USER_ADDRESS, ERC721_OPERATOR_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(ERC721_IS_OPERATOR));
+                assertingCallLocalResultIsBuffer(ERC721_IS_OPERATOR, "GET_ERC721_IS_OPERATOR"));
     }
 
     private Query miscViewsQuery(@NonNull final Function function, @NonNull final Object... args) {
