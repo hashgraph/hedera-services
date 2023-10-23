@@ -1392,21 +1392,21 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return onlyDefaultHapiSpec("royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots")
                 .given(
-                        cryptoCreate(TOKEN_TREASURY), //1001
-                        cryptoCreate(royaltyCollectorNoSlots),//1002
-                        cryptoCreate(party).maxAutomaticTokenAssociations(123),//1003
-                        cryptoCreate(counterparty).maxAutomaticTokenAssociations(123),//1004
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(royaltyCollectorNoSlots),
+                        cryptoCreate(party).maxAutomaticTokenAssociations(123),
+                        cryptoCreate(counterparty).maxAutomaticTokenAssociations(123),
                         newKeyNamed(multipurpose),
                         getAccountInfo(party).savingSnapshot(party),
                         getAccountInfo(counterparty).savingSnapshot(counterparty),
                         getAccountInfo(royaltyCollectorNoSlots).savingSnapshot(royaltyCollectorNoSlots))
                 .when(
-                        tokenCreate(someFungible) //1005
+                        tokenCreate(someFungible)
                                 .treasury(TOKEN_TREASURY)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .initialSupply(123456789),
                         cryptoTransfer(moving(1000, someFungible).between(TOKEN_TREASURY, counterparty)),
-                        tokenCreate(uniqueWithRoyalty)//1006
+                        tokenCreate(uniqueWithRoyalty)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
                                 .supplyKey(multipurpose)
