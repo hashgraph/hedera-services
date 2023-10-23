@@ -107,12 +107,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -124,6 +124,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -156,9 +157,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
             "Scheduled transaction should not be successful!";
     private static final String FAILED_XFER = "failedXfer";
     private static final String SCHEDULED_TRANSACTION_BE_SUCCESSFUL = "Scheduled transaction be successful!";
-    private static final String SYSTEM_DELETE = "SystemDelete";
     private static final String PAYING_ACCOUNT_2 = "payingAccount2";
-    private static final String FREEZE = "Freeze";
     private static final String SCHEDULING_WHITELIST = "scheduling.whitelist";
     private static final String FAILING_TXN = "failingTxn";
     private static final String ADMIN = "admin";
@@ -167,9 +166,10 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     private static final String SENDER_1 = "sender1";
     private static final String SENDER_2 = "sender2";
     private static final String SENDER_3 = "sender3";
-    public static byte[] ORIG_FILE = "SOMETHING".getBytes();
+    static final byte[] ORIG_FILE = "SOMETHING".getBytes();
     private static final String A_SCHEDULE = "validSchedule";
-
+    private static final String defaultWhitelist =
+            HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST);
     private static final String PAYER = "somebody";
     private static final String RANDOM_MSG =
             "Little did they care who danced between /" + " And little she by whom her dance" + " was seen";
@@ -206,55 +206,81 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(isLongTermEnabled -> List.of(
-                executionWithDefaultPayerWorks(),
-                executionWithCustomPayerWorks(),
-                executionWithCustomPayerWorksWithLastSigBeingCustomPayer(),
-                executionWithCustomPayerWhoSignsAtCreationAsPayerWorks(),
-                executionWithCustomPayerAndAdminKeyWorks(),
-                executionWithDefaultPayerButNoFundsFails(),
-                executionWithCustomPayerButNoFundsFails(),
-                executionWithDefaultPayerButAccountDeletedFails(),
-                executionWithCustomPayerButAccountDeletedFails(),
-                executionWithInvalidAccountAmountsFails(),
+                aSuiteSetup(),
+                congestionPricingAffectsImmediateScheduleExecution(),
+                executionTriggersOnceTopicHasSatisfiedSubmitKey(),
+                executionTriggersWithWeirdlyRepeatedKey(),
                 executionWithCryptoInsufficientAccountBalanceFails(),
                 executionWithCryptoSenderDeletedFails(),
+                executionWithCustomPayerAndAdminKeyWorks(),
+                executionWithCustomPayerButAccountDeletedFails(),
+                executionWithCustomPayerButNoFundsFails(),
+                executionWithCustomPayerWhoSignsAtCreationAsPayerWorks(),
+                executionWithCustomPayerWorks(),
+                executionWithCustomPayerWorksWithLastSigBeingCustomPayer(),
+                executionWithDefaultPayerButAccountDeletedFails(),
+                executionWithDefaultPayerButNoFundsFails(),
+                executionWithDefaultPayerWorks(),
+                executionWithInvalidAccountAmountsFails(),
                 executionWithTokenInsufficientAccountBalanceFails(),
-                executionTriggersWithWeirdlyRepeatedKey(),
-                executionTriggersOnceTopicHasSatisfiedSubmitKey(),
-                scheduledSubmitThatWouldFailWithTopicDeletedCannotBeSigned(),
+                scheduledBurnExecutesProperly(),
+                scheduledBurnFailsWithInvalidTxBody(),
+                scheduledBurnForUniqueFailsWithInvalidAmount(),
+                scheduledBurnForUniqueSucceedsWithExistingAmount(),
+                scheduledFreezeWithUnauthorizedPayerFails(isLongTermEnabled),
+                scheduledFreezeWorksAsExpected(),
+                scheduledMintExecutesProperly(),
+                scheduledMintFailsWithInvalidAmount(),
+                scheduledMintFailsWithInvalidTxBody(),
+                scheduledMintWithInvalidTokenThrowsUnresolvableSigners(),
+                scheduledPermissionedFileUpdateUnauthorizedPayerFails(),
+                scheduledPermissionedFileUpdateWorksAsExpected(),
                 scheduledSubmitFailedWithInvalidChunkNumberStillPaysServiceFeeButHasNoImpact(),
                 scheduledSubmitFailedWithInvalidChunkTxnIdStillPaysServiceFeeButHasNoImpact(),
-                scheduledSubmitThatWouldFailWithInvalidTopicIdCannotBeScheduled(),
                 scheduledSubmitFailedWithMsgSizeTooLargeStillPaysServiceFeeButHasNoImpact(),
-                scheduledXferFailingWithEmptyTokenTransferAccountAmountsPaysServiceFeeButNoImpact(),
-                scheduledXferFailingWithRepeatedTokenIdPaysServiceFeeButNoImpact(),
-                scheduledXferFailingWithNonNetZeroTokenTransferPaysServiceFeeButNoImpact(),
-                scheduledXferFailingWithUnassociatedAccountTransferPaysServiceFeeButNoImpact(),
-                scheduledXferFailingWithNonKycedAccountTransferPaysServiceFeeButNoImpact(),
-                scheduledXferFailingWithFrozenAccountTransferPaysServiceFeeButNoImpact(),
-                scheduledXferFailingWithDeletedTokenPaysServiceFeeButNoImpact(),
-                scheduledXferFailingWithDeletedAccountPaysServiceFeeButNoImpact(),
-                scheduledMintExecutesProperly(),
-                scheduledUniqueMintExecutesProperly(),
-                scheduledUniqueMintFailsWithInvalidBatchSize(),
-                scheduledUniqueMintFailsWithInvalidMetadata(),
-                scheduledMintFailsWithInvalidAmount(),
-                scheduledMintWithInvalidTokenThrowsUnresolvableSigners(),
-                scheduledMintFailsWithInvalidTxBody(),
-                scheduledBurnExecutesProperly(),
+                scheduledSubmitThatWouldFailWithInvalidTopicIdCannotBeScheduled(),
+                scheduledSubmitThatWouldFailWithTopicDeletedCannotBeSigned(),
+                scheduledSystemDeleteUnauthorizedPayerFails(isLongTermEnabled),
+                scheduledSystemDeleteWorksAsExpected(),
                 scheduledUniqueBurnExecutesProperly(),
                 scheduledUniqueBurnFailsWithInvalidBatchSize(),
                 scheduledUniqueBurnFailsWithInvalidNftId(),
-                scheduledBurnForUniqueFailsWithInvalidAmount(),
-                scheduledBurnForUniqueSucceedsWithExistingAmount(),
-                scheduledBurnFailsWithInvalidTxBody(),
-                scheduledFreezeWorksAsExpected(),
-                scheduledFreezeWithUnauthorizedPayerFails(isLongTermEnabled),
-                scheduledPermissionedFileUpdateWorksAsExpected(),
-                scheduledPermissionedFileUpdateUnauthorizedPayerFails(),
-                scheduledSystemDeleteWorksAsExpected(),
-                scheduledSystemDeleteUnauthorizedPayerFails(isLongTermEnabled),
-                congestionPricingAffectsImmediateScheduleExecution()));
+                scheduledUniqueMintExecutesProperly(),
+                scheduledUniqueMintFailsWithInvalidBatchSize(),
+                scheduledUniqueMintFailsWithInvalidMetadata(),
+                scheduledXferFailingWithDeletedAccountPaysServiceFeeButNoImpact(),
+                scheduledXferFailingWithDeletedTokenPaysServiceFeeButNoImpact(),
+                scheduledXferFailingWithEmptyTokenTransferAccountAmountsPaysServiceFeeButNoImpact(),
+                scheduledXferFailingWithFrozenAccountTransferPaysServiceFeeButNoImpact(),
+                scheduledXferFailingWithNonKycedAccountTransferPaysServiceFeeButNoImpact(),
+                scheduledXferFailingWithNonNetZeroTokenTransferPaysServiceFeeButNoImpact(),
+                scheduledXferFailingWithRepeatedTokenIdPaysServiceFeeButNoImpact(),
+                scheduledXferFailingWithUnassociatedAccountTransferPaysServiceFeeButNoImpact(),
+                zSuiteCleanup()));
+    }
+
+    private HapiSpec zSuiteCleanup() {
+        return defaultHapiSpec("suiteCleanup")
+                .given()
+                .when()
+                .then(fileUpdate(APP_PROPERTIES)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .overridingProps(Map.of(SCHEDULING_WHITELIST, defaultWhitelist)));
+    }
+
+    private HapiSpec aSuiteSetup() {
+        // Managing whitelist for these is error-prone, so just whitelist everything by default.
+        final List<String> whitelistNames = new LinkedList<>();
+        for (final HederaFunctionality enumValue : HederaFunctionality.values()) {
+            whitelistNames.add(enumValue.protoName());
+        }
+        final String whitelistAll = String.join(",", whitelistNames);
+        return defaultHapiSpec("suiteSetup")
+                .given()
+                .when()
+                .then(fileUpdate(APP_PROPERTIES)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .overridingProps(Map.of(SCHEDULING_WHITELIST, whitelistAll)));
     }
 
     private HapiSpec scheduledBurnFailsWithInvalidTxBody() {
@@ -1415,7 +1441,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS));
     }
 
-    public HapiSpec executionTriggersOnceTopicHasSatisfiedSubmitKey() {
+    private HapiSpec executionTriggersOnceTopicHasSatisfiedSubmitKey() {
         String adminKey = ADMIN;
         String submitKey = "submit";
         String mutableTopic = "XXX";
@@ -1451,7 +1477,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         getTopicInfo(mutableTopic).hasSeqNo(1L));
     }
 
-    public HapiSpec executionTriggersWithWeirdlyRepeatedKey() {
+    private HapiSpec executionTriggersWithWeirdlyRepeatedKey() {
         String schedule = "dupKeyXfer";
 
         return defaultHapiSpec("ExecutionTriggersWithWeirdlyRepeatedKey")
@@ -1483,7 +1509,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         getTxnRecord("repeatedSigning").logged());
     }
 
-    public HapiSpec executionWithDefaultPayerWorks() {
+    private HapiSpec executionWithDefaultPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithDefaultPayerWorks")
                 .given(
@@ -1539,7 +1565,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 }));
     }
 
-    public HapiSpec executionWithDefaultPayerButNoFundsFails() {
+    private HapiSpec executionWithDefaultPayerButNoFundsFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1L;
@@ -1575,7 +1601,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    public HapiSpec executionWithCustomPayerWorksWithLastSigBeingCustomPayer() {
+    private HapiSpec executionWithCustomPayerWorksWithLastSigBeingCustomPayer() {
         long noBalance = 0L;
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWorksWithLastSigBeingCustomPayer")
@@ -1611,7 +1637,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(transferAmount));
     }
 
-    public HapiSpec executionWithCustomPayerButNoFundsFails() {
+    private HapiSpec executionWithCustomPayerButNoFundsFails() {
         long balance = 0L;
         long noBalance = 0L;
         long transferAmount = 1;
@@ -1642,7 +1668,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    public HapiSpec executionWithDefaultPayerButAccountDeletedFails() {
+    private HapiSpec executionWithDefaultPayerButAccountDeletedFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1L;
@@ -1668,7 +1694,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .hasPriority(recordWith().status(INSUFFICIENT_PAYER_BALANCE)));
     }
 
-    public HapiSpec executionWithCustomPayerButAccountDeletedFails() {
+    private HapiSpec executionWithCustomPayerButAccountDeletedFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1;
@@ -1703,7 +1729,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    public HapiSpec executionWithCryptoInsufficientAccountBalanceFails() {
+    private HapiSpec executionWithCryptoInsufficientAccountBalanceFails() {
         long noBalance = 0L;
         long senderBalance = 100L;
         long transferAmount = 101L;
@@ -1735,7 +1761,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    public HapiSpec executionWithCryptoSenderDeletedFails() {
+    private HapiSpec executionWithCryptoSenderDeletedFails() {
         long noBalance = 0L;
         long senderBalance = 100L;
         long transferAmount = 101L;
@@ -1769,7 +1795,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    public HapiSpec executionWithTokenInsufficientAccountBalanceFails() {
+    private HapiSpec executionWithTokenInsufficientAccountBalanceFails() {
         String xToken = "XXX";
         String invalidSchedule = "withInsufficientTokenTransfer";
         String schedulePayer = PAYER;
@@ -1801,7 +1827,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100));
     }
 
-    public HapiSpec executionWithInvalidAccountAmountsFails() {
+    private HapiSpec executionWithInvalidAccountAmountsFails() {
         long transferAmount = 100;
         long senderBalance = 1000L;
         long payingAccountBalance = 1_000_000L;
@@ -1836,7 +1862,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         }));
     }
 
-    public HapiSpec executionWithCustomPayerWorks() {
+    private HapiSpec executionWithCustomPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWorks")
                 .given(
@@ -1900,7 +1926,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 }));
     }
 
-    public HapiSpec executionWithCustomPayerAndAdminKeyWorks() {
+    private HapiSpec executionWithCustomPayerAndAdminKeyWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerAndAdminKeyWorks")
                 .given(
@@ -1966,7 +1992,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 }));
     }
 
-    public HapiSpec executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
+    private HapiSpec executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWhoSignsAtCreationAsPayerWorks")
                 .given(
@@ -2064,7 +2090,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
         return defaultHapiSpec("ScheduledFreezeWorksAsExpected")
                 .given(
                         cryptoCreate(PAYING_ACCOUNT),
-                        overriding(SCHEDULING_WHITELIST, FREEZE),
                         fileUpdate(standardUpdateFile)
                                 .signedBy(FREEZE_ADMIN)
                                 .path(poeticUpgradeLoc)
@@ -2085,9 +2110,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .hasKnownStatus(SUCCESS))
                 .then(
                         freezeAbort().payingWith(GENESIS),
-                        overriding(
-                                SCHEDULING_WHITELIST,
-                                HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(successTxn).scheduled();
@@ -2110,36 +2132,30 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                     .given(
                             cryptoCreate(PAYING_ACCOUNT),
                             cryptoCreate(PAYING_ACCOUNT_2),
-                            overriding(SCHEDULING_WHITELIST, FREEZE),
                             fileUpdate(standardUpdateFile)
                                     .signedBy(FREEZE_ADMIN)
                                     .path(poeticUpgradeLoc)
                                     .payingWith(FREEZE_ADMIN))
                     .when()
-                    .then(
-                            scheduleCreate(
-                                            A_SCHEDULE,
-                                            prepareUpgrade()
-                                                    .withUpdateFile(standardUpdateFile)
-                                                    .havingHash(poeticUpgradeHash))
-                                    .withEntityMemo(randomUppercase(100))
-                                    .designatingPayer(PAYING_ACCOUNT_2)
-                                    .payingWith(PAYING_ACCOUNT)
-                                    // we are always busy with long term enabled in this case
-                                    // because
-                                    // there are no throttles for freeze and we deeply check with
-                                    // long term enabled
-                                    .hasPrecheck(BUSY),
-                            overriding(
-                                    SCHEDULING_WHITELIST,
-                                    HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)));
+                    .then(scheduleCreate(
+                                    A_SCHEDULE,
+                                    prepareUpgrade()
+                                            .withUpdateFile(standardUpdateFile)
+                                            .havingHash(poeticUpgradeHash))
+                            .withEntityMemo(randomUppercase(100))
+                            .designatingPayer(PAYING_ACCOUNT_2)
+                            .payingWith(PAYING_ACCOUNT)
+                            // we are always busy with long term enabled in this case
+                            // because
+                            // there are no throttles for freeze and we deeply check with
+                            // long term enabled
+                            .hasPrecheck(BUSY));
         }
 
         return defaultHapiSpec("ScheduledFreezeWithUnauthorizedPayerFails")
                 .given(
                         cryptoCreate(PAYING_ACCOUNT),
                         cryptoCreate(PAYING_ACCOUNT_2),
-                        overriding(SCHEDULING_WHITELIST, FREEZE),
                         fileUpdate(standardUpdateFile)
                                 .signedBy(FREEZE_ADMIN)
                                 .path(poeticUpgradeLoc)
@@ -2160,9 +2176,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .hasKnownStatus(SUCCESS))
                 .then(
                         freezeAbort().payingWith(GENESIS),
-                        overriding(
-                                SCHEDULING_WHITELIST,
-                                HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(successTxn).scheduled();
@@ -2179,7 +2192,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
         return defaultHapiSpec("ScheduledPermissionedFileUpdateWorksAsExpected")
                 .given(
                         cryptoCreate(PAYING_ACCOUNT),
-                        overriding(SCHEDULING_WHITELIST, "FileUpdate"),
                         scheduleCreate(
                                         A_SCHEDULE,
                                         fileUpdate(standardUpdateFile).contents("fooo!"))
@@ -2192,20 +2204,15 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .payingWith(PAYING_ACCOUNT)
                         .via(signTxn)
                         .hasKnownStatus(SUCCESS))
-                .then(
-                        overriding(
-                                SCHEDULING_WHITELIST,
-                                HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)),
-                        getScheduleInfo(A_SCHEDULE).isExecuted(),
-                        withOpContext((spec, opLog) -> {
-                            var triggeredTx = getTxnRecord(successTxn).scheduled();
-                            allRunFor(spec, triggeredTx);
+                .then(getScheduleInfo(A_SCHEDULE).isExecuted(), withOpContext((spec, opLog) -> {
+                    var triggeredTx = getTxnRecord(successTxn).scheduled();
+                    allRunFor(spec, triggeredTx);
 
-                            Assertions.assertEquals(
-                                    SUCCESS,
-                                    triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_BE_SUCCESSFUL);
-                        }));
+                    Assertions.assertEquals(
+                            SUCCESS,
+                            triggeredTx.getResponseRecord().getReceipt().getStatus(),
+                            SCHEDULED_TRANSACTION_BE_SUCCESSFUL);
+                }));
     }
 
     private HapiSpec scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
@@ -2214,7 +2221,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 .given(
                         cryptoCreate(PAYING_ACCOUNT),
                         cryptoCreate(PAYING_ACCOUNT_2),
-                        overriding(SCHEDULING_WHITELIST, "FileUpdate"),
                         scheduleCreate(
                                         A_SCHEDULE,
                                         fileUpdate(standardUpdateFile).contents("fooo!"))
@@ -2227,20 +2233,15 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .payingWith(PAYING_ACCOUNT)
                         .via(signTxn)
                         .hasKnownStatus(SUCCESS))
-                .then(
-                        overriding(
-                                SCHEDULING_WHITELIST,
-                                HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)),
-                        getScheduleInfo(A_SCHEDULE).isExecuted(),
-                        withOpContext((spec, opLog) -> {
-                            var triggeredTx = getTxnRecord(successTxn).scheduled();
-                            allRunFor(spec, triggeredTx);
+                .then(getScheduleInfo(A_SCHEDULE).isExecuted(), withOpContext((spec, opLog) -> {
+                    var triggeredTx = getTxnRecord(successTxn).scheduled();
+                    allRunFor(spec, triggeredTx);
 
-                            Assertions.assertEquals(
-                                    AUTHORIZATION_FAILED,
-                                    triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    "Scheduled transaction be AUTHORIZATION_FAILED!");
-                        }));
+                    Assertions.assertEquals(
+                            AUTHORIZATION_FAILED,
+                            triggeredTx.getResponseRecord().getReceipt().getStatus(),
+                            "Scheduled transaction be AUTHORIZATION_FAILED!");
+                }));
     }
 
     private HapiSpec scheduledSystemDeleteWorksAsExpected() {
@@ -2249,7 +2250,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 .given(
                         cryptoCreate(PAYING_ACCOUNT),
                         fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
-                        overriding(SCHEDULING_WHITELIST, SYSTEM_DELETE),
                         scheduleCreate(A_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
                                 .withEntityMemo(randomUppercase(100))
                                 .designatingPayer(SYSTEM_DELETE_ADMIN)
@@ -2261,9 +2261,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .via(signTxn)
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        overriding(
-                                SCHEDULING_WHITELIST,
-                                HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         getFileInfo("misc").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
                         withOpContext((spec, opLog) -> {
@@ -2285,23 +2282,18 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                     .given(
                             cryptoCreate(PAYING_ACCOUNT),
                             cryptoCreate(PAYING_ACCOUNT_2),
-                            fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
-                            overriding(SCHEDULING_WHITELIST, SYSTEM_DELETE))
+                            fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE))
                     .when()
-                    .then(
-                            scheduleCreate(A_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
-                                    .withEntityMemo(randomUppercase(100))
-                                    .designatingPayer(PAYING_ACCOUNT_2)
-                                    .payingWith(PAYING_ACCOUNT)
-                                    // we are always busy with long term enabled in this case
-                                    // because
-                                    // there are no throttles for SystemDelete and we deeply check
-                                    // with
-                                    // long term enabled
-                                    .hasPrecheck(BUSY),
-                            overriding(
-                                    SCHEDULING_WHITELIST,
-                                    HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)));
+                    .then(scheduleCreate(A_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
+                            .withEntityMemo(randomUppercase(100))
+                            .designatingPayer(PAYING_ACCOUNT_2)
+                            .payingWith(PAYING_ACCOUNT)
+                            // we are always busy with long term enabled in this case
+                            // because
+                            // there are no throttles for SystemDelete and we deeply check
+                            // with
+                            // long term enabled
+                            .hasPrecheck(BUSY));
         }
 
         return defaultHapiSpec("ScheduledSystemDeleteUnauthorizedPayerFails")
@@ -2309,7 +2301,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         cryptoCreate(PAYING_ACCOUNT),
                         cryptoCreate(PAYING_ACCOUNT_2),
                         fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
-                        overriding(SCHEDULING_WHITELIST, SYSTEM_DELETE),
                         scheduleCreate(A_SCHEDULE, systemFileDelete("misc").updatingExpiry(1L))
                                 .withEntityMemo(randomUppercase(100))
                                 .designatingPayer(PAYING_ACCOUNT_2)
@@ -2321,9 +2312,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         .via(signTxn)
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        overriding(
-                                SCHEDULING_WHITELIST,
-                                HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         getFileInfo("misc").nodePayment(1_234L),
                         withOpContext((spec, opLog) -> {
@@ -2350,7 +2338,6 @@ public class ScheduleExecutionSpecs extends HapiSuite {
         return defaultHapiSpec("CongestionPricingAffectsImmediateScheduleExecution")
                 .given(
                         cryptoCreate(ACCOUNT).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
-                        overriding(SCHEDULING_WHITELIST, "ContractCall"),
                         uploadInitCode(contract),
                         contractCreate(contract),
                         scheduleCreate(
@@ -2414,11 +2401,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                         percentCongestionMultiplier,
                                         HapiSpecSetup.getDefaultNodeProps().get(percentCongestionMultiplier),
                                         minCongestionPeriod,
-                                        HapiSpecSetup.getDefaultNodeProps().get(minCongestionPeriod),
-                                        SCHEDULING_WHITELIST,
-                                        HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST))),
-                        cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
-                                .payingWith(GENESIS),
+                                        HapiSpecSetup.getDefaultNodeProps().get(minCongestionPeriod))),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)).payingWith(GENESIS),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord("pricyCall").scheduled();
