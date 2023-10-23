@@ -42,7 +42,7 @@ public class GetApprovedCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithFungibleTokenStaticCall() {
-        subject = new GetApprovedCall(mockEnhancement(), FUNGIBLE_TOKEN, 123L, true, true);
+        subject = new GetApprovedCall(gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN, 123L, true, true);
 
         final var result = subject.execute().fullResult().result();
 
@@ -52,7 +52,7 @@ public class GetApprovedCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithFungibleToken() {
-        subject = new GetApprovedCall(mockEnhancement(), FUNGIBLE_TOKEN, 123L, true, false);
+        subject = new GetApprovedCall(gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN, 123L, true, false);
 
         final var result = subject.execute().fullResult().result();
 
@@ -62,7 +62,8 @@ public class GetApprovedCallTest extends HtsCallTestBase {
 
     @Test
     void getApprovedErc() {
-        subject = new GetApprovedCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, 123L, true, false);
+        subject = new GetApprovedCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, 123L, true, false);
+
         given(nativeOperations.getNft(9898L, 123)).willReturn(CIVILIAN_OWNED_NFT);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 
@@ -78,7 +79,7 @@ public class GetApprovedCallTest extends HtsCallTestBase {
 
     @Test
     void getApprovedHapi() {
-        subject = new GetApprovedCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, 123L, false, false);
+        subject = new GetApprovedCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, 123L, false, false);
         given(nativeOperations.getNft(9898L, 123)).willReturn(CIVILIAN_OWNED_NFT);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 

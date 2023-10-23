@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNftViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -33,10 +34,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public class TokenUriCall extends AbstractNftViewCall {
 
     public TokenUriCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final Token token,
             final long serialNo) {
-        super(enhancement, token, serialNo);
+        super(gasCalculator, enhancement, token, serialNo);
     }
 
     /**
@@ -47,9 +49,8 @@ public class TokenUriCall extends AbstractNftViewCall {
             @NonNull final Token token, @NonNull final Nft nft) {
         requireNonNull(token);
         requireNonNull(nft);
-
-        // TODO - gas calculation
         final var metadata = new String(nft.metadata().toByteArray());
-        return successResult(TokenUriTranslator.TOKEN_URI.getOutputs().encodeElements(metadata), 0L);
+        return successResult(
+                TokenUriTranslator.TOKEN_URI.getOutputs().encodeElements(metadata), gasCalculator.viewGasRequirement());
     }
 }

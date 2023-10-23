@@ -24,6 +24,7 @@ import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
@@ -32,23 +33,26 @@ import java.math.BigInteger;
 
 public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
     protected final VerificationStrategy verificationStrategy;
-    protected final AccountID sender;
+    protected final AccountID senderId;
     protected final TokenID token;
     protected final AccountID spender;
     protected final BigInteger amount;
     protected final TokenType tokenType;
 
+    // too many parameters
+    @SuppressWarnings("java:S107")
     protected AbstractGrantApprovalCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final Enhancement enhancement,
             @NonNull final VerificationStrategy verificationStrategy,
-            @NonNull final AccountID sender,
+            @NonNull final AccountID senderId,
             @NonNull final TokenID token,
             @NonNull final AccountID spender,
             @NonNull final BigInteger amount,
             @NonNull final TokenType tokenType) {
-        super(enhancement);
+        super(gasCalculator, enhancement);
         this.verificationStrategy = verificationStrategy;
-        this.sender = sender;
+        this.senderId = senderId;
         this.token = token;
         this.spender = spender;
         this.amount = amount;
@@ -57,7 +61,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
 
     public TransactionBody callGrantApproval() {
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(sender).build())
+                .transactionID(TransactionID.newBuilder().accountID(senderId).build())
                 .cryptoApproveAllowance(approve(token, spender, amount, tokenType))
                 .build();
     }
@@ -72,7 +76,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
                         .tokenAllowances(TokenAllowance.newBuilder()
                                 .tokenId(token)
                                 .spender(spender)
-                                .owner(sender)
+                                .owner(senderId)
                                 .amount(amount.longValue())
                                 .build())
                         .build()
@@ -80,7 +84,7 @@ public abstract class AbstractGrantApprovalCall extends AbstractHtsCall {
                         .nftAllowances(NftAllowance.newBuilder()
                                 .tokenId(token)
                                 .spender(spender)
-                                .owner(sender)
+                                .owner(senderId)
                                 .serialNumbers(amount.longValue())
                                 .build())
                         .build();

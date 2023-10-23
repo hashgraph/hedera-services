@@ -70,3 +70,14 @@ publishing {
         }
     }
 }
+
+tasks.register("releaseEvmMavenCentral") {
+    group = "release"
+    dependsOn(tasks.named("publishMavenPublicationToSonatypeRepository"))
+}
+
+tasks.register("releaseEvmMavenCentralSnapshot") {
+    group = "release"
+    dependsOn(project(":swirlds-common").tasks.named("publishMavenPublicationToSonatypeSnapshotRepository"))
+    dependsOn(tasks.named("publishMavenPublicationToSonatypeSnapshotRepository"))
+}

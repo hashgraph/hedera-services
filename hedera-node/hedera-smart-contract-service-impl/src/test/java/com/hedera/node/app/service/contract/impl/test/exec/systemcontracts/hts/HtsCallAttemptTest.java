@@ -36,6 +36,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -133,6 +134,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
         assertNull(subject.redirectToken());
@@ -152,6 +154,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
         assertNull(subject.asExecutableCall());
@@ -169,6 +172,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
         assertInstanceOf(DecimalsCall.class, subject.asExecutableCall());
@@ -186,6 +190,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
         assertInstanceOf(TokenUriCall.class, subject.asExecutableCall());
@@ -203,6 +208,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
         assertInstanceOf(OwnerOfCall.class, subject.asExecutableCall());
@@ -223,6 +229,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
         assertInstanceOf(BalanceOfCall.class, subject.asExecutableCall());
@@ -244,6 +251,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
         assertInstanceOf(IsApprovedForAllCall.class, subject.asExecutableCall());
@@ -261,6 +269,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
         assertInstanceOf(TotalSupplyCall.class, subject.asExecutableCall());
@@ -278,6 +287,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
         assertInstanceOf(NameCall.class, subject.asExecutableCall());
@@ -295,6 +305,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
         assertInstanceOf(SymbolCall.class, subject.asExecutableCall());
@@ -304,6 +315,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsErc721TransferFromRedirectToNonfungible() {
         given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
                 .willReturn(NON_FUNGIBLE_TOKEN);
+        given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         final var input = TestHelpers.bytesForRedirect(
                 Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM
                         .encodeCallWithArgs(
@@ -322,6 +334,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
         assertInstanceOf(Erc721TransferFromCall.class, subject.asExecutableCall());
@@ -331,6 +344,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsErc20TransferFromRedirectToFungible() {
         given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
                 .willReturn(FUNGIBLE_TOKEN);
+        given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         final var input = TestHelpers.bytesForRedirect(
                 Erc20TransfersTranslator.ERC_20_TRANSFER_FROM
                         .encodeCallWithArgs(
@@ -349,6 +363,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
         assertInstanceOf(Erc20TransfersCall.class, subject.asExecutableCall());
@@ -358,6 +373,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsErc20TransferRedirectToFungible() {
         given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
                 .willReturn(FUNGIBLE_TOKEN);
+        given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         final var input = TestHelpers.bytesForRedirect(
                 Erc20TransfersTranslator.ERC_20_TRANSFER
                         .encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS), BigInteger.TWO)
@@ -373,6 +389,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
         assertInstanceOf(Erc20TransfersCall.class, subject.asExecutableCall());
@@ -424,6 +441,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
 
@@ -485,6 +503,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
 
@@ -510,8 +529,16 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, false, nativeOperations))
                 .willReturn(strategy);
         given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
-        lenient().when(mintDecoder.decodeMint(any())).thenReturn(TransactionBody.DEFAULT);
-        lenient().when(mintDecoder.decodeMintV2(any())).thenReturn(TransactionBody.DEFAULT);
+        lenient()
+                .when(mintDecoder.decodeMint(any()))
+                .thenReturn(TransactionBody.newBuilder()
+                        .tokenMint(TokenMintTransactionBody.DEFAULT)
+                        .build());
+        lenient()
+                .when(mintDecoder.decodeMintV2(any()))
+                .thenReturn(TransactionBody.newBuilder()
+                        .tokenMint(TokenMintTransactionBody.DEFAULT)
+                        .build());
         final var selector = CommonUtils.unhex(hexedSelector.substring(2));
         final var useV2 = Arrays.equals(MintTranslator.MINT_V2.selector(), selector);
         final Bytes input;
@@ -546,6 +573,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
+                gasCalculator,
                 callTranslators,
                 false);
 
