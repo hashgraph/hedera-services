@@ -50,6 +50,7 @@ public class CreatesXTestConstants {
             Tuple.of(false, INVALID_ACCOUNT_HEADLONG_ADDRESS, new byte[] {}, new byte[] {}, asAddress("")));
 
     static final Tuple EXPIRY = Tuple.of(SECOND, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
+    static final Tuple INVALID_EXPIRY = Tuple.of(SECOND, INVALID_ACCOUNT_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
 
     static final Tuple FIXED_FEE = Tuple.of(100L, ERC20_TOKEN_ADDRESS, false, false, OWNER_HEADLONG_ADDRESS);
     static final Tuple FRACTIONAL_FEE = Tuple.of(100L, 100L, 100L, 100L, true, OWNER_HEADLONG_ADDRESS);

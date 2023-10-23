@@ -87,7 +87,9 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -102,99 +104,108 @@ public class ClassicViewsXTest extends AbstractContractXTest {
         doClassicQueries();
     }
 
+    @Override
+    protected Configuration configuration() {
+        return HederaTestConfigBuilder.create()
+                .withValue("contracts.chainId", "298")
+                .withValue("ledger.id", "03")
+                .getOrCreateConfig();
+    }
+
     private void doClassicQueries() {
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_IS_FROZEN, ERC20_TOKEN_ADDRESS, ERC_USER_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(TOKEN_IS_FROZEN));
+                assertingCallLocalResultIsBuffer(TOKEN_IS_FROZEN, "GET_IS_FROZEN"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_IS_KYC, ERC20_TOKEN_ADDRESS, ERC_USER_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(TOKEN_IS_KYC));
+                assertingCallLocalResultIsBuffer(TOKEN_IS_KYC, "GET_IS_KYC"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_IS_TOKEN, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(TOKEN_IS_TOKEN));
+                assertingCallLocalResultIsBuffer(TOKEN_IS_TOKEN, "GET_IS_TOKEN"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_TYPE, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(TOKEN_TYPE_FUNGIBLE));
+                assertingCallLocalResultIsBuffer(TOKEN_TYPE_FUNGIBLE, "GET_TOKEN_TYPE"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_DEFAULT_FREEZE_STATUS, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(TOKEN_FROZEN_STATUS));
+                assertingCallLocalResultIsBuffer(TOKEN_FROZEN_STATUS, "GET_DEFAULT_FREEZE_STATUS"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_DEFAULT_KYC_STATUS, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(TOKEN_KYC_GRANTED_STATUS));
+                assertingCallLocalResultIsBuffer(TOKEN_KYC_GRANTED_STATUS, "GET_DEFAULT_KYC_STATUS"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_EXPIRY, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(EXPECTED_TOKEN_EXPIRY));
+                assertingCallLocalResultIsBuffer(EXPECTED_TOKEN_EXPIRY, "GET_TOKEN_EXPIRY"));
         // Token Keys
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(1L)),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(returnExpectedKey(ADMIN_KEY)));
+                assertingCallLocalResultIsBuffer(returnExpectedKey(ADMIN_KEY), "GET_TOKEN_KEY (ADMIN_KEY)"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(2L)),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(returnExpectedKey(KYC_KEY)));
+                assertingCallLocalResultIsBuffer(returnExpectedKey(KYC_KEY), "GET_TOKEN_KEY (KYC_KEY)"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(4L)),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(returnExpectedKey(FREEZE_KEY)));
+                assertingCallLocalResultIsBuffer(returnExpectedKey(FREEZE_KEY), "GET_TOKEN_KEY (FREEZE_KEY)"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(8L)),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(returnExpectedKey(WIPE_KEY)));
+                assertingCallLocalResultIsBuffer(returnExpectedKey(WIPE_KEY), "GET_TOKEN_KEY (WIPE_KEY)"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(16L)),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(returnExpectedKey(SUPPLY_KEY)));
+                assertingCallLocalResultIsBuffer(returnExpectedKey(SUPPLY_KEY), "GET_TOKEN_KEY (SUPPLY_KEY)"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(32L)),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(returnExpectedKey(FEE_SCHEDULE_KEY)));
+                assertingCallLocalResultIsBuffer(
+                        returnExpectedKey(FEE_SCHEDULE_KEY), "GET_TOKEN_KEY (FEE_SCHEDULE_KEY)"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_KEY, ERC20_TOKEN_ADDRESS, BigInteger.valueOf(64L)),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(returnExpectedKey(PAUSE_KEY)));
+                assertingCallLocalResultIsBuffer(returnExpectedKey(PAUSE_KEY), "GET_TOKEN_KEY (PAUSE_KEY)"));
 
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_CUSTOM_FEES, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(EXPECTED_CUSTOM_FEES));
+                assertingCallLocalResultIsBuffer(EXPECTED_CUSTOM_FEES, "GET_TOKEN_CUSTOM_FEES"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_TOKEN_INFO, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(EXPECTED_TOKEN_INFO));
+                assertingCallLocalResultIsBuffer(EXPECTED_TOKEN_INFO, "GET_TOKEN_INFO"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_FUNGIBLE_TOKEN_INFO, ERC20_TOKEN_ADDRESS),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(EXPECTED_FUNGIBLE_TOKEN_INFO));
+                assertingCallLocalResultIsBuffer(EXPECTED_FUNGIBLE_TOKEN_INFO, "GET_FUNGIBLE_TOKEN_INFO"));
         answerSingleQuery(
                 CONTRACT_SERVICE.handlers().contractCallLocalHandler(),
                 miscViewsQuery(GET_NON_FUNGIBLE_TOKEN_INFO, ERC721_TOKEN_ADDRESS, 1L),
                 ERC_USER_ID,
-                assertingCallLocalResultIs(EXPECTED_NON_FUNGIBLE_TOKEN_INFO));
+                assertingCallLocalResultIsBuffer(EXPECTED_NON_FUNGIBLE_TOKEN_INFO, "GET_NON_FUNGIBLE_TOKEN_INFO"));
     }
 
     private Query miscViewsQuery(@NonNull final Function function, @NonNull final Object... args) {

@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,13 +38,13 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.FungibleBurnCall;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
-import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-public class FungibleBurnCallTest extends HtsCallTestBase {
+class FungibleBurnCallTest extends HtsCallTestBase {
+    private static final long NEW_TOTAL_SUPPLY = 666L;
 
     private static final org.hyperledger.besu.datatypes.Address FRAME_SENDER_ADDRESS = EIP_1014_ADDRESS;
 
@@ -61,7 +62,15 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
     @Test
     void revertsOnMissingToken() {
         subject = new FungibleBurnCall(
-                1234, mockEnhancement(), null, verificationStrategy, FRAME_SENDER_ADDRESS, addressIdConverter);
+                1234,
+                gasCalculator,
+                mockEnhancement(),
+                null,
+                BURN_TOKEN_V1.getOutputs(),
+                verificationStrategy,
+                SENDER_ID,
+                FRAME_SENDER_ADDRESS,
+                addressIdConverter);
 
         final var result = subject.execute().fullResult().result();
 
@@ -81,7 +90,7 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
         assertEquals(
                 asBytesResult(BURN_TOKEN_V1
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) ResponseCodeEnum.SUCCESS.protoOrdinal(), NEW_TOTAL_SUPPLY)),
                 result.getOutput());
     }
 
@@ -97,7 +106,7 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
         assertEquals(
                 asBytesResult(BURN_TOKEN_V2
                         .getOutputs()
-                        .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()))),
+                        .encodeElements((long) ResponseCodeEnum.SUCCESS.protoOrdinal(), NEW_TOTAL_SUPPLY)),
                 result.getOutput());
     }
 
@@ -131,14 +140,18 @@ public class FungibleBurnCallTest extends HtsCallTestBase {
                         eq(TokenBurnRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
+        given(recordBuilder.getNewTotalSupply()).willReturn(NEW_TOTAL_SUPPLY);
     }
 
     private FungibleBurnCall subjectForBurn(final long amount) {
         return new FungibleBurnCall(
                 amount,
+                gasCalculator,
                 mockEnhancement(),
                 FUNGIBLE_TOKEN_ID,
+                BURN_TOKEN_V1.getOutputs(),
                 verificationStrategy,
+                SENDER_ID,
                 FRAME_SENDER_ADDRESS,
                 addressIdConverter);
     }

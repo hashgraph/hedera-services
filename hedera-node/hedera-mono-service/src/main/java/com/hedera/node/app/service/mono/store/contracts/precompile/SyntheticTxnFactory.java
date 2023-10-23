@@ -538,7 +538,7 @@ public class SyntheticTxnFactory {
      * @return the transaction builder with the {@code NodeStakeUpdateTransactionBody} set
      */
 
-    // too may parameters
+    // too many parameters
     @SuppressWarnings("java:S107")
     public TransactionBody.Builder nodeStakeUpdate(
             @NonNull final Timestamp stakingPeriodEnd,
