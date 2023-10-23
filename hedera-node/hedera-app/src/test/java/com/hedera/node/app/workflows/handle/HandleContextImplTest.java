@@ -108,6 +108,7 @@ import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -171,11 +172,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 .build();
     }
 
-    private HandleContextImpl createContext(TransactionBody txBody) {
-        HederaFunctionality function;
+    private HandleContextImpl createContext(final TransactionBody txBody) {
+        final HederaFunctionality function;
         try {
             function = functionOf(txBody);
-        } catch (UnknownHederaFunctionality e) {
+        } catch (final UnknownHederaFunctionality e) {
             throw new RuntimeException(e);
         }
 
@@ -399,7 +400,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testCreateReadableStore(@Mock ReadableStates readableStates) {
+        void testCreateReadableStore(@Mock final ReadableStates readableStates) {
             // given
             when(stack.createReadableStates(TokenService.NAME)).thenReturn(readableStates);
             final var context = createContext(defaultTransactionBody());
@@ -412,7 +413,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testCreateWritableStore(@Mock WritableStates writableStates) {
+        void testCreateWritableStore(@Mock final WritableStates writableStates) {
             // given
             when(stack.createWritableStates(TokenService.NAME)).thenReturn(writableStates);
             final var context = createContext(defaultTransactionBody());
@@ -692,7 +693,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testAddChildRecordBuilder(@Mock SingleTransactionRecordBuilderImpl childRecordBuilder) {
+        void testAddChildRecordBuilder(@Mock final SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
             when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
             final var context = createContext(defaultTransactionBody());
@@ -705,7 +706,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testAddRemovableChildRecordBuilder(@Mock SingleTransactionRecordBuilderImpl childRecordBuilder) {
+        void testAddRemovableChildRecordBuilder(@Mock final SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
             final var context = createContext(defaultTransactionBody());
@@ -774,11 +775,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             stack = new SavepointStackImpl(baseState);
         }
 
-        private HandleContextImpl createContext(TransactionBody txBody, TransactionCategory category) {
-            HederaFunctionality function;
+        private HandleContextImpl createContext(final TransactionBody txBody, final TransactionCategory category) {
+            final HederaFunctionality function;
             try {
                 function = functionOf(txBody);
-            } catch (UnknownHederaFunctionality e) {
+            } catch (final UnknownHederaFunctionality e) {
                 throw new RuntimeException(e);
             }
 
@@ -864,10 +865,10 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @ParameterizedTest
         @MethodSource("createContextDispatchers")
-        void testDispatchSucceeds(Consumer<HandleContext> contextDispatcher) throws PreCheckException {
+        void testDispatchSucceeds(final Consumer<HandleContext> contextDispatcher) throws PreCheckException {
             // given
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
-            when(verifier.verificationFor((Key) any())).thenReturn(verification);
+            Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
                     .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
@@ -889,7 +890,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @ParameterizedTest
         @MethodSource("createContextDispatchers")
-        void testDispatchPreHandleFails(Consumer<HandleContext> contextDispatcher) throws PreCheckException {
+        void testDispatchPreHandleFails(final Consumer<HandleContext> contextDispatcher) throws PreCheckException {
             // given
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
@@ -915,10 +916,10 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @ParameterizedTest
         @MethodSource("createContextDispatchers")
-        void testDispatchHandleFails(Consumer<HandleContext> contextDispatcher) {
+        void testDispatchHandleFails(final Consumer<HandleContext> contextDispatcher) {
             // given
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
-            when(verifier.verificationFor((Key) any())).thenReturn(verification);
+            Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
                     .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
@@ -942,7 +943,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @ParameterizedTest
         @EnumSource(TransactionCategory.class)
-        void testDispatchPrecedingWithNonUserTxnFails(TransactionCategory category) {
+        void testDispatchPrecedingWithNonUserTxnFails(final TransactionCategory category) {
             if (category != TransactionCategory.USER) {
                 // given
                 final var context = createContext(defaultTransactionBody(), category);
