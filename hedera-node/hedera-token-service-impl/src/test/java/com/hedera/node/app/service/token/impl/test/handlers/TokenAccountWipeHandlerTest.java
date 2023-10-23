@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
