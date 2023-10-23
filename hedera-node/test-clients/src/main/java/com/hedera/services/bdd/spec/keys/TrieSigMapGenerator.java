@@ -87,6 +87,7 @@ public class TrieSigMapGenerator implements SigMapGenerator {
 
         final Function<byte[], byte[]> prefixCalc = getPrefixCalcFor(trie);
         return keySigs.stream()
+                .filter(keySig -> keySig.getValue().length > 0)
                 .map(keySig -> {
                     final var key = keySig.getKey();
                     final var wrappedKey = ByteString.copyFrom(key);
