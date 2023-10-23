@@ -196,14 +196,14 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
-        this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
-        this.serviceApiFactory = new ServiceApiFactory(stack, configuration);
+        writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
+        serviceApiFactory = new ServiceApiFactory(stack, configuration);
 
         if (payerKey == null) {
-            this.feeCalculatorCreator = ignore -> NoOpFeeCalculator.INSTANCE;
-            this.feeAccumulator = NoOpFeeAccumulator.INSTANCE;
+            feeCalculatorCreator = ignore -> NoOpFeeCalculator.INSTANCE;
+            feeAccumulator = NoOpFeeAccumulator.INSTANCE;
         } else {
-            this.feeCalculatorCreator = subType -> feeManager.createFeeCalculator(
+            feeCalculatorCreator = subType -> feeManager.createFeeCalculator(
                     txBody,
                     payerKey,
                     functionality,
@@ -212,7 +212,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     userTransactionConsensusTime,
                     subType);
             final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
-            this.feeAccumulator = new FeeAccumulatorImpl(tokenApi, recordBuilder);
+            feeAccumulator = new FeeAccumulatorImpl(tokenApi, recordBuilder);
         }
 
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
@@ -248,7 +248,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @NonNull
     @Override
-    public FeeCalculator feeCalculator(@NonNull SubType subType) {
+    public FeeCalculator feeCalculator(@NonNull final SubType subType) {
         return feeCalculatorCreator.apply(subType);
     }
 
@@ -340,7 +340,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @NonNull
     @Override
-    public TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested)
+    public TransactionKeys allKeysForTransaction(
+            @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
             throws PreCheckException {
         dispatcher.dispatchPureChecks(nestedTxn);
         final var nestedContext = new PreHandleContextImpl(
@@ -556,16 +557,16 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             // Synthetic transaction bodies do not have transaction ids, node account
             // ids, and so on; hence we don't need to validate them with the checker
             dispatcher.dispatchPureChecks(txBody);
-        } catch (PreCheckException e) {
+        } catch (final PreCheckException e) {
             childRecordBuilder.status(e.responseCode());
             return;
         }
 
         final var childStack = new SavepointStackImpl(current());
-        HederaFunctionality function;
+        final HederaFunctionality function;
         try {
             function = functionOf(txBody);
-        } catch (UnknownHederaFunctionality e) {
+        } catch (final UnknownHederaFunctionality e) {
             logger.error("Possible bug: unknown function in transaction body", e);
             childRecordBuilder.status(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
             return;
@@ -579,13 +580,13 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             try {
                 childPayerKey =
                         accountStore.getAccountById(transactionID.accountID()).key();
-            } catch (NullPointerException ex) {
+            } catch (final NullPointerException ex) {
                 childRecordBuilder.status(ResponseCodeEnum.INVALID_TRANSACTION_ID);
                 return;
             }
         }
 
-        final var validationResult = validate(verifier, function, txBody, payer, payerKey);
+        final var validationResult = validate(verifier, function, txBody, payer, payerKey, childCategory);
         if (validationResult.status != SO_FAR_SO_GOOD) {
             childRecordBuilder.status(validationResult.responseCodeEnum);
             return;
@@ -618,7 +619,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             dispatcher.dispatchHandle(childContext);
             childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
             childStack.commitFullStack();
-        } catch (HandleException e) {
+        } catch (final HandleException e) {
             childRecordBuilder.status(e.getStatus());
             recordListBuilder.revertChildrenOf(childRecordBuilder);
         }
@@ -629,17 +630,18 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     private ValidationResult validate(
             @NonNull final HandleContextVerifier verifier,
-            HederaFunctionality function,
-            TransactionBody txBody,
-            AccountID payer,
-            Key payerKey) {
+            final HederaFunctionality function,
+            final TransactionBody txBody,
+            final AccountID payer,
+            final Key payerKey,
+            final TransactionCategory txCategory) {
 
-        PreHandleContextImpl preHandleContext;
+        final PreHandleContextImpl preHandleContext;
         try {
             preHandleContext =
                     new PreHandleContextImpl(readableStoreFactory(), txBody, payer, configuration(), dispatcher);
             dispatcher.dispatchPreHandle(preHandleContext);
-        } catch (PreCheckException e) {
+        } catch (final PreCheckException e) {
             return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode());
         }
 
@@ -660,10 +662,13 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             return new ValidationResult(PRE_HANDLE_FAILURE, ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE);
         }
 
-        // Check all signature verifications. This will also wait, if validation is still ongoing.
-        final var payerKeyVerification = verifier.verificationFor(payerKey);
-        if (payerKeyVerification.failed()) {
-            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_SIGNATURE);
+        // Skip payer verification when dispatching a child transaction
+        if (txCategory.equals(CHILD)) {
+            // Check all signature verifications. This will also wait, if validation is still ongoing.
+            final var payerKeyVerification = verifier.verificationFor(payerKey);
+            if (payerKeyVerification.failed()) {
+                return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_SIGNATURE);
+            }
         }
 
         // verify all the keys
