@@ -54,6 +54,7 @@ public class WireBuilder<O> {
     private WireMetricsBuilder metricsBuilder;
     private long unhandledTaskCapacity = UNLIMITED_CAPACITY;
     private boolean flushingEnabled = false;
+    private boolean externalBackPressure = false;
     private ObjectCounter onRamp;
     private ObjectCounter offRamp;
     private ForkJoinPool pool = ForkJoinPool.commonPool();
@@ -80,19 +81,6 @@ public class WireBuilder<O> {
             throw new IllegalArgumentException("Wire name must not be empty");
         }
         this.name = name;
-    }
-
-    /**
-     * This is a convenience method for hinting to the compiler the generic type of this builder. This method is a no
-     * op.
-     *
-     * @param clazz the class of the output type
-     * @param <X>   the output type
-     * @return this
-     */
-    @SuppressWarnings("unchecked")
-    public <X> WireBuilder<X> withOutputType(@NonNull final Class<X> clazz) {
-        return (WireBuilder<X>) this;
     }
 
     /**
@@ -155,6 +143,20 @@ public class WireBuilder<O> {
     @NonNull
     public WireBuilder<O> withOffRamp(@NonNull final ObjectCounter offRamp) {
         this.offRamp = Objects.requireNonNull(offRamp);
+        return this;
+    }
+
+    /**
+     * If true then the framework will assume that back pressure is being applied via external mechanisms.
+     * <p>
+     * This method does not change the runtime behavior of the wiring framework. But it does effect cyclical back
+     * pressure detection and automatically generated wiring diagrams.
+     *
+     * @param externalBackPressure true if back pressure is being applied externally, false otherwise
+     * @return this
+     */
+    public WireBuilder<O> withExternalBackPressure(final boolean externalBackPressure) {
+        this.externalBackPressure = externalBackPressure;
         return this;
     }
 
@@ -302,8 +304,7 @@ public class WireBuilder<O> {
             metricsBuilder.registerMetrics(name, counters.onRamp());
         }
 
-        // TODO add a way to signal back pressure that is external to the wire
-        final boolean insertionIsBlocking = unhandledTaskCapacity != UNLIMITED_CAPACITY;
+        final boolean insertionIsBlocking = unhandledTaskCapacity != UNLIMITED_CAPACITY || externalBackPressure;
 
         if (concurrent) {
             return new ConcurrentWire<>(

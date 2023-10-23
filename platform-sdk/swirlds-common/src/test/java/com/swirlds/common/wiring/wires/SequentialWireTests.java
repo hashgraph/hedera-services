@@ -85,10 +85,8 @@ class SequentialWireTests {
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
-                .withConcurrency(false)
-                .build();
+        final Wire<Void> wire =
+                model.wireBuilder("test").withConcurrency(false).build().cast();
         final InputChannel<Integer, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
@@ -124,10 +122,8 @@ class SequentialWireTests {
             }
         };
 
-        final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
-                .withConcurrency(false)
-                .build();
+        final Wire<Void> wire =
+                model.wireBuilder("test").withConcurrency(false).build().cast();
         final InputChannel<Integer, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
@@ -157,10 +153,8 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
-                .withConcurrency(false)
-                .build();
+        final Wire<Void> wire =
+                model.wireBuilder("test").withConcurrency(false).build().cast();
         final InputChannel<Integer, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
@@ -220,10 +214,8 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
-                .withConcurrency(false)
-                .build();
+        final Wire<Void> wire =
+                model.wireBuilder("test").withConcurrency(false).build().cast();
         final InputChannel<Integer, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
@@ -290,10 +282,8 @@ class SequentialWireTests {
             }
         };
 
-        final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
-                .withConcurrency(false)
-                .build();
+        final Wire<Void> wire =
+                model.wireBuilder("test").withConcurrency(false).build().cast();
         final InputChannel<Integer, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
@@ -344,10 +334,10 @@ class SequentialWireTests {
         };
 
         final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
-                .build();
+                .build()
+                .cast();
         final InputChannel<Integer, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
@@ -408,11 +398,11 @@ class SequentialWireTests {
         };
 
         final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .withSleepDuration(Duration.ofMillis(1))
-                .build();
+                .build()
+                .cast();
         final InputChannel<Integer, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
@@ -496,10 +486,10 @@ class SequentialWireTests {
         };
 
         final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
-                .build();
+                .build()
+                .cast();
         final InputChannel<Integer, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
@@ -574,10 +564,10 @@ class SequentialWireTests {
         };
 
         final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
-                .build();
+                .build()
+                .cast();
         final InputChannel<Integer, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
@@ -633,10 +623,8 @@ class SequentialWireTests {
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
-                .withConcurrency(false)
-                .build();
+        final Wire<Void> wire =
+                model.wireBuilder("test").withConcurrency(false).build().cast();
         final InputChannel<Integer, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
@@ -675,14 +663,10 @@ class SequentialWireTests {
         final AtomicInteger countC = new AtomicInteger();
         final AtomicInteger countD = new AtomicInteger();
 
-        final Wire<Integer> wireToA =
-                model.wireBuilder("wireToA").withOutputType(Integer.class).build();
-        final Wire<Integer> wireToB =
-                model.wireBuilder("wireToB").withOutputType(Integer.class).build();
-        final Wire<Integer> wireToC =
-                model.wireBuilder("wireToC").withOutputType(Integer.class).build();
-        final Wire<Integer> wireToD =
-                model.wireBuilder("wireToD").withOutputType(Integer.class).build();
+        final Wire<Integer> wireToA = model.wireBuilder("wireToA").build().cast();
+        final Wire<Integer> wireToB = model.wireBuilder("wireToB").build().cast();
+        final Wire<Integer> wireToC = model.wireBuilder("wireToC").build().cast();
+        final Wire<Integer> wireToD = model.wireBuilder("wireToD").build().cast();
 
         final InputChannel<Integer, Integer> channelToA = wireToA.buildInputChannel("channelToA");
         final InputChannel<Integer, Integer> channelToB = wireToB.buildInputChannel("channelToB");
@@ -780,10 +764,8 @@ class SequentialWireTests {
         final Consumer<Boolean> booleanHandler = x -> wireValue.set((x ? -1 : 1) * wireValue.get());
         final Consumer<String> stringHandler = x -> wireValue.set(hash32(wireValue.get(), x.hashCode()));
 
-        final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
-                .withConcurrency(false)
-                .build();
+        final Wire<Void> wire =
+                model.wireBuilder("test").withConcurrency(false).build().cast();
 
         final InputChannel<Integer, Void> integerChannel = wire.buildInputChannel("integerChannel")
                 .withInputType(Integer.class)
@@ -838,10 +820,10 @@ class SequentialWireTests {
         final Consumer<Integer> handler2 = x -> wireValue.set(hash32(wireValue.get(), -x));
 
         final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
-                .build();
+                .build()
+                .cast();
 
         final InputChannel<Integer, Void> channel1 =
                 wire.buildInputChannel("channel1").withInputType(Integer.class).bind(handler1);
@@ -921,16 +903,16 @@ class SequentialWireTests {
         final ObjectCounter backpressure = new BackpressureObjectCounter(11, Duration.ofMillis(1));
 
         final Wire<Void> wireA = model.wireBuilder("testA")
-                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withOnRamp(backpressure)
-                .build();
+                .build()
+                .cast();
 
         final Wire<Void> wireB = model.wireBuilder("testB")
-                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withOffRamp(backpressure)
-                .build();
+                .build()
+                .cast();
 
         final InputChannel<Integer, Void> channelA = wireA.buildInputChannel("channelA");
         final InputChannel<Integer, Void> channelB = wireB.buildInputChannel("channelB");
@@ -1043,11 +1025,11 @@ class SequentialWireTests {
         };
 
         final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .withFlushingEnabled(true)
-                .build();
+                .build()
+                .cast();
         final InputChannel<Integer, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
@@ -1146,11 +1128,11 @@ class SequentialWireTests {
         };
 
         final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .withFlushingEnabled(true)
-                .build();
+                .build()
+                .cast();
         final InputChannel<Integer, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
         assertEquals(0, wire.getUnprocessedTaskCount());
@@ -1259,10 +1241,10 @@ class SequentialWireTests {
     @Test
     void flushDisabledTest() {
         final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(10)
-                .build();
+                .build()
+                .cast();
 
         assertThrows(UnsupportedOperationException.class, wire::flush, "flush() should not be supported");
         assertThrows(UnsupportedOperationException.class, wire::interruptableFlush, "flush() should not be supported");
@@ -1281,10 +1263,10 @@ class SequentialWireTests {
         final AtomicInteger exceptionCount = new AtomicInteger();
 
         final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUncaughtExceptionHandler((t, e) -> exceptionCount.incrementAndGet())
-                .build();
+                .build()
+                .cast();
         final InputChannel<Integer, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
         assertEquals(-1, wire.getUnprocessedTaskCount());
@@ -1314,26 +1296,26 @@ class SequentialWireTests {
         // create 3 wires with the following bindings:
         // a -> b -> c -> latch
         final Wire<Void> a = model.wireBuilder("a")
-                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
-                .build();
+                .build()
+                .cast();
         final Wire<Void> b = model.wireBuilder("b")
-                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
-                .build();
+                .build()
+                .cast();
         final Wire<Void> c = model.wireBuilder("c")
-                .withOutputType(Void.class)
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
-                .build();
+                .build()
+                .cast();
 
         final InputChannel<Object, Void> channelA = a.buildInputChannel("channelA");
         final InputChannel<Object, Void> channelB = b.buildInputChannel("channelB");
@@ -1379,14 +1361,10 @@ class SequentialWireTests {
      */
     @Test
     void simpleSolderingTest() {
-        final Wire<Integer> wireA =
-                model.wireBuilder("A").withOutputType(Integer.class).build();
-        final Wire<Integer> wireB =
-                model.wireBuilder("A").withOutputType(Integer.class).build();
-        final Wire<Integer> wireC =
-                model.wireBuilder("A").withOutputType(Integer.class).build();
-        final Wire<Void> wireD =
-                model.wireBuilder("A").withOutputType(Void.class).build();
+        final Wire<Integer> wireA = model.wireBuilder("A").build().cast();
+        final Wire<Integer> wireB = model.wireBuilder("A").build().cast();
+        final Wire<Integer> wireC = model.wireBuilder("A").build().cast();
+        final Wire<Void> wireD = model.wireBuilder("A").build().cast();
 
         final InputChannel<Integer, Integer> inputA = wireA.buildInputChannel("inputA");
         final InputChannel<Integer, Integer> inputB = wireB.buildInputChannel("inputB");
@@ -1440,14 +1418,10 @@ class SequentialWireTests {
      */
     @Test
     void lambdaSolderingTest() {
-        final Wire<Integer> wireA =
-                model.wireBuilder("A").withOutputType(Integer.class).build();
-        final Wire<Integer> wireB =
-                model.wireBuilder("B").withOutputType(Integer.class).build();
-        final Wire<Integer> wireC =
-                model.wireBuilder("C").withOutputType(Integer.class).build();
-        final Wire<Void> wireD =
-                model.wireBuilder("D").withOutputType(Void.class).build();
+        final Wire<Integer> wireA = model.wireBuilder("A").build().cast();
+        final Wire<Integer> wireB = model.wireBuilder("B").build().cast();
+        final Wire<Integer> wireC = model.wireBuilder("C").build().cast();
+        final Wire<Void> wireD = model.wireBuilder("D").build().cast();
 
         final InputChannel<Integer, Integer> inputA = wireA.buildInputChannel("inputA");
         final InputChannel<Integer, Integer> inputB = wireB.buildInputChannel("inputB");
@@ -1510,25 +1484,20 @@ class SequentialWireTests {
         // A passes data to X, Y, and Z
         // X, Y, and Z pass data to B
 
-        final Wire<Integer> wireA =
-                model.wireBuilder("A").withOutputType(Integer.class).build();
+        final Wire<Integer> wireA = model.wireBuilder("A").build().cast();
         final InputChannel<Integer, Integer> addNewValueToA = wireA.buildInputChannel("addNewValueToA");
         final InputChannel<Boolean, Integer> setInversionBitInA = wireA.buildInputChannel("setInversionBitInA");
 
-        final Wire<Integer> wireX =
-                model.wireBuilder("X").withOutputType(Integer.class).build();
+        final Wire<Integer> wireX = model.wireBuilder("X").build().cast();
         final InputChannel<Integer, Integer> inputX = wireX.buildInputChannel("inputX");
 
-        final Wire<Integer> wireY =
-                model.wireBuilder("Y").withOutputType(Integer.class).build();
+        final Wire<Integer> wireY = model.wireBuilder("Y").build().cast();
         final InputChannel<Integer, Integer> inputY = wireY.buildInputChannel("inputY");
 
-        final Wire<Integer> wireZ =
-                model.wireBuilder("Z").withOutputType(Integer.class).build();
+        final Wire<Integer> wireZ = model.wireBuilder("Z").build().cast();
         final InputChannel<Integer, Integer> inputZ = wireZ.buildInputChannel("inputZ");
 
-        final Wire<Void> wireB =
-                model.wireBuilder("B").withOutputType(Void.class).build();
+        final Wire<Void> wireB = model.wireBuilder("B").build().cast();
         final InputChannel<Integer, Void> inputB = wireB.buildInputChannel("inputB");
 
         wireA.solderTo(inputX).solderTo(inputY).solderTo(inputZ);
@@ -1709,14 +1678,10 @@ class SequentialWireTests {
      */
     @Test
     void squelchNullValuesInWiresTest() {
-        final Wire<Integer> wireA =
-                model.wireBuilder("A").withOutputType(Integer.class).build();
-        final Wire<Integer> wireB =
-                model.wireBuilder("A").withOutputType(Integer.class).build();
-        final Wire<Integer> wireC =
-                model.wireBuilder("A").withOutputType(Integer.class).build();
-        final Wire<Void> wireD =
-                model.wireBuilder("A").withOutputType(Void.class).build();
+        final Wire<Integer> wireA = model.wireBuilder("A").build().cast();
+        final Wire<Integer> wireB = model.wireBuilder("A").build().cast();
+        final Wire<Integer> wireC = model.wireBuilder("A").build().cast();
+        final Wire<Void> wireD = model.wireBuilder("A").build().cast();
 
         final InputChannel<Integer, Integer> inputA = wireA.buildInputChannel("inputA");
         final InputChannel<Integer, Integer> inputB = wireB.buildInputChannel("inputB");
@@ -1796,29 +1761,29 @@ class SequentialWireTests {
     @Test
     void metricsEnabledTest() {
         final Wire<Integer> wireA = model.wireBuilder("A")
-                .withOutputType(Integer.class)
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(true)
                         .withUnhandledTaskMetricEnabled(true))
-                .build();
+                .build()
+                .cast();
         final Wire<Integer> wireB = model.wireBuilder("B")
-                .withOutputType(Integer.class)
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(true)
                         .withUnhandledTaskMetricEnabled(false))
-                .build();
+                .build()
+                .cast();
         final Wire<Integer> wireC = model.wireBuilder("C")
-                .withOutputType(Integer.class)
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(false)
                         .withUnhandledTaskMetricEnabled(true))
-                .build();
+                .build()
+                .cast();
         final Wire<Void> wireD = model.wireBuilder("D")
-                .withOutputType(Void.class)
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(false)
                         .withUnhandledTaskMetricEnabled(false))
-                .build();
+                .build()
+                .cast();
 
         final InputChannel<Integer, Integer> inputA = wireA.buildInputChannel("inputA");
         final InputChannel<Integer, Integer> inputB = wireB.buildInputChannel("inputB");
@@ -1919,6 +1884,60 @@ class SequentialWireTests {
         }
 
         assertEventuallyEquals(expectedCount, count::get, Duration.ofSeconds(1), "Wire count did not match expected");
+    }
+
+    @Test
+    void externalBackPressureTest() {
+
+        // There are three components, A, B, and C.
+        // We want to control the number of elements in all three, not individually.
+
+        final ObjectCounter counter = new BackpressureObjectCounter(10, Duration.ofMillis(1));
+
+        final Wire<Integer> wireA = model.wireBuilder("A")
+                .withOnRamp(counter)
+                .withExternalBackPressure(true)
+                .build()
+                .cast();
+        final InputChannel<Integer, Integer> aIn = wireA.buildInputChannel("aIn");
+
+        final Wire<Integer> wireB =
+                model.wireBuilder("B").withExternalBackPressure(true).build().cast();
+        final InputChannel<Integer, Integer> bIn = wireB.buildInputChannel("bIn");
+
+        final Wire<Void> wireC = model.wireBuilder("C")
+                .withOffRamp(counter)
+                .withExternalBackPressure(true)
+                .build()
+                .cast();
+        final InputChannel<Integer, Void> cIn = wireC.buildInputChannel("cIn");
+
+        wireA.solderTo(bIn);
+        wireB.solderTo(cIn);
+
+        final AtomicInteger countA = new AtomicInteger();
+        final CountDownLatch latchA = new CountDownLatch(1);
+        aIn.bind(x -> {
+            countA.set(hash32(countA.get(), x));
+            return x;
+        });
+
+        final AtomicInteger countB = new AtomicInteger();
+        final CountDownLatch latchB = new CountDownLatch(1);
+        bIn.bind(x -> {
+            countB.set(hash32(countB.get(), x));
+            return x;
+        });
+
+        final AtomicInteger countC = new AtomicInteger();
+        final CountDownLatch latchC = new CountDownLatch(1);
+        cIn.bind(x -> {
+            countC.set(hash32(countC.get(), x));
+        });
+
+
+        // TODO finish this test
+
     }
 
     // TODO write test for wire that has multiple counters

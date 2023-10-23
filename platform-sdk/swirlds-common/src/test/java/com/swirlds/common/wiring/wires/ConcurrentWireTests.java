@@ -56,10 +56,8 @@ class ConcurrentWireTests {
             }
         };
 
-        final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
-                .withConcurrency(true)
-                .build();
+        final Wire<Void> wire =
+                model.wireBuilder("test").withConcurrency(true).build().cast();
         final InputChannel<Integer, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
 
@@ -103,10 +101,8 @@ class ConcurrentWireTests {
             count.addAndGet(x.value);
         };
 
-        final Wire<Void> wire = model.wireBuilder("test")
-                .withOutputType(Void.class)
-                .withConcurrency(true)
-                .build();
+        final Wire<Void> wire =
+                model.wireBuilder("test").withConcurrency(true).build().cast();
         final InputChannel<Operation, Void> channel =
                 wire.buildInputChannel("channel").withInputType(Operation.class).bind(handler);
 

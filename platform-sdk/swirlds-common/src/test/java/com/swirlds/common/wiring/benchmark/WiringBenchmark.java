@@ -64,24 +64,27 @@ class WiringBenchmark {
         final ObjectCounter backpressure = new BackpressureObjectCounter(10_000, Duration.ZERO);
 
         final Wire<WiringBenchmarkEvent> verificationWire = model.wireBuilder("verification")
-                .withOutputType(WiringBenchmarkEvent.class)
                 .withPool(executor)
                 .withConcurrency(true)
                 .withOnRamp(backpressure)
-                .build();
+                .withExternalBackPressure(true)
+                .build()
+                .cast();
 
         final Wire<WiringBenchmarkEvent> orphanBufferWire = model.wireBuilder("orphanBuffer")
-                .withOutputType(WiringBenchmarkEvent.class)
                 .withPool(executor)
                 .withConcurrency(false)
-                .build();
+                .withExternalBackPressure(true)
+                .build()
+                .cast();
 
         final Wire<Void> eventPoolWire = model.wireBuilder("eventPool")
-                .withOutputType(Void.class)
                 .withPool(executor)
                 .withConcurrency(false)
                 .withOffRamp(backpressure)
-                .build();
+                .withExternalBackPressure(true)
+                .build()
+                .cast();
 
         // Step 2: create channels
         final InputChannel<WiringBenchmarkEvent, WiringBenchmarkEvent> eventsToOrphanBuffer =
