@@ -76,8 +76,6 @@ public class BaseTokenHandler {
             @NonNull final WritableTokenRelationStore tokenRelationStore) {
         requireNonNull(token);
         requireNonNull(treasuryRel);
-
-        validateTrue(amount >= 0, INVALID_TOKEN_MINT_AMOUNT);
         // validate token supply key exists for mint or burn.
         // But this flag is not set when mint is called on token creation with initial supply.
         // We don't need to check the supply key ONLY in that case

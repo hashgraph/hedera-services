@@ -140,6 +140,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
         });
     }
 
+    @HapiTest
     private HapiSpec populatingMetadataForFungibleDoesNotWork() {
         return defaultHapiSpec("PopulatingMetadataForFungibleDoesNotWork")
                 .given(
@@ -232,6 +233,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec serialNumbersOnlyOnFungibleBurnFails() {
         return defaultHapiSpec("SerialNumbersOnlyOnFungibleBurnFails")
                 .given(
@@ -718,6 +720,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
+    @HapiTest
     private HapiSpec commonWipeFailsWhenInvokedOnUniqueToken() {
         return defaultHapiSpec("CommonWipeFailsWhenInvokedOnUniqueToken")
                 .given(
@@ -749,6 +752,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 1));
     }
 
+    @HapiTest
     private HapiSpec uniqueWipeFailsWhenInvokedOnFungibleToken() { // invokes unique wipe on fungible tokens
         return defaultHapiSpec("UniqueWipeFailsWhenInvokedOnFungibleToken")
                 .given(
@@ -767,7 +771,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .hasKnownStatus(INVALID_WIPING_AMOUNT)
                                 .via("wipeTx"),
                         wipeTokenAccount(A_TOKEN, ACCOUNT, List.of())
-                                .hasKnownStatus(OK)
+                                .hasPrecheck(OK)
                                 .via("wipeEmptySerialTx"))
                 .then(
                         getTokenInfo(A_TOKEN).hasTotalSupply(10),

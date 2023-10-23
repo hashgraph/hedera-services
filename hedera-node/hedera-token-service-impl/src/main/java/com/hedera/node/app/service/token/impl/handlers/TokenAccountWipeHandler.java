@@ -142,6 +142,9 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         final long newAccountBalance;
         final Account.Builder updatedAcctBuilder = acct.copyBuilder();
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
+            // Validate that there is at least one fungible token to wipe
+            validateTrue(fungibleWipeCount >= 0 && nftSerialNums.isEmpty(), INVALID_WIPING_AMOUNT);
+
             // Check that the new total supply will not be negative
             newTotalSupply = token.totalSupply() - fungibleWipeCount;
             validateTrue(newTotalSupply >= 0, INVALID_WIPING_AMOUNT);

@@ -134,6 +134,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         }
 
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
+
+            validateTrue(op.amount() >= 0 && op.metadata().isEmpty(), INVALID_TOKEN_MINT_AMOUNT);
             // we need to know if treasury mint while creation to ignore supply key exist or not.
             long newTotalSupply =
                     mintFungible(token, treasuryRel, op.amount(), false, accountStore, tokenStore, tokenRelStore);
