@@ -27,6 +27,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.ClassicGrantApprovalCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator;
@@ -47,9 +48,13 @@ public class ClassicGrantApprovalCallTest extends HtsCallTestBase {
     @Mock
     private CryptoTransferRecordBuilder recordBuilder;
 
+    @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
+
     @Test
     void fungibleApprove() {
         subject = new ClassicGrantApprovalCall(
+                systemContractGasCalculator,
                 mockEnhancement(),
                 verificationStrategy,
                 OWNER_ID,
@@ -72,6 +77,7 @@ public class ClassicGrantApprovalCallTest extends HtsCallTestBase {
     @Test
     void nftApprove() {
         subject = new ClassicGrantApprovalCall(
+                systemContractGasCalculator,
                 mockEnhancement(),
                 verificationStrategy,
                 OWNER_ID,

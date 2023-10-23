@@ -508,13 +508,11 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         final var op = body.cryptoApproveAllowanceOrThrow();
         final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
 
-        final var txnValidStart =
-                body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
-        final var payerId = body.transactionIDOrThrow().accountIDOrThrow();
-        final var account = accountStore.getAccountById(payerId);
+        final var currentSecond = feeContext.currentTime().getEpochSecond();
+        final var account = accountStore.getAccountById(feeContext.payer());
 
-        final var currentExpiry = account == null ? txnValidStart : account.expirationSecond();
-        final long lifeTime = ESTIMATOR_UTILS.relativeLifetime(txnValidStart, currentExpiry);
+        final var currentExpiry = account == null ? currentSecond : account.expirationSecond();
+        final long lifeTime = ESTIMATOR_UTILS.relativeLifetime(currentSecond, currentExpiry);
         // If the value is being adjusted instead of inserting a new entry , the fee charged will be
         // slightly less than the base price
         final var adjustedBytes = getNewBytes(body.cryptoApproveAllowanceOrThrow(), account);

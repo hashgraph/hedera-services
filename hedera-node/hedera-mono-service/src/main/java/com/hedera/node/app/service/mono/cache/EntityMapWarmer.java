@@ -44,9 +44,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A proto-duction implementation of cache warming for {@link VirtualMap}, i.e. a quick-and-dirty
@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class EntityMapWarmer {
 
-    private static final Logger log = LoggerFactory.getLogger(EntityMapWarmer.class);
+    private static final Logger log = LogManager.getLogger(EntityMapWarmer.class);
     // Note: these suppliers need to be stored here as they are (instead of storing what
     // the supplier references) in order for this class to get the latest copies of the
     // underlying data structures

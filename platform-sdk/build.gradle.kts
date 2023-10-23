@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.platform-root") }
+plugins { id("com.hedera.hashgraph.java") }
 
 val sdkDir = layout.projectDirectory.dir("sdk")
 
@@ -26,9 +26,13 @@ tasks.register<JavaExec>("run") {
     jvmArgs = listOf("-agentlib:jdwp=transport=dt_socket,address=8888,server=y,suspend=n")
     maxHeapSize = "8g"
 
-    // Running ':assemble' (root project) before, will trigger the assemble, and with that
+    // Running ':assemble' of all 'platform-sdk' subprojects before, will trigger
     // copyLib/copyApp, of all projects that provide an application.
-    dependsOn(tasks.assemble)
+    dependsOn(
+        rootProject.subprojects
+            .filter { it.projectDir.absolutePath.contains("/platform-sdk/") }
+            .map { "${it.path}:assemble" }
+    )
 }
 
 val cleanRun =

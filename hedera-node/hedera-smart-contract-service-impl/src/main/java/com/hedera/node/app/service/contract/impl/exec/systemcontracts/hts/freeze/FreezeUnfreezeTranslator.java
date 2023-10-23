@@ -17,12 +17,16 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.freeze;
 
 import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
@@ -57,7 +61,28 @@ public class FreezeUnfreezeTranslator extends AbstractHtsCallTranslator {
     @Override
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         return new DispatchForResponseCodeHtsCall<>(
-                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class);
+                attempt,
+                bodyForClassic(attempt),
+                SingleTransactionRecordBuilder.class,
+                Arrays.equals(attempt.selector(), FREEZE.selector())
+                        ? FreezeUnfreezeTranslator::freezeGasRequirement
+                        : FreezeUnfreezeTranslator::unfreezeGasRequirement);
+    }
+
+    public static long freezeGasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final AccountID payerId) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.FREEZE, payerId);
+    }
+
+    public static long unfreezeGasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final AccountID payerId) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.UNFREEZE, payerId);
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {

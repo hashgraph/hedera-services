@@ -20,7 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall.transferGasRequirement;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -31,6 +31,8 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
@@ -48,7 +50,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
     private final Address to;
     private final TokenID tokenId;
     private final VerificationStrategy verificationStrategy;
-    private final org.hyperledger.besu.datatypes.Address spender;
+    private final AccountID senderId;
     private final AddressIdConverter addressIdConverter;
 
     // too many parameters
@@ -59,15 +61,16 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
             @NonNull final Address to,
             @NonNull final TokenID tokenId,
             @NonNull final VerificationStrategy verificationStrategy,
-            @NonNull final org.hyperledger.besu.datatypes.Address spender,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final SystemContractGasCalculator gasCalculator,
+            @NonNull final AccountID senderId,
             @NonNull final AddressIdConverter addressIdConverter) {
-        super(enhancement);
+        super(gasCalculator, enhancement);
         this.from = requireNonNull(from);
         this.to = requireNonNull(to);
         this.tokenId = tokenId;
-        this.spender = requireNonNull(spender);
         this.verificationStrategy = requireNonNull(verificationStrategy);
+        this.senderId = requireNonNull(senderId);
         this.addressIdConverter = requireNonNull(addressIdConverter);
         this.serialNo = serialNo;
     }
@@ -78,25 +81,21 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
     @Override
     public @NonNull PricedResult execute() {
         // https://eips.ethereum.org/EIPS/eip-721
-        // TODO - gas calculation
         if (tokenId == null) {
-            return reversionWith(INVALID_TOKEN_ID, 0L);
+            return reversionWith(INVALID_TOKEN_ID, gasCalculator.canonicalGasRequirement(DispatchType.TRANSFER_NFT));
         }
-        final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
+        final var syntheticTransfer = syntheticTransfer(senderId);
+        final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId);
         final var recordBuilder = systemContractOperations()
-                .dispatch(
-                        syntheticTransfer(spenderId),
-                        verificationStrategy,
-                        spenderId,
-                        CryptoTransferRecordBuilder.class);
+                .dispatch(syntheticTransfer, verificationStrategy, senderId, CryptoTransferRecordBuilder.class);
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder.status(), 0L));
+            return gasOnly(revertResult(recordBuilder.status(), gasRequirement));
         } else {
             return gasOnly(successResult(
                     Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM
                             .getOutputs()
                             .encodeElements(),
-                    0L));
+                    gasRequirement));
         }
     }
 

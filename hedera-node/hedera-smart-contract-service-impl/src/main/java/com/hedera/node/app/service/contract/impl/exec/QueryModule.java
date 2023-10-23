@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
-import static com.hedera.node.app.spi.workflows.FunctionalityResourcePrices.PREPAID_RESOURCE_PRICES;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
+import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
@@ -50,9 +51,17 @@ public interface QueryModule {
     @Provides
     @QueryScope
     static TinybarValues provideTinybarValues(@NonNull final ExchangeRate exchangeRate) {
-        // Use zeros for all resource prices, since we charge for query gas via an independent
-        // CryptoTransfer in the query header; and it is illegal to emit logs in a static call
-        return new TinybarValues(exchangeRate, PREPAID_RESOURCE_PRICES);
+        return TinybarValues.forQueryWith(exchangeRate);
+    }
+
+    @Provides
+    @QueryScope
+    static SystemContractGasCalculator provideSystemContractGasCalculator(
+            @NonNull final CanonicalDispatchPrices canonicalDispatchPrices,
+            @NonNull final TinybarValues tinybarValues) {
+        return new SystemContractGasCalculator(tinybarValues, canonicalDispatchPrices, (body, payerId) -> {
+            throw new IllegalStateException("Queries should fail before dispatching a child transaction");
+        });
     }
 
     @Provides
@@ -95,8 +104,14 @@ public interface QueryModule {
     static HederaEvmContext provideHederaEvmContext(
             @NonNull final HederaOperations hederaOperations,
             @NonNull final HederaEvmBlocks hederaEvmBlocks,
-            @NonNull final TinybarValues tinybarValues) {
-        return new HederaEvmContext(hederaOperations.gasPriceInTinybars(), true, hederaEvmBlocks, tinybarValues);
+            @NonNull final TinybarValues tinybarValues,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator) {
+        return new HederaEvmContext(
+                hederaOperations.gasPriceInTinybars(),
+                true,
+                hederaEvmBlocks,
+                tinybarValues,
+                systemContractGasCalculator);
     }
 
     @Binds
@@ -105,11 +120,11 @@ public interface QueryModule {
 
     @Binds
     @QueryScope
-    HederaOperations bindExtWorldScope(QueryHederaOperations queryExtWorldScope);
+    HederaOperations bindHederaOperations(QueryHederaOperations queryExtWorldScope);
 
     @Binds
     @QueryScope
-    HederaNativeOperations bindExtFrameScope(QueryHederaNativeOperations queryExtFrameScope);
+    HederaNativeOperations bindHederaNativeOperations(QueryHederaNativeOperations queryExtFrameScope);
 
     @Binds
     @QueryScope
@@ -117,6 +132,5 @@ public interface QueryModule {
 
     @Binds
     @QueryScope
-    SystemContractOperations bindQuerySystemContractOperations(
-            QuerySystemContractOperations querySystemContractOperations);
+    SystemContractOperations bindSystemContractOperations(QuerySystemContractOperations querySystemContractOperations);
 }

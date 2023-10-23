@@ -39,7 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenCustomFeesCallTest extends HtsCallTestBase {
     @Test
     void returnsTokenCustomFeesStatusForPresentToken() {
-        final var subject = new TokenCustomFeesCall(mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN);
+        final var subject = new TokenCustomFeesCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 
@@ -59,7 +59,7 @@ class TokenCustomFeesCallTest extends HtsCallTestBase {
 
     @Test
     void returnsTokenCustomFeesStatusForMissingToken() {
-        final var subject = new TokenCustomFeesCall(mockEnhancement(), false, null);
+        final var subject = new TokenCustomFeesCall(gasCalculator, mockEnhancement(), false, null);
 
         final var result = subject.execute().fullResult().result();
 
@@ -78,7 +78,7 @@ class TokenCustomFeesCallTest extends HtsCallTestBase {
 
     @Test
     void returnsTokenCustomFeesStatusForMissingTokenStaticCall() {
-        final var subject = new TokenCustomFeesCall(mockEnhancement(), true, null);
+        final var subject = new TokenCustomFeesCall(gasCalculator, mockEnhancement(), true, null);
 
         final var result = subject.execute().fullResult().result();
 

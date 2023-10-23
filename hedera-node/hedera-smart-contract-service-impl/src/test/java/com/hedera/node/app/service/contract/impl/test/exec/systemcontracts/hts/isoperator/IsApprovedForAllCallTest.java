@@ -43,7 +43,7 @@ class IsApprovedForAllCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithFungibleToken() {
-        subject = new IsApprovedForAllCall(mockEnhancement(), FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
+        subject = new IsApprovedForAllCall(gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
 
         final var result = subject.execute().fullResult().result();
 
@@ -53,7 +53,8 @@ class IsApprovedForAllCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithMissingOwner() {
-        subject = new IsApprovedForAllCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
+        subject =
+                new IsApprovedForAllCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
 
         final var result = subject.execute().fullResult().result();
 
@@ -63,7 +64,8 @@ class IsApprovedForAllCallTest extends HtsCallTestBase {
 
     @Test
     void checksForPresentOwnerAndFindsApprovedOperator() {
-        subject = new IsApprovedForAllCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
+        subject =
+                new IsApprovedForAllCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(SOMEBODY);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 
@@ -79,7 +81,7 @@ class IsApprovedForAllCallTest extends HtsCallTestBase {
 
     @Test
     void checksForPresentOwnerAndDetectsNoOperator() {
-        subject = new IsApprovedForAllCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OWNER);
+        subject = new IsApprovedForAllCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OWNER);
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(SOMEBODY);
 
         final var result = subject.execute().fullResult().result();
@@ -94,7 +96,8 @@ class IsApprovedForAllCallTest extends HtsCallTestBase {
 
     @Test
     void returnsFalseForPresentOwnerAndMissingOperator() {
-        subject = new IsApprovedForAllCall(mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
+        subject =
+                new IsApprovedForAllCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, THE_OWNER, THE_OPERATOR);
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(SOMEBODY);
 
         final var result = subject.execute().fullResult().result();
