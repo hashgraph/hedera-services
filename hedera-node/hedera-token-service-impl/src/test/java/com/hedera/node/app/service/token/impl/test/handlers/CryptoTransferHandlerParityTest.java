@@ -63,6 +63,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -93,9 +94,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        subject.preHandle(context);
-        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(context.requiredNonPayerKeys(), contains(FIRST_TOKEN_SENDER_KT.asPbjKey()));
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
