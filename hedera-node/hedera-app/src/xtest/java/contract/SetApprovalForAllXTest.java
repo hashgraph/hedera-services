@@ -180,7 +180,7 @@ public class SetApprovalForAllXTest extends AbstractContractXTest {
         runHtsCallAndExpectRevert(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrap(SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL
-                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, INVALID_SENDER_HEADLONG_ADDRESS, false)
+                        .encodeCallWithArgs(ERC721_TOKEN_ADDRESS, INVALID_SENDER_HEADLONG_ADDRESS, true)
                         .array()),
                 TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 

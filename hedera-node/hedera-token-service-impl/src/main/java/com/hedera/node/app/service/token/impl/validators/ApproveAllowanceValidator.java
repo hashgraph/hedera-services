@@ -181,7 +181,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             final var spenderAccount = accountStore.getAccountById(spender);
             validateNFTSpender(serialNums, spenderAccount);
 
-            if (allowance.hasApprovedForAll()) {
+            if (Boolean.TRUE.equals(allowance.approvedForAll())) {
                 validateNFTSpender(spenderAccount);
             }
 

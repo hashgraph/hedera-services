@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllCall;
@@ -52,6 +53,9 @@ public class SetApprovalForAllCallTest extends HtsCallTestBase {
     @Mock
     private AddressIdConverter addressIdConverter;
 
+    @Mock
+    private SystemContractGasCalculator gasCalculator;
+
     private SetApprovalForAllCall subject;
 
     @BeforeEach
@@ -59,9 +63,11 @@ public class SetApprovalForAllCallTest extends HtsCallTestBase {
         given(attempt.enhancement()).willReturn(mockEnhancement());
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(attempt.addressIdConverter().convertSender(any())).willReturn(OWNER_ID);
+        given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
 
         subject =
-                new SetApprovalForAllCall(attempt, TransactionBody.newBuilder().build());
+                new SetApprovalForAllCall(attempt, TransactionBody.newBuilder().build(),
+                        SetApprovalForAllTranslator::gasRequirement);
 
         given(systemContractOperations.dispatch(any(), any(), any(), any())).willReturn(recordBuilder);
     }

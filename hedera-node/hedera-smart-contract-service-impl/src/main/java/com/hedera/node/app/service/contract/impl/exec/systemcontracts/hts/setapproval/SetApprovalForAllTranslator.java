@@ -65,8 +65,7 @@ public class SetApprovalForAllTranslator extends AbstractHtsCallTranslator {
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var result = bodyForClassic(attempt);
         // @Future remove to revert #9214 after modularization is completed
-        return new SetApprovalForAllCall(attempt, result);
-        //  return new DispatchForResponseCodeHtsCall<>(attempt, result, SingleTransactionRecordBuilder.class);
+        return new SetApprovalForAllCall(attempt, result, SetApprovalForAllTranslator::gasRequirement);
     }
 
     public static long gasRequirement(
