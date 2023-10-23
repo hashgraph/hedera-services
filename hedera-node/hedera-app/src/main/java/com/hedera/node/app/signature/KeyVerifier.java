@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.verifier;
+package com.hedera.node.app.signature;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.workflows.VerificationAssistant;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Helper class that contains all functionality for verifying signatures during handle.
  */
-public interface HandleContextVerifier {
+public interface KeyVerifier {
 
     /**
      * Get a {@link SignatureVerification} for the given key.
