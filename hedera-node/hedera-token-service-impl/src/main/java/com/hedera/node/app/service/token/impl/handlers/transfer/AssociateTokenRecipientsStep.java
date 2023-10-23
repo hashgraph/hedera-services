@@ -40,7 +40,6 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -64,7 +63,6 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-        final var recordBuilder = handleContext.recordBuilder(CryptoTransferRecordBuilder.class);
         final var nftStore = handleContext.writableStore(WritableNftStore.class);
         final var expiryValidator = handleContext.expiryValidator();
         final List<TokenAssociation> newAssociations = new ArrayList<>();
@@ -115,7 +113,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         }
 
         for (TokenAssociation newAssociation : newAssociations) {
-            recordBuilder.addAutomaticTokenAssociation(newAssociation);
+            transferContext.addToAutomaticAssociations(newAssociation);
         }
     }
 
