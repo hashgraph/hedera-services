@@ -18,7 +18,6 @@ package com.swirlds.platform.event.linking;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
@@ -39,12 +38,14 @@ import org.apache.logging.log4j.Logger;
 /**
  * Links events.
  * <p>
- * Expects events to be provided in topological order. If an
- * out-of-order event is provided, it is logged and discarded.
+ * Expects events to be provided in topological order. If an out-of-order event is provided, it is logged and discarded.
  */
 public class InOrderLinker {
     private static final Logger logger = LogManager.getLogger(InOrderLinker.class);
 
+    /**
+     * The initial capacity of the {@link #parentDescriptorMap} and {@link #parentHashMap}
+     */
     private static final int INITIAL_CAPACITY = 1024;
 
     /**
@@ -82,16 +83,11 @@ public class InOrderLinker {
     /**
      * Constructor
      *
-     * @param time               the time
      * @param eventConsumer      the consumer that successfully linked events are passed to
      * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
      */
     public InOrderLinker(
-            @NonNull final Time time,
-            @NonNull final Consumer<EventImpl> eventConsumer,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
-
-        Objects.requireNonNull(time);
+            @NonNull final Consumer<EventImpl> eventConsumer, @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.eventConsumer = Objects.requireNonNull(eventConsumer);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
@@ -153,8 +149,10 @@ public class InOrderLinker {
 
         final EventImpl linkedEvent = new EventImpl(event, selfParent, otherParent);
 
-        parentDescriptorMap.put(event.getDescriptor(), linkedEvent);
-        parentHashMap.put(event.getHashedData().getHash(), linkedEvent);
+        final EventDescriptor eventDescriptor = event.getDescriptor();
+
+        parentDescriptorMap.put(eventDescriptor, linkedEvent);
+        parentHashMap.put(eventDescriptor.getHash(), linkedEvent);
 
         eventConsumer.accept(linkedEvent);
     }
