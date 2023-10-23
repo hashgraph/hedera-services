@@ -36,7 +36,7 @@ class DecimalsCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithNonfungibleToken() {
-        subject = new DecimalsCall(mockEnhancement(), NON_FUNGIBLE_TOKEN);
+        subject = new DecimalsCall(mockEnhancement(), gasCalculator, NON_FUNGIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 
@@ -46,7 +46,7 @@ class DecimalsCallTest extends HtsCallTestBase {
 
     @Test
     void returnsInRangeDecimalsForPresentToken() {
-        subject = new DecimalsCall(mockEnhancement(), FUNGIBLE_TOKEN);
+        subject = new DecimalsCall(mockEnhancement(), gasCalculator, FUNGIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 
@@ -61,7 +61,7 @@ class DecimalsCallTest extends HtsCallTestBase {
 
     @Test
     void returnsMaxDecimalsForUnreasonableToken() {
-        subject = new DecimalsCall(mockEnhancement(), UNREASONABLY_DIVISIBLE_TOKEN);
+        subject = new DecimalsCall(mockEnhancement(), gasCalculator, UNREASONABLY_DIVISIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 

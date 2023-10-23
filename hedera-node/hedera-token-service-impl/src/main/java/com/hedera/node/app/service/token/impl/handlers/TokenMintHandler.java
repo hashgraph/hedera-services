@@ -289,7 +289,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                 : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
         final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
-        final var payerId = feeContext.body().transactionIDOrThrow().accountIDOrThrow();
+        final var payerId = feeContext.payer();
         final var payerKey = readableAccountStore.getAccountById(payerId).keyOrThrow();
 
         final var calculator = feeContext.feeCalculator(subType);

@@ -24,8 +24,8 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_A
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,24 +33,21 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersCall;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class Erc20TransfersCallTest extends HtsCallTestBase {
-
-    private static final org.hyperledger.besu.datatypes.Address FRAME_SENDER_ADDRESS = EIP_1014_ADDRESS;
     private static final Address FROM_ADDRESS = ConversionUtils.asHeadlongAddress(EIP_1014_ADDRESS.toArray());
     private static final Address TO_ADDRESS =
             ConversionUtils.asHeadlongAddress(asEvmAddress(B_NEW_ACCOUNT_ID.accountNumOrThrow()));
@@ -64,18 +61,22 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
     @Mock
     private CryptoTransferRecordBuilder recordBuilder;
 
+    @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
+
     private Erc20TransfersCall subject;
 
     @Test
     void revertsOnMissingToken() {
         subject = new Erc20TransfersCall(
+                systemContractGasCalculator,
                 mockEnhancement(),
                 1234,
                 null,
                 TO_ADDRESS,
                 null,
                 verificationStrategy,
-                FRAME_SENDER_ADDRESS,
+                SENDER_ID,
                 addressIdConverter);
 
         final var result = subject.execute().fullResult().result();
@@ -86,11 +87,11 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
 
     @Test
     void transferHappyPathSucceedsWithTrue() {
-        givenSynthIdHelperWithCaller(FRAME_SENDER_ADDRESS, A_NEW_ACCOUNT_ID);
+        givenSynthIdHelperWithoutFrom();
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
                         eq(verificationStrategy),
-                        eq(A_NEW_ACCOUNT_ID),
+                        eq(SENDER_ID),
                         eq(CryptoTransferRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
@@ -105,11 +106,11 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
 
     @Test
     void transferFromHappyPathSucceedsWithTrue() {
-        givenSynthIdHelperWithCaller(FRAME_SENDER_ADDRESS, A_NEW_ACCOUNT_ID);
+        givenSynthIdHelperWithFrom();
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
                         eq(verificationStrategy),
-                        eq(A_NEW_ACCOUNT_ID),
+                        eq(SENDER_ID),
                         eq(CryptoTransferRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
@@ -124,11 +125,11 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
 
     @Test
     void unhappyPathRevertsWithReason() {
-        givenSynthIdHelperWithCaller(FRAME_SENDER_ADDRESS, A_NEW_ACCOUNT_ID);
+        givenSynthIdHelperWithoutFrom();
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
                         eq(verificationStrategy),
-                        eq(A_NEW_ACCOUNT_ID),
+                        eq(SENDER_ID),
                         eq(CryptoTransferRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
@@ -141,34 +142,38 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
         assertEquals(Bytes.wrap(INSUFFICIENT_ACCOUNT_BALANCE.protoName().getBytes()), result.getOutput());
     }
 
-    private void givenSynthIdHelperWithCaller(
-            @NonNull final org.hyperledger.besu.datatypes.Address caller, @NonNull final AccountID callerId) {
-        given(addressIdConverter.convert(asHeadlongAddress(caller))).willReturn(callerId);
+    private void givenSynthIdHelperWithFrom() {
         given(addressIdConverter.convert(FROM_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
+        given(addressIdConverter.convertCredit(TO_ADDRESS)).willReturn(B_NEW_ACCOUNT_ID);
+    }
+
+    private void givenSynthIdHelperWithoutFrom() {
         given(addressIdConverter.convertCredit(TO_ADDRESS)).willReturn(B_NEW_ACCOUNT_ID);
     }
 
     private Erc20TransfersCall subjectForTransfer(final long amount) {
         return new Erc20TransfersCall(
+                systemContractGasCalculator,
                 mockEnhancement(),
                 amount,
                 null,
                 TO_ADDRESS,
                 FUNGIBLE_TOKEN_ID,
                 verificationStrategy,
-                FRAME_SENDER_ADDRESS,
+                SENDER_ID,
                 addressIdConverter);
     }
 
     private Erc20TransfersCall subjectForTransferFrom(final long amount) {
         return new Erc20TransfersCall(
+                systemContractGasCalculator,
                 mockEnhancement(),
                 amount,
                 FROM_ADDRESS,
                 TO_ADDRESS,
                 FUNGIBLE_TOKEN_ID,
                 verificationStrategy,
-                FRAME_SENDER_ADDRESS,
+                SENDER_ID,
                 addressIdConverter);
     }
 }

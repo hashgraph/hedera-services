@@ -207,7 +207,14 @@ public class QueryChecker {
             @NonNull final Key payerKey,
             @NonNull final Configuration configuration) {
         final var feeContext = new FeeContextImpl(
-                consensusTime, transactionInfo, payerKey, feeManager, storeFactory, configuration, authorizer);
+                consensusTime,
+                transactionInfo,
+                payerKey,
+                transactionInfo.payerID(),
+                feeManager,
+                storeFactory,
+                configuration,
+                authorizer);
         return cryptoTransferHandler.calculateFees(feeContext).totalFee();
     }
 }

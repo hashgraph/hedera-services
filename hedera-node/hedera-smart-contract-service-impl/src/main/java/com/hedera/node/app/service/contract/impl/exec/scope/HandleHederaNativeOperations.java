@@ -25,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -152,5 +153,11 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     @Override
     public void trackDeletion(final long deletedNumber, final long beneficiaryNumber) {
         // TODO - implement after merging upstream
+    }
+
+    @Override
+    public boolean checkForCustomFees(@NonNull final CryptoTransferTransactionBody op) {
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        return tokenServiceApi.checkForCustomFees(op);
     }
 }
