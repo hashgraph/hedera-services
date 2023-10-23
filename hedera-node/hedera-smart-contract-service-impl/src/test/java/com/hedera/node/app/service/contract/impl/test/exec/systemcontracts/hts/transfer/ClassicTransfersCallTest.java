@@ -34,9 +34,8 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ApprovalSwitchHelper;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
@@ -64,16 +63,13 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
     private ApprovalSwitchHelper approvalSwitchHelper;
 
     @Mock
-    private AddressIdConverter addressIdConverter;
-
-    @Mock
-    private HtsCallAttempt attempt;
-
-    @Mock
     private CryptoTransferRecordBuilder recordBuilder;
 
     @Mock
     private SystemAccountCreditScreen systemAccountCreditScreen;
+
+    @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
 
     private ClassicTransfersCall subject;
 
@@ -195,6 +191,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
 
     private void givenRetryingSubject() {
         subject = new ClassicTransfersCall(
+                systemContractGasCalculator,
                 mockEnhancement(),
                 ClassicTransfersTranslator.CRYPTO_TRANSFER.selector(),
                 A_NEW_ACCOUNT_ID,
@@ -210,6 +207,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
                 .withValue("contracts.precompile.atomicCryptoTransfer.enabled", "true")
                 .getOrCreateConfig();
         subject = new ClassicTransfersCall(
+                systemContractGasCalculator,
                 mockEnhancement(),
                 ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector(),
                 A_NEW_ACCOUNT_ID,
@@ -222,6 +220,7 @@ class ClassicTransfersCallTest extends HtsCallTestBase {
 
     private void givenV2SubjectWithV2Disabled() {
         subject = new ClassicTransfersCall(
+                systemContractGasCalculator,
                 mockEnhancement(),
                 ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.selector(),
                 A_NEW_ACCOUNT_ID,
