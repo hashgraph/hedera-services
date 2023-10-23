@@ -153,9 +153,10 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
             newAccountBalance = validated.accountTokenRel().balance() - fungibleWipeCount;
             validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT);
         } else {
-            // Validate that there is at least one NFT to wipe
-            validateFalse(nftSerialNums.isEmpty(), FAIL_INVALID);
-
+            // Check if nft serial numbers are zero, but fungible count is more than zero
+            validateFalse(nftSerialNums.isEmpty() && fungibleWipeCount > 0, FAIL_INVALID);
+            // Check if nft serial numbers are zero
+            validateFalse(nftSerialNums.isEmpty(), INVALID_WIPING_AMOUNT);
             // Check that the new total supply will not be negative
             newTotalSupply = token.totalSupply() - nftSerialNums.size();
             validateTrue(newTotalSupply >= 0, INVALID_WIPING_AMOUNT);

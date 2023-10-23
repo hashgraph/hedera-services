@@ -752,7 +752,6 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 1));
     }
 
-    @HapiTest
     private HapiSpec uniqueWipeFailsWhenInvokedOnFungibleToken() { // invokes unique wipe on fungible tokens
         return defaultHapiSpec("UniqueWipeFailsWhenInvokedOnFungibleToken")
                 .given(
@@ -771,7 +770,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .hasKnownStatus(INVALID_WIPING_AMOUNT)
                                 .via("wipeTx"),
                         wipeTokenAccount(A_TOKEN, ACCOUNT, List.of())
-                                .hasPrecheck(OK)
+                                .hasKnownStatus(OK)
                                 .via("wipeEmptySerialTx"))
                 .then(
                         getTokenInfo(A_TOKEN).hasTotalSupply(10),

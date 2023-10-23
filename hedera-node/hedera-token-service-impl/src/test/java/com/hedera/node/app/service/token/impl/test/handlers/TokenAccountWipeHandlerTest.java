@@ -632,7 +632,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
             assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
-                    .has(responseCode(FAIL_INVALID));
+                    .has(responseCode(INVALID_WIPING_AMOUNT));
         }
 
         @Test
