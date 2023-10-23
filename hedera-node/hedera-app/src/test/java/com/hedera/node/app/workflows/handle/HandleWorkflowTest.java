@@ -197,7 +197,7 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock
     private DualStateUpdateFacility dualStateUpdateFacility;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private SolvencyPreCheck solvencyPreCheck;
 
     @Mock(strictness = LENIENT)
@@ -209,7 +209,7 @@ class HandleWorkflowTest extends AppTestBase {
     private HandleWorkflow workflow;
 
     @BeforeEach
-    void setup() {
+    void setup() throws PreCheckException {
         setupStandardStates();
 
         accountsState.put(
@@ -237,6 +237,8 @@ class HandleWorkflowTest extends AppTestBase {
 
         final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(config);
+
+        when(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID()))).thenReturn(ALICE.account());
 
         doAnswer(invocation -> {
                     final var context = invocation.getArgument(0, HandleContext.class);
@@ -1023,6 +1025,13 @@ class HandleWorkflowTest extends AppTestBase {
                     .dispatchPreHandle(any());
             doAnswer(invocation -> {
                         final var expanded = invocation.getArgument(2, Set.class);
+                        expanded.add(ExpandedSignaturePairFactory.ecdsaPair(alicesKey));
+                        return null;
+                    })
+                    .when(signatureExpander)
+                    .expand(eq(alicesKey), any(), any());
+            doAnswer(invocation -> {
+                        final var expanded = invocation.getArgument(2, Set.class);
                         expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
                         return null;
                     })
@@ -1211,6 +1220,13 @@ class HandleWorkflowTest extends AppTestBase {
                     .dispatchPreHandle(any());
             doAnswer(invocation -> {
                         final var expanded = invocation.getArgument(2, Set.class);
+                        expanded.add(ExpandedSignaturePairFactory.ecdsaPair(alicesKey));
+                        return null;
+                    })
+                    .when(signatureExpander)
+                    .expand(eq(alicesKey), any(), any());
+            doAnswer(invocation -> {
+                        final var expanded = invocation.getArgument(2, Set.class);
                         expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
                         return null;
                     })
@@ -1253,6 +1269,13 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(dispatcher)
                     .dispatchPreHandle(any());
+            doAnswer(invocation -> {
+                        final var expanded = invocation.getArgument(2, Set.class);
+                        expanded.add(ExpandedSignaturePairFactory.ecdsaPair(alicesKey));
+                        return null;
+                    })
+                    .when(signatureExpander)
+                    .expand(eq(alicesKey), any(), any());
             doAnswer(invocation -> {
                         final var expanded = invocation.getArgument(2, Set.class);
                         expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
@@ -1317,6 +1340,13 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(dispatcher)
                     .dispatchPreHandle(any());
+            doAnswer(invocation -> {
+                        final var expanded = invocation.getArgument(2, Set.class);
+                        expanded.add(ExpandedSignaturePairFactory.ecdsaPair(alicesKey));
+                        return null;
+                    })
+                    .when(signatureExpander)
+                    .expand(eq(alicesKey), any(), any());
             doAnswer(invocation -> {
                         final var expanded = invocation.getArgument(2, Set.class);
                         expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
