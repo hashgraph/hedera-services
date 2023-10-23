@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
@@ -32,8 +33,10 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class BurnTranslator extends AbstractHtsCallTranslator {
 
-    public static final Function BURN_TOKEN_V1 = new Function("burnToken(address,uint64,int64[])", ReturnTypes.INT);
-    public static final Function BURN_TOKEN_V2 = new Function("burnToken(address,int64,int64[])", ReturnTypes.INT);
+    public static final Function BURN_TOKEN_V1 =
+            new Function("burnToken(address,uint64,int64[])", ReturnTypes.INT64_INT64);
+    public static final Function BURN_TOKEN_V2 =
+            new Function("burnToken(address,int64,int64[])", ReturnTypes.INT64_INT64);
 
     @Inject
     public BurnTranslator() {
@@ -51,12 +54,16 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
         final var selector = attempt.selector();
         final Tuple call;
         final long amount;
-        if (Arrays.equals(selector, BurnTranslator.BURN_TOKEN_V1.selector())) {
+        final TupleType outputs;
+        final var isV1Call = Arrays.equals(selector, BurnTranslator.BURN_TOKEN_V1.selector());
+        if (isV1Call) {
             call = BurnTranslator.BURN_TOKEN_V1.decodeCall(attempt.input().toArrayUnsafe());
             amount = ((BigInteger) call.get(1)).longValueExact();
+            outputs = BurnTranslator.BURN_TOKEN_V1.getOutputs();
         } else {
             call = BurnTranslator.BURN_TOKEN_V2.decodeCall(attempt.input().toArrayUnsafe());
             amount = call.get(1);
+            outputs = BurnTranslator.BURN_TOKEN_V2.getOutputs();
         }
         final var token = attempt.linkedToken(Address.fromHexString(call.get(0).toString()));
         if (token == null) {
@@ -65,16 +72,22 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
             return token.tokenType() == TokenType.FUNGIBLE_COMMON
                     ? new FungibleBurnCall(
                             amount,
+                            attempt.systemContractGasCalculator(),
                             attempt.enhancement(),
                             ConversionUtils.asTokenId(call.get(0)),
+                            outputs,
                             attempt.defaultVerificationStrategy(),
+                            attempt.senderId(),
                             attempt.senderAddress(),
                             attempt.addressIdConverter())
                     : new NonFungibleBurnCall(
                             Longs.asList(call.get(2)),
+                            attempt.systemContractGasCalculator(),
                             attempt.enhancement(),
                             ConversionUtils.asTokenId(call.get(0)),
+                            outputs,
                             attempt.defaultVerificationStrategy(),
+                            attempt.senderId(),
                             attempt.senderAddress(),
                             attempt.addressIdConverter());
         }

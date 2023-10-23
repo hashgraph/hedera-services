@@ -56,6 +56,7 @@ public class TokenUriTranslator extends AbstractHtsCallTranslator {
         final var serialNo = asExactLongValueOrZero(TokenUriTranslator.TOKEN_URI
                 .decodeCall(attempt.input().toArrayUnsafe())
                 .get(0));
-        return new TokenUriCall(attempt.enhancement(), attempt.redirectToken(), serialNo);
+        return new TokenUriCall(
+                attempt.systemContractGasCalculator(), attempt.enhancement(), attempt.redirectToken(), serialNo);
     }
 }

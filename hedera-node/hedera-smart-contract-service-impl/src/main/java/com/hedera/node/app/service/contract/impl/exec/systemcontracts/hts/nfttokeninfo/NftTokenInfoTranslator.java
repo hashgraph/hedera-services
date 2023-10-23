@@ -56,6 +56,11 @@ public class NftTokenInfoTranslator extends AbstractHtsCallTranslator {
         final var args = NON_FUNGIBLE_TOKEN_INFO.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new NftTokenInfoCall(
-                attempt.enhancement(), attempt.isStaticCall(), token, args.get(1), attempt.configuration());
+                attempt.systemContractGasCalculator(),
+                attempt.enhancement(),
+                attempt.isStaticCall(),
+                token,
+                args.get(1),
+                attempt.configuration());
     }
 }

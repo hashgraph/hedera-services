@@ -598,6 +598,7 @@ public class EthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
+    @HapiTest
     HapiSpec etx008ContractCreateExecutesWithExpectedRecord() {
         final var txn = "creation";
         final var contract = "Fuse";

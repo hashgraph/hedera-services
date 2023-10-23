@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.QueryHederaNativeOperations;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
@@ -73,6 +74,9 @@ class QueryHederaNativeOperationsTest {
 
     @Test
     void doesNotSupportAnyMutations() {
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.checkForCustomFees(CryptoTransferTransactionBody.DEFAULT));
         assertThrows(UnsupportedOperationException.class, () -> subject.setNonce(1L, 2L));
         assertThrows(UnsupportedOperationException.class, () -> subject.createHollowAccount(Bytes.EMPTY));
         assertThrows(UnsupportedOperationException.class, () -> subject.finalizeHollowAccountAsContract(Bytes.EMPTY));
