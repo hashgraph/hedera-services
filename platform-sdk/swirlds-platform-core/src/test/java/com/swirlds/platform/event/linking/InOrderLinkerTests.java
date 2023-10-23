@@ -67,11 +67,12 @@ class InOrderLinkerTests {
 
     /**
      * Generates a mock event with the given parameters
-     * @param selfHash the hash of the event
-     * @param selfGeneration the generation of the event
-     * @param selfParentHash the hash of the self parent of the event
-     * @param selfParentGeneration the generation of the self parent of the event
-     * @param otherParentHash the hash of the other parent of the event
+     *
+     * @param selfHash              the hash of the event
+     * @param selfGeneration        the generation of the event
+     * @param selfParentHash        the hash of the self parent of the event
+     * @param selfParentGeneration  the generation of the self parent of the event
+     * @param otherParentHash       the hash of the other parent of the event
      * @param otherParentGeneration the generation of the other parent of the event
      * @return the mock event
      */
@@ -154,6 +155,9 @@ class InOrderLinkerTests {
                 genesisOtherParent.getGeneration());
         inOrderLinker.linkEvent(child1);
 
+        inOrderLinker.setMinimumGenerationNonAncient(2);
+
+        // almost ancient
         final Hash child2Hash = randomHash(random);
         final long child2Generation = 2;
         final GossipEvent child2 = generateMockEvent(
@@ -225,16 +229,26 @@ class InOrderLinkerTests {
     void ancientEvent() {
         inOrderLinker.setMinimumGenerationNonAncient(3);
 
-        final GossipEvent child = generateMockEvent(
+        final GossipEvent child1 = generateMockEvent(
+                randomHash(random),
+                1,
+                genesisSelfParent.getHashedData().getHash(),
+                genesisSelfParent.getGeneration(),
+                genesisOtherParent.getHashedData().getHash(),
+                genesisOtherParent.getGeneration());
+        inOrderLinker.linkEvent(child1);
+
+        // barely ancient
+        final GossipEvent child2 = generateMockEvent(
                 randomHash(random),
                 2,
                 genesisSelfParent.getHashedData().getHash(),
                 genesisSelfParent.getGeneration(),
                 genesisOtherParent.getHashedData().getHash(),
                 genesisOtherParent.getGeneration());
-        inOrderLinker.linkEvent(child);
+        inOrderLinker.linkEvent(child2);
 
         assertEquals(genesisEventCount, consumedEventCount.get());
-        assertEquals(1, exitedIntakePipelineCount.get());
+        assertEquals(2, exitedIntakePipelineCount.get());
     }
 }

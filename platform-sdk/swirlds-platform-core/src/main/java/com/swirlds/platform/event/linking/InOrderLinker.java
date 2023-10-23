@@ -60,13 +60,13 @@ public class InOrderLinker {
     /**
      * A map from event hash to event.
      * <p>
-     * This map is needed in addition to the sequence map, since we need to be able to look up parents event based on
+     * This map is needed in addition to the sequence map, since we need to be able to look up parent events based on
      * hash. Elements are removed from this map when the window of the sequence map is shifted.
      */
     private final Map<Hash, EventImpl> parentHashMap = new HashMap<>(INITIAL_CAPACITY);
 
     /**
-     * Deduplicated events are passed to this consumer.
+     * Linked events are passed to this consumer.
      */
     private final Consumer<EventImpl> eventConsumer;
 
@@ -111,6 +111,7 @@ public class InOrderLinker {
         final long selfParentGen = hashedData.getSelfParentGen();
         final EventImpl selfParent;
         if (selfParentGen >= minimumGenerationNonAncient) {
+            // self parent is non-ancient. we are guaranteed to have it, since events are received in topological order
             selfParent = parentHashMap.get(selfParentHash);
             if (selfParent == null) {
                 logger.error(
@@ -131,6 +132,7 @@ public class InOrderLinker {
         final long otherParentGen = hashedData.getOtherParentGen();
         final EventImpl otherParent;
         if (otherParentGen >= minimumGenerationNonAncient) {
+            // other parent is non-ancient. we are guaranteed to have it, since events are received in topological order
             otherParent = parentHashMap.get(otherParentHash);
             if (otherParent == null) {
                 logger.error(
