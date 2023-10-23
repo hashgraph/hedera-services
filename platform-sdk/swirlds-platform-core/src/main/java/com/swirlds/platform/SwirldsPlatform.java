@@ -313,7 +313,6 @@ public class SwirldsPlatform implements Platform {
      * @param mainClassName            the name of the app class inheriting from SwirldMain
      * @param swirldName               the name of the swirld being run
      * @param appVersion               the current version of the running application
-     * @param softwareUpgrade          true if a software upgrade occurred since the last run.
      * @param initialState             the initial state of the platform
      * @param emergencyRecoveryManager used in emergency recovery.
      */
@@ -325,7 +324,6 @@ public class SwirldsPlatform implements Platform {
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion appVersion,
-            final boolean softwareUpgrade,
             @NonNull final SignedState initialState,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
@@ -407,7 +405,7 @@ public class SwirldsPlatform implements Platform {
                 epochHash,
                 initialState.getRound());
 
-        preconsensusEventFileManager = buildPreconsensusEventFileManager(initialState.getRound(), softwareUpgrade);
+        preconsensusEventFileManager = buildPreconsensusEventFileManager(initialState.getRound());
 
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
@@ -1013,13 +1011,10 @@ public class SwirldsPlatform implements Platform {
      * Build the preconsensus event file manager.
      *
      * @param startingRound   the round number of the initial state being loaded into the system
-     * @param softwareUpgrade whether or not this node is starting up after a software upgrade
      */
     @NonNull
-    private PreconsensusEventFileManager buildPreconsensusEventFileManager(
-            final long startingRound, final boolean softwareUpgrade) {
+    private PreconsensusEventFileManager buildPreconsensusEventFileManager(final long startingRound) {
         try {
-            clearPCESOnSoftwareUpgradeIfConfigured(softwareUpgrade);
             return new PreconsensusEventFileManager(
                     platformContext, Time.getCurrent(), recycleBin, selfId, startingRound);
         } catch (final IOException e) {
@@ -1187,24 +1182,5 @@ public class SwirldsPlatform implements Platform {
      */
     private boolean isLastEventBeforeRestart(final EventImpl event) {
         return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
-    }
-
-    /**
-     * Clears the preconsensus event stream if a software upgrade has occurred and the configuration specifies that the
-     * stream should be cleared on software upgrade.
-     *
-     * @param softwareUpgrade true if a software upgrade has occurred
-     * @throws UncheckedIOException if the required changes on software upgrade cannot be performed
-     */
-    private void clearPCESOnSoftwareUpgradeIfConfigured(final boolean softwareUpgrade) {
-        final boolean clearOnSoftwareUpgrade = platformContext
-                .getConfiguration()
-                .getConfigData(PreconsensusEventStreamConfig.class)
-                .clearOnSoftwareUpgrade();
-
-        if (softwareUpgrade && clearOnSoftwareUpgrade) {
-            logger.info(STARTUP.getMarker(), "Clearing the preconsensus event stream on software upgrade.");
-            PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
-        }
     }
 }
