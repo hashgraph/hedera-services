@@ -20,8 +20,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep.validateSpenderHasAllowance;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -38,7 +40,6 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -62,9 +63,10 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-        final var recordBuilder = handleContext.recordBuilder(CryptoTransferRecordBuilder.class);
         final var nftStore = handleContext.writableStore(WritableNftStore.class);
-        final List<TokenAssociation> newAssociations = new ArrayList<TokenAssociation>();
+        final var expiryValidator = handleContext.expiryValidator();
+        final List<TokenAssociation> newAssociations = new ArrayList<>();
+        final var payer = handleContext.payer();
 
         for (final var xfers : op.tokenTransfersOrElse(emptyList())) {
             final var tokenId = xfers.tokenOrThrow();
@@ -79,14 +81,22 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 }
             }
 
-            for (final var aa : xfers.nftTransfersOrElse(emptyList())) {
-                final var receiverId = aa.receiverAccountID();
-                final var senderId = aa.senderAccountID();
+            for (final var nftTransfer : xfers.nftTransfersOrElse(emptyList())) {
+                final var receiverId = nftTransfer.receiverAccountID();
+                final var senderId = nftTransfer.senderAccountID();
                 // sender should be associated already. If not throw exception
                 validateTrue(tokenRelStore.get(senderId, tokenId) != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
-                final var nft = nftStore.get(tokenId, aa.serialNumber());
+                final var nft = nftStore.get(tokenId, nftTransfer.serialNumber());
                 validateTrue(nft != null, INVALID_NFT_ID);
+
+                final var senderAccount = getIfUsable(senderId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
+                if (nftTransfer.isApproval()) {
+                    // If isApproval flag is set then the spender account must have paid for the transaction.
+                    // The transfer list specifies the owner who granted allowance as sender
+                    // check if the allowances from the sender account has the payer account as spender
+                    validateSpenderHasAllowance(senderAccount, payer, tokenId, nft);
+                }
 
                 if (nft.hasOwnerId()) {
                     validateTrue(nft.ownerId().equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
@@ -103,7 +113,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         }
 
         for (TokenAssociation newAssociation : newAssociations) {
-            recordBuilder.addAutomaticTokenAssociation(newAssociation);
+            transferContext.addToAutomaticAssociations(newAssociation);
         }
     }
 
@@ -130,6 +140,9 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         final var config = handleContext.configuration();
 
         if (tokenRel == null && account.maxAutoAssociations() > 0) {
+            validateFalse(
+                    account.usedAutoAssociations() >= account.maxAutoAssociations(),
+                    NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
             final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);

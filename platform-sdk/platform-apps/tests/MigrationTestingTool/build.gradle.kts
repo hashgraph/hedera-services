@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.hashgraph.application")
-    id("com.hedera.hashgraph.mock-release-tasks")
-}
+plugins { id("com.hedera.hashgraph.application") }
 
 application.mainClass.set("com.swirlds.demo.migration.MigrationTestingToolMain")

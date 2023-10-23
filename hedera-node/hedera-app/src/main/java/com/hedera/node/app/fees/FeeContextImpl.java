@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.fees;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
@@ -40,6 +41,7 @@ public class FeeContextImpl implements FeeContext {
     private final Instant consensusTime;
     private final TransactionInfo txInfo;
     private final Key payerKey;
+    private final AccountID payerId;
     private final FeeManager feeManager;
     private final ReadableStoreFactory storeFactory;
     private final Configuration configuration;
@@ -51,6 +53,7 @@ public class FeeContextImpl implements FeeContext {
      * @param consensusTime the approximation of consensus time used during ingest
      * @param txInfo the {@link TransactionInfo} of the transaction
      * @param payerKey the {@link Key} of the payer
+     * @param payerId the {@link AccountID} of the payer
      * @param feeManager the {@link FeeManager} to generate a {@link FeeCalculator}
      * @param storeFactory the {@link ReadableStoreFactory} to create readable stores
      */
@@ -58,6 +61,7 @@ public class FeeContextImpl implements FeeContext {
             @NonNull final Instant consensusTime,
             @NonNull final TransactionInfo txInfo,
             @NonNull final Key payerKey,
+            @NonNull final AccountID payerId,
             @NonNull final FeeManager feeManager,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Configuration configuration,
@@ -65,10 +69,21 @@ public class FeeContextImpl implements FeeContext {
         this.consensusTime = consensusTime;
         this.txInfo = txInfo;
         this.payerKey = payerKey;
+        this.payerId = payerId;
         this.feeManager = feeManager;
         this.storeFactory = storeFactory;
         this.configuration = configuration;
         this.authorizer = authorizer;
+    }
+
+    @Override
+    public Instant currentTime() {
+        return consensusTime;
+    }
+
+    @Override
+    public @NonNull AccountID payer() {
+        return payerId;
     }
 
     @NonNull

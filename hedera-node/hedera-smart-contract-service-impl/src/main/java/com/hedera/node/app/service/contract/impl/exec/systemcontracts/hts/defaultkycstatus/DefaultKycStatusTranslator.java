@@ -52,6 +52,7 @@ public class DefaultKycStatusTranslator extends AbstractHtsCallTranslator {
     public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var args = DEFAULT_KYC_STATUS.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
-        return new DefaultKycStatusCall(attempt.enhancement(), attempt.isStaticCall(), token);
+        return new DefaultKycStatusCall(
+                attempt.systemContractGasCalculator(), attempt.enhancement(), attempt.isStaticCall(), token);
     }
 }

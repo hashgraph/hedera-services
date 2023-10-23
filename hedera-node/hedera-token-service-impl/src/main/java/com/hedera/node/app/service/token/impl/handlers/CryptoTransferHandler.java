@@ -62,6 +62,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWi
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferStep;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -143,6 +144,14 @@ public class CryptoTransferHandler implements TransactionHandler {
         for (final var step : steps) {
             // Apply all changes to the handleContext's States
             step.doIn(transferContext);
+        }
+
+        final var recordBuilder = context.recordBuilder(CryptoTransferRecordBuilder.class);
+        if (!transferContext.getAutomaticAssociations().isEmpty()) {
+            transferContext.getAutomaticAssociations().forEach(recordBuilder::addAutomaticTokenAssociation);
+        }
+        if (!transferContext.getAssessedCustomFees().isEmpty()) {
+            recordBuilder.assessedCustomFees(transferContext.getAssessedCustomFees());
         }
     }
 
