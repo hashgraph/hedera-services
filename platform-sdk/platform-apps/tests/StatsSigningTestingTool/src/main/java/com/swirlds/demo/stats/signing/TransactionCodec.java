@@ -27,7 +27,7 @@ import java.util.Map;
 
 /**
  * The core transaction encoder and decoder implementation. See below for the binary transaction format specification.
- *
+ * <p>
  * Transaction Structure:
  * ------------------------------------------------------------------------------------------------------------
  * | 8 bytes | 1 byte | 1 byte   | 4 bytes   | pklen bytes | 4 bytes | siglen bytes | 4 bytes | datalen bytes |
@@ -53,6 +53,9 @@ final class TransactionCodec {
     static {
         activeAlgorithms.put(EC_SEC_P_256_K_1_ALGORITHM.getId(), EC_SEC_P_256_K_1_ALGORITHM);
         activeAlgorithms.put(X_25519_SIGNING_ALGORITHM.getId(), X_25519_SIGNING_ALGORITHM);
+
+        X_25519_SIGNING_ALGORITHM.tryAcquirePrimitives();
+        EC_SEC_P_256_K_1_ALGORITHM.tryAcquirePrimitives();
     }
 
     public static int bufferSize(final SigningAlgorithm algorithm, final int dataLength) {
@@ -144,6 +147,15 @@ final class TransactionCodec {
         final ByteBuffer wrapper = ByteBuffer.wrap(tx).position(TX_PREAMBLE_SIG_ALG_ID_OFFSET);
         final byte algorithmId = wrapper.get();
         final SigningAlgorithm algorithm = activeAlgorithms.get(algorithmId);
+        final SignatureType signatureType = (algorithm != null) ? algorithm.getSignatureType() : SignatureType.ED25519;
+
+        return (signatureType == SignatureType.ECDSA_SECP256K1)
+                ? readEcdsaSignature(wrapper, algorithm, signatureType)
+                : readStandardSignature(wrapper, tx, signatureType);
+    }
+
+    private static TransactionSignature readStandardSignature(
+            final ByteBuffer wrapper, final byte[] tx, final SignatureType signatureType) {
         final int pkLen = wrapper.getInt();
         final int pkOffset = wrapper.position();
         wrapper.position(pkOffset + pkLen);
@@ -155,8 +167,28 @@ final class TransactionCodec {
         final int dataLen = wrapper.getInt();
         final int dataOffset = wrapper.position();
 
-        final SignatureType signatureType = (algorithm != null) ? algorithm.getSignatureType() : SignatureType.ED25519;
-
         return new TransactionSignature(tx, sigOffset, sigLen, pkOffset, pkLen, dataOffset, dataLen, signatureType);
+    }
+
+    private static TransactionSignature readEcdsaSignature(
+            final ByteBuffer wrapper, final SigningAlgorithm algorithm, final SignatureType signatureType) {
+        final int pkLen = wrapper.getInt();
+        final byte[] pk = new byte[pkLen];
+        wrapper.get(pk);
+
+        final int sigLen = wrapper.getInt();
+        final byte[] sig = new byte[sigLen];
+        wrapper.get(sig);
+
+        final int dataLen = wrapper.getInt();
+        final byte[] data = new byte[dataLen];
+        wrapper.get(data);
+
+        final byte[] dataHash = algorithm.hash(data, 0, data.length);
+        final ByteBuffer sigPayload = ByteBuffer.allocate(pkLen + sigLen + dataHash.length);
+        sigPayload.put(pk).put(sig).put(dataHash);
+
+        return new TransactionSignature(
+                sigPayload.array(), pkLen, sigLen, 0, pkLen, pkLen + sigLen, dataHash.length, signatureType);
     }
 }

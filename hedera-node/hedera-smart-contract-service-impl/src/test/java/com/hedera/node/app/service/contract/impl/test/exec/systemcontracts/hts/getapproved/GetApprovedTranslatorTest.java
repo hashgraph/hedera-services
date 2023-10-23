@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator;
@@ -39,6 +40,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class GetApprovedTranslatorTest {
     @Mock
     private HtsCallAttempt attempt;
+
+    @Mock
+    private SystemContractGasCalculator gasCalculator;
 
     @Mock
     private Token token;
@@ -76,6 +80,7 @@ public class GetApprovedTranslatorTest {
         given(attempt.selector()).willReturn(GetApprovedTranslator.ERC_GET_APPROVED.selector());
         given(attempt.input()).willReturn(inputBytes);
         given(attempt.enhancement()).willReturn(enhancement);
+        given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(GetApprovedCall.class);
@@ -90,6 +95,7 @@ public class GetApprovedTranslatorTest {
         given(attempt.enhancement()).willReturn(enhancement);
         given(attempt.linkedToken(fromHeadlongAddress(NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS)))
                 .willReturn(token);
+        given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(GetApprovedCall.class);

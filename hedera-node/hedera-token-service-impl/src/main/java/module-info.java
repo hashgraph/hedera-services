@@ -15,7 +15,6 @@ module com.hedera.node.app.service.token.impl {
     requires com.swirlds.common;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
-    requires org.slf4j;
     requires static com.github.spotbugs.annotations;
 
     provides com.hedera.node.app.service.token.TokenService with

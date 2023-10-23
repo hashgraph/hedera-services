@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
@@ -43,6 +44,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class UpdateExpiryTranslatorTest {
     @Mock
     private HtsCallAttempt attempt;
+
+    @Mock
+    private SystemContractGasCalculator gasCalculator;
 
     @Mock
     private HederaWorldUpdater.Enhancement enhancement;
@@ -91,6 +95,7 @@ class UpdateExpiryTranslatorTest {
         given(addressIdConverter.convertSender(any())).willReturn(NON_SYSTEM_ACCOUNT_ID);
         given(addressIdConverter.convert(any())).willReturn(NON_SYSTEM_ACCOUNT_ID);
         given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
+        given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(DispatchForResponseCodeHtsCall.class);

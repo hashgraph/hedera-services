@@ -267,6 +267,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
+    @HapiTest
     private HapiSpec associateWithMissingEvmAddressHasSaneTxnAndRecord() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final var missingAddress =

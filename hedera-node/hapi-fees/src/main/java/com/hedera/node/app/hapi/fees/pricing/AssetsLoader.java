@@ -24,12 +24,14 @@ import java.math.BigDecimal;
 import java.util.EnumMap;
 import java.util.Map;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Loads assets used to generate a fee schedule from JSON resources on the classpath.
  *
  * <p>Please see the individual methods for details.
  */
+@Singleton
 public class AssetsLoader {
     private static final String CAPACITIES_RESOURCE = "capacities.json";
     private static final String CONSTANT_WEIGHTS_RESOURCE = "constant-weights.json";

@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
@@ -36,6 +37,10 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
 public class ClassicCreatesCall extends AbstractHtsCall {
+    /**
+     * The mono-service stipulated minimum gas requirement for a token creation.
+     */
+    private static final long MINIMUM_TINYBAR_PRICE = 100_000L;
 
     @NonNull
     final TransactionBody syntheticCreate;
@@ -45,12 +50,13 @@ public class ClassicCreatesCall extends AbstractHtsCall {
     private final org.hyperledger.besu.datatypes.Address spender;
 
     public ClassicCreatesCall(
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final TransactionBody syntheticCreate,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
             @NonNull final AddressIdConverter addressIdConverter) {
-        super(enhancement);
+        super(systemContractGasCalculator, enhancement);
         this.syntheticCreate = requireNonNull(syntheticCreate);
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.spender = requireNonNull(spender);
@@ -67,9 +73,9 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         final var tokenType =
                 ((TokenCreateTransactionBody) syntheticCreate.data().value()).tokenType();
         if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            return gasOnly(revertResult(recordBuilder.status(), 0L));
+            return gasOnly(revertResult(recordBuilder.status(), MINIMUM_TINYBAR_PRICE));
         } else {
-            final var isFungible = tokenType == TokenType.FUNGIBLE_COMMON ? true : false;
+            final var isFungible = tokenType == TokenType.FUNGIBLE_COMMON;
             ByteBuffer encodedOutput;
 
             if (isFungible && customFees.size() == 0) {
@@ -89,9 +95,8 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
             }
-
-            // @TODO zero should not be hardcoded
-            return gasOnly(successResult(encodedOutput, 0L));
+            final long gasRequirement = gasCalculator.gasRequirement(syntheticCreate, spenderId, MINIMUM_TINYBAR_PRICE);
+            return gasOnly(successResult(encodedOutput, gasRequirement));
         }
     }
 }

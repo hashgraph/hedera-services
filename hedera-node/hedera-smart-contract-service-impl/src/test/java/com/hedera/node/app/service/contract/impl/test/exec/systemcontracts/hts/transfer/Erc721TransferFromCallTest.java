@@ -17,11 +17,10 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asHeadlongAddress;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,7 +28,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -38,7 +36,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transf
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
@@ -63,11 +60,11 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
 
     @Test
     void happyPathSucceedsWithEmptyBytes() {
-        givenSynthIdHelperWithCaller(FRAME_SENDER_ADDRESS, A_NEW_ACCOUNT_ID);
+        givenSynthIdHelperForToAccount();
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
                         eq(verificationStrategy),
-                        eq(A_NEW_ACCOUNT_ID),
+                        eq(SENDER_ID),
                         eq(CryptoTransferRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
@@ -82,11 +79,11 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
 
     @Test
     void unhappyPathRevertsWithReason() {
-        givenSynthIdHelperWithCaller(FRAME_SENDER_ADDRESS, A_NEW_ACCOUNT_ID);
+        givenSynthIdHelperForToAccount();
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
                         eq(verificationStrategy),
-                        eq(A_NEW_ACCOUNT_ID),
+                        eq(SENDER_ID),
                         eq(CryptoTransferRecordBuilder.class)))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
@@ -99,10 +96,7 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
         assertEquals(Bytes.wrap(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO.protoName().getBytes()), result.getOutput());
     }
 
-    private void givenSynthIdHelperWithCaller(
-            @NonNull final org.hyperledger.besu.datatypes.Address caller, @NonNull final AccountID callerId) {
-        given(addressIdConverter.convert(asHeadlongAddress(caller))).willReturn(callerId);
-        given(addressIdConverter.convert(FROM_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
+    private void givenSynthIdHelperForToAccount() {
         given(addressIdConverter.convertCredit(TO_ADDRESS)).willReturn(B_NEW_ACCOUNT_ID);
     }
 
@@ -113,8 +107,9 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
                 TO_ADDRESS,
                 NON_FUNGIBLE_TOKEN_ID,
                 verificationStrategy,
-                FRAME_SENDER_ADDRESS,
                 mockEnhancement(),
+                gasCalculator,
+                SENDER_ID,
                 addressIdConverter);
     }
 }
