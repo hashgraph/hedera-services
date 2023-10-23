@@ -79,7 +79,7 @@ class TipsetEventCreatorTests {
     /**
      * @param nodeId                 the node ID of the simulated node
      * @param tipsetTracker          tracks tipsets of events
-     * @param eventCreator     the event creator for the simulated node
+     * @param eventCreator           the event creator for the simulated node
      * @param tipsetWeightCalculator used to sanity check event creation logic
      */
     private record SimulatedNode(
@@ -709,7 +709,10 @@ class TipsetEventCreatorTests {
         when(hashedData.getHash()).thenReturn(hash);
         when(event.getBaseHash()).thenReturn(hash);
 
+        when(hashedData.getEventDescriptor()).thenReturn(new EventDescriptor(hash, creator, generation, -1));
+
         when(event.getHashedData()).thenReturn(hashedData);
+        when(event.getBaseEventHashedData()).thenReturn(hashedData);
 
         final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
         when(unhashedData.getOtherId()).thenReturn(otherParentId);

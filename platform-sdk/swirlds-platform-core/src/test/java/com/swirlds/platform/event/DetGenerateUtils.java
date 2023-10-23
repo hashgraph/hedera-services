@@ -27,12 +27,14 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -47,13 +49,22 @@ public abstract class DetGenerateUtils {
     private static final int DEFAULT_SIGNATURE_SIZE = 384;
 
     public static BaseEventHashedData generateBaseEventHashedData(final Random random) {
+
+        final NodeId selfId = new NodeId(nextLong(random, 0));
+        final EventDescriptor selfDescriptor =
+                new EventDescriptor(generateRandomHash(random, DEFAULT_HASH_TYPE), selfId, nextLong(random, 0), -1);
+        final EventDescriptor otherDescriptor = new EventDescriptor(
+                generateRandomHash(random, DEFAULT_HASH_TYPE),
+                new NodeId(nextLong(random, 0)),
+                nextLong(random, 0),
+                -1);
+
         return new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 new NodeId(nextLong(random, 0)), // creatorId, must be positive
-                nextLong(random, 0), // selfParentGen, must be positive
-                nextLong(random, 0), // otherParentGen, must be positive
-                generateRandomHash(random, DEFAULT_HASH_TYPE), // selfParentHash
-                generateRandomHash(random, DEFAULT_HASH_TYPE), // otherParentHash
+                selfDescriptor, // selfParent
+                Collections.singletonList(otherDescriptor), // otherParents
+                -1, // addressBookRound
                 generateRandomInstant(random, DEFAULT_MAX_EPOCH), // timeCreated
                 generateTransactions(DEFAULT_TRANSACTION_NUMBER, DEFAULT_TRANSACTION_MAX_SIZE, random)
                         .toArray(new ConsensusTransactionImpl[0])); // transactions

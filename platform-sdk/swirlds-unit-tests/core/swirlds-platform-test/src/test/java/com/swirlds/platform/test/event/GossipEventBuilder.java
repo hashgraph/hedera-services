@@ -22,6 +22,7 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -30,6 +31,7 @@ import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Random;
 
 public class GossipEventBuilder {
@@ -179,17 +181,24 @@ public class GossipEventBuilder {
         final long otherParentGen = fakeGeneration >= GraphGenerations.FIRST_GENERATION
                 ? fakeGeneration - 1
                 : getOtherParentGossip() != null ? getOtherParentGossip().getGeneration() : -1;
+
+        final EventDescriptor selfParent = getSelfParentGossip() == null
+                ? new EventDescriptor(RandomUtils.randomHash(random), creatorId, selfParentGen, -1)
+                : new EventDescriptor(getSelfParentGossip().getHashedData().getHash(), creatorId, selfParentGen, -1);
+        final EventDescriptor otherParent = (getOtherParentGossip() == null
+                        || getOtherParentGossip().getUnhashedData().getOtherId() == null)
+                ? new EventDescriptor(RandomUtils.randomHash(random), new NodeId(0), otherParentGen, -1)
+                : new EventDescriptor(
+                        getOtherParentGossip().getHashedData().getHash(),
+                        getOtherParentGossip().getUnhashedData().getOtherId(),
+                        otherParentGen,
+                        -1);
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1), // TODO use constant
                 creatorId,
-                selfParentGen,
-                otherParentGen,
-                getSelfParentGossip() != null
-                        ? getSelfParentGossip().getHashedData().getHash()
-                        : null,
-                getOtherParentGossip() != null
-                        ? getOtherParentGossip().getHashedData().getHash()
-                        : null,
+                selfParent,
+                otherParent == null ? null : Collections.singletonList(otherParent),
+                -1,
                 timestamp == null ? getParentTime().plusMillis(1 + creatorId.id()) : timestamp,
                 tr);
 
@@ -205,7 +214,7 @@ public class GossipEventBuilder {
         final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
                 getOtherParentGossip() != null
                         ? getOtherParentGossip().getHashedData().getCreatorId()
-                        : null,
+                        : new NodeId(0),
                 sig);
         final GossipEvent gossipEvent = new GossipEvent(hashedData, unhashedData);
         gossipEvent.buildDescriptor();

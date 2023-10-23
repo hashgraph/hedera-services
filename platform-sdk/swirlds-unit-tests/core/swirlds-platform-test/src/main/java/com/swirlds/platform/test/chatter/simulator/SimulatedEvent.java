@@ -72,7 +72,7 @@ public class SimulatedEvent implements ChatterEvent {
         random.nextBytes(hashBytes);
         final Hash hash = new Hash(hashBytes, DigestType.SHA_384);
 
-        this.descriptor = new EventDescriptor(hash, creator, round);
+        this.descriptor = new EventDescriptor(hash, creator, -1, round);
     }
 
     /**

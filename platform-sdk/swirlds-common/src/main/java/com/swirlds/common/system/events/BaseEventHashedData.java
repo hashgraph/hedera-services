@@ -28,6 +28,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.utility.CommonUtils;
@@ -36,6 +37,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -67,7 +70,24 @@ public class BaseEventHashedData extends AbstractSerializableHashable
          * In this version, the software version of the node that created this event is included in the event.
          */
         public static final int SOFTWARE_VERSION = 3;
+
+        /**
+         * Event descriptors replace the hashes and generation of the parents in the event.
+         * Multiple otherParents are supported.
+         * AddressBookRound is added for lookup of the effective address book at the time of event creation.
+         *
+         * @since 0.44.0
+         */
+        public static final int ADDRESS_BOOK_ROUND = 4;
     }
+
+    /**
+     * The version discovered while deserializing the event.
+     *
+     * DEPRECATED:  remove after 0.45.0 goes to mainnet.
+     */
+    private int deserializedVersion = ClassVersion.ADDRESS_BOOK_ROUND;
+
     ///////////////////////////////////////
     // immutable, sent during normal syncs, affects the hash that is signed:
     ///////////////////////////////////////
@@ -76,14 +96,12 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     private SoftwareVersion softwareVersion;
     /** ID of this event's creator (translate before sending) */
     private NodeId creatorId;
-    /** the generation for the self parent */
-    private long selfParentGen;
-    /** the generation for the other parent */
-    private long otherParentGen;
-    /** self parent hash value */
-    private Hash selfParentHash;
-    /** other parent hash value */
-    private Hash otherParentHash;
+    /** the round number in which this event was created, used to look up the effective address book at that time. */
+    private long addressBookRound;
+    /** the self parent event descriptor */
+    private EventDescriptor selfParent;
+    /** the other parents' event descriptors */
+    private List<EventDescriptor> otherParents;
     /** creation time, as claimed by its creator */
     private Instant timeCreated;
     /** the payload: an array of transactions */
@@ -101,14 +119,12 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      *      the software version of the node that created this event.
      * @param creatorId
      * 		ID of this event's creator
-     * @param selfParentGen
-     * 		the generation for the self parent
-     * @param otherParentGen
-     * 		the generation for the other parent
-     * @param selfParentHash
-     * 		self parent hash value
-     * @param otherParentHash
-     * 		other parent hash value
+     * @param selfParent
+     *         self parent event descriptor
+     * @param otherParents
+     *        other parent event descriptors
+     * @param addressBookRound
+     *         the address book round in which this event was created.
      * @param timeCreated
      * 		creation time, as claimed by its creator
      * @param transactions
@@ -117,61 +133,22 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     public BaseEventHashedData(
             @NonNull SoftwareVersion softwareVersion,
             @NonNull final NodeId creatorId,
-            final long selfParentGen,
-            final long otherParentGen,
-            @Nullable final Hash selfParentHash,
-            @Nullable final Hash otherParentHash,
+            @Nullable final EventDescriptor selfParent,
+            @Nullable final List<EventDescriptor> otherParents,
+            final long addressBookRound,
             @NonNull final Instant timeCreated,
             @Nullable final ConsensusTransactionImpl[] transactions) {
         this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
         this.creatorId = Objects.requireNonNull(creatorId, "The creatorId must not be null");
-        this.selfParentGen = selfParentGen;
-        this.otherParentGen = otherParentGen;
-        this.selfParentHash = selfParentHash;
-        this.otherParentHash = otherParentHash;
+        this.selfParent = selfParent;
+        if (otherParents != null && otherParents.size() == 1 && otherParents.get(0) == null) {
+            throw new IllegalArgumentException("otherParents must not contain null");
+        }
+        this.otherParents = otherParents;
+        this.addressBookRound = addressBookRound;
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
         this.transactions = transactions;
         checkUserTransactions();
-    }
-
-    /**
-     * Create a BaseEventHashedData object
-     *
-     * @param softwareVersion
-     *      the software version of the node that created this event.
-     * @param creatorId
-     * 		ID of this event's creator
-     * @param selfParentGen
-     * 		the generation for the self parent
-     * @param otherParentGen
-     * 		the generation for the other parent
-     * @param selfParentHash
-     * 		self parent hash value in byte array format
-     * @param otherParentHash
-     * 		other parent hash value in byte array format
-     * @param timeCreated
-     * 		creation time, as claimed by its creator
-     * @param transactions
-     * 		the payload: an array of transactions included in this event instance
-     */
-    public BaseEventHashedData(
-            @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final NodeId creatorId,
-            final long selfParentGen,
-            final long otherParentGen,
-            @Nullable final byte[] selfParentHash,
-            @Nullable final byte[] otherParentHash,
-            @NonNull final Instant timeCreated,
-            @Nullable final ConsensusTransactionImpl[] transactions) {
-        this(
-                softwareVersion,
-                creatorId,
-                selfParentGen,
-                otherParentGen,
-                selfParentHash == null ? null : new Hash(selfParentHash),
-                otherParentHash == null ? null : new Hash(otherParentHash),
-                timeCreated,
-                transactions);
     }
 
     @Override
@@ -184,13 +161,20 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             @NonNull final SerializableDataOutputStream out, @NonNull final EventSerializationOptions option)
             throws IOException {
         out.writeSerializable(softwareVersion, true);
-        // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
-        // Changing the event format may require a HIP.  The old format is preserved for now.
-        out.writeLong(creatorId.id());
-        out.writeLong(selfParentGen);
-        out.writeLong(otherParentGen);
-        out.writeSerializable(selfParentHash, false);
-        out.writeSerializable(otherParentHash, false);
+        if (deserializedVersion < ClassVersion.ADDRESS_BOOK_ROUND) {
+            // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
+            // Changing the event format may require a HIP.  The old format is preserved for now.
+            out.writeLong(creatorId.id());
+            out.writeLong(selfParent != null ? selfParent.getGeneration() : -1);
+            out.writeLong(otherParents != null ? otherParents.get(0).getGeneration() : -1);
+            out.writeSerializable(selfParent != null ? selfParent.getHash() : null, false);
+            out.writeSerializable(otherParents != null ? otherParents.get(0).getHash() : null, false);
+        } else {
+            out.writeSerializable(creatorId, false);
+            out.writeSerializable(selfParent, false);
+            out.writeSerializableList(otherParents, false, true);
+            out.writeLong(addressBookRound);
+        }
         out.writeInstant(timeCreated);
 
         // write serialized length of transaction array first, so during the deserialization proces
@@ -221,18 +205,33 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             @NonNull final SerializableDataInputStream in, final int version, final int maxTransactionCount)
             throws IOException {
         Objects.requireNonNull(in, "The input stream must not be null");
+        deserializedVersion = version;
         if (version >= ClassVersion.SOFTWARE_VERSION) {
             softwareVersion = in.readSerializable();
         } else {
             softwareVersion = SoftwareVersion.NO_VERSION;
         }
-        // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
-        // Changing the event format may require a HIP.  The old format is preserved for now.
-        creatorId = NodeId.deserializeLong(in, false);
-        selfParentGen = in.readLong();
-        otherParentGen = in.readLong();
-        selfParentHash = in.readSerializable(false, Hash::new);
-        otherParentHash = in.readSerializable(false, Hash::new);
+        if (version < ClassVersion.ADDRESS_BOOK_ROUND) {
+            // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
+            // Changing the event format may require a HIP.  The old format is preserved for now.
+            creatorId = NodeId.deserializeLong(in, false);
+            final long selfParentGen = in.readLong();
+            final long otherParentGen = in.readLong();
+            final Hash selfParentHash = in.readSerializable(false, Hash::new);
+            final Hash otherParentHash = in.readSerializable(false, Hash::new);
+            selfParent =
+                    selfParentHash == null ? null : new EventDescriptor(selfParentHash, creatorId, selfParentGen, -1);
+            // The creator for the other parent descriptor is not here and should be retrieved from the unhashed data.
+            otherParents = otherParentHash == null
+                    ? null
+                    : Collections.singletonList(new EventDescriptor(otherParentHash, otherParentGen, -1));
+            addressBookRound = -1;
+        } else {
+            creatorId = in.readSerializable(false, NodeId::new);
+            selfParent = in.readSerializable(false, EventDescriptor::new);
+            otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
+            addressBookRound = in.readLong();
+        }
         timeCreated = in.readInstant();
         in.readInt(); // read serialized length
         transactions = in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true);
@@ -270,10 +269,9 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         final BaseEventHashedData that = (BaseEventHashedData) o;
 
         return (Objects.equals(creatorId, that.creatorId))
-                && (selfParentGen == that.selfParentGen)
-                && (otherParentGen == that.otherParentGen)
-                && Objects.equals(selfParentHash, that.selfParentHash)
-                && Objects.equals(otherParentHash, that.otherParentHash)
+                && Objects.equals(selfParent, that.selfParent)
+                && Objects.equals(otherParents, that.otherParents)
+                && addressBookRound == that.addressBookRound
                 && Objects.equals(timeCreated, that.timeCreated)
                 && Arrays.equals(transactions, that.transactions)
                 && Objects.equals(softwareVersion, that.softwareVersion);
@@ -281,14 +279,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(
-                softwareVersion,
-                creatorId,
-                selfParentGen,
-                otherParentGen,
-                selfParentHash,
-                otherParentHash,
-                timeCreated);
+        int result = Objects.hash(softwareVersion, creatorId, selfParent, otherParents, addressBookRound, timeCreated);
         result = 31 * result + Arrays.hashCode(transactions);
         return result;
     }
@@ -298,10 +289,9 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         return new ToStringBuilder(this)
                 .append("softwareVersion", softwareVersion)
                 .append("creatorId", creatorId)
-                .append("selfParentGen", selfParentGen)
-                .append("otherParentGen", otherParentGen)
-                .append("selfParentHash", CommonUtils.hex(valueOrNull(selfParentHash), TO_STRING_BYTE_ARRAY_LENGTH))
-                .append("otherParentHash", CommonUtils.hex(valueOrNull(otherParentHash), TO_STRING_BYTE_ARRAY_LENGTH))
+                .append("selfParent", selfParent)
+                .append("otherParents", otherParents)
+                .append("addressBookRound", addressBookRound)
                 .append("timeCreated", timeCreated)
                 .append("transactions size", transactions == null ? "null" : transactions.length)
                 .append("hash", CommonUtils.hex(valueOrNull(getHash()), TO_STRING_BYTE_ARRAY_LENGTH))
@@ -319,7 +309,10 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     @Override
     public int getVersion() {
-        return ClassVersion.SOFTWARE_VERSION;
+        if (deserializedVersion < ClassVersion.ADDRESS_BOOK_ROUND) {
+            return deserializedVersion;
+        }
+        return ClassVersion.ADDRESS_BOOK_ROUND;
     }
 
     /**
@@ -342,28 +335,125 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         return creatorId;
     }
 
+    /**
+     * Get the address book round of the event.
+     *
+     * @return the address book round of the event
+     */
+    public long getAddressBookRound() {
+        return addressBookRound;
+    }
+
+    /**
+     * Get the event descriptor for the self parent.
+     *
+     * @return the event descriptor for the self parent
+     */
+    public EventDescriptor getSelfParent() {
+        return selfParent;
+    }
+
+    /**
+     * Get the event descriptors for the other parents.
+     *
+     * @return the event descriptors for the other parents
+     */
+    public List<EventDescriptor> getOtherParents() {
+        return otherParents;
+    }
+
+    /**
+     * Get the self parent generation
+     *
+     * @return the self parent generation
+     */
     public long getSelfParentGen() {
-        return selfParentGen;
+        if (selfParent == null) {
+            return -1;
+        }
+        return selfParent.getGeneration();
     }
 
+    /**
+     * Get the maximum generation of the other parents.
+     *
+     * @return the maximum generation of the other parents
+     * @deprecated this method should be replaced since there can be multiple other parents.
+     */
     public long getOtherParentGen() {
-        return otherParentGen;
+        if (otherParents == null || otherParents.isEmpty()) {
+            return -1;
+        }
+        if (otherParents.size() == 1) {
+            return otherParents.get(0).getGeneration();
+        }
+        return otherParents.stream()
+                .max((a, b) -> Long.compare(a.getGeneration(), b.getGeneration()))
+                .get()
+                .getGeneration();
     }
 
+    /**
+     * Get the hash of the self parent.
+     *
+     * @return the hash of the self parent
+     */
     public Hash getSelfParentHash() {
-        return selfParentHash;
+        if (selfParent == null) {
+            return null;
+        }
+        return selfParent.getHash();
     }
 
+    /**
+     * Get the hash of the other parent with the maximum generation.
+     *
+     * @return the hash of the other parent with the maximum generation
+     * @deprecated
+     * */
     public Hash getOtherParentHash() {
-        return otherParentHash;
+        if (otherParents == null || otherParents.isEmpty()) {
+            return null;
+        }
+        if (otherParents.size() == 1) {
+            return otherParents.get(0).getHash();
+        }
+        return otherParents.stream()
+                .max((a, b) -> Long.compare(a.getGeneration(), b.getGeneration()))
+                .get()
+                .getHash();
     }
 
+    /**
+     *  Check if the event has a self parent.
+     * @return true if the event has a self parent
+     */
     public boolean hasSelfParent() {
-        return selfParentHash != null;
+        return selfParent != null;
     }
 
+    /**
+     * Check if the event has other parents.
+     * @return true if the event has other parents
+     */
     public boolean hasOtherParent() {
-        return otherParentHash != null;
+        return otherParents != null && !otherParents.isEmpty();
+    }
+
+    /**
+     * Get the hash value of the parent event.
+     * @return the hash value of the parent event
+     */
+    public byte[] getSelfParentHashValue() {
+        return selfParent == null ? null : getSelfParentHash().getValue();
+    }
+
+    /**
+     * Get the hash value of the other parent with the maximum generation.
+     * @return  the hash value of the other parent with the maximum generation
+     */
+    public byte[] getOtherParentHashValue() {
+        return otherParents == null ? null : getOtherParentHash().getValue();
     }
 
     public Instant getTimeCreated() {
@@ -378,7 +468,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     }
 
     public long getGeneration() {
-        return calculateGeneration(selfParentGen, otherParentGen);
+        return calculateGeneration(getSelfParentGen(), getOtherParentGen());
     }
 
     /**
@@ -392,5 +482,14 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      */
     public static long calculateGeneration(final long selfParentGeneration, final long otherParentGeneration) {
         return 1 + Math.max(selfParentGeneration, otherParentGeneration);
+    }
+
+    /**
+     * Get an event descriptor for this event.
+     *
+     * @return an event descriptor for this event
+     */
+    public EventDescriptor getEventDescriptor() {
+        return new EventDescriptor(getHash(), getCreatorId(), getGeneration(), getAddressBookRound());
     }
 }

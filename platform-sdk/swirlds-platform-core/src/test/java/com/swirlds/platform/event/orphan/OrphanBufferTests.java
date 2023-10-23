@@ -95,7 +95,7 @@ class OrphanBufferTests {
      */
     private EventDescriptor createBootstrapEvent(
             @NonNull final NodeId nodeId, @NonNull final List<EventDescriptor> parentCandidates) {
-        final EventDescriptor bootstrapEvent = new EventDescriptor(randomHash(random), nodeId, 0);
+        final EventDescriptor bootstrapEvent = new EventDescriptor(randomHash(random), nodeId, 0, -1);
 
         parentCandidates.add(bootstrapEvent);
 
@@ -127,6 +127,9 @@ class OrphanBufferTests {
         when(hashedData.getSelfParentHash()).thenReturn(selfParent.getHash());
         when(hashedData.getOtherParentHash()).thenReturn(otherParent.getHash());
         when(hashedData.getTimeCreated()).thenReturn(Instant.now());
+        when(hashedData.getSelfParent()).thenReturn(selfParent == null ? null : selfParent);
+        when(hashedData.getOtherParents())
+                .thenReturn(otherParent == null ? null : Collections.singletonList(otherParent));
 
         final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
         when(unhashedData.getOtherId()).thenReturn(otherParent.getCreator());
@@ -134,7 +137,7 @@ class OrphanBufferTests {
         final GossipEvent event = mock(GossipEvent.class);
         when(event.getHashedData()).thenReturn(hashedData);
         when(event.getUnhashedData()).thenReturn(unhashedData);
-        when(event.getDescriptor()).thenReturn(new EventDescriptor(eventHash, eventCreator, eventGeneration));
+        when(event.getDescriptor()).thenReturn(new EventDescriptor(eventHash, eventCreator, eventGeneration, -1));
         when(event.getGeneration()).thenReturn(eventGeneration);
         when(event.getSenderId()).thenReturn(eventCreator);
 
@@ -275,5 +278,33 @@ class OrphanBufferTests {
         // the pipeline at a later stage
         assertEquals(TEST_EVENT_COUNT, eventsExitedIntakePipeline.get() + emittedEvents.size());
         assertEquals(0, orphanBuffer.getCurrentOrphanCount());
+    }
+
+    @Test
+    @DisplayName("Test Parent Iterator")
+    void testParentIterator() {
+        final GossipEvent event = mock(GossipEvent.class);
+
+        final EventDescriptor selfParent = new EventDescriptor(new Hash(), new NodeId(0), 0, -1);
+        final EventDescriptor otherParent1 = new EventDescriptor(new Hash(), new NodeId(1), 1, -1);
+        final EventDescriptor otherParent2 = new EventDescriptor(new Hash(), new NodeId(2), 2, -1);
+        final EventDescriptor otherParent3 = new EventDescriptor(new Hash(), new NodeId(3), 3, -1);
+        final List<EventDescriptor> otherParents = new ArrayList<>();
+        otherParents.add(otherParent1);
+        otherParents.add(otherParent2);
+        otherParents.add(otherParent3);
+
+        final BaseEventHashedData eventBase = mock(BaseEventHashedData.class);
+        when(eventBase.getSelfParent()).thenReturn(selfParent);
+        when(eventBase.getOtherParents()).thenReturn(otherParents);
+        when(event.getHashedData()).thenReturn(eventBase);
+
+        final ParentIterator iterator = new ParentIterator(event);
+
+        assertEquals(selfParent, iterator.next(), "The first parent should be the self parent");
+        int index = 0;
+        while (iterator.hasNext()) {
+            assertEquals(otherParents.get(index++), iterator.next(), "The next parent should be the next other parent");
+        }
     }
 }

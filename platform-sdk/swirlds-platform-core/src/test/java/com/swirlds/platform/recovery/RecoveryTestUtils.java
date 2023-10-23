@@ -36,6 +36,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.internal.EventImpl;
@@ -54,6 +55,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,19 +88,23 @@ public final class RecoveryTestUtils {
             transactions[transactionIndex] = new SwirldTransaction(contents);
         }
 
+        final NodeId selfId = new NodeId(random.nextLong(Long.MAX_VALUE));
+        final NodeId otherId = new NodeId(random.nextLong(Long.MAX_VALUE));
+
+        final EventDescriptor selfDescriptor = new EventDescriptor(randomHash(random), selfId, random.nextLong(), -1);
+        final EventDescriptor otherDescriptor = new EventDescriptor(randomHash(random), otherId, random.nextLong(), -1);
+
         final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
-                new NodeId(random.nextLong(Long.MAX_VALUE)),
-                random.nextLong(),
-                random.nextLong(),
-                randomHash(random),
-                randomHash(random),
+                selfId,
+                selfDescriptor,
+                Collections.singletonList(otherDescriptor),
+                -1,
                 now,
                 transactions);
 
-        final BaseEventUnhashedData baseEventUnhashedData = new BaseEventUnhashedData(
-                new NodeId(random.nextLong(Long.MAX_VALUE)),
-                randomSignature(random).getSignatureBytes());
+        final BaseEventUnhashedData baseEventUnhashedData =
+                new BaseEventUnhashedData(otherId, randomSignature(random).getSignatureBytes());
 
         final ConsensusData consensusData = new ConsensusData();
         consensusData.setConsensusTimestamp(now);

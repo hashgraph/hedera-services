@@ -20,6 +20,7 @@ import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
@@ -29,8 +30,8 @@ import java.util.NoSuchElementException;
 class ParentIterator implements Iterator<EventDescriptor> {
 
     private final EventDescriptor selfParent;
-    private final EventDescriptor otherParent;
-    private int returnedEvents;
+    private final List<EventDescriptor> otherParents;
+    private int parentsToReturn;
 
     /**
      * Constructor.
@@ -38,15 +39,9 @@ class ParentIterator implements Iterator<EventDescriptor> {
      * @param event the event whose parents we want to iterate over
      */
     public ParentIterator(@NonNull final GossipEvent event) {
-        selfParent = new EventDescriptor(
-                event.getHashedData().getSelfParentHash(),
-                event.getHashedData().getCreatorId(),
-                event.getHashedData().getSelfParentGen());
-
-        otherParent = new EventDescriptor(
-                event.getHashedData().getOtherParentHash(),
-                event.getUnhashedData().getOtherId(),
-                event.getHashedData().getOtherParentGen());
+        selfParent = event.getHashedData().getSelfParent();
+        otherParents = event.getHashedData().getOtherParents();
+        parentsToReturn = (selfParent == null ? 0 : 1) + (otherParents == null ? 0 : otherParents.size());
     }
 
     /**
@@ -54,7 +49,7 @@ class ParentIterator implements Iterator<EventDescriptor> {
      */
     @Override
     public boolean hasNext() {
-        return returnedEvents < 2;
+        return parentsToReturn > 0;
     }
 
     /**
@@ -67,16 +62,12 @@ class ParentIterator implements Iterator<EventDescriptor> {
             throw new NoSuchElementException();
         }
 
-        switch (returnedEvents) {
-            case 0 -> {
-                returnedEvents++;
-                return selfParent;
-            }
-            case 1 -> {
-                returnedEvents++;
-                return otherParent;
-            }
-            default -> throw new NoSuchElementException();
+        final int otherParentSize = (otherParents == null ? 0 : otherParents.size());
+        if (parentsToReturn > otherParentSize) {
+            parentsToReturn--;
+            return selfParent;
+        } else {
+            return otherParents.get(otherParentSize - parentsToReturn--);
         }
     }
 }

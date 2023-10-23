@@ -21,6 +21,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
+import com.swirlds.common.system.events.BaseEventImpl;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.EventStrings;
@@ -36,8 +37,21 @@ import java.util.Objects;
  */
 public class GossipEvent implements BaseEvent, ChatterEvent {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
-    private BaseEventHashedData hashedData;
-    private BaseEventUnhashedData unhashedData;
+
+    private static final class ClassVersion {
+        /**
+         * Serializes BaseEventHashedData and BaseEventUnhashedData.
+         */
+        public static final int ORIGINAL = 1;
+
+        public static final int REMOVED_ROUND = 2;
+        /**
+         * Refactored event serialization to support adding address book round.
+         */
+        public static final int ADDRESS_BOOK_ROUND = 3;
+    }
+
+    private BaseEventImpl baseEvent;
     private EventDescriptor descriptor;
     private Instant timeReceived;
 
@@ -56,9 +70,10 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      * @param hashedData   the hashed data for the event
      * @param unhashedData the unhashed data for the event
      */
-    public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
-        this.hashedData = hashedData;
-        this.unhashedData = unhashedData;
+    public GossipEvent(
+            @NonNull final BaseEventHashedData hashedData, @NonNull final BaseEventUnhashedData unhashedData) {
+        // The BaseEventImpl constructor checks for null.
+        this.baseEvent = new BaseEventImpl(hashedData, unhashedData);
         this.timeReceived = Instant.now();
         this.senderId = null;
     }
@@ -68,8 +83,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeSerializable(hashedData, false);
-        out.writeSerializable(unhashedData, false);
+        out.writeSerializable(baseEvent, false);
     }
 
     /**
@@ -77,8 +91,13 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        hashedData = in.readSerializable(false, BaseEventHashedData::new);
-        unhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
+        if (version < ClassVersion.ADDRESS_BOOK_ROUND) {
+            final BaseEventHashedData hashedData = in.readSerializable(false, BaseEventHashedData::new);
+            final BaseEventUnhashedData unhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
+            this.baseEvent = new BaseEventImpl(hashedData, unhashedData);
+        } else {
+            this.baseEvent = in.readSerializable(false, BaseEventImpl::new);
+        }
         if (version == ClassVersion.ORIGINAL) {
             in.readLong(); // roundCreated
         }
@@ -86,11 +105,20 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     }
 
     /**
+     * Get the base event
+     *
+     * @return the base event
+     */
+    public BaseEventImpl getBaseEvent() {
+        return baseEvent;
+    }
+
+    /**
      * Get the hashed data for the event.
      */
     @Override
     public BaseEventHashedData getHashedData() {
-        return hashedData;
+        return baseEvent.getHashedData();
     }
 
     /**
@@ -98,7 +126,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public BaseEventUnhashedData getUnhashedData() {
-        return unhashedData;
+        return baseEvent.getUnhashedData();
     }
 
     /**
@@ -117,13 +145,12 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      * hashed before the descriptor can be built.
      */
     public void buildDescriptor() {
-        this.descriptor =
-                new EventDescriptor(hashedData.getHash(), hashedData.getCreatorId(), hashedData.getGeneration());
+        this.descriptor = baseEvent.getHashedData().getEventDescriptor();
     }
 
     @Override
     public long getGeneration() {
-        return hashedData.getGeneration();
+        return baseEvent.getHashedData().getGeneration();
     }
 
     /**
@@ -166,6 +193,11 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public int getVersion() {
+        return ClassVersion.ADDRESS_BOOK_ROUND;
+    }
+
+    @Override
+    public int getMinimumSupportedVersion() {
         return ClassVersion.REMOVED_ROUND;
     }
 
@@ -199,11 +231,6 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public int hashCode() {
-        return hashedData.getHash().hashCode();
-    }
-
-    private static final class ClassVersion {
-        public static final int ORIGINAL = 1;
-        public static final int REMOVED_ROUND = 2;
+        return baseEvent.getHashedData().getHash().hashCode();
     }
 }

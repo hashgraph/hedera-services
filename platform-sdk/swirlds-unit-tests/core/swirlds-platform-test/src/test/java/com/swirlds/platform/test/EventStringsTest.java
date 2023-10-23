@@ -23,6 +23,7 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
@@ -30,6 +31,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import java.time.Instant;
+import java.util.Collections;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -50,13 +52,17 @@ class EventStringsTest {
         final long spGen = 10;
         final long opGen = 10;
 
+        final NodeId selfId = new NodeId(id);
+        final NodeId otherId = new NodeId(opId);
+        final EventDescriptor selfParent = new EventDescriptor(new Hash(), selfId, spGen, -1);
+        final EventDescriptor otherParent = new EventDescriptor(new Hash(), otherId, opGen, -1);
+
         BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
-                new NodeId(id),
-                spGen,
-                opGen,
-                new Hash(),
-                new Hash(),
+                selfId,
+                selfParent,
+                Collections.singletonList(otherParent),
+                -1,
                 Instant.now(),
                 new ConsensusTransactionImpl[0]);
         hashedData.setHash(new Hash());

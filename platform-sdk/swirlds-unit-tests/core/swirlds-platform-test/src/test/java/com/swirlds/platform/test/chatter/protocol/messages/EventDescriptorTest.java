@@ -34,20 +34,22 @@ import org.junit.jupiter.api.Test;
 class EventDescriptorTest {
     @Test
     void testSerialization() throws IOException, ConstructableRegistryException {
-        final EventDescriptor descriptor = new EventDescriptor(RandomUtils.randomHash(), new NodeId(1), 123);
+        final EventDescriptor descriptor = new EventDescriptor(RandomUtils.randomHash(), new NodeId(1), 123, -1);
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(EventDescriptor.class, EventDescriptor::new));
         final EventDescriptor copy = SerializationUtils.serializeDeserialize(descriptor);
         assertEquals(descriptor, copy, "deserialized version should be the same");
 
         assertThrows(
-                Exception.class, () -> new EventDescriptor(null, new NodeId(0), 0), "we should not permit a null hash");
+                Exception.class,
+                () -> new EventDescriptor(null, new NodeId(0), 0, -1),
+                "we should not permit a null hash");
     }
 
     @Test
     void testEquals() {
-        final EventDescriptor d1 = new EventDescriptor(RandomUtils.randomHash(), new NodeId(1), 123);
-        final EventDescriptor d2 = new EventDescriptor(RandomUtils.randomHash(), new NodeId(2), 234);
+        final EventDescriptor d1 = new EventDescriptor(RandomUtils.randomHash(), new NodeId(1), 123, -1);
+        final EventDescriptor d2 = new EventDescriptor(RandomUtils.randomHash(), new NodeId(2), 234, -1);
         assertTrue(d1.equals(d1), "should be equal to itself");
         assertFalse(d1.equals(null), "should not be equal to null");
         assertFalse(d1.equals(new Object()), "should not be equal to a different class");

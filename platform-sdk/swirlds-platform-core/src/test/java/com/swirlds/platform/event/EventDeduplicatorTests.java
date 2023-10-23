@@ -82,7 +82,7 @@ class EventDeduplicatorTests {
             final long generation,
             @NonNull final byte[] signature) {
 
-        final EventDescriptor descriptor = new EventDescriptor(hash, creatorId, generation);
+        final EventDescriptor descriptor = new EventDescriptor(hash, creatorId, generation, -1);
 
         final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
         when(unhashedData.getSignature()).thenReturn(signature);

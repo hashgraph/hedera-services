@@ -31,15 +31,35 @@ import java.util.Objects;
  * A class used to store base event data that does not affect the hash of that event.
  * <p>
  * A base event is a set of data describing an event at the point when it is created, before it is added to the
- * hashgraph and before its consensus can be determined. Some of this data is used to create a hash of an event
- * that is signed, and some data is additional and does not affect that hash. This data is split into 2 classes:
+ * hashgraph and before its consensus can be determined. Some of this data is used to create a hash of an event that is
+ * signed, and some data is additional and does not affect that hash. This data is split into 2 classes:
  * {@link BaseEventHashedData} and {@link BaseEventUnhashedData}.
  */
 public class BaseEventUnhashedData implements SelfSerializable {
     private static final long CLASS_ID = 0x33cb9d4ae38c9e91L;
-    private static final int CLASS_VERSION = 1;
     private static final int MAX_SIG_LENGTH = 384;
     private static final long SEQUENCE_UNUSED = -1;
+
+    private static class ClassVersion {
+        /**
+         * The original version of the BaseEventUnhashedData class.
+         */
+        public static final int ORIGINAL = 1;
+
+        /**
+         * Removes the serialization of the sequence information and other parent creator id.
+         *
+         * @since 0.45.0
+         */
+        public static final int ADDRESS_BOOK_ROUND = 2;
+    }
+
+    /**
+     * The version of the software discovered during deserialization that needs to be preserved in serialization.
+     * <p>
+     * DEPRECATED: Remove after 0.45 is delivered to mainnet.
+     */
+    private int deserializedVersion = ClassVersion.ADDRESS_BOOK_ROUND;
 
     ///////////////////////////////////////
     // immutable, sent during normal syncs, does NOT affect the hash that is signed:
@@ -72,22 +92,33 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        out.writeLong(creatorSeq);
-        // FUTURE WORK: The otherId should be a selfSerializable NodeId at some point.
-        // Changing the event format may require a HIP.  The old format is preserved for now.
-        out.writeLong(otherId == null ? -1 : otherId.id());
-        out.writeLong(otherSeq);
-        out.writeByteArray(signature);
+        if (deserializedVersion < ClassVersion.ADDRESS_BOOK_ROUND) {
+            out.writeLong(creatorSeq);
+            // FUTURE WORK: The otherId should be a selfSerializable NodeId at some point.
+            // Changing the event format may require a HIP.  The old format is preserved for now.
+            out.writeLong(otherId == null ? -1 : otherId.id());
+            out.writeLong(otherSeq);
+            out.writeByteArray(signature);
+        } else {
+            out.writeByteArray(signature);
+        }
     }
 
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        creatorSeq = in.readLong();
-        // FUTURE WORK: The otherId should be a nullable selfSerializable NodeId at some point.
-        // Changing the event format may require a HIP.  The old format is preserved for now.
-        otherId = NodeId.deserializeLong(in, true);
-        otherSeq = in.readLong();
-        signature = in.readByteArray(MAX_SIG_LENGTH);
+        deserializedVersion = version;
+        if (version < ClassVersion.ADDRESS_BOOK_ROUND) {
+            creatorSeq = in.readLong();
+            otherId = NodeId.deserializeLong(in, true);
+            otherSeq = in.readLong();
+            signature = in.readByteArray(MAX_SIG_LENGTH);
+        } else {
+            signature = in.readByteArray(MAX_SIG_LENGTH);
+            // initialize unused fields (can be removed when the unused fields are removed)
+            otherId = null;
+            creatorSeq = SEQUENCE_UNUSED;
+            otherSeq = SEQUENCE_UNUSED;
+        }
     }
 
     @Override
@@ -102,17 +133,12 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
         final BaseEventUnhashedData that = (BaseEventUnhashedData) o;
 
-        return (creatorSeq == that.creatorSeq)
-                && (Objects.equals(otherId, that.otherId))
-                && (otherSeq == that.otherSeq)
-                && Arrays.equals(signature, that.signature);
+        return Arrays.equals(signature, that.signature);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(creatorSeq, otherId, otherSeq);
-        result = 31 * result + Arrays.hashCode(signature);
-        return result;
+        return Arrays.hashCode(signature);
     }
 
     @Override
@@ -132,7 +158,15 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
     @Override
     public int getVersion() {
-        return CLASS_VERSION;
+        if (deserializedVersion < ClassVersion.ADDRESS_BOOK_ROUND) {
+            return deserializedVersion;
+        }
+        return ClassVersion.ADDRESS_BOOK_ROUND;
+    }
+
+    @Override
+    public int getMinimumSupportedVersion() {
+        return ClassVersion.ORIGINAL;
     }
 
     /**
@@ -145,7 +179,31 @@ public class BaseEventUnhashedData implements SelfSerializable {
         return otherId;
     }
 
+    /**
+     * Get the signature
+     *
+     * @return the signature
+     */
     public byte[] getSignature() {
         return signature;
+    }
+
+    /**
+     * Synchronize the creator data between the hashed event's other parent data and the creatorId.  T his method is to
+     * support backwards compatibility with the previous event serializaiton format.
+     *
+     * @param event the event to update
+     * @deprecated This method should be deleted when we are no longer supporting the previous event serialization
+     * format.
+     */
+    public void updateOtherParentEventDescriptor(@NonNull final BaseEventHashedData event) {
+        if (otherId != null && event.hasOtherParent()) {
+            EventDescriptor otherParent = event.getOtherParents().get(0);
+            if (otherId == null) {
+                otherId = otherParent.getCreator();
+            } else {
+                otherParent.setCreator(otherId);
+            }
+        }
     }
 }

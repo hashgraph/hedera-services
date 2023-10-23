@@ -21,6 +21,7 @@ import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
@@ -29,6 +30,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.platform.components.CriticalQuorum;
@@ -40,6 +42,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,8 +81,17 @@ class CriticalQuorumTest {
      * Build an event containing just the data required for this test.
      */
     private static EventImpl buildSimpleEvent(@NonNull final NodeId creatorId, final long roundCreated) {
+
+        final EventDescriptor selfDescriptor = new EventDescriptor(new Hash(), creatorId, 0, -1);
+        final EventDescriptor otherDescriptor = new EventDescriptor(new Hash(), new NodeId(0), 0, -1);
         final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
-                new BasicSoftwareVersion(1), creatorId, 0, 0, (byte[]) null, null, Instant.now(), null);
+                new BasicSoftwareVersion(1),
+                creatorId,
+                selfDescriptor,
+                Collections.singletonList(otherDescriptor),
+                -1,
+                Instant.now(),
+                null);
 
         final BaseEventUnhashedData baseEventUnhashedData = new BaseEventUnhashedData();
 

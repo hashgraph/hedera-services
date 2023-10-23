@@ -23,6 +23,7 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.test.fixtures.DummySystemTransaction;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -31,6 +32,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -50,14 +52,18 @@ public final class TransactionHandlingTestUtils {
             transactions[index] = new DummySystemTransaction();
         }
 
+        final EventDescriptor selfParent =
+                new EventDescriptor(CryptographyHolder.get().getNullHash(), new NodeId(0), 0, -1);
+        final EventDescriptor otherParent =
+                new EventDescriptor(CryptographyHolder.get().getNullHash(), new NodeId(0), 0, -1);
+
         return new EventImpl(
                 new BaseEventHashedData(
                         new BasicSoftwareVersion(1),
                         new NodeId(0),
-                        0L,
-                        0L,
-                        CryptographyHolder.get().getNullHash(),
-                        CryptographyHolder.get().getNullHash(),
+                        selfParent,
+                        Collections.singletonList(otherParent),
+                        -1,
                         Instant.now(),
                         transactions),
                 new BaseEventUnhashedData(new NodeId(0L), new byte[0]));

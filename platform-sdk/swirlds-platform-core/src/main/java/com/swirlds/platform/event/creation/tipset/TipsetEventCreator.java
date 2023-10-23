@@ -178,7 +178,8 @@ public class TipsetEventCreator implements EventCreator {
                     final EventDescriptor parentDescriptor = new EventDescriptor(
                             event.getBaseEventHashedData().getOtherParentHash(),
                             event.getBaseEventUnhashedData().getOtherId(),
-                            event.getBaseEventHashedData().getOtherParentGen());
+                            event.getBaseEventHashedData().getOtherParentGen(),
+                            event.getBaseEventHashedData().getAddressBookRound());
 
                     childlessOtherEventTracker.registerSelfEventParents(List.of(parentDescriptor));
                 }
@@ -410,12 +411,6 @@ public class TipsetEventCreator implements EventCreator {
      */
     @NonNull
     private GossipEvent assembleEventObject(@Nullable final EventDescriptor otherParent) {
-
-        final long selfParentGeneration = getGeneration(lastSelfEvent);
-        final Hash selfParentHash = getHash(lastSelfEvent);
-
-        final long otherParentGeneration = getGeneration(otherParent);
-        final Hash otherParentHash = getHash(otherParent);
         final NodeId otherParentId = getCreator(otherParent);
 
         final Instant now = time.now();
@@ -430,10 +425,9 @@ public class TipsetEventCreator implements EventCreator {
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 softwareVersion,
                 selfId,
-                selfParentGeneration,
-                otherParentGeneration,
-                selfParentHash,
-                otherParentHash,
+                lastSelfEvent,
+                otherParent == null ? null : Collections.singletonList(otherParent),
+                addressBook.getRound(),
                 timeCreated,
                 transactionSupplier.getTransactions());
         cryptography.digestSync(hashedData);
