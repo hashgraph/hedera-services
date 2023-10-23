@@ -179,10 +179,11 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             validateFalse(TokenType.FUNGIBLE_COMMON.equals(token.tokenType()), FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES);
 
             final var spenderAccount = accountStore.getAccountById(spender);
-            validateNFTSpender(serialNums, spenderAccount);
 
             if (Boolean.TRUE.equals(allowance.approvedForAll())) {
                 validateNFTSpender(spenderAccount);
+            } else {
+                validateNFTSpender(serialNums, spenderAccount);
             }
 
             final var effectiveOwner = getEffectiveOwner(owner, payer, accountStore, expiryValidator);
