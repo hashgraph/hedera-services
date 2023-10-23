@@ -28,7 +28,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.annotations.NodeSelfId;
@@ -186,7 +185,7 @@ public final class IngestChecker {
         }
 
         // 6. Verify payer's signatures
-        verifyPayerSignature(txInfo, payer, payerKey, configuration);
+        verifyPayerSignature(txInfo, payer, configuration);
 
         // 7. Check payer solvency
         final FeeContext feeContext = new FeeContextImpl(
@@ -200,9 +199,9 @@ public final class IngestChecker {
     private void verifyPayerSignature(
             @NonNull final TransactionInfo txInfo,
             @NonNull final Account payer,
-            @NonNull final Key payerKey,
             @NonNull final Configuration configuration)
             throws PreCheckException {
+        final var payerKey = payer.key();
         final var hederaConfig = configuration.getConfigData(HederaConfig.class);
         final var sigPairs = txInfo.signatureMap().sigPairOrElse(List.of());
 
