@@ -25,6 +25,7 @@ import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
@@ -405,7 +406,7 @@ public interface HandleContext {
      * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
      * @param callback           a {@link Predicate} callback function that will observe each primitive key
-     * @param syntheticPayer   the payer of the child transaction
+     * @param syntheticPayerId   the payer of the child transaction
      * @return the record builder of the child transaction
      * @throws NullPointerException     if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
@@ -416,7 +417,20 @@ public interface HandleContext {
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
             @NonNull Predicate<Key> callback,
-            @NonNull AccountID syntheticPayer);
+            @NonNull AccountID syntheticPayerId);
+
+    /**
+     * Dispatches the fee calculation for a child transaction (that might then be dispatched).
+     *
+     * <p>The override payer id still matters for this purpose, because a transaction can add
+     * state whose lifetime is scoped to a payer account (the main current example is a
+     * {@link HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE} dispatch).
+     *
+     * @param txBody the {@link TransactionBody} of the child transaction to compute fees for
+     * @param syntheticPayerId the child payer
+     * @return the calculated fees
+     */
+    Fees dispatchComputeFees(@NonNull TransactionBody txBody, @NonNull AccountID syntheticPayerId);
 
     /**
      * Dispatches a child transaction that already has a transaction ID.
@@ -454,7 +468,7 @@ public interface HandleContext {
      * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
      * @param callback           a {@link Predicate} callback function that will observe each primitive key
-     * @param payer
+     * @param syntheticPayerId  the payer of the child transaction
      * @return the record builder of the child transaction
      * @throws NullPointerException     if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
@@ -465,7 +479,7 @@ public interface HandleContext {
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
             @NonNull Predicate<Key> callback,
-            AccountID payer);
+            @NonNull AccountID syntheticPayerId);
 
     /**
      * Dispatches a removable child transaction that already has a transaction ID.

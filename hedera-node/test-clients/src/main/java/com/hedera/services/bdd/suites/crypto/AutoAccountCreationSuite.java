@@ -84,6 +84,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -204,6 +205,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 cannotAutoCreateWithTxnToLongZero());
     }
 
+    @HapiTest
     private HapiSpec canAutoCreateWithHbarAndTokenTransfers() {
         final var initialTokenSupply = 1000;
         return defaultHapiSpec("canAutoCreateWithHbarAndTokenTransfers")
@@ -236,6 +238,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .hasToken(relationshipWith(A_TOKEN)));
     }
 
+    @HapiTest
     private HapiSpec repeatedAliasInSameTransferListFails() {
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
@@ -298,6 +301,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec autoCreateWithNftFallBackFeeFails() {
         final var firstRoyaltyCollector = "firstRoyaltyCollector";
         return defaultHapiSpec("autoCreateWithNftFallBackFeeFails")
@@ -781,6 +785,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec failureAfterHollowAccountCreationReclaimsAlias() {
         final var underfunded = "underfunded";
         final var secondTransferTxn = "SecondTransferTxn";
@@ -876,6 +881,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec aliasCanBeUsedOnManyAccountsNotAsAlias() {
         return defaultHapiSpec("aliasCanBeUsedOnManyAccountsNotAsAlias")
                 .given(
@@ -909,6 +915,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                         .memo(AUTO_MEMO)));
     }
 
+    @HapiTest
     private HapiSpec accountCreatedIfAliasUsedAsPubKey() {
         return defaultHapiSpec("accountCreatedIfAliasUsedAsPubKey")
                 .given(
@@ -935,6 +942,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
         return defaultHapiSpec("autoAccountCreationWorksWhenUsingAliasOfDeletedAccount")
                 .given(
@@ -966,6 +974,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         );
     }
 
+    @HapiTest
     private HapiSpec transferFromAliasToAlias() {
         return defaultHapiSpec("transferFromAliasToAlias")
                 .given(
@@ -990,6 +999,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)));
     }
 
+    @HapiTest
     private HapiSpec transferFromAliasToAccount() {
         final var payer = PAYER_4;
         final var alias = ALIAS;
@@ -1014,6 +1024,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)));
     }
 
+    @HapiTest
     private HapiSpec transferToAccountAutoCreatedUsingAccount() {
         return defaultHapiSpec("transferToAccountAutoCreatedUsingAccount")
                 .given(newKeyNamed(TRANSFER_ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
@@ -1045,6 +1056,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec transferToAccountAutoCreatedUsingAlias() {
         return defaultHapiSpec("transferToAccountAutoCreatedUsingAlias")
                 .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
@@ -1231,6 +1243,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         assertEquals(0, payerBalWithAutoCreationFee, "Auto creation fee is deducted from payer");
     }
 
+    @HapiTest
     private HapiSpec multipleAutoAccountCreations() {
         return defaultHapiSpec("multipleAutoAccountCreations")
                 .given(cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))

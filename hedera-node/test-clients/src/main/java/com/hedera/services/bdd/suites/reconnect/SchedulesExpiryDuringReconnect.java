@@ -143,7 +143,7 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
                                 .overridingProps(Map.of("ledger.schedule.txExpiryTimeSecs", "1000")),
                         scheduleCreate(
                                         duplicateSchedule,
-                                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
+                                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 2))
                                                 .fee(ONE_HBAR))
                                 .fee(ONE_HUNDRED_HBARS)
                                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)

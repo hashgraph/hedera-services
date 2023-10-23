@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -32,6 +33,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.fixtures.FakeFeeRecordBuilder;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
@@ -52,6 +54,7 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -99,11 +102,20 @@ class TokenServiceApiImplTest {
     @Mock
     private NetworkInfo networkInfo;
 
+    @Mock
+    private Predicate<CryptoTransferTransactionBody> customFeeTest;
+
     private TokenServiceApiImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TokenServiceApiImpl(DEFAULT_CONFIG, stakingValidator, writableStates);
+        subject = new TokenServiceApiImpl(DEFAULT_CONFIG, stakingValidator, writableStates, customFeeTest);
+    }
+
+    @Test
+    void delegatesToCustomFeeTest() {
+        given(customFeeTest.test(CryptoTransferTransactionBody.DEFAULT)).willReturn(true);
+        assertTrue(subject.checkForCustomFees(CryptoTransferTransactionBody.DEFAULT));
     }
 
     @Test
@@ -442,7 +454,7 @@ class TokenServiceApiImplTest {
             final var config =
                     configBuilder.withValue("staking.isEnabled", true).getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
+            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates, customFeeTest);
 
             // When we charge network+service fees of 10 tinybars and a node fee of 2 tinybars
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
@@ -472,7 +484,7 @@ class TokenServiceApiImplTest {
             final var config =
                     configBuilder.withValue("staking.isEnabled", false).getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
+            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates, customFeeTest);
 
             // When we charge fees of 10 tinybars
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
@@ -509,7 +521,7 @@ class TokenServiceApiImplTest {
             final var config =
                     configBuilder.withValue("ledger.fundingAccount", 12345678L).getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
+            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates, customFeeTest);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
@@ -524,7 +536,7 @@ class TokenServiceApiImplTest {
                     .withValue("accounts.stakingRewardAccount", 12345678L)
                     .getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
+            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates, customFeeTest);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
@@ -539,7 +551,7 @@ class TokenServiceApiImplTest {
                     .withValue("accounts.nodeRewardAccount", 12345678L)
                     .getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
+            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates, customFeeTest);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
@@ -552,7 +564,8 @@ class TokenServiceApiImplTest {
             // Given a payer and unpayable fees, just charge the remaining payer balance
             fees = new Fees(1000, 100, 0); // more than the 100 the user has
 
-            subject = new TokenServiceApiImpl(configBuilder.getOrCreateConfig(), stakingValidator, writableStates);
+            subject = new TokenServiceApiImpl(
+                    configBuilder.getOrCreateConfig(), stakingValidator, writableStates, customFeeTest);
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
 
             final var payerAccount = requireNonNull(accountState.get(EOA_ACCOUNT_ID));

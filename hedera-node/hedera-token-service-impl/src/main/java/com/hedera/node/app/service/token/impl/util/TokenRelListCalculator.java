@@ -30,7 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Class that computes the expected results of a token relation operation. That is to say, given a
@@ -39,7 +40,7 @@ import org.slf4j.Logger;
  * relationships in some way
  */
 public class TokenRelListCalculator {
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(TokenRelListCalculator.class);
+    private static final Logger log = LogManager.getLogger(TokenRelListCalculator.class);
 
     private final ReadableTokenRelationStore tokenRelStore;
 

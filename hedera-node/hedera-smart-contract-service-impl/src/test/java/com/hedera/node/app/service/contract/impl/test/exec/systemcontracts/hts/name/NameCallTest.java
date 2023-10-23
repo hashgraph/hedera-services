@@ -33,7 +33,7 @@ class NameCallTest extends HtsCallTestBase {
 
     @Test
     void revertsWithMissingToken() {
-        subject = new NameCall(mockEnhancement(), null);
+        subject = new NameCall(gasCalculator, mockEnhancement(), null);
 
         final var result = subject.execute().fullResult().result();
 
@@ -43,7 +43,7 @@ class NameCallTest extends HtsCallTestBase {
 
     @Test
     void returnsNameForPresentToken() {
-        subject = new NameCall(mockEnhancement(), FUNGIBLE_TOKEN);
+        subject = new NameCall(gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 

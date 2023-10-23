@@ -114,7 +114,7 @@ public class LogCaptor {
             }
             // now check if the current match is the level we're looking for
             String matchLevel = m.group(0);
-            if (level.equals(Level.getLevel(matchLevel))) {
+            if (!matchLevel.isEmpty() && level.equals(Level.getLevel(matchLevel))) {
                 prevLevelMatch = true;
             }
             // move the start index for the next search to the end of the current match

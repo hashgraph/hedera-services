@@ -192,6 +192,7 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
+    @HapiTest
     private HapiSpec allLogOpcodesResolveExpectedContractId() {
         final var contract = "OuterCreator";
 
@@ -225,6 +226,7 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2868
+    @HapiTest
     private HapiSpec inlineCreate2CanFailSafely() {
         final var tcValue = 1_234L;
         final var contract = "RevertingCreateFactory";
@@ -271,6 +273,7 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
+    @HapiTest
     private HapiSpec inlineCreateCanFailSafely() {
         final var tcValue = 1_234L;
         final var creation = CREATION;
@@ -715,6 +718,7 @@ public class Create2OperationSuite extends HapiSuite {
                         cryptoCreate("confirmingNoEntityIdCollision"));
     }
 
+    @HapiTest
     private HapiSpec canCallFinalizedContractViaHapi() {
         final var contract = "FinalizedDestructible";
         final var salt = BigInteger.valueOf(1_234_567_890L);
