@@ -263,6 +263,8 @@ public class KeyFactory implements Serializable {
         private void signRecursively(final Key key, final SigControl controller) throws GeneralSecurityException {
             switch (controller.getNature()) {
                 case SIG_OFF:
+                    keySigs.add(new AbstractMap.SimpleEntry<>(extractPubKey(key), new byte[0]));
+                    break;
                 case CONTRACT_ID:
                 case DELEGATABLE_CONTRACT_ID:
                     break;
