@@ -629,7 +629,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum) {}
 
     private ValidationResult validate(
-            @NonNull final HandleContextVerifier verifier,
+            @NonNull final KeyVerifier verifier,
             final HederaFunctionality function,
             final TransactionBody txBody,
             final AccountID payer,
