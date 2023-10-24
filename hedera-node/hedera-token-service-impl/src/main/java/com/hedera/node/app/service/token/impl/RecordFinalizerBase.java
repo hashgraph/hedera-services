@@ -187,7 +187,8 @@ public class RecordFinalizerBase {
             final var builder = NftTransfer.newBuilder();
             if (modifiedNft != null) {
                 // If ownerId is null, we assume that the receiver is the treasury
-                final var receiverAccountID = modifiedNft.hasOwnerId() ? modifiedNft.ownerId() : token.treasuryAccountId();
+                final var receiverAccountID =
+                        modifiedNft.hasOwnerId() ? modifiedNft.ownerId() : token.treasuryAccountId();
                 builder.receiverAccountID(receiverAccountID);
             } else {
                 builder.receiverAccountID(ZERO_ACCOUNT_ID);
