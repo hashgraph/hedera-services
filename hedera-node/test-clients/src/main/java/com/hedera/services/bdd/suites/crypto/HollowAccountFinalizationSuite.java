@@ -125,6 +125,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 hollowAccountCompletionIsPersistedEvenIfTxnFails(),
                 precompileTransferFromHollowAccountWithNeededSigFailsAndDoesNotFinalizeAccount());
     }
+
     @HapiTest
     private HapiSpec hollowAccountCompletionWithTokenTransfer() {
         final var fungibleToken = "fungibleToken";
