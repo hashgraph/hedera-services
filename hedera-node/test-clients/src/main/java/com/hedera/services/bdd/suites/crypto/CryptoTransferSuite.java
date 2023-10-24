@@ -470,6 +470,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
+    // @HapiTest This test is failing due to child records not being correct. Will be enabled once fixed.
     private HapiSpec canUseEip1014AliasesForXfers() {
         final var partyCreation2 = "partyCreation2";
         final var counterCreation2 = "counterCreation2";
@@ -1379,6 +1380,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                                                 .balance(exchangeAmount / 15)))));
     }
 
+    @HapiTest
     private HapiSpec royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots() {
         final var uniqueWithRoyalty = "uniqueWithRoyalty";
         final var someFungible = "firstFungible";
@@ -1755,6 +1757,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_ACCOUNT_ID)));
     }
 
+    @HapiTest
     private HapiSpec complexKeyAcctPaysForOwnTransfer() {
         SigControl enoughUniqueSigs = SigControl.threshSigs(
                 2,
@@ -1773,6 +1776,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         .fee(ONE_HUNDRED_HBARS));
     }
 
+    @HapiTest
     private HapiSpec twoComplexKeysRequired() {
         SigControl payerShape = threshOf(2, threshOf(1, 7), threshOf(3, 7));
         SigControl receiverShape = SigControl.threshSigs(3, threshOf(2, 2), threshOf(3, 5), ON);

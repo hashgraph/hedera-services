@@ -72,8 +72,8 @@ public class CustomGasCalculator extends LondonGasCalculator {
         final var hevmGasCost = gasCostOfStoring(
                 logSize(numTopics, dataLength),
                 lifetime,
-                tinybarValues.serviceRbhPrice(),
-                tinybarValues.serviceGasPrice());
+                tinybarValues.topLevelTinybarRbhPrice(),
+                tinybarValues.topLevelTinybarGasPrice());
 
         return Math.max(evmGasCost, hevmGasCost);
     }

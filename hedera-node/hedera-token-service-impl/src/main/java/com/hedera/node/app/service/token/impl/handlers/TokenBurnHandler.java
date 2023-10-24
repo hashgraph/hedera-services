@@ -42,6 +42,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
+import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -116,7 +117,8 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         }
 
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
-            changeSupply(
+            validateTrue(fungibleBurnCount >= 0 && nftSerialNums.isEmpty(), INVALID_TOKEN_BURN_AMOUNT);
+            final var newTotalSupply = changeSupply(
                     validated.token(),
                     treasuryRel,
                     -fungibleBurnCount,
@@ -124,6 +126,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
                     accountStore,
                     tokenStore,
                     tokenRelStore);
+            context.recordBuilder(TokenBurnRecordBuilder.class).newTotalSupply(newTotalSupply);
         } else {
             validateTrue(!nftSerialNums.isEmpty(), INVALID_TOKEN_BURN_METADATA);
 
@@ -137,7 +140,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
             }
 
             // Update counts for accounts and token rels
-            changeSupply(
+            final var newTotalSupply = changeSupply(
                     token, treasuryRel, -nftSerialNums.size(), FAIL_INVALID, accountStore, tokenStore, tokenRelStore);
 
             // Update treasury's NFT count
@@ -150,6 +153,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
 
             // Remove the nft objects
             nftSerialNums.forEach(serialNum -> nftStore.remove(tokenId, serialNum));
+            context.recordBuilder(TokenBurnRecordBuilder.class).newTotalSupply(newTotalSupply);
         }
     }
 

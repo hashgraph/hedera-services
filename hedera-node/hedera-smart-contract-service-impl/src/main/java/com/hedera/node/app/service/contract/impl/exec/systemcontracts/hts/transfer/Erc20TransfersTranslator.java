@@ -59,28 +59,28 @@ public class Erc20TransfersTranslator extends AbstractHtsCallTranslator {
         if (isErc20Transfer(attempt.selector())) {
             final var call = Erc20TransfersTranslator.ERC_20_TRANSFER.decodeCall(
                     attempt.input().toArrayUnsafe());
-            return callFrom(attempt.senderAddress(), null, call.get(0), call.get(1), attempt);
+            return callFrom(null, call.get(0), call.get(1), attempt);
         } else {
             final var call = Erc20TransfersTranslator.ERC_20_TRANSFER_FROM.decodeCall(
                     attempt.input().toArrayUnsafe());
-            return callFrom(attempt.senderAddress(), call.get(0), call.get(1), call.get(2), attempt);
+            return callFrom(call.get(0), call.get(1), call.get(2), attempt);
         }
     }
 
     private Erc20TransfersCall callFrom(
-            @NonNull final org.hyperledger.besu.datatypes.Address sender,
             @Nullable final Address from,
             @NonNull final Address to,
             @NonNull final BigInteger amount,
             @NonNull final HtsCallAttempt attempt) {
         return new Erc20TransfersCall(
+                attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 amount.longValueExact(),
                 from,
                 to,
                 requireNonNull(attempt.redirectToken()).tokenIdOrThrow(),
                 attempt.defaultVerificationStrategy(),
-                sender,
+                attempt.senderId(),
                 attempt.addressIdConverter());
     }
 

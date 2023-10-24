@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.api;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -36,6 +37,14 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * If, for example, we extract a {@code StakingService}, this API would likely need to expand.
  */
 public interface TokenServiceApi {
+    /**
+     * Checks if the given transfer operation uses custom fees.
+     *
+     * @param op the transfer operation check
+     * @return true if the given transaction body has custom fees, false otherwise
+     */
+    boolean checkForCustomFees(@NonNull CryptoTransferTransactionBody op);
+
     /**
      * Deletes the account with the given id and transfers any remaining hbar balance to the given obtainer id.
      *

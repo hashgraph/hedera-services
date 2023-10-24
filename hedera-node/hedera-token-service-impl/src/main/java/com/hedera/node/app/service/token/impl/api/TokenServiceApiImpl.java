@@ -32,6 +32,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.FeeRecordBuilder;
@@ -52,6 +53,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -69,11 +71,14 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     private final AccountID stakingRewardAccountID;
     private final AccountID nodeRewardAccountID;
     private final StakingConfig stakingConfig;
+    private final Predicate<CryptoTransferTransactionBody> customFeeTest;
 
     public TokenServiceApiImpl(
             @NonNull final Configuration config,
             @NonNull final StakingValidator stakingValidator,
-            @NonNull final WritableStates writableStates) {
+            @NonNull final WritableStates writableStates,
+            @NonNull final Predicate<CryptoTransferTransactionBody> customFeeTest) {
+        this.customFeeTest = customFeeTest;
         requireNonNull(config);
         this.accountStore = new WritableAccountStore(writableStates);
         this.stakingValidator = requireNonNull(stakingValidator);
@@ -417,6 +422,11 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             requireNonNull(deletedAccount);
             requireNonNull(obtainerAccount);
         }
+    }
+
+    @Override
+    public boolean checkForCustomFees(@NonNull final CryptoTransferTransactionBody op) {
+        return customFeeTest.test(op);
     }
 
     /**
