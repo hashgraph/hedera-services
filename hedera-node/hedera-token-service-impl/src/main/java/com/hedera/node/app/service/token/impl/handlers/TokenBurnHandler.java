@@ -75,6 +75,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
+        pureChecks(context.body());
         final var op = context.body().tokenBurnOrThrow();
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
