@@ -41,7 +41,6 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.Custo
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFixedFeeAssessor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFractionalFeeAssessor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomRoyaltyFeeAssessor;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
@@ -122,11 +121,10 @@ public class CustomFeeAssessmentStep {
         final var tokenRelStore = handleContext.readableStore(ReadableTokenRelationStore.class);
         final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
         final var config = handleContext.configuration();
-        final var recordBuilder = handleContext.recordBuilder(CryptoTransferRecordBuilder.class);
         final var autoCreatedIds = transferContext.resolutions().values();
         final var result = assessFees(tokenStore, tokenRelStore, config, accountStore, autoCreatedIds::contains);
 
-        recordBuilder.assessedCustomFees(result.assessedCustomFees());
+        result.assessedCustomFees().forEach(transferContext::addToAssessedCustomFee);
         customFeeAssessor.resetInitialNftChanges();
         return result.assessedTxns();
     }

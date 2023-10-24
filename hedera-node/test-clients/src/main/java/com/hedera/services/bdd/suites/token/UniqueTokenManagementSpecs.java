@@ -140,6 +140,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
         });
     }
 
+    @HapiTest
     private HapiSpec populatingMetadataForFungibleDoesNotWork() {
         return defaultHapiSpec("PopulatingMetadataForFungibleDoesNotWork")
                 .given(
@@ -232,6 +233,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec serialNumbersOnlyOnFungibleBurnFails() {
         return defaultHapiSpec("SerialNumbersOnlyOnFungibleBurnFails")
                 .given(
@@ -718,6 +720,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
+    @HapiTest
     private HapiSpec commonWipeFailsWhenInvokedOnUniqueToken() {
         return defaultHapiSpec("CommonWipeFailsWhenInvokedOnUniqueToken")
                 .given(

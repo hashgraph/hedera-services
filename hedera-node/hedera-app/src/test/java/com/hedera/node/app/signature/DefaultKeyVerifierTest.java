@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.verifier;
+package com.hedera.node.app.signature;
 
 import static com.hedera.node.app.spi.fixtures.Scenarios.ALICE;
 import static com.hedera.node.app.spi.fixtures.Scenarios.BOB;
@@ -41,10 +41,9 @@ import com.google.common.collect.Streams;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
-import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.workflows.VerificationAssistant;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -72,7 +71,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class BaseHandleContextVerifierTest {
+class DefaultKeyVerifierTest {
 
     private static final HederaConfig HEDERA_CONFIG =
             HederaTestConfigBuilder.createConfig().getConfigData(HederaConfig.class);
@@ -89,10 +88,9 @@ class BaseHandleContextVerifierTest {
         final var key = ALICE.keyInfo().publicKey();
 
         // then
-        assertThatThrownBy(() -> new BaseHandleContextVerifier(null, keyVerifications))
+        assertThatThrownBy(() -> new DefaultKeyVerifier(null, keyVerifications))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new BaseHandleContextVerifier(HEDERA_CONFIG, null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new DefaultKeyVerifier(HEDERA_CONFIG, null)).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> verifier.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> verifier.verificationFor(null, verificationAssistant))
@@ -1259,8 +1257,8 @@ class BaseHandleContextVerifierTest {
         }
     }
 
-    private HandleContextVerifier createVerifier(@NonNull final Map<Key, SignatureVerificationFuture> map) {
-        return new BaseHandleContextVerifier(HEDERA_CONFIG, map);
+    private KeyVerifier createVerifier(@NonNull final Map<Key, SignatureVerificationFuture> map) {
+        return new DefaultKeyVerifier(HEDERA_CONFIG, map);
     }
 
     /** Convenience method for creating a key list */
