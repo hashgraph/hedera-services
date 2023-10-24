@@ -73,10 +73,7 @@ public class SyncOutputStream extends SerializableDataOutputStream {
         }
 
         // we write the data to the buffer first, for efficiency
-        return new SyncOutputStream(
-                wrappedStream,
-                syncByteCounter,
-                connectionByteCounter);
+        return new SyncOutputStream(wrappedStream, syncByteCounter, connectionByteCounter);
     }
 
     public CountingStreamExtension getSyncByteCounter() {
