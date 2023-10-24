@@ -41,7 +41,7 @@ public final class TipsetUtils {
         if (event.getBaseHash() == null) {
             throw new IllegalStateException("event is not hashed");
         }
-        return event.getHashedData().getEventDescriptor();
+        return event.getHashedData().createEventDescriptor();
     }
 
     /**

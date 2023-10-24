@@ -82,11 +82,11 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     }
 
     /**
-     * The version discovered while deserializing the event.
+     * The version of the serialization to use.  May be overridden by the version encountered when deserializing.
      *
      * DEPRECATED:  remove after 0.45.0 goes to mainnet.
      */
-    private int deserializedVersion = ClassVersion.ADDRESS_BOOK_ROUND;
+    private int serializedVersion = ClassVersion.ADDRESS_BOOK_ROUND;
 
     ///////////////////////////////////////
     // immutable, sent during normal syncs, affects the hash that is signed:
@@ -161,9 +161,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             @NonNull final SerializableDataOutputStream out, @NonNull final EventSerializationOptions option)
             throws IOException {
         out.writeSerializable(softwareVersion, true);
-        if (deserializedVersion < ClassVersion.ADDRESS_BOOK_ROUND) {
-            // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
-            // Changing the event format may require a HIP.  The old format is preserved for now.
+        if (serializedVersion < ClassVersion.ADDRESS_BOOK_ROUND) {
             out.writeLong(creatorId.id());
             out.writeLong(selfParent != null ? selfParent.getGeneration() : -1);
             out.writeLong(otherParents != null ? otherParents.get(0).getGeneration() : -1);
@@ -205,7 +203,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             @NonNull final SerializableDataInputStream in, final int version, final int maxTransactionCount)
             throws IOException {
         Objects.requireNonNull(in, "The input stream must not be null");
-        deserializedVersion = version;
+        serializedVersion = version;
         if (version >= ClassVersion.SOFTWARE_VERSION) {
             softwareVersion = in.readSerializable();
         } else {
@@ -309,10 +307,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     @Override
     public int getVersion() {
-        if (deserializedVersion < ClassVersion.ADDRESS_BOOK_ROUND) {
-            return deserializedVersion;
-        }
-        return ClassVersion.ADDRESS_BOOK_ROUND;
+        return serializedVersion;
     }
 
     /**
@@ -489,7 +484,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      *
      * @return an event descriptor for this event
      */
-    public EventDescriptor getEventDescriptor() {
+    public EventDescriptor createEventDescriptor() {
         return new EventDescriptor(getHash(), getCreatorId(), getGeneration(), getAddressBookRound());
     }
 }

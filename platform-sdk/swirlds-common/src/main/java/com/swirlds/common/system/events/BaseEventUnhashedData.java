@@ -59,7 +59,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
      * <p>
      * DEPRECATED: Remove after 0.45 is delivered to mainnet.
      */
-    private int deserializedVersion = ClassVersion.ADDRESS_BOOK_ROUND;
+    private int serializedVersion = ClassVersion.ADDRESS_BOOK_ROUND;
 
     ///////////////////////////////////////
     // immutable, sent during normal syncs, does NOT affect the hash that is signed:
@@ -92,7 +92,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        if (deserializedVersion < ClassVersion.ADDRESS_BOOK_ROUND) {
+        if (serializedVersion < ClassVersion.ADDRESS_BOOK_ROUND) {
             out.writeLong(creatorSeq);
             // FUTURE WORK: The otherId should be a selfSerializable NodeId at some point.
             // Changing the event format may require a HIP.  The old format is preserved for now.
@@ -106,7 +106,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        deserializedVersion = version;
+        serializedVersion = version;
         if (version < ClassVersion.ADDRESS_BOOK_ROUND) {
             creatorSeq = in.readLong();
             otherId = NodeId.deserializeLong(in, true);
@@ -158,10 +158,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
     @Override
     public int getVersion() {
-        if (deserializedVersion < ClassVersion.ADDRESS_BOOK_ROUND) {
-            return deserializedVersion;
-        }
-        return ClassVersion.ADDRESS_BOOK_ROUND;
+        return serializedVersion;
     }
 
     @Override

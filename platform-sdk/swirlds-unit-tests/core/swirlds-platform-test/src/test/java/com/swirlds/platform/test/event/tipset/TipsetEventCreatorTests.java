@@ -709,7 +709,7 @@ class TipsetEventCreatorTests {
         when(hashedData.getHash()).thenReturn(hash);
         when(event.getBaseHash()).thenReturn(hash);
 
-        when(hashedData.getEventDescriptor()).thenReturn(new EventDescriptor(hash, creator, generation, -1));
+        when(hashedData.createEventDescriptor()).thenReturn(new EventDescriptor(hash, creator, generation, -1));
 
         when(event.getHashedData()).thenReturn(hashedData);
         when(event.getBaseEventHashedData()).thenReturn(hashedData);
