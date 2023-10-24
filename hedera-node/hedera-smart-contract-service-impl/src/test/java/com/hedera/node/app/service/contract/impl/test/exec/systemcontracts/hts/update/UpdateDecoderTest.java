@@ -20,13 +20,16 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBL
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateDecoder;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateExpiryTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator;
+import java.time.Instant;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,8 +46,10 @@ class UpdateDecoderTest {
     private AddressIdConverter addressIdConverter;
 
     private final UpdateDecoder subject = new UpdateDecoder();
-
     private final String newName = "NEW NAME";
+    private static final long EXPIRY_TIMESTAMP = Instant.now().plusSeconds(3600).toEpochMilli() / 1000;
+    private static final long AUTO_RENEW_PERIOD = 8_000_000L;
+    private final Tuple expiry = Tuple.of(EXPIRY_TIMESTAMP, OWNER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD);
     private final Tuple hederaToken = Tuple.of(
             newName,
             "symbol",
@@ -56,7 +61,7 @@ class UpdateDecoderTest {
             // TokenKey
             new Tuple[] {},
             // Expiry
-            Tuple.of(0L, OWNER_HEADLONG_ADDRESS, 0L));
+            expiry);
 
     @BeforeEach
     void setUp() {
@@ -95,5 +100,39 @@ class UpdateDecoderTest {
         final var body = subject.decodeTokenUpdateV3(attempt);
         final var tokenUpdate = body.tokenUpdateOrThrow();
         assertEquals(tokenUpdate.name(), newName);
+    }
+
+    @Test
+    void updateExpiryV1Works() {
+        final var encoded = Bytes.wrapByteBuffer(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V1.encodeCallWithArgs(
+                FUNGIBLE_TOKEN_HEADLONG_ADDRESS, expiry));
+        given(attempt.input()).willReturn(encoded);
+
+        final var body = subject.decodeTokenUpdateExpiryV1(attempt);
+        final var tokenUpdate = body.tokenUpdateOrThrow();
+
+        assertNotNull(tokenUpdate.expiry());
+        assertNotNull(tokenUpdate.autoRenewPeriod());
+
+        assertEquals(EXPIRY_TIMESTAMP, tokenUpdate.expiry().seconds());
+        assertEquals(AUTO_RENEW_PERIOD, tokenUpdate.autoRenewPeriod().seconds());
+        assertEquals(OWNER_ID, tokenUpdate.autoRenewAccount());
+    }
+
+    @Test
+    void updateExpiryV2Works() {
+        final var encoded = Bytes.wrapByteBuffer(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V2.encodeCallWithArgs(
+                FUNGIBLE_TOKEN_HEADLONG_ADDRESS, expiry));
+        given(attempt.input()).willReturn(encoded);
+
+        final var body = subject.decodeTokenUpdateExpiryV2(attempt);
+        final var tokenUpdate = body.tokenUpdateOrThrow();
+
+        assertNotNull(tokenUpdate.expiry());
+        assertNotNull(tokenUpdate.autoRenewPeriod());
+
+        assertEquals(EXPIRY_TIMESTAMP, tokenUpdate.expiry().seconds());
+        assertEquals(AUTO_RENEW_PERIOD, tokenUpdate.autoRenewPeriod().seconds());
+        assertEquals(OWNER_ID, tokenUpdate.autoRenewAccount());
     }
 }

@@ -18,8 +18,7 @@ import com.google.protobuf.gradle.ProtobufExtract
 
 plugins {
     id("com.hedera.hashgraph.application")
-    id("com.google.protobuf").version("0.9.4")
-    id("com.hedera.hashgraph.mock-release-tasks")
+    id("com.google.protobuf")
 }
 
 application.mainClass.set("com.swirlds.demo.platform.PlatformTestingToolMain")

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapproved.GetApprovedTranslator.ERC_GET_APPROVED;
@@ -27,6 +28,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -37,33 +39,43 @@ public class GetApprovedCall extends AbstractRevertibleTokenViewCall {
 
     private final long serialNo;
     private final boolean isErcCall;
+    private final boolean isStaticCall;
 
     public GetApprovedCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull HederaWorldUpdater.Enhancement enhancement,
             @Nullable Token token,
             final long serialNo,
-            final boolean isErcCall) {
-        super(enhancement, token);
+            final boolean isErcCall,
+            final boolean isStaticCall) {
+        super(gasCalculator, enhancement, token);
         this.serialNo = serialNo;
         this.isErcCall = isErcCall;
+        this.isStaticCall = isStaticCall;
     }
 
     @Override
-    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token) {
+    protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
-        // TODO - gas calculation
         if (token.tokenType() != TokenType.NON_FUNGIBLE_UNIQUE) {
-            return revertResult(INVALID_TOKEN_ID, 0L);
+            if (!isStaticCall) {
+                return revertResult(INVALID_TOKEN_NFT_SERIAL_NUMBER, gasCalculator.viewGasRequirement());
+            } else {
+                return revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
+            }
         }
-        var spenderNum = nativeOperations()
-                .getNft(token.tokenId().tokenNum(), serialNo)
-                .spenderId()
-                .accountNumOrThrow();
-        var spender = nativeOperations().getAccount(spenderNum);
+        final var nft = nativeOperations().getNft(token.tokenId().tokenNum(), serialNo);
+        if (nft == null || !nft.hasNftId()) {
+            return revertResult(INVALID_TOKEN_NFT_SERIAL_NUMBER, gasCalculator.viewGasRequirement());
+        }
+        final var spenderNum = nft.spenderId().accountNumOrThrow();
+        final var spender = nativeOperations().getAccount(spenderNum);
         return isErcCall
-                ? successResult(ERC_GET_APPROVED.getOutputs().encodeElements(headlongAddressOf(spender)), 0L)
+                ? successResult(
+                        ERC_GET_APPROVED.getOutputs().encodeElements(headlongAddressOf(spender)),
+                        gasCalculator.viewGasRequirement())
                 : successResult(
                         HAPI_GET_APPROVED.getOutputs().encodeElements(SUCCESS.getNumber(), headlongAddressOf(spender)),
-                        0L);
+                        gasCalculator.viewGasRequirement());
     }
 }

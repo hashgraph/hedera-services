@@ -110,14 +110,3 @@ tasks.assemble {
     dependsOn(tasks.named("eetClasses"))
     dependsOn(tasks.named("xtestClasses"))
 }
-
-// !!! Remove the following once 'test' tasks are allowed to run in parallel ===
-tasks.withType<Test>().configureEach {
-    // Only start running 'node' tests after all 'platform' tests finished-
-    // This is to not have 'node' tests run in parallel with 'platform' tests.
-    if (gradle.rootBuild().startParameter.taskNames.contains("check")) {
-        dependsOn(gradle.includedBuild("platform-sdk").task(":check"))
-    }
-}
-
-fun Gradle.rootBuild(): Gradle = parent?.rootBuild() ?: this

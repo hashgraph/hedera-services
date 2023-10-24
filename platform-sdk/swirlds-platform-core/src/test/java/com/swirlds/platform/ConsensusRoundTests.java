@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -38,16 +39,15 @@ class ConsensusRoundTests {
         final EventImpl e2 = mock(EventImpl.class);
         final EventImpl e3 = mock(EventImpl.class);
         final GraphGenerations g = mock(GraphGenerations.class);
+        final ConsensusSnapshot snapshot = mock(ConsensusSnapshot.class);
 
         when(e3.isLastInRoundReceived()).thenReturn(true);
 
-        when(e1.getRoundReceived()).thenReturn(1L);
-        when(e2.getRoundReceived()).thenReturn(1L);
-        when(e3.getRoundReceived()).thenReturn(1L);
+        when(snapshot.round()).thenReturn(1L);
 
         final List<EventImpl> events = List.of(e1, e2, e3);
 
-        final ConsensusRound round = new ConsensusRound(events, mock(EventImpl.class), g);
+        final ConsensusRound round = new ConsensusRound(events, mock(EventImpl.class), g, snapshot);
 
         assertEquals(events, round.getConsensusEvents(), "consensus event list does not match the provided list.");
         assertEquals(events.size(), round.getNumEvents(), "numEvents does not match the events provided.");
@@ -70,7 +70,8 @@ class ConsensusRoundTests {
             events.add(event);
         }
 
-        final ConsensusRound round = new ConsensusRound(events, mock(EventImpl.class), mock(GraphGenerations.class));
+        final ConsensusRound round = new ConsensusRound(
+                events, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
 
         assertEquals(
                 numActualTransactions, round.getNumAppTransactions(), "Incorrect number of application transactions.");

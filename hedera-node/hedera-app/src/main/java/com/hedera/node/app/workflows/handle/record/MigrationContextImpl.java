@@ -22,6 +22,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -33,13 +34,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param newStates The new states, preloaded with any new state definitions.
  * @param configuration The configuration to use
  * @param genesisRecordsBuilder The instance responsible for genesis records
+ * @param handleThrottling The instance responsible for handle throttling
  */
 public record MigrationContextImpl(
         @NonNull ReadableStates previousStates,
         @NonNull WritableStates newStates,
         @NonNull Configuration configuration,
         @NonNull NetworkInfo networkInfo,
-        @NonNull GenesisRecordsBuilder genesisRecordsBuilder)
+        @NonNull GenesisRecordsBuilder genesisRecordsBuilder,
+        @NonNull HandleThrottleParser handleThrottling)
         implements MigrationContext {
 
     public MigrationContextImpl {
@@ -48,5 +51,6 @@ public record MigrationContextImpl(
         requireNonNull(configuration);
         requireNonNull(networkInfo);
         requireNonNull(genesisRecordsBuilder);
+        requireNonNull(handleThrottling);
     }
 }

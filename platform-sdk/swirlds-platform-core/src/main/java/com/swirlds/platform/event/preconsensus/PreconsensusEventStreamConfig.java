@@ -90,8 +90,6 @@ import java.time.Duration;
  * @param replayQueueSize                                 the size of the queue used for holding preconsensus events
  *                                                        that are waiting to be replayed
  * @param replayHashPoolSize                              the number of threads used for hashing events during replay
- * @param clearOnSoftwareUpgrade                          if true, then delete all preconsensus event files when a
- *                                                        software upgrade is taking place.
  */
 @ConfigData("event.preconsensus")
 public record PreconsensusEventStreamConfig(
@@ -108,5 +106,4 @@ public record PreconsensusEventStreamConfig(
         @ConfigProperty(defaultValue = "true") boolean enableStorage,
         @ConfigProperty(defaultValue = "true") boolean enableReplay,
         @ConfigProperty(defaultValue = "1024") int replayQueueSize,
-        @ConfigProperty(defaultValue = "8") int replayHashPoolSize,
-        @ConfigProperty(defaultValue = "true") boolean clearOnSoftwareUpgrade) {}
+        @ConfigProperty(defaultValue = "8") int replayHashPoolSize) {}

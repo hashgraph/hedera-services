@@ -60,13 +60,13 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
 import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
@@ -102,6 +102,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HandleWorkflowTest extends AppTestBase {
 
     private static final Instant CONSENSUS_NOW = Instant.parse("2000-01-01T00:00:00Z");
+    private static final Instant TX_CONSENSUS_NOW = CONSENSUS_NOW.minusNanos(1000 + 3);
 
     private static final long CONFIG_VERSION = 11L;
 
@@ -196,7 +197,7 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock
     private DualStateUpdateFacility dualStateUpdateFacility;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private SolvencyPreCheck solvencyPreCheck;
 
     @Mock(strictness = LENIENT)
@@ -208,7 +209,7 @@ class HandleWorkflowTest extends AppTestBase {
     private HandleWorkflow workflow;
 
     @BeforeEach
-    void setup() {
+    void setup() throws PreCheckException {
         setupStandardStates();
 
         accountsState.put(
@@ -236,6 +237,8 @@ class HandleWorkflowTest extends AppTestBase {
 
         final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(config);
+
+        when(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID()))).thenReturn(ALICE.account());
 
         doAnswer(invocation -> {
                     final var context = invocation.getArgument(0, HandleContext.class);
@@ -1022,6 +1025,13 @@ class HandleWorkflowTest extends AppTestBase {
                     .dispatchPreHandle(any());
             doAnswer(invocation -> {
                         final var expanded = invocation.getArgument(2, Set.class);
+                        expanded.add(ExpandedSignaturePairFactory.ecdsaPair(alicesKey));
+                        return null;
+                    })
+                    .when(signatureExpander)
+                    .expand(eq(alicesKey), any(), any());
+            doAnswer(invocation -> {
+                        final var expanded = invocation.getArgument(2, Set.class);
                         expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
                         return null;
                     })
@@ -1210,6 +1220,13 @@ class HandleWorkflowTest extends AppTestBase {
                     .dispatchPreHandle(any());
             doAnswer(invocation -> {
                         final var expanded = invocation.getArgument(2, Set.class);
+                        expanded.add(ExpandedSignaturePairFactory.ecdsaPair(alicesKey));
+                        return null;
+                    })
+                    .when(signatureExpander)
+                    .expand(eq(alicesKey), any(), any());
+            doAnswer(invocation -> {
+                        final var expanded = invocation.getArgument(2, Set.class);
                         expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
                         return null;
                     })
@@ -1252,6 +1269,13 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(dispatcher)
                     .dispatchPreHandle(any());
+            doAnswer(invocation -> {
+                        final var expanded = invocation.getArgument(2, Set.class);
+                        expanded.add(ExpandedSignaturePairFactory.ecdsaPair(alicesKey));
+                        return null;
+                    })
+                    .when(signatureExpander)
+                    .expand(eq(alicesKey), any(), any());
             doAnswer(invocation -> {
                         final var expanded = invocation.getArgument(2, Set.class);
                         expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
@@ -1316,6 +1340,13 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(dispatcher)
                     .dispatchPreHandle(any());
+            doAnswer(invocation -> {
+                        final var expanded = invocation.getArgument(2, Set.class);
+                        expanded.add(ExpandedSignaturePairFactory.ecdsaPair(alicesKey));
+                        return null;
+                    })
+                    .when(signatureExpander)
+                    .expand(eq(alicesKey), any(), any());
             doAnswer(invocation -> {
                         final var expanded = invocation.getArgument(2, Set.class);
                         expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
@@ -1409,7 +1440,7 @@ class HandleWorkflowTest extends AppTestBase {
             // given
             doThrow(new PreCheckException(responseCode))
                     .when(checker)
-                    .checkTimeBox(OK_RESULT.txInfo().txBody(), CONSENSUS_NOW);
+                    .checkTimeBox(OK_RESULT.txInfo().txBody(), TX_CONSENSUS_NOW);
 
             // when
             workflow.handleRound(state, dualState, round);
@@ -1590,7 +1621,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, dualState, round);
 
             // then
-            verify(blockRecordManager).startUserTransaction(CONSENSUS_NOW, state);
+            verify(blockRecordManager).startUserTransaction(TX_CONSENSUS_NOW, state);
             verify(blockRecordManager).endUserTransaction(any(), eq(state));
             verify(blockRecordManager).endRound(state);
         }

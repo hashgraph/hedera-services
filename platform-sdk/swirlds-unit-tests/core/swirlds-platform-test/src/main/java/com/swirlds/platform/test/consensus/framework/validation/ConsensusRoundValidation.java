@@ -60,6 +60,11 @@ public class ConsensusRoundValidation {
                     round2.getEventCount(),
                     String.format("event number diff at round index %d", roundIndex));
 
+            assertEquals(
+                    round1.getSnapshot(),
+                    round2.getSnapshot(),
+                    String.format("snapshot diff at round index %d", roundIndex));
+
             final Iterator<EventImpl> evIt1 = round1.getConsensusEvents().iterator();
             final Iterator<EventImpl> evIt2 = round2.getConsensusEvents().iterator();
 

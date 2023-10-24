@@ -45,6 +45,7 @@ import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.throttling.ThrottleReqsManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -79,7 +80,7 @@ import org.apache.logging.log4j.Logger;
  * Meant to be used in single-threaded context only as part of the {@link com.hedera.node.app.workflows.handle.HandleWorkflow}.
  */
 @Singleton
-public class ThrottleAccumulator {
+public class ThrottleAccumulator implements HandleThrottleParser {
 
     private static final Logger log = LogManager.getLogger(ThrottleAccumulator.class);
     private static final Set<HederaFunctionality> GAS_THROTTLED_FUNCTIONS =
@@ -176,6 +177,7 @@ public class ThrottleAccumulator {
      * @return the current list of active throttles
      */
     @NonNull
+    @Override
     public List<DeterministicThrottle> allActiveThrottles() {
         return activeThrottles;
     }
@@ -478,6 +480,7 @@ public class ThrottleAccumulator {
      *
      * @param defs the throttle definitions to rebuild the throttle requirements based on
      */
+    @Override
     public void rebuildFor(@NonNull final ThrottleDefinitions defs) {
         List<DeterministicThrottle> newActiveThrottles = new ArrayList<>();
         EnumMap<HederaFunctionality, List<Pair<DeterministicThrottle, Integer>>> reqLists =
@@ -515,6 +518,7 @@ public class ThrottleAccumulator {
     /*
      * Rebuilds the gas throttle based on the current configuration.
      */
+    @Override
     public void applyGasConfig() {
         final var configuration = configProvider.getConfiguration();
         final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
@@ -562,6 +566,7 @@ public class ThrottleAccumulator {
      * Gets the gas throttle.
      */
     @Nullable
+    @Override
     public GasLimitDeterministicThrottle gasLimitThrottle() {
         return gasThrottle;
     }

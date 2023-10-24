@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -50,6 +51,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -271,5 +273,14 @@ class HandleHederaNativeOperationsTest {
         given(context.readableStore(ReadableNftStore.class)).willReturn(nftStore);
         given(nftStore.get(CIVILIAN_OWNED_NFT.nftIdOrThrow())).willReturn(CIVILIAN_OWNED_NFT);
         assertSame(CIVILIAN_OWNED_NFT, subject.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), NFT_SERIAL_NO));
+    }
+
+    @Test
+    void customFeesCheckUsesApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(tokenServiceApi.checkForCustomFees(CryptoTransferTransactionBody.DEFAULT))
+                .willReturn(true);
+        final var result = subject.checkForCustomFees(CryptoTransferTransactionBody.DEFAULT);
+        assertTrue(result);
     }
 }

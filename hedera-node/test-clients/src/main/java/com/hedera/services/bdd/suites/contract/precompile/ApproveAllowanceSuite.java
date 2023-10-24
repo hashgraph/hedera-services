@@ -534,6 +534,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
         return testIndirectApprovalWith("DelegateErc20Callee", DELEGATE_ERC_CALLEE, false);
     }
 
+    @HapiTest
     private HapiSpec testIndirectApprovalWithDirectErc20Callee() {
         return testIndirectApprovalWith("DirectErc20Callee", DIRECT_ERC_CALLEE, true);
     }

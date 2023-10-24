@@ -46,8 +46,8 @@ public record NettyConfig(
         @ConfigProperty(value = "prod.maxConnectionAgeGrace", defaultValue = "5") @NodeProperty
                 long prodMaxConnectionAgeGrace,
         @ConfigProperty(value = "prod.maxConnectionIdle", defaultValue = "10") @NodeProperty long prodMaxConnectionIdle,
-        @ConfigProperty(value = "prod.keepAliveTime", defaultValue = "10") @NodeProperty long prodKeepAliveTime,
-        @ConfigProperty(value = "prod.keepAliveTimeout", defaultValue = "3") @NodeProperty long prodKeepAliveTimeout,
+        @ConfigProperty(value = "prod.keepAliveTime", defaultValue = "60") @NodeProperty long prodKeepAliveTime,
+        @ConfigProperty(value = "prod.keepAliveTimeout", defaultValue = "15") @NodeProperty long prodKeepAliveTimeout,
         @ConfigProperty(defaultValue = "90") @NodeProperty int startRetries,
         @ConfigProperty(defaultValue = "1000") @NodeProperty long startRetryIntervalMs,
         @ConfigProperty(defaultValue = "5") @NodeProperty long terminationTimeout,

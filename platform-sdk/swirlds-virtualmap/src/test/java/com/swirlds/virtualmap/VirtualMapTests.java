@@ -868,7 +868,7 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test
     @Tags({@Tag("VirtualMerkle")})
-    @DisplayName("Tests nodeCacheSizeMb metric")
+    @DisplayName("Tests nodeCacheSizeB metric")
     void testNodeCacheSizeMetric() throws IOException, InterruptedException {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
@@ -884,7 +884,7 @@ class VirtualMapTests extends VirtualTestBase {
         VirtualMap<TestKey, TestValue> map0 = createMap();
         map0.registerMetrics(metrics);
 
-        Metric metric = metrics.getMetric(VirtualMapStatistics.STAT_CATEGORY, "vmap_lifecycle_nodeCacheSizeMb_Test");
+        Metric metric = metrics.getMetric(VirtualMapStatistics.STAT_CATEGORY, "vmap_lifecycle_nodeCacheSizeB_Test");
         assertNotNull(metric);
         if (!(metric instanceof LongGauge)) {
             throw new AssertionError("nodeCacheSizeMb metric is not a gauge");

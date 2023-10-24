@@ -16,8 +16,8 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.platform.ConsensusImpl.calcMinTimestampForNextEvent;
-import static com.swirlds.platform.internal.EventImpl.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+import static com.swirlds.platform.consensus.ConsensusUtils.calcMinTimestampForNextEvent;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

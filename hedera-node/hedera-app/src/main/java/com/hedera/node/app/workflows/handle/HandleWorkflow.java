@@ -52,10 +52,13 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
+import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -79,8 +82,6 @@ import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
-import com.hedera.node.app.workflows.handle.verifier.BaseHandleContextVerifier;
-import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
@@ -244,8 +245,9 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-        // Get the consensus timestamp
-        final Instant consensusNow = platformTxn.getConsensusTimestamp();
+        // Get the consensus timestamp. FUTURE We want this to exactly match the consensus timestamp from the hashgraph,
+        // but for compatibility with the current implementation, we adjust it as follows.
+        final Instant consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 + 3L);
 
         // handle user transaction
         handleUserTransaction(consensusNow, state, dualState, platformEvent, creator, platformTxn);
@@ -260,8 +262,8 @@ public class HandleWorkflow {
             @NonNull final ConsensusTransaction platformTxn) {
         // Setup record builder list
         blockRecordManager.startUserTransaction(consensusNow, state);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
-        final var recordListBuilder = new RecordListBuilder(recordBuilder);
+        final var recordListBuilder = new RecordListBuilder(consensusNow);
+        final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
 
         // Setup helpers
         final var configuration = configProvider.getConfiguration();
@@ -331,7 +333,7 @@ public class HandleWorkflow {
 
             // Set up the verifier
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
-            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+            final var verifier = new DefaultKeyVerifier(hederaConfig, preHandleResult.verificationResults());
             final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(transactionInfo.signatureMap());
 
             // Setup context
@@ -370,7 +372,7 @@ public class HandleWorkflow {
                     fees,
                     platformEvent.getCreatorId().id());
 
-            networkUtilizationManager.resetFrom(state);
+            networkUtilizationManager.resetFrom(stack);
 
             if (validationResult.status() != SO_FAR_SO_GOOD) {
                 final var sigVerificationFailed = validationResult.responseCodeEnum() == INVALID_SIGNATURE;
@@ -379,7 +381,7 @@ public class HandleWorkflow {
                     // Note this is how it's implemented in mono (TopLevelTransition.java#L93), in future we may want to
                     // not trackFeePayments() only for INVALID_SIGNATURE but for any preCheckResult.status() !=
                     // SO_FAR_SO_GOOD
-                    networkUtilizationManager.trackFeePayments(payer, consensusNow, state);
+                    networkUtilizationManager.trackFeePayments(payer, consensusNow, stack);
                 }
                 recordBuilder.status(validationResult.responseCodeEnum());
                 try {
@@ -405,7 +407,7 @@ public class HandleWorkflow {
                 }
 
             } else {
-                networkUtilizationManager.trackTxn(transactionInfo, consensusNow, state);
+                networkUtilizationManager.trackTxn(transactionInfo, consensusNow, stack);
                 if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)) {
                     // privileged transactions are not charged fees
                     feeAccumulator.chargeFees(payer, creator.accountId(), fees);
@@ -461,7 +463,7 @@ public class HandleWorkflow {
             }
         }
 
-        networkUtilizationManager.saveTo(state);
+        networkUtilizationManager.saveTo(stack);
         transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext);
 
         // Commit all state changes
@@ -469,12 +471,9 @@ public class HandleWorkflow {
 
         // store all records at once, build() records end of transaction to log
         final var recordListResult = recordListBuilder.build();
-        recordCache.add(
-                creator.nodeId(),
-                payer,
-                recordListResult.userTransactionRecord().transactionRecord(),
-                consensusNow);
-        blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
+        recordCache.add(creator.nodeId(), payer, recordListResult.records());
+
+        blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
     }
 
     @NonNull
@@ -500,7 +499,7 @@ public class HandleWorkflow {
 
     private ValidationResult validate(
             @NonNull final Instant consensusNow,
-            @NonNull final HandleContextVerifier verifier,
+            @NonNull final KeyVerifier verifier,
             @NonNull final PreHandleResult preHandleResult,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Fees fees,
@@ -599,7 +598,7 @@ public class HandleWorkflow {
         stack.rollbackFullStack();
         final var userTransactionRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
         userTransactionRecordBuilder.status(status);
-        recordListBuilder.revertChildRecordBuilders(userTransactionRecordBuilder);
+        recordListBuilder.revertChildrenOf(userTransactionRecordBuilder);
     }
 
     /*
@@ -680,12 +679,15 @@ public class HandleWorkflow {
 
         // prepare signature verification
         final var verifications = new HashMap<Key, SignatureVerificationFuture>();
-        final var payerKey = previousResult.payerKey();
-        verifications.put(payerKey, previousResult.verificationResults().get(payerKey));
+        final var payer = solvencyPreCheck.getPayerAccount(storeFactory, previousResult.payer());
+        final var payerKey = payer.key();
 
         // expand all keys
         final var expanded = new HashSet<ExpandedSignaturePair>();
         signatureExpander.expand(sigPairs, expanded);
+        if (payerKey != null && !HapiUtils.isHollow(payer)) {
+            signatureExpander.expand(payerKey, sigPairs, expanded);
+        }
         signatureExpander.expand(currentRequiredPayerKeys, sigPairs, expanded);
         signatureExpander.expand(currentOptionalPayerKeys, sigPairs, expanded);
 
