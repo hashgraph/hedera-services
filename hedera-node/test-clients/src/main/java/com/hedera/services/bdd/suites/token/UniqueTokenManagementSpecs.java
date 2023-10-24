@@ -800,6 +800,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                 .then(wipeTokenAccount(NFT, ACCOUNT, List.of(-5L, -6L)).hasPrecheck(INVALID_NFT_ID));
     }
 
+    @HapiTest
     private HapiSpec mintUniqueTokenReceiptCheck() {
         return defaultHapiSpec("mintUniqueTokenReceiptCheck")
                 .given(
