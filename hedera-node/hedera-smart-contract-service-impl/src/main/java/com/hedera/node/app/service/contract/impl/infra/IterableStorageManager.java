@@ -19,16 +19,23 @@ package com.hedera.node.app.service.contract.impl.infra;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 
 import com.hedera.hapi.node.state.contract.SlotKey;
+import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
-import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Provides the logic for maintaining per-contract linked lists of owned storage, and keeping the
@@ -37,6 +44,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class IterableStorageManager {
+    private static final Logger log = LogManager.getLogger(IterableStorageManager.class);
+
     @Inject
     public IterableStorageManager() {
         // Dagger2
@@ -51,29 +60,178 @@ public class IterableStorageManager {
      * slots used per contract via
      * {@link HandleHederaOperations#updateStorageMetadata(long, Bytes, int)}.
      *
-     * @param hederaOperations the scope of the current transaction
+     * @param enhancement the enhancement for the current transaction
      * @param allAccesses the pending changes to storage values
      * @param allSizeChanges the pending changes to storage sizes
      * @param store the writable state store
      */
     public void persistChanges(
-            @NonNull final HederaOperations hederaOperations,
+            @NonNull final Enhancement enhancement,
             @NonNull final List<StorageAccesses> allAccesses,
             @NonNull final List<StorageSizeChange> allSizeChanges,
             @NonNull final ContractStateStore store) {
-        // TODO - include storage linked list management before performance testing
+        // map to store the first storage key for each contract
+        final Map<Long, Bytes> firstKeys = new HashMap<>();
 
-        // Remove all zeroed-out slots from the linked lists
+        // Adjust the storage linked lists for each contract
         allAccesses.forEach(contractAccesses -> contractAccesses.accesses().forEach(access -> {
-            if (access.isRemoval()) {
-                store.removeSlot(new SlotKey(contractAccesses.contractNumber(), tuweniToPbjBytes(access.key())));
+            if (!access.isReadOnly()) {
+                var firstContractKey = contractFirstKeyOf(enhancement, contractAccesses.contractNumber());
+
+                if (access.isRemoval()) {
+                    firstContractKey = removeAccessedValue(
+                            store, firstContractKey, contractAccesses.contractNumber(), tuweniToPbjBytes(access.key()));
+                } else if (access.isInsertion()) {
+                    firstContractKey = insertAccessedValue(
+                            store,
+                            firstContractKey,
+                            tuweniToPbjBytes(access.writtenValue()),
+                            contractAccesses.contractNumber(),
+                            tuweniToPbjBytes(access.key()));
+                } else if (access.isUpdate()) {
+                    updateAccessedValue(
+                            store,
+                            tuweniToPbjBytes(access.writtenValue()),
+                            contractAccesses.contractNumber(),
+                            tuweniToPbjBytes(access.key()));
+                }
+                firstKeys.put(contractAccesses.contractNumber(), firstContractKey);
             }
         }));
+
         // Update contract metadata with the net change in slots used
         allSizeChanges.forEach(change -> {
             if (change.netChange() != 0) {
-                hederaOperations.updateStorageMetadata(change.contractNumber(), Bytes.EMPTY, change.netChange());
+                enhancement
+                        .operations()
+                        .updateStorageMetadata(
+                                change.contractNumber(), firstKeys.get(change.contractNumber()), change.netChange());
             }
         });
+    }
+
+    /**
+     * Returns the first storage key for the contract or Bytes.Empty if none exists.
+     * @param enhancement the enhancement for the current transaction
+     * @param contractNumber the contract number
+     * @return the first storage key for the contract or null if none exists.
+     */
+    @NonNull
+    private Bytes contractFirstKeyOf(@NonNull final Enhancement enhancement, long contractNumber) {
+        final var account = enhancement.nativeOperations().getAccount(contractNumber);
+        return account != null && account.firstContractStorageKey() != null ? account.firstContractStorageKey() : null;
+    }
+
+    /**
+     * Removes the given key from the slot storage and from the linked list of storage for the given contract, and removes the
+     *
+     * @param store Contract storage store
+     * @param firstContractKey The first key in the linked list of storage for the given contract
+     * @param contractNumber The contract number under consideration
+     * @param key The slot key to remove
+     * @return the new first key in the linked list of storage for the given contract
+     */
+    @NonNull
+    private Bytes removeAccessedValue(
+            @NonNull final ContractStateStore store,
+            @Nullable final Bytes firstContractKey,
+            long contractNumber,
+            @NonNull final Bytes key) {
+        try {
+            Objects.requireNonNull(store);
+            Objects.requireNonNull(key);
+            final var slotKey = new SlotKey(contractNumber, key);
+            final var slotValue = Objects.requireNonNull(store.getSlotValue(slotKey), () -> "Missing key " + slotKey);
+            final var nextKey = slotValue.nextKey();
+            final var prevKey = slotValue.previousKey();
+
+            if (nextKey != null) {
+                final var nextValue = Objects.requireNonNull(
+                        store.getSlotValueForModify(new SlotKey(contractNumber, nextKey)),
+                        () -> "Missing next key " + nextKey);
+                final var newNextValue =
+                        nextValue.copyBuilder().previousKey(prevKey).build();
+                store.putSlot(new SlotKey(contractNumber, nextKey), newNextValue);
+            }
+            if (prevKey != null) {
+                final var prevValue = Objects.requireNonNull(
+                        store.getSlotValueForModify(new SlotKey(contractNumber, prevKey)),
+                        () -> "Missing prev key " + prevKey);
+                final var newPrevValue =
+                        prevValue.copyBuilder().nextKey(nextKey).build();
+                store.putSlot(new SlotKey(contractNumber, prevKey), newPrevValue);
+            }
+            store.removeSlot(slotKey);
+            return firstContractKey == null || key.equals(firstContractKey) ? slotValue.nextKey() : firstContractKey;
+        } catch (Exception irreparable) {
+            log.error(
+                    "Failed link management when removing {}; will be unable to"
+                            + " expire all slots for this contract",
+                    key,
+                    irreparable);
+        }
+        return firstContractKey;
+    }
+
+    /**
+     * Updates the given storage slot with the new values resulting from the contract execution.
+     *
+     * @param store Contract storage store
+     * @param newValue The new value for the slot
+     * @param contractNumber The contract number under consideration
+     * @param key The slot key to update
+     */
+    private void updateAccessedValue(
+            @NonNull final ContractStateStore store,
+            @NonNull Bytes newValue,
+            long contractNumber,
+            @NonNull final Bytes key) {
+        try {
+            Objects.requireNonNull(store);
+            Objects.requireNonNull(newValue);
+            Objects.requireNonNull(key);
+            final var slotKey = new SlotKey(contractNumber, key);
+            final var slotValue =
+                    Objects.requireNonNull(store.getSlotValueForModify(slotKey), () -> "Missing key " + slotKey);
+            final var newSlotValue = slotValue.copyBuilder().value(newValue).build();
+            store.putSlot(new SlotKey(contractNumber, key), newSlotValue);
+        } catch (Exception irreparable) {
+            log.error("Failed link management when updating {}", key, irreparable);
+        }
+    }
+
+    /**
+     * Inserts the given key into the slot storage and into the linked list of storage for the given contract.
+     *
+     * @param store Contract storage store
+     * @param firstContractKey The first key in the linked list of storage for the given contract
+     * @param newValue The new value for the slot
+     * @param contractNumber The contract number under consideration
+     * @param newKey The slot key to insert
+     * @return the new first key in the linked list of storage for the given contract
+     */
+    @NonNull
+    private Bytes insertAccessedValue(
+            @NonNull final ContractStateStore store,
+            @Nullable final Bytes firstContractKey,
+            @NonNull final Bytes newValue,
+            long contractNumber,
+            @NonNull final Bytes newKey) {
+        try {
+            Objects.requireNonNull(store);
+            Objects.requireNonNull(newValue);
+            Objects.requireNonNull(newKey);
+            final var newSlotKey = new SlotKey(contractNumber, newKey);
+            final var newSlotValue = SlotValue.newBuilder()
+                    .value(newValue)
+                    .previousKey(null)
+                    .nextKey(firstContractKey)
+                    .build();
+            store.putSlot(newSlotKey, newSlotValue);
+            return newKey;
+        } catch (Exception irreparable) {
+            log.error("Failed link management when inserting {}", newKey, irreparable);
+        }
+        return firstContractKey;
     }
 }
