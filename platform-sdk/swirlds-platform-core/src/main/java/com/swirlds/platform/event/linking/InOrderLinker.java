@@ -39,6 +39,9 @@ import org.apache.logging.log4j.Logger;
  * Links events.
  * <p>
  * Expects events to be provided in topological order. If an out-of-order event is provided, it is logged and discarded.
+ * <p>
+ * Note: This class doesn't have a direct dependency on the {@link com.swirlds.platform.gossip.shadowgraph.ShadowGraph ShadowGraph},
+ * but it is dependent in the sense that the Shadowgraph is currently responsible for eventually unlinking events.
  */
 public class InOrderLinker {
     private static final Logger logger = LogManager.getLogger(InOrderLinker.class);
