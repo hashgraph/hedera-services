@@ -62,19 +62,19 @@ public abstract class WiringModel {
      * @return a new wire builder
      */
     @NonNull
-    public final <O> WireBuilder<O> wireBuilder(@NonNull final String name) {
-        return new WireBuilder<>(this, name);
+    public final <O> TaskSchedulerBuilder<O> wireBuilder(@NonNull final String name) {
+        return new TaskSchedulerBuilder<>(this, name);
     }
 
     /**
-     * Get a new wire metrics builder. Can be passed to {@link WireBuilder#withMetricsBuilder(WireMetricsBuilder)} to
+     * Get a new wire metrics builder. Can be passed to {@link TaskSchedulerBuilder#withMetricsBuilder(TaskSchedulerMetricsBuilder)} to
      * add metrics to the wire.
      *
      * @return a new wire metrics builder
      */
     @NonNull
-    public final WireMetricsBuilder metricsBuilder() {
-        return new WireMetricsBuilder(platformContext.getMetrics(), time);
+    public final TaskSchedulerMetricsBuilder metricsBuilder() {
+        return new TaskSchedulerMetricsBuilder(platformContext.getMetrics(), time);
     }
 
     /**

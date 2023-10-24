@@ -25,7 +25,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
 /**
- * A task in a {@link SequentialWire}.
+ * A task in a {@link SequentialTaskScheduler}.
  */
 class SequentialTask extends AbstractTask {
     private Consumer<Object> handler;
@@ -38,9 +38,9 @@ class SequentialTask extends AbstractTask {
     /**
      * Constructor.
      *
-     * @param pool                     the fork join pool that will execute tasks on this wire
-     * @param offRamp                  an object counter that is decremented when data is removed from the wire
-     * @param busyTimer                a timer that tracks the amount of time the wire is busy
+     * @param pool                     the fork join pool that will execute tasks on this task scheduler
+     * @param offRamp                  an object counter that is decremented when data is removed from the task scheduler
+     * @param busyTimer                a timer that tracks the amount of time the task scheduler is busy
      * @param uncaughtExceptionHandler the uncaught exception handler
      * @param dependencyCount          the number of dependencies that must be satisfied before this task is eligible
      *                                 for execution. The first task in a sequence has a dependency count of 1 (data

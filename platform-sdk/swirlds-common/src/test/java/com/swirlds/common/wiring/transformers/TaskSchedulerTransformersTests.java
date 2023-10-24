@@ -19,8 +19,8 @@ package com.swirlds.common.wiring.transformers;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 
-import com.swirlds.common.wiring.InputChannel;
-import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.InputWire;
+import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.test.framework.TestWiringModel;
 import java.time.Duration;
@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
-class WireTransformersTests {
+class TaskSchedulerTransformersTests {
 
     private static final WiringModel model = TestWiringModel.getInstance();
 
@@ -38,20 +38,24 @@ class WireTransformersTests {
         // Component A produces lists of integers. It passes data to B, C, and D.
         // Components B and C want individual integers. Component D wants the full list of integers.
 
-        final Wire<List<Integer>> wireA = model.wireBuilder("A").build().cast();
-        final InputChannel<Integer, List<Integer>> wireAIn = wireA.buildInputChannel("A in");
+        final TaskScheduler<List<Integer>> taskSchedulerA =
+                model.wireBuilder("A").build().cast();
+        final InputWire<Integer, List<Integer>> wireAIn = taskSchedulerA.buildInputWire("A in");
 
-        final Wire<Void> wireB = model.wireBuilder("B").build().cast();
-        final InputChannel<Integer, Void> wireBIn = wireB.buildInputChannel("B in");
+        final TaskScheduler<Void> taskSchedulerB =
+                model.wireBuilder("B").build().cast();
+        final InputWire<Integer, Void> wireBIn = taskSchedulerB.buildInputWire("B in");
 
-        final Wire<Void> wireC = model.wireBuilder("C").build().cast();
-        final InputChannel<Integer, Void> wireCIn = wireC.buildInputChannel("C in");
+        final TaskScheduler<Void> taskSchedulerC =
+                model.wireBuilder("C").build().cast();
+        final InputWire<Integer, Void> wireCIn = taskSchedulerC.buildInputWire("C in");
 
-        final Wire<Void> wireD = model.wireBuilder("D").build().cast();
-        final InputChannel<List<Integer>, Void> wireDIn = wireD.buildInputChannel("D in");
+        final TaskScheduler<Void> taskSchedulerD =
+                model.wireBuilder("D").build().cast();
+        final InputWire<List<Integer>, Void> wireDIn = taskSchedulerD.buildInputWire("D in");
 
-        wireA.buildSplitter(Integer.class).solderTo(wireBIn).solderTo(wireCIn);
-        wireA.solderTo(wireDIn);
+        taskSchedulerA.buildSplitter(Integer.class).solderTo(wireBIn).solderTo(wireCIn);
+        taskSchedulerA.solderTo(wireDIn);
 
         wireAIn.bind(x -> {
             return List.of(x, x, x);
@@ -102,22 +106,26 @@ class WireTransformersTests {
         // Wire A passes data to B, C, and a lambda.
         // B wants all of A's data, but C and the lambda only want even values.
 
-        final Wire<Integer> wireA = model.wireBuilder("A").build().cast();
-        final InputChannel<Integer, Integer> inA = wireA.buildInputChannel("A in");
+        final TaskScheduler<Integer> taskSchedulerA =
+                model.wireBuilder("A").build().cast();
+        final InputWire<Integer, Integer> inA = taskSchedulerA.buildInputWire("A in");
 
-        final Wire<Void> wireB = model.wireBuilder("B").build().cast();
-        final InputChannel<Integer, Void> inB = wireB.buildInputChannel("B in");
+        final TaskScheduler<Void> taskSchedulerB =
+                model.wireBuilder("B").build().cast();
+        final InputWire<Integer, Void> inB = taskSchedulerB.buildInputWire("B in");
 
-        final Wire<Void> wireC = model.wireBuilder("C").build().cast();
-        final InputChannel<Integer, Void> inC = wireC.buildInputChannel("C in");
+        final TaskScheduler<Void> taskSchedulerC =
+                model.wireBuilder("C").build().cast();
+        final InputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("C in");
 
         final AtomicInteger countA = new AtomicInteger(0);
         final AtomicInteger countB = new AtomicInteger(0);
         final AtomicInteger countC = new AtomicInteger(0);
         final AtomicInteger countLambda = new AtomicInteger(0);
 
-        wireA.solderTo(inB);
-        wireA.buildFilter("onlyEven", x -> x % 2 == 0)
+        taskSchedulerA.solderTo(inB);
+        taskSchedulerA
+                .buildFilter("onlyEven", x -> x % 2 == 0)
                 .solderTo(inC)
                 .solderTo("lambda", x -> countLambda.set(hash32(countLambda.get(), x)));
 
@@ -160,21 +168,25 @@ class WireTransformersTests {
         // A produces data of type TestData.
         // B wants all of A's data, C wants the integer values, and D wants the boolean values.
 
-        final Wire<TestData> wireA = model.wireBuilder("A").build().cast();
-        final InputChannel<TestData, TestData> inA = wireA.buildInputChannel("A in");
+        final TaskScheduler<TestData> taskSchedulerA =
+                model.wireBuilder("A").build().cast();
+        final InputWire<TestData, TestData> inA = taskSchedulerA.buildInputWire("A in");
 
-        final Wire<Void> wireB = model.wireBuilder("B").build().cast();
-        final InputChannel<TestData, Void> inB = wireB.buildInputChannel("B in");
+        final TaskScheduler<Void> taskSchedulerB =
+                model.wireBuilder("B").build().cast();
+        final InputWire<TestData, Void> inB = taskSchedulerB.buildInputWire("B in");
 
-        final Wire<Void> wireC = model.wireBuilder("C").build().cast();
-        final InputChannel<Integer, Void> inC = wireC.buildInputChannel("C in");
+        final TaskScheduler<Void> taskSchedulerC =
+                model.wireBuilder("C").build().cast();
+        final InputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("C in");
 
-        final Wire<Void> wireD = model.wireBuilder("D").build().cast();
-        final InputChannel<Boolean, Void> inD = wireD.buildInputChannel("D in");
+        final TaskScheduler<Void> taskSchedulerD =
+                model.wireBuilder("D").build().cast();
+        final InputWire<Boolean, Void> inD = taskSchedulerD.buildInputWire("D in");
 
-        wireA.solderTo(inB);
-        wireA.buildTransformer("getValue", TestData::value).solderTo(inC);
-        wireA.buildTransformer("getInvert", TestData::invert).solderTo(inD);
+        taskSchedulerA.solderTo(inB);
+        taskSchedulerA.buildTransformer("getValue", TestData::value).solderTo(inC);
+        taskSchedulerA.buildTransformer("getInvert", TestData::invert).solderTo(inD);
 
         final AtomicInteger countA = new AtomicInteger(0);
         inA.bind(x -> {

@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.wiring.InputChannel;
-import com.swirlds.common.wiring.OutputChannel;
-import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.InputWire;
+import com.swirlds.common.wiring.OutputWire;
+import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -29,10 +29,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class EventSignatureValidationWire {
 
-    private final Wire<GossipEvent> wire;
+    private final TaskScheduler<GossipEvent> taskScheduler;
 
-    private final InputChannel<GossipEvent, GossipEvent> eventInput;
-    private final InputChannel<Long, GossipEvent> minimumGenerationNonAncientInput;
+    private final InputWire<GossipEvent, GossipEvent> eventInput;
+    private final InputWire<Long, GossipEvent> minimumGenerationNonAncientInput;
 
     /**
      * Constructor.
@@ -40,7 +40,7 @@ public class EventSignatureValidationWire {
      * @param model the wiring model
      */
     public EventSignatureValidationWire(@NonNull final WiringModel model) {
-        wire = model.wireBuilder("eventSignatureValidator")
+        taskScheduler = model.wireBuilder("eventSignatureValidator")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
@@ -48,8 +48,8 @@ public class EventSignatureValidationWire {
                 .build()
                 .cast();
 
-        eventInput = wire.buildInputChannel("unvalidated events");
-        minimumGenerationNonAncientInput = wire.buildInputChannel("minimum generation non ancient");
+        eventInput = taskScheduler.buildInputWire("unvalidated events");
+        minimumGenerationNonAncientInput = taskScheduler.buildInputWire("minimum generation non ancient");
     }
 
     /**
@@ -58,7 +58,7 @@ public class EventSignatureValidationWire {
      * @return the event input channel
      */
     @NonNull
-    public InputChannel<GossipEvent, GossipEvent> getEventInput() {
+    public InputWire<GossipEvent, GossipEvent> getEventInput() {
         return eventInput;
     }
 
@@ -68,7 +68,7 @@ public class EventSignatureValidationWire {
      * @return the minimum generation non ancient input channel
      */
     @NonNull
-    public InputChannel<Long, GossipEvent> getMinimumGenerationNonAncientInput() {
+    public InputWire<Long, GossipEvent> getMinimumGenerationNonAncientInput() {
         return minimumGenerationNonAncientInput;
     }
 
@@ -78,8 +78,8 @@ public class EventSignatureValidationWire {
      * @return the event output channel
      */
     @NonNull
-    public OutputChannel<GossipEvent> getEventOutput() {
-        return wire;
+    public OutputWire<GossipEvent> getEventOutput() {
+        return taskScheduler;
     }
 
     /**

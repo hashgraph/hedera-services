@@ -22,8 +22,8 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.wiring.InputChannel;
-import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.InputWire;
+import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.test.framework.TestWiringModel;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
-class ConcurrentWireTests {
+class ConcurrentTaskSchedulerTests {
 
     private static final WiringModel model = TestWiringModel.getInstance();
 
@@ -56,12 +56,14 @@ class ConcurrentWireTests {
             }
         };
 
-        final Wire<Void> wire =
+        final TaskScheduler<Void> taskScheduler =
                 model.wireBuilder("test").withConcurrency(true).build().cast();
-        final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
+        final InputWire<Integer, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Integer.class)
+                .bind(handler);
 
-        assertEquals(-1, wire.getUnprocessedTaskCount());
+        assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
 
         long expecterdCount = 0;
         for (int i = 0; i < 100; i++) {
@@ -72,7 +74,7 @@ class ConcurrentWireTests {
 
         assertEventuallyEquals(expecterdCount, count::get, Duration.ofSeconds(1), "count did not reach expected value");
 
-        assertEquals(-1, wire.getUnprocessedTaskCount());
+        assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
     }
 
     /**
@@ -101,12 +103,14 @@ class ConcurrentWireTests {
             count.addAndGet(x.value);
         };
 
-        final Wire<Void> wire =
+        final TaskScheduler<Void> taskScheduler =
                 model.wireBuilder("test").withConcurrency(true).build().cast();
-        final InputChannel<Operation, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Operation.class).bind(handler);
+        final InputWire<Operation, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Operation.class)
+                .bind(handler);
 
-        assertEquals(-1, wire.getUnprocessedTaskCount());
+        assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
 
         // Create two blocking operations. We should expect to see both operations started even though
         // neither operation will be able to finish.
@@ -132,14 +136,14 @@ class ConcurrentWireTests {
         assertEventuallyTrue(
                 () -> started0.get() && started1.get(), Duration.ofSeconds(1), "operations did not all start");
 
-        assertEquals(-1, wire.getUnprocessedTaskCount());
+        assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
 
         latch0.countDown();
         latch1.countDown();
 
         assertEventuallyEquals(expecterdCount, count::get, Duration.ofSeconds(1), "count did not reach expected value");
 
-        assertEquals(-1, wire.getUnprocessedTaskCount());
+        assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
     }
 
     void backpressureTest() {}

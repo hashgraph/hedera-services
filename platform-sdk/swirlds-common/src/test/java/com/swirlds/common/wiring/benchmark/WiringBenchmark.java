@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.InputChannel;
-import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.InputWire;
+import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -63,7 +63,7 @@ class WiringBenchmark {
         // Ensures that we have no more than 10,000 events in the pipeline at any given time
         final ObjectCounter backpressure = new BackpressureObjectCounter(10_000, Duration.ZERO);
 
-        final Wire<WiringBenchmarkEvent> verificationWire = model.wireBuilder("verification")
+        final TaskScheduler<WiringBenchmarkEvent> verificationTaskScheduler = model.wireBuilder("verification")
                 .withPool(executor)
                 .withConcurrency(true)
                 .withOnRamp(backpressure)
@@ -71,14 +71,14 @@ class WiringBenchmark {
                 .build()
                 .cast();
 
-        final Wire<WiringBenchmarkEvent> orphanBufferWire = model.wireBuilder("orphanBuffer")
+        final TaskScheduler<WiringBenchmarkEvent> orphanBufferTaskScheduler = model.wireBuilder("orphanBuffer")
                 .withPool(executor)
                 .withConcurrency(false)
                 .withExternalBackPressure(true)
                 .build()
                 .cast();
 
-        final Wire<Void> eventPoolWire = model.wireBuilder("eventPool")
+        final TaskScheduler<Void> eventPoolTaskScheduler = model.wireBuilder("eventPool")
                 .withPool(executor)
                 .withConcurrency(false)
                 .withOffRamp(backpressure)
@@ -87,19 +87,19 @@ class WiringBenchmark {
                 .cast();
 
         // Step 2: create channels
-        final InputChannel<WiringBenchmarkEvent, WiringBenchmarkEvent> eventsToOrphanBuffer =
-                orphanBufferWire.buildInputChannel("unordered events");
+        final InputWire<WiringBenchmarkEvent, WiringBenchmarkEvent> eventsToOrphanBuffer =
+                orphanBufferTaskScheduler.buildInputWire("unordered events");
 
-        final InputChannel<WiringBenchmarkEvent, WiringBenchmarkEvent> eventsToBeVerified =
-                verificationWire.buildInputChannel("unverified events");
+        final InputWire<WiringBenchmarkEvent, WiringBenchmarkEvent> eventsToBeVerified =
+                verificationTaskScheduler.buildInputWire("unverified events");
 
-        final InputChannel<WiringBenchmarkEvent, Void> eventsToInsertBackIntoEventPool =
-                eventPoolWire.buildInputChannel("verified events");
+        final InputWire<WiringBenchmarkEvent, Void> eventsToInsertBackIntoEventPool =
+                eventPoolTaskScheduler.buildInputWire("verified events");
 
         // Step 3: solder wire outputs to the channels that want that output
 
-        verificationWire.solderTo(eventsToOrphanBuffer);
-        orphanBufferWire.solderTo(eventsToInsertBackIntoEventPool);
+        verificationTaskScheduler.solderTo(eventsToOrphanBuffer);
+        orphanBufferTaskScheduler.solderTo(eventsToInsertBackIntoEventPool);
 
         // Step 4: construct components
 

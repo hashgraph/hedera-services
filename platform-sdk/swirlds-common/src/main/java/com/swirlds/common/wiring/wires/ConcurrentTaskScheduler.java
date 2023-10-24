@@ -16,7 +16,7 @@
 
 package com.swirlds.common.wiring.wires;
 
-import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -27,11 +27,11 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
 /**
- * A {@link Wire} that permits parallel execution of tasks. Similar to {@link ConcurrentWire} but with extra metering.
+ * A {@link TaskScheduler} that permits parallel execution of tasks. Similar to {@link ConcurrentTaskScheduler} but with extra metering.
  *
- * @param <O> the output time of the wire (use {@link Void}) for a wire with no output type)
+ * @param <O> the output time of the wire (use {@link Void}) for a task scheduler with no output type)
  */
-public class ConcurrentWire<O> extends Wire<O> {
+public class ConcurrentTaskScheduler<O> extends TaskScheduler<O> {
 
     private final ObjectCounter onRamp;
     private final ObjectCounter offRamp;
@@ -53,7 +53,7 @@ public class ConcurrentWire<O> extends Wire<O> {
      *                                 otherwise they will throw.
      * @param insertionIsBlocking      when data is inserted into this wire, will it block until capacity is available?
      */
-    public ConcurrentWire(
+    public ConcurrentTaskScheduler(
             @NonNull final WiringModel model,
             @NonNull final String name,
             @NonNull ForkJoinPool pool,

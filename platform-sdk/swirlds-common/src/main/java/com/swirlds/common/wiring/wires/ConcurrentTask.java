@@ -24,7 +24,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
 /**
- * A task in a {@link ConcurrentWire}.
+ * A task in a {@link ConcurrentTaskScheduler}.
  */
 class ConcurrentTask extends AbstractTask {
 

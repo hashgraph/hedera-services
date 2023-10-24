@@ -19,27 +19,27 @@ package com.swirlds.common.wiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Each wire has a primary output channel. When a component method bound to an intake channel returns data, that data is
- * passed to the primary output channel of the wire. This object provides a way for passing additional data out of a
- * component over additional channels.
+ * Each {@link TaskScheduler} has a primary output wire. When a component method bound to an intake wire returns data,
+ * that data is passed to the primary output wire of the task scheduler. This object provides a way for passing
+ * additional data out of a component over additional output wires.
  *
- * @param <T> the type of data that is transmitted over this channel
+ * @param <T> the type of data that is transmitted over this output wire
  */
-public class SecondaryOutputChannel<T> extends OutputChannel<T> {
+public class SecondaryOutputWire<T> extends OutputWire<T> {
 
     /**
      * Constructor.
      *
-     * @param model               the wiring model containing this output channel
+     * @param model               the wiring model containing this output wire
      * @param name                the name of the parent wire
-     * @param insertionIsBlocking when data is inserted into this channel, will it block until capacity is available?
+     * @param insertionIsBlocking when data is inserted into this wire, will it block until capacity is available?
      */
-    protected SecondaryOutputChannel(@NonNull WiringModel model, @NonNull String name, boolean insertionIsBlocking) {
+    protected SecondaryOutputWire(@NonNull WiringModel model, @NonNull String name, boolean insertionIsBlocking) {
         super(model, name, false, insertionIsBlocking);
     }
 
     /**
-     * Call this to push data out over this channel.
+     * Call this to push data out over this output wire.
      *
      * <p>
      * It is a violation of convention to invoke this method from anywhere other than within the component being

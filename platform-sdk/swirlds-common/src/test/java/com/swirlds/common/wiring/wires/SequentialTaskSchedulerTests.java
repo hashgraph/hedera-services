@@ -30,9 +30,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.wiring.InputChannel;
-import com.swirlds.common.wiring.SecondaryOutputChannel;
-import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.InputWire;
+import com.swirlds.common.wiring.SecondaryOutputWire;
+import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
@@ -52,7 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-class SequentialWireTests {
+class SequentialTaskSchedulerTests {
 
     private static final WiringModel model = TestWiringModel.getInstance();
 
@@ -85,12 +85,14 @@ class SequentialWireTests {
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final Wire<Void> wire =
+        final TaskScheduler<Void> taskScheduler =
                 model.wireBuilder("test").withConcurrency(false).build().cast();
-        final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
-        assertEquals(-1, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        final InputWire<Integer, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Integer.class)
+                .bind(handler);
+        assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
@@ -122,12 +124,14 @@ class SequentialWireTests {
             }
         };
 
-        final Wire<Void> wire =
+        final TaskScheduler<Void> taskScheduler =
                 model.wireBuilder("test").withConcurrency(false).build().cast();
-        final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
-        assertEquals(-1, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        final InputWire<Integer, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Integer.class)
+                .bind(handler);
+        assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
@@ -153,12 +157,14 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final Wire<Void> wire =
+        final TaskScheduler<Void> taskScheduler =
                 model.wireBuilder("test").withConcurrency(false).build().cast();
-        final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
-        assertEquals(-1, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        final InputWire<Integer, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Integer.class)
+                .bind(handler);
+        assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         final int operationsPerWorker = 1_000;
         final int workers = 10;
@@ -214,12 +220,14 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final Wire<Void> wire =
+        final TaskScheduler<Void> taskScheduler =
                 model.wireBuilder("test").withConcurrency(false).build().cast();
-        final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
-        assertEquals(-1, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        final InputWire<Integer, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Integer.class)
+                .bind(handler);
+        assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         final int operationsPerWorker = 1_000;
         final int workers = 10;
@@ -282,12 +290,14 @@ class SequentialWireTests {
             }
         };
 
-        final Wire<Void> wire =
+        final TaskScheduler<Void> taskScheduler =
                 model.wireBuilder("test").withConcurrency(false).build().cast();
-        final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
-        assertEquals(-1, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        final InputWire<Integer, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Integer.class)
+                .bind(handler);
+        assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         // The wire will stop processing at 50, but this should not block the calling thread.
         final AtomicInteger value = new AtomicInteger();
@@ -333,15 +343,17 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire<Void> wire = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
                 .withConcurrency(false)
                 .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                 .build()
                 .cast();
-        final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
-        assertEquals(0, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        final InputWire<Integer, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Integer.class)
+                .bind(handler);
+        assertEquals(0, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
@@ -351,15 +363,16 @@ class SequentialWireTests {
 
         assertEventuallyEquals(
                 100L,
-                wire::getUnprocessedTaskCount,
+                taskScheduler::getUnprocessedTaskCount,
                 Duration.ofSeconds(1),
-                "Wire unprocessed task count did not match expected value, count = " + wire.getUnprocessedTaskCount());
+                "Wire unprocessed task count did not match expected value, count = "
+                        + taskScheduler.getUnprocessedTaskCount());
 
         latch0.countDown();
 
         assertEventuallyEquals(
                 50L,
-                wire::getUnprocessedTaskCount,
+                taskScheduler::getUnprocessedTaskCount,
                 Duration.ofSeconds(1),
                 "Wire unprocessed task count did not match expected value");
 
@@ -367,7 +380,7 @@ class SequentialWireTests {
 
         assertEventuallyEquals(
                 2L,
-                wire::getUnprocessedTaskCount,
+                taskScheduler::getUnprocessedTaskCount,
                 Duration.ofSeconds(1),
                 "Wire unprocessed task count did not match expected value");
 
@@ -375,7 +388,7 @@ class SequentialWireTests {
 
         assertEventuallyEquals(value, wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
 
-        assertEquals(0, wire.getUnprocessedTaskCount());
+        assertEquals(0, taskScheduler.getUnprocessedTaskCount());
     }
 
     /**
@@ -397,16 +410,18 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire<Void> wire = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .withSleepDuration(Duration.ofMillis(1))
                 .build()
                 .cast();
-        final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
-        assertEquals(0, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        final InputWire<Integer, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Integer.class)
+                .bind(handler);
+        assertEquals(0, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         final AtomicInteger value = new AtomicInteger();
 
@@ -420,7 +435,7 @@ class SequentialWireTests {
                 },
                 Duration.ofSeconds(1),
                 "unable to add tasks");
-        assertEquals(11, wire.getUnprocessedTaskCount());
+        assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
         // Try to enqueue work on another thread. It should get stuck and be
         // unable to add anything until we release the latch.
@@ -439,7 +454,7 @@ class SequentialWireTests {
         // wire would have processed all of the work that was added to it.
         MILLISECONDS.sleep(50);
         assertFalse(allWorkAdded.get());
-        assertEquals(11, wire.getUnprocessedTaskCount());
+        assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
         // Even if the wire has no capacity, neither offer() nor inject() should not block.
         completeBeforeTimeout(
@@ -459,9 +474,9 @@ class SequentialWireTests {
         assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(1), "unable to add all work");
         assertEventuallyEquals(
                 0L,
-                wire::getUnprocessedTaskCount,
+                taskScheduler::getUnprocessedTaskCount,
                 Duration.ofSeconds(1),
-                "Wire unprocessed task count did not match expected value. " + wire.getUnprocessedTaskCount());
+                "Wire unprocessed task count did not match expected value. " + taskScheduler.getUnprocessedTaskCount());
         assertEventuallyEquals(
                 value.get(), wireValue::get, Duration.ofSeconds(1), "Wire sum did not match expected sum");
     }
@@ -485,15 +500,17 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire<Void> wire = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .build()
                 .cast();
-        final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
-        assertEquals(0, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        final InputWire<Integer, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Integer.class)
+                .bind(handler);
+        assertEquals(0, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         final AtomicInteger value = new AtomicInteger();
 
@@ -507,7 +524,7 @@ class SequentialWireTests {
                 },
                 Duration.ofSeconds(1),
                 "unable to add tasks");
-        assertEquals(11, wire.getUnprocessedTaskCount());
+        assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
         // Try to enqueue work on another thread. It should get stuck and be
         // unable to add anything until we release the latch.
@@ -529,7 +546,7 @@ class SequentialWireTests {
         // wire would have processed all of the work that was added to it.
         MILLISECONDS.sleep(50);
         assertFalse(allWorkAdded.get());
-        assertEquals(11, wire.getUnprocessedTaskCount());
+        assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
         // Release the latch, all work should now be added
         latch.countDown();
@@ -537,7 +554,7 @@ class SequentialWireTests {
         assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(1), "unable to add all work");
         assertEventuallyEquals(
                 0L,
-                wire::getUnprocessedTaskCount,
+                taskScheduler::getUnprocessedTaskCount,
                 Duration.ofSeconds(1),
                 "Wire unprocessed task count did not match expected value");
         assertEventuallyEquals(
@@ -563,15 +580,17 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire<Void> wire = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .build()
                 .cast();
-        final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
-        assertEquals(0, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        final InputWire<Integer, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Integer.class)
+                .bind(handler);
+        assertEquals(0, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         final AtomicInteger value = new AtomicInteger();
 
@@ -585,7 +604,7 @@ class SequentialWireTests {
                 },
                 Duration.ofSeconds(1),
                 "unable to add tasks");
-        assertEquals(11, wire.getUnprocessedTaskCount());
+        assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
         // Try to enqueue work on another thread. It should get stuck and be
         // unable to add anything until we release the latch.
@@ -623,12 +642,14 @@ class SequentialWireTests {
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final Wire<Void> wire =
+        final TaskScheduler<Void> taskScheduler =
                 model.wireBuilder("test").withConcurrency(false).build().cast();
-        final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
-        assertEquals(-1, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        final InputWire<Integer, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Integer.class)
+                .bind(handler);
+        assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
@@ -663,15 +684,19 @@ class SequentialWireTests {
         final AtomicInteger countC = new AtomicInteger();
         final AtomicInteger countD = new AtomicInteger();
 
-        final Wire<Integer> wireToA = model.wireBuilder("wireToA").build().cast();
-        final Wire<Integer> wireToB = model.wireBuilder("wireToB").build().cast();
-        final Wire<Integer> wireToC = model.wireBuilder("wireToC").build().cast();
-        final Wire<Integer> wireToD = model.wireBuilder("wireToD").build().cast();
+        final TaskScheduler<Integer> taskSchedulerToA =
+                model.wireBuilder("wireToA").build().cast();
+        final TaskScheduler<Integer> taskSchedulerToB =
+                model.wireBuilder("wireToB").build().cast();
+        final TaskScheduler<Integer> taskSchedulerToC =
+                model.wireBuilder("wireToC").build().cast();
+        final TaskScheduler<Integer> taskSchedulerToD =
+                model.wireBuilder("wireToD").build().cast();
 
-        final InputChannel<Integer, Integer> channelToA = wireToA.buildInputChannel("channelToA");
-        final InputChannel<Integer, Integer> channelToB = wireToB.buildInputChannel("channelToB");
-        final InputChannel<Integer, Integer> channelToC = wireToC.buildInputChannel("channelToC");
-        final InputChannel<Integer, Integer> channelToD = wireToD.buildInputChannel("channelToD");
+        final InputWire<Integer, Integer> channelToA = taskSchedulerToA.buildInputWire("channelToA");
+        final InputWire<Integer, Integer> channelToB = taskSchedulerToB.buildInputWire("channelToB");
+        final InputWire<Integer, Integer> channelToC = taskSchedulerToC.buildInputWire("channelToC");
+        final InputWire<Integer, Integer> channelToD = taskSchedulerToD.buildInputWire("channelToD");
 
         final Function<Integer, Integer> handlerA = x -> {
             if (x > 0) {
@@ -704,10 +729,10 @@ class SequentialWireTests {
             }
         };
 
-        wireToA.solderTo(channelToB);
-        wireToB.solderTo(channelToC);
-        wireToC.solderTo(channelToD);
-        wireToD.solderTo(channelToA);
+        taskSchedulerToA.solderTo(channelToB);
+        taskSchedulerToB.solderTo(channelToC);
+        taskSchedulerToC.solderTo(channelToD);
+        taskSchedulerToD.solderTo(channelToA);
 
         channelToA.bind(handlerA);
         channelToB.bind(handlerB);
@@ -764,21 +789,24 @@ class SequentialWireTests {
         final Consumer<Boolean> booleanHandler = x -> wireValue.set((x ? -1 : 1) * wireValue.get());
         final Consumer<String> stringHandler = x -> wireValue.set(hash32(wireValue.get(), x.hashCode()));
 
-        final Wire<Void> wire =
+        final TaskScheduler<Void> taskScheduler =
                 model.wireBuilder("test").withConcurrency(false).build().cast();
 
-        final InputChannel<Integer, Void> integerChannel = wire.buildInputChannel("integerChannel")
+        final InputWire<Integer, Void> integerChannel = taskScheduler
+                .buildInputWire("integerChannel")
                 .withInputType(Integer.class)
                 .bind(integerHandler);
-        final InputChannel<Boolean, Void> booleanChannel = wire.buildInputChannel("booleanChannel")
+        final InputWire<Boolean, Void> booleanChannel = taskScheduler
+                .buildInputWire("booleanChannel")
                 .withInputType(Boolean.class)
                 .bind(booleanHandler);
-        final InputChannel<String, Void> stringChannel = wire.buildInputChannel("stringChannel")
+        final InputWire<String, Void> stringChannel = taskScheduler
+                .buildInputWire("stringChannel")
                 .withInputType(String.class)
                 .bind(stringHandler);
 
-        assertEquals(-1, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
@@ -819,19 +847,23 @@ class SequentialWireTests {
 
         final Consumer<Integer> handler2 = x -> wireValue.set(hash32(wireValue.get(), -x));
 
-        final Wire<Void> wire = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .build()
                 .cast();
 
-        final InputChannel<Integer, Void> channel1 =
-                wire.buildInputChannel("channel1").withInputType(Integer.class).bind(handler1);
-        final InputChannel<Integer, Void> channel2 =
-                wire.buildInputChannel("channel2").withInputType(Integer.class).bind(handler2);
+        final InputWire<Integer, Void> channel1 = taskScheduler
+                .buildInputWire("channel1")
+                .withInputType(Integer.class)
+                .bind(handler1);
+        final InputWire<Integer, Void> channel2 = taskScheduler
+                .buildInputWire("channel2")
+                .withInputType(Integer.class)
+                .bind(handler2);
 
-        assertEquals(0, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        assertEquals(0, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         final AtomicInteger value = new AtomicInteger();
 
@@ -845,7 +877,7 @@ class SequentialWireTests {
                 },
                 Duration.ofSeconds(1),
                 "unable to add tasks");
-        assertEquals(11, wire.getUnprocessedTaskCount());
+        assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
         // Try to enqueue work on another thread. It should get stuck and be
         // unable to add anything until we release the latch.
@@ -864,7 +896,7 @@ class SequentialWireTests {
         // wire would have processed all of the work that was added to it.
         MILLISECONDS.sleep(50);
         assertFalse(allWorkAdded.get());
-        assertEquals(11, wire.getUnprocessedTaskCount());
+        assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
         // Even if the wire has no capacity, neither offer() nor inject() should not block.
         completeBeforeTimeout(
@@ -884,7 +916,7 @@ class SequentialWireTests {
         assertEventuallyTrue(allWorkAdded::get, Duration.ofSeconds(1), "unable to add all work");
         assertEventuallyEquals(
                 0L,
-                wire::getUnprocessedTaskCount,
+                taskScheduler::getUnprocessedTaskCount,
                 Duration.ofSeconds(1),
                 "Wire unprocessed task count did not match expected value");
         assertEventuallyEquals(
@@ -902,20 +934,20 @@ class SequentialWireTests {
 
         final ObjectCounter backpressure = new BackpressureObjectCounter(11, Duration.ofMillis(1));
 
-        final Wire<Void> wireA = model.wireBuilder("testA")
+        final TaskScheduler<Void> taskSchedulerA = model.wireBuilder("testA")
                 .withConcurrency(false)
                 .withOnRamp(backpressure)
                 .build()
                 .cast();
 
-        final Wire<Void> wireB = model.wireBuilder("testB")
+        final TaskScheduler<Void> taskSchedulerB = model.wireBuilder("testB")
                 .withConcurrency(false)
                 .withOffRamp(backpressure)
                 .build()
                 .cast();
 
-        final InputChannel<Integer, Void> channelA = wireA.buildInputChannel("channelA");
-        final InputChannel<Integer, Void> channelB = wireB.buildInputChannel("channelB");
+        final InputWire<Integer, Void> channelA = taskSchedulerA.buildInputWire("channelA");
+        final InputWire<Integer, Void> channelB = taskSchedulerB.buildInputWire("channelB");
 
         final Consumer<Integer> handlerA = x -> {
             wireValueA.set(hash32(wireValueA.get(), -x));
@@ -938,8 +970,8 @@ class SequentialWireTests {
         channelB.bind(handlerB);
 
         assertEquals(0, backpressure.getCount());
-        assertEquals("testA", wireA.getName());
-        assertEquals("testB", wireB.getName());
+        assertEquals("testA", taskSchedulerA.getName());
+        assertEquals("testB", taskSchedulerB.getName());
 
         final AtomicInteger valueA = new AtomicInteger();
         final AtomicInteger valueB = new AtomicInteger();
@@ -1024,21 +1056,23 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire<Void> wire = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .withFlushingEnabled(true)
                 .build()
                 .cast();
-        final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
-        assertEquals(0, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        final InputWire<Integer, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Integer.class)
+                .bind(handler);
+        assertEquals(0, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         final AtomicInteger value = new AtomicInteger();
 
         // Flushing a wire with nothing in it should return quickly.
-        completeBeforeTimeout(wire::flush, Duration.ofSeconds(1), "unable to flush wire");
+        completeBeforeTimeout(taskScheduler::flush, Duration.ofSeconds(1), "unable to flush wire");
 
         // We will be stuck handling 0 and we will have the capacity for 10 more, for a total of 11 tasks in flight
         completeBeforeTimeout(
@@ -1050,7 +1084,7 @@ class SequentialWireTests {
                 },
                 Duration.ofSeconds(1),
                 "unable to add tasks");
-        assertEquals(11, wire.getUnprocessedTaskCount());
+        assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
         // Try to enqueue work on another thread. It should get stuck and be
         // unable to add anything until we release the latch.
@@ -1069,7 +1103,7 @@ class SequentialWireTests {
         final AtomicBoolean flushed = new AtomicBoolean(false);
         new ThreadConfiguration(getStaticThreadManager())
                 .setRunnable(() -> {
-                    wire.flush();
+                    taskScheduler.flush();
                     flushed.set(true);
                 })
                 .build(true);
@@ -1080,7 +1114,7 @@ class SequentialWireTests {
         assertFalse(allWorkAdded.get());
         assertFalse(flushed.get());
         // The flush operation puts a task on the wire, which bumps the number up to 12 from 11
-        assertEquals(12, wire.getUnprocessedTaskCount());
+        assertEquals(12, taskScheduler.getUnprocessedTaskCount());
 
         // Even if the wire has no capacity, neither offer() nor inject() should not block.
         completeBeforeTimeout(
@@ -1101,7 +1135,7 @@ class SequentialWireTests {
         assertEventuallyTrue(flushed::get, Duration.ofSeconds(1), "unable to flush wire");
         assertEventuallyEquals(
                 0L,
-                wire::getUnprocessedTaskCount,
+                taskScheduler::getUnprocessedTaskCount,
                 Duration.ofSeconds(1),
                 "Wire unprocessed task count did not match expected value");
         assertEventuallyEquals(
@@ -1127,21 +1161,23 @@ class SequentialWireTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final Wire<Void> wire = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .withFlushingEnabled(true)
                 .build()
                 .cast();
-        final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
-        assertEquals(0, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        final InputWire<Integer, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Integer.class)
+                .bind(handler);
+        assertEquals(0, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         final AtomicInteger value = new AtomicInteger();
 
         // Flushing a wire with nothing in it should return quickly.
-        completeBeforeTimeout(wire::flush, Duration.ofSeconds(1), "unable to flush wire");
+        completeBeforeTimeout(taskScheduler::flush, Duration.ofSeconds(1), "unable to flush wire");
 
         // We will be stuck handling 0 and we will have the capacity for 10 more, for a total of 11 tasks in flight
         completeBeforeTimeout(
@@ -1153,7 +1189,7 @@ class SequentialWireTests {
                 },
                 Duration.ofSeconds(1),
                 "unable to add tasks");
-        assertEquals(11, wire.getUnprocessedTaskCount());
+        assertEquals(11, taskScheduler.getUnprocessedTaskCount());
 
         // Try to enqueue work on another thread. It should get stuck and be
         // unable to add anything until we release the latch.
@@ -1173,7 +1209,7 @@ class SequentialWireTests {
         new ThreadConfiguration(getStaticThreadManager())
                 .setRunnable(() -> {
                     try {
-                        wire.interruptableFlush();
+                        taskScheduler.interruptableFlush();
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
@@ -1187,7 +1223,7 @@ class SequentialWireTests {
         final Thread threadToInterrupt = new ThreadConfiguration(getStaticThreadManager())
                 .setRunnable(() -> {
                     try {
-                        wire.interruptableFlush();
+                        taskScheduler.interruptableFlush();
                         flushedBeforeInterrupt.set(true);
                     } catch (InterruptedException e) {
                         interrupted.set(true);
@@ -1210,7 +1246,7 @@ class SequentialWireTests {
         assertFalse(allWorkAdded.get());
         assertFalse(flushed.get());
         // The flush operation puts a task on the wire and we flush twice, bumping the number from 11 to 13
-        assertEquals(13, wire.getUnprocessedTaskCount());
+        assertEquals(13, taskScheduler.getUnprocessedTaskCount());
 
         // Even if the wire has no capacity, neither offer() nor inject() should not block.
         completeBeforeTimeout(
@@ -1231,7 +1267,7 @@ class SequentialWireTests {
         assertEventuallyTrue(flushed::get, Duration.ofSeconds(1), "unable to flush wire");
         assertEventuallyEquals(
                 0L,
-                wire::getUnprocessedTaskCount,
+                taskScheduler::getUnprocessedTaskCount,
                 Duration.ofSeconds(1),
                 "Wire unprocessed task count did not match expected value");
         assertEventuallyEquals(
@@ -1240,14 +1276,17 @@ class SequentialWireTests {
 
     @Test
     void flushDisabledTest() {
-        final Wire<Void> wire = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(10)
                 .build()
                 .cast();
 
-        assertThrows(UnsupportedOperationException.class, wire::flush, "flush() should not be supported");
-        assertThrows(UnsupportedOperationException.class, wire::interruptableFlush, "flush() should not be supported");
+        assertThrows(UnsupportedOperationException.class, taskScheduler::flush, "flush() should not be supported");
+        assertThrows(
+                UnsupportedOperationException.class,
+                taskScheduler::interruptableFlush,
+                "flush() should not be supported");
     }
 
     @Test
@@ -1262,15 +1301,17 @@ class SequentialWireTests {
 
         final AtomicInteger exceptionCount = new AtomicInteger();
 
-        final Wire<Void> wire = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
                 .withConcurrency(false)
                 .withUncaughtExceptionHandler((t, e) -> exceptionCount.incrementAndGet())
                 .build()
                 .cast();
-        final InputChannel<Integer, Void> channel =
-                wire.buildInputChannel("channel").withInputType(Integer.class).bind(handler);
-        assertEquals(-1, wire.getUnprocessedTaskCount());
-        assertEquals("test", wire.getName());
+        final InputWire<Integer, Void> channel = taskScheduler
+                .buildInputWire("channel")
+                .withInputType(Integer.class)
+                .bind(handler);
+        assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
+        assertEquals("test", taskScheduler.getName());
 
         int value = 0;
         for (int i = 0; i < 100; i++) {
@@ -1295,21 +1336,21 @@ class SequentialWireTests {
 
         // create 3 wires with the following bindings:
         // a -> b -> c -> latch
-        final Wire<Void> a = model.wireBuilder("a")
+        final TaskScheduler<Void> a = model.wireBuilder("a")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build()
                 .cast();
-        final Wire<Void> b = model.wireBuilder("b")
+        final TaskScheduler<Void> b = model.wireBuilder("b")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build()
                 .cast();
-        final Wire<Void> c = model.wireBuilder("c")
+        final TaskScheduler<Void> c = model.wireBuilder("c")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
@@ -1317,9 +1358,9 @@ class SequentialWireTests {
                 .build()
                 .cast();
 
-        final InputChannel<Object, Void> channelA = a.buildInputChannel("channelA");
-        final InputChannel<Object, Void> channelB = b.buildInputChannel("channelB");
-        final InputChannel<Object, Void> channelC = c.buildInputChannel("channelC");
+        final InputWire<Object, Void> channelA = a.buildInputWire("channelA");
+        final InputWire<Object, Void> channelB = b.buildInputWire("channelB");
+        final InputWire<Object, Void> channelC = c.buildInputWire("channelC");
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -1361,19 +1402,23 @@ class SequentialWireTests {
      */
     @Test
     void simpleSolderingTest() {
-        final Wire<Integer> wireA = model.wireBuilder("A").build().cast();
-        final Wire<Integer> wireB = model.wireBuilder("A").build().cast();
-        final Wire<Integer> wireC = model.wireBuilder("A").build().cast();
-        final Wire<Void> wireD = model.wireBuilder("A").build().cast();
+        final TaskScheduler<Integer> taskSchedulerA =
+                model.wireBuilder("A").build().cast();
+        final TaskScheduler<Integer> taskSchedulerB =
+                model.wireBuilder("A").build().cast();
+        final TaskScheduler<Integer> taskSchedulerC =
+                model.wireBuilder("A").build().cast();
+        final TaskScheduler<Void> taskSchedulerD =
+                model.wireBuilder("A").build().cast();
 
-        final InputChannel<Integer, Integer> inputA = wireA.buildInputChannel("inputA");
-        final InputChannel<Integer, Integer> inputB = wireB.buildInputChannel("inputB");
-        final InputChannel<Integer, Integer> inputC = wireC.buildInputChannel("inputC");
-        final InputChannel<Integer, Void> inputD = wireD.buildInputChannel("inputD");
+        final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
+        final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
+        final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
+        final InputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        wireA.solderTo(inputB);
-        wireB.solderTo(inputC);
-        wireC.solderTo(inputD);
+        taskSchedulerA.solderTo(inputB);
+        taskSchedulerB.solderTo(inputC);
+        taskSchedulerC.solderTo(inputD);
 
         final AtomicInteger countA = new AtomicInteger();
         final AtomicInteger countB = new AtomicInteger();
@@ -1418,19 +1463,23 @@ class SequentialWireTests {
      */
     @Test
     void lambdaSolderingTest() {
-        final Wire<Integer> wireA = model.wireBuilder("A").build().cast();
-        final Wire<Integer> wireB = model.wireBuilder("B").build().cast();
-        final Wire<Integer> wireC = model.wireBuilder("C").build().cast();
-        final Wire<Void> wireD = model.wireBuilder("D").build().cast();
+        final TaskScheduler<Integer> taskSchedulerA =
+                model.wireBuilder("A").build().cast();
+        final TaskScheduler<Integer> taskSchedulerB =
+                model.wireBuilder("B").build().cast();
+        final TaskScheduler<Integer> taskSchedulerC =
+                model.wireBuilder("C").build().cast();
+        final TaskScheduler<Void> taskSchedulerD =
+                model.wireBuilder("D").build().cast();
 
-        final InputChannel<Integer, Integer> inputA = wireA.buildInputChannel("inputA");
-        final InputChannel<Integer, Integer> inputB = wireB.buildInputChannel("inputB");
-        final InputChannel<Integer, Integer> inputC = wireC.buildInputChannel("inputC");
-        final InputChannel<Integer, Void> inputD = wireD.buildInputChannel("inputD");
+        final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
+        final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
+        final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
+        final InputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        wireA.solderTo(inputB);
-        wireB.solderTo(inputC);
-        wireC.solderTo(inputD);
+        taskSchedulerA.solderTo(inputB);
+        taskSchedulerB.solderTo(inputC);
+        taskSchedulerC.solderTo(inputD);
 
         final AtomicInteger countA = new AtomicInteger();
         final AtomicInteger countB = new AtomicInteger();
@@ -1438,7 +1487,7 @@ class SequentialWireTests {
         final AtomicInteger countD = new AtomicInteger();
 
         final AtomicInteger lambdaSum = new AtomicInteger();
-        wireB.solderTo("lambda", lambdaSum::getAndAdd);
+        taskSchedulerB.solderTo("lambda", lambdaSum::getAndAdd);
 
         inputA.bind(x -> {
             countA.set(hash32(countA.get(), x));
@@ -1484,26 +1533,31 @@ class SequentialWireTests {
         // A passes data to X, Y, and Z
         // X, Y, and Z pass data to B
 
-        final Wire<Integer> wireA = model.wireBuilder("A").build().cast();
-        final InputChannel<Integer, Integer> addNewValueToA = wireA.buildInputChannel("addNewValueToA");
-        final InputChannel<Boolean, Integer> setInversionBitInA = wireA.buildInputChannel("setInversionBitInA");
+        final TaskScheduler<Integer> taskSchedulerA =
+                model.wireBuilder("A").build().cast();
+        final InputWire<Integer, Integer> addNewValueToA = taskSchedulerA.buildInputWire("addNewValueToA");
+        final InputWire<Boolean, Integer> setInversionBitInA = taskSchedulerA.buildInputWire("setInversionBitInA");
 
-        final Wire<Integer> wireX = model.wireBuilder("X").build().cast();
-        final InputChannel<Integer, Integer> inputX = wireX.buildInputChannel("inputX");
+        final TaskScheduler<Integer> taskSchedulerX =
+                model.wireBuilder("X").build().cast();
+        final InputWire<Integer, Integer> inputX = taskSchedulerX.buildInputWire("inputX");
 
-        final Wire<Integer> wireY = model.wireBuilder("Y").build().cast();
-        final InputChannel<Integer, Integer> inputY = wireY.buildInputChannel("inputY");
+        final TaskScheduler<Integer> taskSchedulerY =
+                model.wireBuilder("Y").build().cast();
+        final InputWire<Integer, Integer> inputY = taskSchedulerY.buildInputWire("inputY");
 
-        final Wire<Integer> wireZ = model.wireBuilder("Z").build().cast();
-        final InputChannel<Integer, Integer> inputZ = wireZ.buildInputChannel("inputZ");
+        final TaskScheduler<Integer> taskSchedulerZ =
+                model.wireBuilder("Z").build().cast();
+        final InputWire<Integer, Integer> inputZ = taskSchedulerZ.buildInputWire("inputZ");
 
-        final Wire<Void> wireB = model.wireBuilder("B").build().cast();
-        final InputChannel<Integer, Void> inputB = wireB.buildInputChannel("inputB");
+        final TaskScheduler<Void> taskSchedulerB =
+                model.wireBuilder("B").build().cast();
+        final InputWire<Integer, Void> inputB = taskSchedulerB.buildInputWire("inputB");
 
-        wireA.solderTo(inputX).solderTo(inputY).solderTo(inputZ);
-        wireX.solderTo(inputB);
-        wireY.solderTo(inputB);
-        wireZ.solderTo(inputB);
+        taskSchedulerA.solderTo(inputX).solderTo(inputY).solderTo(inputZ);
+        taskSchedulerX.solderTo(inputB);
+        taskSchedulerY.solderTo(inputB);
+        taskSchedulerZ.solderTo(inputB);
 
         final AtomicInteger countA = new AtomicInteger();
         final AtomicBoolean invertA = new AtomicBoolean();
@@ -1582,18 +1636,20 @@ class SequentialWireTests {
         // In this test, wires A and B are connected to the input of wire C, which has a maximum capacity.
         // Wire A respects back pressure, but wire B uses injection and can ignore it.
 
-        final Wire<Integer> wireA = model.wireBuilder("A").build().cast();
-        final InputChannel<Integer, Integer> inA = wireA.buildInputChannel("inA");
+        final TaskScheduler<Integer> taskSchedulerA =
+                model.wireBuilder("A").build().cast();
+        final InputWire<Integer, Integer> inA = taskSchedulerA.buildInputWire("inA");
 
-        final Wire<Integer> wireB = model.wireBuilder("B").build().cast();
-        final InputChannel<Integer, Integer> inB = wireB.buildInputChannel("inB");
+        final TaskScheduler<Integer> taskSchedulerB =
+                model.wireBuilder("B").build().cast();
+        final InputWire<Integer, Integer> inB = taskSchedulerB.buildInputWire("inB");
 
-        final Wire<Void> wireC =
+        final TaskScheduler<Void> taskSchedulerC =
                 model.wireBuilder("C").withUnhandledTaskCapacity(10).build().cast();
-        final InputChannel<Integer, Void> inC = wireC.buildInputChannel("inC");
+        final InputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("inC");
 
-        wireA.solderTo(inC); // respects capacity
-        wireB.injectionSolderTo(inC); // ignores capacity
+        taskSchedulerA.solderTo(inC); // respects capacity
+        taskSchedulerB.injectionSolderTo(inC); // ignores capacity
 
         final AtomicInteger countA = new AtomicInteger();
         inA.bind(x -> {
@@ -1631,9 +1687,9 @@ class SequentialWireTests {
         // Eventually, C should have 10 things that have not yet been fully processed.
         assertEventuallyEquals(
                 10L,
-                wireC::getUnprocessedTaskCount,
+                taskSchedulerC::getUnprocessedTaskCount,
                 Duration.ofSeconds(1),
-                "C should have 10 unprocessed tasks, currently has " + wireC.getUnprocessedTaskCount());
+                "C should have 10 unprocessed tasks, currently has " + taskSchedulerC.getUnprocessedTaskCount());
 
         assertEquals(expectedCount, countA.get());
         assertEquals(expectedCount, countB.get());
@@ -1650,7 +1706,7 @@ class SequentialWireTests {
         // If we wait some time, the task from B should have increased C's count to 11, but the task from A
         // should have been unable to increase C's count.
         MILLISECONDS.sleep(50);
-        assertEquals(11, wireC.getUnprocessedTaskCount());
+        assertEquals(11, taskSchedulerC.getUnprocessedTaskCount());
 
         // Push some more data into A and B. A will be unable to process it because it's still
         // stuck pushing the previous value.
@@ -1665,7 +1721,7 @@ class SequentialWireTests {
         // Even if we wait, A should not have been able to process the task.
         MILLISECONDS.sleep(50);
         assertEquals(expectedCount, countA.get());
-        assertEquals(12, wireC.getUnprocessedTaskCount());
+        assertEquals(12, taskSchedulerC.getUnprocessedTaskCount());
 
         // Releasing the latch should allow data to flow through C.
         latch.countDown();
@@ -1678,19 +1734,23 @@ class SequentialWireTests {
      */
     @Test
     void squelchNullValuesInWiresTest() {
-        final Wire<Integer> wireA = model.wireBuilder("A").build().cast();
-        final Wire<Integer> wireB = model.wireBuilder("A").build().cast();
-        final Wire<Integer> wireC = model.wireBuilder("A").build().cast();
-        final Wire<Void> wireD = model.wireBuilder("A").build().cast();
+        final TaskScheduler<Integer> taskSchedulerA =
+                model.wireBuilder("A").build().cast();
+        final TaskScheduler<Integer> taskSchedulerB =
+                model.wireBuilder("A").build().cast();
+        final TaskScheduler<Integer> taskSchedulerC =
+                model.wireBuilder("A").build().cast();
+        final TaskScheduler<Void> taskSchedulerD =
+                model.wireBuilder("A").build().cast();
 
-        final InputChannel<Integer, Integer> inputA = wireA.buildInputChannel("inputA");
-        final InputChannel<Integer, Integer> inputB = wireB.buildInputChannel("inputB");
-        final InputChannel<Integer, Integer> inputC = wireC.buildInputChannel("inputC");
-        final InputChannel<Integer, Void> inputD = wireD.buildInputChannel("inputD");
+        final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
+        final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
+        final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
+        final InputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        wireA.solderTo(inputB);
-        wireB.solderTo(inputC);
-        wireC.solderTo(inputD);
+        taskSchedulerA.solderTo(inputB);
+        taskSchedulerB.solderTo(inputC);
+        taskSchedulerC.solderTo(inputD);
 
         final AtomicInteger countA = new AtomicInteger();
         final AtomicInteger countB = new AtomicInteger();
@@ -1760,39 +1820,39 @@ class SequentialWireTests {
      */
     @Test
     void metricsEnabledTest() {
-        final Wire<Integer> wireA = model.wireBuilder("A")
+        final TaskScheduler<Integer> taskSchedulerA = model.wireBuilder("A")
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(true)
                         .withUnhandledTaskMetricEnabled(true))
                 .build()
                 .cast();
-        final Wire<Integer> wireB = model.wireBuilder("B")
+        final TaskScheduler<Integer> taskSchedulerB = model.wireBuilder("B")
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(true)
                         .withUnhandledTaskMetricEnabled(false))
                 .build()
                 .cast();
-        final Wire<Integer> wireC = model.wireBuilder("C")
+        final TaskScheduler<Integer> taskSchedulerC = model.wireBuilder("C")
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(false)
                         .withUnhandledTaskMetricEnabled(true))
                 .build()
                 .cast();
-        final Wire<Void> wireD = model.wireBuilder("D")
+        final TaskScheduler<Void> taskSchedulerD = model.wireBuilder("D")
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(false)
                         .withUnhandledTaskMetricEnabled(false))
                 .build()
                 .cast();
 
-        final InputChannel<Integer, Integer> inputA = wireA.buildInputChannel("inputA");
-        final InputChannel<Integer, Integer> inputB = wireB.buildInputChannel("inputB");
-        final InputChannel<Integer, Integer> inputC = wireC.buildInputChannel("inputC");
-        final InputChannel<Integer, Void> inputD = wireD.buildInputChannel("inputD");
+        final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
+        final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
+        final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
+        final InputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        wireA.solderTo(inputB);
-        wireB.solderTo(inputC);
-        wireC.solderTo(inputD);
+        taskSchedulerA.solderTo(inputB);
+        taskSchedulerB.solderTo(inputC);
+        taskSchedulerC.solderTo(inputD);
 
         final AtomicInteger countA = new AtomicInteger();
         final AtomicInteger countB = new AtomicInteger();
@@ -1834,17 +1894,19 @@ class SequentialWireTests {
 
     @Test
     void multipleOutputChannelsTest() {
-        final Wire<Integer> wireA = model.wireBuilder("A").build().cast();
-        final InputChannel<Integer, Integer> aIn = wireA.buildInputChannel("aIn");
-        final SecondaryOutputChannel<Boolean> aOutBoolean = wireA.buildSecondaryOutputChanel();
-        final SecondaryOutputChannel<String> aOutString = wireA.buildSecondaryOutputChanel();
+        final TaskScheduler<Integer> taskSchedulerA =
+                model.wireBuilder("A").build().cast();
+        final InputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
+        final SecondaryOutputWire<Boolean> aOutBoolean = taskSchedulerA.buildSecondaryOutputWire();
+        final SecondaryOutputWire<String> aOutString = taskSchedulerA.buildSecondaryOutputWire();
 
-        final Wire<Void> wireB = model.wireBuilder("A").build().cast();
-        final InputChannel<Integer, Void> bInInteger = wireB.buildInputChannel("bIn1");
-        final InputChannel<Boolean, Void> bInBoolean = wireB.buildInputChannel("bIn2");
-        final InputChannel<String, Void> bInString = wireB.buildInputChannel("bIn3");
+        final TaskScheduler<Void> taskSchedulerB =
+                model.wireBuilder("A").build().cast();
+        final InputWire<Integer, Void> bInInteger = taskSchedulerB.buildInputWire("bIn1");
+        final InputWire<Boolean, Void> bInBoolean = taskSchedulerB.buildInputWire("bIn2");
+        final InputWire<String, Void> bInString = taskSchedulerB.buildInputWire("bIn3");
 
-        wireA.solderTo(bInInteger);
+        taskSchedulerA.solderTo(bInInteger);
         aOutBoolean.solderTo(bInBoolean);
         aOutString.solderTo(bInString);
 
@@ -1894,26 +1956,26 @@ class SequentialWireTests {
 
         final ObjectCounter counter = new BackpressureObjectCounter(10, Duration.ofMillis(1));
 
-        final Wire<Integer> wireA = model.wireBuilder("A")
+        final TaskScheduler<Integer> taskSchedulerA = model.wireBuilder("A")
                 .withOnRamp(counter)
                 .withExternalBackPressure(true)
                 .build()
                 .cast();
-        final InputChannel<Integer, Integer> aIn = wireA.buildInputChannel("aIn");
+        final InputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
 
-        final Wire<Integer> wireB =
+        final TaskScheduler<Integer> taskSchedulerB =
                 model.wireBuilder("B").withExternalBackPressure(true).build().cast();
-        final InputChannel<Integer, Integer> bIn = wireB.buildInputChannel("bIn");
+        final InputWire<Integer, Integer> bIn = taskSchedulerB.buildInputWire("bIn");
 
-        final Wire<Void> wireC = model.wireBuilder("C")
+        final TaskScheduler<Void> taskSchedulerC = model.wireBuilder("C")
                 .withOffRamp(counter)
                 .withExternalBackPressure(true)
                 .build()
                 .cast();
-        final InputChannel<Integer, Void> cIn = wireC.buildInputChannel("cIn");
+        final InputWire<Integer, Void> cIn = taskSchedulerC.buildInputWire("cIn");
 
-        wireA.solderTo(bIn);
-        wireB.solderTo(cIn);
+        taskSchedulerA.solderTo(bIn);
+        taskSchedulerB.solderTo(cIn);
 
         final AtomicInteger countA = new AtomicInteger();
         final CountDownLatch latchA = new CountDownLatch(1);
@@ -1934,7 +1996,6 @@ class SequentialWireTests {
         cIn.bind(x -> {
             countC.set(hash32(countC.get(), x));
         });
-
 
         // TODO finish this test
 

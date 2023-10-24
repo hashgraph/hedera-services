@@ -17,7 +17,7 @@
 package com.swirlds.common.wiring.wires;
 
 import com.swirlds.common.metrics.extensions.FractionalTimer;
-import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,11 +30,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
- * A {@link Wire} that guarantees that tasks are executed sequentially in the order they are received.
+ * A {@link TaskScheduler} that guarantees that tasks are executed sequentially in the order they are received.
  *
- * @param <O> the output time of the wire (use {@link Void}) for a wire with no output type)
+ * @param <O> the output time of the wire (use {@link Void}) for a task scheduler with no output type)
  */
-public class SequentialWire<O> extends Wire<O> {
+public class SequentialTaskScheduler<O> extends TaskScheduler<O> {
 
     private final AtomicReference<SequentialTask> lastTask;
     private final ObjectCounter onRamp;
@@ -47,19 +47,20 @@ public class SequentialWire<O> extends Wire<O> {
      * Constructor.
      *
      * @param model                    the wiring model containing this wire
-     * @param name                     the name of the wire
-     * @param pool                     the fork join pool that will execute tasks on this wire
+     * @param name                     the name of the task scheduler
+     * @param pool                     the fork join pool that will execute tasks on this scheduler
      * @param uncaughtExceptionHandler the uncaught exception handler
-     * @param onRamp                   an object counter that is incremented when data is added to the wire, ignored if
-     *                                 null
-     * @param offRamp                  an object counter that is decremented when data is removed from the wire, ignored
-     *                                 if null
-     * @param busyTimer                a timer that tracks the amount of time the wire is busy, ignored if null
+     * @param onRamp                   an object counter that is incremented when data is added to the task scheduler,
+     *                                 ignored if null
+     * @param offRamp                  an object counter that is decremented when data is removed from the task
+     *                                 scheduler, ignored if null
+     * @param busyTimer                a timer that tracks the amount of time the scheduler is busy
      * @param flushEnabled             if true, then {@link #flush()} and {@link #interruptableFlush()} will be enabled,
      *                                 otherwise they will throw.
-     * @param insertionIsBlocking      when data is inserted into this wire, will it block until capacity is available?
+     * @param insertionIsBlocking      when data is inserted into this task scheduler, will it block until capacity is
+     *                                 available?
      */
-    public SequentialWire(
+    public SequentialTaskScheduler(
             @NonNull final WiringModel model,
             @NonNull final String name,
             @NonNull ForkJoinPool pool,
@@ -129,7 +130,7 @@ public class SequentialWire<O> extends Wire<O> {
      * @param data    the data to be passed to the consumer for this task
      */
     private void scheduleTask(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
-        // This wire may be called by may threads, but it must serialize the results a sequence of tasks that are
+        // This method may be called by may threads, but it must serialize the results a sequence of tasks that are
         // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
         // from task to task, such that each task depends on the previous task.
 

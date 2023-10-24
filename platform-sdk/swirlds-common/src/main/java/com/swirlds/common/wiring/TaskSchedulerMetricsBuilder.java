@@ -28,9 +28,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * Configures metrics for a {@link Wire}.
+ * Configures metrics for a {@link TaskScheduler}.
  */
-public class WireMetricsBuilder {
+public class TaskSchedulerMetricsBuilder {
 
     private final Metrics metrics;
     private final Time time;
@@ -44,7 +44,7 @@ public class WireMetricsBuilder {
      * @param metrics the metrics object to configure
      * @param time    the time object to use for metrics
      */
-    WireMetricsBuilder(@NonNull final Metrics metrics, @NonNull final Time time) {
+    TaskSchedulerMetricsBuilder(@NonNull final Metrics metrics, @NonNull final Time time) {
         this.metrics = Objects.requireNonNull(metrics);
         this.time = Objects.requireNonNull(time);
     }
@@ -56,7 +56,7 @@ public class WireMetricsBuilder {
      * @return this
      */
     @NonNull
-    public WireMetricsBuilder withUnhandledTaskMetricEnabled(final boolean enabled) {
+    public TaskSchedulerMetricsBuilder withUnhandledTaskMetricEnabled(final boolean enabled) {
         this.unhandledTaskMetricEnabled = enabled;
         return this;
     }
@@ -64,13 +64,13 @@ public class WireMetricsBuilder {
     /**
      * Set whether the busy fraction metric should be enabled. Default false.
      * <p>
-     * Note: this metric is currently only compatible with non-concurrent wire implementations. At a future time this
-     * metric will be updated to work with concurrent wire implementations.
+     * Note: this metric is currently only compatible with non-concurrent task scheduler implementations. At a future
+     * time this metric may be updated to work with concurrent scheduler implementations.
      *
      * @param enabled true if the busy fraction metric should be enabled, false otherwise
      * @return this
      */
-    public WireMetricsBuilder withBusyFractionMetricsEnabled(final boolean enabled) {
+    public TaskSchedulerMetricsBuilder withBusyFractionMetricsEnabled(final boolean enabled) {
         this.busyFractionMetricEnabled = enabled;
         return this;
     }
@@ -111,16 +111,20 @@ public class WireMetricsBuilder {
     /**
      * Register all configured metrics.
      *
+     * @param taskSchedulerName    the name of the task scheduler
      * @param unhandledTaskCounter the counter that is used to track the number of scheduled tasks
      */
-    void registerMetrics(@NonNull final String wireName, @Nullable final ObjectCounter unhandledTaskCounter) {
+    void registerMetrics(@NonNull final String taskSchedulerName, @Nullable final ObjectCounter unhandledTaskCounter) {
         if (unhandledTaskMetricEnabled) {
             Objects.requireNonNull(unhandledTaskCounter);
 
             final FunctionGauge.Config<Long> config = new FunctionGauge.Config<>(
-                            "platform", wireName + "_unhandled_task_count", Long.class, unhandledTaskCounter::getCount)
-                    .withDescription(
-                            "The number of scheduled tasks that have not been fully handled for the wire " + wireName);
+                            "platform",
+                            taskSchedulerName + "_unhandled_task_count",
+                            Long.class,
+                            unhandledTaskCounter::getCount)
+                    .withDescription("The number of scheduled tasks that have not been fully handled for the scheduler "
+                            + taskSchedulerName);
             metrics.getOrCreate(config);
         }
 
@@ -128,8 +132,8 @@ public class WireMetricsBuilder {
             busyFractionTimer.registerMetric(
                     metrics,
                     "platform",
-                    wireName + "_busy_fraction",
-                    "Fraction (out of 1.0) of time spent processing tasks for the wire " + wireName);
+                    taskSchedulerName + "_busy_fraction",
+                    "Fraction (out of 1.0) of time spent processing tasks for the task scheduler " + taskSchedulerName);
         }
     }
 }

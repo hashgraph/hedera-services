@@ -25,8 +25,8 @@ import com.swirlds.common.wiring.counters.MultiObjectCounter;
 import com.swirlds.common.wiring.counters.NoOpObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.counters.StandardObjectCounter;
-import com.swirlds.common.wiring.wires.ConcurrentWire;
-import com.swirlds.common.wiring.wires.SequentialWire;
+import com.swirlds.common.wiring.wires.ConcurrentTaskScheduler;
+import com.swirlds.common.wiring.wires.SequentialTaskScheduler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -37,13 +37,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A builder for wires.
+ * A builder for {@link TaskScheduler}s.
  *
- * @param <O> the output time of the wire (use {@link Void}) for a wire with no output type)
+ * @param <O> the output time of the primary output wire for this task scheduler (use {@link Void}) for a scheduler with
+ *            no output)
  */
-public class WireBuilder<O> {
+public class TaskSchedulerBuilder<O> {
 
-    private static final Logger logger = LogManager.getLogger(WireBuilder.class);
+    private static final Logger logger = LogManager.getLogger(TaskSchedulerBuilder.class);
 
     public static final long UNLIMITED_CAPACITY = -1;
 
@@ -51,7 +52,7 @@ public class WireBuilder<O> {
 
     private boolean concurrent = false;
     private final String name;
-    private WireMetricsBuilder metricsBuilder;
+    private TaskSchedulerMetricsBuilder metricsBuilder;
     private long unhandledTaskCapacity = UNLIMITED_CAPACITY;
     private boolean flushingEnabled = false;
     private boolean externalBackPressure = false;
@@ -65,83 +66,83 @@ public class WireBuilder<O> {
     /**
      * Constructor.
      *
-     * @param name the name of the wire. Used for metrics and debugging. Must be unique. Must only contain alphanumeric
-     *             characters and underscores.
+     * @param name the name of the task scheduler. Used for metrics and debugging. Must be unique. Must only contain
+     *             alphanumeric characters and underscores.
      */
-    WireBuilder(@NonNull final WiringModel model, @NonNull final String name) {
+    TaskSchedulerBuilder(@NonNull final WiringModel model, @NonNull final String name) {
         this.model = Objects.requireNonNull(model);
 
         // The reason why wire names have a restricted character set is because downstream consumers of metrics
         // are very fussy about what characters are allowed in metric names.
         if (!name.matches("^[a-zA-Z0-9_]*$")) {
             throw new IllegalArgumentException(
-                    "Wire name must only contain alphanumeric characters, underscores, and hyphens");
+                    "Task Schedulers name must only contain alphanumeric characters, underscores, and hyphens");
         }
         if (name.isEmpty()) {
-            throw new IllegalArgumentException("Wire name must not be empty");
+            throw new IllegalArgumentException("TaskScheduler name must not be empty");
         }
         this.name = name;
     }
 
     /**
-     * Set whether the wire should be concurrent or not. Default false.
+     * Set whether the scheduler should be concurrent or not. Default false.
      *
-     * @param concurrent true if the wire should be concurrent, false otherwise
+     * @param concurrent true if the task scheduler should be concurrent, false otherwise
      * @return this
      */
     @NonNull
-    public WireBuilder<O> withConcurrency(boolean concurrent) {
+    public TaskSchedulerBuilder<O> withConcurrency(boolean concurrent) {
         this.concurrent = concurrent;
         return this;
     }
 
     /**
-     * Set the maximum number of permitted scheduled tasks in the wire. Default is unlimited.
+     * Set the maximum number of permitted scheduled tasks. Default is unlimited.
      *
-     * @param unhandledTaskCapacity the maximum number of permitted unhandled tasks on the wire
+     * @param unhandledTaskCapacity the maximum number of permitted unhandled tasks
      * @return this
      */
     @NonNull
-    public WireBuilder<O> withUnhandledTaskCapacity(final long unhandledTaskCapacity) {
+    public TaskSchedulerBuilder<O> withUnhandledTaskCapacity(final long unhandledTaskCapacity) {
         this.unhandledTaskCapacity = unhandledTaskCapacity;
         return this;
     }
 
     /**
-     * Set whether the wire should enable flushing. Default false. Flushing a wire with this disabled will cause the
-     * wire to throw an exception.
+     * Set whether the task scheduler should enable flushing. Default false. Flushing a wire with this disabled will
+     * cause the wire to throw an exception. Enabling flushing may add overhead.
      *
      * @param requireFlushCapability true if the wire should require flush capability, false otherwise
      * @return this
      */
     @NonNull
-    public WireBuilder<O> withFlushingEnabled(final boolean requireFlushCapability) {
+    public TaskSchedulerBuilder<O> withFlushingEnabled(final boolean requireFlushCapability) {
         this.flushingEnabled = requireFlushCapability;
         return this;
     }
 
     /**
-     * Specify an object counter that should be notified when data is added to the wire. This is useful for implementing
-     * backpressure that spans multiple wires.
+     * Specify an object counter that should be notified when data is added to the task scheduler. This is useful for
+     * implementing backpressure that spans multiple schedulers.
      *
-     * @param onRamp the object counter that should be notified when data is added to the wire
+     * @param onRamp the object counter that should be notified when data is added to the task scheduler
      * @return this
      */
     @NonNull
-    public WireBuilder<O> withOnRamp(@NonNull final ObjectCounter onRamp) {
+    public TaskSchedulerBuilder<O> withOnRamp(@NonNull final ObjectCounter onRamp) {
         this.onRamp = Objects.requireNonNull(onRamp);
         return this;
     }
 
     /**
-     * Specify an object counter that should be notified when data is removed from the wire. This is useful for
-     * implementing backpressure that spans multiple wires.
+     * Specify an object counter that should be notified when data is removed from the task scheduler. This is useful
+     * for implementing backpressure that spans multiple schedulers.
      *
      * @param offRamp the object counter that should be notified when data is removed from the wire
      * @return this
      */
     @NonNull
-    public WireBuilder<O> withOffRamp(@NonNull final ObjectCounter offRamp) {
+    public TaskSchedulerBuilder<O> withOffRamp(@NonNull final ObjectCounter offRamp) {
         this.offRamp = Objects.requireNonNull(offRamp);
         return this;
     }
@@ -155,7 +156,7 @@ public class WireBuilder<O> {
      * @param externalBackPressure true if back pressure is being applied externally, false otherwise
      * @return this
      */
-    public WireBuilder<O> withExternalBackPressure(final boolean externalBackPressure) {
+    public TaskSchedulerBuilder<O> withExternalBackPressure(final boolean externalBackPressure) {
         this.externalBackPressure = externalBackPressure;
         return this;
     }
@@ -167,7 +168,7 @@ public class WireBuilder<O> {
      * @return this
      */
     @NonNull
-    public WireBuilder<O> withSleepDuration(@NonNull final Duration backpressureSleepDuration) {
+    public TaskSchedulerBuilder<O> withSleepDuration(@NonNull final Duration backpressureSleepDuration) {
         if (backpressureSleepDuration.isNegative()) {
             throw new IllegalArgumentException("Backpressure sleep duration must not be negative");
         }
@@ -182,32 +183,33 @@ public class WireBuilder<O> {
      * @return this
      */
     @NonNull
-    public WireBuilder<O> withMetricsBuilder(@NonNull final WireMetricsBuilder metricsBuilder) {
+    public TaskSchedulerBuilder<O> withMetricsBuilder(@NonNull final TaskSchedulerMetricsBuilder metricsBuilder) {
         this.metricsBuilder = Objects.requireNonNull(metricsBuilder);
         return this;
     }
 
     /**
-     * Provide a custom thread pool for this wire. If none is provided then the common fork join pool will be used.
+     * Provide a custom thread pool for this task scheduler. If none is provided then the common fork join pool will be
+     * used.
      *
      * @param pool the thread pool
      * @return this
      */
     @NonNull
-    public WireBuilder<O> withPool(@NonNull final ForkJoinPool pool) {
+    public TaskSchedulerBuilder<O> withPool(@NonNull final ForkJoinPool pool) {
         this.pool = Objects.requireNonNull(pool);
         return this;
     }
 
     /**
-     * Provide a custom uncaught exception handler for this wire. If none is provided then the default uncaught
-     * exception handler will be used. The default handler will write a message to the log.
+     * Provide a custom uncaught exception handler for this task scheduler. If none is provided then the default
+     * uncaught exception handler will be used. The default handler will write a message to the log.
      *
      * @param uncaughtExceptionHandler the uncaught exception handler
      * @return this
      */
     @NonNull
-    public WireBuilder<O> withUncaughtExceptionHandler(
+    public TaskSchedulerBuilder<O> withUncaughtExceptionHandler(
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler) {
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
         return this;
@@ -256,7 +258,8 @@ public class WireBuilder<O> {
     }
 
     /**
-     * Figure out which counters to use for this wire (if any), constructing them if they need to be constructed.
+     * Figure out which counters to use for this task scheduler (if any), constructing them if they need to be
+     * constructed.
      */
     @NonNull
     private Counters buildCounters() {
@@ -291,12 +294,12 @@ public class WireBuilder<O> {
     }
 
     /**
-     * Build the wire.
+     * Build the task scheduler.
      *
-     * @return the wire
+     * @return the task scheduler
      */
     @NonNull
-    public Wire<O> build() {
+    public TaskScheduler<O> build() {
         final Counters counters = buildCounters();
         final FractionalTimer busyFractionTimer = buildBusyTimer();
 
@@ -307,7 +310,7 @@ public class WireBuilder<O> {
         final boolean insertionIsBlocking = unhandledTaskCapacity != UNLIMITED_CAPACITY || externalBackPressure;
 
         if (concurrent) {
-            return new ConcurrentWire<>(
+            return new ConcurrentTaskScheduler<>(
                     model,
                     name,
                     pool,
@@ -317,7 +320,7 @@ public class WireBuilder<O> {
                     flushingEnabled,
                     insertionIsBlocking);
         } else {
-            return new SequentialWire<>(
+            return new SequentialTaskScheduler<>(
                     model,
                     name,
                     pool,

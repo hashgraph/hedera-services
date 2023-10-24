@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.wiring.InputChannel;
-import com.swirlds.common.wiring.OutputChannel;
-import com.swirlds.common.wiring.Wire;
+import com.swirlds.common.wiring.InputWire;
+import com.swirlds.common.wiring.OutputWire;
+import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
@@ -33,12 +33,12 @@ import java.util.List;
  */
 public class OrphanBufferWire {
 
-    private final Wire<List<GossipEvent>> wire;
+    private final TaskScheduler<List<GossipEvent>> taskScheduler;
 
-    private final InputChannel<GossipEvent, List<GossipEvent>> eventInput;
-    private final InputChannel<Long, List<GossipEvent>> minimumGenerationNonAncientInput;
+    private final InputWire<GossipEvent, List<GossipEvent>> eventInput;
+    private final InputWire<Long, List<GossipEvent>> minimumGenerationNonAncientInput;
 
-    private final OutputChannel<GossipEvent> eventOutput;
+    private final OutputWire<GossipEvent> eventOutput;
 
     /**
      * Constructor.
@@ -46,7 +46,7 @@ public class OrphanBufferWire {
      * @param model the wiring model
      */
     public OrphanBufferWire(@NonNull final WiringModel model) {
-        wire = model.wireBuilder("orphanBuffer")
+        taskScheduler = model.wireBuilder("orphanBuffer")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
@@ -54,10 +54,10 @@ public class OrphanBufferWire {
                 .build()
                 .cast();
 
-        eventInput = wire.buildInputChannel("unordered events");
-        minimumGenerationNonAncientInput = wire.buildInputChannel("minimum generation non ancient");
+        eventInput = taskScheduler.buildInputWire("unordered events");
+        minimumGenerationNonAncientInput = taskScheduler.buildInputWire("minimum generation non ancient");
 
-        eventOutput = wire.buildSplitter();
+        eventOutput = taskScheduler.buildSplitter();
     }
 
     /**
@@ -66,7 +66,7 @@ public class OrphanBufferWire {
      * @return the event input channel
      */
     @NonNull
-    public InputChannel<GossipEvent, List<GossipEvent>> getEventInput() {
+    public InputWire<GossipEvent, List<GossipEvent>> getEventInput() {
         return eventInput;
     }
 
@@ -76,7 +76,7 @@ public class OrphanBufferWire {
      * @return the minimum generation non ancient input channel
      */
     @NonNull
-    public InputChannel<Long, List<GossipEvent>> getMinimumGenerationNonAncientInput() {
+    public InputWire<Long, List<GossipEvent>> getMinimumGenerationNonAncientInput() {
         return minimumGenerationNonAncientInput;
     }
 
@@ -86,7 +86,7 @@ public class OrphanBufferWire {
      * @return the event output channel
      */
     @NonNull
-    public OutputChannel<GossipEvent> getEventOutput() {
+    public OutputWire<GossipEvent> getEventOutput() {
         return eventOutput;
     }
 
