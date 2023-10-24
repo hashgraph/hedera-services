@@ -75,7 +75,7 @@ public class IterableStorageManager {
 
         // Adjust the storage linked lists for each contract
         allAccesses.forEach(contractAccesses -> contractAccesses.accesses().forEach(access -> {
-            if (!access.isReadOnly()) {
+            if (access.isUpdate()) {
                 var firstContractKey = contractFirstKeyOf(enhancement, contractAccesses.contractNumber());
 
                 if (access.isRemoval()) {
@@ -88,7 +88,7 @@ public class IterableStorageManager {
                             tuweniToPbjBytes(access.writtenValue()),
                             contractAccesses.contractNumber(),
                             tuweniToPbjBytes(access.key()));
-                } else if (access.isUpdate()) {
+                } else {
                     updateAccessedValue(
                             store,
                             tuweniToPbjBytes(access.writtenValue()),
