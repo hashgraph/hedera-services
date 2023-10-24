@@ -55,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -124,7 +125,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 hollowAccountCompletionIsPersistedEvenIfTxnFails(),
                 precompileTransferFromHollowAccountWithNeededSigFailsAndDoesNotFinalizeAccount());
     }
-
+    @HapiTest
     private HapiSpec hollowAccountCompletionWithTokenTransfer() {
         final var fungibleToken = "fungibleToken";
         final AtomicReference<TokenID> ftId = new AtomicReference<>();

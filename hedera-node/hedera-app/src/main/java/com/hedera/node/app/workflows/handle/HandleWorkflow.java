@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
@@ -42,6 +43,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
@@ -50,6 +52,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
@@ -420,6 +423,14 @@ public class HandleWorkflow {
                         throw new HandleException(CONSENSUS_GAS_EXHAUSTED);
                     }
 
+                    // Finalize any hollow accounts
+                    for (final var hollowAccount : preHandleResult.hollowAccounts()) {
+                        final var verification = verifier.verificationFor(hollowAccount.alias());
+                        if (verification.key() != null) {
+                            finalizeHollowAccounts(context, hollowAccount, verification.key());
+                        }
+                    }
+
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
                     recordBuilder.status(SUCCESS);
@@ -474,6 +485,15 @@ public class HandleWorkflow {
         recordCache.add(creator.nodeId(), payer, recordListResult.records());
 
         blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
+    }
+
+    private void finalizeHollowAccounts(final HandleContextImpl context, final Account hollowAccount, final Key key) {
+        final var accountStore = context.writableStore(WritableAccountStore.class);
+        if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
+            logger.error("Hollow account {} has a key other than the sentinel key", hollowAccount);
+        }
+        final var accountAsContract = hollowAccount.copyBuilder().key(key).build();
+        accountStore.put(accountAsContract);
     }
 
     @NonNull
