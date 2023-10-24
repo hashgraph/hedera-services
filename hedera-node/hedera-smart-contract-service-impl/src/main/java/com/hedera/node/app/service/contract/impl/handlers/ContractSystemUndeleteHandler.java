@@ -19,6 +19,8 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -30,6 +32,9 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SYSTEM_UNDELETE}.
+ * <p>
+ * This transaction type has been deprecated. Because protobufs promise backwards compatibility,
+ * we cannot remove it. However, it should not be used.
  */
 @Singleton
 public class ContractSystemUndeleteHandler implements TransactionHandler {
@@ -45,6 +50,14 @@ public class ContractSystemUndeleteHandler implements TransactionHandler {
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
+        // this will never actually get called
+        // because preHandle will always throw
         throw new HandleException(NOT_SUPPORTED);
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(final FeeContext feeContext) {
+        return Fees.FREE;
     }
 }
