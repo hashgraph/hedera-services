@@ -191,14 +191,14 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
-        writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
-        serviceApiFactory = new ServiceApiFactory(stack, configuration);
+        this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
+        this.serviceApiFactory = new ServiceApiFactory(stack, configuration);
 
         if (payerKey == null) {
-            feeCalculatorCreator = ignore -> NoOpFeeCalculator.INSTANCE;
-            feeAccumulator = NoOpFeeAccumulator.INSTANCE;
+            this.feeCalculatorCreator = ignore -> NoOpFeeCalculator.INSTANCE;
+            this.feeAccumulator = NoOpFeeAccumulator.INSTANCE;
         } else {
-            feeCalculatorCreator = subType -> feeManager.createFeeCalculator(
+            this.feeCalculatorCreator = subType -> feeManager.createFeeCalculator(
                     txBody,
                     payerKey,
                     functionality,
@@ -207,7 +207,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     userTransactionConsensusTime,
                     subType);
             final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
-            feeAccumulator = new FeeAccumulatorImpl(tokenApi, recordBuilder);
+            this.feeAccumulator = new FeeAccumulatorImpl(tokenApi, recordBuilder);
         }
 
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
