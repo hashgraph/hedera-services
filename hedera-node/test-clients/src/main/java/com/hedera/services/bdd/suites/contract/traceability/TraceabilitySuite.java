@@ -4026,7 +4026,8 @@ public class TraceabilitySuite extends HapiSuite {
                         expectContractBytecode(TRACEABILITY_TXN, contract));
     }
 
-    HapiSpec traceabilityE2EScenario13() {
+    @HapiTest
+    private HapiSpec traceabilityE2EScenario13() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return defaultHapiSpec("traceabilityE2EScenario13")
                 .given(
@@ -4068,6 +4069,7 @@ public class TraceabilitySuite extends HapiSuite {
                         expectContractBytecodeWithMinimalFieldsSidecarFor(FIRST_CREATE_TXN, PAY_RECEIVABLE_CONTRACT));
     }
 
+    @HapiTest
     private HapiSpec traceabilityE2EScenario14() {
         return defaultHapiSpec("traceabilityE2EScenario14")
                 .given(
@@ -4110,7 +4112,8 @@ public class TraceabilitySuite extends HapiSuite {
                 }));
     }
 
-    HapiSpec traceabilityE2EScenario15() {
+    @HapiTest
+    private HapiSpec traceabilityE2EScenario15() {
         final String GET_BYTECODE = "getBytecode";
         final String DEPLOY = "deploy";
         final var CREATE_2_TXN = "Create2Txn";
@@ -4248,7 +4251,8 @@ public class TraceabilitySuite extends HapiSuite {
                 .then();
     }
 
-    HapiSpec traceabilityE2EScenario16() {
+    @HapiTest
+    private HapiSpec traceabilityE2EScenario16() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final String PRECOMPILE_CALLER = "PrecompileCaller";
         final String txn = "payTxn";
@@ -4438,7 +4442,8 @@ public class TraceabilitySuite extends HapiSuite {
                                 FIRST_CREATE_TXN, REVERTING_CONTRACT, BigInteger.valueOf(4)));
     }
 
-    HapiSpec traceabilityE2EScenario19() {
+    @HapiTest
+    private HapiSpec traceabilityE2EScenario19() {
         final var RECEIVER = "RECEIVER";
         final var hbarsToSend = 1;
         final var transferTxn = "payTxn";
@@ -4480,6 +4485,7 @@ public class TraceabilitySuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec traceabilityE2EScenario20() {
         return defaultHapiSpec("traceabilityE2EScenario20")
                 .given(uploadInitCode(REVERTING_CONTRACT))
