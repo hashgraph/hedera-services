@@ -122,12 +122,11 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
     private HapiSpec normalUserCannotDeleteSystemAccountsFrom1To100() {
         return normalUserCannotDeleteSystemAccounts(1, 100);
     }
-    
+
     @HapiTest
     private HapiSpec normalUserCannotDeleteSystemAccountsFrom700To750() {
         return normalUserCannotDeleteSystemAccounts(700, 750);
     }
-
 
     @HapiTest
     private HapiSpec genesisCannotDeleteSystemFileIds() {
@@ -189,7 +188,6 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                                 .hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE))
                         .toArray(HapiSpecOperation[]::new)));
     }
-
 
     private HapiSpec systemUserCannotDeleteSystemFiles(int[] fileIds, String sysUser) {
         return defaultHapiSpec("systemUserCannotDeleteSystemFiles")
