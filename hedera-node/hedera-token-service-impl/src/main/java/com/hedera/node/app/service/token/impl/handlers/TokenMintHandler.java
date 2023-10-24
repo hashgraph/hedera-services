@@ -282,25 +282,11 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var op = feeContext.body().tokenMintOrThrow();
-        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
-        final var token = readableTokenStore.get(op.tokenOrThrow());
-
-        if (token == null) {
-            return Fees.FREE;
-        }
-
-        final var subType = token.tokenType() == TokenType.FUNGIBLE_COMMON
-                ? SubType.TOKEN_FUNGIBLE_COMMON
-                : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+        final var subType = op.amount() > 0 ? SubType.TOKEN_FUNGIBLE_COMMON : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
         final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
         final var payerId = feeContext.payer();
-        final var payer = readableAccountStore.getAccountById(payerId);
-
-        if (payer == null) {
-            return Fees.FREE;
-        }
-        final var payerKey = payer.keyOrThrow();
+        final var payerKey = readableAccountStore.getAccountById(payerId).keyOrThrow();
 
         final var calculator = feeContext.feeCalculator(subType);
         if (SubType.TOKEN_NON_FUNGIBLE_UNIQUE.equals(subType)) {
