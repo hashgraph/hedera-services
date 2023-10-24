@@ -67,6 +67,8 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
         this.unhashedData = unhashedData;
         this.timeReceived = Instant.now();
         this.senderId = null;
+        //The following line can be removed after 0.45.0 is delivered to mainnet
+        unhashedData.updateOtherParentEventDescriptor(hashedData);
     }
 
     /**
@@ -85,6 +87,8 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         hashedData = in.readSerializable(false, BaseEventHashedData::new);
         unhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
+        //The following line can be removed after 0.45.0 is delivered to mainnet
+        unhashedData.updateOtherParentEventDescriptor(hashedData);
         if (version == ClassVersion.ORIGINAL) {
             in.readLong(); // roundCreated
         }
