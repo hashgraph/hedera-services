@@ -49,6 +49,7 @@ public class StreamedRound implements Round {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public Iterator<ConsensusEvent> iterator() {
         final Iterator<EventImpl> iterator = events.iterator();
         return new Iterator<>() {

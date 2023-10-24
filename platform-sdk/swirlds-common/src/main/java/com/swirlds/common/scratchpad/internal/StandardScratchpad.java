@@ -78,10 +78,9 @@ public class StandardScratchpad<K extends Enum<K> & ScratchpadType> implements S
     /**
      * The file extension used for scratchpad files.
      */
-    public static final String SCRATCHPAD_FILE_EXTENSION = ".scr";
+    public static final String SCRATCHPAD_FILE_EXTENSION = ".scratchpad";
 
     private final Set<K> fields;
-    private final Map<Integer, K> indexToFieldMap;
     private final String id;
 
     private final Map<K, SelfSerializable> data = new HashMap<>();
@@ -126,7 +125,7 @@ public class StandardScratchpad<K extends Enum<K> & ScratchpadType> implements S
         this.id = id;
         fields = EnumSet.allOf(clazz);
 
-        indexToFieldMap = new HashMap<>();
+        final Map<Integer, K> indexToFieldMap = new HashMap<>();
         for (final K key : fields) {
             final K previous = indexToFieldMap.put(key.getFieldId(), key);
             if (previous != null) {
@@ -134,7 +133,7 @@ public class StandardScratchpad<K extends Enum<K> & ScratchpadType> implements S
             }
         }
 
-        loadFromDisk();
+        loadFromDisk(indexToFieldMap);
     }
 
     /**
@@ -144,12 +143,14 @@ public class StandardScratchpad<K extends Enum<K> & ScratchpadType> implements S
     public void logContents() {
         final TextTable table = new TextTable().setBordersEnabled(false);
 
-        for (final K field : fields) {
-            final SelfSerializable value = data.get(field);
-            if (value == null) {
-                table.addToRow(field.name(), "null");
-            } else {
-                table.addRow(field.name(), value.toString());
+        try (final Locked ignored = lock.lock()) {
+            for (final K field : fields) {
+                final SelfSerializable value = data.get(field);
+                if (value == null) {
+                    table.addToRow(field.name(), "null");
+                } else {
+                    table.addRow(field.name(), value.toString());
+                }
             }
         }
 
@@ -165,7 +166,9 @@ public class StandardScratchpad<K extends Enum<K> & ScratchpadType> implements S
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("unchecked")
     @Override
+    @Nullable
     public <V extends SelfSerializable> V get(@NonNull final K key) {
         try (final Locked ignored = lock.lock()) {
             return (V) data.get(key);
@@ -175,7 +178,9 @@ public class StandardScratchpad<K extends Enum<K> & ScratchpadType> implements S
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("unchecked")
     @Override
+    @Nullable
     public <V extends SelfSerializable> V set(@NonNull final K key, @Nullable final V value) {
         logger.info(STARTUP.getMarker(), "Setting scratchpad field {}:{} to {}", id, key, value);
         try (final Locked ignored = lock.lock()) {
@@ -225,8 +230,10 @@ public class StandardScratchpad<K extends Enum<K> & ScratchpadType> implements S
 
     /**
      * Parse the scratchpad file from disk.
+     *
+     * @param indexToFieldMap a map from field ID to the enum field
      */
-    private void loadFromDisk() {
+    private void loadFromDisk(final Map<Integer, K> indexToFieldMap) {
         try {
             final List<Path> files = getScratchpadFiles();
             if (files.isEmpty()) {

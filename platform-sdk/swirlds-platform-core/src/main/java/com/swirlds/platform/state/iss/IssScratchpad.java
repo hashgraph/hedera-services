@@ -23,7 +23,7 @@ import com.swirlds.common.scratchpad.ScratchpadType;
  */
 public enum IssScratchpad implements ScratchpadType {
     /**
-     * The round number of the most recently observed ISS, or -1 if this node has never observed an ISS.
+     * The round number of the most recently observed ISS, or null if this node has never observed an ISS.
      */
     LAST_ISS_ROUND(0);
 

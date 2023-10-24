@@ -117,8 +117,11 @@ public class ConsensusHashManager {
      * @param dispatchBuilder              responsible for building dispatchers
      * @param addressBook                  the address book for the network
      * @param currentEpochHash             the current epoch hash
+     * @param currentSoftwareVersion       the current software version
      * @param ignorePreconsensusSignatures If true, ignore signatures from the preconsensus event stream, otherwise
      *                                     validate them like normal.
+     * @param ignoredRound                 a round that should not be validated. Set to {@link #DO_NOT_IGNORE_ROUNDS} if
+     *                                     all rounds should be validated.
      */
     public ConsensusHashManager(
             @NonNull final PlatformContext platformContext,
