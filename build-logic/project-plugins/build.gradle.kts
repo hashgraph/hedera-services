@@ -37,5 +37,5 @@ dependencies {
     implementation("org.gradlex:java-ecosystem-capabilities:1.3.1")
     implementation("org.gradlex:java-module-dependencies:1.4.1")
     implementation("org.owasp:dependency-check-gradle:8.4.0")
-    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.3.1.3277")
+    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.4.1.3373")
 }

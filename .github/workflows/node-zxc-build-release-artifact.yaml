@@ -589,7 +589,7 @@ jobs:
           OSSRH_PASSWORD: ${{ secrets.svcs-ossrh-password }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: ":hedera-node:app-service-evm:releaseMavenCentral --scan -PpublishSigningEnabled=true"
+          arguments: "releaseEvmMavenCentral --scan -PpublishSigningEnabled=true"
 
       - name: Gradle Maven Central Snapshot
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
@@ -599,7 +599,7 @@ jobs:
           OSSRH_PASSWORD: ${{ secrets.svcs-ossrh-password }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: ":hedera-node:app-service-evm:releaseMavenCentralSnapshot --scan -PpublishSigningEnabled=true"
+          arguments: "releaseEvmMavenCentralSnapshot --scan -PpublishSigningEnabled=true"
 
   sdk-publish:
     name: Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GCP Registry' }}
@@ -755,7 +755,7 @@ jobs:
           OSSRH_PASSWORD: ${{ secrets.sdk-ossrh-password }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: ":platform-sdk:release${{ inputs.sdk-release-profile }} --scan -PpublishSigningEnabled=true"
+          arguments: "release${{ inputs.sdk-release-profile }} --scan -PpublishSigningEnabled=true"
 
       - name: Upload SDK Release Archives
         if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
@@ -825,7 +825,7 @@ jobs:
                           },
                           {
                             "type": "mrkdwn",
-                            "text": ${{ steps.parameters.outputs.artifact-registry }}"
+                            "text": "${{ steps.parameters.outputs.artifact-registry }}"
                           },
                           {
                             "type": "mrkdwn",

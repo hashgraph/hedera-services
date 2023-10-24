@@ -50,7 +50,7 @@ jobs:
         uses: gradle/gradle-build-action@ef76a971e2fa3f867b617efd72f2fbd72cf6f8bc # v2.8.0
         with:
           gradle-version: wrapper
-          arguments: -p hedera-node assemble --scan
+          arguments: assemble --scan
 
       - name: Setup NodeJS
         uses: actions/setup-node@5e21ff4d9bc1a8cf6de233a3057d20ec6b3fb69d # v3.8.1
