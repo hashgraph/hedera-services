@@ -93,7 +93,9 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO);
         final var context = new FakePreHandleContext(readableAccountStore, theTxn);
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(FIRST_TOKEN_SENDER_KT.asPbjKey()));
     }
 
     @Test

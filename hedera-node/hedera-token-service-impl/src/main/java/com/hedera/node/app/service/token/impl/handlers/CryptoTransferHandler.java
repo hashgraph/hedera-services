@@ -306,7 +306,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // allow auto-creation of "hollow accounts" if you transfer value into an account *by alias* that
                 // didn't previously exist. If that is not the case, then we fail because we couldn't find the
                 // destination account.
-                if (account == null || (!isCredit && !isHollow(account))) {
+                if (!isCredit || !isAlias(accountId)) {
                     // Interestingly, this means that if the transfer amount is exactly 0 and the account has a
                     // non-existent alias, then we fail.
                     throw new PreCheckException(INVALID_ACCOUNT_ID);
