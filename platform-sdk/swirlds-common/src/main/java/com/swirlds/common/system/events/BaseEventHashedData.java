@@ -163,8 +163,12 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         out.writeSerializable(softwareVersion, true);
         if (serializedVersion < ClassVersion.ADDRESS_BOOK_ROUND) {
             out.writeLong(creatorId.id());
-            out.writeLong(selfParent != null ? selfParent.getGeneration() : -1);
-            out.writeLong(otherParents != null ? otherParents.get(0).getGeneration() : -1);
+            out.writeLong(
+                    selfParent != null ? selfParent.getGeneration() : EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED);
+            out.writeLong(
+                    otherParents != null
+                            ? otherParents.get(0).getGeneration()
+                            : EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED);
             out.writeSerializable(selfParent != null ? selfParent.getHash() : null, false);
             out.writeSerializable(otherParents != null ? otherParents.get(0).getHash() : null, false);
         } else {
@@ -217,13 +221,16 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             final long otherParentGen = in.readLong();
             final Hash selfParentHash = in.readSerializable(false, Hash::new);
             final Hash otherParentHash = in.readSerializable(false, Hash::new);
-            selfParent =
-                    selfParentHash == null ? null : new EventDescriptor(selfParentHash, creatorId, selfParentGen, -1);
+            selfParent = selfParentHash == null
+                    ? null
+                    : new EventDescriptor(
+                            selfParentHash, creatorId, selfParentGen, EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED);
             // The creator for the other parent descriptor is not here and should be retrieved from the unhashed data.
             otherParents = otherParentHash == null
                     ? null
-                    : Collections.singletonList(new EventDescriptor(otherParentHash, otherParentGen, -1));
-            addressBookRound = -1;
+                    : Collections.singletonList(new EventDescriptor(
+                            otherParentHash, otherParentGen, EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED));
+            addressBookRound = EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED;
         } else {
             creatorId = in.readSerializable(false, NodeId::new);
             selfParent = in.readSerializable(false, EventDescriptor::new);
@@ -364,7 +371,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      */
     public long getSelfParentGen() {
         if (selfParent == null) {
-            return -1;
+            return EventConstants.GENERATION_UNDEFINED;
         }
         return selfParent.getGeneration();
     }
@@ -377,7 +384,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      */
     public long getOtherParentGen() {
         if (otherParents == null || otherParents.isEmpty()) {
-            return -1;
+            return EventConstants.GENERATION_UNDEFINED;
         }
         if (otherParents.size() == 1) {
             return otherParents.get(0).getGeneration();
@@ -480,7 +487,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     }
 
     /**
-     * Get an event descriptor for this event.
+     * Create an event descriptor for this event.
      *
      * @return an event descriptor for this event
      */

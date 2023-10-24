@@ -72,32 +72,26 @@ public class BaseEventUnhashedData implements SelfSerializable {
     // otherId is also probably not needed anymore, so at some point this class can be replaced with just a Signature
     // ----------------------------------------------------------------------------------------------------------------
 
-    /** sequence number for this by its creator (0 is first) */
-    private long creatorSeq;
     /** ID of otherParent (translate before sending) */
     private NodeId otherId;
-    /** sequence number for otherParent event (by its creator) */
-    private long otherSeq;
     /** creator's sig for this */
     private byte[] signature;
 
     public BaseEventUnhashedData() {}
 
     public BaseEventUnhashedData(@Nullable final NodeId otherId, @NonNull final byte[] signature) {
-        this.creatorSeq = SEQUENCE_UNUSED;
         this.otherId = otherId;
         this.signature = Objects.requireNonNull(signature, "signature must not be null");
-        this.otherSeq = SEQUENCE_UNUSED;
     }
 
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         if (serializedVersion < ClassVersion.ADDRESS_BOOK_ROUND) {
-            out.writeLong(creatorSeq);
+            out.writeLong(SEQUENCE_UNUSED);
             // FUTURE WORK: The otherId should be a selfSerializable NodeId at some point.
             // Changing the event format may require a HIP.  The old format is preserved for now.
             out.writeLong(otherId == null ? -1 : otherId.id());
-            out.writeLong(otherSeq);
+            out.writeLong(SEQUENCE_UNUSED);
             out.writeByteArray(signature);
         } else {
             out.writeByteArray(signature);
@@ -108,16 +102,14 @@ public class BaseEventUnhashedData implements SelfSerializable {
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         serializedVersion = version;
         if (version < ClassVersion.ADDRESS_BOOK_ROUND) {
-            creatorSeq = in.readLong();
+            in.readLong(); //unused
             otherId = NodeId.deserializeLong(in, true);
-            otherSeq = in.readLong();
+            in.readLong(); //unused
             signature = in.readByteArray(MAX_SIG_LENGTH);
         } else {
             signature = in.readByteArray(MAX_SIG_LENGTH);
             // initialize unused fields (can be removed when the unused fields are removed)
             otherId = null;
-            creatorSeq = SEQUENCE_UNUSED;
-            otherSeq = SEQUENCE_UNUSED;
         }
     }
 
@@ -144,10 +136,8 @@ public class BaseEventUnhashedData implements SelfSerializable {
     @Override
     public String toString() {
         final int signatureLength = signature == null ? 0 : signature.length;
-        return "BaseEventUnhashedData{" + "creatorSeq="
-                + creatorSeq + ", otherId="
-                + otherId + ", otherSeq="
-                + otherSeq + ", signature="
+        return "BaseEventUnhashedData{" + ", otherId="
+                + otherId + ", signature="
                 + CommonUtils.hex(signature, signatureLength) + '}';
     }
 

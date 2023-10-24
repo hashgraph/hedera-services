@@ -23,6 +23,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.event.GossipEvent;
@@ -74,15 +75,17 @@ public final class EqualsVerifier {
         }
 
         final NodeId selfId = new NodeId(r.nextLong(Long.MAX_VALUE));
-        final EventDescriptor selfParent = new EventDescriptor(randomHash(r), selfId, r.nextLong(Long.MAX_VALUE), -1);
-        final EventDescriptor otherParent = new EventDescriptor(randomHash(r), selfId, r.nextLong(Long.MAX_VALUE), -1);
+        final EventDescriptor selfParent = new EventDescriptor(
+                randomHash(r), selfId, r.nextLong(Long.MAX_VALUE), EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED);
+        final EventDescriptor otherParent = new EventDescriptor(
+                randomHash(r), selfId, r.nextLong(Long.MAX_VALUE), EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED);
 
         final BaseEventHashedData data = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 selfId,
                 selfParent,
                 Collections.singletonList(otherParent),
-                -1,
+                EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED,
                 randomInstant(r),
                 transactions);
         data.setHash(randomHash(r));
