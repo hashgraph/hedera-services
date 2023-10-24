@@ -493,6 +493,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec hollowAccountCompletionViaNonReqSigIsNotAllowed() {
         final var DEPOSIT_AMOUNT = 1000;
         return defaultHapiSpec("hollowAccountCompletionViaNonReqSigIsNotAllowed")
@@ -590,6 +591,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec completedHollowAccountsTransfer() {
         return defaultHapiSpec("CompletedHollowAccountsTransfer")
                 .given(
@@ -829,6 +831,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec precompileTransferFromHollowAccountWithNeededSigFailsAndDoesNotFinalizeAccount() {
         final var receiver = "receiver";
         final var ft = "ft";
