@@ -295,7 +295,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // is set on the transaction, then we defer to the token transfer logic to determine if all
                 // signing requirements were met ("isApproval" is a way for the client to say "I don't need a key
                 // because I'm approved which you will see when you handle this transaction").
-                if (account == null || (isDebit && !accountAmount.isApproval() && !isHollow(account))) {
+                if (isDebit && !accountAmount.isApproval() && !isHollow(account)) {
                     // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
                     ctx.requireKeyOrThrow(account.key(), INVALID_ACCOUNT_ID);
                 } else if (isCredit && account.receiverSigRequired()) {
