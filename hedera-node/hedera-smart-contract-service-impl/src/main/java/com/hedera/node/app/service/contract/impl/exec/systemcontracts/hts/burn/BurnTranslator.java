@@ -17,12 +17,16 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn;
 
 import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
@@ -47,8 +51,13 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
 
     @Override
     public HtsCall callFrom(@NonNull HtsCallAttempt attempt) {
+        final var body = bodyForClassic(attempt);
+        final var isFungibleMint = body.tokenBurnOrThrow().serialNumbers().isEmpty();
         return new DispatchForResponseCodeHtsCall<>(
-                attempt, bodyForClassic(attempt), SingleTransactionRecordBuilder.class);
+                attempt,
+                body,
+                SingleTransactionRecordBuilder.class,
+                isFungibleMint ? BurnTranslator::fungibleBurnGasRequirement : BurnTranslator::nftBurnGasRequirement);
     }
 
     private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
@@ -57,5 +66,21 @@ public class BurnTranslator extends AbstractHtsCallTranslator {
         } else {
             return decoder.decodeBurnV2(attempt);
         }
+    }
+
+    public static long fungibleBurnGasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final AccountID payerId) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.BURN_FUNGIBLE, payerId);
+    }
+
+    public static long nftBurnGasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final AccountID payerId) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.BURN_NFT, payerId);
     }
 }
