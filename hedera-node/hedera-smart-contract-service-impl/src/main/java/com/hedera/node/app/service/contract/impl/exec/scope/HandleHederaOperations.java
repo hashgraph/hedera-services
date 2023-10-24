@@ -18,17 +18,17 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
-import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -41,6 +41,8 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.hyperledger.besu.evm.account.MutableAccount;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -216,7 +218,8 @@ public class HandleHederaOperations implements HederaOperations {
                 number,
                 synthAccountCreationFromHapi(
                         ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation),
-                parent.autoRenewAccountId());
+                parent.autoRenewAccountId(),
+                evmAddress);
     }
 
     /**
@@ -230,7 +233,8 @@ public class HandleHederaOperations implements HederaOperations {
                 number,
                 synthAccountCreationFromHapi(
                         ContractID.newBuilder().contractNum(number).build(), evmAddress, body),
-                body.autoRenewAccountId());
+                body.autoRenewAccountId(),
+                evmAddress);
     }
 
     /**
@@ -282,12 +286,29 @@ public class HandleHederaOperations implements HederaOperations {
     private void dispatchAndMarkCreation(
             final long number,
             @NonNull final CryptoCreateTransactionBody body,
-            @Nullable final AccountID autoRenewAccountId) {
+            @Nullable final AccountID autoRenewAccountId,
+            @Nullable final Bytes evmAddress) {
         final var recordBuilder = context.dispatchChildTransaction(
                 TransactionBody.newBuilder().cryptoCreateAccount(body).build(),
                 CryptoCreateRecordBuilder.class,
                 key -> true,
                 context.payer());
+
+        final var contractId = ContractID.newBuilder().contractNum(number).build();
+        //TODO Build whole child record
+        ((ContractCreateRecordBuilder)recordBuilder)
+                .contractID(contractId)
+                .contractCreateResult( ContractFunctionResult.newBuilder()
+    //                .gasUsed(100)
+    //                .bloom(bloomForAll(logs))
+    //                .contractCallResult(output)
+                    .contractID(contractId)
+                    .evmAddress(evmAddress)
+    //                .createdContractIDs(createdIds)
+    //                .logInfo(pbjLogsFrom(logs))
+    //                .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
+    //                .contractNonces(updater.getUpdatedContractNonces())
+                    .errorMessage(null).build());
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
         if (recordBuilder.status() != OK && recordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
