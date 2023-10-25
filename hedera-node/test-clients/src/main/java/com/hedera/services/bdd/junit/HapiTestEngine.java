@@ -257,10 +257,12 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                     MethodSource.from(testMethod));
             this.testMethod = testMethod;
             setParent(parent);
+            // TODO: do I need that? Will depend on the location of the filtering argument
             setTags(getTagsIfAny(testMethod));
         }
 
         private Set<TestTag> getTagsIfAny(Method testMethod) {
+            // TODO: add a comment
             final var tagsAnnotation = testMethod.getAnnotation(Tags.class);
             final var tagAnnotation = testMethod.getAnnotation(Tag.class);
 
@@ -292,7 +294,16 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 return SkipResult.skip(msg == null || msg.isBlank() ? "Disabled" : msg);
             }
 
-            return SkipResult.doNotSkip();
+            // TODO: add comments
+            TestTag tag = TestTag.create("TAG"); // TODO: THIS WILL COME FROM SOMEWHERE
+            Set<TestTag> methodTags = getTagsIfAny(testMethod);
+            if (tag == null && methodTags.isEmpty()) {
+                return SkipResult.doNotSkip();
+            } else if (methodTags.contains(tag)) {
+                return SkipResult.doNotSkip();
+            } else {
+                return SkipResult.skip("Tag not contained");
+            }
         }
 
         @Override
