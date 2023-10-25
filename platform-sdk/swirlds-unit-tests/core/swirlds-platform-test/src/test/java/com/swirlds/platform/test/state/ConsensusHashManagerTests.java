@@ -90,6 +90,7 @@ class ConsensusHashManagerTests {
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 DEFAULT_SOFTWARE_VERSION,
+                false,
                 DO_NOT_IGNORE_ROUNDS);
 
         final AtomicBoolean fail = new AtomicBoolean(false);
@@ -203,6 +204,7 @@ class ConsensusHashManagerTests {
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 DEFAULT_SOFTWARE_VERSION,
+                false,
                 DO_NOT_IGNORE_ROUNDS);
 
         final AtomicBoolean fail = new AtomicBoolean(false);
@@ -359,6 +361,7 @@ class ConsensusHashManagerTests {
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 DEFAULT_SOFTWARE_VERSION,
+                false,
                 DO_NOT_IGNORE_ROUNDS);
 
         dispatchBuilder.registerObserver(
@@ -440,6 +443,7 @@ class ConsensusHashManagerTests {
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 DEFAULT_SOFTWARE_VERSION,
+                false,
                 DO_NOT_IGNORE_ROUNDS);
 
         dispatchBuilder.registerObserver(
@@ -504,6 +508,7 @@ class ConsensusHashManagerTests {
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 DEFAULT_SOFTWARE_VERSION,
+                false,
                 DO_NOT_IGNORE_ROUNDS);
 
         final AtomicInteger issCount = new AtomicInteger();
@@ -608,6 +613,7 @@ class ConsensusHashManagerTests {
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 DEFAULT_SOFTWARE_VERSION,
+                false,
                 DO_NOT_IGNORE_ROUNDS);
 
         final AtomicInteger issCount = new AtomicInteger();
@@ -685,6 +691,7 @@ class ConsensusHashManagerTests {
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 DEFAULT_SOFTWARE_VERSION,
+                false,
                 DO_NOT_IGNORE_ROUNDS);
 
         final AtomicInteger issCount = new AtomicInteger();
@@ -756,6 +763,7 @@ class ConsensusHashManagerTests {
                 addressBook,
                 DEFAULT_EPOCH_HASH,
                 DEFAULT_SOFTWARE_VERSION,
+                false,
                 1);
 
         final AtomicBoolean fail = new AtomicBoolean(false);
