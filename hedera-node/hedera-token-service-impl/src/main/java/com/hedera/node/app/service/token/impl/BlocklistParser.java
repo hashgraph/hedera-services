@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.util.Collections;
@@ -38,7 +41,6 @@ public class BlocklistParser {
     private static final Logger log = LogManager.getLogger(BlocklistParser.class);
 
     /**
-     * todo
      * Makes sure that all blocked accounts contained in the blocklist resource are present in state, and creates their definitions (if necessary).
      *
      * <p><b>Note: this method assumes that blocklists are enabled</b> – it does not check that config property
@@ -51,14 +53,12 @@ public class BlocklistParser {
     }
 
     private List<String> readFileLines(@NonNull final String blocklistResourceName) {
-        final List<String> fileLines;
         try {
-            fileLines = readPrivateKeyBlocklist(blocklistResourceName);
+            return readPrivateKeyBlocklist(blocklistResourceName);
         } catch (Exception e) {
             log.error("Failed to read blocklist resource {}", blocklistResourceName, e);
             return Collections.emptyList();
         }
-        return fileLines;
     }
 
     private static List<BlockedInfo> parseBlockList(final List<String> fileLines) {
@@ -80,8 +80,12 @@ public class BlocklistParser {
     @NonNull
     private static List<String> readPrivateKeyBlocklist(@NonNull final String fileName) {
         final var inputStream = BlocklistParser.class.getClassLoader().getResourceAsStream(fileName);
-        final var reader = new BufferedReader(new InputStreamReader(inputStream));
-        return reader.lines().toList();
+        requireNonNull(inputStream);
+        try (var reader = new BufferedReader(new InputStreamReader(inputStream))) {
+            return reader.lines().toList();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load blocklist", e);
+        }
     }
 
     /**
