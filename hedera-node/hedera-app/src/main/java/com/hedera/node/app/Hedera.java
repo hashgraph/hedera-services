@@ -97,7 +97,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -433,36 +432,37 @@ public final class Hedera implements SwirldMain {
                 // We call with null here because we're migrating the entity ID service itself
                 null);
         // Now that the Entity ID Service is migrated, migrate the remaining services
-        for (final var registration : servicesRegistry.registrations().stream()
+        servicesRegistry.registrations().stream()
                 .filter(r -> !Objects.equals(entityIdRegistration, r))
-                .collect(Collectors.toSet())) {
-            // FUTURE We should have metrics here to keep track of how long it takes to migrate each service
-            final var service = registration.service();
-            final var serviceName = service.getServiceName();
-            logger.info("Migrating Service {}", serviceName);
-            final var registry = (MerkleSchemaRegistry) registration.registry();
+                .forEach(registration -> {
+                    // FUTURE We should have metrics here to keep track of how long it takes to migrate each service
+                    final var service = registration.service();
+                    final var serviceName = service.getServiceName();
+                    logger.info("Migrating Service {}", serviceName);
+                    final var registry = (MerkleSchemaRegistry) registration.registry();
 
-            // The token service has a dependency on the entity ID service during genesis migrations, so we CAREFULLY
-            // create a different WritableStates specific to the entity ID service. The different WritableStates
-            // instances won't be able to see the changes made by each other, but there shouldn't be any conflicting
-            // changes. We'll inject this into the MigrationContext below to enable generation of entity IDs.
-            final var entityIdWritableStates = state.createWritableStates(EntityIdService.NAME);
-            final var entityIdStore = new WritableEntityIdStore(entityIdWritableStates);
+                    // The token service has a dependency on the entity ID service during genesis migrations, so we
+                    // CAREFULLY create a different WritableStates specific to the entity ID service. The different
+                    // WritableStates instances won't be able to see the changes made by each other, but there shouldn't
+                    // be any conflicting changes. We'll inject this into the MigrationContext below to enable
+                    // generation of entity IDs.
+                    final var entityIdWritableStates = state.createWritableStates(EntityIdService.NAME);
+                    final var entityIdStore = new WritableEntityIdStore(entityIdWritableStates);
 
-            registry.migrate(
-                    state,
-                    previousVersion,
-                    currentVersion,
-                    configProvider.getConfiguration(),
-                    networkInfo,
-                    backendThrottle,
-                    requireNonNull(entityIdStore));
-            // Now commit any changes that were made to the entity ID state (since other service entities could depend
-            // on newly-generated entity IDs)
-            if (entityIdWritableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
-                mws.commit();
-            }
-        }
+                    registry.migrate(
+                            state,
+                            previousVersion,
+                            currentVersion,
+                            configProvider.getConfiguration(),
+                            networkInfo,
+                            backendThrottle,
+                            requireNonNull(entityIdStore));
+                    // Now commit any changes that were made to the entity ID state (since other service entities could
+                    // depend on newly-generated entity IDs)
+                    if (entityIdWritableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
+                        mws.commit();
+                    }
+                });
         logger.info("Migration complete");
     }
 
