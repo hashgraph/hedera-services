@@ -180,6 +180,8 @@ public class RecordFinalizerBase {
                         persistedNft.hasOwnerId() && !persistedNft.ownerId().equals(AccountID.DEFAULT);
                 // If the NFT did not have an owner before set it to the treasury account
                 senderAccountId = hasOwnerId ? persistedNft.ownerId() : token.treasuryAccountId();
+            } else {
+                senderAccountId = ZERO_ACCOUNT_ID;
             }
 
             // If the NFT has been burned or wiped, modifiedNft will be null. In that case the receiverId
