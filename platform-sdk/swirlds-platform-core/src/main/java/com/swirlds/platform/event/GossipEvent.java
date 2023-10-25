@@ -69,28 +69,34 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     /**
      * Checks whether the data included in hashed data is internally consistent
      *
-     * @param hashedData the event to be validated
-     * @return true if the event has valid parents, otherwise false
+     * @throws IOException if the data is not internally consistent
      */
-    private static boolean isHashedDataInternallyConsistent(@NonNull final BaseEventHashedData hashedData) {
+    private void checkHashedDataInternalConsistency() throws IOException {
         final Hash selfParentHash = hashedData.getSelfParentHash();
         final long selfParentGeneration = hashedData.getSelfParentGen();
 
         // If a parent hash is missing, then the generation must also be invalid.
         // If a parent hash is not missing, then the generation must be valid.
         if ((selfParentHash == null) != (selfParentGeneration < FIRST_GENERATION)) {
-            return false;
+            throw new IOException(
+                    "Internal event self-parent inconsistency detected. Event: %s, self-parent hash: %s, self-parent generation: %s"
+                            .formatted(this, selfParentHash, selfParentGeneration));
         }
 
         final Hash otherParentHash = hashedData.getOtherParentHash();
         final long otherParentGeneration = hashedData.getOtherParentGen();
 
         if ((otherParentHash == null) != (otherParentGeneration < FIRST_GENERATION)) {
-            return false;
+            throw new IOException(
+                    "Internal event other-parent inconsistency detected. Event: %s, other-parent hash: %s, other-parent generation: %s"
+                            .formatted(this, otherParentHash, otherParentGeneration));
         }
 
-        // If both parents are present, then they must have different hashes.
-        return (selfParentHash == null) || !selfParentHash.equals(otherParentHash);
+        if ((selfParentHash != null) && selfParentHash.equals(otherParentHash)) {
+            throw new IOException(
+                    "Self-parent and other-parent have the same hash. Event: %s, duplicate parent hash: %s"
+                            .formatted(this, selfParentHash));
+        }
     }
 
     /**
@@ -114,9 +120,17 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
         }
         timeReceived = Instant.now();
 
-        if (hashedData == null || unhashedData == null || !isHashedDataInternallyConsistent(hashedData)) {
-            throw new IOException("Invalid event: " + this);
+        if (hashedData == null) {
+            // do not log the event itself, since toString would throw a NullPointerException
+            throw new IOException("Received hashedData was null");
         }
+
+        if (unhashedData == null) {
+            // do not log the event itself, since toString would throw a NullPointerException
+            throw new IOException("Received unhashedData was null");
+        }
+
+        checkHashedDataInternalConsistency();
     }
 
     /**
