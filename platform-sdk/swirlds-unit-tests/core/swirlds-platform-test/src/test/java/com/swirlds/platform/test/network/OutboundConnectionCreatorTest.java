@@ -282,6 +282,9 @@ class OutboundConnectionCreatorTest {
 
     @NonNull
     private static Configuration getConfig() {
-        return new TestConfigBuilder().withValue("socket.bufferSize", "100").getOrCreateConfig();
+        return new TestConfigBuilder()
+                .withValue("socket.bufferSize", "100")
+                .withValue("socket.gzipCompression", false)
+                .getOrCreateConfig();
     }
 }

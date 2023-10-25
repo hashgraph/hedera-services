@@ -18,9 +18,11 @@ package com.swirlds.platform.test.network.communication;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.IOConsumer;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.test.network.FakeConnection;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,8 +31,12 @@ import java.io.OutputStream;
 public class ReadWriteFakeConnection extends FakeConnection {
     private final SyncInputStream in;
     private final SyncOutputStream out;
+
+    private final Configuration configuration =
+            new TestConfigBuilder().withValue("socket.gzipCompression", false).getOrCreateConfig();
+
     private final PlatformContext platformContext =
-            TestPlatformContextBuilder.create().build();
+            TestPlatformContextBuilder.create().withConfiguration(configuration).build();
 
     public ReadWriteFakeConnection(final InputStream in, final OutputStream out) {
         super();
