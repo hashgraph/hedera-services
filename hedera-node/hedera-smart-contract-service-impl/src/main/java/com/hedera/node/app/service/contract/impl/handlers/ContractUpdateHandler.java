@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -45,7 +46,9 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -117,6 +120,7 @@ public class ContractUpdateHandler implements TransactionHandler {
 
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var toBeUpdated = accountStore.getContractById(target);
+        validateSemantics(toBeUpdated, context, op);
         final var changed = update(toBeUpdated, context, op);
 
         context.serviceApi(TokenServiceApi.class).updateContract(changed);
@@ -126,9 +130,6 @@ public class ContractUpdateHandler implements TransactionHandler {
             @NonNull final Account contract,
             @NonNull final HandleContext context,
             @NonNull final ContractUpdateTransactionBody op) {
-
-        validateSemantics(contract, context, op);
-
         final var builder = contract.copyBuilder();
         if (op.hasAdminKey()) {
             if (EMPTY_KEY_LIST.equals(op.adminKey())) {
@@ -168,9 +169,19 @@ public class ContractUpdateHandler implements TransactionHandler {
         }
         if (op.hasMaxAutomaticTokenAssociations()) {
             final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+            final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
+            final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+
             validateFalse(
                     op.maxAutomaticTokenAssociations() > ledgerConfig.maxAutoAssociations(),
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+
+            final long newMax = op.maxAutomaticTokenAssociations();
+            validateFalse(newMax < contract.maxAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
+            validateFalse(
+                    entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
+                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+
             builder.maxAutoAssociations(op.maxAutomaticTokenAssociations());
         }
         return builder.build();
