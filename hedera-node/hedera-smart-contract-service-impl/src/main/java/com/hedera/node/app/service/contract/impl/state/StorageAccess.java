@@ -118,4 +118,3 @@ public record StorageAccess(@NonNull UInt256 key, @NonNull UInt256 value, @Nulla
         }
     }
 }
-

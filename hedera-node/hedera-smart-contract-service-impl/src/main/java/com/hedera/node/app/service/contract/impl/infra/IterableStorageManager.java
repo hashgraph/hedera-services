@@ -79,7 +79,7 @@ public class IterableStorageManager {
             if (access.isUpdate()) {
                 var firstContractKey = contractFirstKeyOf(enhancement, contractAccesses.contractNumber());
 
-                switch(StorageAccessType.getAccessType(access)) {
+                switch (StorageAccessType.getAccessType(access)) {
                     case REMOVAL -> firstContractKey = removeAccessedValue(
                             store, firstContractKey, contractAccesses.contractNumber(), tuweniToPbjBytes(access.key()));
                     case INSERTION -> firstContractKey = insertAccessedValue(
@@ -241,16 +241,20 @@ public class IterableStorageManager {
         return firstContractKey;
     }
 
-    @NonNull private SlotKey newSlotKeyFor(long contractNumber, @NonNull final Bytes key) {
+    @NonNull
+    private SlotKey newSlotKeyFor(long contractNumber, @NonNull final Bytes key) {
         return new SlotKey(contractNumber, key);
     }
 
-    @NonNull private SlotValue newSlotValueFor(@NonNull final ContractStateStore store,
+    @NonNull
+    private SlotValue newSlotValueFor(
+            @NonNull final ContractStateStore store,
             final boolean forModify,
             @NonNull final SlotKey slotKey,
             @NonNull final String msgOnError,
             @NonNull final Bytes key) {
-        return forModify ? Objects.requireNonNull(store.getSlotValueForModify(slotKey), () -> msgOnError + key) :
-                Objects.requireNonNull(store.getSlotValue(slotKey), () -> msgOnError + key);
+        return forModify
+                ? Objects.requireNonNull(store.getSlotValueForModify(slotKey), () -> msgOnError + key)
+                : Objects.requireNonNull(store.getSlotValue(slotKey), () -> msgOnError + key);
     }
 }
