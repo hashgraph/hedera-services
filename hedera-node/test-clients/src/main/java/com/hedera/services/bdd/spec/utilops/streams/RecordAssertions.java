@@ -79,6 +79,15 @@ public class RecordAssertions extends UtilOp {
         allRunFor(spec, triggerOp);
     }
 
+    public static void uninterruptiblyTriggerAndCloseAtLeastOneFile(final HapiSpec spec) {
+        try {
+            RecordAssertions.triggerAndCloseAtLeastOneFile(spec);
+            Thread.sleep(1000L);
+        } catch (final InterruptedException ignore) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     @Nullable
     private Throwable firstFailureIfAny(final String loc) {
         try {

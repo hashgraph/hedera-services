@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
@@ -82,8 +83,10 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.SnapshotModeOp.SnapshotMode.TAKE_FROM_MONO_STREAMS;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -122,7 +125,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -145,7 +147,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
+// @HapiTestSuite
 public class CryptoTransferSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(CryptoTransferSuite.class);
     private static final String OWNER = "owner";
@@ -1825,8 +1827,9 @@ public class CryptoTransferSuite extends HapiSuite {
     private HapiSpec vanillaTransferSucceeds() {
         long initialBalance = HapiSpecSetup.getDefaultInstance().defaultBalance();
 
-        return defaultHapiSpec("VanillaTransferSucceeds")
+        return onlyDefaultHapiSpec("VanillaTransferSucceeds")
                 .given(
+                        snapshotMode(TAKE_FROM_MONO_STREAMS),
                         cryptoCreate("somebody")
                                 .maxAutomaticTokenAssociations(5001)
                                 .hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),

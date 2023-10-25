@@ -1023,6 +1023,10 @@ public class UtilVerbs {
         }
     }
 
+    public static HapiSpecOperation snapshotMode(SnapshotModeOp.SnapshotMode mode) {
+        return new SnapshotModeOp(mode);
+    }
+
     public static HapiSpecOperation updateLargeFile(
             String payer,
             String fileName,

@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
+import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.uninterruptiblyTriggerAndCloseAtLeastOneFile;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -67,6 +68,7 @@ import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
+import com.hedera.services.bdd.spec.utilops.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
@@ -468,6 +470,7 @@ public class HapiSpec implements Runnable {
                 .deferStatusResolution()
                 .hasAnyStatusAtAll()
                 .execFor(this);
+        SnapshotModeOp snapshotOp = null;
         for (HapiSpecOperation op : ops) {
             if (!autoScheduled.isEmpty() && op.shouldSkipWhenAutoScheduling(autoScheduled)) {
                 continue;
@@ -479,6 +482,8 @@ public class HapiSpec implements Runnable {
                 assertions.add(recordStreamAssertion);
             } else if (op instanceof HapiTxnOp txn && autoScheduled.contains(txn.type())) {
                 op = autoScheduledSequenceFor(txn);
+            } else if (op instanceof SnapshotModeOp snapshotModeOp) {
+                snapshotOp = snapshotModeOp;
             }
             Optional<Throwable> error = op.execFor(this);
             Failure asyncFailure = null;
@@ -510,6 +515,10 @@ public class HapiSpec implements Runnable {
             });
         }
         if (status == PASSED) {
+            if (snapshotOp != null) {
+                uninterruptiblyTriggerAndCloseAtLeastOneFile(this);
+                snapshotOp.finishLifecycle();
+            }
             final var maybeRecordStreamError = checkRecordStream(assertions);
             if (maybeRecordStreamError.isPresent()) {
                 status = FAILED;
