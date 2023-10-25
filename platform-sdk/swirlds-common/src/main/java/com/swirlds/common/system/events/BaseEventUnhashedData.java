@@ -176,7 +176,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
     }
 
     /**
-     * Synchronize the creator data between the hashed event's other parent data and the creatorId.  T his method is to
+     * Synchronize the creator data between the hashed event's other parent data and the creatorId.  This method is to
      * support backwards compatibility with the previous event serializaiton format.
      *
      * @param event the event to update
