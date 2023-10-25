@@ -251,7 +251,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest
+    @HapiTest // here
     private HapiSpec hollowAccountFinalizationWhenAccountNotPresentInPreHandle() {
         final var ECDSA_2 = "ECDSA_2";
         return defaultHapiSpec("hollowAccountFinalizationWhenAccountNotPresentInPreHandle")
@@ -541,7 +541,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest
+    @HapiTest // here
     private HapiSpec tooManyHollowAccountFinalizationsShouldFail() {
         final var ECDSA_KEY_1 = "ECDSA_KEY_1";
         final var ECDSA_KEY_2 = "ECDSA_KEY_2";
@@ -689,7 +689,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest
+    @HapiTest // here
     private HapiSpec txnWith2CompletionsAndAnother2PrecedingChildRecords() {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
@@ -711,6 +711,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                     final var newAccountID =
                             hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
+                    System.out.println("newAccountID: " + newAccountID);
                 }))
                 .then(withOpContext((spec, opLog) -> {
                     // send a crypto transfer from the hollow payer
@@ -813,7 +814,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest
+    @HapiTest // here
     private HapiSpec hollowAccountCompletionIsPersistedEvenIfTxnFails() {
         return defaultHapiSpec("hollowAccountCompletionIsPersistedEvenIfTxnFails")
                 .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))

@@ -207,14 +207,22 @@ public class TokenHandlerHelper {
     }
 
     /**
-     * Checks that a key does not represent an immutable account, e.g. the staking rewards account.
+     * Checks that an account does not represent one of the staking accounts
      * Throws a {@link PreCheckException} with the designated response code otherwise.
-     * @param key the key to check
+     * @param accountID the accountID to check
      * @param responseCode the response code to throw
      * @throws PreCheckException if the account is considered immutable
      */
-    public static void verifyIsNotImmutableAccount(
-            @Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException {
+    public static void verifyNotStakingAccounts(
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException {
+        if (accountID.accountNum() == 800L || accountID.accountNum() == 801L) {
+            throw new PreCheckException(responseCode);
+        }
+    }
+
+    public static void verifyNotEmptyKey(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException {
         if (EMPTY_KEY_LIST.equals(key)) {
             throw new PreCheckException(responseCode);
         }

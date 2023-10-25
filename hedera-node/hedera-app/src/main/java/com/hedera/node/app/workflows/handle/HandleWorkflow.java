@@ -508,8 +508,7 @@ public class HandleWorkflow {
                         .key(key)
                         .build())
                 .build();
-        // Should this be preceding child transaction ??
-        context.dispatchRemovableChildTransaction(
+        context.dispatchPrecedingTransaction(
                 syntheticUpdateTxn, SingleTransactionRecordBuilder.class, k -> true, context.payer());
     }
 
