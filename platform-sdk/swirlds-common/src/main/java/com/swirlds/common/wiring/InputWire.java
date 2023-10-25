@@ -140,9 +140,7 @@ public class InputWire<I, O> {
     }
 
     /**
-     * Add a task to the task scheduler. May block if back pressure is enabled. Similar to
-     * {@link #interruptablePut(Object)} except that it cannot be interrupted and can block forever if backpressure is
-     * enabled.
+     * Add a task to the task scheduler. May block if back pressure is enabled.
      *
      * @param data the data to be processed by the task scheduler
      */

@@ -30,12 +30,10 @@ class NoOpObjectCounterTests {
         final NoOpObjectCounter counter = NoOpObjectCounter.getInstance();
 
         counter.onRamp();
-        counter.interruptableOnRamp();
         counter.attemptOnRamp();
         counter.forceOnRamp();
         counter.offRamp();
         counter.waitUntilEmpty();
-        counter.interruptableWaitUntilEmpty();
         assertEquals(-1, counter.getCount());
     }
 }

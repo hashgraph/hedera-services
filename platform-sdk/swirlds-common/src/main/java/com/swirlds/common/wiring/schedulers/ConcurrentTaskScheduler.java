@@ -50,7 +50,7 @@ public class ConcurrentTaskScheduler<O> extends TaskScheduler<O> {
      *                                 null
      * @param offRamp                  an object counter that is decremented when data is removed from the wire, ignored
      *                                 if null
-     * @param flushEnabled             if true, then {@link #flush() will be enabled, otherwise it will throw.
+     * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
      * @param insertionIsBlocking      when data is inserted into this wire, will it block until capacity is available?
      */
     public ConcurrentTaskScheduler(

@@ -55,12 +55,11 @@ class BackpressureObjectCounterTests {
                 count++;
 
                 // All of these methods are logically equivalent with current capacity.
-                final int choice = random.nextInt(4);
+                final int choice = random.nextInt(3);
                 switch (choice) {
                     case 0 -> counter.onRamp();
-                    case 1 -> counter.interruptableOnRamp();
-                    case 2 -> counter.attemptOnRamp();
-                    case 3 -> counter.forceOnRamp();
+                    case 1 -> counter.attemptOnRamp();
+                    case 2 -> counter.forceOnRamp();
                     default -> throw new IllegalStateException("Unexpected value: " + choice);
                 }
 
@@ -117,77 +116,6 @@ class BackpressureObjectCounterTests {
 
         // even though the interrupt did not unblock the thread, the interrupt should not have been squelched.
         assertEventuallyEquals(true, interrupted::get, Duration.ofSeconds(1), "Thread should have been interrupted");
-
-        assertEquals(10, counter.getCount());
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {0, 1})
-    void interruptableOnRampTest(final int sleepMillis) throws InterruptedException {
-        final Duration sleepDuration = Duration.ofMillis(sleepMillis);
-
-        final ObjectCounter counter = new BackpressureObjectCounter(10, sleepDuration);
-
-        // Fill up the counter to capacity
-        for (int i = 0; i < 10; i++) {
-            counter.onRamp();
-        }
-
-        assertEquals(10, counter.getCount());
-
-        // Attempt to another, should block.
-        final AtomicBoolean added1 = new AtomicBoolean(false);
-        final AtomicReference<Boolean> interrupted1 = new AtomicReference<>();
-        final Thread thread1 = new ThreadConfiguration(getStaticThreadManager())
-                .setRunnable(() -> {
-                    try {
-                        counter.interruptableOnRamp();
-                        added1.set(true);
-                    } catch (InterruptedException e) {
-                        interrupted1.set(true);
-                        return;
-                    }
-
-                    interrupted1.set(false);
-                })
-                .build(true);
-
-        // Attempt to add one more, should block.
-        final AtomicBoolean added2 = new AtomicBoolean(false);
-        final AtomicReference<Boolean> interrupted2 = new AtomicReference<>();
-        new ThreadConfiguration(getStaticThreadManager())
-                .setRunnable(() -> {
-                    try {
-                        counter.interruptableOnRamp();
-                        added2.set(true);
-                    } catch (InterruptedException e) {
-                        interrupted2.set(true);
-                        return;
-                    }
-                    interrupted2.set(false);
-                })
-                .build(true);
-
-        assertEquals(10, counter.getCount());
-
-        // Sleep for a little while. Threads should be unable to on ramp another element.
-        MILLISECONDS.sleep(50);
-        assertEquals(10, counter.getCount());
-
-        // Interrupt thread 1.
-        thread1.interrupt();
-        assertEventuallyEquals(true, interrupted1::get, Duration.ofSeconds(1), "Thread should have been interrupted");
-        assertFalse(added1.get());
-
-        // The second thread should still be blocked.
-        MILLISECONDS.sleep(50);
-        assertEquals(10, counter.getCount());
-
-        // Off ramp one element. Thread 2 should become unblocked.
-        counter.offRamp();
-
-        assertEventuallyTrue(added2::get, Duration.ofSeconds(1), "Thread should have been unblocked");
-        assertEventuallyEquals(false, interrupted2::get, Duration.ofSeconds(1), "Thread should have been interrupted");
 
         assertEquals(10, counter.getCount());
     }
@@ -264,85 +192,5 @@ class BackpressureObjectCounterTests {
         }
 
         assertEventuallyTrue(empty::get, Duration.ofSeconds(1), "Counter did not empty in time.");
-    }
-
-    @Test
-    void interruptableWaitUntilEmptyTest() throws InterruptedException {
-        final ObjectCounter counter = new BackpressureObjectCounter(1000, Duration.ofMillis(1));
-
-        for (int i = 0; i < 100; i++) {
-            counter.onRamp();
-        }
-
-        final AtomicBoolean empty = new AtomicBoolean(false);
-        new ThreadConfiguration(getStaticThreadManager())
-                .setRunnable(() -> {
-                    try {
-                        counter.interruptableWaitUntilEmpty();
-                    } catch (final InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                    empty.set(true);
-                })
-                .build(true);
-
-        // Should be blocked.
-        MILLISECONDS.sleep(50);
-        assertFalse(empty.get());
-
-        // Draining most of the things from the counter should still block.
-        for (int i = 0; i < 90; i++) {
-            counter.offRamp();
-        }
-        MILLISECONDS.sleep(50);
-        assertFalse(empty.get());
-
-        // Removing remaining things from the counter should unblock.
-        for (int i = 0; i < 10; i++) {
-            counter.offRamp();
-        }
-
-        assertEventuallyTrue(empty::get, Duration.ofSeconds(1), "Counter did not empty in time.");
-    }
-
-    @Test
-    void interruptWhileWaitingForEmptyTest() throws InterruptedException {
-        final ObjectCounter counter = new BackpressureObjectCounter(1000, Duration.ofMillis(1));
-
-        for (int i = 0; i < 100; i++) {
-            counter.onRamp();
-        }
-
-        final AtomicBoolean empty = new AtomicBoolean(false);
-        final AtomicBoolean interrupted = new AtomicBoolean(false);
-        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
-                .setRunnable(() -> {
-                    try {
-                        counter.interruptableWaitUntilEmpty();
-                    } catch (final InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        interrupted.set(true);
-                        return;
-                    }
-                    empty.set(true);
-                })
-                .build(true);
-
-        // Should be blocked.
-        MILLISECONDS.sleep(50);
-        assertFalse(empty.get());
-
-        // Draining most of the things from the counter should still block.
-        for (int i = 0; i < 90; i++) {
-            counter.offRamp();
-        }
-        MILLISECONDS.sleep(50);
-        assertFalse(empty.get());
-
-        // Interrupting the thread should cause us to unblock.
-        thread.interrupt();
-
-        assertEventuallyTrue(interrupted::get, Duration.ofSeconds(1), "thread was not interrupted");
-        assertFalse(empty.get());
     }
 }

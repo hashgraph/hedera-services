@@ -38,8 +38,7 @@ class EmptyBlocker implements ManagedBlocker {
      * @param count                     the counter to use
      * @param sleepNanos                the number of nanoseconds to sleep while blocking, or -1 to not sleep
      */
-    public EmptyBlocker(
-            @NonNull final AtomicLong count, final int sleepNanos) {
+    public EmptyBlocker(@NonNull final AtomicLong count, final int sleepNanos) {
         this.count = Objects.requireNonNull(count);
         this.sleepNanos = sleepNanos;
     }

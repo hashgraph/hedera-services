@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 class StandardObjectCounterTests {
 
     @Test
-    void basicOperationTest() throws InterruptedException {
+    void basicOperationTest() {
         final Random random = getRandomPrintSeed();
 
         final ObjectCounter counter = new StandardObjectCounter(Duration.ofMillis(1));
@@ -46,12 +46,11 @@ class StandardObjectCounterTests {
                 count++;
 
                 // All of these methods are logically equivalent for this implementation.
-                final int choice = random.nextInt(4);
+                final int choice = random.nextInt(3);
                 switch (choice) {
                     case 0 -> counter.onRamp();
-                    case 1 -> counter.interruptableOnRamp();
-                    case 2 -> counter.attemptOnRamp();
-                    case 3 -> counter.forceOnRamp();
+                    case 1 -> counter.attemptOnRamp();
+                    case 2 -> counter.forceOnRamp();
                     default -> throw new IllegalStateException("Unexpected value: " + choice);
                 }
 
@@ -102,85 +101,5 @@ class StandardObjectCounterTests {
         }
 
         assertEventuallyTrue(empty::get, Duration.ofSeconds(1), "Counter did not empty in time.");
-    }
-
-    @Test
-    void interruptableWaitUntilEmptyTest() throws InterruptedException {
-        final ObjectCounter counter = new StandardObjectCounter(Duration.ofMillis(1));
-
-        for (int i = 0; i < 100; i++) {
-            counter.onRamp();
-        }
-
-        final AtomicBoolean empty = new AtomicBoolean(false);
-        new ThreadConfiguration(getStaticThreadManager())
-                .setRunnable(() -> {
-                    try {
-                        counter.interruptableWaitUntilEmpty();
-                    } catch (final InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                    empty.set(true);
-                })
-                .build(true);
-
-        // Should be blocked.
-        MILLISECONDS.sleep(50);
-        assertFalse(empty.get());
-
-        // Draining most of the things from the counter should still block.
-        for (int i = 0; i < 90; i++) {
-            counter.offRamp();
-        }
-        MILLISECONDS.sleep(50);
-        assertFalse(empty.get());
-
-        // Removing remaining things from the counter should unblock.
-        for (int i = 0; i < 10; i++) {
-            counter.offRamp();
-        }
-
-        assertEventuallyTrue(empty::get, Duration.ofSeconds(1), "Counter did not empty in time.");
-    }
-
-    @Test
-    void interruptWhileWaitingForEmptyTest() throws InterruptedException {
-        final ObjectCounter counter = new StandardObjectCounter(Duration.ofMillis(1));
-
-        for (int i = 0; i < 100; i++) {
-            counter.onRamp();
-        }
-
-        final AtomicBoolean empty = new AtomicBoolean(false);
-        final AtomicBoolean interrupted = new AtomicBoolean(false);
-        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
-                .setRunnable(() -> {
-                    try {
-                        counter.interruptableWaitUntilEmpty();
-                    } catch (final InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        interrupted.set(true);
-                        return;
-                    }
-                    empty.set(true);
-                })
-                .build(true);
-
-        // Should be blocked.
-        MILLISECONDS.sleep(50);
-        assertFalse(empty.get());
-
-        // Draining most of the things from the counter should still block.
-        for (int i = 0; i < 90; i++) {
-            counter.offRamp();
-        }
-        MILLISECONDS.sleep(50);
-        assertFalse(empty.get());
-
-        // Interrupting the thread should cause us to unblock.
-        thread.interrupt();
-
-        assertEventuallyTrue(interrupted::get, Duration.ofSeconds(1), "thread was not interrupted");
-        assertFalse(empty.get());
     }
 }

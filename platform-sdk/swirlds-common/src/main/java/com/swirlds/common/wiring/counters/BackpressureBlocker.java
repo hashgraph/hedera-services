@@ -42,9 +42,7 @@ class BackpressureBlocker implements ManagedBlocker {
      * @param sleepNanos                the number of nanoseconds to sleep while blocking, or -1 to not sleep
      */
     public BackpressureBlocker(
-            @NonNull final AtomicLong count,
-            @NonNull final LongUnaryOperator increment,
-            final int sleepNanos) {
+            @NonNull final AtomicLong count, @NonNull final LongUnaryOperator increment, final int sleepNanos) {
         this.count = Objects.requireNonNull(count);
         this.increment = Objects.requireNonNull(increment);
         this.sleepNanos = sleepNanos;

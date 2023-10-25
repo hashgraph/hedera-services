@@ -55,7 +55,7 @@ public class SequentialTaskScheduler<O> extends TaskScheduler<O> {
      * @param offRamp                  an object counter that is decremented when data is removed from the task
      *                                 scheduler, ignored if null
      * @param busyTimer                a timer that tracks the amount of time the scheduler is busy
-     * @param flushEnabled             if true, then {@link #flush() will be enabled, otherwise it will throw.
+     * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
      * @param insertionIsBlocking      when data is inserted into this task scheduler, will it block until capacity is
      *                                 available?
      */
