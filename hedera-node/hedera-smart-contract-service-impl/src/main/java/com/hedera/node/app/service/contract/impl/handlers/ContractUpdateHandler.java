@@ -25,7 +25,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CON
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -64,6 +66,7 @@ public class ContractUpdateHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().contractUpdateInstanceOrThrow();
+        pureChecks(context.body());
 
         if (isAdminSigRequired(op)) {
             context.requireKeyOrThrow(op.contractIDOrElse(ContractID.DEFAULT), INVALID_CONTRACT_ID);
@@ -85,12 +88,9 @@ public class ContractUpdateHandler implements TransactionHandler {
         //  It's probably incorrect so I will wait for the reviews for guidance
         if (op.hasAdminKey()) {
             // TODO: is this correct? Is the contractID field deprecated?
-            if (op.adminKey().contractID() != null) {
-                throw new PreCheckException(INVALID_ADMIN_KEY);
-            }
-            if (op.adminKey().hasThresholdKey() && !op.adminKey().thresholdKey().hasKeys()) {
-                throw new PreCheckException(INVALID_ADMIN_KEY);
-            }
+            validateFalsePreCheck(op.adminKey().contractID() != null, INVALID_ADMIN_KEY);
+            validateFalsePreCheck(op.adminKey().hasThresholdKey() && !op.adminKey().thresholdKey().hasKeys(),
+                INVALID_ADMIN_KEY);
         }
     }
 
@@ -170,9 +170,8 @@ public class ContractUpdateHandler implements TransactionHandler {
         }
         if (op.hasMaxAutomaticTokenAssociations()) {
             final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-            if (op.maxAutomaticTokenAssociations() > ledgerConfig.maxAutoAssociations()) {
-                throw new HandleException(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-            }
+            validateFalse(op.maxAutomaticTokenAssociations() > ledgerConfig.maxAutoAssociations(),
+                REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
             builder.maxAutoAssociations(op.maxAutomaticTokenAssociations());
         }
         return builder.build();
@@ -183,29 +182,20 @@ public class ContractUpdateHandler implements TransactionHandler {
             boolean keyNotSentinel = !EMPTY_KEY_LIST.equals(op.adminKey());
             boolean keyIsUnset = op.adminKey().key().kind() == KeyOneOfType.UNSET;
             boolean keyIsNotValid = !KeyUtils.isValid(op.adminKey());
-            if (keyNotSentinel && (keyIsUnset || keyIsNotValid)) {
-                throw new HandleException(INVALID_ADMIN_KEY);
-            }
+            validateFalse(keyNotSentinel && (keyIsUnset || keyIsNotValid), INVALID_ADMIN_KEY);
         }
 
         if (op.hasExpirationTime()) {
             try {
                 context.attributeValidator().validateExpiry(op.expirationTime().seconds());
             } catch (HandleException e) {
-                if (contract.expiredAndPendingRemoval()) {
-                    throw new HandleException(CONTRACT_EXPIRED_AND_PENDING_REMOVAL);
-                }
+                validateFalse(contract.expiredAndPendingRemoval(), CONTRACT_EXPIRED_AND_PENDING_REMOVAL);
                 throw e;
             }
         }
 
-        if (!onlyAffectsExpiry(op) && !isMutable(contract)) {
-            throw new HandleException(MODIFYING_IMMUTABLE_CONTRACT);
-        }
-
-        if (reducesExpiry(op, contract.expirationSecond())) {
-            throw new HandleException(EXPIRATION_REDUCTION_NOT_ALLOWED);
-        }
+        validateFalse(!onlyAffectsExpiry(op) && !isMutable(contract), MODIFYING_IMMUTABLE_CONTRACT);
+        validateFalse(reducesExpiry(op, contract.expirationSecond()), EXPIRATION_REDUCTION_NOT_ALLOWED);
     }
 
     boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {
