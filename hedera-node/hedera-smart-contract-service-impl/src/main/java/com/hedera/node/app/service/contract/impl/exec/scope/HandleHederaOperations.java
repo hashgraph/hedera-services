@@ -147,7 +147,7 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public long lazyCreationCostInGas() {
         // TODO - implement correctly
-        return 1L;
+        return 500_000L;
     }
 
     /**

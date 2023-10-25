@@ -4029,8 +4029,10 @@ public class TraceabilitySuite extends HapiSuite {
     @HapiTest
     private HapiSpec traceabilityE2EScenario13() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
-        return defaultHapiSpec("traceabilityE2EScenario13")
+        return propertyPreservingHapiSpec("traceabilityE2EScenario13")
+                .preserving(CHAIN_ID_PROPERTY)
                 .given(
+                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
@@ -4071,8 +4073,10 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec traceabilityE2EScenario14() {
-        return defaultHapiSpec("traceabilityE2EScenario14")
+        return propertyPreservingHapiSpec("traceabilityE2EScenario14")
+                .preserving(CHAIN_ID_PROPERTY)
                 .given(
+                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
@@ -4447,8 +4451,10 @@ public class TraceabilitySuite extends HapiSuite {
         final var RECEIVER = "RECEIVER";
         final var hbarsToSend = 1;
         final var transferTxn = "payTxn";
-        return defaultHapiSpec("traceabilityE2EScenario19")
+        return propertyPreservingHapiSpec("traceabilityE2EScenario19")
+                .preserving(CHAIN_ID_PROPERTY)
                 .given(
+                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RECEIVER).balance(0L),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -4828,6 +4834,7 @@ public class TraceabilitySuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec ethereumLazyCreateExportsExpectedSidecars() {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var RECIPIENT_KEY2 = "lazyAccountRecipient2";

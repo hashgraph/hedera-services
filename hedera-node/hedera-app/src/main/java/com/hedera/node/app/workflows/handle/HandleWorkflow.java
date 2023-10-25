@@ -454,7 +454,11 @@ public class HandleWorkflow {
                             throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
                         }
                     }
-                    recordBuilder.status(SUCCESS);
+                    
+                    // Do not override to SUCCESS if there is an error status
+                    if (recordBuilder.status() == OK) {
+                        recordBuilder.status(SUCCESS);
+                    }
 
                     // After transaction is successfully handled update the gas throttle by leaking the unused gas
                     if (isGasThrottled(transactionInfo.functionality()) && recordBuilder.hasContractResult()) {
