@@ -238,9 +238,10 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
         int totalTransactionSize = 0;
         for (final Transaction transaction : transactions) {
-            if (!transaction.isSystem()) {
+            if (!hasUserTransactions && !transaction.isSystem()) {
                 hasUserTransactions = true;
             }
+
             totalTransactionSize += transaction.getSerializedLength();
         }
 
