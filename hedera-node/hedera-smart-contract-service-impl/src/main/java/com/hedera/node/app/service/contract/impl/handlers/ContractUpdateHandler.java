@@ -89,8 +89,10 @@ public class ContractUpdateHandler implements TransactionHandler {
         if (op.hasAdminKey()) {
             // TODO: is this correct? Is the contractID field deprecated?
             validateFalsePreCheck(op.adminKey().contractID() != null, INVALID_ADMIN_KEY);
-            validateFalsePreCheck(op.adminKey().hasThresholdKey() && !op.adminKey().thresholdKey().hasKeys(),
-                INVALID_ADMIN_KEY);
+            validateFalsePreCheck(
+                    op.adminKey().hasThresholdKey()
+                            && !op.adminKey().thresholdKey().hasKeys(),
+                    INVALID_ADMIN_KEY);
         }
     }
 
@@ -114,11 +116,7 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var target = op.contractIDOrThrow();
 
         final var accountStore = context.readableStore(ReadableAccountStore.class);
-
-        // validate update account exists
         final var toBeUpdated = accountStore.getContractById(target);
-        validateTrue(toBeUpdated != null, INVALID_CONTRACT_ID);
-
         final var changed = update(toBeUpdated, context, op);
 
         context.serviceApi(TokenServiceApi.class).updateContract(changed);
@@ -170,14 +168,17 @@ public class ContractUpdateHandler implements TransactionHandler {
         }
         if (op.hasMaxAutomaticTokenAssociations()) {
             final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-            validateFalse(op.maxAutomaticTokenAssociations() > ledgerConfig.maxAutoAssociations(),
-                REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+            validateFalse(
+                    op.maxAutomaticTokenAssociations() > ledgerConfig.maxAutoAssociations(),
+                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
             builder.maxAutoAssociations(op.maxAutomaticTokenAssociations());
         }
         return builder.build();
     }
 
     private void validateSemantics(Account contract, HandleContext context, ContractUpdateTransactionBody op) {
+        validateTrue(contract != null, INVALID_CONTRACT_ID);
+
         if (op.hasAdminKey()) {
             boolean keyNotSentinel = !EMPTY_KEY_LIST.equals(op.adminKey());
             boolean keyIsUnset = op.adminKey().key().kind() == KeyOneOfType.UNSET;
