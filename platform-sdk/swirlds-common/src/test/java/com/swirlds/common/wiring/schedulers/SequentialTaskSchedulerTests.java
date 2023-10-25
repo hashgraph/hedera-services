@@ -1951,7 +1951,7 @@ class SequentialTaskSchedulerTests {
     }
 
     @Test
-    void externalBackPressureTest() {
+    void externalBackPressureTest() throws InterruptedException {
 
         // There are three components, A, B, and C.
         // We want to control the number of elements in all three, not individually.
@@ -1984,6 +1984,11 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger countA = new AtomicInteger();
         final CountDownLatch latchA = new CountDownLatch(1);
         aIn.bind(x -> {
+            try {
+                latchA.await();
+            } catch (final InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             countA.set(hash32(countA.get(), x));
             return x;
         });
@@ -1991,6 +1996,11 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger countB = new AtomicInteger();
         final CountDownLatch latchB = new CountDownLatch(1);
         bIn.bind(x -> {
+            try {
+                latchB.await();
+            } catch (final InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             countB.set(hash32(countB.get(), x));
             return x;
         });
@@ -1998,12 +2008,168 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger countC = new AtomicInteger();
         final CountDownLatch latchC = new CountDownLatch(1);
         cIn.bind(x -> {
+            try {
+                latchC.await();
+            } catch (final InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             countC.set(hash32(countC.get(), x));
         });
 
-        // TODO finish this test
+        // Add enough data to fill all available capacity.
+        int expectedCount = 0;
+        for (int i = 0; i < 10; i++) {
+            aIn.put(i);
+            expectedCount = hash32(expectedCount, i);
+        }
 
+        final AtomicBoolean moreWorkInserted = new AtomicBoolean(false);
+        new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    aIn.put(10);
+                    moreWorkInserted.set(true);
+                })
+                .build(true);
+        expectedCount = hash32(expectedCount, 10);
+
+        assertEquals(10, counter.getCount());
+
+        // Work is currently stuck at A. No matter how much time passes, no new work should be added.
+        MILLISECONDS.sleep(50);
+        assertFalse(moreWorkInserted.get());
+        assertEquals(10, counter.getCount());
+
+        // Unblock A. Work will flow forward and get blocked at B. No matter how much time passes, no new work should
+        // be added.
+        latchA.countDown();
+        MILLISECONDS.sleep(50);
+        assertFalse(moreWorkInserted.get());
+        assertEquals(10, counter.getCount());
+
+        // Unblock B. Work will flow forward and get blocked at C. No matter how much time passes, no new work should
+        // be added.
+        latchB.countDown();
+        MILLISECONDS.sleep(50);
+        assertFalse(moreWorkInserted.get());
+
+        // Unblock C. Entire pipeline is now unblocked and new things will be added.
+        latchC.countDown();
+        assertEventuallyEquals(0L, counter::getCount, Duration.ofSeconds(1), "Counter should be empty");
+        assertEquals(expectedCount, countA.get());
+        assertEquals(expectedCount, countB.get());
+        assertEquals(expectedCount, countC.get());
+        assertTrue(moreWorkInserted.get());
     }
 
-    // TODO write test for wire that has multiple counters
+    @Test
+    void multipleCountersInternalBackpressureTest() throws InterruptedException {
+
+        // There are three components, A, B, and C.
+        // The pipeline as a whole has a capacity of 10. Each step individually has a capacity of 5;
+
+        final ObjectCounter counter = new BackpressureObjectCounter(10, Duration.ofMillis(1));
+
+        final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
+                .withOnRamp(counter)
+                .withExternalBackPressure(true)
+                .withUnhandledTaskCapacity(5)
+                .build()
+                .cast();
+        final InputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
+
+        final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
+                .withExternalBackPressure(true)
+                .withUnhandledTaskCapacity(5)
+                .build()
+                .cast();
+        final InputWire<Integer, Integer> bIn = taskSchedulerB.buildInputWire("bIn");
+
+        final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
+                .withOffRamp(counter)
+                .withExternalBackPressure(true)
+                .withUnhandledTaskCapacity(5)
+                .build()
+                .cast();
+        final InputWire<Integer, Void> cIn = taskSchedulerC.buildInputWire("cIn");
+
+        taskSchedulerA.solderTo(bIn);
+        taskSchedulerB.solderTo(cIn);
+
+        final AtomicInteger countA = new AtomicInteger();
+        final CountDownLatch latchA = new CountDownLatch(1);
+        aIn.bind(x -> {
+            try {
+                latchA.await();
+            } catch (final InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            countA.set(hash32(countA.get(), x));
+            return x;
+        });
+
+        final AtomicInteger countB = new AtomicInteger();
+        final CountDownLatch latchB = new CountDownLatch(1);
+        bIn.bind(x -> {
+            try {
+                latchB.await();
+            } catch (final InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            countB.set(hash32(countB.get(), x));
+            return x;
+        });
+
+        final AtomicInteger countC = new AtomicInteger();
+        final CountDownLatch latchC = new CountDownLatch(1);
+        cIn.bind(x -> {
+            try {
+                latchC.await();
+            } catch (final InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            countC.set(hash32(countC.get(), x));
+        });
+
+        int expectedCount = 0;
+        for (int i = 0; i < 11; i++) {
+            expectedCount = hash32(expectedCount, i);
+        }
+
+        // This thread wants to add 11 things to the pipeline.
+        final AtomicBoolean allWOrkInserted = new AtomicBoolean(false);
+        new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    for (int i = 0; i < 11; i++) {
+                        aIn.put(i);
+                    }
+                    allWOrkInserted.set(true);
+                })
+                .build(true);
+
+        // Work is currently stuck at A. No matter how much time passes, we should not be able to exceed A's capacity.
+        MILLISECONDS.sleep(50);
+        assertFalse(allWOrkInserted.get());
+        assertEquals(5, counter.getCount());
+
+        // Unblock A. Work will flow forward and get blocked at B. A can fit 5 items, B can fit another 5.
+        latchA.countDown();
+        MILLISECONDS.sleep(50);
+        assertFalse(allWOrkInserted.get());
+        assertEquals(10, counter.getCount());
+
+        // Unblock B. Work will flow forward and get blocked at C. We shouldn't be able to add additional items
+        // since that would violate the global capacity.
+        latchB.countDown();
+        MILLISECONDS.sleep(50);
+        assertFalse(allWOrkInserted.get());
+        assertEquals(10, counter.getCount());
+
+        // Unblock C. Entire pipeline is now unblocked and new things will be added.
+        latchC.countDown();
+        assertEventuallyEquals(0L, counter::getCount, Duration.ofSeconds(1), "Counter should be empty");
+        assertEquals(expectedCount, countA.get());
+        assertEquals(expectedCount, countB.get());
+        assertEquals(expectedCount, countC.get());
+        assertTrue(allWOrkInserted.get());
+    }
 }
