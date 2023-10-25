@@ -145,14 +145,4 @@ class ConcurrentTaskSchedulerTests {
 
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
     }
-
-    void backpressureTest() {}
-
-    // TODO test the following:
-    //  - backpressure
-    //  - counting unprocessed elements
-    //  - various insertion methods
-    //  - circular data flow
-    //  - multiple channels
-    //  - flushing
 }
