@@ -30,11 +30,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.zip.GZIPOutputStream;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 
 public class SyncOutputStream extends SerializableDataOutputStream {
     private final CountingStreamExtension syncByteCounter;
@@ -63,11 +63,8 @@ public class SyncOutputStream extends SerializableDataOutputStream {
 
         final OutputStream wrappedStream;
         if (compress) {
-            try {
-                wrappedStream = new GZIPOutputStream(meteredStream, bufferSize, true);
-            } catch (final IOException e) {
-                throw new UncheckedIOException("unable to create gzip output stream", e);
-            }
+            wrappedStream = new DeflaterOutputStream(
+                    meteredStream, new Deflater(Deflater.DEFAULT_COMPRESSION, true), bufferSize, true);
         } else {
             wrappedStream = new BufferedOutputStream(meteredStream, bufferSize);
         }

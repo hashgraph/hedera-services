@@ -76,7 +76,7 @@ final class ReconnectTest {
             new TestConfigBuilder().withValue("socket.gzipCompression", false).getOrCreateConfig();
 
     private final PlatformContext platformContext =
-            TestPlatformContextBuilder.create().withConfiguration(configuration).build();
+            TestPlatformContextBuilder.create().build();
 
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {

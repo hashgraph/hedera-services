@@ -31,9 +31,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
 public class SyncInputStream extends SerializableDataInputStream {
 
@@ -61,11 +61,7 @@ public class SyncInputStream extends SerializableDataInputStream {
 
         final InputStream wrappedStream;
         if (compress) {
-            try {
-                wrappedStream = new GZIPInputStream(meteredStream, bufferSize);
-            } catch (final IOException e) {
-                throw new UncheckedIOException("unable to create gzip input stream", e);
-            }
+            wrappedStream = new InflaterInputStream(meteredStream, new Inflater(true), bufferSize);
         } else {
             wrappedStream = new BufferedInputStream(meteredStream, bufferSize);
         }
