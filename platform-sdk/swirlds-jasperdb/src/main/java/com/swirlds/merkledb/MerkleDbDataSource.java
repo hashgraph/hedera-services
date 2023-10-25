@@ -794,29 +794,34 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 shutdownThreadsAndWait(
                         mergingExecutor, storeInternalExecutor, storeKeyToPathExecutor, snapshotExecutor);
             } finally {
-                // close all closable data stores
-                logger.info(MERKLE_DB.getMarker(), "Closing Data Source [{}]", tableName);
-                if (hashStoreRam != null) {
-                    hashStoreRam.close();
+                try {
+                    // close all closable data stores
+                    logger.info(MERKLE_DB.getMarker(), "Closing Data Source [{}]", tableName);
+                    if (hashStoreRam != null) {
+                        hashStoreRam.close();
+                    }
+                    if (hashStoreDisk != null) {
+                        hashStoreDisk.close();
+                    }
+                    pathToDiskLocationInternalNodes.close();
+                    pathToDiskLocationLeafNodes.close();
+                    if (longKeyToPath != null) {
+                        longKeyToPath.close();
+                    }
+                    if (objectKeyToPath != null) {
+                        objectKeyToPath.close();
+                    }
+                    pathToKeyValue.close();
+                    // Store metadata
+                    saveMetadata(dbPaths.metadataFile);
+                } catch (final Throwable t) {
+                    logger.error(EXCEPTION.getMarker(), "Exception while closing Data Source [{}]", tableName);
+                } finally {
+                    // updated count of open databases
+                    COUNT_OF_OPEN_DATABASES.decrement();
+                    // Notify the database
+                    database.closeDataSource(this);
                 }
-                if (hashStoreDisk != null) {
-                    hashStoreDisk.close();
-                }
-                pathToDiskLocationInternalNodes.close();
-                pathToDiskLocationLeafNodes.close();
-                if (longKeyToPath != null) {
-                    longKeyToPath.close();
-                }
-                if (objectKeyToPath != null) {
-                    objectKeyToPath.close();
-                }
-                pathToKeyValue.close();
-                // updated count of open databases
-                COUNT_OF_OPEN_DATABASES.decrement();
-                // Store metadata
-                saveMetadata(dbPaths.metadataFile);
-                // Notify the database
-                database.closeDataSource(this);
             }
         }
     }
