@@ -73,6 +73,11 @@ class NodeInfoTest {
     }
 
     @Test
+    void getsSelfId() {
+        assertEquals(nodeId, subject.selfId());
+    }
+
+    @Test
     void understandsZeroStake() {
         givenEntryWithWeight(nodeId, 0L);
 
