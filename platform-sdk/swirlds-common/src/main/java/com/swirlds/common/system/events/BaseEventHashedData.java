@@ -29,6 +29,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
+import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -212,15 +213,9 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
-        deserialize(in, version, transactionConfig.maxTransactionCountPerEvent());
-    }
-
-    public void deserialize(
-            @NonNull final SerializableDataInputStream in, final int version, final int maxTransactionCount)
-            throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         Objects.requireNonNull(in, "The input stream must not be null");
+
         if (version >= ClassVersion.SOFTWARE_VERSION) {
             softwareVersion = in.readSerializable();
         } else {
@@ -235,8 +230,24 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         otherParentHash = in.readSerializable(false, Hash::new);
         timeCreated = in.readInstant();
         in.readInt(); // read serialized length
-        transactions = in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true);
-        checkUserTransactions();
+
+        final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
+
+        transactions = in.readSerializableArray(
+                ConsensusTransactionImpl[]::new, transactionConfig.maxTransactionCountPerEvent(), true);
+
+        int totalTransactionSize = 0;
+        for (final Transaction transaction : transactions) {
+            if (!transaction.isSystem()) {
+                hasUserTransactions = true;
+            }
+            totalTransactionSize += transaction.getSerializedLength();
+        }
+
+        if (totalTransactionSize > transactionConfig.maxTransactionBytesPerEvent()) {
+            throw new IOException("Total size of transactions in this event %s exceeds the maximum allowed size"
+                    .formatted(totalTransactionSize));
+        }
     }
 
     /**

@@ -29,7 +29,6 @@ import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.validation.EventDeduplication;
@@ -37,7 +36,6 @@ import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.event.validation.GossipEventValidator;
 import com.swirlds.platform.event.validation.GossipEventValidators;
 import com.swirlds.platform.event.validation.StaticValidators;
-import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
@@ -48,8 +46,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 class EventValidatorTests {
@@ -143,26 +139,6 @@ class EventValidatorTests {
                 .duplicateEvent();
         verify(metrics, description("metrics should have recorded the non-duplicate event"))
                 .nonDuplicateEvent();
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {100, 1999, 2000, 2001, 10_000})
-    void accumulatedTransactionSize(final int transAmount) {
-        final int maxTransactionBytesPerEvent = 2000;
-        final GossipEventValidator validator = new TransactionSizeValidator(maxTransactionBytesPerEvent);
-        final GossipEvent event = GossipEventBuilder.builder()
-                .setNumberOfTransactions(transAmount)
-                .buildEvent();
-
-        int eventTransSize = 0;
-        for (final Transaction t : event.getHashedData().getTransactions()) {
-            eventTransSize += t.getSerializedLength();
-        }
-        if (eventTransSize <= maxTransactionBytesPerEvent) {
-            assertTrue(validator.isEventValid(event), "transaction limit should not have been exceeded");
-        } else {
-            assertFalse(validator.isEventValid(event), "transaction limit should have been exceeded");
-        }
     }
 
     @Test
