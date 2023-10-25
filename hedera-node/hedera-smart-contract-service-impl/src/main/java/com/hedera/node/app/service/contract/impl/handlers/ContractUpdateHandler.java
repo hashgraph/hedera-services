@@ -28,7 +28,6 @@ import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -37,7 +36,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.key.KeyUtils;
@@ -69,7 +67,6 @@ public class ContractUpdateHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().contractUpdateInstanceOrThrow();
-        pureChecks(context.body());
 
         if (isAdminSigRequired(op)) {
             context.requireKeyOrThrow(op.contractIDOrElse(ContractID.DEFAULT), INVALID_CONTRACT_ID);
@@ -79,23 +76,6 @@ public class ContractUpdateHandler implements TransactionHandler {
         }
         if (op.hasAutoRenewAccountId() && !op.autoRenewAccountIdOrThrow().equals(AccountID.DEFAULT)) {
             context.requireKeyOrThrow(op.autoRenewAccountIdOrThrow(), INVALID_AUTORENEW_ACCOUNT);
-        }
-    }
-
-    @Override
-    public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
-        final var op = txn.contractUpdateInstanceOrThrow();
-
-        // TODO: Mono is using UpdateCustomizerFactory.processAdminKey but we don't have JContractIDKey/JKey
-        //  implementation in mod. So I stitched this together.
-        //  It's probably incorrect so I will wait for the reviews for guidance
-        if (op.hasAdminKey()) {
-            // TODO: is this correct? Is the contractID field deprecated?
-            validateFalsePreCheck(op.adminKey().contractID() != null, INVALID_ADMIN_KEY);
-            validateFalsePreCheck(
-                    op.adminKey().hasThresholdKey()
-                            && !op.adminKey().thresholdKey().hasKeys(),
-                    INVALID_ADMIN_KEY);
         }
     }
 
