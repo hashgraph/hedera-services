@@ -45,6 +45,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
@@ -53,7 +54,6 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
@@ -73,6 +73,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
 import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -423,7 +424,8 @@ public class HandleWorkflow {
                         throw new HandleException(CONSENSUS_GAS_EXHAUSTED);
                     }
 
-                    // Finalize any hollow accounts
+                    // Any hollow accounts that must sign to have all needed signatures, need to be finalized
+                    // as a result of transaction being handled.
                     for (final var hollowAccount : preHandleResult.hollowAccounts()) {
                         final var verification = verifier.verificationFor(hollowAccount.alias());
                         if (verification.key() != null) {
@@ -487,13 +489,28 @@ public class HandleWorkflow {
         blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
     }
 
+    /**
+     * Updates key on the hollow accounts that need to be finalized. This is done by dispatching a preceding
+     * synthetic update transaction. The ksy is derived from the signature expansion, by looking up the ECDSA key
+     * for the alias.
+     *
+     * @param context the handle context
+     * @param hollowAccount the hollow account
+     * @param key the key to update to
+     */
     private void finalizeHollowAccounts(final HandleContextImpl context, final Account hollowAccount, final Key key) {
-        final var accountStore = context.writableStore(WritableAccountStore.class);
         if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
             logger.error("Hollow account {} has a key other than the sentinel key", hollowAccount);
         }
-        final var accountAsContract = hollowAccount.copyBuilder().key(key).build();
-        accountStore.put(accountAsContract);
+        final var syntheticUpdateTxn = TransactionBody.newBuilder()
+                .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
+                        .accountIDToUpdate(hollowAccount.accountId())
+                        .key(key)
+                        .build())
+                .build();
+        // Should this be preceding child transaction ??
+        context.dispatchRemovableChildTransaction(
+                syntheticUpdateTxn, SingleTransactionRecordBuilder.class, k -> true, context.payer());
     }
 
     @NonNull
@@ -710,6 +727,7 @@ public class HandleWorkflow {
         signatureExpander.expand(sigPairs, expanded);
         if (payerKey != null && !isHollow(payer)) {
             signatureExpander.expand(payerKey, sigPairs, expanded);
+            context.requireSignatureForHollowAccount(payer);
         }
         signatureExpander.expand(currentRequiredPayerKeys, sigPairs, expanded);
         signatureExpander.expand(currentOptionalPayerKeys, sigPairs, expanded);
@@ -736,7 +754,7 @@ public class HandleWorkflow {
                 previousResult.responseCode(),
                 previousResult.txInfo(),
                 context.requiredNonPayerKeys(),
-                context.requiredHollowAccounts(),
+                previousResult.hollowAccounts(),
                 verifications,
                 previousResult.innerResult(),
                 previousResult.configVersion());

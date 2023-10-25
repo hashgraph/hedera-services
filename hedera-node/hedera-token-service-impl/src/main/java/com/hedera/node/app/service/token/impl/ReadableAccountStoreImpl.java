@@ -147,7 +147,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
             return maybeDirectReference;
         } else {
             try {
-                final var protoKey = Key.PROTOBUF.parseStrict(alias.toReadableSequentialData());
+                final var protoKey = Key.PROTOBUF.parse(alias.toReadableSequentialData());
                 if (protoKey.hasEcdsaSecp256k1()) {
                     final var evmAddress = recoverAddressFromPubKey(protoKey.ecdsaSecp256k1OrThrow());
                     return evmAddress.length() > 0 ? aliases.get(new ProtoBytes(evmAddress)) : null;
