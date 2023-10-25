@@ -36,6 +36,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.key.KeyUtils;
@@ -104,6 +105,8 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var changed = update(toBeUpdated, context, op);
 
         context.serviceApi(TokenServiceApi.class).updateContract(changed);
+        final var recordBuilder = context.recordBuilder(ContractUpdateRecordBuilder.class);
+        recordBuilder.contractID(target);
     }
 
     public Account update(
