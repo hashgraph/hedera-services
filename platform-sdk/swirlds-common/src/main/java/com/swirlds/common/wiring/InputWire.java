@@ -151,17 +151,6 @@ public class InputWire<I, O> {
     }
 
     /**
-     * Add a task to the task scheduler. May block if back pressure is enabled. If backpressure is enabled and being
-     * applied, this method can be interrupted.
-     *
-     * @param data the data to be processed by the task scheduler
-     * @throws InterruptedException if the thread is interrupted while waiting for capacity to become available
-     */
-    public void interruptablePut(@Nullable final I data) throws InterruptedException {
-        taskScheduler.interruptablePut(handler, data);
-    }
-
-    /**
      * Add a task to the task scheduler. If backpressure is enabled and there is not immediately capacity available,
      * this method will not accept the data.
      *

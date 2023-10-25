@@ -56,16 +56,6 @@ public class MultiObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
-    public void interruptableOnRamp() throws InterruptedException {
-        for (final ObjectCounter counter : counters) {
-            counter.interruptableOnRamp();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public boolean attemptOnRamp() {
         final boolean success = counters[0].attemptOnRamp();
         if (!success) {
@@ -114,16 +104,6 @@ public class MultiObjectCounter extends ObjectCounter {
     public void waitUntilEmpty() {
         for (final ObjectCounter counter : counters) {
             counter.waitUntilEmpty();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void interruptableWaitUntilEmpty() throws InterruptedException {
-        for (final ObjectCounter counter : counters) {
-            counter.interruptableWaitUntilEmpty();
         }
     }
 }

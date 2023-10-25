@@ -32,7 +32,6 @@ class BackpressureBlocker implements ManagedBlocker {
     private final AtomicLong count;
     private final LongUnaryOperator increment;
     private final int sleepNanos;
-    private final boolean throwInterruptedException;
 
     /**
      * Constructor.
@@ -41,18 +40,14 @@ class BackpressureBlocker implements ManagedBlocker {
      * @param increment                 a function that increments the counter if possible and throws a
      *                                  {@link NoCapacityException} if it is not possible
      * @param sleepNanos                the number of nanoseconds to sleep while blocking, or -1 to not sleep
-     * @param throwInterruptedException if true, throw an {@link InterruptedException} when interrupted, otherwise allow
-     *                                  the thread to maintain its interrupted status but do not throw
      */
     public BackpressureBlocker(
             @NonNull final AtomicLong count,
             @NonNull final LongUnaryOperator increment,
-            final int sleepNanos,
-            final boolean throwInterruptedException) {
+            final int sleepNanos) {
         this.count = Objects.requireNonNull(count);
         this.increment = Objects.requireNonNull(increment);
         this.sleepNanos = sleepNanos;
-        this.throwInterruptedException = throwInterruptedException;
     }
 
     /**
@@ -64,15 +59,9 @@ class BackpressureBlocker implements ManagedBlocker {
             try {
                 NANOSECONDS.sleep(sleepNanos);
             } catch (final InterruptedException e) {
-                if (throwInterruptedException) {
-                    throw e;
-                } else {
-                    // Don't throw an interrupted exception, but allow the thread to maintain its interrupted status.
-                    Thread.currentThread().interrupt();
-                }
+                // Don't throw an interrupted exception, but allow the thread to maintain its interrupted status.
+                Thread.currentThread().interrupt();
             }
-        } else if (throwInterruptedException && Thread.currentThread().isInterrupted()) {
-            throw new InterruptedException();
         }
         return false;
     }

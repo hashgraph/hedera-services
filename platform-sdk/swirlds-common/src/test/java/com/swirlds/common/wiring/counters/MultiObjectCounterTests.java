@@ -20,4 +20,17 @@ class MultiObjectCounterTests {
 
     // TODO write tests
 
+
+    void onRampTest() {
+
+    }
+
+    void interruptableOnRampTest() {
+
+    }
+
+    void attemptOnRampTest() {
+
+    }
+
 }

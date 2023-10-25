@@ -35,8 +35,8 @@ public abstract class TaskScheduler<O> extends OutputWire<O> {
      *
      * @param model               the wiring model containing this task scheduler
      * @param name                the name of the task scheduler
-     * @param flushEnabled        if true, then {@link #flush()} and {@link #interruptableFlush()} will be enabled,
-     *                            otherwise they will throw.
+     * @param flushEnabled        if true, then {@link #flush()} will be enabled,
+     *                            otherwise it will throw.
      * @param insertionIsBlocking when data is inserted into this task scheduler, will it block until capacity is
      *                            available?
      */
@@ -109,25 +109,6 @@ public abstract class TaskScheduler<O> extends OutputWire<O> {
     public abstract void flush();
 
     /**
-     * Flush all data in the task scheduler. Blocks until all data currently in flight has been processed or until the
-     * thread is interrupted.
-     *
-     * <p>
-     * Note: must be enabled by passing true to {@link TaskSchedulerBuilder#withFlushingEnabled(boolean)}.
-     *
-     * <p>
-     * Warning: some implementations of flush may block indefinitely if new work is continuously added to the scheduler
-     * while flushing. Such implementations are guaranteed to finish flushing once new work is no longer being added.
-     * Some implementations do not have this restriction, and will return as soon as all of the in flight work has been
-     * processed, regardless of whether or not new work is being added.
-     *
-     * @throws InterruptedException          if the thread is interrupted while waiting for all data to be processed
-     * @throws UnsupportedOperationException if {@link TaskSchedulerBuilder#withFlushingEnabled(boolean)} was set to false (or
-     *                                       was unset, default is false)
-     */
-    public abstract void interruptableFlush() throws InterruptedException;
-
-    /**
      * By default a component has a single output wire (i.e. the primary output wire). This method allows additional
      * output wires to be created.
      *
@@ -145,24 +126,12 @@ public abstract class TaskScheduler<O> extends OutputWire<O> {
     }
 
     /**
-     * Add a task to the scheduler. May block if back pressure is enabled. Similar to
-     * {@link #interruptablePut(Consumer, Object)} except that it cannot be interrupted and can block forever if
-     * backpressure is enabled.
+     * Add a task to the scheduler. May block if back pressure is enabled.
      *
      * @param handler handles the provided data
      * @param data    the data to be processed by the task scheduler
      */
     protected abstract void put(@NonNull Consumer<Object> handler, @Nullable Object data);
-
-    /**
-     * Add a task to the scheduler. May block if back pressure is enabled. If backpressure is enabled and being applied,
-     * this method can be interrupted.
-     *
-     * @param data the data to be processed by the scheduler
-     * @throws InterruptedException if the thread is interrupted while waiting for capacity to become available
-     */
-    protected abstract void interruptablePut(@NonNull Consumer<Object> handler, @Nullable Object data)
-            throws InterruptedException;
 
     /**
      * Add a task to the scheduler. If backpressure is enabled and there is not immediately capacity available, this

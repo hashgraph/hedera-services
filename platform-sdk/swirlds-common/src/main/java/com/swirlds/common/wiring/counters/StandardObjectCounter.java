@@ -29,7 +29,6 @@ public class StandardObjectCounter extends ObjectCounter {
 
     private final AtomicLong count = new AtomicLong(0);
     private final ManagedBlocker waitUntilEmptyBlocker;
-    private final ManagedBlocker interruptableWaitUntilEmptyBlocker;
 
     /**
      * Constructor.
@@ -38,8 +37,7 @@ public class StandardObjectCounter extends ObjectCounter {
      */
     public StandardObjectCounter(@NonNull final Duration sleepDuration) {
         final int sleepNanos = (int) sleepDuration.toNanos();
-        waitUntilEmptyBlocker = new EmptyBlocker(count, sleepNanos, false);
-        interruptableWaitUntilEmptyBlocker = new EmptyBlocker(count, sleepNanos, true);
+        waitUntilEmptyBlocker = new EmptyBlocker(count, sleepNanos);
     }
 
     /**
@@ -47,14 +45,6 @@ public class StandardObjectCounter extends ObjectCounter {
      */
     @Override
     public void onRamp() {
-        count.incrementAndGet();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void interruptableOnRamp() {
         count.incrementAndGet();
     }
 
@@ -107,16 +97,5 @@ public class StandardObjectCounter extends ObjectCounter {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while blocking on an waitUntilEmpty()");
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void interruptableWaitUntilEmpty() throws InterruptedException {
-        if (count.get() == 0) {
-            return;
-        }
-        ForkJoinPool.managedBlock(interruptableWaitUntilEmptyBlocker);
     }
 }

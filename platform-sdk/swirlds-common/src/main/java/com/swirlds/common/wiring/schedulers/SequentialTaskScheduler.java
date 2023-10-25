@@ -55,8 +55,7 @@ public class SequentialTaskScheduler<O> extends TaskScheduler<O> {
      * @param offRamp                  an object counter that is decremented when data is removed from the task
      *                                 scheduler, ignored if null
      * @param busyTimer                a timer that tracks the amount of time the scheduler is busy
-     * @param flushEnabled             if true, then {@link #flush()} and {@link #interruptableFlush()} will be enabled,
-     *                                 otherwise they will throw.
+     * @param flushEnabled             if true, then {@link #flush() will be enabled, otherwise it will throw.
      * @param insertionIsBlocking      when data is inserted into this task scheduler, will it block until capacity is
      *                                 available?
      */
@@ -89,16 +88,6 @@ public class SequentialTaskScheduler<O> extends TaskScheduler<O> {
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
         onRamp.onRamp();
-        scheduleTask(handler, data);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void interruptablePut(@NonNull final Consumer<Object> handler, @Nullable final Object data)
-            throws InterruptedException {
-        onRamp.interruptableOnRamp();
         scheduleTask(handler, data);
     }
 
@@ -157,15 +146,6 @@ public class SequentialTaskScheduler<O> extends TaskScheduler<O> {
     public void flush() {
         throwIfFlushDisabled();
         flushWithSemaphore().acquireUninterruptibly();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void interruptableFlush() throws InterruptedException {
-        throwIfFlushDisabled();
-        flushWithSemaphore().acquire();
     }
 
     /**

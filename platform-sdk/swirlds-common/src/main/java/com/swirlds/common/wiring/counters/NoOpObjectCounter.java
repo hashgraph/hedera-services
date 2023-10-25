@@ -47,12 +47,6 @@ public class NoOpObjectCounter extends ObjectCounter {
      * {@inheritDoc}
      */
     @Override
-    public void interruptableOnRamp() {}
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public boolean attemptOnRamp() {
         return true;
     }
@@ -82,10 +76,4 @@ public class NoOpObjectCounter extends ObjectCounter {
      */
     @Override
     public void waitUntilEmpty() {}
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void interruptableWaitUntilEmpty() {}
 }

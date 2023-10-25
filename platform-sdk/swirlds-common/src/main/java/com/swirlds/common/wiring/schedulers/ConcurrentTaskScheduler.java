@@ -27,7 +27,8 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
 /**
- * A {@link TaskScheduler} that permits parallel execution of tasks. Similar to {@link ConcurrentTaskScheduler} but with extra metering.
+ * A {@link TaskScheduler} that permits parallel execution of tasks. Similar to {@link ConcurrentTaskScheduler} but with
+ * extra metering.
  *
  * @param <O> the output time of the wire (use {@link Void}) for a task scheduler with no output type)
  */
@@ -49,8 +50,7 @@ public class ConcurrentTaskScheduler<O> extends TaskScheduler<O> {
      *                                 null
      * @param offRamp                  an object counter that is decremented when data is removed from the wire, ignored
      *                                 if null
-     * @param flushEnabled             if true, then {@link #flush()} and {@link #interruptableFlush()} will be enabled,
-     *                                 otherwise they will throw.
+     * @param flushEnabled             if true, then {@link #flush() will be enabled, otherwise it will throw.
      * @param insertionIsBlocking      when data is inserted into this wire, will it block until capacity is available?
      */
     public ConcurrentTaskScheduler(
@@ -77,16 +77,6 @@ public class ConcurrentTaskScheduler<O> extends TaskScheduler<O> {
     @Override
     protected void put(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
         onRamp.onRamp();
-        new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void interruptablePut(@NonNull final Consumer<Object> handler, @Nullable final Object data)
-            throws InterruptedException {
-        onRamp.interruptableOnRamp();
         new ConcurrentTask(pool, offRamp, uncaughtExceptionHandler, handler, data).send();
     }
 
@@ -126,14 +116,5 @@ public class ConcurrentTaskScheduler<O> extends TaskScheduler<O> {
     public void flush() {
         throwIfFlushDisabled();
         onRamp.waitUntilEmpty();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void interruptableFlush() throws InterruptedException {
-        throwIfFlushDisabled();
-        onRamp.interruptableWaitUntilEmpty();
     }
 }

@@ -31,12 +31,9 @@ public class BackpressureObjectCounter extends ObjectCounter {
 
     private final AtomicLong count = new AtomicLong(0);
     private final LongUnaryOperator increment;
-    private final int sleepNanos;
 
     private final ManagedBlocker onRampBlocker;
-    private final ManagedBlocker interruptableOnRampBlocker;
     private final ManagedBlocker waitUntilEmptyBlocker;
-    private final ManagedBlocker interruptableWaitUntilEmptyBlocker;
 
     /**
      * Constructor.
@@ -50,8 +47,6 @@ public class BackpressureObjectCounter extends ObjectCounter {
             throw new IllegalArgumentException("Capacity must be greater than zero");
         }
 
-        sleepNanos = (int) sleepDuration.toNanos();
-
         increment = count -> {
             if (count >= capacity) {
                 throw new NoCapacityException();
@@ -59,10 +54,10 @@ public class BackpressureObjectCounter extends ObjectCounter {
             return count + 1;
         };
 
-        onRampBlocker = new BackpressureBlocker(count, increment, sleepNanos, false);
-        interruptableOnRampBlocker = new BackpressureBlocker(count, increment, sleepNanos, true);
-        waitUntilEmptyBlocker = new EmptyBlocker(count, sleepNanos, false);
-        interruptableWaitUntilEmptyBlocker = new EmptyBlocker(count, sleepNanos, true);
+        final int sleepNanos = (int) sleepDuration.toNanos();
+
+        onRampBlocker = new BackpressureBlocker(count, increment, sleepNanos);
+        waitUntilEmptyBlocker = new EmptyBlocker(count, sleepNanos);
     }
 
     /**
@@ -83,22 +78,6 @@ public class BackpressureObjectCounter extends ObjectCounter {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Interrupted while blocking on an onRamp()");
             }
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void interruptableOnRamp() throws InterruptedException {
-        try {
-            count.updateAndGet(increment);
-            // Best case scenario: capacity is was immediately available.
-        } catch (final NoCapacityException e) {
-            // Slow case. Capacity wasn't available, so we need to block.
-            // This will block until capacity is available and the count has been incremented
-            // or we are interrupted..
-            ForkJoinPool.managedBlock(interruptableOnRampBlocker);
         }
     }
 
@@ -155,16 +134,5 @@ public class BackpressureObjectCounter extends ObjectCounter {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while blocking on an waitUntilEmpty()");
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void interruptableWaitUntilEmpty() throws InterruptedException {
-        if (count.get() == 0) {
-            return;
-        }
-        ForkJoinPool.managedBlock(interruptableWaitUntilEmptyBlocker);
     }
 }

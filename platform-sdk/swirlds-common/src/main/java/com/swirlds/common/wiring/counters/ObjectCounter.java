@@ -27,14 +27,6 @@ public abstract class ObjectCounter {
     public abstract void onRamp();
 
     /**
-     * Signal that an object is entering the part of the system that this object is being used to monitor. Similar to
-     * {@link #onRamp()}, but if the implementation is blocking this version can be interrupted.
-     *
-     * @throws InterruptedException if the thread is interrupted while waiting
-     */
-    public abstract void interruptableOnRamp() throws InterruptedException;
-
-    /**
      * Signal that an object is entering the part of the system that this object is being used to monitor. Object is not
      * "on ramped" if it is not immediately possible to do so without violating capacity constraints.
      *
@@ -62,12 +54,4 @@ public abstract class ObjectCounter {
      * Blocks until the number of objects off-ramped is equal to the number of objects on-ramped.
      */
     public abstract void waitUntilEmpty();
-
-    /**
-     * Blocks until the number of objects off-ramped is equal to the number of objects on-ramped or the thread is
-     * interrupted.
-     *
-     * @throws InterruptedException if the thread is interrupted while waiting
-     */
-    public abstract void interruptableWaitUntilEmpty() throws InterruptedException;
 }
