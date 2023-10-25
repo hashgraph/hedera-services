@@ -41,7 +41,7 @@ class BackpressureObjectCounterTests {
      * implementation works as expected.
      */
     @Test
-    void countWithHighCapacityTest() throws InterruptedException {
+    void countWithHighCapacityTest() {
         final Random random = getRandomPrintSeed();
 
         final ObjectCounter counter = new BackpressureObjectCounter(1_000_000_000, Duration.ofMillis(1));

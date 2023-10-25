@@ -22,7 +22,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool.ManagedBlocker;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongUnaryOperator;
 
 /**
  * This class is used to implement backpressure in a {@link java.util.concurrent.ForkJoinPool} friendly way.
@@ -30,21 +29,20 @@ import java.util.function.LongUnaryOperator;
 class BackpressureBlocker implements ManagedBlocker {
 
     private final AtomicLong count;
-    private final LongUnaryOperator increment;
+    private final long capacity;
     private final int sleepNanos;
 
     /**
      * Constructor.
      *
-     * @param count                     the counter to use
-     * @param increment                 a function that increments the counter if possible and throws a
-     *                                  {@link NoCapacityException} if it is not possible
-     * @param sleepNanos                the number of nanoseconds to sleep while blocking, or -1 to not sleep
+     * @param count      the counter to use
+     * @param capacity   the maximum number of objects that can be in the part of the system that this object is being
+     *                   used to monitor before backpressure is applied
+     * @param sleepNanos the number of nanoseconds to sleep while blocking, or -1 to not sleep
      */
-    public BackpressureBlocker(
-            @NonNull final AtomicLong count, @NonNull final LongUnaryOperator increment, final int sleepNanos) {
+    public BackpressureBlocker(@NonNull final AtomicLong count, final long capacity, final int sleepNanos) {
         this.count = Objects.requireNonNull(count);
-        this.increment = Objects.requireNonNull(increment);
+        this.capacity = capacity;
         this.sleepNanos = sleepNanos;
     }
 
@@ -70,14 +68,10 @@ class BackpressureBlocker implements ManagedBlocker {
     @Override
     public boolean isReleasable() {
         // Make an attempt to reserve capacity.
-
-        try {
-            count.updateAndGet(increment);
-            // Capacity was reserved, no need to block.
-            return true;
-        } catch (final NoCapacityException e) {
-            // We were unable to reserve capacity, so blocking will be necessary.
+        long currentCount = count.get();
+        if (currentCount >= capacity) {
             return false;
         }
+        return count.compareAndSet(currentCount, currentCount + 1);
     }
 }

@@ -56,7 +56,7 @@ public class BackpressureObjectCounter extends ObjectCounter {
 
         final int sleepNanos = (int) sleepDuration.toNanos();
 
-        onRampBlocker = new BackpressureBlocker(count, increment, sleepNanos);
+        onRampBlocker = new BackpressureBlocker(count, capacity, sleepNanos);
         waitUntilEmptyBlocker = new EmptyBlocker(count, sleepNanos);
     }
 
