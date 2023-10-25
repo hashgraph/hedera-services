@@ -140,14 +140,14 @@ public class IterableStorageManager {
             Objects.requireNonNull(store);
             Objects.requireNonNull(key);
             final var slotKey = newSlotKeyFor(contractNumber, key);
-            final var slotValue = newSlotValueFor(store, false, slotKey, "Missing key ", key);
+            final var slotValue = slotValueFor(store, false, slotKey, "Missing key ", key);
             final var nextKey = slotValue.nextKey();
             final var prevKey = slotValue.previousKey();
 
             if (nextKey != null) {
                 // Look up the next slot value
                 final var nextSlotKey = newSlotKeyFor(contractNumber, nextKey);
-                final var nextValue = newSlotValueFor(store, true, nextSlotKey, "Missing next key ", nextKey);
+                final var nextValue = slotValueFor(store, true, nextSlotKey, "Missing next key ", nextKey);
 
                 // Create new next value and put into the store
                 final var newNextValue =
@@ -157,7 +157,7 @@ public class IterableStorageManager {
             if (prevKey != null) {
                 // Look up the previous slot value
                 final var prevSlotKey = newSlotKeyFor(contractNumber, prevKey);
-                final var prevValue = newSlotValueFor(store, true, prevSlotKey, "Missing previous key ", prevKey);
+                final var prevValue = slotValueFor(store, true, prevSlotKey, "Missing previous key ", prevKey);
 
                 // Create new previous value and put into the store
                 final var newPrevValue =
@@ -195,7 +195,7 @@ public class IterableStorageManager {
             Objects.requireNonNull(key);
             // Look up the existing slot value for modification
             final var slotKey = newSlotKeyFor(contractNumber, key);
-            final var slotValue = newSlotValueFor(store, true, slotKey, "Missing key ", key);
+            final var slotValue = slotValueFor(store, true, slotKey, "Missing key ", key);
 
             // Create updated new slot value and put into the store
             final var newSlotValue = slotValue.copyBuilder().value(newValue).build();
@@ -247,7 +247,7 @@ public class IterableStorageManager {
     }
 
     @NonNull
-    private SlotValue newSlotValueFor(
+    private SlotValue slotValueFor(
             @NonNull final ContractStateStore store,
             final boolean forModify,
             @NonNull final SlotKey slotKey,
