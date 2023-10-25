@@ -42,9 +42,10 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.Browser;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -121,9 +122,10 @@ public class StressTestingToolMain implements SwirldMain {
                 .build();
     }
 
+    @Nullable
     @Override
-    public void updateConfigurationBuilder(@NonNull final ConfigurationBuilder configurationBuilder) {
-        configurationBuilder.withConfigDataType(StressTestingToolConfig.class);
+    public List<Class<? extends Record>> getConfigDataTypes() {
+        return List.of(StressTestingToolConfig.class);
     }
 
     @Override
