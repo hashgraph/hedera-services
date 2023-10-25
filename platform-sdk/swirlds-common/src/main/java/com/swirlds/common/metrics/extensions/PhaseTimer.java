@@ -72,7 +72,7 @@ public class PhaseTimer<T extends Enum<T>> {
 
         if (fractionMetricsEnabled) {
             for (final T phase : builder.getPhases()) {
-                fractionalTimers.put(phase, new FractionalTimer(time));
+                fractionalTimers.put(phase, new StandardFractionalTimer(time));
             }
         }
 

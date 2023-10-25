@@ -78,6 +78,8 @@ module com.swirlds.common {
     exports com.swirlds.common.utility.throttle;
     exports com.swirlds.common.jackson;
     exports com.swirlds.common.units;
+    exports com.swirlds.common.wiring;
+    exports com.swirlds.common.wiring.counters;
 
     /* Targeted exports */
     exports com.swirlds.common.internal to
