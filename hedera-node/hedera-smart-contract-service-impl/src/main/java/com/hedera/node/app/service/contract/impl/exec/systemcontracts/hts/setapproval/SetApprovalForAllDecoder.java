@@ -18,13 +18,11 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setap
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asTokenId;
 
-import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -47,8 +45,8 @@ public class SetApprovalForAllDecoder {
      */
     public TransactionBody decodeSetApprovalForAll(@NonNull final HtsCallAttempt attempt) {
         final var call = SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL.decodeCall(attempt.inputBytes());
-        return bodyOf(approveAllAllowanceNFTBody(
-                attempt.addressIdConverter(), attempt.senderId(), asTokenId(call.get(0)), call.get(1), call.get(2)));
+        final var operatorId = attempt.addressIdConverter().convert(call.get(1));
+        return bodyOf(approveAllAllowanceNFTBody(attempt.senderId(), asTokenId(call.get(0)), operatorId, call.get(2)));
     }
 
     /**
@@ -62,21 +60,20 @@ public class SetApprovalForAllDecoder {
         final var tokenId = attempt.redirectTokenId();
         Objects.requireNonNull(tokenId, "Redirect Token ID is null.");
 
-        return bodyOf(approveAllAllowanceNFTBody(
-                attempt.addressIdConverter(), attempt.senderId(), tokenId, call.get(0), call.get(1)));
+        final var operatorId = attempt.addressIdConverter().convert(call.get(0));
+        return bodyOf(approveAllAllowanceNFTBody(attempt.senderId(), tokenId, operatorId, call.get(1)));
     }
 
     private CryptoApproveAllowanceTransactionBody approveAllAllowanceNFTBody(
-            @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final AccountID senderId,
             @NonNull final TokenID tokenID,
-            @NonNull final Address operatorAddress,
+            @NonNull final AccountID operatorId,
             final boolean approved) {
         return CryptoApproveAllowanceTransactionBody.newBuilder()
                 .nftAllowances(NftAllowance.newBuilder()
                         .tokenId(tokenID)
                         .owner(senderId)
-                        .spender(addressIdConverter.convert(operatorAddress))
+                        .spender(operatorId)
                         .approvedForAll(approved)
                         .build())
                 .build();

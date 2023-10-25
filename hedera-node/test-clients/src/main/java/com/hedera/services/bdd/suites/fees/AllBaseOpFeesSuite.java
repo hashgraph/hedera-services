@@ -90,7 +90,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
                 NftMintsScaleLinearlyBasedOnNumberOfSignatures()));
     }
 
-    //    @HapiTest
+    @HapiTest
     private HapiSpec baseNftMintOperationIsChargedExpectedFee() {
         final var standard100ByteMetadata = ByteString.copyFromUtf8(
                 "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
