@@ -285,7 +285,7 @@ public class HandleWorkflow {
             stakingPeriodTimeHook.process(tokenServiceContext);
         } catch (Exception e) {
             // If anything goes wrong, we log the error and continue
-            logger.error("Failed to process staking period time hook", e);
+            logger.error("Failed to process genesis record time hook and staking period time hook", e);
         }
         // @future('7836'): update the exchange rate and call from here
 

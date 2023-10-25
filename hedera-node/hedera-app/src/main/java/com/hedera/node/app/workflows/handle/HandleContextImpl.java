@@ -444,14 +444,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (category != TransactionCategory.USER) {
             throw new IllegalArgumentException("Only user-transactions can dispatch preceding transactions");
         }
-        if (stack.depth() > 1) {
-            throw new IllegalStateException(
-                    "Cannot dispatch a preceding transaction when a savepoint has been created");
-        }
-
-        if (current().isModified()) {
-            throw new IllegalStateException("Cannot dispatch a preceding transaction when the state has been modified");
-        }
 
         // run the transaction
         final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration());
