@@ -40,7 +40,7 @@ public class EventSignatureValidationWire {
      * @param model the wiring model
      */
     public EventSignatureValidationWire(@NonNull final WiringModel model) {
-        taskScheduler = model.wireBuilder("eventSignatureValidator")
+        taskScheduler = model.schedulerBuilder("eventSignatureValidator")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)

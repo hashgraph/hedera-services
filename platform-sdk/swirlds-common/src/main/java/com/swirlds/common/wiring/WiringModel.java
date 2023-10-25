@@ -55,22 +55,24 @@ public abstract class WiringModel {
     }
 
     /**
-     * Get a new wire builder.
+     * Get a new task scheduler builder.
      *
-     * @param name the name of the wire. Used for metrics and debugging. Must be unique (not enforced by framework).
-     *             Must only contain alphanumeric characters, underscores, and hyphens (enforced by framework).
+     * @param name the name of the task scheduler. Used for metrics and debugging. Must be unique (not enforced by
+     *             framework). Must only contain alphanumeric characters, underscores, and hyphens (enforced by
+     *             framework).
      * @return a new wire builder
      */
     @NonNull
-    public final <O> TaskSchedulerBuilder<O> wireBuilder(@NonNull final String name) {
+    public final <O> TaskSchedulerBuilder<O> schedulerBuilder(@NonNull final String name) {
         return new TaskSchedulerBuilder<>(this, name);
     }
 
     /**
-     * Get a new wire metrics builder. Can be passed to {@link TaskSchedulerBuilder#withMetricsBuilder(TaskSchedulerMetricsBuilder)} to
-     * add metrics to the wire.
+     * Get a new task scheduler metrics builder. Can be passed to
+     * {@link TaskSchedulerBuilder#withMetricsBuilder(TaskSchedulerMetricsBuilder)} to add metrics to the task
+     * scheduler.
      *
-     * @return a new wire metrics builder
+     * @return a new task scheduler metrics builder
      */
     @NonNull
     public final TaskSchedulerMetricsBuilder metricsBuilder() {
@@ -91,8 +93,8 @@ public abstract class WiringModel {
     /**
      * Generate a mermaid style wiring diagram.
      *
-     * @return a mermaid style wiring diagram
      * @param groups optional groupings of vertices
+     * @return a mermaid style wiring diagram
      */
     @NonNull
     public abstract String generateWiringDiagram(@NonNull final Set<ModelGroup> groups);
@@ -100,9 +102,9 @@ public abstract class WiringModel {
     /**
      * Reserved for internal framework use. Do not call this method directly.
      * <p>
-     * Register a vertex in the wiring model. These are either Wires or WireTransformers. Vertexes always have a single
-     * Java object output type, although there may be many consumers of that output. Vertexes may have many input
-     * types.
+     * Register a vertex in the wiring model. These are either output task schedulers or wire transformers. Vertexes
+     * always have a single Java object output type, although there may be many consumers of that output. Vertexes may
+     * have many input types.
      *
      * @param vertexName          the name of the vertex
      * @param insertionIsBlocking if true then insertion may block until capacity is available

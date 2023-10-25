@@ -58,27 +58,27 @@ class SequentialTaskSchedulerTests {
 
     @Test
     void illegalNamesTest() {
-        assertThrows(NullPointerException.class, () -> model.wireBuilder(null));
-        assertThrows(IllegalArgumentException.class, () -> model.wireBuilder(""));
-        assertThrows(IllegalArgumentException.class, () -> model.wireBuilder(" "));
-        assertThrows(IllegalArgumentException.class, () -> model.wireBuilder("foo bar"));
-        assertThrows(IllegalArgumentException.class, () -> model.wireBuilder("foo?bar"));
-        assertThrows(IllegalArgumentException.class, () -> model.wireBuilder("foo:bar"));
-        assertThrows(IllegalArgumentException.class, () -> model.wireBuilder("foo*bar"));
-        assertThrows(IllegalArgumentException.class, () -> model.wireBuilder("foo/bar"));
-        assertThrows(IllegalArgumentException.class, () -> model.wireBuilder("foo\\bar"));
-        assertThrows(IllegalArgumentException.class, () -> model.wireBuilder("foo-bar"));
+        assertThrows(NullPointerException.class, () -> model.schedulerBuilder(null));
+        assertThrows(IllegalArgumentException.class, () -> model.schedulerBuilder(""));
+        assertThrows(IllegalArgumentException.class, () -> model.schedulerBuilder(" "));
+        assertThrows(IllegalArgumentException.class, () -> model.schedulerBuilder("foo bar"));
+        assertThrows(IllegalArgumentException.class, () -> model.schedulerBuilder("foo?bar"));
+        assertThrows(IllegalArgumentException.class, () -> model.schedulerBuilder("foo:bar"));
+        assertThrows(IllegalArgumentException.class, () -> model.schedulerBuilder("foo*bar"));
+        assertThrows(IllegalArgumentException.class, () -> model.schedulerBuilder("foo/bar"));
+        assertThrows(IllegalArgumentException.class, () -> model.schedulerBuilder("foo\\bar"));
+        assertThrows(IllegalArgumentException.class, () -> model.schedulerBuilder("foo-bar"));
 
         // legal names that should not throw
-        model.wireBuilder("x");
-        model.wireBuilder("fooBar");
-        model.wireBuilder("foo_bar");
-        model.wireBuilder("foo_bar123");
-        model.wireBuilder("123");
+        model.schedulerBuilder("x");
+        model.schedulerBuilder("fooBar");
+        model.schedulerBuilder("foo_bar");
+        model.schedulerBuilder("foo_bar123");
+        model.schedulerBuilder("123");
     }
 
     /**
-     * Add values to the wire, ensure that each value was processed in the correct order.
+     * Add values to the task scheduler, ensure that each value was processed in the correct order.
      */
     @Test
     void orderOfOperationsTest() {
@@ -86,7 +86,7 @@ class SequentialTaskSchedulerTests {
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
         final TaskScheduler<Void> taskScheduler =
-                model.wireBuilder("test").withConcurrency(false).build().cast();
+                model.schedulerBuilder("test").withConcurrency(false).build().cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -104,10 +104,10 @@ class SequentialTaskSchedulerTests {
     }
 
     /**
-     * Add values to the wire, ensure that each value was processed in the correct order. Add a delay to the handler.
-     * The delay should not effect the final value if things are happening as we expect. If the wire is allowing things
-     * to happen with parallelism, then the delay is likely to result in a reordering of operations (which will fail the
-     * test).
+     * Add values to the task scheduler, ensure that each value was processed in the correct order. Add a delay to the
+     * handler. The delay should not effect the final value if things are happening as we expect. If the task scheduler
+     * is allowing things to happen with parallelism, then the delay is likely to result in a reordering of operations
+     * (which will fail the test).
      */
     @Test
     void orderOfOperationsWithDelayTest() {
@@ -125,7 +125,7 @@ class SequentialTaskSchedulerTests {
         };
 
         final TaskScheduler<Void> taskScheduler =
-                model.wireBuilder("test").withConcurrency(false).build().cast();
+                model.schedulerBuilder("test").withConcurrency(false).build().cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -143,7 +143,7 @@ class SequentialTaskSchedulerTests {
     }
 
     /**
-     * Multiple threads adding work to the wire shouldn't cause problems. Also, work should always be handled
+     * Multiple threads adding work to the task scheduler shouldn't cause problems. Also, work should always be handled
      * sequentially regardless of the number of threads adding work.
      */
     @Test
@@ -158,7 +158,7 @@ class SequentialTaskSchedulerTests {
         };
 
         final TaskScheduler<Void> taskScheduler =
-                model.wireBuilder("test").withConcurrency(false).build().cast();
+                model.schedulerBuilder("test").withConcurrency(false).build().cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -203,7 +203,7 @@ class SequentialTaskSchedulerTests {
     }
 
     /**
-     * Multiple threads adding work to the wire shouldn't cause problems. Also, work should always be handled
+     * Multiple threads adding work to the task scheduler shouldn't cause problems. Also, work should always be handled
      * sequentially regardless of the number of threads adding work. Random delay is added to the workers. This should
      * not effect the outcome.
      */
@@ -221,7 +221,7 @@ class SequentialTaskSchedulerTests {
         };
 
         final TaskScheduler<Void> taskScheduler =
-                model.wireBuilder("test").withConcurrency(false).build().cast();
+                model.schedulerBuilder("test").withConcurrency(false).build().cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -273,7 +273,7 @@ class SequentialTaskSchedulerTests {
     }
 
     /**
-     * Ensure that the work happening on the wire is not happening on the callers thread.
+     * Ensure that the work happening on the task scheduler is not happening on the callers thread.
      */
     @Test
     void wireWordDoesNotBlockCallingThreadTest() throws InterruptedException {
@@ -291,7 +291,7 @@ class SequentialTaskSchedulerTests {
         };
 
         final TaskScheduler<Void> taskScheduler =
-                model.wireBuilder("test").withConcurrency(false).build().cast();
+                model.schedulerBuilder("test").withConcurrency(false).build().cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -343,7 +343,7 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withConcurrency(false)
                 .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                 .build()
@@ -410,7 +410,7 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .withSleepDuration(Duration.ofMillis(1))
@@ -500,7 +500,7 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .build()
@@ -580,7 +580,7 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .build()
@@ -643,7 +643,7 @@ class SequentialTaskSchedulerTests {
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
         final TaskScheduler<Void> taskScheduler =
-                model.wireBuilder("test").withConcurrency(false).build().cast();
+                model.schedulerBuilder("test").withConcurrency(false).build().cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -685,13 +685,13 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger countD = new AtomicInteger();
 
         final TaskScheduler<Integer> taskSchedulerToA =
-                model.wireBuilder("wireToA").build().cast();
+                model.schedulerBuilder("wireToA").build().cast();
         final TaskScheduler<Integer> taskSchedulerToB =
-                model.wireBuilder("wireToB").build().cast();
+                model.schedulerBuilder("wireToB").build().cast();
         final TaskScheduler<Integer> taskSchedulerToC =
-                model.wireBuilder("wireToC").build().cast();
+                model.schedulerBuilder("wireToC").build().cast();
         final TaskScheduler<Integer> taskSchedulerToD =
-                model.wireBuilder("wireToD").build().cast();
+                model.schedulerBuilder("wireToD").build().cast();
 
         final InputWire<Integer, Integer> channelToA = taskSchedulerToA.buildInputWire("channelToA");
         final InputWire<Integer, Integer> channelToB = taskSchedulerToB.buildInputWire("channelToB");
@@ -790,7 +790,7 @@ class SequentialTaskSchedulerTests {
         final Consumer<String> stringHandler = x -> wireValue.set(hash32(wireValue.get(), x.hashCode()));
 
         final TaskScheduler<Void> taskScheduler =
-                model.wireBuilder("test").withConcurrency(false).build().cast();
+                model.schedulerBuilder("test").withConcurrency(false).build().cast();
 
         final InputWire<Integer, Void> integerChannel = taskScheduler
                 .buildInputWire("integerChannel")
@@ -847,7 +847,7 @@ class SequentialTaskSchedulerTests {
 
         final Consumer<Integer> handler2 = x -> wireValue.set(hash32(wireValue.get(), -x));
 
-        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .build()
@@ -934,13 +934,13 @@ class SequentialTaskSchedulerTests {
 
         final ObjectCounter backpressure = new BackpressureObjectCounter(11, Duration.ofMillis(1));
 
-        final TaskScheduler<Void> taskSchedulerA = model.wireBuilder("testA")
+        final TaskScheduler<Void> taskSchedulerA = model.schedulerBuilder("testA")
                 .withConcurrency(false)
                 .withOnRamp(backpressure)
                 .build()
                 .cast();
 
-        final TaskScheduler<Void> taskSchedulerB = model.wireBuilder("testB")
+        final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("testB")
                 .withConcurrency(false)
                 .withOffRamp(backpressure)
                 .build()
@@ -1056,7 +1056,7 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .withFlushingEnabled(true)
@@ -1161,7 +1161,7 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(11)
                 .withFlushingEnabled(true)
@@ -1276,7 +1276,7 @@ class SequentialTaskSchedulerTests {
 
     @Test
     void flushDisabledTest() {
-        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(10)
                 .build()
@@ -1301,7 +1301,7 @@ class SequentialTaskSchedulerTests {
 
         final AtomicInteger exceptionCount = new AtomicInteger();
 
-        final TaskScheduler<Void> taskScheduler = model.wireBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withConcurrency(false)
                 .withUncaughtExceptionHandler((t, e) -> exceptionCount.incrementAndGet())
                 .build()
@@ -1336,21 +1336,21 @@ class SequentialTaskSchedulerTests {
 
         // create 3 wires with the following bindings:
         // a -> b -> c -> latch
-        final TaskScheduler<Void> a = model.wireBuilder("a")
+        final TaskScheduler<Void> a = model.schedulerBuilder("a")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build()
                 .cast();
-        final TaskScheduler<Void> b = model.wireBuilder("b")
+        final TaskScheduler<Void> b = model.schedulerBuilder("b")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build()
                 .cast();
-        final TaskScheduler<Void> c = model.wireBuilder("c")
+        final TaskScheduler<Void> c = model.schedulerBuilder("c")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
@@ -1403,13 +1403,13 @@ class SequentialTaskSchedulerTests {
     @Test
     void simpleSolderingTest() {
         final TaskScheduler<Integer> taskSchedulerA =
-                model.wireBuilder("A").build().cast();
+                model.schedulerBuilder("A").build().cast();
         final TaskScheduler<Integer> taskSchedulerB =
-                model.wireBuilder("A").build().cast();
+                model.schedulerBuilder("A").build().cast();
         final TaskScheduler<Integer> taskSchedulerC =
-                model.wireBuilder("A").build().cast();
+                model.schedulerBuilder("A").build().cast();
         final TaskScheduler<Void> taskSchedulerD =
-                model.wireBuilder("A").build().cast();
+                model.schedulerBuilder("A").build().cast();
 
         final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
         final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
@@ -1464,13 +1464,13 @@ class SequentialTaskSchedulerTests {
     @Test
     void lambdaSolderingTest() {
         final TaskScheduler<Integer> taskSchedulerA =
-                model.wireBuilder("A").build().cast();
+                model.schedulerBuilder("A").build().cast();
         final TaskScheduler<Integer> taskSchedulerB =
-                model.wireBuilder("B").build().cast();
+                model.schedulerBuilder("B").build().cast();
         final TaskScheduler<Integer> taskSchedulerC =
-                model.wireBuilder("C").build().cast();
+                model.schedulerBuilder("C").build().cast();
         final TaskScheduler<Void> taskSchedulerD =
-                model.wireBuilder("D").build().cast();
+                model.schedulerBuilder("D").build().cast();
 
         final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
         final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
@@ -1534,24 +1534,24 @@ class SequentialTaskSchedulerTests {
         // X, Y, and Z pass data to B
 
         final TaskScheduler<Integer> taskSchedulerA =
-                model.wireBuilder("A").build().cast();
+                model.schedulerBuilder("A").build().cast();
         final InputWire<Integer, Integer> addNewValueToA = taskSchedulerA.buildInputWire("addNewValueToA");
         final InputWire<Boolean, Integer> setInversionBitInA = taskSchedulerA.buildInputWire("setInversionBitInA");
 
         final TaskScheduler<Integer> taskSchedulerX =
-                model.wireBuilder("X").build().cast();
+                model.schedulerBuilder("X").build().cast();
         final InputWire<Integer, Integer> inputX = taskSchedulerX.buildInputWire("inputX");
 
         final TaskScheduler<Integer> taskSchedulerY =
-                model.wireBuilder("Y").build().cast();
+                model.schedulerBuilder("Y").build().cast();
         final InputWire<Integer, Integer> inputY = taskSchedulerY.buildInputWire("inputY");
 
         final TaskScheduler<Integer> taskSchedulerZ =
-                model.wireBuilder("Z").build().cast();
+                model.schedulerBuilder("Z").build().cast();
         final InputWire<Integer, Integer> inputZ = taskSchedulerZ.buildInputWire("inputZ");
 
         final TaskScheduler<Void> taskSchedulerB =
-                model.wireBuilder("B").build().cast();
+                model.schedulerBuilder("B").build().cast();
         final InputWire<Integer, Void> inputB = taskSchedulerB.buildInputWire("inputB");
 
         taskSchedulerA.solderTo(inputX).solderTo(inputY).solderTo(inputZ);
@@ -1637,15 +1637,17 @@ class SequentialTaskSchedulerTests {
         // Wire A respects back pressure, but wire B uses injection and can ignore it.
 
         final TaskScheduler<Integer> taskSchedulerA =
-                model.wireBuilder("A").build().cast();
+                model.schedulerBuilder("A").build().cast();
         final InputWire<Integer, Integer> inA = taskSchedulerA.buildInputWire("inA");
 
         final TaskScheduler<Integer> taskSchedulerB =
-                model.wireBuilder("B").build().cast();
+                model.schedulerBuilder("B").build().cast();
         final InputWire<Integer, Integer> inB = taskSchedulerB.buildInputWire("inB");
 
-        final TaskScheduler<Void> taskSchedulerC =
-                model.wireBuilder("C").withUnhandledTaskCapacity(10).build().cast();
+        final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
+                .withUnhandledTaskCapacity(10)
+                .build()
+                .cast();
         final InputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("inC");
 
         taskSchedulerA.solderTo(inC); // respects capacity
@@ -1735,13 +1737,13 @@ class SequentialTaskSchedulerTests {
     @Test
     void squelchNullValuesInWiresTest() {
         final TaskScheduler<Integer> taskSchedulerA =
-                model.wireBuilder("A").build().cast();
+                model.schedulerBuilder("A").build().cast();
         final TaskScheduler<Integer> taskSchedulerB =
-                model.wireBuilder("A").build().cast();
+                model.schedulerBuilder("A").build().cast();
         final TaskScheduler<Integer> taskSchedulerC =
-                model.wireBuilder("A").build().cast();
+                model.schedulerBuilder("A").build().cast();
         final TaskScheduler<Void> taskSchedulerD =
-                model.wireBuilder("A").build().cast();
+                model.schedulerBuilder("A").build().cast();
 
         final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
         final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
@@ -1820,25 +1822,25 @@ class SequentialTaskSchedulerTests {
      */
     @Test
     void metricsEnabledTest() {
-        final TaskScheduler<Integer> taskSchedulerA = model.wireBuilder("A")
+        final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(true)
                         .withUnhandledTaskMetricEnabled(true))
                 .build()
                 .cast();
-        final TaskScheduler<Integer> taskSchedulerB = model.wireBuilder("B")
+        final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(true)
                         .withUnhandledTaskMetricEnabled(false))
                 .build()
                 .cast();
-        final TaskScheduler<Integer> taskSchedulerC = model.wireBuilder("C")
+        final TaskScheduler<Integer> taskSchedulerC = model.schedulerBuilder("C")
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(false)
                         .withUnhandledTaskMetricEnabled(true))
                 .build()
                 .cast();
-        final TaskScheduler<Void> taskSchedulerD = model.wireBuilder("D")
+        final TaskScheduler<Void> taskSchedulerD = model.schedulerBuilder("D")
                 .withMetricsBuilder(model.metricsBuilder()
                         .withBusyFractionMetricsEnabled(false)
                         .withUnhandledTaskMetricEnabled(false))
@@ -1895,13 +1897,13 @@ class SequentialTaskSchedulerTests {
     @Test
     void multipleOutputChannelsTest() {
         final TaskScheduler<Integer> taskSchedulerA =
-                model.wireBuilder("A").build().cast();
+                model.schedulerBuilder("A").build().cast();
         final InputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
         final SecondaryOutputWire<Boolean> aOutBoolean = taskSchedulerA.buildSecondaryOutputWire();
         final SecondaryOutputWire<String> aOutString = taskSchedulerA.buildSecondaryOutputWire();
 
         final TaskScheduler<Void> taskSchedulerB =
-                model.wireBuilder("A").build().cast();
+                model.schedulerBuilder("A").build().cast();
         final InputWire<Integer, Void> bInInteger = taskSchedulerB.buildInputWire("bIn1");
         final InputWire<Boolean, Void> bInBoolean = taskSchedulerB.buildInputWire("bIn2");
         final InputWire<String, Void> bInString = taskSchedulerB.buildInputWire("bIn3");
@@ -1956,18 +1958,20 @@ class SequentialTaskSchedulerTests {
 
         final ObjectCounter counter = new BackpressureObjectCounter(10, Duration.ofMillis(1));
 
-        final TaskScheduler<Integer> taskSchedulerA = model.wireBuilder("A")
+        final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
                 .withOnRamp(counter)
                 .withExternalBackPressure(true)
                 .build()
                 .cast();
         final InputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
 
-        final TaskScheduler<Integer> taskSchedulerB =
-                model.wireBuilder("B").withExternalBackPressure(true).build().cast();
+        final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
+                .withExternalBackPressure(true)
+                .build()
+                .cast();
         final InputWire<Integer, Integer> bIn = taskSchedulerB.buildInputWire("bIn");
 
-        final TaskScheduler<Void> taskSchedulerC = model.wireBuilder("C")
+        final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
                 .withOffRamp(counter)
                 .withExternalBackPressure(true)
                 .build()

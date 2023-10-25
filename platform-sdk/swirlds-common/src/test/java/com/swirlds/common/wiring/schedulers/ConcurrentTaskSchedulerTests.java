@@ -57,7 +57,7 @@ class ConcurrentTaskSchedulerTests {
         };
 
         final TaskScheduler<Void> taskScheduler =
-                model.wireBuilder("test").withConcurrency(true).build().cast();
+                model.schedulerBuilder("test").withConcurrency(true).build().cast();
         final InputWire<Integer, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Integer.class)
@@ -104,7 +104,7 @@ class ConcurrentTaskSchedulerTests {
         };
 
         final TaskScheduler<Void> taskScheduler =
-                model.wireBuilder("test").withConcurrency(true).build().cast();
+                model.schedulerBuilder("test").withConcurrency(true).build().cast();
         final InputWire<Operation, Void> channel = taskScheduler
                 .buildInputWire("channel")
                 .withInputType(Operation.class)

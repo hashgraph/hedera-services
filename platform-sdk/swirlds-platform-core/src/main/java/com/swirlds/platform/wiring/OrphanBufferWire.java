@@ -46,7 +46,7 @@ public class OrphanBufferWire {
      * @param model the wiring model
      */
     public OrphanBufferWire(@NonNull final WiringModel model) {
-        taskScheduler = model.wireBuilder("orphanBuffer")
+        taskScheduler = model.schedulerBuilder("orphanBuffer")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)

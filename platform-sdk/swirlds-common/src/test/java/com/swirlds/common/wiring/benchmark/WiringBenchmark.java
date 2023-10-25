@@ -63,7 +63,7 @@ class WiringBenchmark {
         // Ensures that we have no more than 10,000 events in the pipeline at any given time
         final ObjectCounter backpressure = new BackpressureObjectCounter(10_000, Duration.ZERO);
 
-        final TaskScheduler<WiringBenchmarkEvent> verificationTaskScheduler = model.wireBuilder("verification")
+        final TaskScheduler<WiringBenchmarkEvent> verificationTaskScheduler = model.schedulerBuilder("verification")
                 .withPool(executor)
                 .withConcurrency(true)
                 .withOnRamp(backpressure)
@@ -71,14 +71,14 @@ class WiringBenchmark {
                 .build()
                 .cast();
 
-        final TaskScheduler<WiringBenchmarkEvent> orphanBufferTaskScheduler = model.wireBuilder("orphanBuffer")
+        final TaskScheduler<WiringBenchmarkEvent> orphanBufferTaskScheduler = model.schedulerBuilder("orphanBuffer")
                 .withPool(executor)
                 .withConcurrency(false)
                 .withExternalBackPressure(true)
                 .build()
                 .cast();
 
-        final TaskScheduler<Void> eventPoolTaskScheduler = model.wireBuilder("eventPool")
+        final TaskScheduler<Void> eventPoolTaskScheduler = model.schedulerBuilder("eventPool")
                 .withPool(executor)
                 .withConcurrency(false)
                 .withOffRamp(backpressure)
