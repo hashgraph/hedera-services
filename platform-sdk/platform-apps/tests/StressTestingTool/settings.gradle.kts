@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.demo.iss;
+pluginManagement { includeBuild("../../../../build-logic") }
 
-import com.swirlds.common.scratchpad.ScratchpadType;
+includeBuild("../../../../hedera-dependency-versions")
 
-/**
- * Types of data stored in the scratch pad by the ISS Testing Tool.
- */
-public enum IssScratchPadType implements ScratchpadType {
-
-    /** Data about ISSs that were provoked */
-    PROVOKED_ISS;
-
-    @Override
-    public int getFieldId() {
-        return 1;
-    }
-}
+includeBuild("../../../../platform-sdk")

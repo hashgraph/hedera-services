@@ -120,7 +120,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
                                 .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)));
     }
 
-    //    @HapiTest  disable to unblock other PRs
+    @HapiTest
     private HapiSpec updateKeyOnAutoCreatedAccount() {
         final var complexKey = "complexKey";
 
