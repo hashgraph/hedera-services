@@ -131,6 +131,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final EntityNumber node1Id = EntityNumber.newBuilder().number(1L).build();
 
     /* ---------- Account IDs */
+    protected final AccountID ZERO_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(0).build();
     protected final AccountID payerId = AccountID.newBuilder().accountNum(3).build();
     protected final AccountID deleteAccountId =
             AccountID.newBuilder().accountNum(3213).build();

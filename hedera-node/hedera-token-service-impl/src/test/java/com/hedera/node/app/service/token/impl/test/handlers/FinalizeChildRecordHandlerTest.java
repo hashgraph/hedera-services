@@ -509,7 +509,7 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
                         .token(TOKEN_321)
                         .nftTransfers(NftTransfer.newBuilder()
                                 .serialNumber(1)
-                                .senderAccountID((AccountID) null)
+                                .senderAccountID(ZERO_ACCOUNT_ID)
                                 .receiverAccountID(ACCOUNT_3434_ID)
                                 .build())
                         .build()));
