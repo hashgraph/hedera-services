@@ -175,7 +175,7 @@ public class ConversionUtils {
         requireNonNull(accountID);
         final var integralAddress = accountID.hasAccountNum()
                 ? asEvmAddress(accountID.accountNum())
-                : accountID.alias().toByteArray();
+                : (accountID.alias() == null ? Bytes.EMPTY.toArray() : accountID.alias().toByteArray());
         return asHeadlongAddress(integralAddress);
     }
 
