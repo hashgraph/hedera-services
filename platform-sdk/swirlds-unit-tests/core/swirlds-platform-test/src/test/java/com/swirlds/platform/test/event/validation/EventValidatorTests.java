@@ -31,8 +31,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.validation.EventDeduplication;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -165,72 +163,6 @@ class EventValidatorTests {
         } else {
             assertFalse(validator.isEventValid(event), "transaction limit should have been exceeded");
         }
-    }
-
-    @Test
-    void parentValidity() {
-        final long undefinedGeneration = EventConstants.GENERATION_UNDEFINED;
-        final long validGeneration = 10;
-        final Hash hash1 = RandomUtils.randomHash();
-        final Hash hash2 = RandomUtils.randomHash();
-        final Hash nullHash = null;
-
-        final GossipEventValidator validator = StaticValidators.buildParentValidator(10);
-
-        // has generation but no hash
-        assertFalse(validator.isEventValid(eventWithParents(validGeneration, undefinedGeneration, nullHash, nullHash)));
-        assertFalse(validator.isEventValid(eventWithParents(undefinedGeneration, validGeneration, nullHash, nullHash)));
-
-        // has hash but no generation
-        assertFalse(
-                validator.isEventValid(eventWithParents(undefinedGeneration, undefinedGeneration, hash1, nullHash)));
-        assertFalse(
-                validator.isEventValid(eventWithParents(undefinedGeneration, undefinedGeneration, nullHash, hash2)));
-
-        // both parents same hash
-        assertFalse(validator.isEventValid(eventWithParents(validGeneration, validGeneration, hash1, hash1)));
-
-        // no parents
-        assertTrue(
-                validator.isEventValid(eventWithParents(undefinedGeneration, undefinedGeneration, nullHash, nullHash)));
-
-        // valid parents
-        assertTrue(validator.isEventValid(eventWithParents(validGeneration, undefinedGeneration, hash1, nullHash)));
-        assertTrue(validator.isEventValid(eventWithParents(undefinedGeneration, validGeneration, nullHash, hash2)));
-        assertTrue(validator.isEventValid(eventWithParents(validGeneration, validGeneration, hash1, hash2)));
-    }
-
-    @Test
-    void parentValiditySizeOneNetwork() {
-        final long undefinedGeneration = EventConstants.GENERATION_UNDEFINED;
-        final long validGeneration = 10;
-        final Hash hash1 = RandomUtils.randomHash();
-        final Hash hash2 = RandomUtils.randomHash();
-        final Hash nullHash = null;
-
-        final GossipEventValidator validator = StaticValidators.buildParentValidator(1);
-
-        // has generation but no hash
-        assertFalse(validator.isEventValid(eventWithParents(validGeneration, undefinedGeneration, nullHash, nullHash)));
-        assertFalse(validator.isEventValid(eventWithParents(undefinedGeneration, validGeneration, nullHash, nullHash)));
-
-        // has hash but no generation
-        assertFalse(
-                validator.isEventValid(eventWithParents(undefinedGeneration, undefinedGeneration, hash1, nullHash)));
-        assertFalse(
-                validator.isEventValid(eventWithParents(undefinedGeneration, undefinedGeneration, nullHash, hash2)));
-
-        // both parents same hash
-        assertTrue(validator.isEventValid(eventWithParents(validGeneration, validGeneration, hash1, hash1)));
-
-        // no parents
-        assertTrue(
-                validator.isEventValid(eventWithParents(undefinedGeneration, undefinedGeneration, nullHash, nullHash)));
-
-        // valid parents
-        assertTrue(validator.isEventValid(eventWithParents(validGeneration, undefinedGeneration, hash1, nullHash)));
-        assertTrue(validator.isEventValid(eventWithParents(undefinedGeneration, validGeneration, nullHash, hash2)));
-        assertTrue(validator.isEventValid(eventWithParents(validGeneration, validGeneration, hash1, hash2)));
     }
 
     @Test

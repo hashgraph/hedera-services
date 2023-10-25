@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.event;
 
+import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
+
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
@@ -64,6 +67,33 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     }
 
     /**
+     * Checks whether the data included in hashed data is internally consistent
+     *
+     * @param hashedData the event to be validated
+     * @return true if the event has valid parents, otherwise false
+     */
+    private static boolean isHashedDataInternallyConsistent(@NonNull final BaseEventHashedData hashedData) {
+        final Hash selfParentHash = hashedData.getSelfParentHash();
+        final long selfParentGeneration = hashedData.getSelfParentGen();
+
+        // If a parent hash is missing, then the generation must also be invalid.
+        // If a parent hash is not missing, then the generation must be valid.
+        if ((selfParentHash == null) != (selfParentGeneration < FIRST_GENERATION)) {
+            return false;
+        }
+
+        final Hash otherParentHash = hashedData.getOtherParentHash();
+        final long otherParentGeneration = hashedData.getOtherParentGen();
+
+        if ((otherParentHash == null) != (otherParentGeneration < FIRST_GENERATION)) {
+            return false;
+        }
+
+        // If both parents are present, then they must have different hashes.
+        return (selfParentHash == null) || !selfParentHash.equals(otherParentHash);
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -83,6 +113,10 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
             in.readLong(); // roundCreated
         }
         timeReceived = Instant.now();
+
+        if (hashedData == null || unhashedData == null || !isHashedDataInternallyConsistent(hashedData)) {
+            throw new IOException("Invalid event: " + this);
+        }
     }
 
     /**

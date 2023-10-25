@@ -18,9 +18,6 @@ package com.swirlds.platform.event.validation;
 
 import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
 
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.EventImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,37 +54,5 @@ public final class StaticValidators {
         }
 
         return true;
-    }
-
-    /**
-     * Creates a validator that checks if an event's parent data is correct
-     *
-     * @param networkSize the size of the network
-     * @return an event validator that checks if the parent data is valid
-     */
-    public static GossipEventValidator buildParentValidator(final int networkSize) {
-        return event -> {
-            final BaseEventHashedData hashedData = event.getHashedData();
-            final Hash spHash = hashedData.getSelfParentHash();
-            final Hash opHash = hashedData.getOtherParentHash();
-            final boolean hasSpHash = spHash != null;
-            final boolean hasOpHash = opHash != null;
-            final boolean hasSpGen = hashedData.getSelfParentGen() >= GraphGenerations.FIRST_GENERATION;
-            final boolean hasOpGen = hashedData.getOtherParentGen() >= GraphGenerations.FIRST_GENERATION;
-
-            if (hasSpGen != hasSpHash) {
-                logger.error(INVALID_EVENT_ERROR.getMarker(), "invalid self-parent: {} ", event::toString);
-                return false;
-            }
-            if (hasOpGen != hasOpHash) {
-                logger.error(INVALID_EVENT_ERROR.getMarker(), "invalid other-parent: {} ", event::toString);
-                return false;
-            }
-            if (networkSize > 1 && hasOpHash && hasSpHash && spHash.equals(opHash)) {
-                logger.error(INVALID_EVENT_ERROR.getMarker(), "both parents have the same hash: {} ", event::toString);
-                return false;
-            }
-            return true;
-        };
     }
 }
