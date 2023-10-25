@@ -162,15 +162,12 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var op = feeContext.body();
-        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
-        final var tokenType =
-                readableTokenStore.get(op.tokenBurnOrThrow().tokenOrThrow()).tokenType();
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(fromPbj(op));
         return feeContext
                 .feeCalculator(
-                        tokenType.equals(TokenType.FUNGIBLE_COMMON)
-                                ? SubType.TOKEN_FUNGIBLE_COMMON
-                                : SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
+                        meta.getSerialNumsCount() > 0
+                                ? SubType.TOKEN_NON_FUNGIBLE_UNIQUE
+                                : SubType.TOKEN_FUNGIBLE_COMMON)
                 .addBytesPerTransaction(meta.getBpt())
                 .addNetworkRamByteSeconds(meta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs())
                 .calculate();

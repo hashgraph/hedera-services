@@ -196,7 +196,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void updateStorageMetadata(
-            final long contractNumber, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
+            final long contractNumber, @Nullable final Bytes firstKey, final int netChangeInSlotsUsed) {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         final var accountId = AccountID.newBuilder().accountNum(contractNumber).build();
         tokenServiceApi.updateStorageMetadata(accountId, firstKey, netChangeInSlotsUsed);

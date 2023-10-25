@@ -18,13 +18,16 @@ package com.swirlds.platform.recovery.internal;
 
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
  * Takes an iterator that walks over events and returns an iterator that walks over rounds.
@@ -33,6 +36,7 @@ public class EventStreamRoundIterator implements IOIterator<Round> {
 
     private final IOIterator<EventImpl> eventIterator;
     private final boolean allowPartialRound;
+    private final AddressBook consensusRoster;
 
     private Round next;
     private boolean ended = false;
@@ -40,19 +44,22 @@ public class EventStreamRoundIterator implements IOIterator<Round> {
     /**
      * Create a new iterator that walks over rounds.
      *
-     * @param eventStreamDirectory
-     * 		a directory containing event stream files
-     * @param startingRound
-     * 		the round to start iterating at, or {@link EventStreamPathIterator#FIRST_ROUND_AVAILABLE} if all available
-     * 		rounds should be returned.
-     * @param allowPartialRound
-     * 		if true then allow the last round to contain just some of the events
-     * 		from that round. If false then do not return a round that does not
-     * 		have all of its events.
+     * @param consensusRoster      the consensus roster
+     * @param eventStreamDirectory a directory containing event stream files
+     * @param startingRound        the round to start iterating at, or
+     *                             {@link EventStreamPathIterator#FIRST_ROUND_AVAILABLE} if all available rounds should
+     *                             be returned.
+     * @param allowPartialRound    if true then allow the last round to contain just some of the events from that round.
+     *                             If false then do not return a round that does not have all of its events.
      */
     public EventStreamRoundIterator(
-            final Path eventStreamDirectory, final long startingRound, boolean allowPartialRound) throws IOException {
+            @NonNull final AddressBook consensusRoster,
+            final Path eventStreamDirectory,
+            final long startingRound,
+            boolean allowPartialRound)
+            throws IOException {
         this(
+                consensusRoster,
                 new EventStreamMultiFileIterator(eventStreamDirectory, new EventStreamRoundLowerBound(startingRound))
                         .transform(EventStreamRoundIterator::convertToEventImpl),
                 allowPartialRound);
@@ -61,19 +68,22 @@ public class EventStreamRoundIterator implements IOIterator<Round> {
     /**
      * Create a new iterator that walks over rounds.
      *
-     * @param eventIterator
-     * 		an iterator that walks over events
+     * @param consensusRoster the consensus roster
+     * @param eventIterator   an iterator that walks over events
      */
-    public EventStreamRoundIterator(final IOIterator<EventImpl> eventIterator, boolean allowPartialRound) {
-        this.eventIterator = eventIterator;
+    public EventStreamRoundIterator(
+            @NonNull final AddressBook consensusRoster,
+            final IOIterator<EventImpl> eventIterator,
+            boolean allowPartialRound) {
+        this.consensusRoster = Objects.requireNonNull(consensusRoster);
+        this.eventIterator = Objects.requireNonNull(eventIterator);
         this.allowPartialRound = allowPartialRound;
     }
 
     /**
      * Convert a {@link DetailedConsensusEvent} to an {@link EventImpl}.
      *
-     * @param event
-     * 		the event to convert
+     * @param event the event to convert
      * @return an event impl with the same data as the detailed consensus event
      */
     private static EventImpl convertToEventImpl(final DetailedConsensusEvent event) {
@@ -117,7 +127,7 @@ public class EventStreamRoundIterator implements IOIterator<Round> {
             }
         }
 
-        next = new StreamedRound(events, round);
+        next = new StreamedRound(consensusRoster, events, round);
         return true;
     }
 
