@@ -70,6 +70,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class ApproveAllowanceSuite extends HapiSuite {
 
     public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS = "contracts.permittedDelegateCallers";
