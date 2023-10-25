@@ -317,17 +317,17 @@ public class ContractUpdateSuite extends HapiSuite {
     @HapiTest
     private HapiSpec canMakeContractImmutableWithEmptyKeyList() {
         return defaultHapiSpec("CanMakeContractImmutableWithEmptyKeyList")
-            .given(
-                newKeyNamed(ADMIN_KEY),
-                newKeyNamed(NEW_ADMIN_KEY),
-                uploadInitCode(CONTRACT),
-                contractCreate(CONTRACT).adminKey(ADMIN_KEY))
-            .when(
-                contractUpdate(CONTRACT).improperlyEmptyingAdminKey().hasKnownStatus(INVALID_ADMIN_KEY),
-                contractUpdate(CONTRACT).properlyEmptyingAdminKey())
-            .then(
-                // In mono this is implemented in SigRequirements.contractFailure
-                contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
+                .given(
+                        newKeyNamed(ADMIN_KEY),
+                        newKeyNamed(NEW_ADMIN_KEY),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
+                .when(
+                        contractUpdate(CONTRACT).improperlyEmptyingAdminKey().hasKnownStatus(INVALID_ADMIN_KEY),
+                        contractUpdate(CONTRACT).properlyEmptyingAdminKey())
+                .then(
+                        // In mono this is implemented in SigRequirements.contractFailure
+                        contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
     }
 
     @HapiTest
@@ -400,41 +400,41 @@ public class ContractUpdateSuite extends HapiSuite {
                                 .logged()
                                 .has(contractWith().memo(BETTER_MEMO).expiry(newExpiry)),
                         contractUpdate(contract + suffix).payingWith(payer).newExpirySecs(betterExpiry),
-                    getContractInfo(contract + suffix)
-                        .payingWith(payer)
-                        .logged()
-                        .has(contractWith().memo(BETTER_MEMO).expiry(betterExpiry)),
-                    contractUpdate(contract + suffix)
-                        .payingWith(payer)
-                        .signedBy(payer)
-                        .newExpirySecs(newExpiry)
-                        .hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED),
-                    contractUpdate(contract + suffix)
-                        .payingWith(payer)
-                        .signedBy(payer)
-                        .newMemo(NEW_MEMO)
-                        .hasKnownStatus(INVALID_SIGNATURE),
-                    contractUpdate(contract + suffix)
-                        .payingWith(payer)
-                        .signedBy(payer, INITIAL_ADMIN_KEY)
-                        .hasKnownStatus(INVALID_SIGNATURE),
+                        getContractInfo(contract + suffix)
+                                .payingWith(payer)
+                                .logged()
+                                .has(contractWith().memo(BETTER_MEMO).expiry(betterExpiry)),
+                        contractUpdate(contract + suffix)
+                                .payingWith(payer)
+                                .signedBy(payer)
+                                .newExpirySecs(newExpiry)
+                                .hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED),
+                        contractUpdate(contract + suffix)
+                                .payingWith(payer)
+                                .signedBy(payer)
+                                .newMemo(NEW_MEMO)
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        contractUpdate(contract + suffix)
+                                .payingWith(payer)
+                                .signedBy(payer, INITIAL_ADMIN_KEY)
+                                .hasKnownStatus(INVALID_SIGNATURE),
 
-                    // In mono this is implemented in SigRequirements.contractFailure
-                    contractUpdate(contract)
-                        .payingWith(payer)
-                        .newMemo(BETTER_MEMO)
-                        .hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
-                    contractDelete(contract).payingWith(payer).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
-                    contractUpdate(contract).payingWith(payer).newExpirySecs(betterExpiry),
-                    contractDelete(contract + suffix)
-                        .payingWith(payer)
-                        .signedBy(payer, INITIAL_ADMIN_KEY)
-                        .hasKnownStatus(INVALID_SIGNATURE),
-                    contractDelete(contract + suffix)
-                        .payingWith(payer)
-                        .signedBy(payer)
-                        .hasKnownStatus(INVALID_SIGNATURE),
-                    contractDelete(contract + suffix).payingWith(payer).hasKnownStatus(SUCCESS));
+                        // In mono this is implemented in SigRequirements.contractFailure
+                        contractUpdate(contract)
+                                .payingWith(payer)
+                                .newMemo(BETTER_MEMO)
+                                .hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                        contractDelete(contract).payingWith(payer).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                        contractUpdate(contract).payingWith(payer).newExpirySecs(betterExpiry),
+                        contractDelete(contract + suffix)
+                                .payingWith(payer)
+                                .signedBy(payer, INITIAL_ADMIN_KEY)
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        contractDelete(contract + suffix)
+                                .payingWith(payer)
+                                .signedBy(payer)
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        contractDelete(contract + suffix).payingWith(payer).hasKnownStatus(SUCCESS));
     }
 
     @HapiTest

@@ -24,17 +24,17 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
+import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
-import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.key.KeyUtils;
@@ -55,9 +55,6 @@ import javax.inject.Singleton;
 @Singleton
 public class ContractUpdateHandler implements TransactionHandler {
 
-    private static final Key IMMUTABILITY_SENTINEL_KEY =
-            Key.newBuilder().keyList(KeyList.newBuilder()).build();
-
     @Inject
     public ContractUpdateHandler() {
         // Exists for injection
@@ -77,6 +74,11 @@ public class ContractUpdateHandler implements TransactionHandler {
         if (op.hasAutoRenewAccountId() && !op.autoRenewAccountIdOrThrow().equals(AccountID.DEFAULT)) {
             context.requireKeyOrThrow(op.autoRenewAccountIdOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
+    }
+
+    @Override
+    public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
+        final var op = txn.contractUpdateInstanceOrThrow();
 
         // TODO: Mono is using UpdateCustomizerFactory.processAdminKey but we don't have JContractIDKey/JKey
         //  implementation in mod. So I stitched this together.
@@ -127,11 +129,11 @@ public class ContractUpdateHandler implements TransactionHandler {
             @NonNull final HandleContext context,
             @NonNull final ContractUpdateTransactionBody op) {
 
-        validate(contract, context, op);
+        validateSemantics(contract, context, op);
 
         final var builder = contract.copyBuilder();
         if (op.hasAdminKey()) {
-            if (IMMUTABILITY_SENTINEL_KEY.equals(op.adminKey())) {
+            if (EMPTY_KEY_LIST.equals(op.adminKey())) {
                 builder.key(contract.key());
             } else {
                 builder.key(op.adminKey());
@@ -176,9 +178,9 @@ public class ContractUpdateHandler implements TransactionHandler {
         return builder.build();
     }
 
-    private void validate(Account contract, HandleContext context, ContractUpdateTransactionBody op) {
+    private void validateSemantics(Account contract, HandleContext context, ContractUpdateTransactionBody op) {
         if (op.hasAdminKey()) {
-            boolean keyNotSentinel = !IMMUTABILITY_SENTINEL_KEY.equals(op.adminKey());
+            boolean keyNotSentinel = !EMPTY_KEY_LIST.equals(op.adminKey());
             boolean keyIsUnset = op.adminKey().key().kind() == KeyOneOfType.UNSET;
             boolean keyIsNotValid = !KeyUtils.isValid(op.adminKey());
             if (keyNotSentinel && (keyIsUnset || keyIsNotValid)) {
