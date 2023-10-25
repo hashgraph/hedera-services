@@ -233,6 +233,9 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             addressBookRound = EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED;
         } else {
             creatorId = in.readSerializable(false, NodeId::new);
+            if (creatorId == null) {
+                throw new IOException("creatorId is null");
+            }
             selfParent = in.readSerializable(false, EventDescriptor::new);
             otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
             addressBookRound = in.readLong();
@@ -303,6 +306,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
                 .toString();
     }
 
+    @Nullable
     private byte[] valueOrNull(final Hash hash) {
         return hash == null ? null : hash.getValue();
     }
@@ -351,6 +355,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      *
      * @return the event descriptor for the self parent
      */
+    @Nullable
     public EventDescriptor getSelfParent() {
         return selfParent;
     }
@@ -360,6 +365,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      *
      * @return the event descriptors for the other parents
      */
+    @Nullable
     public List<EventDescriptor> getOtherParents() {
         return otherParents;
     }
@@ -389,10 +395,10 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         if (otherParents.size() == 1) {
             return otherParents.get(0).getGeneration();
         }
-        return otherParents.stream()
-                .max((a, b) -> Long.compare(a.getGeneration(), b.getGeneration()))
-                .get()
-                .getGeneration();
+        // 0.45.0 adds support for multiple other parents in the serialization scheme, but not yet in the
+        // implementation.
+        // This exception should never be reached unless we have multiple parents and need to update the implementation.
+        throw new UnsupportedOperationException("Multiple other parents is not supported yet");
     }
 
     /**
@@ -400,6 +406,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      *
      * @return the hash of the self parent
      */
+    @Nullable
     public Hash getSelfParentHash() {
         if (selfParent == null) {
             return null;
@@ -412,7 +419,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      *
      * @return the hash of the other parent with the maximum generation
      * @deprecated
-     * */
+     */
+    @Nullable
     public Hash getOtherParentHash() {
         if (otherParents == null || otherParents.isEmpty()) {
             return null;
@@ -420,10 +428,10 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         if (otherParents.size() == 1) {
             return otherParents.get(0).getHash();
         }
-        return otherParents.stream()
-                .max((a, b) -> Long.compare(a.getGeneration(), b.getGeneration()))
-                .get()
-                .getHash();
+        // 0.45.0 adds support for multiple other parents in the serialization scheme, but not yet in the
+        // implementation.
+        // This exception should never be reached unless we have multiple parents and need to update the implementation.
+        throw new UnsupportedOperationException("Multiple other parents is not supported yet");
     }
 
     /**
@@ -446,6 +454,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      * Get the hash value of the parent event.
      * @return the hash value of the parent event
      */
+    @Nullable
     public byte[] getSelfParentHashValue() {
         return selfParent == null ? null : getSelfParentHash().getValue();
     }
@@ -454,10 +463,12 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      * Get the hash value of the other parent with the maximum generation.
      * @return  the hash value of the other parent with the maximum generation
      */
+    @Nullable
     public byte[] getOtherParentHashValue() {
         return otherParents == null ? null : getOtherParentHash().getValue();
     }
 
+    @NonNull
     public Instant getTimeCreated() {
         return timeCreated;
     }
@@ -465,6 +476,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     /**
      * @return array of transactions inside this event instance
      */
+    @Nullable
     public ConsensusTransactionImpl[] getTransactions() {
         return transactions;
     }
@@ -491,6 +503,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      *
      * @return an event descriptor for this event
      */
+    @NonNull
     public EventDescriptor createEventDescriptor() {
         return new EventDescriptor(getHash(), getCreatorId(), getGeneration(), getAddressBookRound());
     }

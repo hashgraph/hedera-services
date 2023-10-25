@@ -18,7 +18,6 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
 import static com.swirlds.platform.state.signed.StartupStateUtils.doRecoveryCleanup;
@@ -43,14 +42,9 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.events.EventDescriptor;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.RecoveryScratchpad;
@@ -66,7 +60,6 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -134,30 +127,6 @@ class StartupStateUtilsTests {
             @Nullable final Hash epoch,
             final boolean corrupted)
             throws IOException {
-
-        final EventImpl[] events = new EventImpl[random.nextInt(1, 10)];
-        for (int i = 0; i < events.length; i++) {
-
-            final NodeId selfId = new NodeId(random.nextInt(1, 10));
-            final NodeId otherId = new NodeId(random.nextInt(1, 10));
-            final EventDescriptor selfDescriptor =
-                    new EventDescriptor(randomHash(random), selfId, random.nextInt(1, 1000), -1);
-            final EventDescriptor otherDescriptor =
-                    new EventDescriptor(randomHash(random), otherId, random.nextInt(1, 1000), -1);
-            final BaseEventHashedData hashedData = new BaseEventHashedData(
-                    new BasicSoftwareVersion(1),
-                    selfId,
-                    selfDescriptor,
-                    Collections.singletonList(otherDescriptor),
-                    -1,
-                    randomInstant(random),
-                    new ConsensusTransactionImpl[0]);
-            final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(otherId, new byte[0]);
-            final EventImpl event = new EventImpl(hashedData, unhashedData);
-            platformContext.getCryptography().digestSync(hashedData);
-            platformContext.getCryptography().digestSync(event);
-            events[i] = event;
-        }
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
                 .setRound(round)

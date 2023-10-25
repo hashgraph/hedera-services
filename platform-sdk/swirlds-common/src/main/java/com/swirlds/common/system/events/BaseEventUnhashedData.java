@@ -102,9 +102,9 @@ public class BaseEventUnhashedData implements SelfSerializable {
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         serializedVersion = version;
         if (version < ClassVersion.ADDRESS_BOOK_ROUND) {
-            in.readLong(); //unused
+            in.readLong(); // unused
             otherId = NodeId.deserializeLong(in, true);
-            in.readLong(); //unused
+            in.readLong(); // unused
             signature = in.readByteArray(MAX_SIG_LENGTH);
         } else {
             signature = in.readByteArray(MAX_SIG_LENGTH);
