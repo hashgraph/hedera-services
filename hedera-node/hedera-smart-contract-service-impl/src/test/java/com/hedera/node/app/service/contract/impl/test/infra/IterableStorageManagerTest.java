@@ -102,20 +102,11 @@ class IterableStorageManagerTest {
         given(hederaNativeOperations.getAccount(anyLong())).willReturn(account);
         given(account.firstContractStorageKey()).willReturn(BYTES_1);
         given(enhancement.operations()).willReturn(hederaOperations);
-        // Updating the contract storage for CONTRACT_1
-        given(store.getSlotValueForModify(new SlotKey(CONTRACT_1, BYTES_1)))
-                .willReturn(new SlotValue(Bytes.EMPTY, null, null));
         // Deleting the last slot contract storage for CONTRACT_2
         given(store.getSlotValue(new SlotKey(CONTRACT_2, BYTES_1))).willReturn(new SlotValue(Bytes.EMPTY, null, null));
 
         subject.persistChanges(enhancement, accesses, sizeChanges, store);
 
-        // Model updating the first contract storage
-        verify(store).getSlotValueForModify(new SlotKey(1L, BYTES_1));
-        verify(store)
-                .putSlot(
-                        new SlotKey(1L, BYTES_1),
-                        new SlotValue(ConversionUtils.tuweniToPbjBytes(UInt256.MAX_VALUE), null, null));
         // Model deleting the second contract storage
         verify(store).getSlotValue(new SlotKey(2L, BYTES_1));
         verify(store).removeSlot(new SlotKey(2L, BYTES_1));
@@ -202,53 +193,6 @@ class IterableStorageManagerTest {
 
         // The new first key is BYTES_1 as before running the test
         verify(hederaOperations).updateStorageMetadata(1L, BYTES_1, -1);
-        verifyNoMoreInteractions(store);
-        verifyNoMoreInteractions(hederaOperations);
-    }
-
-    @Test
-    void updateSlot() {
-        final var accesses = List.of(new StorageAccesses(
-                CONTRACT_1,
-                List.of(StorageAccess.newWrite(UInt256.valueOf(2L), UInt256.valueOf(1L), UInt256.MAX_VALUE))));
-
-        final var sizeChanges = List.of(new StorageSizeChange(CONTRACT_1, 0, 0));
-
-        given(enhancement.nativeOperations()).willReturn(hederaNativeOperations);
-        given(hederaNativeOperations.getAccount(CONTRACT_1)).willReturn(account);
-        given(account.firstContractStorageKey()).willReturn(BYTES_1);
-        // Update the second slot
-        given(store.getSlotValueForModify(new SlotKey(CONTRACT_1, BYTES_2)))
-                .willReturn(new SlotValue(BYTES_2, BYTES_1, BYTES_3));
-
-        subject.persistChanges(enhancement, accesses, sizeChanges, store);
-
-        // Model modifying the slot value
-        verify(store)
-                .putSlot(
-                        new SlotKey(CONTRACT_1, BYTES_2),
-                        new SlotValue(ConversionUtils.tuweniToPbjBytes(UInt256.MAX_VALUE), BYTES_1, BYTES_3));
-
-        verifyNoMoreInteractions(store);
-        verifyNoMoreInteractions(hederaOperations);
-    }
-
-    @Test
-    void updateSlotValueNotFound() {
-        final var accesses = List.of(new StorageAccesses(
-                CONTRACT_1,
-                List.of(StorageAccess.newWrite(UInt256.valueOf(2L), UInt256.valueOf(1L), UInt256.MAX_VALUE))));
-
-        final var sizeChanges = List.of(new StorageSizeChange(CONTRACT_1, 0, 0));
-
-        given(enhancement.nativeOperations()).willReturn(hederaNativeOperations);
-        given(hederaNativeOperations.getAccount(CONTRACT_1)).willReturn(account);
-        given(account.firstContractStorageKey()).willReturn(BYTES_1);
-        // Update the second slot
-        given(store.getSlotValueForModify(new SlotKey(CONTRACT_1, BYTES_2))).willReturn(null);
-
-        subject.persistChanges(enhancement, accesses, sizeChanges, store);
-
         verifyNoMoreInteractions(store);
         verifyNoMoreInteractions(hederaOperations);
     }

@@ -88,11 +88,6 @@ public class IterableStorageManager {
                             tuweniToPbjBytes(access.writtenValue()),
                             contractAccesses.contractNumber(),
                             tuweniToPbjBytes(access.key()));
-                    case UPDATE -> updateAccessedValue(
-                            store,
-                            tuweniToPbjBytes(access.writtenValue()),
-                            contractAccesses.contractNumber(),
-                            tuweniToPbjBytes(access.key()));
                 }
                 firstKeys.put(contractAccesses.contractNumber(), firstContractKey);
             }
@@ -174,35 +169,6 @@ public class IterableStorageManager {
                     irreparable);
         }
         return firstContractKey;
-    }
-
-    /**
-     * Updates the given storage slot with the new values resulting from the contract execution.
-     *
-     * @param store Contract storage store
-     * @param newValue The new value for the slot
-     * @param contractNumber The contract number under consideration
-     * @param key The slot key to update
-     */
-    private void updateAccessedValue(
-            @NonNull final ContractStateStore store,
-            @NonNull Bytes newValue,
-            long contractNumber,
-            @NonNull final Bytes key) {
-        try {
-            Objects.requireNonNull(store);
-            Objects.requireNonNull(newValue);
-            Objects.requireNonNull(key);
-            // Look up the existing slot value for modification
-            final var slotKey = newSlotKeyFor(contractNumber, key);
-            final var slotValue = slotValueFor(store, true, slotKey, "Missing key ");
-
-            // Create updated new slot value and put into the store
-            final var newSlotValue = slotValue.copyBuilder().value(newValue).build();
-            store.putSlot(new SlotKey(contractNumber, key), newSlotValue);
-        } catch (Exception irreparable) {
-            log.error("Failed updating storage value for {}", key, irreparable);
-        }
     }
 
     /**
