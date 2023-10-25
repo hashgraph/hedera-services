@@ -25,9 +25,15 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Tags;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.ReflectionSupport;
 import org.junit.platform.engine.EngineDiscoveryRequest;
@@ -35,6 +41,7 @@ import org.junit.platform.engine.ExecutionRequest;
 import org.junit.platform.engine.Filter;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.TestEngine;
+import org.junit.platform.engine.TestTag;
 import org.junit.platform.engine.UniqueId;
 import org.junit.platform.engine.discovery.ClassSelector;
 import org.junit.platform.engine.discovery.ClasspathRootSelector;
@@ -129,11 +136,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 .forEach(engineDescriptor::addChild);
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>We don't need to do anything here, just return our phony context
-     */
     @Override
     protected HapiTestEngineExecutionContext createExecutionContext(ExecutionRequest request) {
         // Populating the data needed for the context
@@ -242,17 +244,36 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
      * Describes a {@link HapiSpec} test method, and contains logic for running the actual test.
      */
     private static final class MethodTestDescriptor extends AbstractTestDescriptor
-            implements Node<HapiTestEngineExecutionContext> {
+        implements Node<HapiTestEngineExecutionContext> {
+
         /** The method under test */
         private final Method testMethod;
 
+        private Set<TestTag> testTags;
+
         public MethodTestDescriptor(Method testMethod, ClassTestDescriptor parent) {
             super(
-                    parent.getUniqueId().append("method", testMethod.getName()),
-                    testMethod.getName(),
-                    MethodSource.from(testMethod));
+                parent.getUniqueId().append("method", testMethod.getName()),
+                testMethod.getName(),
+                MethodSource.from(testMethod));
             this.testMethod = testMethod;
             setParent(parent);
+            setTags(getTagsIfAny(testMethod));
+        }
+
+        private Set<TestTag> getTagsIfAny(Method testMethod) {
+            final var tagsAnnotation = testMethod.getAnnotation(Tags.class);
+            final var tagAnnotation = testMethod.getAnnotation(Tag.class);
+
+            final var tags = new HashSet<TestTag>();
+            if (tagsAnnotation != null) {
+                tags.addAll(Arrays.stream(tagsAnnotation.value())
+                    .map(t -> TestTag.create(t.value()))
+                    .toList());
+            } else if (tagAnnotation != null) {
+                tags.add(TestTag.create(tagAnnotation.value()));
+            }
+            return tags;
         }
 
         @Override
@@ -289,6 +310,15 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 throw new AssertionError();
             }
             return context;
+        }
+
+        @Override
+        public Set<TestTag> getTags() {
+            return testTags;
+        }
+
+        public void setTags(Set<TestTag> testTags) {
+            this.testTags = testTags;
         }
     }
 }
