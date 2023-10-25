@@ -30,7 +30,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -244,7 +243,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
      * Describes a {@link HapiSpec} test method, and contains logic for running the actual test.
      */
     private static final class MethodTestDescriptor extends AbstractTestDescriptor
-        implements Node<HapiTestEngineExecutionContext> {
+            implements Node<HapiTestEngineExecutionContext> {
 
         /** The method under test */
         private final Method testMethod;
@@ -253,9 +252,9 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
         public MethodTestDescriptor(Method testMethod, ClassTestDescriptor parent) {
             super(
-                parent.getUniqueId().append("method", testMethod.getName()),
-                testMethod.getName(),
-                MethodSource.from(testMethod));
+                    parent.getUniqueId().append("method", testMethod.getName()),
+                    testMethod.getName(),
+                    MethodSource.from(testMethod));
             this.testMethod = testMethod;
             setParent(parent);
             setTags(getTagsIfAny(testMethod));
@@ -268,8 +267,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             final var tags = new HashSet<TestTag>();
             if (tagsAnnotation != null) {
                 tags.addAll(Arrays.stream(tagsAnnotation.value())
-                    .map(t -> TestTag.create(t.value()))
-                    .toList());
+                        .map(t -> TestTag.create(t.value()))
+                        .toList());
             } else if (tagAnnotation != null) {
                 tags.add(TestTag.create(tagAnnotation.value()));
             }
@@ -283,13 +282,16 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
         @Override
         public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
-            final var annotation = AnnotationSupport.findAnnotation(testMethod, Disabled.class);
-            if (!AnnotationSupport.isAnnotated(testMethod, HapiTest.class)) {
+            final var isHapiTestAnnotated = AnnotationSupport.isAnnotated(testMethod, HapiTest.class);
+            final var disabledAnnotation = AnnotationSupport.findAnnotation(testMethod, Disabled.class);
+
+            if (!isHapiTestAnnotated) {
                 return SkipResult.skip(testMethod.getName() + " No @HapiTest annotation");
-            } else if (annotation.isPresent()) {
-                final var msg = annotation.get().value();
+            } else if (disabledAnnotation.isPresent()) {
+                final var msg = disabledAnnotation.get().value();
                 return SkipResult.skip(msg == null || msg.isBlank() ? "Disabled" : msg);
             }
+
             return SkipResult.doNotSkip();
         }
 
