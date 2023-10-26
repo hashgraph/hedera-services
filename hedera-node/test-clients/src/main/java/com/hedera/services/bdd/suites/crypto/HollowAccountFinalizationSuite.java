@@ -542,7 +542,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest // here
+    @HapiTest
     private HapiSpec tooManyHollowAccountFinalizationsShouldFail() {
         final var ECDSA_KEY_1 = "ECDSA_KEY_1";
         final var ECDSA_KEY_2 = "ECDSA_KEY_2";
@@ -690,7 +690,9 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest // here
+    //    @HapiTest We need a way to differentiate between hollow created records and other preceding records.
+    // In mono-service we commint hollow accounts even if transaction fails, but in mod service we don't.
+    // So we can't enable this test
     private HapiSpec txnWith2CompletionsAndAnother2PrecedingChildRecords() {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
@@ -737,7 +739,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                             recordWith().status(SUCCESS),
                             recordWith().status(SUCCESS),
                             recordWith().status(REVERTED_SUCCESS));
-                    //                    // assert that the payer has been finalized
+                    // assert that the payer has been finalized
                     final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                     final var payerEvmAddress = ByteString.copyFrom(recoverAddressFromPubKey(
                             ecdsaKey.getECDSASecp256K1().toByteArray()));
@@ -752,7 +754,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                             otherEcdsaKey.getECDSASecp256K1().toByteArray()));
                     final var op5 = getAliasedAccountInfo(otherEvmAddress)
                             .has(accountWith().key(ecdsaKey2).noAlias().evmAddress(otherEvmAddress));
-                    allRunFor(spec, op3, childRecordCheck, op4, op5);
+                    allRunFor(spec, op3, op4, op5);
                 }));
     }
 

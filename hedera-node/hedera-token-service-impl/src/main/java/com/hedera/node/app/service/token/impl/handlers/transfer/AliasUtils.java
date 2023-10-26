@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAliasSizeGreaterThanEvmAddress;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static java.util.Objects.requireNonNull;
 
@@ -44,6 +45,9 @@ public final class AliasUtils {
      */
     public static boolean isSerializedProtoKey(@NonNull final Bytes alias) {
         requireNonNull(alias);
+        if (!isAliasSizeGreaterThanEvmAddress(alias)) {
+            return false;
+        }
         try (final var bais = new ByteArrayInputStream(requireNonNull(asBytes(alias)))) {
             final var stream = new ReadableStreamingData(bais);
             stream.limit(bais.available());

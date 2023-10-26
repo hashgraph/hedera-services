@@ -236,7 +236,8 @@ public class EndOfStakingPeriodUpdater {
                 stakingConfig.maxStakeRewarded());
         log.info("Exporting:\n{}", finalNodeStakes);
 
-        final var nodeStakeUpdateBuilder = context.addPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
+        final var nodeStakeUpdateBuilder =
+                context.addPrecedingChildRecordBuilderForGenesis(NodeStakeUpdateRecordBuilder.class);
         nodeStakeUpdateBuilder.transaction(Transaction.newBuilder()
                 .body(syntheticNodeStakeUpdateTxn.build())
                 .build());

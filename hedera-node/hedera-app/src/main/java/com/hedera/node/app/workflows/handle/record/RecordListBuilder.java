@@ -28,6 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -137,7 +138,7 @@ public final class RecordListBuilder {
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
         final var precedingCount = precedingTxnRecordBuilders.size();
         final var maxRecords = consensusConfig.handleMaxPrecedingRecords();
-        if (precedingCount >= maxRecords && !isOnGenesis) {
+        if (precedingTxnRecordBuilders.size() >= maxRecords && !isOnGenesis) {
             // We do not have a MAX_PRECEDING_RECORDS_EXCEEDED error, so use this.
             throw new HandleException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
         }
@@ -235,6 +236,9 @@ public final class RecordListBuilder {
         if (childRecordBuilders == null) {
             childRecordBuilders = new ArrayList<>();
         }
+        if (precedingTxnRecordBuilders == null) {
+            precedingTxnRecordBuilders = new ArrayList<>();
+        }
 
         // Find the index into the list of records from which to revert. If the record builder is the user transaction,
         // then we start at index 0, which is the first child transaction after the user transaction. If the record
@@ -279,6 +283,13 @@ public final class RecordListBuilder {
         for (int i = count - 1; i >= into; i--) {
             childRecordBuilders.remove(i);
         }
+
+        // If there are preceding child records that are more than 3 deep,
+        // then we need to revert them as well.
+        precedingTxnRecordBuilders.stream()
+                .filter(Predicate.not(SingleTransactionRecordBuilderImpl::removable))
+                .skip(3)
+                .forEach(child -> child.status(ResponseCodeEnum.REVERTED_SUCCESS));
     }
 
     /**
