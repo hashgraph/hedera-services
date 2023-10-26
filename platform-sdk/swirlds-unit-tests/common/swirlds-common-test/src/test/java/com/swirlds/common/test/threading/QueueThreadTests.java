@@ -704,9 +704,8 @@ class QueueThreadTests {
         assertSame(configuration.getQueue(), copy2.getQueue(), "copy configuration should match");
     }
 
-    //@Test
+    @Test
     @DisplayName("Queue Max/Min Size Metrics Test - With Thread Start")
-    @RepeatedTest(100)
     void testQueueMaxMinSizeMetricsWithThreadStart() {
         // given
         final BlockingQueue<Integer> queue = new LinkedBlockingQueue<>(List.of(0, 1, 2, 3, 4));
