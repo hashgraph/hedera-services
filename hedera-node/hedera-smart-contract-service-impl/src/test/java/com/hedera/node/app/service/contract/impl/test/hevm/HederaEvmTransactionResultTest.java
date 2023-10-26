@@ -36,11 +36,9 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.WEI_NET
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.bloomForAll;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -54,7 +52,6 @@ import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
@@ -121,14 +118,6 @@ class HederaEvmTransactionResultTest {
                 .willReturn(Optional.of(CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
         final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
         assertEquals(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS, subject.finalStatus());
-    }
-
-    @Test
-    void finalStatusFromRevertNotImplemented() {
-        given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
-        given(frame.getRevertReason()).willReturn(Optional.of(Bytes.of("MAX_CHILD_RECORDS_EXCEEDED".getBytes())));
-        final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
-        assertThrows(AssertionError.class, subject::finalStatus);
     }
 
     @Test
@@ -233,7 +222,7 @@ class HederaEvmTransactionResultTest {
 
         final var result = HederaEvmTransactionResult.successFrom(
                 GAS_LIMIT / 2, SENDER_ID, CALLED_CONTRACT_ID, CALLED_CONTRACT_EVM_ADDRESS, frame);
-        final var queryResult = result.asQueryResultOf();
+        final var queryResult = result.asQueryResult();
         assertEquals(GAS_LIMIT / 2, queryResult.gasUsed());
         assertEquals(bloomForAll(BESU_LOGS), queryResult.bloom());
         assertEquals(OUTPUT_DATA, queryResult.contractCallResult());
@@ -249,7 +238,7 @@ class HederaEvmTransactionResultTest {
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INVALID_OPERATION));
 
         final var result = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
-        final var protoResult = result.asQueryResultOf();
+        final var protoResult = result.asQueryResult();
         assertEquals(ExceptionalHaltReason.INVALID_OPERATION.toString(), protoResult.errorMessage());
     }
 
@@ -259,6 +248,7 @@ class HederaEvmTransactionResultTest {
         given(frame.getRevertReason()).willReturn(Optional.of(SOME_REVERT_REASON));
 
         final var result = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
-        assertThatThrownBy(() -> result.asQueryResultOf()).isInstanceOf(AssertionError.class);
+        final var protoResult = result.asQueryResult();
+        assertEquals(SOME_REVERT_REASON.toString(), protoResult.errorMessage());
     }
 }

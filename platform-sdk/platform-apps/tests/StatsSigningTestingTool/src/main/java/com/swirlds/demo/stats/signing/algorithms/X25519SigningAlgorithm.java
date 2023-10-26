@@ -148,6 +148,14 @@ public class X25519SigningAlgorithm implements SigningAlgorithm {
      * {@inheritDoc}
      */
     @Override
+    public byte[] hash(byte[] buffer, int offset, int len) {
+        throw new UnsupportedOperationException("External hashing is not supported by this algorithm");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void tryAcquirePrimitives() {
         try {
             final SodiumJava sodium = new SodiumJava();

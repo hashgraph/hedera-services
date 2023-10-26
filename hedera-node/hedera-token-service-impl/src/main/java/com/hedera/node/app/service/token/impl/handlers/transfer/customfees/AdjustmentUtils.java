@@ -21,11 +21,12 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class AdjustmentUtils {
     public static final Function<TokenID, Map<AccountID, Long>> ADJUSTMENTS_MAP_FACTORY = ignore -> new HashMap<>();
@@ -157,29 +158,33 @@ public class AdjustmentUtils {
      * fungible token balances for a given beneficiary and returns them
      * @param result The {@link AssessmentResult} object
      * @param tokenId The token id
-     * @param beneficiary The beneficiary account
+     * @param sender The sender of the nft
      * @return The list of credits
      */
-    public static Map<AccountID, Pair<Long, TokenID>> getFungibleCredits(
-            final AssessmentResult result, final TokenID tokenId, final AccountID beneficiary) {
-        final var tokenChanges = result.getImmutableInputTokenAdjustments().getOrDefault(tokenId, new HashMap<>());
-        final var credits = new HashMap<AccountID, Pair<Long, TokenID>>();
+    public static List<ExchangedValue> getFungibleCredits(
+            final AssessmentResult result, final TokenID tokenId, final AccountID sender) {
+        final var tokenChanges = result.getImmutableInputTokenAdjustments();
+        // get all the fungible changes that are credited to the sender of nft in the same transaction.
+        // this includes hbar and fungible token balances
+        final var credits = new ArrayList<ExchangedValue>();
         for (final var entry : tokenChanges.entrySet()) {
-            final var account = entry.getKey();
-            final var amount = entry.getValue();
-            if (amount > 0 && account.equals(beneficiary)) {
-                credits.put(account, Pair.of(amount, tokenId));
+            final var token = entry.getKey();
+            final var map = entry.getValue();
+            if (map.containsKey(sender) && map.get(sender) > 0) {
+                credits.add(new ExchangedValue(sender, token, map.get(sender)));
             }
         }
         for (final var entry : result.getInputHbarAdjustments().entrySet()) {
             final var account = entry.getKey();
             final var amount = entry.getValue();
-            if (amount > 0 && account.equals(beneficiary)) {
-                credits.put(account, Pair.of(amount, null));
+            if (amount > 0 && account.equals(sender)) {
+                credits.add(new ExchangedValue(sender, null, amount));
             }
         }
         return credits;
     }
+
+    public record ExchangedValue(AccountID account, TokenID tokenId, long amount) {}
 
     /**
      * Adjusts hbar fees. It makes 2 adjustments a debit for sender and credit to collector.

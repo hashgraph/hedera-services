@@ -371,7 +371,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      * @param configuration the {@link Configuration}
      * @return the calculated fees
      */
-    public static Fees cryptoUpdateFees(
+    private Fees cryptoUpdateFees(
             final TransactionBody body,
             final FeeCalculator feeCalculator,
             final ReadableAccountStore accountStore,
@@ -384,7 +384,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
         final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.key())) : 0L;
         final var baseSize = baseSizeOf(op, keySize);
-        final var newMemoSize = op.memoOrElse("").length();
+        final var newMemoSize = op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length;
         final long newVariableBytes =
                 (newMemoSize != 0L ? newMemoSize : account.memo().getBytes(StandardCharsets.UTF_8).length)
                         + (keySize == 0L ? getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT))) : keySize);
@@ -401,7 +401,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
         final var oldSlotsUsage = account.maxAutoAssociations() * UPDATE_SLOT_MULTIPLIER;
         final var newSlotsUsage = op.hasMaxAutomaticTokenAssociations()
-                ? op.maxAutomaticTokenAssociations() * UPDATE_SLOT_MULTIPLIER
+                ? op.maxAutomaticTokenAssociations().longValue() * UPDATE_SLOT_MULTIPLIER
                 : oldSlotsUsage;
         // If given an explicit auto-assoc slot lifetime, we use it as a lower bound for both old and new lifetimes
         final long slotRbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
@@ -411,7 +411,8 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 Math.max(explicitAutoAssocSlotLifetime, newLifetime));
         return feeCalculator
                 .addBytesPerTransaction(baseSize)
-                .addRamByteSeconds((rbsDelta + slotRbsDelta) > 0 ? rbsDelta + slotRbsDelta : 0)
+                .addRamByteSeconds(rbsDelta > 0 ? rbsDelta : 0)
+                .addRamByteSeconds(slotRbsDelta > 0 ? slotRbsDelta : 0)
                 .calculate();
     }
 }

@@ -42,6 +42,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
+import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -108,17 +109,24 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         final var nftSerialNums = new ArrayList<>(new LinkedHashSet<>(op.serialNumbers()));
         final var validated =
                 validateSemantics(tokenId, fungibleBurnCount, nftSerialNums, tokenStore, tokenRelStore, tokensConfig);
+        final var treasuryRel = validated.tokenTreasuryRel();
         final var token = validated.token();
 
+        if (token.hasKycKey()) {
+            validateTrue(treasuryRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+        }
+
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
-            changeSupply(
+            validateTrue(fungibleBurnCount >= 0 && nftSerialNums.isEmpty(), INVALID_TOKEN_BURN_AMOUNT);
+            final var newTotalSupply = changeSupply(
                     validated.token(),
-                    validated.tokenTreasuryRel(),
+                    treasuryRel,
                     -fungibleBurnCount,
                     INVALID_TOKEN_BURN_AMOUNT,
                     accountStore,
                     tokenStore,
                     tokenRelStore);
+            context.recordBuilder(TokenBurnRecordBuilder.class).newTotalSupply(newTotalSupply);
         } else {
             validateTrue(!nftSerialNums.isEmpty(), INVALID_TOKEN_BURN_METADATA);
 
@@ -132,14 +140,8 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
             }
 
             // Update counts for accounts and token rels
-            changeSupply(
-                    token,
-                    validated.tokenTreasuryRel(),
-                    -nftSerialNums.size(),
-                    FAIL_INVALID,
-                    accountStore,
-                    tokenStore,
-                    tokenRelStore);
+            final var newTotalSupply = changeSupply(
+                    token, treasuryRel, -nftSerialNums.size(), FAIL_INVALID, accountStore, tokenStore, tokenRelStore);
 
             // Update treasury's NFT count
             final var treasuryAcct = accountStore.get(token.treasuryAccountId());
@@ -151,6 +153,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
 
             // Remove the nft objects
             nftSerialNums.forEach(serialNum -> nftStore.remove(tokenId, serialNum));
+            context.recordBuilder(TokenBurnRecordBuilder.class).newTotalSupply(newTotalSupply);
         }
     }
 
@@ -158,15 +161,12 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var op = feeContext.body();
-        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
-        final var tokenType =
-                readableTokenStore.get(op.tokenBurnOrThrow().tokenOrThrow()).tokenType();
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(fromPbj(op));
         return feeContext
                 .feeCalculator(
-                        tokenType.equals(TokenType.FUNGIBLE_COMMON)
-                                ? SubType.TOKEN_FUNGIBLE_COMMON
-                                : SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
+                        meta.getSerialNumsCount() > 0
+                                ? SubType.TOKEN_NON_FUNGIBLE_UNIQUE
+                                : SubType.TOKEN_FUNGIBLE_COMMON)
                 .addBytesPerTransaction(meta.getBpt())
                 .addNetworkRamByteSeconds(meta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs())
                 .calculate();

@@ -33,7 +33,7 @@ public record AccountsConfig(
         @ConfigProperty(defaultValue = "59") @NetworkProperty long systemDeleteAdmin,
         @ConfigProperty(defaultValue = "60") @NetworkProperty long systemUndeleteAdmin,
         @ConfigProperty(defaultValue = "2") @NetworkProperty long treasury,
-        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean storeOnDisk,
-        @ConfigProperty(defaultValue = "5000000") @NetworkProperty long maxNumber,
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean storeOnDisk,
+        @ConfigProperty(defaultValue = "20000000") @NetworkProperty long maxNumber,
         @ConfigProperty(value = "blocklist.enabled", defaultValue = "false") @NetworkProperty boolean blocklistEnabled,
-        @ConfigProperty(value = "blocklist.resource", defaultValue = "") @NetworkProperty String blocklistResource) {}
+        @ConfigProperty(value = "blocklist.path", defaultValue = "") @NetworkProperty String blocklistResource) {}

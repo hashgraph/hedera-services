@@ -90,6 +90,7 @@ import com.swirlds.merkle.map.test.pta.TransactionRecord;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -839,6 +840,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     @Override
+    @NonNull
     public SwirldState newState() {
         return new PlatformTestingToolState();
     }

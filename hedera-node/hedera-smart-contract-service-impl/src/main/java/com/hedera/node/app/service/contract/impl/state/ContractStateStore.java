@@ -82,6 +82,16 @@ public interface ContractStateStore {
     SlotValue getSlotValue(@NonNull SlotKey key);
 
     /**
+     * Returns the {@link SlotValue} for the given {@link SlotKey}, or null if not found.
+     * The SlotValue returned will be for modify.
+     *
+     * @param key the {@link SlotKey} to get the {@link SlotValue} for
+     * @return the {@link SlotValue} for the given {@link SlotKey}, or null if not found
+     */
+    @Nullable
+    SlotValue getSlotValueForModify(@NonNull SlotKey key);
+
+    /**
      * Returns the original {@link SlotValue} for the given {@link SlotKey}, or null if not found.
      *
      * @param key the {@link SlotKey} to get the {@link SlotValue} for
@@ -96,4 +106,11 @@ public interface ContractStateStore {
      * @return the number of slots
      */
     long getNumSlots();
+
+    /**
+     * Returns the number of bytecodes.
+     *
+     * @return the number of bytecodes
+     */
+    long getNumBytecodes();
 }

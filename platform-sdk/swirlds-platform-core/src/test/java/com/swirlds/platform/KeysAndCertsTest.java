@@ -69,7 +69,7 @@ class KeysAndCertsTest {
         final int node = random.nextInt(addressBook.getSize());
         final NodeId nodeId = addressBook.getNodeId(node);
 
-        final PlatformSigner signer = PlatformConstructor.platformSigner(keysAndCerts.get(nodeId));
+        final PlatformSigner signer = new PlatformSigner(keysAndCerts.get(nodeId));
         testSignVerify(signer, addressBook.getAddress(nodeId).getSigPublicKey());
         // test it twice to verify that the signer is reusable
         testSignVerify(signer, addressBook.getAddress(nodeId).getSigPublicKey());

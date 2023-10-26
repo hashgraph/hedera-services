@@ -45,6 +45,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
@@ -225,6 +226,7 @@ class SavedStateMetadataTests {
         final PlatformState platformState = mock(PlatformState.class);
         final PlatformData platformData = mock(PlatformData.class);
         when(platformData.getHashEventsCons()).thenReturn(randomHash(random));
+        when(platformData.getSnapshot()).thenReturn(mock(ConsensusSnapshot.class));
         final AddressBook addressBook = mock(AddressBook.class);
 
         when(signedState.getState()).thenReturn(state);

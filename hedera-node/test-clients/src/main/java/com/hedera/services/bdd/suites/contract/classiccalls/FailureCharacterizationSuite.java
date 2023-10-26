@@ -87,6 +87,7 @@ import com.hedera.services.bdd.suites.contract.classiccalls.mutations.WipeNftFai
 import com.hedera.services.bdd.suites.contract.classiccalls.mutations.WipeUnitsFailableCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.views.GetAllowanceFailableCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.views.GetApprovedFailableCall;
+import com.hedera.services.bdd.suites.contract.classiccalls.views.GetCustomFeesFailableCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.views.GetFungibleTokenInfoFailableCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.views.GetNonFungibleTokenInfoFailableCall;
 import com.hedera.services.bdd.suites.contract.classiccalls.views.GetTokenDefaultFreezeStatusFailableCall;
@@ -125,6 +126,7 @@ public class FailureCharacterizationSuite extends HapiSuite {
                         new IsFrozenFailableCall(),
                         new IsApprovedForAllFailableCall(),
                         new GetApprovedFailableCall(),
+                        new GetCustomFeesFailableCall(),
                         new GetTokenKeyFailableCall(),
                         new GetTokenInfoFailableCall(),
                         new GetTokenTypeFailableCall(),

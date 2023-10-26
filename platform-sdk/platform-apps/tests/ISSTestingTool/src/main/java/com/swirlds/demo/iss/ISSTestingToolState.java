@@ -44,6 +44,8 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.ByteUtils;
@@ -52,9 +54,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import org.apache.logging.log4j.LogManager;
@@ -103,7 +107,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
 
     private boolean immutable;
 
-    private Scratchpad<IssScratchPadType> scratchPad;
+    private Scratchpad<IssTestingToolScratchpad> scratchPad;
 
     public ISSTestingToolState() {}
 
@@ -160,7 +164,8 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         }
 
         this.selfId = platform.getSelfId();
-        this.scratchPad = new Scratchpad<>(platform.getContext(), selfId, IssScratchPadType.class, "ISSTestingTool");
+        this.scratchPad =
+                Scratchpad.create(platform.getContext(), selfId, IssTestingToolScratchpad.class, "ISSTestingTool");
     }
 
     /**
@@ -183,10 +188,11 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
                         shouldTriggerIncident(elapsedSinceGenesis, currentTimestamp, plannedIssList);
 
                 if (plannedIss != null) {
-                    triggerISS(plannedIss, elapsedSinceGenesis, currentTimestamp);
+                    triggerISS(round.getConsensusRoster(), plannedIss, elapsedSinceGenesis, currentTimestamp);
                     // Record the consensus time at which this ISS was provoked
                     scratchPad.set(
-                            IssScratchPadType.PROVOKED_ISS, new SerializableLong(currentTimestamp.toEpochMilli()));
+                            IssTestingToolScratchpad.PROVOKED_ISS,
+                            new SerializableLong(currentTimestamp.toEpochMilli()));
                 }
 
                 final PlannedLogError plannedLogError =
@@ -267,7 +273,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
                 continue;
             }
 
-            final SerializableLong issLong = scratchPad.get(IssScratchPadType.PROVOKED_ISS);
+            final SerializableLong issLong = scratchPad.get(IssTestingToolScratchpad.PROVOKED_ISS);
             if (issLong != null) {
                 final Instant lastProvokedIssTime = Instant.ofEpochMilli(issLong.getValue());
                 if (lastProvokedIssTime.equals(currentTimestamp)) {
@@ -287,13 +293,42 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
     }
 
     /**
+     * Determine which hash partition in a planned ISS is the largest (by consensus weight). If there is a tie, returns
+     * the smaller partition index.
+     *
+     * @return the index of the largest hash partition
+     */
+    private int findLargestPartition(@NonNull final AddressBook addresses, @NonNull final PlannedIss plannedIss) {
+
+        final Map<Integer, Long> partitionWeights = new HashMap<>();
+        for (final Address address : addresses) {
+            final int partition = plannedIss.getPartitionOfNode(address.getNodeId());
+            final long newWeight = partitionWeights.getOrDefault(partition, 0L) + address.getWeight();
+            partitionWeights.put(partition, newWeight);
+        }
+
+        int largestPartition = 0;
+        long largestPartitionWeight = 0;
+        for (int partition = 0; partition < plannedIss.getPartitionCount(); partition++) {
+            if (partitionWeights.get(partition) > largestPartitionWeight) {
+                largestPartition = partition;
+                largestPartitionWeight = partitionWeights.getOrDefault(partition, 0L);
+            }
+        }
+
+        return largestPartition;
+    }
+
+    /**
      * Trigger an ISS
      *
+     * @param addressBook         the address book for this round
      * @param plannedIss          the planned ISS to trigger
      * @param elapsedSinceGenesis the amount of time that has elapsed since genesis
      * @param currentTimestamp    the current consensus timestamp
      */
     private void triggerISS(
+            @NonNull final AddressBook addressBook,
             @NonNull final PlannedIss plannedIss,
             @NonNull final Duration elapsedSinceGenesis,
             @NonNull final Instant currentTimestamp) {
@@ -302,9 +337,14 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         Objects.requireNonNull(elapsedSinceGenesis);
         Objects.requireNonNull(currentTimestamp);
 
+        final int hashPartitionIndex = plannedIss.getPartitionOfNode(selfId);
+        if (hashPartitionIndex == findLargestPartition(addressBook, plannedIss)) {
+            // If we are in the largest partition then don't bother modifying the state.
+            return;
+        }
+
         // Randomly mutate the state. Each node in the same partition will get the same random mutation.
         // Nodes in different partitions will get a different random mutation with high probability.
-        final int hashPartitionIndex = plannedIss.getPartitionOfNode(selfId);
         final long hashPartitionSeed = hash64(currentTimestamp.toEpochMilli(), hashPartitionIndex);
         final Random random = new Random(hashPartitionSeed);
         runningSum += random.nextInt();

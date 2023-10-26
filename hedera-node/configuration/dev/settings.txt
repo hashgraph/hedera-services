@@ -32,7 +32,6 @@ event.creation.maxCreationRate,                20
                                           #############################
 
 reconnect.active,                              true
-reconnect.asyncStreamTimeoutMilliseconds,      60000
 
                                           #############################
                                           #          Metrics          #

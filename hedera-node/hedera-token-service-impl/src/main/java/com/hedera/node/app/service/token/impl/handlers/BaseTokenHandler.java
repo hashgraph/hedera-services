@@ -43,19 +43,19 @@ import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class BaseTokenHandler {
-    private static final Logger log = LoggerFactory.getLogger(BaseTokenHandler.class);
+    private static final Logger log = LogManager.getLogger(BaseTokenHandler.class);
     /**
      * Mints fungible tokens. This method is called in both token create and mint.
      * @param token the new or existing token to mint
@@ -76,8 +76,6 @@ public class BaseTokenHandler {
             @NonNull final WritableTokenRelationStore tokenRelationStore) {
         requireNonNull(token);
         requireNonNull(treasuryRel);
-
-        validateTrue(amount >= 0, INVALID_TOKEN_MINT_AMOUNT);
         // validate token supply key exists for mint or burn.
         // But this flag is not set when mint is called on token creation with initial supply.
         // We don't need to check the supply key ONLY in that case
@@ -307,7 +305,7 @@ public class BaseTokenHandler {
      * @param token the token to link to the account
      * @param accountStore the account store
      * @param tokenRelStore the token relation store
-     * @param context the handle context
+     * @param config the configuration
      * @return the new token relation added
      */
     protected TokenRelation autoAssociate(
@@ -315,9 +313,9 @@ public class BaseTokenHandler {
             @NonNull final Token token,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            @NonNull final HandleContext context) {
-        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
+            @NonNull final Configuration config) {
+        final var tokensConfig = config.getConfigData(TokensConfig.class);
+        final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
 
         final var accountId = account.accountId();
         final var tokenId = token.tokenId();

@@ -1,11 +1,12 @@
 # Panel, Test Name, Owner, Notes URL
+
+3NReconnect, MixedOps-Interrupted-2NReconnect-6k-41m, services, https://www.notion.so/swirldslabs/3NReconnect-MixedOps-Interrupted-2NReconnect-6k-41m-d51de29ec7234747835a045792c37989?pvs=4
+3NReconnect, MixedOps-NI-3NReconnect-6k-30m, services, https://www.notion.so/swirldslabs/3NReconnect-MixedOps-Interrupted-2NReconnect-6k-41m-d51de29ec7234747835a045792c37989?pvs=4
+
 Abbrev, Consistency-Hard-Restart-10m, platform, https://www.notion.so/swirldslabs/Abbrev-Consistency-Hard-Restart-10m-ba9b0aa74a074bc7b6da0ebe9ec13e80
 Abbrev, Consistency-NDReconnect-10m, platform, https://www.notion.so/swirldslabs/Abbrev-Consistency-NDReconnect-10m-8b83db4b23064472a5450d0cb8640e33
 Abbrev, FCM-Migration-5-2m, platform, https://www.notion.so/swirldslabs/Abbrev-FCM-Migration-5-2m-8b0484685db144b788bec3d3a7ab9634
 Abbrev, VMerkle-Basic-1k-4m, platform, https://www.notion.so/swirldslabs/Abbrev-VMerkle-Basic-1k-4m-7d0b6140891a44f08efd2ca4bc6ed15f
-
-3NReconnect, MixedOps-Interrupted-2NReconnect-6k-41m, services, https://www.notion.so/swirldslabs/3NReconnect-MixedOps-Interrupted-2NReconnect-6k-41m-d51de29ec7234747835a045792c37989?pvs=4
-3NReconnect, MixedOps-NI-3NReconnect-6k-30m, services, https://www.notion.so/swirldslabs/3NReconnect-MixedOps-Interrupted-2NReconnect-6k-41m-d51de29ec7234747835a045792c37989?pvs=4
 
 AddressBook, AddressBook-genesis-force-use-config-addressbook-1k-1m, platform, https://www.notion.so/swirldslabs/AddressBook-AddressBook-genesis-force-use-config-addressbook-1k-1m-d1e6e2b85e6e40668e74600d4831ea73
 AddressBook, AddressBook-genesis-normal-1k-1m, platform, https://www.notion.so/swirldslabs/AddressBook-AddressBook-genesis-normal-1k-1m-84779ed3b0b3408ab96fb49f0d56693b
@@ -18,13 +19,12 @@ AddressBook, AddressBook-restart-upgrade-remove-node-1k-4m, platform, https://ww
 
 Assorted, FCMFCQ-Assorted-500-3m, platform, https://www.notion.so/swirldslabs/Assorted-FCMFCQ-Assorted-500-3m-04e1a9d1a735425fa6ce7ce813b83749
 
-BalanceValid, HTS-Basic-AccountBalances-Client-2k-15m, services, https://www.notion.so/swirldslabs/BalanceValid-HTS-Basic-AccountBalances-Client-2k-15m-b9a8f8ebd09c48f78e55bd3a6dbca27c
+BalanceValid, HTS-Basic-AccountBalances-Client-100-15m, services, https://www.notion.so/swirldslabs/BalanceValid-HTS-Basic-AccountBalances-Client-100-15m-a091fbfa10ae4adfa8ce1f9c1c507d69
 BalanceValid, HTS-Restart-AccountBalances-2k-20m, services, https://www.notion.so/swirldslabs/BalanceValid-HTS-Restart-AccountBalances-2k-20m-88537cdefd0e4027adc4de757491bb24
 
 Basic, Crypto-Basic-50k-20m, platform, https://www.notion.so/swirldslabs/Basic-Crypto-Basic-50k-20m-561c84b78b3142d19081f75ddb0a2f79
 Basic, Crypto-LargeTx-50k-20m, platform, https://www.notion.so/swirldslabs/Basic-Crypto-LargeTx-50k-20m-ec9f7e26c7cb4dc3b3c23f7e129f0994
 
-CentOS7_Update, Crypto-Update-Config-1.5k-25m, services, https://www.notion.so/swirldslabs/CentOS7_Update-Crypto-Update-Config-1-5k-25m-0e7fbb16203042e3918df1bfb8e8bb68
 CentOS7_Update, Crypto-Update-Jar-1.5k-25m, services, https://www.notion.so/swirldslabs/CentOS7_Update-Crypto-Update-Jar-1-5k-25m-979f86b5e10c4992ac98da1692000384
 CentOS7_Update, Crypto-Update-Setting-1.5k-15m, services, https://www.notion.so/swirldslabs/CentOS7_Update-Crypto-Update-Setting-1-5k-15m-caf2ab2df6dc48f0ba4a15423e84b802
 CentOS7_Update, Crypto-Update-Setting-Config-1.5k-25m, services, https://www.notion.so/swirldslabs/CentOS7_Update-Crypto-Update-Setting-Config-1-5k-25m-e9554baba84047a4a961a79074623643
@@ -98,22 +98,22 @@ Performance, HCS-Restart-Performance-Random-10k-60m, services, https://www.notio
 
 QueryPerf, Query-Restart-Performance-7N-7C-10k-30m, services, https://www.notion.so/swirldslabs/QueryPerf-Query-Restart-Performance-7N-7C-10k-30m-90abe5f0ce754f4780d6cdd7cec9389d
 
-RHEL7_Update, Crypto-Update-Config-1.5k-25m, services, https://www.notion.so/swirldslabs/RHEL7_Update-Crypto-Update-Config-1-5k-25m-32ad1c7f327549dbb014c4ce1ad32e37
 RHEL7_Update, Crypto-Update-Jar-1.5k-25m, services, https://www.notion.so/swirldslabs/RHEL7_Update-Crypto-Update-Jar-1-5k-25m-11e8ce6b514047dba923612ba34f166b
 RHEL7_Update, Crypto-Update-Setting-1.5k-15m, services, https://www.notion.so/swirldslabs/RHEL7_Update-Crypto-Update-Setting-1-5k-15m-1b0ea7c6bc9449d5bf8d9735b8f8a601?pvs=9
 RHEL7_Update, Crypto-Update-Setting-Config-1.5k-25m, services, https://www.notion.so/swirldslabs/RHEL7_Update-Crypto-Update-Setting-Config-1-5k-25m-d29ef57d0dfa4b5d8fcc6cdd2a56b520
 
-RHEL8_Update, Crypto-Update-Config-1.5k-25m, services, https://www.notion.so/swirldslabs/RHEL8_Update-Crypto-Update-Config-1-5k-25m-d4569615453247fc804367b2c80a6fe4
 RHEL8_Update, Crypto-Update-Jar-1.5k-25m, services, https://www.notion.so/swirldslabs/RHEL8_Update-Crypto-Update-Jar-1-5k-25m-9dfe1285aac044f387521856f831cfdf
 RHEL8_Update, Crypto-Update-Setting-1.5k-15m, services, https://www.notion.so/swirldslabs/RHEL8_Update-Crypto-Update-Setting-1-5k-15m-e473298ef3f946d18f184fe804abc551
 RHEL8_Update, Crypto-Update-Setting-Config-1.5k-25m, services, https://www.notion.so/swirldslabs/RHEL8_Update-Crypto-Update-Setting-Config-1-5k-25m-3a713041ae024e67b75e76815ad237cf
 
 Reconnect, FCM-FallenBehind-1k-20m, platform, https://www.notion.so/swirldslabs/Reconnect-FCM-FallenBehind-1k-20m-bdbca8de39e24860aa25aaf3d71c7f01
 Reconnect, FileOps-NIReconnect-12-21m, services, https://www.notion.so/swirldslabs/Reconnect-FileOps-NIReconnect-12-21m-ebb982b4fb404186ac98c921e53a17b5
+Reconnect, MixedOps-GenesisReconnect-500-15m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-GenesisReconnect-500-15m-d9bfb9a925cb466db9b622ace80fa289
 Reconnect, MixedOps-GenesisReconnect-6k-15m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-GenesisReconnect-6k-15m-4043841860f94b629e7238e4131bc465
 Reconnect, MixedOps-NDReconnect-1.5k-25m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NDReconnect-1-5k-25m-df8817b8d3c2437fa61a2cc0ff5b2bfb
 Reconnect, MixedOps-NI-MultiReconnect-10k-32m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NI-MultiReconnect-10k-32m-bd9f0ef494894310b4bae6f66ad86faa
 Reconnect, MixedOps-NIReconnect-1.5k-25m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnect-1-5k-25m-e7f791b62e52431b9a73539f6a5145b0
+Reconnect, MixedOps-NIReconnect-2k-28m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnect-2k-28m-a49b6253fd56491c945b962c3306aa1d
 Reconnect, MixedOps-NIReconnect-6k-28m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnect-6k-28m-5f652bb45a854f949ee40ddf1a2f9c58
 Reconnect, MixedOps-NIReconnectFail-1.5k-10m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnectFail-1-5k-10m-482531712c6a4a14b4b744705ba708c5
 Reconnect, SmartContractOps-NIReconnect-14-21m, services, https://www.notion.so/swirldslabs/Reconnect-SmartContractOps-NIReconnect-14-21m-0a33c4c3f497450d89c2c62f5d0afd1e
@@ -137,7 +137,6 @@ SimilarStake, FCM-Restart-Stake-2.5k-10m, platform, https://www.notion.so/swirld
 SimilarStake, FCM-SBReconnect-Stake-2.5k-8m, platform, https://www.notion.so/swirldslabs/SimilarStake-FCM-SBReconnect-Stake-2-5k-8m-2f72c1dea04640868ef315c9464a7304
 SimilarStake, NFT-Restart-Stake-2.5k-10m, platform, https://www.notion.so/swirldslabs/SimilarStake-NFT-Restart-Stake-2-5k-10m-ba74a2ef2b7b4a3e88ed51077182c508
 
-Ubuntu1804_Update, Crypto-Update-Config-1.5k-25m, services, https://www.notion.so/swirldslabs/Ubuntu1804_Update-Crypto-Update-Config-1-5k-25m-ed59b8538bc243c29f93c19e3cdb3670
 Ubuntu1804_Update, Crypto-Update-Jar-1.5k-25m, services, https://www.notion.so/swirldslabs/Ubuntu1804_Update-Crypto-Update-Jar-1-5k-25m-b717f28a7f474827806a6733487795fe
 Ubuntu1804_Update, Crypto-Update-Setting-1.5k-15m, services, https://www.notion.so/swirldslabs/Ubuntu1804_Update-Crypto-Update-Setting-1-5k-15m-f9e4cf7f22dd407ba7324be9e6fe3710
 Ubuntu1804_Update, Crypto-Update-Setting-Config-1.5k-25m, services, https://www.notion.so/swirldslabs/Ubuntu1804_Update-Crypto-Update-Setting-Config-1-5k-25m-c57ab146de9242a495a3662472891433
@@ -155,7 +154,6 @@ Update, Crypto-Update-AbortAftPrepare-1.5k-25m, services, https://www.notion.so/
 Update, Crypto-Update-AbortAftUpdateSetting-1.5k-25m, services, https://www.notion.so/swirldslabs/Update-Crypto-Update-AbortAftUpdateSetting-1-5k-25m-33f1be21244c429e927bb55a4365f3c5
 Update, Crypto-Update-AbortAftUpdateSetting-UpdateJar-1.5k-25m, services, https://www.notion.so/swirldslabs/Update-Crypto-Update-AbortAftUpdateSetting-UpdateJar-1-5k-25m-73a97222a6824137a7307e53000544f9
 Update, Crypto-Update-AbortPreUpdateSetting-1.5k-25m, services, https://www.notion.so/swirldslabs/Update-Crypto-Update-AbortPreUpdateSetting-1-5k-25m-4906b56a43944a6a97f9ddaa3e484229
-Update, Crypto-Update-Config-1.5k-25m, services, https://www.notion.so/swirldslabs/Update-Crypto-Update-Config-1-5k-25m-ceee15befdbf4ad28e897d5aa6835887
 Update, Crypto-Update-Jar-1.5k-25m, services, https://www.notion.so/swirldslabs/Update-Crypto-Update-Jar-1-5k-25m-ee2ddf542fb24851971e62acb1164b70
 Update, Crypto-Update-Setting-1.5k-15m, services, https://www.notion.so/swirldslabs/Update-Crypto-Update-Setting-1-5k-15m-d44658a933f8415091a19dc8c55b2963
 Update, Crypto-Update-Setting-Config-1.5k-25m, services, https://www.notion.so/swirldslabs/Update-Crypto-Update-Setting-Config-1-5k-25m-77b7240c0a5b42649c756263a6989e7a

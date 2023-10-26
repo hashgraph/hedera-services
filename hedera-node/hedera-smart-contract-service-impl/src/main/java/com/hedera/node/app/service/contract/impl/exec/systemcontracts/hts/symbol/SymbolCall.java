@@ -19,8 +19,9 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.symbo
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -28,10 +29,12 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /**
  * Implements the token redirect {@code symbol()} call of the HTS system contract.
  */
-public class SymbolCall extends AbstractTokenViewCall {
-
-    public SymbolCall(@NonNull final HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token) {
-        super(enhancement, token);
+public class SymbolCall extends AbstractRevertibleTokenViewCall {
+    public SymbolCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @Nullable final Token token) {
+        super(gasCalculator, enhancement, token);
     }
 
     /**
@@ -40,6 +43,6 @@ public class SymbolCall extends AbstractTokenViewCall {
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull Token token) {
         final var output = SymbolTranslator.SYMBOL.getOutputs().encodeElements(token.symbol());
-        return successResult(output, 0L);
+        return successResult(output, gasCalculator.viewGasRequirement());
     }
 }

@@ -169,7 +169,7 @@ public class PlannedIss implements SelfSerializable, PlannedIncident {
      * String example:
      * </p>
      * <pre>
-     * 1234:0,1+2+3
+     * 1234:0-1+2+3
      * </pre>
      * <p>
      * The first number is a time, in seconds, after genesis, when the ISS will be triggered. Here

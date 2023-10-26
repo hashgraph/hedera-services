@@ -63,7 +63,7 @@ jobs:
       enable-e2e-tests: false
       enable-integration-tests: false
       enable-hapi-tests: false
-      enable-sonar-analysis: true
+      enable-sonar-analysis: false
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}

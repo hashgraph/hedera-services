@@ -21,12 +21,10 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.List;
 
 /**
  * Responsible for building the genesis state.
@@ -50,11 +48,7 @@ public final class GenesisStateBuilder {
 
         platformData.setCreationSoftwareVersion(appVersion);
         platformData.setRound(0);
-        platformData.setNumEventsCons(0);
         platformData.setHashEventsCons(null);
-        platformData.setEvents(new EventImpl[0]);
-        platformData.setMinGenInfo(List.of());
-        platformData.setLastTransactionTimestamp(Instant.ofEpochSecond(0L));
         platformData.setEpochHash(null);
         platformData.setConsensusTimestamp(Instant.ofEpochSecond(0L));
 

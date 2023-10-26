@@ -179,8 +179,6 @@ import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.PrivilegedOpsSuite;
-import com.hedera.services.bdd.suites.throttling.ResetThrottleSuite;
-import com.hedera.services.bdd.suites.throttling.ResetTokenMaxPerAccount;
 import com.hedera.services.bdd.suites.throttling.ThrottleDefValidationSuite;
 import com.hedera.services.bdd.suites.token.Hip17UnhappyTokensSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
@@ -456,8 +454,6 @@ public class SuiteRunner {
             put("CannotDeleteSystemEntitiesSuite", aof(CannotDeleteSystemEntitiesSuite::new));
             /* Throttling */
             put("ThrottleDefValidationSuite", aof(ThrottleDefValidationSuite::new));
-            put("ResetThrottleSuite", aof(ResetThrottleSuite::new));
-            put("ResetTokenMaxPerAccount", aof(ResetTokenMaxPerAccount::new));
             put("CongestionPricingSuite", aof(CongestionPricingSuite::new));
             put("SteadyStateThrottlingCheck", aof(SteadyStateThrottlingCheck::new));
             /* Network metadata. */

@@ -18,9 +18,16 @@ package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.QueryModule;
+import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
@@ -29,9 +36,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.QueryContext;
-import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -40,7 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class QueryModuleTest {
     @Mock
-    private QueryContext context;
+    private CanonicalDispatchPrices canonicalDispatchPrices;
 
     @Mock
     private HederaOperations hederaOperations;
@@ -58,10 +62,10 @@ class QueryModuleTest {
     private HederaEvmBlocks hederaEvmBlocks;
 
     @Mock
-    private ReadableAccountStore readableAccountStore;
+    private TinybarValues tinybarValues;
 
     @Mock
-    private Configuration config;
+    private SystemContractGasCalculator systemContractGasCalculator;
 
     @Test
     void providesExpectedProxyWorldUpdater() {
@@ -87,6 +91,16 @@ class QueryModuleTest {
     @Test
     void providesExpectedHederaEvmContext() {
         assertInstanceOf(
-                HederaEvmContext.class, QueryModule.provideHederaEvmContext(hederaOperations, hederaEvmBlocks));
+                HederaEvmContext.class,
+                QueryModule.provideHederaEvmContext(
+                        hederaOperations, hederaEvmBlocks, tinybarValues, systemContractGasCalculator));
+    }
+
+    @Test
+    void systemContractCalculatorNotUsableForChildDispatchCalculations() {
+        final var calculator = QueryModule.provideSystemContractGasCalculator(canonicalDispatchPrices, tinybarValues);
+        assertThrows(
+                IllegalStateException.class,
+                () -> calculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.APPROVE, AccountID.DEFAULT));
     }
 }

@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.fees.calculation.file.txns;
 
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;
@@ -42,8 +41,7 @@ public class FileCreateResourceUsage implements TxnResourceUsageEstimator {
     }
 
     @Override
-    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final StateView view)
-            throws InvalidTxBodyException {
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final StateView view) {
         final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         return fileOpsUsage.fileCreateUsage(txn, sigUsage);
     }

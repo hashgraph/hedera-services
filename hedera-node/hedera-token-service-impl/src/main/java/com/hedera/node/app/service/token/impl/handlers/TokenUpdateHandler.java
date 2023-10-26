@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CURRENT_TREASURY_STILL_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
@@ -49,7 +48,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -131,7 +129,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var accountStore = context.writableStore(WritableAccountStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var tokenStore = context.writableStore(WritableTokenStore.class);
-        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        final var config = context.configuration();
+        final var tokensConfig = config.getConfigData(TokensConfig.class);
 
         // If the operation has treasury change, then we need to check if the new treasury is valid
         // and if the treasury is not already associated with the token, see if it has auto associations
@@ -147,7 +146,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             // If there is no treasury relationship, then we need to create one if auto associations are available.
             // If not fail
             if (newTreasuryRel == null) {
-                final var newRelation = autoAssociate(newTreasuryAccount, token, accountStore, tokenRelStore, context);
+                final var newRelation = autoAssociate(newTreasuryAccount, token, accountStore, tokenRelStore, config);
                 recordBuilder.addAutomaticTokenAssociation(
                         asTokenAssociation(newRelation.tokenId(), newRelation.accountId()));
             }
@@ -438,12 +437,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var readableStore = feeContext.readableStore(ReadableTokenStore.class);
         final var token = readableStore.get(op.tokenOrThrow());
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            try {
-                return new TokenUpdateResourceUsage(txnEstimateFactory).usageGiven(fromPbj(body), sigValueObj, token);
-            } catch (InvalidTxBodyException e) {
-                throw new HandleException(INVALID_TRANSACTION_BODY);
-            }
-        });
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new TokenUpdateResourceUsage(
+                        txnEstimateFactory)
+                .usageGiven(fromPbj(body), sigValueObj, token));
     }
 }

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
@@ -92,7 +93,7 @@ class EthereumTransactionHandlerTest {
 
     @Test
     void delegatesToCreatedComponentAndExposesEthTxDataCallWithToAddress() {
-        given(factory.create(handleContext)).willReturn(component);
+        given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
         given(component.contextTransactionProcessor()).willReturn(processor);
         given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
@@ -112,7 +113,7 @@ class EthereumTransactionHandlerTest {
 
     @Test
     void delegatesToCreatedComponentAndExposesEthTxDataCreateWithoutToAddress() {
-        given(factory.create(handleContext)).willReturn(component);
+        given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITHOUT_TO_ADDRESS));
         given(component.contextTransactionProcessor()).willReturn(processor);
         given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))

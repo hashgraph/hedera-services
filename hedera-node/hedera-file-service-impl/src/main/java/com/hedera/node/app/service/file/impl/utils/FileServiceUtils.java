@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.file.impl.utils;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_CONTENT_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
@@ -57,10 +56,6 @@ public class FileServiceUtils {
      */
     public static void validateContent(@NonNull byte[] content, @NonNull FilesConfig fileServiceConfig) {
         var contentLength = content.length;
-
-        if (contentLength <= 0) {
-            throw new HandleException(FILE_CONTENT_EMPTY);
-        }
 
         if (contentLength > fileServiceConfig.maxSizeKb() * 1024L) {
             throw new HandleException(MAX_FILE_SIZE_EXCEEDED);
@@ -104,9 +99,8 @@ public class FileServiceUtils {
      * @param context the prehandle context for the transaction.
      */
     public static void validateAndAddRequiredKeys(
-            @Nullable final File file,
-            @Nullable final KeyList transactionKeys,
-            @NonNull final PreHandleContext context) {
+            @Nullable final File file, @Nullable final KeyList transactionKeys, @NonNull final PreHandleContext context)
+            throws PreCheckException {
         if (file != null) {
             KeyList fileKeyList = file.keys();
 
@@ -132,7 +126,7 @@ public class FileServiceUtils {
      * @param context the prehandle context for the transaction.
      */
     public static void validateAndAddRequiredKeysForDelete(
-            @Nullable final File file, @NonNull final PreHandleContext context) {
+            @Nullable final File file, @NonNull final PreHandleContext context) throws PreCheckException {
         if (file != null) {
             KeyList fileKeyList = file.keys();
 

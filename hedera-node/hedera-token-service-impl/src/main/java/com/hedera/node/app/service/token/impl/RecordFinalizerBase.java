@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -78,17 +79,25 @@ public class RecordFinalizerBase {
 
     /**
      * Gets all fungible tokenRelation balances for all modified token relations from the given {@link WritableTokenRelationStore}.
+     *
      * @param writableTokenRelStore the {@link WritableTokenRelationStore} to get the token relation balances from
+     * @param tokenStore
      * @return a {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation balances for all
      * modified token relations
      */
     @NonNull
     protected Map<EntityIDPair, Long> fungibleChangesFrom(
-            @NonNull final WritableTokenRelationStore writableTokenRelStore) {
+            @NonNull final WritableTokenRelationStore writableTokenRelStore,
+            @NonNull final ReadableTokenStore tokenStore) {
         final var fungibleChanges = new HashMap<EntityIDPair, Long>();
         for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
             final var relAcctId = modifiedRel.accountId();
             final var relTokenId = modifiedRel.tokenId();
+            final var token = tokenStore.get(relTokenId);
+            // Add this to fungible token transfer list only if this token is a fungible token
+            if (!token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+                continue;
+            }
             final var modifiedTokenRel = writableTokenRelStore.get(relAcctId, relTokenId);
             final var persistedTokenRel = writableTokenRelStore.getOriginalValue(relAcctId, relTokenId);
 

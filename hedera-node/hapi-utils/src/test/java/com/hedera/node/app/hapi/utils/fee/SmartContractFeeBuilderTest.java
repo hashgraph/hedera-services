@@ -17,9 +17,7 @@
 package com.hedera.node.app.hapi.utils.fee;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
@@ -31,7 +29,7 @@ class SmartContractFeeBuilderTest {
     private final SmartContractFeeBuilder smartContractFeeBuilder = new SmartContractFeeBuilder();
 
     @Test
-    void assertGetFileContentQueryFeeMatrices() throws InvalidTxBodyException {
+    void assertGetFileContentQueryFeeMatrices() {
         var transactionBody = transactionBodyBuilder
                 .setEthereumTransaction(EthereumTransactionBody.newBuilder())
                 .build();
@@ -51,13 +49,5 @@ class SmartContractFeeBuilderTest {
         assertEquals(3481, result.getServicedata().getRbh());
         assertEquals(0, result.getServicedata().getSbh());
         assertEquals(0, result.getServicedata().getTv());
-    }
-
-    @Test
-    void assertGetFileDeleteTxFeeMatricesThrowsException() {
-        var transactionBody = transactionBodyBuilder.build();
-        assertThrows(InvalidTxBodyException.class, () -> {
-            smartContractFeeBuilder.getEthereumTransactionFeeMatrices(transactionBody, signValueObj);
-        });
     }
 }

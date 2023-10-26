@@ -313,7 +313,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 .then();
     }
 
-    //    @HapiTest INSUFFICIENT_TX_FEE, expecting OK
+    @HapiTest
     private HapiSpec duplicateKeysAndSerialsInSameTxnDoesntThrow() {
         return defaultHapiSpec("duplicateKeysAndSerialsInSameTxnDoesntThrow")
                 .given(
@@ -399,7 +399,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 3L).hasSpenderID(SPENDER));
     }
 
-    // @HapiTest  Expected DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL, was INVALID_SIGNATURE!
+    @HapiTest
     private HapiSpec approveForAllSpenderCanDelegateOnNFT() {
         final String delegatingSpender = "delegatingSpender";
         final String newSpender = "newSpender";
@@ -443,11 +443,15 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                         OWNER, NON_FUNGIBLE_TOKEN, delegatingSpender, newSpender, false, List.of(2L))
                                 .signedBy(DEFAULT_PAYER, newSpender)
                                 .hasPrecheck(DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL),
+                        // NOTE: This test in mono-service was failing in pre-check before signing requirements
+                        // (the signing requirements are wrong too).
+                        // In new code since we moved these checks to handle, it failed at signature verification.
+                        // To make it fail with same status code, we need to sign with owner.
                         cryptoApproveAllowance()
                                 .payingWith(DEFAULT_PAYER)
                                 .addDelegatedNftAllowance(
                                         OWNER, NON_FUNGIBLE_TOKEN, newSpender, delegatingSpender, true, List.of())
-                                .signedBy(DEFAULT_PAYER, delegatingSpender)
+                                .signedBy(DEFAULT_PAYER, OWNER)
                                 .hasPrecheck(DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(newSpender),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(delegatingSpender),
@@ -1593,7 +1597,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged());
     }
 
-    //        @HapiTest HapiScheduleCreate not working yet
+    @HapiTest
     private HapiSpec scheduledCryptoApproveAllowanceWorks() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWorks")
                 .given(

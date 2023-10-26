@@ -171,6 +171,7 @@ public class CostOfEverythingSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     HapiSpec txnGetCreateRecord() {
         return customHapiSpec("TxnGetCreateRecord")
                 .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
@@ -181,6 +182,7 @@ public class CostOfEverythingSuite extends HapiSuite {
                 .then(getTxnRecord("txn").logged());
     }
 
+    @HapiTest
     HapiSpec txnGetSmallTransferRecord() {
         return customHapiSpec("TxnGetSmalTransferRecord")
                 .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
@@ -191,6 +193,7 @@ public class CostOfEverythingSuite extends HapiSuite {
                 .then(getTxnRecord("txn").logged());
     }
 
+    @HapiTest
     HapiSpec txnGetLargeTransferRecord() {
         return customHapiSpec("TxnGetLargeTransferRecord")
                 .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))

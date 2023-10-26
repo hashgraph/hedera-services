@@ -110,8 +110,7 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
         given(frame.getRecipientAddress()).willReturn(RECIEVER_ADDRESS);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getAccount(RECIEVER_ADDRESS)).willReturn(receiver);
-        given(receiver.getMutable()).willReturn(mutableReceiver);
-        given(mutableReceiver.getBalance()).willReturn(Wei.ONE);
+        given(receiver.getBalance()).willReturn(Wei.ONE);
         given(gasCalculator.createOperationGasCost(frame)).willReturn(GAS_COST);
 
         final var expected = new Operation.OperationResult(GAS_COST, null);

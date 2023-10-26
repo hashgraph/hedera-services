@@ -19,7 +19,6 @@ package com.swirlds.platform.components.state;
 import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;
@@ -33,10 +32,10 @@ import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesCons
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
@@ -51,6 +50,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     private final String mainClassName;
     private final NodeId selfId;
     private final String swirldName;
+    private final DispatchBuilder dispatchBuilder;
     private PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter;
     private StateToDiskAttemptConsumer stateToDiskAttemptConsumer;
     private NewLatestCompleteStateConsumer newLatestCompleteStateConsumer;
@@ -60,7 +60,6 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     private HaltRequestedConsumer haltRequestedConsumer;
     private FatalErrorConsumer fatalErrorConsumer;
     private PreconsensusEventWriter preconsensusEventWriter;
-    private final Hash currentEpochHash;
 
     /**
      * Gets the current platform status
@@ -75,14 +74,14 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     public DefaultStateManagementComponentFactory(
             @NonNull final PlatformContext context,
             @NonNull final ThreadManager threadManager,
+            @NonNull final DispatchBuilder dispatchBuilder,
             @NonNull final AddressBook addressBook,
             @NonNull final PlatformSigner signer,
             @NonNull final String mainClassName,
             @NonNull final NodeId selfId,
             @NonNull final String swirldName,
             @NonNull final PlatformStatusGetter platformStatusGetter,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @Nullable final Hash currentEpochHash) {
+            @NonNull final StatusActionSubmitter statusActionSubmitter) {
 
         this.context = Objects.requireNonNull(context);
         this.threadManager = Objects.requireNonNull(threadManager);
@@ -93,7 +92,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
         this.swirldName = Objects.requireNonNull(swirldName);
         this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
-        this.currentEpochHash = currentEpochHash;
+        this.dispatchBuilder = Objects.requireNonNull(dispatchBuilder);
     }
 
     @Override
@@ -159,6 +158,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
         return new DefaultStateManagementComponent(
                 context,
                 threadManager,
+                dispatchBuilder,
                 addressBook,
                 signer,
                 mainClassName,
@@ -174,8 +174,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
                 fatalErrorConsumer,
                 preconsensusEventWriter,
                 platformStatusGetter,
-                statusActionSubmitter,
-                currentEpochHash);
+                statusActionSubmitter);
     }
 
     private void verifyInputs() {

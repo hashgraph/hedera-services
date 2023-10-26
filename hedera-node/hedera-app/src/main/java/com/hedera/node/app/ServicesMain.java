@@ -24,7 +24,7 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.platform.SwirldsPlatformBuilder;
+import com.swirlds.platform.PlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
@@ -90,10 +90,16 @@ public class ServicesMain implements SwirldMain {
     public static void main(final String... args) throws Exception {
         BootstrapUtils.setupConstructableRegistry();
         final var registry = ConstructableRegistry.getInstance();
-        new SwirldsPlatformBuilder()
-                .withName("Hedera")
-                .withMain(() -> new Hedera(registry))
-                .withNodeId(args != null && args.length > 0 ? Integer.parseInt(args[0]) : 0)
-                .buildAndStart();
+
+        final Hedera hedera = new Hedera(registry);
+        final NodeId selfId = args != null && args.length > 0 ? new NodeId(Integer.parseInt(args[0])) : new NodeId(0);
+
+        final PlatformBuilder builder = new PlatformBuilder(
+                Hedera.APP_NAME, Hedera.SWIRLD_NAME, hedera.getSoftwareVersion(), hedera::newState, selfId);
+
+        final Platform platform = builder.build();
+        hedera.init(platform, selfId);
+        platform.start();
+        hedera.run();
     }
 }

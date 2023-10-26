@@ -166,7 +166,7 @@ class AbstractStackedLedgerUpdaterTest {
         assertEquals(aBalance, wrapped.trackingLedgers().accounts().get(aAccount, BALANCE));
 
         final var wrappedMutableAccount = wrapped.getAccount(aAddress);
-        wrappedMutableAccount.getMutable().decrementBalance(Wei.of(1));
+        wrappedMutableAccount.decrementBalance(Wei.of(1));
 
         wrapped.commit();
         assertEquals(aBalance - 1, ledgers.accounts().get(aAccount, BALANCE));
@@ -227,9 +227,9 @@ class AbstractStackedLedgerUpdaterTest {
         ledgers.accounts().set(aAccount, BALANCE, aBalance);
 
         final var mutableAccount = subject.getAccount(aAddress);
-        mutableAccount.getMutable().decrementBalance(Wei.of(1));
-        mutableAccount.getMutable().setCode(mockCode);
-        mutableAccount.getMutable().clearStorage();
+        mutableAccount.decrementBalance(Wei.of(1));
+        mutableAccount.setCode(mockCode);
+        mutableAccount.clearStorage();
         subject.trackingLedgers().aliases().link(nonMirrorAddress, aAddress);
         subject.trackingLedgers().aliases().link(otherNonMirrorAddress, bAddress);
 
@@ -237,7 +237,7 @@ class AbstractStackedLedgerUpdaterTest {
 
         final var wrappedMutableAccount = wrapped.getAccount(aAddress);
         assertEquals(mockCode, wrappedMutableAccount.getCode());
-        wrappedMutableAccount.getMutable().decrementBalance(Wei.of(1));
+        wrappedMutableAccount.decrementBalance(Wei.of(1));
         assertEquals(aBalance, ledgers.accounts().get(aAccount, BALANCE));
 
         wrapped.commit();

@@ -35,6 +35,11 @@ import java.util.Objects;
  */
 @SuppressWarnings("unused")
 public final class DataFileMetadata {
+
+    /**
+     * Maximum level of compaction for storage files.
+     */
+    public static final int MAX_COMPACTION_LEVEL = 127;
     /**
      * The file format version, this is ready in case we need to change file format and support
      * multiple versions.
@@ -63,6 +68,8 @@ public final class DataFileMetadata {
     private final Instant creationDate;
     /** Serialization version for data stored in the file */
     private final long serializationVersion;
+    /** The level of compaction this file has. See {@link DataFileCompactor}*/
+    private final byte compactionLevel;
 
     /**
      * Create a new DataFileMetadata with complete set of data
@@ -84,13 +91,16 @@ public final class DataFileMetadata {
             final long dataItemCount,
             final int index,
             final Instant creationDate,
-            final long serializationVersion) {
+            final long serializationVersion,
+            final int compactionLevel) {
         this.fileFormatVersion = fileFormatVersion;
         this.dataItemValueSize = dataItemValueSize;
         this.dataItemCount = dataItemCount;
         this.index = index;
         this.creationDate = creationDate;
         this.serializationVersion = serializationVersion;
+        assert compactionLevel >= 0 && compactionLevel < MAX_COMPACTION_LEVEL;
+        this.compactionLevel = (byte) compactionLevel;
     }
 
     /**
@@ -112,7 +122,7 @@ public final class DataFileMetadata {
             this.dataItemCount = buf.getLong();
             this.index = buf.getInt();
             this.creationDate = Instant.ofEpochSecond(buf.getLong(), buf.getInt());
-            buf.get(); // backwards compatibility: used to be a byte for isMergeFile
+            this.compactionLevel = buf.get();
             this.serializationVersion = buf.getLong();
         }
     }
@@ -130,7 +140,7 @@ public final class DataFileMetadata {
         buf.putInt(this.index);
         buf.putLong(this.creationDate.getEpochSecond());
         buf.putInt(this.creationDate.getNano());
-        buf.put((byte) 0); // backwards compatibility: used to be a byte for isMergeFile
+        buf.put(compactionLevel);
         buf.putLong(this.serializationVersion);
         buf.rewind();
         return buf;
@@ -187,6 +197,10 @@ public final class DataFileMetadata {
     /** Get the serialization version for data stored in this file */
     public long getSerializationVersion() {
         return serializationVersion;
+    }
+
+    public int getCompactionLevel() {
+        return compactionLevel;
     }
 
     /** toString for debugging */

@@ -41,7 +41,6 @@ module com.hedera.node.app {
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
     requires org.apache.logging.log4j;
-    requires org.slf4j;
     requires static com.github.spotbugs.annotations;
 
     exports com.hedera.node.app to

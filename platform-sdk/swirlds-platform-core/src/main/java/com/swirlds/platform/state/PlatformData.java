@@ -25,8 +25,8 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.events.EventSerializationOptions;
 import com.swirlds.common.utility.NonCryptographicHashing;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.RoundCalculationUtils;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -52,9 +51,16 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     public static final long GENESIS_ROUND = 0;
 
     private static final class ClassVersion {
-        public static final int ORIGINAL = 1;
         public static final int EPOCH_HASH = 2;
         public static final int ROUNDS_NON_ANCIENT = 3;
+        /**
+         * - Events are no longer serialized, the field is kept for migration purposes
+         * - Mingen is no longer stored directly, its part of the snapshot
+         * - restart/reconnect now uses a snapshot
+         * - lastTransactionTimestamp is no longer stored directly, its part of the snapshot
+         * - numEventsCons is no longer stored directly, its part of the snapshot
+         * */
+        public static final int CONSENSUS_SNAPSHOT = 4;
     }
 
     /**
@@ -64,12 +70,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * before any transactions are handled.
      */
     private long round = GENESIS_ROUND;
-
-    /**
-     * how many consensus events have there been throughout all of history, up through the round received that this
-     * SignedState represents.
-     */
-    private long numEventsCons;
 
     /**
      * running hash of the hashes of all consensus events have there been throughout all of history, up through the
@@ -93,11 +93,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     private List<MinGenInfo> minGenInfo;
 
     /**
-     * the timestamp of the last transactions handled by this state
-     */
-    private Instant lastTransactionTimestamp;
-
-    /**
      * The version of the application software that was responsible for creating this state.
      */
     private SoftwareVersion creationSoftwareVersion;
@@ -118,6 +113,9 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     private int roundsNonAncient;
 
+    /** A snapshot of the consensus state at the end of the round, used for restart/reconnect */
+    private ConsensusSnapshot snapshot;
+
     public PlatformData() {}
 
     /**
@@ -128,7 +126,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     private PlatformData(final PlatformData that) {
         super(that);
         this.round = that.round;
-        this.numEventsCons = that.numEventsCons;
         this.hashEventsCons = that.hashEventsCons;
         if (that.events != null) {
             this.events = Arrays.copyOf(that.events, that.events.length);
@@ -137,11 +134,11 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         if (that.minGenInfo != null) {
             this.minGenInfo = new ArrayList<>(that.minGenInfo);
         }
-        this.lastTransactionTimestamp = that.lastTransactionTimestamp;
         this.creationSoftwareVersion = that.creationSoftwareVersion;
         this.epochHash = that.epochHash;
         this.nextEpochHash = that.nextEpochHash;
         this.roundsNonAncient = that.roundsNonAncient;
+        this.snapshot = that.snapshot;
     }
 
     /**
@@ -174,25 +171,14 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(round);
-        out.writeLong(numEventsCons);
         out.writeSerializable(hashEventsCons, false);
 
-        out.writeInt(events.length);
-        for (EventImpl event : events) {
-            out.writeOptionalSerializable(event, false, EventSerializationOptions.OMIT_TRANSACTIONS);
-            out.writeSerializable(event.getBaseEventHashedData().getHash(), false);
-        }
         out.writeInstant(consensusTimestamp);
 
-        out.writeInt(minGenInfo.size());
-        for (final MinGenInfo info : minGenInfo) {
-            out.writeLong(info.round());
-            out.writeLong(info.minimumGeneration());
-        }
-        out.writeInstant(lastTransactionTimestamp);
         out.writeSerializable(creationSoftwareVersion, true);
         out.writeSerializable(epochHash, false);
         out.writeInt(roundsNonAncient);
+        out.writeSerializable(snapshot, false);
     }
 
     /**
@@ -201,29 +187,33 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         round = in.readLong();
-        numEventsCons = in.readLong();
+        if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
+            // numEventsCons
+            in.readLong();
+        }
 
         hashEventsCons = in.readSerializable(false, Hash::new);
 
-        int eventNum = in.readInt();
-        events = new EventImpl[eventNum];
-        for (int i = 0; i < eventNum; i++) {
-            events[i] = in.readSerializable(false, EventImpl::new);
-            events[i].getBaseEventHashedData().setHash(in.readSerializable(false, Hash::new));
-            events[i].markAsSignedStateEvent();
+        if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
+            int eventNum = in.readInt();
+            events = new EventImpl[eventNum];
+            for (int i = 0; i < eventNum; i++) {
+                events[i] = in.readSerializable(false, EventImpl::new);
+                events[i].getBaseEventHashedData().setHash(in.readSerializable(false, Hash::new));
+                events[i].markAsSignedStateEvent();
+            }
+            State.linkParents(events);
         }
 
         consensusTimestamp = in.readInstant();
 
-        final int minGenInfoSize = in.readInt();
-        minGenInfo = new LinkedList<>();
-        for (int i = 0; i < minGenInfoSize; i++) {
-            minGenInfo.add(new MinGenInfo(in.readLong(), in.readLong()));
+        if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
+            minGenInfo = MinGenInfo.deserializeList(in);
+
+            // previously this was the last transaction timestamp
+            in.readInstant();
         }
 
-        State.linkParents(events);
-
-        lastTransactionTimestamp = in.readInstant();
         creationSoftwareVersion = in.readSerializable();
 
         if (version >= ClassVersion.EPOCH_HASH) {
@@ -238,6 +228,10 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         } else {
             roundsNonAncient = in.readInt();
         }
+
+        if (version >= ClassVersion.CONSENSUS_SNAPSHOT) {
+            snapshot = in.readSerializable(false, ConsensusSnapshot::new);
+        }
     }
 
     /**
@@ -245,7 +239,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ROUNDS_NON_ANCIENT;
+        return ClassVersion.CONSENSUS_SNAPSHOT;
     }
 
     /**
@@ -297,26 +291,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Get the number of consensus events that have been applied to this state since the beginning of time.
-     *
-     * @return the number of handled consensus events
-     */
-    public long getNumEventsCons() {
-        return numEventsCons;
-    }
-
-    /**
-     * Set the number of consensus events that have been applied to this state since the beginning of time.
-     *
-     * @param numEventsCons the number of handled consensus events
-     * @return this object
-     */
-    public PlatformData setNumEventsCons(final long numEventsCons) {
-        this.numEventsCons = numEventsCons;
-        return this;
-    }
-
-    /**
      * Get the running hash of all events that have been applied to this state since the beginning of time.
      *
      * @return a running hash of events
@@ -343,20 +317,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public EventImpl[] getEvents() {
         return events;
-    }
-
-    /**
-     * Set the events stored in this state.
-     *
-     * @param events an array of events
-     * @return this object
-     */
-    public PlatformData setEvents(final EventImpl[] events) {
-        this.events = events;
-        if (events != null && events.length > 0) {
-            setLastTransactionTimestamp(events[events.length - 1].getLastTransTime());
-        }
-        return this;
     }
 
     /**
@@ -387,18 +347,10 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @return minimum generation info list
      */
     public List<MinGenInfo> getMinGenInfo() {
+        if (snapshot != null) {
+            return snapshot.minGens();
+        }
         return minGenInfo;
-    }
-
-    /**
-     * Get the minimum event generation for each node within this state.
-     *
-     * @param minGenInfo minimum generation info list
-     * @return this object
-     */
-    public PlatformData setMinGenInfo(final List<MinGenInfo> minGenInfo) {
-        this.minGenInfo = minGenInfo;
-        return this;
     }
 
     /**
@@ -428,26 +380,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No MinGen info found in state"))
                 .minimumGeneration();
-    }
-
-    /**
-     * Get the timestamp of the last transaction that was applied during this round.
-     *
-     * @return a timestamp
-     */
-    public Instant getLastTransactionTimestamp() {
-        return lastTransactionTimestamp;
-    }
-
-    /**
-     * Set the timestamp of the last transaction that was applied during this round.
-     *
-     * @param lastTransactionTimestamp a timestamp
-     * @return this object
-     */
-    public PlatformData setLastTransactionTimestamp(final Instant lastTransactionTimestamp) {
-        this.lastTransactionTimestamp = lastTransactionTimestamp;
-        return this;
     }
 
     /**
@@ -521,6 +453,22 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
+     * @return the consensus snapshot for this round
+     */
+    public ConsensusSnapshot getSnapshot() {
+        return snapshot;
+    }
+
+    /**
+     * @param snapshot the consensus snapshot for this round
+     * @return this object
+     */
+    public PlatformData setSnapshot(final ConsensusSnapshot snapshot) {
+        this.snapshot = snapshot;
+        return this;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -533,13 +481,13 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         }
         final PlatformData that = (PlatformData) other;
         return round == that.round
-                && numEventsCons == that.numEventsCons
                 && Objects.equals(hashEventsCons, that.hashEventsCons)
                 && Arrays.equals(events, that.events)
                 && Objects.equals(consensusTimestamp, that.consensusTimestamp)
                 && Objects.equals(minGenInfo, that.minGenInfo)
                 && Objects.equals(epochHash, that.epochHash)
-                && Objects.equals(roundsNonAncient, that.roundsNonAncient);
+                && Objects.equals(roundsNonAncient, that.roundsNonAncient)
+                && Objects.equals(snapshot, that.snapshot);
     }
 
     /**
@@ -557,13 +505,13 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     public String toString() {
         return new ToStringBuilder(this)
                 .append("round", round)
-                .append("numEventsCons", numEventsCons)
                 .append("hashEventsCons", hashEventsCons)
                 .append("events", events)
                 .append("consensusTimestamp", consensusTimestamp)
                 .append("minGenInfo", minGenInfo)
                 .append("epochHash", epochHash)
                 .append("roundsNonAncient", roundsNonAncient)
+                .append("snapshot", snapshot)
                 .toString();
     }
 }

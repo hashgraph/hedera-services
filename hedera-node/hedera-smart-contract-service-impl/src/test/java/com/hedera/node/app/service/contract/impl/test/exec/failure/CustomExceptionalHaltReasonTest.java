@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.failure;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_ENTITY_LIMIT_REACHED;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
@@ -37,6 +38,9 @@ class CustomExceptionalHaltReasonTest {
         assertEquals(
                 ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION,
                 statusFor(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
+        assertEquals(
+                ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED,
+                statusFor(CONTRACT_ENTITY_LIMIT_REACHED));
         assertEquals(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION, statusFor(ExceptionalHaltReason.PRECOMPILE_ERROR));
     }
 

@@ -27,6 +27,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.threading.framework.QueueThread;
+import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -99,7 +100,7 @@ public class PreConsensusEventHandler implements Clearable, Startable {
                 .setQueue(queue)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("thread-curr")
-                .setStopBehavior(swirldStateManager.getStopBehavior())
+                .setStopBehavior(Stoppable.StopBehavior.BLOCKING)
                 .setHandler(swirldStateManager::handlePreConsensusEvent)
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())

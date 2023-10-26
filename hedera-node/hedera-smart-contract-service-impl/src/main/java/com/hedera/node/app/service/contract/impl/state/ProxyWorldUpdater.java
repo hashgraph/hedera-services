@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
@@ -34,6 +35,7 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
+import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -44,7 +46,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -105,6 +107,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Nullable
     protected PendingCreation pendingCreation;
+
+    protected boolean reverted = false;
 
     public ProxyWorldUpdater(
             @NonNull final Enhancement enhancement,
@@ -299,7 +303,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public EvmAccount getAccount(@NonNull final Address address) {
+    public MutableAccount getAccount(@NonNull final Address address) {
         return evmFrameState.getMutableAccount(address);
     }
 
@@ -307,9 +311,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public EvmAccount createAccount(@NonNull final Address address, final long nonce, @NonNull final Wei balance) {
+    public MutableAccount createAccount(@NonNull final Address address, final long nonce, @NonNull final Wei balance) {
         if (pendingCreation == null) {
             throw new IllegalStateException(CANNOT_CREATE + address + " without a pending creation");
+        }
+        if (evmFrameState.numBytecodesInState() + 1 > enhancement.operations().contractCreationLimit()) {
+            throw new ResourceExhaustedException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
         final var number = getValidatedCreationNumber(address, balance, pendingCreation);
         if (pendingCreation.isHapiCreation()) {
@@ -343,9 +350,14 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public void revert() {
         // It might seem like we should have a call to evmFrameState.revert() here; but remember the
-        // EvmFrameState is just a convenience wrapper around the Scope to let us use Besu types, and
-        // ultimately the Scope is the one tracking and managing all changes
+        // EvmFrameState is just a convenience wrapper around the scope to let us use Besu types, and
+        // ultimately the HederaOperations is the one tracking and managing all changes
         enhancement.operations().revert();
+        // Because of the revert-then-commit pattern that Besu uses for force deletions in
+        // AbstractMessageProcessor#clearAccumulatedStateBesidesGasAndOutput(), we have
+        // to take special measures here to avoid popping the savepoint stack twice for
+        // this frame
+        reverted = true;
     }
 
     /**
@@ -355,8 +367,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @SuppressWarnings("java:S125")
     public void commit() {
         // It might seem like we should have a call to evmFrameState.commit() here; but remember the
-        // EvmFrameState is just a mutable view of the scope's state that lets us use Besu types
-        enhancement.operations().commit();
+        // EvmFrameState is just a convenience wrapper around the scope to let us use Besu types, and
+        // ultimately the HederaOperations is the one tracking and managing all changes
+        if (!reverted) {
+            enhancement.operations().commit();
+        }
     }
 
     /**

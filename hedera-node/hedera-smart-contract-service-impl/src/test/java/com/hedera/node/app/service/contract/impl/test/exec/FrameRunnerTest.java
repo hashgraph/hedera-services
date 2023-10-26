@@ -208,8 +208,9 @@ class FrameRunnerTest {
         givenBaseScenarioWithDetails(receiver, false);
     }
 
-    private void givenBaseScenarioWithDetails(@NonNull final Address receiver, final boolean sucess) {
+    private void givenBaseScenarioWithDetails(@NonNull final Address receiver, final boolean success) {
         final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
+        messageFrameStack.addFirst(frame);
         given(frame.getType()).willReturn(MessageFrame.Type.CONTRACT_CREATION);
         given(childFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
         doAnswer(invocation -> {
@@ -235,7 +236,7 @@ class FrameRunnerTest {
                 .getOrCreateConfig();
         given(frame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE)).willReturn(config);
         given(frame.getGasPrice()).willReturn(Wei.of(NETWORK_GAS_PRICE));
-        if (sucess) {
+        if (success) {
             given(frame.getState()).willReturn(MessageFrame.State.COMPLETED_SUCCESS);
             given(frame.getLogs()).willReturn(List.of(BESU_LOG));
             given(frame.getOutputData()).willReturn(pbjToTuweniBytes(OUTPUT_DATA));

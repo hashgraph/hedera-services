@@ -46,6 +46,11 @@ class ReadableScheduleStoreTest extends ScheduleTestBase {
     }
 
     @Test
+    void getsExpectedSize() {
+        assertThat(scheduleStore.numSchedulesInState()).isEqualTo(2);
+    }
+
+    @Test
     void returnsEmptyIfMissingSchedule() {
         final long missingId = testScheduleID.scheduleNum() + 15_000L;
         final ScheduleID missing =

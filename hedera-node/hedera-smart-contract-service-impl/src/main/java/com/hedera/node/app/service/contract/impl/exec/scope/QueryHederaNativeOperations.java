@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
@@ -34,6 +35,11 @@ import javax.inject.Inject;
 @QueryScope
 public class QueryHederaNativeOperations implements HederaNativeOperations {
     private final QueryContext context;
+
+    @Override
+    public boolean checkForCustomFees(@NonNull final CryptoTransferTransactionBody op) {
+        throw new UnsupportedOperationException("Cannot dispatch child transfers in query context");
+    }
 
     @Inject
     public QueryHederaNativeOperations(@NonNull final QueryContext context) {

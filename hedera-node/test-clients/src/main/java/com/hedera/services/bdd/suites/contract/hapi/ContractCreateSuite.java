@@ -262,6 +262,7 @@ public class ContractCreateSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec childCreationsHaveExpectedKeysWithOmittedAdminKey() {
         final AtomicLong firstStickId = new AtomicLong();
         final AtomicLong secondStickId = new AtomicLong();
@@ -463,6 +464,7 @@ public class ContractCreateSuite extends HapiSuite {
                         getAccountBalance(beneficiary).hasTinyBars(3 * (totalToSend / 2)));
     }
 
+    @HapiTest
     private HapiSpec cannotCreateTooLargeContract() {
         ByteString contents;
         try {
@@ -480,7 +482,9 @@ public class ContractCreateSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS * 10).key(FILE_KEY),
                         fileCreate("bytecode")
                                 .path(bytecodePath("CryptoKitties"))
-                                .hasPrecheck(TRANSACTION_OVERSIZE))
+                                .hasPrecheck(TRANSACTION_OVERSIZE)
+                                // Modularized code will not allow a message larger than 6144 bytes at all
+                                .orUnavailableStatus())
                 .when(
                         fileCreate("bytecode").contents("").key(KEY_LIST),
                         UtilVerbs.updateLargeFile(ACCOUNT, "bytecode", contents))
@@ -550,6 +554,7 @@ public class ContractCreateSuite extends HapiSuite {
                                         results -> log.info("Results were {}", CommonUtils.hex((byte[]) results[0]))));
     }
 
+    @HapiTest
     HapiSpec vanillaSuccess() {
         final var contract = "CreateTrivial";
         return defaultHapiSpec("VanillaSuccess")

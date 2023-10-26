@@ -45,6 +45,11 @@ public class LogProcessor {
     private static final Logger logger = LogManager.getLogger(LogProcessor.class);
 
     /**
+     * Defensively abort log processing if there are too many lines in all log files combined.
+     */
+    private static final int MAX_LINES = 500000;
+
+    /**
      * Hidden constructor.
      */
     private LogProcessor() {}
@@ -103,11 +108,18 @@ public class LogProcessor {
 
         final Map<NodeId, List<String>> logLinesByNode = new HashMap<>();
 
+        long lineCount = 0;
         for (final Map.Entry<NodeId, Path> entry : logFilesByNode.entrySet()) {
             final List<String> logLines;
             try (final BufferedReader reader =
                     new BufferedReader(new FileReader(entry.getValue().toFile()))) {
                 logLines = reader.lines().toList();
+            }
+
+            lineCount += logLines.size();
+            if (lineCount > MAX_LINES) {
+                logger.info(LogMarker.CLI.getMarker(), "Aborting log processing because there are too many lines");
+                return;
             }
 
             logLinesByNode.put(entry.getKey(), logLines);

@@ -47,7 +47,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
@@ -81,7 +81,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             List.of(NETWORK_GET_EXECUTION_TIME, GET_ACCOUNT_DETAILS);
 
     private final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
-    private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
     private final QueryChecker queryChecker;
     private final IngestChecker ingestChecker;
@@ -93,13 +92,13 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final Authorizer authorizer;
     private final ExchangeRateManager exchangeRateManager;
     private final FeeManager feeManager;
+    private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
      *
      * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed state depending on the
      * {@link ResponseType}
-     * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param queryChecker the {@link QueryChecker} with specific checks of an ingest-workflow
      * @param ingestChecker the {@link IngestChecker} to handle the crypto transfer
@@ -110,12 +109,12 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param authorizer the {@link Authorizer} to check permissions and special privileges
      * @param exchangeRateManager the {@link ExchangeRateManager} to get the {@link ExchangeRateInfo}
      * @param feeManager the {@link FeeManager} to calculate the fees
+     * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
     public QueryWorkflowImpl(
             @NonNull final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor,
-            @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker queryChecker,
             @NonNull final IngestChecker ingestChecker,
@@ -125,9 +124,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final RecordCache recordCache,
             @NonNull final Authorizer authorizer,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final FeeManager feeManager) {
+            @NonNull final FeeManager feeManager,
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
         this.stateAccessor = requireNonNull(stateAccessor, "stateAccessor must not be null");
-        this.throttleAccumulator = requireNonNull(throttleAccumulator, "throttleAccumulator must not be null");
         this.submissionManager = requireNonNull(submissionManager, "submissionManager must not be null");
         this.ingestChecker = requireNonNull(ingestChecker, "ingestChecker must not be null");
         this.queryChecker = requireNonNull(queryChecker, "queryChecker must not be null");
@@ -138,6 +137,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
+        this.synchronizedThrottleAccumulator =
+                requireNonNull(synchronizedThrottleAccumulator, "hapiThrottling must not be null");
     }
 
     @Override
@@ -170,11 +171,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 throw new PreCheckException(NOT_SUPPORTED);
             }
 
-            // 3. Check query throttles
-            if (throttleAccumulator.shouldThrottleQuery(function, query)) {
-                throw new PreCheckException(BUSY);
-            }
-
             final var state = wrappedState.get();
             final var storeFactory = new ReadableStoreFactory(state);
             final var paymentRequired = handler.requiresNodePayment(responseType);
@@ -186,7 +182,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 allegedPayment = queryHeader.paymentOrThrow();
                 final var configuration = configProvider.getConfiguration();
 
-                // 4.i Ingest checks
+                // 3.i Ingest checks
                 final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment, configuration);
                 txBody = transactionInfo.txBody();
 
@@ -205,10 +201,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 // A super-user does not have to pay for a query and has all permissions
                 if (!authorizer.isSuperUser(payerID)) {
 
-                    // 4.ii Validate CryptoTransfer
+                    // 3.ii Validate CryptoTransfer
                     queryChecker.validateCryptoTransfer(transactionInfo);
 
-                    // 4.iii Check permissions
+                    // 3.iii Check permissions
                     queryChecker.checkPermissions(payerID, function);
 
                     // Get the payer
@@ -219,15 +215,15 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                         throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
                     }
 
-                    // 4.iv Calculate costs
+                    // 3.iv Calculate costs
                     final var queryFees = handler.computeFees(context).totalFee();
                     final var txFees = queryChecker.estimateTxFees(
                             storeFactory, consensusTime, transactionInfo, payer.keyOrThrow(), configuration);
 
-                    // 4.v Check account balances
+                    // 3.v Check account balances
                     queryChecker.validateAccountBalances(accountStore, transactionInfo, payer, queryFees, txFees);
 
-                    // 4.vi Submit payment to platform
+                    // 3.vi Submit payment to platform
                     final var txBytes = Transaction.PROTOBUF.toBytes(allegedPayment);
                     submissionManager.submit(txBody, txBytes);
                 }
@@ -246,8 +242,14 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                         null);
             }
 
-            // 5. Check validity of query
+            // 4. Check validity of query
             handler.validate(context);
+
+            // 5. Check query throttles
+            if (synchronizedThrottleAccumulator.shouldThrottle(function, query)
+                    && !RESTRICTED_FUNCTIONALITIES.contains(function)) {
+                throw new PreCheckException(BUSY);
+            }
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs

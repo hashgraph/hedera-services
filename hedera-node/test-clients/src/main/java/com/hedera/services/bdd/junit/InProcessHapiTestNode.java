@@ -16,12 +16,17 @@
 
 package com.hedera.services.bdd.junit;
 
+import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.PlatformBuilder.DEFAULT_SETTINGS_FILE_NAME;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.node.app.Hedera;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.platform.SwirldsPlatformBuilder;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.PlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -33,9 +38,14 @@ import java.nio.file.Path;
  *
  * <p>Ideally we would host the node with classloader isolation, which would allow us to bring this node down and up
  * again. Unfortunately, the {@link ConstructableRegistry} thwarted my attempt, because it ignores the classloader
- * isolation, discovers all the classloaders (including the system classloader), and chooses its own rank order for
- * what order to look classes up in. That makes it impossible to do classloader isolation. We need to fix that. Until
- * then, in process nodes simply will not work well when stopped.
+ * isolation, discovers all the classloaders (including the system classloader), and chooses its own rank order for what
+ * order to look classes up in. That makes it impossible to do classloader isolation. We need to fix that. Until then,
+ * in process nodes simply will not work well when stopped.
+ *
+ * <p>NOTE!! This class will not work generally, There are several problems that must be fixed. We must have a clean
+ * way to shut things down, which we don't have today. We also need a way to specify the config properties to use
+ * with the Hedera config (which is DIFFERENT from the platform config). Right now that involves setting an environment
+ * variable, which we cannot do when running in process. See ConfigProviderBase.
  */
 public class InProcessHapiTestNode implements HapiTestNode {
     /** The thread in which the Hedera node will run */
@@ -51,8 +61,8 @@ public class InProcessHapiTestNode implements HapiTestNode {
      * Create a new in-process node.
      *
      * @param workingDir The working directory. Must already be created and setup with all the files.
-     * @param nodeId The node ID
-     * @param grpcPort The grpc port to configure the server with.
+     * @param nodeId     The node ID
+     * @param grpcPort   The grpc port to configure the server with.
      */
     public InProcessHapiTestNode(@NonNull final Path workingDir, final long nodeId, final int grpcPort) {
         this.workingDir = requireNonNull(workingDir);
@@ -62,7 +72,9 @@ public class InProcessHapiTestNode implements HapiTestNode {
 
     @Override
     public void start() {
-        if (th != null) throw new IllegalStateException("Node is not stopped, cannot start it!");
+        if (th != null) {
+            throw new IllegalStateException("Node is not stopped, cannot start it!");
+        }
 
         try {
             th = new WorkerThread(workingDir, nodeId, grpcPort);
@@ -95,7 +107,9 @@ public class InProcessHapiTestNode implements HapiTestNode {
     @Override
     public void stop() {
         if (th != null) {
-            if (th.hedera != null) th.hedera.shutdown();
+            if (th.hedera != null) {
+                th.hedera.shutdown();
+            }
             th.interrupt();
             th = null;
         }
@@ -130,24 +144,34 @@ public class InProcessHapiTestNode implements HapiTestNode {
         public void run() {
             BootstrapUtils.setupConstructableRegistry();
             final var cr = ConstructableRegistry.getInstance();
-            new SwirldsPlatformBuilder()
-                    .withNodeId(nodeId)
-                    .withConfigValue("paths.configPath", path("config.txt"))
-                    .withConfigValue("paths.settingsPath", path("settings.txt"))
-                    .withConfigValue("paths.settingsUsedDir", path("."))
-                    .withConfigValue("paths.keysDirPath", path("data/keys"))
-                    .withConfigValue("paths.appsDirPath", path("data/apps"))
-                    .withConfigValue("paths.logPath", path("log4j2.xml"))
-                    .withConfigValue("emergencyRecoveryFileLoadDir", path("data/saved"))
-                    .withConfigValue("state.savedStateDirectory", path("data/saved"))
-                    .withConfigValue("loadKeysFromPfxFiles", false)
-                    .withConfigValue("grpc.port", grpcPort)
-                    .withMain(() -> {
-                        final var h = new Hedera(cr);
-                        hedera = h;
-                        return h;
-                    })
-                    .buildAndStart();
+
+            hedera = new Hedera(cr);
+
+            final PlatformBuilder builder = new PlatformBuilder(
+                    Hedera.APP_NAME,
+                    Hedera.SWIRLD_NAME,
+                    hedera.getSoftwareVersion(),
+                    hedera::newState,
+                    new NodeId(nodeId));
+
+            final ConfigurationBuilder configBuilder = ConfigurationBuilder.create()
+                    .withValue("paths.settingsUsedDir", path("."))
+                    .withValue("paths.keysDirPath", path("data/keys"))
+                    .withValue("paths.appsDirPath", path("data/apps"))
+                    .withValue("paths.logPath", path("log4j2.xml"))
+                    .withValue("emergencyRecoveryFileLoadDir", path("data/saved"))
+                    .withValue("state.savedStateDirectory", path("data/saved"))
+                    .withValue("loadKeysFromPfxFiles", "false")
+                    .withValue("grpc.port", Integer.toString(grpcPort));
+
+            builder.withConfigurationBuilder(configBuilder)
+                    .withSettingsPath(Path.of(path(DEFAULT_SETTINGS_FILE_NAME)))
+                    .withConfigPath(Path.of(path(DEFAULT_CONFIG_FILE_NAME)));
+
+            final Platform platform = builder.build();
+            hedera.init(platform, new NodeId(nodeId));
+            platform.start();
+            hedera.run();
         }
 
         private String path(String path) {

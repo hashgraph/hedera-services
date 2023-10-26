@@ -84,6 +84,6 @@ public class ContextQueryProcessor implements Callable<CallOutcome> {
                 hevmTransaction, worldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, context.configuration());
 
         // Return the outcome, maybe enriched with details of the base commit and Ethereum transaction
-        return new CallOutcome(result.asQueryResultOf(), result.finalStatus());
+        return new CallOutcome(result.asQueryResult(), result.finalStatus());
     }
 }

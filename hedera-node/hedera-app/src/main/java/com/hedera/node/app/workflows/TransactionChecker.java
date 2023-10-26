@@ -67,8 +67,8 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Checks transactions for internal consistency and validity.
@@ -82,7 +82,7 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 public class TransactionChecker {
-    private static final Logger logger = LoggerFactory.getLogger(TransactionChecker.class);
+    private static final Logger logger = LogManager.getLogger(TransactionChecker.class);
 
     private static final int USER_TRANSACTION_NONCE = 0;
 

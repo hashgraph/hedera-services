@@ -27,6 +27,7 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.internal.EventImpl;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -99,7 +100,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
             case ChildIndices.SWIRLD_STATE:
                 return true;
             case ChildIndices.PLATFORM_STATE:
-                return childClassId == PlatformState.CLASS_ID || childClassId == LegacyPlatformState.CLASS_ID;
+                return childClassId == PlatformState.CLASS_ID;
             case ChildIndices.DUAL_STATE:
                 return childClassId == DualStateImpl.CLASS_ID;
             default:
@@ -266,6 +267,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
         final Hash epochHash = data.getNextEpochHash();
         final Hash hashEventsCons = data.getHashEventsCons();
         final List<MinGenInfo> minGenInfo = data.getMinGenInfo();
+        final ConsensusSnapshot snapshot = data.getSnapshot();
 
         final StringBuilder sb = new StringBuilder();
 
@@ -273,7 +275,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
                 .setBordersEnabled(false)
                 .addRow("Round:", data.getRound())
                 .addRow("Timestamp:", data.getConsensusTimestamp())
-                .addRow("Event count:", data.getNumEventsCons())
+                .addRow("Next consensus number:", snapshot == null ? "null" : snapshot.nextConsensusNumber())
                 .addRow("Running event hash:", hashEventsCons)
                 .addRow("Running event mnemonic:", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
                 .addRow("Rounds non-ancient:", data.getRoundsNonAncient())

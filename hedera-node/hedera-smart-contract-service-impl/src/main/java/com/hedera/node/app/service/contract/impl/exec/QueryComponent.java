@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import dagger.BindsInstance;
@@ -29,7 +30,9 @@ public interface QueryComponent {
     @Subcomponent.Factory
     interface Factory {
         QueryComponent create(
-                @BindsInstance @NonNull QueryContext context, @BindsInstance @NonNull Instant approxConsensusTime);
+                @BindsInstance @NonNull QueryContext context,
+                @BindsInstance @NonNull Instant approxConsensusTime,
+                @BindsInstance @NonNull HederaFunctionality functionality);
     }
 
     ContextQueryProcessor contextQueryProcessor();

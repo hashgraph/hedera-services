@@ -232,6 +232,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                                 .hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID));
     }
 
+    @HapiTest
     private HapiSpec insufficientFeeFails() {
         final long adequateQueryPayment = 500_000L;
 
@@ -247,6 +248,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                                 .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
     }
 
+    @HapiTest
     private HapiSpec lowBalanceFails() {
         final long adequateQueryPayment = 500_000_000L;
 
@@ -283,7 +285,6 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     // https://github.com/hashgraph/hedera-services/pull/5485
-    @HapiTest
     private HapiSpec callLocalDoesNotCheckSignaturesNorPayer() {
         return defaultHapiSpec("callLocalDoesNotCheckSignaturesNorPayer")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))

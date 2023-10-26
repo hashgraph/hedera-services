@@ -39,7 +39,6 @@ import org.hyperledger.besu.collections.undo.UndoTable;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.TxValues;
@@ -65,10 +64,7 @@ class AbstractEvmRecordingCreateOperationTest {
     private MessageFrame frame;
 
     @Mock
-    private EvmAccount recipientAccount;
-
-    @Mock
-    private MutableAccount mutableAccount;
+    private MutableAccount recipientAccount;
 
     @Mock
     private HederaEvmWorldUpdater updater;
@@ -142,8 +138,7 @@ class AbstractEvmRecordingCreateOperationTest {
         given(frame.getRecipientAddress()).willReturn(recipient);
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.getAccount(recipient)).willReturn(recipientAccount);
-        given(recipientAccount.getMutable()).willReturn(mutableAccount);
-        given(mutableAccount.getBalance()).willReturn(Wei.ONE);
+        given(recipientAccount.getBalance()).willReturn(Wei.ONE);
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
         verify(frame).pushStackItem(UInt256.ZERO);
@@ -217,8 +212,7 @@ class AbstractEvmRecordingCreateOperationTest {
         given(frame.getRecipientAddress()).willReturn(recipient);
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.getAccount(recipient)).willReturn(recipientAccount);
-        given(recipientAccount.getMutable()).willReturn(mutableAccount);
-        given(mutableAccount.getBalance()).willReturn(Wei.of(value));
+        given(recipientAccount.getBalance()).willReturn(Wei.of(value));
         given(frame.getDepth()).willReturn(1023);
         given(frame.getStackItem(anyInt())).willReturn(Bytes.ofUnsignedLong(1));
         given(externalizer.shouldFailBasedOnLazyCreation(eq(frame), any())).willReturn(true);
@@ -247,8 +241,7 @@ class AbstractEvmRecordingCreateOperationTest {
         given(frame.getRecipientAddress()).willReturn(recipient);
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.getAccount(recipient)).willReturn(recipientAccount);
-        given(recipientAccount.getMutable()).willReturn(mutableAccount);
-        given(mutableAccount.getBalance()).willReturn(Wei.of(value));
+        given(recipientAccount.getBalance()).willReturn(Wei.of(value));
         given(frame.getDepth()).willReturn(1023);
     }
 

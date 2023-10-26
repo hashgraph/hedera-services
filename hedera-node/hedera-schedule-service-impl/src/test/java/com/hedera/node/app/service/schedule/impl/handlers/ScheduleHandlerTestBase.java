@@ -37,11 +37,11 @@ import com.hedera.node.app.service.schedule.impl.ScheduleTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
-import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
@@ -166,6 +166,8 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         given(mockContext.verificationFor(eq(optionKey), any())).willReturn(failedVerification(optionKey));
         given(mockContext.verificationFor(eq(otherKey), any())).willReturn(failedVerification(otherKey));
         given(mockContext.dispatchChildTransaction(any(), eq(ScheduleRecordBuilder.class), any(Predicate.class)))
+                .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
+        given(mockContext.recordBuilder(ScheduleRecordBuilder.class))
                 .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
     }
 

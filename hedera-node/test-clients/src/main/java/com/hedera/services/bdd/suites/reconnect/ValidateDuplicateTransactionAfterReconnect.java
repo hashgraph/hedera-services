@@ -50,14 +50,14 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiSuite {
         return customHapiSpec("validateDuplicateTransactionAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(
-                        sleepFor(Duration.ofSeconds(50).toMillis()),
+                        sleepFor(Duration.ofSeconds(20).toMillis()),
                         getAccountBalance(GENESIS).setNode("0.0.8").unavailableNode())
                 .when(
                         cryptoCreate("repeatedTransaction").via(transactionId),
                         getAccountBalance(GENESIS).setNode("0.0.8").unavailableNode())
                 .then(
                         withLiveNode("0.0.8")
-                                .within(180, TimeUnit.SECONDS)
+                                .within(150, TimeUnit.SECONDS)
                                 .loggingAvailabilityEvery(10)
                                 .sleepingBetweenRetriesFor(5),
                         // the target node is back online, but may enter reconnect session soon,

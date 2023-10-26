@@ -47,6 +47,7 @@ import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.gui.model.GuiModel;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -275,6 +276,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     }
 
     @Override
+    @NonNull
     public SwirldState newState() {
         return new StatsSigningTestingToolState(() -> sttTransactionPool);
     }

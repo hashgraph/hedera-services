@@ -21,7 +21,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SystemExitCode;
@@ -41,6 +40,7 @@ import com.swirlds.platform.components.state.DefaultStateManagementComponentFact
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponentFactory;
 import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.metrics.WiringMetrics;
@@ -78,14 +78,20 @@ public class ManualWiring {
     /** A queue thread that asynchronously invokes NewLatestCompleteStateConsumers */
     private final QueueThread<Runnable> asyncLatestCompleteStateQueue;
 
+    private final DispatchBuilder dispatchBuilder;
+
     public ManualWiring(
-            final PlatformContext platformContext, final ThreadManager threadManager, final AddressBook addressBook) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final DispatchBuilder dispatchBuilder,
+            @NonNull final AddressBook addressBook) {
 
         this.platformContext = platformContext;
         this.threadManager = threadManager;
         this.addressBook = addressBook;
         this.wiringMetrics = new WiringMetrics(platformContext.getMetrics());
         this.shutdown = new Shutdown();
+        this.dispatchBuilder = Objects.requireNonNull(dispatchBuilder);
 
         final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
         asyncLatestCompleteStateQueue = new QueueThreadConfiguration<Runnable>(threadManager)
@@ -123,7 +129,6 @@ public class ManualWiring {
      * @param preconsensusEventWriter            writes preconsensus events to disk
      * @param platformStatusGetter               gets the current platform status
      * @param statusActionSubmitter              enables submitting platform status actions
-     * @param currentEpochHash                   the current epoch hash
      * @return a fully wired {@link StateManagementComponent}
      */
     public @NonNull StateManagementComponent wireStateManagementComponent(
@@ -136,8 +141,7 @@ public class ManualWiring {
             @NonNull final AppCommunicationComponent appCommunicationComponent,
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final PlatformStatusGetter platformStatusGetter,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @Nullable final Hash currentEpochHash) {
+            @NonNull final StatusActionSubmitter statusActionSubmitter) {
 
         Objects.requireNonNull(platformSigner, "platformSigner");
         Objects.requireNonNull(mainClassName, "mainClassName");
@@ -154,14 +158,14 @@ public class ManualWiring {
                 new DefaultStateManagementComponentFactory(
                         platformContext,
                         threadManager,
+                        dispatchBuilder,
                         addressBook,
                         platformSigner,
                         mainClassName,
                         selfId,
                         swirldName,
                         platformStatusGetter,
-                        statusActionSubmitter,
-                        currentEpochHash);
+                        statusActionSubmitter);
 
         stateManagementComponentFactory.newLatestCompleteStateConsumer(ss -> {
             final ReservedSignedState reservedSignedState = ss.reserve("ManualWiring newLatestCompleteStateConsumer");
@@ -199,7 +203,7 @@ public class ManualWiring {
     /**
      * Inform all components that a fatal error has occurred, log the error, and shutdown the JVM.
      */
-    private void handleFatalError(
+    public void handleFatalError(
             @Nullable final String msg, @Nullable final Throwable throwable, @NonNull final SystemExitCode exitCode) {
 
         // Log this fatal error first, to make sure it ends up in the logs, no matter what else happens

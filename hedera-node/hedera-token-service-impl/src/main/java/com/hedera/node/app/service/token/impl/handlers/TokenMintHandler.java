@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
@@ -125,10 +126,16 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
 
         // validate treasury relation exists
-        final var treasuryRel = tokenRelStore.get(token.treasuryAccountId(), tokenId);
+        final var treasuryRel = TokenHandlerHelper.getIfUsable(token.treasuryAccountId(), tokenId, tokenRelStore);
+
         validateTrue(treasuryRel != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        if (token.hasKycKey()) {
+            validateTrue(treasuryRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+        }
 
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
+
+            validateTrue(op.amount() >= 0 && op.metadata().isEmpty(), INVALID_TOKEN_MINT_AMOUNT);
             // we need to know if treasury mint while creation to ignore supply key exist or not.
             long newTotalSupply =
                     mintFungible(token, treasuryRel, op.amount(), false, accountStore, tokenStore, tokenRelStore);
@@ -143,7 +150,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             // validate resources exist for minting nft
             final var meta = op.metadata();
             validateTrue(
-                    nftStore.sizeOfState() + meta.size() < maxAllowedMints, MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
+                    nftStore.sizeOfState() + meta.size() <= maxAllowedMints, MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
             // mint nft
             final var mintedSerials = mintNonFungible(
                     token,
@@ -156,6 +163,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                     nftStore);
             final var recordBuilder = context.recordBuilder(TokenMintRecordBuilder.class);
 
+            recordBuilder.newTotalSupply(tokenStore.get(tokenId).totalSupply());
             recordBuilder.serialNumbers(mintedSerials);
             // TODO: Need to build transfer ownership from list to transfer NFT to treasury
             // This should probably be done in finalize method on token service which constructs the
@@ -232,6 +240,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var copyToken = modifiedToken.copyBuilder();
         final var copyTreasury = treasuryAccount.copyBuilder();
         // Update Token and treasury
+        copyToken.totalSupply(token.totalSupply() + metadataCount);
         copyToken.lastUsedSerialNumber(currentSerialNumber);
         copyTreasury.numberOwnedNfts(treasuryAccount.numberOwnedNfts() + metadataCount);
 
@@ -275,14 +284,10 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var op = feeContext.body().tokenMintOrThrow();
-        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
-        final var tokenType = readableTokenStore.get(op.tokenOrThrow()).tokenType();
-        final var subType = tokenType == TokenType.FUNGIBLE_COMMON
-                ? SubType.TOKEN_FUNGIBLE_COMMON
-                : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+        final var subType = op.amount() > 0 ? SubType.TOKEN_FUNGIBLE_COMMON : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
         final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
-        final var payerId = feeContext.body().transactionIDOrThrow().accountIDOrThrow();
+        final var payerId = feeContext.payer();
         final var payerKey = readableAccountStore.getAccountById(payerId).keyOrThrow();
 
         final var calculator = feeContext.feeCalculator(subType);

@@ -273,7 +273,7 @@ public class LoggingTests {
                 exceptions++;
                 logBuilder.error(EXCEPTION.getMarker(), "error " + i, new RuntimeException());
             } else {
-                logBuilder.info(LogMarker.HEARTBEAT.getMarker(), "heartbeat" + i);
+                logBuilder.info(LogMarker.STARTUP.getMarker(), "startup" + i);
             }
         }
 
@@ -310,7 +310,7 @@ public class LoggingTests {
             if (i % 3 == 0) {
                 logBuilder.error(EXCEPTION.getMarker(), "error " + i, new RuntimeException());
             } else {
-                logBuilder.info(LogMarker.HEARTBEAT.getMarker(), "heartbeat" + i);
+                logBuilder.info(LogMarker.STARTUP.getMarker(), "startup" + i);
             }
         }
 
@@ -349,7 +349,7 @@ public class LoggingTests {
                 exceptions++;
                 logBuilder.error(EXCEPTION.getMarker(), "error " + i, new RuntimeException());
             } else {
-                logBuilder.info(LogMarker.HEARTBEAT.getMarker(), "heartbeat" + i);
+                logBuilder.info(LogMarker.STARTUP.getMarker(), "startup" + i);
             }
         }
 
@@ -381,7 +381,7 @@ public class LoggingTests {
                 exceptions++;
                 logBuilder.error(EXCEPTION.getMarker(), "error " + i, new RuntimeException());
             } else {
-                logBuilder.info(LogMarker.HEARTBEAT.getMarker(), "heartbeat" + i);
+                logBuilder.info(LogMarker.STARTUP.getMarker(), "startup" + i);
             }
         }
 
