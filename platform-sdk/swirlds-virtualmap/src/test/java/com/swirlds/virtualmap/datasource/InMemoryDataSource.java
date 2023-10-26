@@ -364,4 +364,14 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
     public void setFailureOnLeafRecordLookup(boolean failureOnLeafRecordLookup) {
         this.failureOnLeafRecordLookup = failureOnLeafRecordLookup;
     }
+
+    @Override
+    public void enableBackgroundCompaction() {
+        // no op
+    }
+
+    @Override
+    public void stopAndDisableBackgroundCompaction() {
+        // no op
+    }
 }
