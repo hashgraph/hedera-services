@@ -118,10 +118,4 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
     private boolean alreadyCreated(final MutableAccount account) {
         return account.getNonce() > 0 || account.getCode().size() > 0;
     }
-
-    protected void revert(final MessageFrame frame) {
-        super.revert(frame);
-        // clear child records on revert operation
-        ((HederaWorldUpdater) frame.getWorldUpdater()).revertChildRecords();
-    }
 }
