@@ -169,31 +169,31 @@ public class HapiTestEnv {
                     .replace(
                             "</Appenders>\n" + "  <Loggers>",
                             """
-                    <RollingFile name="TestClientRollingFile" fileName="output/test-clients.log"
-                      filePattern="output/test-clients-%d{yyyy-MM-dd}-%i.log.gz">
-                      <PatternLayout>
-                        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
-                      </PatternLayout>
-                      <Policies>
-                        <TimeBasedTriggeringPolicy/>
-                        <SizeBasedTriggeringPolicy size="100 MB"/>
-                      </Policies>
-                      <DefaultRolloverStrategy max="10">
-                        <Delete basePath="output" maxDepth="3">
-                          <IfFileName glob="test-clients-*.log.gz">
-                            <IfLastModified age="P3D"/>
-                          </IfFileName>
-                        </Delete>
-                      </DefaultRolloverStrategy>
-                    </RollingFile>
-                  </Appenders>
-                  <Loggers>
+                                      <RollingFile name="TestClientRollingFile" fileName="output/test-clients.log"
+                                        filePattern="output/test-clients-%d{yyyy-MM-dd}-%i.log.gz">
+                                        <PatternLayout>
+                                          <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-4L %c{1} - %m{nolookups}%n</pattern>
+                                        </PatternLayout>
+                                        <Policies>
+                                          <TimeBasedTriggeringPolicy/>
+                                          <SizeBasedTriggeringPolicy size="100 MB"/>
+                                        </Policies>
+                                        <DefaultRolloverStrategy max="10">
+                                          <Delete basePath="output" maxDepth="3">
+                                            <IfFileName glob="test-clients-*.log.gz">
+                                              <IfLastModified age="P3D"/>
+                                            </IfFileName>
+                                          </Delete>
+                                        </DefaultRolloverStrategy>
+                                      </RollingFile>
+                                    </Appenders>
+                                    <Loggers>
 
-                    <Logger name="com.hedera.services.bdd" level="info" additivity="false">
-                      <AppenderRef ref="Console"/>
-                      <AppenderRef ref="TestClientRollingFile"/>
-                    </Logger>
-                    """)
+                                      <Logger name="com.hedera.services.bdd" level="info" additivity="false">
+                                        <AppenderRef ref="Console"/>
+                                        <AppenderRef ref="TestClientRollingFile"/>
+                                      </Logger>
+                                      """)
                     .replace(
                             "output/",
                             workingDir.resolve("output").toAbsolutePath().normalize() + "/");

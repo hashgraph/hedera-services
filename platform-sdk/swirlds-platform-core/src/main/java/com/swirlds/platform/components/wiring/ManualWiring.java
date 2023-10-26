@@ -31,7 +31,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.payloads.FatalErrorPayload;
-import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
@@ -41,6 +40,7 @@ import com.swirlds.platform.components.state.DefaultStateManagementComponentFact
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponentFactory;
 import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.metrics.WiringMetrics;
@@ -66,7 +66,6 @@ public class ManualWiring {
     private final PlatformContext platformContext;
     private final ThreadManager threadManager;
     private final AddressBook addressBook;
-    private final FreezeManager freezeManager;
     private final Shutdown shutdown;
     /** A list of all formal platform components */
     private final List<PlatformComponent> platformComponentList = new ArrayList<>();
@@ -79,17 +78,20 @@ public class ManualWiring {
     /** A queue thread that asynchronously invokes NewLatestCompleteStateConsumers */
     private final QueueThread<Runnable> asyncLatestCompleteStateQueue;
 
+    private final DispatchBuilder dispatchBuilder;
+
     public ManualWiring(
-            final PlatformContext platformContext,
-            final ThreadManager threadManager,
-            final AddressBook addressBook,
-            final FreezeManager freezeManager) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final DispatchBuilder dispatchBuilder,
+            @NonNull final AddressBook addressBook) {
+
         this.platformContext = platformContext;
         this.threadManager = threadManager;
         this.addressBook = addressBook;
-        this.freezeManager = freezeManager;
         this.wiringMetrics = new WiringMetrics(platformContext.getMetrics());
         this.shutdown = new Shutdown();
+        this.dispatchBuilder = Objects.requireNonNull(dispatchBuilder);
 
         final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
         asyncLatestCompleteStateQueue = new QueueThreadConfiguration<Runnable>(threadManager)
@@ -156,6 +158,7 @@ public class ManualWiring {
                 new DefaultStateManagementComponentFactory(
                         platformContext,
                         threadManager,
+                        dispatchBuilder,
                         addressBook,
                         platformSigner,
                         mainClassName,
@@ -183,13 +186,7 @@ public class ManualWiring {
         });
 
         // FUTURE WORK: make the call to the app communication component asynchronous
-        stateManagementComponentFactory.stateToDiskConsumer((ss, path, success) -> {
-            freezeManager.stateToDisk(ss, path, success);
-            appCommunicationComponent.stateToDiskAttempt(ss, path, success);
-        });
-
-        stateManagementComponentFactory.stateLacksSignaturesConsumer(freezeManager::stateLacksSignatures);
-        stateManagementComponentFactory.newCompleteStateConsumer(freezeManager::stateHasEnoughSignatures);
+        stateManagementComponentFactory.stateToDiskConsumer(appCommunicationComponent);
 
         stateManagementComponentFactory.prioritySystemTransactionConsumer(prioritySystemTransactionSubmitter);
         stateManagementComponentFactory.haltRequestedConsumer(haltRequestedConsumer);
@@ -206,7 +203,7 @@ public class ManualWiring {
     /**
      * Inform all components that a fatal error has occurred, log the error, and shutdown the JVM.
      */
-    private void handleFatalError(
+    public void handleFatalError(
             @Nullable final String msg, @Nullable final Throwable throwable, @NonNull final SystemExitCode exitCode) {
 
         // Log this fatal error first, to make sure it ends up in the logs, no matter what else happens

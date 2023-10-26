@@ -40,9 +40,14 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
@@ -59,6 +64,9 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     private boolean invalidateEthData = false;
     private Optional<Long> maxGasAllowance = Optional.of(ONE_HUNDRED_HBARS);
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
+
+    @Nullable
+    private BiConsumer<HapiSpec, EthereumTransactionBody.Builder> spec;
 
     public HapiEthereumContractCreate exposingNumTo(LongConsumer obs) {
         newNumObserver = Optional.of(obs);
@@ -81,8 +89,10 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         super.omitAdminKey = true;
     }
 
-    public HapiEthereumContractCreate(String contract, String abi, Object... args) {
-        super(contract, abi, args);
+    public HapiEthereumContractCreate(
+            @NonNull final String contract, @NonNull final BiConsumer<HapiSpec, EthereumTransactionBody.Builder> spec) {
+        super(contract);
+        this.spec = spec;
         this.payer = Optional.of(RELAYER);
         super.omitAdminKey = true;
     }
@@ -175,6 +185,15 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
+        if (this.spec != null) {
+            return b -> {
+                try {
+                    b.setEthereumTransaction(explicitEthereumTransaction(spec));
+                } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            };
+        }
         bytecodeFileFn.ifPresent(stringSupplier -> bytecodeFile = Optional.of(stringSupplier.get()));
         if (bytecodeFile.isEmpty()) {
             setBytecodeToDefaultContract(spec);
@@ -216,7 +235,6 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var senderAddress = ByteString.copyFrom(extractedSignatures.address());
         spec.registry().saveBytes(ETH_SENDER_ADDRESS, senderAddress);
 
-        System.out.println("Size = " + callData.length + " vs " + MAX_CALL_DATA_SIZE);
         if (fileContents.toByteArray().length > MAX_CALL_DATA_SIZE) {
             ethFileID = Optional.of(TxnUtils.asFileId(bytecodeFile.get(), spec));
             signedEthTxData = signedEthTxData.replaceCallData(new byte[] {});
@@ -250,5 +268,13 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     @Override
     protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::createContract;
+    }
+
+    private EthereumTransactionBody explicitEthereumTransaction(HapiSpec spec)
+            throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        return spec.txns()
+                .<EthereumTransactionBody, EthereumTransactionBody.Builder>body(
+                        EthereumTransactionBody.class,
+                        b -> Objects.requireNonNull(this.spec).accept(spec, b));
     }
 }

@@ -17,7 +17,6 @@
 package com.swirlds.platform.components;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.event.creation.ParentBasedCreationRule;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -60,7 +59,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * <li> If the weight counted is below 1/3 then increase the threshold by 1 and go to step 2. </li>
  * </ol>
  */
-public interface CriticalQuorum extends EventAddedObserver, ParentBasedCreationRule {
+public interface CriticalQuorum extends EventAddedObserver {
 
     /**
      * Checks whether the node with the supplied id is in critical quorum based on the number of events

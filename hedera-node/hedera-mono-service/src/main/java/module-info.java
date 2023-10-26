@@ -235,6 +235,8 @@ module com.hedera.node.app.service.mono {
     opens com.hedera.node.app.service.mono.state.migration to
             com.swirlds.common;
 
+    exports com.hedera.node.app.service.mono.fees.calculation.meta;
+
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.evm;
@@ -279,6 +281,5 @@ module com.hedera.node.app.service.mono {
     requires org.hyperledger.besu.secp256k1;
     requires com.sun.jna;
     requires org.eclipse.collections.impl;
-    requires org.slf4j;
     requires static com.github.spotbugs.annotations;
 }

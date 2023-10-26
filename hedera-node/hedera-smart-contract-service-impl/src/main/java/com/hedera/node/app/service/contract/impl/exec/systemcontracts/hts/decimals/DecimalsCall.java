@@ -22,8 +22,9 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hed
 
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -31,11 +32,14 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /**
  * Implements the token redirect {@code decimals()} call of the HTS system contract.
  */
-public class DecimalsCall extends AbstractTokenViewCall {
+public class DecimalsCall extends AbstractRevertibleTokenViewCall {
     private static final int MAX_REPORTABLE_DECIMALS = 0xFF;
 
-    public DecimalsCall(@NonNull HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token) {
-        super(enhancement, token);
+    public DecimalsCall(
+            @NonNull HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final SystemContractGasCalculator gasCalculator,
+            @Nullable final Token token) {
+        super(gasCalculator, enhancement, token);
     }
 
     /**
@@ -43,12 +47,13 @@ public class DecimalsCall extends AbstractTokenViewCall {
      */
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
-        // TODO - gas calculation
         if (token.tokenType() != TokenType.FUNGIBLE_COMMON) {
-            return revertResult(INVALID_TOKEN_ID, 0L);
+            return revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
         } else {
             final var decimals = Math.min(MAX_REPORTABLE_DECIMALS, token.decimals());
-            return successResult(DecimalsTranslator.DECIMALS.getOutputs().encodeElements(decimals), 0L);
+            return successResult(
+                    DecimalsTranslator.DECIMALS.getOutputs().encodeElements(decimals),
+                    gasCalculator.viewGasRequirement());
         }
     }
 }

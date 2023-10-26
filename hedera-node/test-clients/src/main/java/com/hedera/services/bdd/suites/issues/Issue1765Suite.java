@@ -140,18 +140,20 @@ public class Issue1765Suite extends HapiSuite {
                 .given(flattened(
                         withOpContext((spec, ctxLog) -> spec.registry().saveFileId(INVALID_FILE, asFile("0.0.0"))),
                         newKeyNamed(INVALID_FILE).type(KeyFactory.KeyType.LIST),
-                        takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
+                        takeBalanceSnapshots(FUNDING, GENESIS, STAKING_REWARD, NODE)))
                 .when(fileUpdate(INVALID_FILE)
                         .memo(THE_MEMO_IS)
                         .fee(ADEQUATE_FEE)
                         .via(INVALID_UPDATE_TXN)
                         .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID))
                 .then(
-                        validateTransferListForBalances(INVALID_UPDATE_TXN, List.of(FUNDING, GENESIS, NODE)),
+                        validateTransferListForBalances(
+                                INVALID_UPDATE_TXN, List.of(FUNDING, GENESIS, STAKING_REWARD, NODE)),
                         getTxnRecord(INVALID_UPDATE_TXN)
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
 
+    @HapiTest
     private static HapiSpec recordOfInvalidFileAppendSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_FILE = IMAGINARY;
@@ -161,7 +163,7 @@ public class Issue1765Suite extends HapiSuite {
                 .given(flattened(
                         withOpContext((spec, ctxLog) -> spec.registry().saveFileId(INVALID_FILE, asFile("0.0.0"))),
                         newKeyNamed(INVALID_FILE).type(KeyFactory.KeyType.LIST),
-                        takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
+                        takeBalanceSnapshots(FUNDING, GENESIS, STAKING_REWARD, NODE)))
                 .when(fileAppend(INVALID_FILE)
                         .memo(THE_MEMO_IS)
                         .content("Some more content.")
@@ -169,7 +171,8 @@ public class Issue1765Suite extends HapiSuite {
                         .via(INVALID_APPEND_TXN)
                         .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID))
                 .then(
-                        validateTransferListForBalances(INVALID_APPEND_TXN, List.of(FUNDING, GENESIS, NODE)),
+                        validateTransferListForBalances(
+                                INVALID_APPEND_TXN, List.of(FUNDING, GENESIS, STAKING_REWARD, NODE)),
                         getTxnRecord(INVALID_APPEND_TXN)
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }

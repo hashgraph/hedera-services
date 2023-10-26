@@ -17,10 +17,12 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,14 +31,15 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /**
  * Implementation support for view calls that require an extant token and NFT to succeed.
  */
-public abstract class AbstractNftViewCall extends AbstractTokenViewCall {
+public abstract class AbstractNftViewCall extends AbstractRevertibleTokenViewCall {
     private final long serialNo;
 
     protected AbstractNftViewCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final Token token,
             final long serialNo) {
-        super(enhancement, token);
+        super(gasCalculator, enhancement, token);
         this.serialNo = serialNo;
     }
 
@@ -46,10 +49,9 @@ public abstract class AbstractNftViewCall extends AbstractTokenViewCall {
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
-        // TODO - gas calculation
         final var nft = nativeOperations().getNft(token.tokenIdOrThrow().tokenNum(), serialNo);
         if (nft == null) {
-            return HederaSystemContract.FullResult.revertResult(INVALID_NFT_ID, 0L);
+            return revertResult(INVALID_NFT_ID, gasCalculator.viewGasRequirement());
         } else {
             return resultOfViewingNft(token, nft);
         }

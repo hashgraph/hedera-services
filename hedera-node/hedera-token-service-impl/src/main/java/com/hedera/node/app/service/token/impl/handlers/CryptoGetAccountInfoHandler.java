@@ -22,7 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.tokenRelationshipsOf;
-import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl.isOfEvmAddressSize;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -31,7 +31,6 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.token.AccountInfo;
 import com.hedera.hapi.node.token.CryptoGetInfoQuery;
@@ -152,8 +151,11 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         } else {
             final var info = AccountInfo.newBuilder();
             info.ledgerId(ledgerConfig.id());
-            if (!isEmpty(account.key())) info.key(account.key());
-            info.accountID(accountID);
+            info.key(account.key());
+
+            // Set this field with the account's id since that's guaranteed to be a numeric 0.0.X id;
+            // the request might have been made using a 0.0.<alias> id
+            info.accountID(account.accountIdOrThrow());
             info.receiverSigRequired(account.receiverSigRequired());
             info.deleted(account.deleted());
             info.memo(account.memo());
@@ -165,7 +167,9 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             info.maxAutomaticTokenAssociations(account.maxAutoAssociations());
             info.ethereumNonce(account.ethereumNonce());
             //  info.proxyAccountID(); Deprecated
-            info.alias(account.alias());
+            if (!isOfEvmAddressSize(account.alias())) {
+                info.alias(account.alias());
+            }
             info.tokenRelationships(
                     tokenRelationshipsOf(account, tokenStore, tokenRelationStore, tokensConfig.maxRelsPerInfoQuery()));
             info.stakingInfo(AccountSummariesApi.summarizeStakingInfo(
@@ -187,9 +191,8 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         final var accountId = op.accountIDOrThrow();
         final var account = accountStore.getAccountById(accountId);
 
-        return queryContext
-                .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj ->
-                        new GetAccountInfoResourceUsage(cryptoOpsUsage, null, null, null).usageGiven(query, account));
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetAccountInfoResourceUsage(
+                        cryptoOpsUsage, null, null, null)
+                .usageGiven(query, account));
     }
 }

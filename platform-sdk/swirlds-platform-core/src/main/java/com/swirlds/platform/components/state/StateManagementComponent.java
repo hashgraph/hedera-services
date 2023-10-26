@@ -18,10 +18,8 @@ package com.swirlds.platform.components.state;
 
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.common.output.NewSignedStateFromTransactionsConsumer;
-import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
 import com.swirlds.platform.components.common.output.SignedStateToLoadConsumer;
 import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
-import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.signed.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -42,7 +40,6 @@ import java.util.List;
 public interface StateManagementComponent
         extends PlatformComponent,
                 SignedStateFinder,
-                RoundAppliedToStateConsumer,
                 SignedStateToLoadConsumer,
                 NewSignedStateFromTransactionsConsumer,
                 LatestSignedStateProvider {
@@ -114,10 +111,4 @@ public interface StateManagementComponent
      */
     @NonNull
     SignedStateManager getSignedStateManager();
-
-    /**
-     * Get the consensus hash manager.
-     */
-    @NonNull
-    ConsensusHashManager getConsensusHashManager();
 }

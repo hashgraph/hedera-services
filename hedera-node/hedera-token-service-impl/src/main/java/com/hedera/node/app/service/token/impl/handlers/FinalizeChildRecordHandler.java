@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRew
 
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -54,6 +55,7 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final var writableAccountStore = context.writableStore(WritableAccountStore.class);
         final var writableTokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var writableNftStore = context.writableStore(WritableNftStore.class);
+        final var tokenStore = context.readableStore(ReadableTokenStore.class);
 
         /* ------------------------- Hbar changes from child transaction  ------------------------- */
         final var hbarChanges = hbarChangesFrom(writableAccountStore);
@@ -69,12 +71,12 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final ArrayList<TokenTransferList> tokenTransferLists;
 
         // ---------- fungible token transfers -------------------------
-        final var fungibleChanges = fungibleChangesFrom(writableTokenRelStore);
+        final var fungibleChanges = fungibleChangesFrom(writableTokenRelStore, tokenStore);
         final var fungibleTokenTransferLists = asTokenTransferListFrom(fungibleChanges);
         tokenTransferLists = new ArrayList<>(fungibleTokenTransferLists);
 
         // ---------- nft transfers -------------------------
-        final var nftChanges = nftChangesFrom(writableNftStore);
+        final var nftChanges = nftChangesFrom(writableNftStore, tokenStore);
         final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);
         tokenTransferLists.addAll(nftTokenTransferLists);
 

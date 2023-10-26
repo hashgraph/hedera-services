@@ -59,8 +59,6 @@ public final class ConfigMappings {
             new ConfigMapping("prometheus.endpointEnabled", "prometheusEndpointEnabled"),
             new ConfigMapping("prometheus.endpointPortNumber", "prometheusEndpointPortNumber"),
             new ConfigMapping("prometheus.endpointMaxBacklogAllowed", "prometheusEndpointMaxBacklogAllowed"),
-            new ConfigMapping("paths.configPath", "configPath"),
-            new ConfigMapping("paths.settingsPath", "settingsPath"),
             new ConfigMapping("paths.settingsUsedDir", "settingsUsedDir"),
             new ConfigMapping("paths.keysDirPath", "keysDirPath"),
             new ConfigMapping("paths.appsDirPath", "appsDirPath"),
@@ -80,7 +78,6 @@ public final class ConfigMappings {
             new ConfigMapping("thread.threadPriorityNonSync", "threadPriorityNonSync"),
             new ConfigMapping("thread.threadDumpPeriodMs", "threadDumpPeriodMs"),
             new ConfigMapping("thread.threadDumpLogDir", "threadDumpLogDir"),
-            new ConfigMapping("reconnect.asyncStreamTimeout", "reconnect.asyncStreamTimeoutMilliseconds"),
             new ConfigMapping("reconnect.asyncOutputStreamFlush", "reconnect.asyncOutputStreamFlushMilliseconds"),
             new ConfigMapping("reconnect.maxAckDelay", "reconnect.maxAckDelayMilliseconds"));
 

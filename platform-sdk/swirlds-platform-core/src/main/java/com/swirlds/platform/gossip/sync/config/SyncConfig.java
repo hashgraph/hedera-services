@@ -29,10 +29,17 @@ import com.swirlds.config.api.ConfigProperty;
  *                                        algorithm is active (milliseconds)
  * @param hashOnGossipThreads             if true, hash events on gossip threads. If false, events are hashed on the
  *                                        event intake thread.
+ * @param waitForEventsInIntake           if true, then a node will not sync again with the same peer until all
+ *                                        previously received events from that peer have fully traversed the intake
+ *                                        pipeline
+ * @param criticalQuorumEnabled           if true, use the critical quorum heuristic when deciding if we should sync
+ *                                        with a peer
  */
 @ConfigData("sync")
 public record SyncConfig(
         @ConfigProperty(defaultValue = "25") int syncSleepAfterFailedNegotiation,
         @ConfigProperty(defaultValue = "17") int syncProtocolPermitCount,
         @ConfigProperty(defaultValue = "1000") int syncProtocolHeartbeatPeriod,
-        @ConfigProperty(defaultValue = "true") boolean hashOnGossipThreads) {}
+        @ConfigProperty(defaultValue = "true") boolean hashOnGossipThreads,
+        @ConfigProperty(defaultValue = "true") boolean waitForEventsInIntake,
+        @ConfigProperty(defaultValue = "false") boolean criticalQuorumEnabled) {}

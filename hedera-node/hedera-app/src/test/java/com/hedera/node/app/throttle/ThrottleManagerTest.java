@@ -140,7 +140,7 @@ class ThrottleManagerTest {
         // then
         Assertions.assertThat(exception).isInstanceOf(HandleException.class);
         Assertions.assertThat(((HandleException) exception).getStatus())
-                .isEqualTo(ResponseCodeEnum.INVALID_TRANSACTION);
+                .isEqualTo(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
     }
 
     @Test
@@ -167,7 +167,7 @@ class ThrottleManagerTest {
         // then
         Assertions.assertThat(exception).isInstanceOf(HandleException.class);
         Assertions.assertThat(((HandleException) exception).getStatus())
-                .isEqualTo(ResponseCodeEnum.INVALID_TRANSACTION);
+                .isEqualTo(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
     }
 
     @Test

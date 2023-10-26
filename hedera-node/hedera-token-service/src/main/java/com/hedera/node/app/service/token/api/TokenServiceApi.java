@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.api;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -28,8 +28,6 @@ import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBu
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Defines mutations that can't be expressed as a {@link com.hedera.hapi.node.transaction.TransactionBody} dispatch.
@@ -38,6 +36,14 @@ import java.util.Set;
  * If, for example, we extract a {@code StakingService}, this API would likely need to expand.
  */
 public interface TokenServiceApi {
+    /**
+     * Checks if the given transfer operation uses custom fees.
+     *
+     * @param op the transfer operation check
+     * @return true if the given transaction body has custom fees, false otherwise
+     */
+    boolean checkForCustomFees(@NonNull CryptoTransferTransactionBody op);
+
     /**
      * Deletes the account with the given id and transfers any remaining hbar balance to the given obtainer id.
      *
@@ -124,27 +130,20 @@ public interface TokenServiceApi {
     void transferFromTo(@NonNull AccountID from, @NonNull AccountID to, long amount);
 
     /**
-     * Returns a list of all the account ids that were modified by this {@link TokenServiceApi}.
+     * Returns a summary of the changes made to contract state.
      *
-     * @return the account ids that were modified by this {@link TokenServiceApi}
+     * @return a summary of the changes made to contract state
      */
-    Set<AccountID> modifiedAccountIds();
-
-    /**
-     * Returns a list of the contract nonces updated by this {@link TokenServiceApi}.
-     *
-     * @return a list of all the account ids that were modified by this {@link TokenServiceApi}
-     */
-    List<ContractNonceInfo> updatedContractNonces();
+    ContractChangeSummary summarizeContractChanges();
 
     /**
      * Updates the storage metadata for the given contract.
      *
      * @param accountId the id of the contract
-     * @param firstKey       the first key in the storage linked list, empty if the storage is empty
+     * @param firstKey       the first key in the storage linked list, null if the storage is empty
      * @param netChangeInSlotsUsed      the net change in the number of storage slots used by the contract
      */
-    void updateStorageMetadata(@NonNull AccountID accountId, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
+    void updateStorageMetadata(@NonNull AccountID accountId, @Nullable Bytes firstKey, int netChangeInSlotsUsed);
 
     /**
      * Charges the payer the given network fee, and records that fee in the given record builder.
@@ -177,4 +176,13 @@ public interface TokenServiceApi {
      * @param recordBuilder the record builder to record the fees in
      */
     void refundFees(@NonNull AccountID receiver, @NonNull Fees fees, @NonNull final FeeRecordBuilder recordBuilder);
+
+    /**
+     * Returns the number of storage slots used by the given account before any changes were made via
+     * this {@link TokenServiceApi}.
+     *
+     * @param id the id of the account
+     * @return the number of storage slots used by the given account before any changes were made
+     */
+    long originalKvUsageFor(@NonNull AccountID id);
 }

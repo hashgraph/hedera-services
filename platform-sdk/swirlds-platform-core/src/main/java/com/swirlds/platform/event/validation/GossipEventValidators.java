@@ -17,7 +17,10 @@
 package com.swirlds.platform.event.validation;
 
 import com.swirlds.platform.event.GossipEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A {@link GossipEventValidator} which combines multiple validators to provide a single output
@@ -25,8 +28,26 @@ import java.util.List;
 public class GossipEventValidators implements GossipEventValidator {
     private final List<GossipEventValidator> validators;
 
-    public GossipEventValidators(final List<GossipEventValidator> validators) {
-        this.validators = validators;
+    public GossipEventValidators(@NonNull final List<GossipEventValidator> validators) {
+        this.validators = new ArrayList<>(Objects.requireNonNull(validators));
+    }
+
+    /**
+     * Replace an existing validator with a new one
+     *
+     * @param validatorName the name of the validator to replace
+     * @param replacement   the new validator
+     */
+    public void replaceValidator(@NonNull String validatorName, @NonNull GossipEventValidator replacement) {
+        Objects.requireNonNull(validatorName);
+        Objects.requireNonNull(replacement);
+        for (int i = 0; i < validators.size(); i++) {
+            if (validators.get(i).validatorName().equals(validatorName)) {
+                validators.set(i, replacement);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("No validator with name " + validatorName + " found");
     }
 
     /**

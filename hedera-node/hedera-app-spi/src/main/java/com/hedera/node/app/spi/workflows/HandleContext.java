@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -24,10 +25,12 @@ import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -115,6 +118,20 @@ public interface HandleContext {
      */
     @Nullable
     Key payerKey();
+
+    /**
+     * Returns the Hedera resource prices (in thousandths of a tinycent) for the given {@link SubType} of
+     * the given {@link HederaFunctionality}. The contract service needs this information to determine both the
+     * gas price and the cost of storing logs (a function of the {@code rbh} price, which may itself vary by
+     * contract operation type).
+     *
+     * @param functionality the {@link HederaFunctionality} of interest
+     * @param subType the {@link SubType} of interest
+     * @return the corresponding Hedera resource prices
+     */
+    @NonNull
+    FunctionalityResourcePrices resourcePricesFor(
+            @NonNull final HederaFunctionality functionality, @NonNull final SubType subType);
 
     /**
      * Get a calculator for calculating fees for the current transaction, and its {@link SubType}. Most transactions
@@ -370,16 +387,6 @@ public interface HandleContext {
     }
 
     /**
-     * @deprecated Use {@link #dispatchPrecedingTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    @NonNull
-    default <T> T dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass) {
-        return dispatchPrecedingTransaction(
-                txBody, recordBuilderClass, key -> verificationFor(key).passed());
-    }
-
-    /**
      * Dispatches a child transaction.
      *
      * <p>A child transaction depends on the current transaction. That means if the current transaction fails,
@@ -400,7 +407,7 @@ public interface HandleContext {
      * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
      * @param callback           a {@link Predicate} callback function that will observe each primitive key
-     * @param syntheticPayer   the payer of the child transaction
+     * @param syntheticPayerId   the payer of the child transaction
      * @return the record builder of the child transaction
      * @throws NullPointerException     if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
@@ -411,7 +418,20 @@ public interface HandleContext {
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
             @NonNull Predicate<Key> callback,
-            @NonNull AccountID syntheticPayer);
+            @NonNull AccountID syntheticPayerId);
+
+    /**
+     * Dispatches the fee calculation for a child transaction (that might then be dispatched).
+     *
+     * <p>The override payer id still matters for this purpose, because a transaction can add
+     * state whose lifetime is scoped to a payer account (the main current example is a
+     * {@link HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE} dispatch).
+     *
+     * @param txBody the {@link TransactionBody} of the child transaction to compute fees for
+     * @param syntheticPayerId the child payer
+     * @return the calculated fees
+     */
+    Fees dispatchComputeFees(@NonNull TransactionBody txBody, @NonNull AccountID syntheticPayerId);
 
     /**
      * Dispatches a child transaction that already has a transaction ID.
@@ -435,23 +455,6 @@ public interface HandleContext {
     }
 
     /**
-     * @deprecated Use {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    @NonNull
-    default <T> T dispatchChildTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @NonNull VerificationAssistant callback) {
-        throwIfMissingPayerId(txBody);
-        return dispatchChildTransaction(
-                txBody,
-                recordBuilderClass,
-                key -> callback.test(key, verificationFor(key)),
-                txBody.transactionIDOrThrow().accountIDOrThrow());
-    }
-
-    /**
      * Dispatches a removable child transaction.
      *
      * <p>A removable child transaction depends on the current transaction. It behaves in almost all aspects like a
@@ -466,7 +469,7 @@ public interface HandleContext {
      * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
      * @param callback           a {@link Predicate} callback function that will observe each primitive key
-     * @param payer
+     * @param syntheticPayerId  the payer of the child transaction
      * @return the record builder of the child transaction
      * @throws NullPointerException     if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
@@ -477,7 +480,7 @@ public interface HandleContext {
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
             @NonNull Predicate<Key> callback,
-            AccountID payer);
+            @NonNull AccountID syntheticPayerId);
 
     /**
      * Dispatches a removable child transaction that already has a transaction ID.
@@ -498,19 +501,6 @@ public interface HandleContext {
                 recordBuilderClass,
                 callback,
                 txBody.transactionIDOrThrow().accountIDOrThrow());
-    }
-
-    /**
-     * @deprecated Use {@link #dispatchRemovableChildTransaction(TransactionBody, Class, Predicate, AccountID)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    @NonNull
-    default <T> T dispatchRemovableChildTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @NonNull VerificationAssistant callback) {
-        return dispatchRemovableChildTransaction(
-                txBody, recordBuilderClass, key -> callback.test(key, verificationFor(key)));
     }
 
     /**

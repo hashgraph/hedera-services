@@ -266,14 +266,6 @@ class UpdateTrackingAccountTest {
     }
 
     @Test
-    void getMutableReturnsSelf() {
-        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingAccount<>(account, null);
-
-        assertSame(subject, subject.getMutable());
-    }
-
-    @Test
     void toStringWorksAsExpected() {
         final var expectedNoUpdatedStorageOrCode = "0x000000000000000000000000000000000000066e -> {nonce:0,"
                 + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"

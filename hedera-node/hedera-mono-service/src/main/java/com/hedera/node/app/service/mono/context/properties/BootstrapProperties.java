@@ -19,7 +19,7 @@ package com.hedera.node.app.service.mono.context.properties;
 import static com.hedera.node.app.service.mono.context.properties.PropUtils.loadOverride;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_RESOURCE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
@@ -568,7 +568,7 @@ public final class BootstrapProperties implements PropertySource {
             UTIL_PRNG_IS_ENABLED,
             TOKENS_AUTO_CREATIONS_ENABLED,
             ACCOUNTS_BLOCKLIST_ENABLED,
-            ACCOUNTS_BLOCKLIST_RESOURCE,
+            ACCOUNTS_BLOCKLIST_PATH,
             CACHE_CRYPTO_TRANSFER_WARM_THREADS);
 
     static final Set<String> NODE_PROPS = Set.of(
@@ -824,7 +824,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
             entry(WORKFLOWS_ENABLED, AS_FUNCTIONS),
             entry(ACCOUNTS_BLOCKLIST_ENABLED, AS_BOOLEAN),
-            entry(ACCOUNTS_BLOCKLIST_RESOURCE, AS_STRING),
+            entry(ACCOUNTS_BLOCKLIST_PATH, AS_STRING),
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, AS_INT),
             entry(CONFIG_VERSION, AS_INT));
 }

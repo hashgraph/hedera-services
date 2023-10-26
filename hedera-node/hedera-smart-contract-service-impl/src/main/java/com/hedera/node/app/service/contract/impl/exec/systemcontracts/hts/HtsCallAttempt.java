@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -63,8 +64,12 @@ public class HtsCallAttempt {
     private final Configuration configuration;
     private final AddressIdConverter addressIdConverter;
     private final VerificationStrategies verificationStrategies;
+    private final SystemContractGasCalculator gasCalculator;
     private final List<HtsCallTranslator> callTranslators;
+    private final boolean isStaticCall;
 
+    // too many parameters
+    @SuppressWarnings("java:S107")
     public HtsCallAttempt(
             @NonNull final Bytes input,
             @NonNull final Address senderAddress,
@@ -73,9 +78,12 @@ public class HtsCallAttempt {
             @NonNull final Configuration configuration,
             @NonNull final AddressIdConverter addressIdConverter,
             @NonNull final VerificationStrategies verificationStrategies,
-            @NonNull final List<HtsCallTranslator> callTranslators) {
+            @NonNull final SystemContractGasCalculator gasCalculator,
+            @NonNull final List<HtsCallTranslator> callTranslators,
+            final boolean isStaticCall) {
         requireNonNull(input);
         this.callTranslators = requireNonNull(callTranslators);
+        this.gasCalculator = requireNonNull(gasCalculator);
         this.senderAddress = requireNonNull(senderAddress);
         this.configuration = requireNonNull(configuration);
         this.addressIdConverter = requireNonNull(addressIdConverter);
@@ -107,6 +115,7 @@ public class HtsCallAttempt {
         }
         this.selector = this.input.slice(0, 4).toArrayUnsafe();
         this.senderId = addressIdConverter.convertSender(senderAddress);
+        this.isStaticCall = isStaticCall;
     }
 
     /**
@@ -130,6 +139,15 @@ public class HtsCallAttempt {
     }
 
     /**
+     * Returns the system contract gas calculator for this call.
+     *
+     * @return the system contract gas calculator for this call
+     */
+    public @NonNull SystemContractGasCalculator systemContractGasCalculator() {
+        return gasCalculator;
+    }
+
+    /**
      * Returns the native operations this call was attempted within.
      *
      * @return the native operations this call was attempted within
@@ -140,59 +158,7 @@ public class HtsCallAttempt {
 
     /**
      * Tries to translate this call attempt into a {@link HtsCall} from the given sender address.
-     * <p>
-     * Call attempts could refer to a,
-     * <ul>
-     *   <li>[x] TRANSFER (ERCTransferPrecompile, TransferPrecompile)</li>
-     *   <li>[ ] MINT_UNITS (MintPrecompile)</li>
-     *   <li>[ ] MINT_NFTS (MintPrecompile)</li>
-     *   <li>[ ] BURN_UNITS (BurnPrecompile)</li>
-     *   <li>[ ] BURN_SERIAL_NOS (BurnPrecompile)</li>
-     *   <li>[ ] ASSOCIATE_ONE (AssociatePrecompile) </li>
-     *   <li>[ ] ASSOCIATE_MANY (MultiAssociatePrecompile)</li>
-     *   <li>[ ] DISSOCIATE_ONE (DissociatePrecompile) </li>
-     *   <li>[ ] DISSOCIATE_MANY (MultiDissociatePrecompile)</li>
-     *   <li>[ ] PAUSE_TOKEN (PausePrecompile)</li>
-     *   <li>[ ] UNPAUSE_TOKEN (UnpausePrecompile)</li>
-     *   <li>[ ] FREEZE_ACCOUNT (FreezeTokenPrecompile) </li>
-     *   <li>[ ] UNFREEZE_ACCOUNT (UnfreezeTokenPrecompile)</li>
-     *   <li>[ ] GRANT_KYC (GrantKycPrecompile)</li>
-     *   <li>[ ] REVOKE_KYC (RevokeKycPrecompile)</li>
-     *   <li>[ ] WIPE_AMOUNT (WipeFungiblePrecompile)</li>
-     *   <li>[ ] WIPE_SERIAL_NUMBERS (WipeNonFungiblePrecompile)</li>
-     *   <li>[ ] GRANT_ALLOWANCE (ApprovePrecompile)</li>
-     *   <li>[ ] GRANT_APPROVAL (ApprovePrecompile)</li>
-     *   <li>[ ] APPROVE_OPERATOR (SetApprovalForAllPrecompile)</li>
-     *   <li>[ ] CREATE_TOKEN (TokenCreatePrecompile)</li>
-     *   <li>[ ] DELETE_TOKEN (DeleteTokenPrecompile)</li>
-     *   <li>[ ] UPDATE_TOKEN</li>
-     *   <li>[x] BALANCE_OF (BalanceOfPrecompile)</li>
-     *   <li>[x] TOTAL_SUPPLY (TotalSupplyPrecompile)</li>
-     *   <li>[x] DECIMALS (DecimalsPrecompile)</li>
-     *   <li>[x] NAME (NamePrecompile)</li>
-     *   <li>[x] SYMBOL (SymbolPrecompile)</li>
-     *   <li>[x] OWNER_OF (OwnerOfPrecompile)</li>
-     *   <li>[x] TOKEN_URI (TokenURIPrecompile</li>
-     *   <li>[ ] ALLOWANCE (AllowancePrecompile)</li>
-     *   <li>[ ] APPROVED (GetApprovedPrecompile)</li>
-     *   <li>[ ] IS_FROZEN (IsFrozenPrecompile)</li>
-     *   <li>[x] IS_APPROVED_FOR_ALL (IsApprovedForAllPrecompile)</li>
-     *   <li>[ ] IS_KYC (IsKycPrecompile)</li>
-     *   <li>[ ] IS_TOKEN (IsTokenPrecompile)</li>
-     *   <li>[ ] NFT_INFO</li>
-     *   <li>[ ] TOKEN_INFO (TokenInfoPrecompile)</li>
-     *   <li>[ ] TOKEN_CUSTOM_FEES (TokenGetCustomFeesPrecompile)</li>
-     *   <li>[ ] FUNGIBLE_TOKEN_INFO (FungibleTokenInfoPrecompile) </li>
-     *   <li>[ ] NON_FUNGIBLE_TOKEN_INFO (NonFungibleTokenInfoPrecompile) </li>
-     *   <li>[ ] TOKEN_EXPIRY_INFO (GetTokenExpiryInfoPrecompile) </li>
-     *   <li>[ ] TOKEN_TYPE (GetTokenTypePrecompile) </li>
-     *   <li>[ ] TOKEN_KEY (GetTokenKeyPrecompile) </li>
-     *   <li>[ ] DEFAULT_FREEZE_STATUS (GetTokenDefaultFreezeStatus) </li>
-     *   <li>[ ] DEFAULT_KYC_STATUS (GetTokenDefaultKycStatus) </li>
-     *   <li>[ ] UPDATE_TOKEN_KEYS (TokenUpdateKeysPrecompile)</li>
-     *   <li>[ ] UPDATE_TOKEN_EXPIRY (UpdateTokenExpiryInfoPrecompile)</li>
-     *   <li>[ ] UPDATE_TOKEN (TokenUpdatePrecompile)</li>
-     * </ul>
+     *
      * @return the executable call, or null if this attempt can't be translated to one
      */
     public @Nullable HtsCall asExecutableCall() {
@@ -352,6 +318,13 @@ public class HtsCallAttempt {
             // No point in looking up a token that can't exist
             return null;
         }
+    }
+
+    /**
+     * @return whether the current call attempt is a static call
+     */
+    public boolean isStaticCall() {
+        return isStaticCall;
     }
 
     private boolean isRedirect(final byte[] input) {

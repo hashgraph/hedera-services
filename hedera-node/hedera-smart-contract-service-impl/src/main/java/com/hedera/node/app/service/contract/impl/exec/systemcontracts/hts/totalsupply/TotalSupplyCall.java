@@ -19,8 +19,9 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.total
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -29,10 +30,13 @@ import java.math.BigInteger;
 /**
  * Implements the token redirect {@code totalSupply()} call of the HTS system contract.
  */
-public class TotalSupplyCall extends AbstractTokenViewCall {
+public class TotalSupplyCall extends AbstractRevertibleTokenViewCall {
 
-    public TotalSupplyCall(@NonNull final HederaWorldUpdater.Enhancement enhancement, @Nullable final Token token) {
-        super(enhancement, token);
+    public TotalSupplyCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @Nullable final Token token) {
+        super(gasCalculator, enhancement, token);
     }
 
     /**

@@ -50,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -94,17 +95,16 @@ public class ContractCallLocalSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            invalidDeletedContract(),
-            invalidContractID(),
-            impureCallFails(),
-            insufficientFeeFails(),
-            lowBalanceFails(),
-            erc20Query(),
-            vanillaSuccess(),
-            callLocalDoesNotCheckSignaturesNorPayer(),
-            htsOwnershipCheckWorksWithAliasAddress()
-        });
+        return List.of(
+                invalidDeletedContract(),
+                invalidContractID(),
+                impureCallFails(),
+                insufficientFeeFails(),
+                lowBalanceFails(),
+                erc20Query(),
+                vanillaSuccess(),
+                callLocalDoesNotCheckSignaturesNorPayer(),
+                htsOwnershipCheckWorksWithAliasAddress());
     }
 
     private HapiSpec htsOwnershipCheckWorksWithAliasAddress() {
@@ -180,6 +180,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                                 "Sender address should match the owner address.")));
     }
 
+    @HapiTest
     private HapiSpec vanillaSuccess() {
         return defaultHapiSpec("vanillaSuccess")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
@@ -193,6 +194,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                                         }))));
     }
 
+    @HapiTest
     private HapiSpec impureCallFails() {
         return defaultHapiSpec("impureCallFails")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
@@ -204,6 +206,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                                 .hasAnswerOnlyPrecheck(ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION));
     }
 
+    @HapiTest
     private HapiSpec invalidDeletedContract() {
         return defaultHapiSpec("invalidDeletedContract")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -213,6 +216,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                         .hasAnswerOnlyPrecheck(CONTRACT_DELETED));
     }
 
+    @HapiTest
     private HapiSpec invalidContractID() {
         final var invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
         final var functionAbi = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
@@ -228,6 +232,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                                 .hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID));
     }
 
+    @HapiTest
     private HapiSpec insufficientFeeFails() {
         final long adequateQueryPayment = 500_000L;
 
@@ -243,6 +248,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                                 .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
     }
 
+    @HapiTest
     private HapiSpec lowBalanceFails() {
         final long adequateQueryPayment = 500_000_000L;
 
@@ -265,6 +271,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                         getAccountBalance("payer").logged());
     }
 
+    @HapiTest
     private HapiSpec erc20Query() {
         final var decimalsABI = "{\"constant\": true,\"inputs\": [],\"name\": \"decimals\","
                 + "\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false,"

@@ -16,14 +16,18 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
@@ -34,6 +38,7 @@ import com.hedera.node.app.service.contract.impl.exec.ContextQueryProcessor;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallLocalHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import org.junit.jupiter.api.Test;
@@ -66,6 +71,9 @@ class ContractCallLocalHandlerTest {
 
     @Mock
     private ReadableAccountStore store;
+
+    @Mock
+    private ReadableTokenStore tokenStore;
 
     @Mock
     private Account contract;
@@ -108,9 +116,33 @@ class ContractCallLocalHandlerTest {
         given(contractCallLocalQuery.contractID()).willReturn(contractID);
         given(context.createStore(ReadableAccountStore.class)).willReturn(store);
         given(store.getContractById(contractID)).willReturn(contract);
+        givenDefaultConfig();
 
         // when:
         assertThatCode(() -> subject.validate(context)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void validateFailsOnNegativeGas() {
+        // given
+        given(context.query()).willReturn(query);
+        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
+        given(contractCallLocalQuery.gas()).willReturn(-1L);
+
+        // when:
+        assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
+    }
+
+    @Test
+    void validateFailsOnExcessGas() {
+        // given
+        given(context.query()).willReturn(query);
+        given(context.configuration()).willReturn(DEFAULT_CONFIG);
+        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
+        given(contractCallLocalQuery.gas()).willReturn(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec() + 1);
+
+        // when:
+        assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
     }
 
     @Test
@@ -119,19 +151,23 @@ class ContractCallLocalHandlerTest {
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
         given(contractCallLocalQuery.contractID()).willReturn(null);
+        givenDefaultConfig();
 
         // when:
         assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
     }
 
     @Test
-    void validateFailsIfNoContractTest() {
+    void validateFailsIfNoContractOrTokenTest() {
         // given
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
         given(contractCallLocalQuery.contractID()).willReturn(contractID);
         given(context.createStore(ReadableAccountStore.class)).willReturn(store);
         given(store.getContractById(contractID)).willReturn(null);
+        given(context.createStore(ReadableTokenStore.class)).willReturn(tokenStore);
+        given(tokenStore.get(any())).willReturn(null);
+        givenDefaultConfig();
 
         // when:
         assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
@@ -146,6 +182,7 @@ class ContractCallLocalHandlerTest {
         given(context.createStore(ReadableAccountStore.class)).willReturn(store);
         given(store.getContractById(contractID)).willReturn(contract);
         given(contract.deleted()).willReturn(true);
+        givenDefaultConfig();
 
         // when:
         assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
@@ -153,9 +190,10 @@ class ContractCallLocalHandlerTest {
 
     @Test
     void findResponsePositiveTest() {
-        given(factory.create(any(), any())).willReturn(component);
+        given(factory.create(any(), any(), eq(HederaFunctionality.CONTRACT_CALL_LOCAL)))
+                .willReturn(component);
         given(component.contextQueryProcessor()).willReturn(processor);
-        final var expectedResult = SUCCESS_RESULT.asQueryResultOf();
+        final var expectedResult = SUCCESS_RESULT.asQueryResult();
         final var expectedOutcome = new CallOutcome(expectedResult, SUCCESS_RESULT.finalStatus());
         given(processor.call()).willReturn(expectedOutcome);
 
@@ -165,5 +203,9 @@ class ContractCallLocalHandlerTest {
 
         assertThat(response.contractCallLocal().header()).isEqualTo(responseHeader);
         assertThat(response.contractCallLocal().functionResult()).isEqualTo(expectedOutcome.result());
+    }
+
+    private void givenDefaultConfig() {
+        given(context.configuration()).willReturn(DEFAULT_CONFIG);
     }
 }

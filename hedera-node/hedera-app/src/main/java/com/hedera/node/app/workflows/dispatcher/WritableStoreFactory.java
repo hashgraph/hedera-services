@@ -29,6 +29,9 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
+import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.WritableScheduleStoreImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
@@ -79,8 +82,12 @@ public class WritableStoreFactory {
         newMap.put(
                 WritableContractStateStore.class,
                 new StoreEntry(ContractService.NAME, WritableContractStateStore::new));
+        // ScheduleService
+        newMap.put(WritableScheduleStore.class, new StoreEntry(ScheduleService.NAME, WritableScheduleStoreImpl::new));
         // EntityIdService
         newMap.put(WritableEntityIdStore.class, new StoreEntry(EntityIdService.NAME, WritableEntityIdStore::new));
+        // Schedule Service
+        newMap.put(WritableScheduleStore.class, new StoreEntry(ScheduleService.NAME, WritableScheduleStoreImpl::new));
         return Collections.unmodifiableMap(newMap);
     }
 

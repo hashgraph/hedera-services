@@ -178,7 +178,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("fee schedule update fails if token is deleted")
     void rejectsDeletedTokenId() {
-        final var deletedToken = givenValidFungibleToken(payerId, true, false, false, false);
+        final var deletedToken = givenValidFungibleToken(payerId, true, false, false, false, true);
         writableTokenStore.put(deletedToken);
 
         assertThatThrownBy(() -> subject.handle(context))
@@ -189,7 +189,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("fee schedule update fails if token is paused")
     void rejectsPausedTokenId() {
-        final var pausedToken = givenValidFungibleToken(payerId, false, true, false, false);
+        final var pausedToken = givenValidFungibleToken(payerId, false, true, false, false, true);
         writableTokenStore.put(pausedToken);
 
         assertThatThrownBy(() -> subject.handle(context))

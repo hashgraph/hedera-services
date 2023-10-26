@@ -430,7 +430,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return events in the platformState
      */
-    public @NonNull EventImpl[] getEvents() {
+    public @Nullable EventImpl[] getEvents() {
         return state.getPlatformState().getPlatformData().getEvents();
     }
 
@@ -441,15 +441,6 @@ public class SignedState implements SignedStateInfo {
      */
     public @NonNull Hash getHashEventsCons() {
         return state.getPlatformState().getPlatformData().getHashEventsCons();
-    }
-
-    /**
-     * Get the number of consensus events in this state.
-     *
-     * @return the number of consensus events in this state
-     */
-    public long getNumEventsCons() {
-        return state.getPlatformState().getPlatformData().getNumEventsCons();
     }
 
     /**
@@ -480,15 +471,6 @@ public class SignedState implements SignedStateInfo {
      */
     public long getMinRoundGeneration() {
         return getState().getPlatformState().getPlatformData().getMinRoundGeneration();
-    }
-
-    /**
-     * Get the timestamp of the last transaction added to this state.
-     *
-     * @return the timestamp of the last transaction added to this state
-     */
-    public @NonNull Instant getLastTransactionTimestamp() {
-        return state.getPlatformState().getPlatformData().getLastTransactionTimestamp();
     }
 
     /**
@@ -628,6 +610,11 @@ public class SignedState implements SignedStateInfo {
 
         if (isComplete()) {
             // No need to add more signatures
+            return false;
+        }
+
+        if (!addressBook.contains(nodeId)) {
+            // we can ignore signatures from nodes no longer in the address book
             return false;
         }
 

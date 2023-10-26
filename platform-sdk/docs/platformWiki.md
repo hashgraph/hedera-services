@@ -19,6 +19,7 @@ This code is maintained by the "Platform Base" team.
     - [Busy time metrics](base/metrics/metric-types/busy-time-metric.md)
 - Logging
 - Thread Management
+- [Test Support](./base/test-support/test-support.md)
 
 ## Core
 

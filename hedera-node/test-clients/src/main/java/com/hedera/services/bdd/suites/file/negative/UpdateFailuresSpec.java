@@ -73,7 +73,7 @@ public class UpdateFailuresSpec extends HapiSuite {
                 confusedUpdateCantExtendExpiry());
     }
 
-    // TODO Exchange rate file parsing is too lenient, it should be fixed.
+    @HapiTest
     private HapiSpec confusedUpdateCantExtendExpiry() {
         // this test verify that the exchange rate file parsed correctly on update, it doesn't check expiry
         var initialExpiry = new AtomicLong();
@@ -93,8 +93,7 @@ public class UpdateFailuresSpec extends HapiSuite {
                 .then(QueryVerbs.getFileInfo(EXCHANGE_RATES).hasExpiry(initialExpiry::get));
     }
 
-    // TODO Privileged file check for file update is not implemented yet.
-    // In addition address_book and node_details are not implemented in genesis schema.
+    @HapiTest
     private HapiSpec precheckRejectsUnauthorized() {
         // this test is to verify that the system files cannot be updated without privileged account
         return defaultHapiSpec("precheckRejectsUnauthorized")

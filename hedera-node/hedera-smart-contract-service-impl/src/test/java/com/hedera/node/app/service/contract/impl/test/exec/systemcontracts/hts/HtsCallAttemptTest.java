@@ -33,8 +33,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -50,9 +52,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decima
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.decimals.DecimalsTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.FungibleMintCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.NonFungibleMintCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.name.NameTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ownerof.OwnerOfCall;
@@ -98,6 +99,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     @Mock
     private ClassicTransfersDecoder classicTransfersDecoder;
 
+    @Mock
+    private MintDecoder mintDecoder;
+
     private List<HtsCallTranslator> callTranslators;
 
     @BeforeEach
@@ -106,7 +110,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 new AssociationsTranslator(associationsDecoder),
                 new Erc20TransfersTranslator(),
                 new Erc721TransferFromTranslator(),
-                new MintTranslator(),
+                new MintTranslator(mintDecoder),
                 new ClassicTransfersTranslator(classicTransfersDecoder),
                 new BalanceOfTranslator(),
                 new IsApprovedForAllTranslator(),
@@ -130,7 +134,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
         assertNull(subject.redirectToken());
         verifyNoInteractions(nativeOperations);
     }
@@ -148,7 +154,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
         assertNull(subject.asExecutableCall());
     }
 
@@ -164,7 +172,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
         assertInstanceOf(DecimalsCall.class, subject.asExecutableCall());
     }
 
@@ -180,7 +190,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
         assertInstanceOf(TokenUriCall.class, subject.asExecutableCall());
     }
 
@@ -196,7 +208,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
         assertInstanceOf(OwnerOfCall.class, subject.asExecutableCall());
     }
 
@@ -215,7 +229,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
         assertInstanceOf(BalanceOfCall.class, subject.asExecutableCall());
     }
 
@@ -235,7 +251,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
         assertInstanceOf(IsApprovedForAllCall.class, subject.asExecutableCall());
     }
 
@@ -251,7 +269,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
         assertInstanceOf(TotalSupplyCall.class, subject.asExecutableCall());
     }
 
@@ -267,7 +287,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
         assertInstanceOf(NameCall.class, subject.asExecutableCall());
     }
 
@@ -283,7 +305,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
         assertInstanceOf(SymbolCall.class, subject.asExecutableCall());
     }
 
@@ -291,6 +315,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsErc721TransferFromRedirectToNonfungible() {
         given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
                 .willReturn(NON_FUNGIBLE_TOKEN);
+        given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         final var input = TestHelpers.bytesForRedirect(
                 Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM
                         .encodeCallWithArgs(
@@ -309,7 +334,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
         assertInstanceOf(Erc721TransferFromCall.class, subject.asExecutableCall());
     }
 
@@ -317,6 +344,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsErc20TransferFromRedirectToFungible() {
         given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
                 .willReturn(FUNGIBLE_TOKEN);
+        given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         final var input = TestHelpers.bytesForRedirect(
                 Erc20TransfersTranslator.ERC_20_TRANSFER_FROM
                         .encodeCallWithArgs(
@@ -335,7 +363,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
         assertInstanceOf(Erc20TransfersCall.class, subject.asExecutableCall());
     }
 
@@ -343,6 +373,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     void constructsErc20TransferRedirectToFungible() {
         given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
                 .willReturn(FUNGIBLE_TOKEN);
+        given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         final var input = TestHelpers.bytesForRedirect(
                 Erc20TransfersTranslator.ERC_20_TRANSFER
                         .encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS), BigInteger.TWO)
@@ -358,7 +389,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
         assertInstanceOf(Erc20TransfersCall.class, subject.asExecutableCall());
     }
 
@@ -408,7 +441,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
 
         assertInstanceOf(DispatchForResponseCodeHtsCall.class, subject.asExecutableCall());
         assertArrayEquals(selector, subject.selector());
@@ -468,7 +503,9 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
 
         assertInstanceOf(ClassicTransfersCall.class, subject.asExecutableCall());
         assertArrayEquals(selector, subject.selector());
@@ -477,27 +514,35 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     }
 
     enum LinkedTokenType {
-        MISSING,
         NON_FUNGIBLE,
         FUNGIBLE
     }
 
     @ParameterizedTest
     @CsvSource({
-        "0x278e0b88,MISSING",
         "0x278e0b88,FUNGIBLE",
         "0x278e0b88,NON_FUNGIBLE",
-        "0xe0f4059a,MISSING",
         "0xe0f4059a,FUNGIBLE",
         "0xe0f4059a,NON_FUNGIBLE",
     })
     void constructsMints(String hexedSelector, LinkedTokenType linkedTokenType) {
+        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, false, nativeOperations))
+                .willReturn(strategy);
+        given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
+        lenient()
+                .when(mintDecoder.decodeMint(any()))
+                .thenReturn(TransactionBody.newBuilder()
+                        .tokenMint(TokenMintTransactionBody.DEFAULT)
+                        .build());
+        lenient()
+                .when(mintDecoder.decodeMintV2(any()))
+                .thenReturn(TransactionBody.newBuilder()
+                        .tokenMint(TokenMintTransactionBody.DEFAULT)
+                        .build());
         final var selector = CommonUtils.unhex(hexedSelector.substring(2));
         final var useV2 = Arrays.equals(MintTranslator.MINT_V2.selector(), selector);
         final Bytes input;
         if (linkedTokenType == LinkedTokenType.FUNGIBLE) {
-            given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
-                    .willReturn(FUNGIBLE_TOKEN);
             input = useV2
                     ? Bytes.wrap(MintTranslator.MINT_V2
                             .encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS), 1L, new byte[0][])
@@ -507,10 +552,6 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                                     asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS), BigInteger.ONE, new byte[0][])
                             .array());
         } else {
-            if (linkedTokenType == LinkedTokenType.NON_FUNGIBLE) {
-                given(nativeOperations.getToken(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
-                        .willReturn(NON_FUNGIBLE_TOKEN);
-            }
             input = useV2
                     ? Bytes.wrap(MintTranslator.MINT_V2
                             .encodeCallWithArgs(
@@ -532,15 +573,11 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DEFAULT_CONFIG,
                 addressIdConverter,
                 verificationStrategies,
-                callTranslators);
+                gasCalculator,
+                callTranslators,
+                false);
 
-        if (linkedTokenType == LinkedTokenType.MISSING) {
-            assertNull(subject.asExecutableCall());
-        } else if (linkedTokenType == LinkedTokenType.FUNGIBLE) {
-            assertInstanceOf(FungibleMintCall.class, subject.asExecutableCall());
-        } else {
-            assertInstanceOf(NonFungibleMintCall.class, subject.asExecutableCall());
-        }
+        assertInstanceOf(DispatchForResponseCodeHtsCall.class, subject.asExecutableCall());
         assertArrayEquals(selector, subject.selector());
         assertFalse(subject.isTokenRedirect());
     }

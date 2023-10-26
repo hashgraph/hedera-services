@@ -170,6 +170,12 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final TokenID nonFungibleTokenId = asToken(2L);
     protected final TokenID fungibleTokenIDB = asToken(6L);
     protected final TokenID fungibleTokenIDC = asToken(7L);
+    protected final int hbarReceiver = 10000000;
+    protected final AccountID hbarReceiverId =
+            AccountID.newBuilder().accountNum(hbarReceiver).build();
+    protected final int tokenReceiver = hbarReceiver + 1;
+    protected final AccountID tokenReceiverId =
+            AccountID.newBuilder().accountNum(tokenReceiver).build();
 
     protected final EntityIDPair fungiblePair = EntityIDPair.newBuilder()
             .accountId(payerId)
@@ -272,7 +278,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                     Fraction.newBuilder().numerator(1).denominator(2).build())
             .fallbackFee(hbarFixedFee)
             .build();
-    protected List<CustomFee> customFees = List.of(withFixedFee(hbarFixedFee), withFractionalFee(fractionalFee));
+    protected CustomFee customFractionalFee = withFractionalFee(fractionalFee);
+    protected List<CustomFee> customFees = List.of(withFixedFee(hbarFixedFee), customFractionalFee);
 
     /* ---------- Misc ---------- */
     protected final Timestamp consensusTimestamp =
@@ -370,20 +377,38 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     @BeforeEach
     public void setUp() {
+        handlerTestBaseInternalSetUp(true);
+    }
+
+    protected void handlerTestBaseInternalSetUp(final boolean prepopulateReceiverIds) {
         configuration = HederaTestConfigBuilder.create().getOrCreateConfig();
         versionedConfig = new VersionedConfigImpl(configuration, 1);
         givenValidAccounts();
         givenValidTokens();
         givenValidTokenRelations();
         givenStakingInfos();
-        setUpAllEntities();
+        setUpAllEntities(prepopulateReceiverIds);
         refreshReadableStores();
         refreshWritableStores();
     }
 
-    private void setUpAllEntities() {
+    private void setUpAllEntities(final boolean prepopulateReceiverIds) {
         accountsMap = new HashMap<>();
         accountsMap.put(payerId, account);
+        if (prepopulateReceiverIds) {
+            accountsMap.put(
+                    hbarReceiverId,
+                    Account.newBuilder()
+                            .accountId(hbarReceiverId)
+                            .tinybarBalance(Long.MAX_VALUE)
+                            .build());
+            accountsMap.put(
+                    tokenReceiverId,
+                    Account.newBuilder()
+                            .accountId(tokenReceiverId)
+                            .tinybarBalance(Long.MAX_VALUE)
+                            .build());
+        }
         accountsMap.put(deleteAccountId, deleteAccount);
         accountsMap.put(transferAccountId, transferAccount);
         accountsMap.put(ownerId, ownerAccount);
@@ -708,7 +733,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                         .amount(40)
                         .build()))
                 .build();
-        nonFungibleToken = givenValidNonFungibleToken();
+        nonFungibleToken = givenValidNonFungibleToken(true);
         nftSl1 = givenNft(nftIdSl1);
         nftSl2 = givenNft(nftIdSl2);
     }
@@ -753,7 +778,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     protected Token givenValidFungibleToken(AccountID autoRenewAccountId) {
-        return givenValidFungibleToken(autoRenewAccountId, false, false, false, false);
+        return givenValidFungibleToken(autoRenewAccountId, false, false, false, false, true);
     }
 
     protected Token givenValidFungibleToken(
@@ -761,7 +786,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             boolean deleted,
             boolean paused,
             boolean accountsFrozenByDefault,
-            boolean accountsKycGrantedByDefault) {
+            boolean accountsKycGrantedByDefault,
+            boolean hasKyc) {
         return new Token(
                 fungibleTokenId,
                 tokenName,
@@ -770,7 +796,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 1000,
                 treasuryId,
                 adminKey,
-                kycKey,
+                hasKyc ? kycKey : null,
                 freezeKey,
                 wipeKey,
                 supplyKey,
@@ -791,13 +817,14 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 customFees);
     }
 
-    protected Token givenValidNonFungibleToken() {
+    protected Token givenValidNonFungibleToken(boolean hasKyc) {
         return fungibleToken
                 .copyBuilder()
                 .tokenId(nonFungibleTokenId)
                 .treasuryAccountId(treasuryId)
                 .customFees(List.of(withRoyaltyFee(royaltyFee)))
                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                .kycKey(hasKyc ? kycKey : null)
                 .build();
     }
 

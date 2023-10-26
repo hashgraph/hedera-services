@@ -850,6 +850,20 @@ class DeterministicThrottlingTest {
     }
 
     @Test
+    void canLeakCapacityForNOfManaged() throws IOException {
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+        subject.rebuildFor(defs);
+
+        subject.shouldThrottleNOfUnscaled(1, TokenMint, consensusNow);
+        final var oneUsed = subject.activeThrottlesFor(TokenMint).get(0).used();
+        subject.shouldThrottleNOfUnscaled(43, TokenMint, consensusNow);
+        subject.leakCapacityForNOfUnscaled(2, TokenMint);
+        final var fortyTwoUsed = subject.activeThrottlesFor(TokenMint).get(0).used();
+        assertEquals(42 * oneUsed, fortyTwoUsed);
+    }
+
+    @Test
     void whenThrottlesUsesNoCapacity() throws IOException {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 

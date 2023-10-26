@@ -28,21 +28,16 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.RecycleBin;
-import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.RecoveryScratchpad;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.state.PlatformData;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -50,6 +45,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -84,7 +80,7 @@ public final class StartupStateUtils {
             final long initialStateRound) {
 
         final Scratchpad<RecoveryScratchpad> recoveryScratchpad =
-                new Scratchpad<>(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
+                Scratchpad.create(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
         recoveryScratchpad.logContents();
 
         final Hash previousEpoch = recoveryScratchpad.get(RecoveryScratchpad.EPOCH_HASH);
@@ -97,11 +93,8 @@ public final class StartupStateUtils {
         logger.info(
                 STARTUP.getMarker(),
                 "Entering new epoch, cleaning up file system in preparation for emergency recovery. "
-                        + "The preconsensus event stream will be cleared and any states with a round number "
-                        + "higher than {} will recycled.",
+                        + "Any states with a round number higher than {} will be recycled.",
                 initialStateRound);
-
-        PreconsensusEventFileManager.clear(platformContext, recycleBin, selfId);
 
         final List<SavedStateInfo> savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
         for (final SavedStateInfo stateInfo : savedStateFiles) {
@@ -121,7 +114,8 @@ public final class StartupStateUtils {
      *
      * @param platformContext          the platform context
      * @param recycleBin               the recycle bin
-     * @param appMain                  the app main
+     * @param softwareVersion          the software version of the app
+     * @param genesisStateBuilder      a supplier that can build a genesis state
      * @param mainClassName            the name of the app's SwirldMain class
      * @param swirldName               the name of this swirld
      * @param selfId                   the node id of this node
@@ -135,7 +129,8 @@ public final class StartupStateUtils {
     public static ReservedSignedState getInitialState(
             @NonNull final PlatformContext platformContext,
             @NonNull final RecycleBin recycleBin,
-            @NonNull final SwirldMain appMain,
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final Supplier<SwirldState> genesisStateBuilder,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
@@ -156,7 +151,7 @@ public final class StartupStateUtils {
                 selfId,
                 mainClassName,
                 swirldName,
-                appMain.getSoftwareVersion(),
+                softwareVersion,
                 emergencyRecoveryManager);
 
         try (loadedState) {
@@ -171,7 +166,7 @@ public final class StartupStateUtils {
         }
 
         final ReservedSignedState genesisState =
-                buildGenesisState(platformContext, configAddressBook, appMain.getSoftwareVersion(), appMain.newState());
+                buildGenesisState(platformContext, configAddressBook, softwareVersion, genesisStateBuilder.get());
 
         try (genesisState) {
             return copyInitialSignedState(platformContext, genesisState.get());
@@ -448,21 +443,6 @@ public final class StartupStateUtils {
                     STARTUP.getMarker(),
                     "Loaded state is not in the correct hash epoch, "
                             + "this node will need to receive a state through an emergency reconnect.");
-
-            // Due to a bug in the way we handle events in state, we need to clear this state's events.
-            // This doesn't cause problems since we are just using this state to make reconnect faster.
-            logger.warn(STARTUP.getMarker(), "Removing events from state. This will alter the state's hash.");
-            final State stateNode = state.get().getState();
-            final PlatformState platformState = stateNode.getPlatformState();
-            final PlatformData platformData = platformState.getPlatformData();
-            platformData.setEvents(new EventImpl[0]);
-
-            // Fix the state's hash
-            platformData.invalidateHash();
-            platformState.invalidateHash();
-            stateNode.invalidateHash();
-            MerkleCryptoFactory.getInstance().digestTreeSync(stateNode);
-
             return state;
         }
     }

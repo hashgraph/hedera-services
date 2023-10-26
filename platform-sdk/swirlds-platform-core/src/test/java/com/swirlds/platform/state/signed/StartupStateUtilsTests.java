@@ -18,13 +18,11 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
 import static com.swirlds.platform.state.signed.StartupStateUtils.doRecoveryCleanup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,13 +42,9 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.RecoveryScratchpad;
@@ -134,29 +128,9 @@ class StartupStateUtilsTests {
             final boolean corrupted)
             throws IOException {
 
-        final EventImpl[] events = new EventImpl[random.nextInt(1, 10)];
-        for (int i = 0; i < events.length; i++) {
-            final BaseEventHashedData hashedData = new BaseEventHashedData(
-                    new BasicSoftwareVersion(1),
-                    new NodeId(random.nextInt(1, 10)),
-                    random.nextInt(1, 1000),
-                    random.nextInt(1, 1000),
-                    randomHash(random),
-                    randomHash(random),
-                    randomInstant(random),
-                    new ConsensusTransactionImpl[0]);
-            final BaseEventUnhashedData unhashedData =
-                    new BaseEventUnhashedData(new NodeId(random.nextInt(1, 10)), new byte[0]);
-            final EventImpl event = new EventImpl(hashedData, unhashedData);
-            platformContext.getCryptography().digestSync(hashedData);
-            platformContext.getCryptography().digestSync(event);
-            events[i] = event;
-        }
-
         final SignedState signedState = new RandomSignedStateGenerator(random)
                 .setRound(round)
                 .setEpoch(epoch)
-                .setEvents(events)
                 .build();
 
         final Path savedStateDirectory = getSignedStateDirectory(mainClassName, selfId, swirldName, round);
@@ -479,10 +453,8 @@ class StartupStateUtilsTests {
         loadedState.getState().throwIfDestroyed();
 
         assertEquals(targetState.getRound(), loadedState.getRound());
-        // Events will have been deleted from the state, so the hash will not match
-        assertNotEquals(targetState.getState().getHash(), loadedState.getState().getHash());
-        assertEquals(
-                0, loadedState.getState().getPlatformState().getPlatformData().getEvents().length);
+        assertEquals(targetState.getState().getHash(), loadedState.getState().getHash());
+        assertNull(loadedState.getState().getPlatformState().getPlatformData().getEvents());
 
         // As a sanity check, make sure the consensus timestamp is the same. This is generated randomly, so if this
         // matches then it's a good signal that the correct state was loaded.
@@ -718,8 +690,7 @@ class StartupStateUtilsTests {
 
             assertEquals(latestUncorruptedState.getRound(), loadedState.getRound());
 
-            // Events will have been deleted, hash will not match
-            assertNotEquals(
+            assertEquals(
                     latestUncorruptedState.getState().getHash(),
                     loadedState.getState().getHash());
 
@@ -805,7 +776,7 @@ class StartupStateUtilsTests {
         final PlatformContext platformContext = buildContext(false);
 
         final Scratchpad<RecoveryScratchpad> scratchpad =
-                new Scratchpad<>(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
+                Scratchpad.create(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
         scratchpad.set(RecoveryScratchpad.EPOCH_HASH, epoch);
 
         final AtomicInteger recycleCount = new AtomicInteger(0);
@@ -891,7 +862,7 @@ class StartupStateUtilsTests {
             epochRound = targetState.getRound();
         }
 
-        // Write a file into the PCES directory. This file will be deleted if the PCES is cleared.
+        // Write a file into the PCES directory. This file will should be deleted
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
@@ -909,19 +880,18 @@ class StartupStateUtilsTests {
         doRecoveryCleanup(platformContext, recycleBin, selfId, swirldName, mainClassName, epoch, epochRound);
 
         final Scratchpad<RecoveryScratchpad> scratchpad =
-                new Scratchpad<>(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
+                Scratchpad.create(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
 
         assertEquals(epoch, scratchpad.get(RecoveryScratchpad.EPOCH_HASH));
 
         final Path signedStateDirectory = getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
                 .getParent();
 
-        // The +1 is from the marker file in the PCES directory
-        assertEquals(statesToDelete + 1, recycleCount.get());
+        assertEquals(statesToDelete, recycleCount.get());
 
         assertEquals(
                 stateCount - statesToDelete, Files.list(signedStateDirectory).count());
 
-        assertFalse(Files.exists(markerFile));
+        assertTrue(Files.exists(markerFile));
     }
 }

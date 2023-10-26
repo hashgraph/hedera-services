@@ -19,22 +19,28 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.haltResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSamePrecompileResult;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import java.nio.ByteBuffer;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,11 +57,18 @@ class HtsSystemContractTest {
     @Mock
     private GasCalculator gasCalculator;
 
+    private MockedStatic<FrameUtils> frameUtils;
     private HtsSystemContract subject;
 
     @BeforeEach
     void setUp() {
+        frameUtils = Mockito.mockStatic(FrameUtils.class);
         subject = new HtsSystemContract(gasCalculator, attemptFactory);
+    }
+
+    @AfterEach
+    void clear() {
+        frameUtils.close();
     }
 
     @Test
@@ -97,6 +110,7 @@ class HtsSystemContractTest {
     }
 
     private void givenValidCallAttempt() {
+        frameUtils.when(() -> isDelegateCall(frame)).thenReturn(false);
         given(attemptFactory.createCallFrom(Bytes.EMPTY, frame)).willReturn(call);
     }
 }

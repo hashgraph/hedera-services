@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.fees;
 
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_HEADER;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.HapiUtils.countOfCryptographicKeys;
 import static java.util.Objects.requireNonNull;
@@ -35,6 +38,7 @@ import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.function.Function;
@@ -111,6 +115,21 @@ public class FeeCalculatorImpl implements FeeCalculator {
         usage.resetForTransaction(baseMeta, sigUsage);
     }
 
+    public FeeCalculatorImpl(@Nullable final FeeData feeData, @NonNull final ExchangeRate currentRate) {
+        if (feeData == null) {
+            this.feeData = null;
+            this.usage = null;
+        } else {
+            this.feeData = fromPbj(feeData);
+            this.usage = UsageAccumulator.fromGrpc(this.feeData);
+            usage.reset();
+            usage.addBpt(BASIC_QUERY_HEADER + BASIC_TX_ID_SIZE);
+            usage.addBpr(BASIC_QUERY_RES_HEADER);
+        }
+        this.currentRate = fromPbj(currentRate);
+        this.sigUsage = new SigUsage(0, 0, 0);
+    }
+
     @Override
     @NonNull
     public FeeCalculator withResourceUsagePercent(double percent) {
@@ -120,6 +139,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
     @Override
     @NonNull
     public FeeCalculator addBytesPerTransaction(long bytes) {
+        failIfLegacyOnly();
         usage.addBpt(bytes);
         return this;
     }
@@ -127,12 +147,14 @@ public class FeeCalculatorImpl implements FeeCalculator {
     @NonNull
     @Override
     public FeeCalculator addNetworkRamByteSeconds(long amount) {
+        failIfLegacyOnly();
         usage.addNetworkRbs(amount);
         return this;
     }
 
     @NonNull
     public FeeCalculator addRamByteSeconds(long amount) {
+        failIfLegacyOnly();
         usage.addRbs(amount);
         return this;
     }
@@ -140,19 +162,23 @@ public class FeeCalculatorImpl implements FeeCalculator {
     @NonNull
     @Override
     public FeeCalculator addStorageBytesSeconds(long seconds) {
+        failIfLegacyOnly();
         usage.addSbs(seconds);
         return this;
     }
 
     @NonNull
     public FeeCalculator addVerificationsPerTransaction(long amount) {
+        failIfLegacyOnly();
         usage.addVpt(amount);
         return this;
     }
 
     @NonNull
     public FeeCalculator resetUsage() {
-        usage.reset();
+        if (usage != null) {
+            usage.reset();
+        }
         return this;
     }
 
@@ -168,9 +194,16 @@ public class FeeCalculatorImpl implements FeeCalculator {
     @Override
     @NonNull
     public Fees calculate() {
+        failIfLegacyOnly();
         // Use the "hapi-fees" module to calculate the fees, and convert to one of our "Fees" objects.
         final var overflowCalc = new OverflowCheckingCalc();
         final var feeObject = overflowCalc.fees(usage, feeData, currentRate, 1);
         return new Fees(feeObject.nodeFee(), feeObject.networkFee(), feeObject.serviceFee());
+    }
+
+    private void failIfLegacyOnly() {
+        if (usage == null) {
+            throw new UnsupportedOperationException("Only legacy calculation supported");
+        }
     }
 }

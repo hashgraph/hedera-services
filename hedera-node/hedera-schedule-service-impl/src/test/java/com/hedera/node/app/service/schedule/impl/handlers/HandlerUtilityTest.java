@@ -82,7 +82,7 @@ class HandlerUtilityTest extends ScheduleHandlerTestBase {
             assertThat(marked.deleted()).isEqualTo(expected.deleted());
             assertThat(marked.signatories()).containsExactlyElementsOf(expected.signatories());
 
-            verifyPartialEquality(expected, marked);
+            verifyPartialEquality(marked, expected);
             assertThat(marked.scheduleId()).isEqualTo(expected.scheduleId());
         }
     }
@@ -106,7 +106,7 @@ class HandlerUtilityTest extends ScheduleHandlerTestBase {
             assertThat(modified.resolutionTime()).isEqualTo(expected.resolutionTime());
             assertThat(modified.deleted()).isEqualTo(expected.deleted());
 
-            verifyPartialEquality(expected, modified);
+            verifyPartialEquality(modified, expected);
             assertThat(modified.scheduleId()).isEqualTo(expected.scheduleId());
         }
     }
@@ -132,7 +132,7 @@ class HandlerUtilityTest extends ScheduleHandlerTestBase {
             assertThat(modified.resolutionTime()).isEqualTo(timestampFromInstant(testConsensusTime));
             assertThat(modified.deleted()).isEqualTo(expected.deleted());
 
-            verifyPartialEquality(expected, modified);
+            verifyPartialEquality(modified, expected);
             assertThat(modified.scheduleId()).isEqualTo(expected.scheduleId());
         }
     }
@@ -140,8 +140,12 @@ class HandlerUtilityTest extends ScheduleHandlerTestBase {
     @Test
     void createProvisionalScheduleCreatesCorrectSchedule() {
         // Creating a provisional schedule should produce the expected Schedule except for Schedule ID.
-        for (final Schedule expected : listOfScheduledOptions) {
-            final TransactionBody createTransaction = expected.originalCreateTransaction();
+        for (final Schedule next : listOfScheduledOptions) {
+            final TransactionBody createTransaction = next.originalCreateTransaction();
+            final String createMemo = createTransaction.scheduleCreate().memo();
+            final boolean createWait = createTransaction.scheduleCreate().waitForExpiry();
+            final Schedule.Builder build = next.copyBuilder().memo(createMemo);
+            final Schedule expected = build.waitForExpiry(createWait).build();
             final long maxLifeSeconds = scheduleConfig.maxExpirationFutureSeconds();
             final Schedule modified =
                     HandlerUtility.createProvisionalSchedule(createTransaction, testConsensusTime, maxLifeSeconds);
@@ -151,7 +155,7 @@ class HandlerUtilityTest extends ScheduleHandlerTestBase {
             assertThat(modified.resolutionTime()).isEqualTo(expected.resolutionTime());
             assertThat(modified.signatories()).containsExactlyElementsOf(expected.signatories());
 
-            verifyPartialEquality(expected, modified);
+            verifyPartialEquality(modified, expected);
             assertThat(modified.hasScheduleId()).isFalse();
         }
     }
@@ -178,7 +182,7 @@ class HandlerUtilityTest extends ScheduleHandlerTestBase {
             assertThat(completed.resolutionTime()).isEqualTo(provisional.resolutionTime());
             assertThat(completed.signatories()).containsExactlyElementsOf(fakeSignatories);
 
-            verifyPartialEquality(provisional, completed);
+            verifyPartialEquality(completed, provisional);
         }
     }
 
@@ -198,7 +202,7 @@ class HandlerUtilityTest extends ScheduleHandlerTestBase {
      * @param actual the actual values to verify
      * @throws AssertionError if any verified value is not equal between the two parameters.
      */
-    private static void verifyPartialEquality(final Schedule expected, final Schedule actual) {
+    private static void verifyPartialEquality(final Schedule actual, final Schedule expected) {
         assertThat(actual.originalCreateTransaction()).isEqualTo(expected.originalCreateTransaction());
         assertThat(actual.memo()).isEqualTo(expected.memo());
         assertThat(actual.calculatedExpirationSecond()).isEqualTo(expected.calculatedExpirationSecond());

@@ -183,7 +183,7 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .logged());
     }
 
-    // @HapiTest recheck after calculateFees() is implemented
+    @HapiTest
     private HapiSpec usdFeeAsExpectedCryptoUpdate() {
         double autoAssocSlotPrice = 0.0018;
         double baseFee = 0.00022;

@@ -57,12 +57,14 @@ import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
@@ -103,6 +105,7 @@ public class SingleTransactionRecordBuilderImpl
                 PrngRecordBuilder,
                 ScheduleRecordBuilder,
                 TokenMintRecordBuilder,
+                TokenBurnRecordBuilder,
                 TokenCreateRecordBuilder,
                 ContractCreateRecordBuilder,
                 ContractCallRecordBuilder,
@@ -131,6 +134,7 @@ public class SingleTransactionRecordBuilderImpl
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
     private ExchangeRateSet exchangeRate = ExchangeRateSet.DEFAULT;
     private List<Long> serialNumbers = new LinkedList<>();
+    private long newTotalSupply = 0L;
     private final TransactionReceipt.Builder transactionReceiptBuilder = TransactionReceipt.newBuilder();
     // Sidecar data, booleans are the migration flag
     private List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new LinkedList<>();
@@ -144,6 +148,10 @@ public class SingleTransactionRecordBuilderImpl
     // While the fee is sent to the underlying builder all the time, it is also cached here because, as of today,
     // there is no way to get the transaction fee from the PBJ object.
     private long transactionFee;
+    private ContractFunctionResult contractFunctionResult;
+
+    // Used for some child records builders.
+    private final boolean removable;
 
     /**
      * Creates new transaction record builder.
@@ -152,6 +160,18 @@ public class SingleTransactionRecordBuilderImpl
      */
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
+        this.removable = false;
+    }
+
+    /**
+     * Creates new transaction record builder.
+     *
+     * @param consensusNow the consensus timestamp for the transaction
+     * @param removable    whether the record is removable (see {@link RecordListBuilder}
+     */
+    public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow, final boolean removable) {
+        this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
+        this.removable = removable;
     }
 
     /**
@@ -215,6 +235,10 @@ public class SingleTransactionRecordBuilderImpl
         logEndTransactionRecord(transactionID, transactionRecord);
 
         return new SingleTransactionRecord(transaction, transactionRecord, transactionSidecarRecords);
+    }
+
+    public boolean removable() {
+        return removable;
     }
 
     // ------------------------------------------------------------------------------------------------------------------------
@@ -337,6 +361,7 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl contractCallResult(
             @Nullable final ContractFunctionResult contractCallResult) {
         transactionRecordBuilder.contractCallResult(contractCallResult);
+        this.contractFunctionResult = contractCallResult;
         return this;
     }
 
@@ -351,6 +376,7 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl contractCreateResult(
             @Nullable ContractFunctionResult contractCreateResult) {
         transactionRecordBuilder.contractCreateResult(contractCreateResult);
+        this.contractFunctionResult = contractCreateResult;
         return this;
     }
 
@@ -595,6 +621,19 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
+     * Returns if the builder has a ContractFunctionResult set.
+     *
+     * @return the receipt status
+     */
+    public boolean hasContractResult() {
+        return this.contractFunctionResult != null;
+    }
+
+    public long getGasUsedForContractTxn() {
+        return this.contractFunctionResult.gasUsed();
+    }
+
+    /**
      * Sets the receipt accountID.
      *
      * @param accountID the {@link AccountID} for the receipt
@@ -735,8 +774,13 @@ public class SingleTransactionRecordBuilderImpl
      */
     @NonNull
     public SingleTransactionRecordBuilderImpl newTotalSupply(final long newTotalSupply) {
+        this.newTotalSupply = newTotalSupply;
         transactionReceiptBuilder.newTotalSupply(newTotalSupply);
         return this;
+    }
+
+    public long getNewTotalSupply() {
+        return newTotalSupply;
     }
 
     /**
@@ -919,5 +963,14 @@ public class SingleTransactionRecordBuilderImpl
     @Nullable
     public AccountID getDeletedAccountBeneficiaryFor(@NonNull final AccountID deletedAccountID) {
         return deletedAccountBeneficiaries.get(deletedAccountID);
+    }
+
+    /**
+     * Returns the in-progress {@link ContractFunctionResult}.
+     *
+     * @return the in-progress {@link ContractFunctionResult}
+     */
+    public ContractFunctionResult contractFunctionResult() {
+        return contractFunctionResult;
     }
 }

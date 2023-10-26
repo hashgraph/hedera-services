@@ -149,31 +149,46 @@ public class FileAppendHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull FeeContext feeContext) {
-        final var op = feeContext.body();
-        final var dataLength = (op.fileAppend().contents() != null)
-                ? op.fileAppend().contents().length()
-                : 0;
+        final var body = feeContext.body();
+        final var op = body.fileAppendOrThrow();
+        final var fileID = op.fileIDOrThrow();
+        final var fileStore = feeContext.readableStore(ReadableFileStore.class);
+        final var config = feeContext.configuration();
+        final var fileServiceConfig = config.getConfigData(FilesConfig.class);
+
+        final var dataLength = op.contents().length();
 
         /**
          * TODO: revisit after modularizaion completed
          * PR conversation: 8089
          */
         final long effectiveLifeTime;
-        final var fileServiceConfig = feeContext.configuration().getConfigData(FilesConfig.class);
-        final var file = feeContext
-                .readableStore(ReadableFileStore.class)
-                .getFileLeaf(op.fileAppendOrThrow().fileIDOrThrow());
-        final var fileNum = file.fileId().fileNum();
+        final var file = fileStore.getFileLeaf(fileID);
+
+        if (file == null) {
+            return feeContext
+                    .feeCalculator(SubType.DEFAULT)
+                    .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE)
+                    .calculate();
+        }
+
+        final var fileNum = fileID.fileNum();
+
         final var firstSoftwareUpdateFile =
                 fileServiceConfig.softwareUpdateRange().left();
         final var lastSoftwareUpdateFile =
                 fileServiceConfig.softwareUpdateRange().right();
+
+        /* Since only authorized payers can update special files---and their
+        fees will be waived---just return something immediately, without the
+        expense of looking up actual file metadata. */
         if (firstSoftwareUpdateFile <= fileNum && fileNum <= lastSoftwareUpdateFile) {
             effectiveLifeTime = THREE_MONTHS_IN_SECONDS;
         } else {
             final var effCreationTime =
-                    op.transactionID().transactionValidStart().seconds();
-            final var effExpiration = (file.expirationSecond() > 0) ? file.expirationSecond() : effCreationTime;
+                    body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
+            final var effExpiration =
+                    (file != null && file.expirationSecond() > 0) ? file.expirationSecond() : effCreationTime;
             effectiveLifeTime = effExpiration - effCreationTime;
         }
 

@@ -16,10 +16,12 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
@@ -27,6 +29,7 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartR
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.isGasThrottled;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
@@ -44,12 +47,15 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
+import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
@@ -66,6 +72,7 @@ import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -75,13 +82,12 @@ import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
-import com.hedera.node.app.workflows.handle.verifier.BaseHandleContextVerifier;
-import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.Round;
@@ -126,6 +132,7 @@ public class HandleWorkflow {
     private final DualStateUpdateFacility dualStateUpdateFacility;
     private final SolvencyPreCheck solvencyPreCheck;
     private final Authorizer authorizer;
+    private final NetworkUtilizationManager networkUtilizationManager;
 
     @Inject
     public HandleWorkflow(
@@ -147,7 +154,8 @@ public class HandleWorkflow {
             @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
             @NonNull final DualStateUpdateFacility dualStateUpdateFacility,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
-            @NonNull final Authorizer authorizer) {
+            @NonNull final Authorizer authorizer,
+            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -169,6 +177,8 @@ public class HandleWorkflow {
                 requireNonNull(dualStateUpdateFacility, "dualStateUpdateFacility must not be null");
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
+        this.networkUtilizationManager =
+                requireNonNull(networkUtilizationManager, "networkUtilizationManager must not be null");
     }
 
     /**
@@ -235,16 +245,12 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-        // Get the consensus timestamp
-        final Instant consensusNow = platformTxn.getConsensusTimestamp();
+        // Get the consensus timestamp. FUTURE We want this to exactly match the consensus timestamp from the hashgraph,
+        // but for compatibility with the current implementation, we adjust it as follows.
+        final Instant consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 + 3L);
 
         // handle user transaction
         handleUserTransaction(consensusNow, state, dualState, platformEvent, creator, platformTxn);
-
-        // TODO: handle long scheduled transactions
-
-        // TODO: handle system tasks. System tasks should be outside the blockRecordManager start/end user transaction
-        // TODO: and have their own start/end. So system transactions are handled like separate user transactions.
     }
 
     private void handleUserTransaction(
@@ -256,8 +262,8 @@ public class HandleWorkflow {
             @NonNull final ConsensusTransaction platformTxn) {
         // Setup record builder list
         blockRecordManager.startUserTransaction(consensusNow, state);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
-        final var recordListBuilder = new RecordListBuilder(recordBuilder);
+        final var recordListBuilder = new RecordListBuilder(consensusNow);
+        final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
 
         // Setup helpers
         final var configuration = configProvider.getConfiguration();
@@ -327,7 +333,7 @@ public class HandleWorkflow {
 
             // Set up the verifier
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
-            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+            final var verifier = new DefaultKeyVerifier(hederaConfig, preHandleResult.verificationResults());
             final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(transactionInfo.signatureMap());
 
             // Setup context
@@ -365,7 +371,18 @@ public class HandleWorkflow {
                     readableStoreFactory,
                     fees,
                     platformEvent.getCreatorId().id());
+
+            networkUtilizationManager.resetFrom(stack);
+
             if (validationResult.status() != SO_FAR_SO_GOOD) {
+                final var sigVerificationFailed = validationResult.responseCodeEnum() == INVALID_SIGNATURE;
+                if (sigVerificationFailed) {
+                    // If the signature status isn't ok, only work done will be fee charging
+                    // Note this is how it's implemented in mono (TopLevelTransition.java#L93), in future we may want to
+                    // not trackFeePayments() only for INVALID_SIGNATURE but for any preCheckResult.status() !=
+                    // SO_FAR_SO_GOOD
+                    networkUtilizationManager.trackFeePayments(payer, consensusNow, stack);
+                }
                 recordBuilder.status(validationResult.responseCodeEnum());
                 try {
                     if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
@@ -390,17 +407,37 @@ public class HandleWorkflow {
                 }
 
             } else {
+                networkUtilizationManager.trackTxn(transactionInfo, consensusNow, stack);
                 if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)) {
                     // privileged transactions are not charged fees
                     feeAccumulator.chargeFees(payer, creator.accountId(), fees);
                 }
                 try {
+                    if (networkUtilizationManager.wasLastTxnGasThrottled()) {
+                        // Don't charge the payer the service fee component, because the user-submitted transaction
+                        // was fully valid but network capacity was unavailable to satisfy it
+                        fees = fees.withoutServiceComponent();
+                        throw new HandleException(CONSENSUS_GAS_EXHAUSTED);
+                    }
+
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
                     recordBuilder.status(SUCCESS);
 
+                    // After transaction is successfully handled update the gas throttle by leaking the unused gas
+                    if (isGasThrottled(transactionInfo.functionality()) && recordBuilder.hasContractResult()) {
+                        final var contractsConfig = configuration.getConfigData(ContractsConfig.class);
+                        if (contractsConfig.throttleThrottleByGas()) {
+                            final var gasUsed = recordBuilder.getGasUsedForContractTxn();
+                            final var gasLimitForContractTx =
+                                    getGasLimitForContractTx(txBody, transactionInfo.functionality());
+                            final var excessAmount = gasLimitForContractTx - gasUsed;
+                            networkUtilizationManager.leakUnusedGasPreviouslyReserved(transactionInfo, excessAmount);
+                        }
+                    }
+
                     // Notify responsible facility if system-file was uploaded
-                    systemFileUpdateFacility.handleTxBody(stack, txBody, recordBuilder);
+                    systemFileUpdateFacility.handleTxBody(stack, txBody);
 
                     // Notify if dual state was updated
                     dualStateUpdateFacility.handleTxBody(stack, dualState, txBody);
@@ -426,6 +463,7 @@ public class HandleWorkflow {
             }
         }
 
+        networkUtilizationManager.saveTo(stack);
         transactionFinalizer.finalizeParentRecord(payer, tokenServiceContext);
 
         // Commit all state changes
@@ -433,12 +471,9 @@ public class HandleWorkflow {
 
         // store all records at once, build() records end of transaction to log
         final var recordListResult = recordListBuilder.build();
-        recordCache.add(
-                creator.nodeId(),
-                payer,
-                recordListResult.userTransactionRecord().transactionRecord(),
-                consensusNow);
-        blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
+        recordCache.add(creator.nodeId(), payer, recordListResult.records());
+
+        blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
     }
 
     @NonNull
@@ -451,9 +486,20 @@ public class HandleWorkflow {
         return new FeeAccumulatorImpl(tokenApi, recordBuilder);
     }
 
+    private static long getGasLimitForContractTx(final TransactionBody txnBody, final HederaFunctionality function) {
+        return switch (function) {
+            case CONTRACT_CREATE -> txnBody.contractCreateInstance().gas();
+            case CONTRACT_CALL -> txnBody.contractCall().gas();
+            case ETHEREUM_TRANSACTION -> EthTxData.populateEthTxData(
+                            txnBody.ethereumTransaction().ethereumData().toByteArray())
+                    .gasLimit();
+            default -> 0L;
+        };
+    }
+
     private ValidationResult validate(
             @NonNull final Instant consensusNow,
-            @NonNull final HandleContextVerifier verifier,
+            @NonNull final KeyVerifier verifier,
             @NonNull final PreHandleResult preHandleResult,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Fees fees,
@@ -463,6 +509,7 @@ public class HandleWorkflow {
         final var payerID = txInfo.payerID();
         final var functionality = txInfo.functionality();
         final var txBody = txInfo.txBody();
+        boolean isPayerHollow = false;
 
         // Check if pre-handle was successful
         if (preHandleResult.status() != SO_FAR_SO_GOOD) {
@@ -482,9 +529,11 @@ public class HandleWorkflow {
         }
 
         // Check the status and solvency of the payer
+
         try {
             final var payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
             solvencyPreCheck.checkSolvency(txInfo, payer, fees);
+            isPayerHollow = isHollow(payer);
         } catch (final InsufficientServiceFeeException e) {
             return new ValidationResult(PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE, e.responseCode());
         } catch (final InsufficientNonFeeDebitsException e) {
@@ -520,7 +569,7 @@ public class HandleWorkflow {
 
         // Check all signature verifications. This will also wait, if validation is still ongoing.
         final var payerKeyVerification = verifier.verificationFor(preHandleResult.payerKey());
-        if (payerKeyVerification.failed()) {
+        if (!isPayerHollow && payerKeyVerification.failed()) {
             return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_SIGNATURE);
         }
 
@@ -552,7 +601,7 @@ public class HandleWorkflow {
         stack.rollbackFullStack();
         final var userTransactionRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
         userTransactionRecordBuilder.status(status);
-        recordListBuilder.revertChildRecordBuilders(userTransactionRecordBuilder);
+        recordListBuilder.revertChildrenOf(userTransactionRecordBuilder);
     }
 
     /*
@@ -606,7 +655,6 @@ public class HandleWorkflow {
      * any keys need to be added. If so, we trigger the signature verification for the new keys and collect all
      * results.
      */
-    // TODO: Need to re-use expandAndVerifySignatures from PreHandleWorkflowImpl instead of duplicating this code
     @NonNull
     private PreHandleResult addMissingSignatures(
             @NonNull final ReadableStoreFactory storeFactory,
@@ -634,12 +682,15 @@ public class HandleWorkflow {
 
         // prepare signature verification
         final var verifications = new HashMap<Key, SignatureVerificationFuture>();
-        final var payerKey = previousResult.payerKey();
-        verifications.put(payerKey, previousResult.verificationResults().get(payerKey));
+        final var payer = solvencyPreCheck.getPayerAccount(storeFactory, previousResult.payer());
+        final var payerKey = payer.key();
 
         // expand all keys
         final var expanded = new HashSet<ExpandedSignaturePair>();
         signatureExpander.expand(sigPairs, expanded);
+        if (payerKey != null && !isHollow(payer)) {
+            signatureExpander.expand(payerKey, sigPairs, expanded);
+        }
         signatureExpander.expand(currentRequiredPayerKeys, sigPairs, expanded);
         signatureExpander.expand(currentOptionalPayerKeys, sigPairs, expanded);
 

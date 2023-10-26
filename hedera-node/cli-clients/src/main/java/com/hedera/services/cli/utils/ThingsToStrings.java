@@ -63,6 +63,12 @@ public class ThingsToStrings {
         return s;
     }
 
+    @NonNull
+    public static String squashLinesToEscapes(@Nullable String s) {
+        if (s == null) return "";
+        return s.replace("\r", "\\r").replace("\n", "\\n");
+    }
+
     // All of these converters from something to a String will check to see if that something is a "null" or is
     // an "empty" (whatever "empty" might mean for that thing).  They return `true` if the thing _existed_, otherwise
     // (null or "empty") return false.  (Thus, they are predicates.)

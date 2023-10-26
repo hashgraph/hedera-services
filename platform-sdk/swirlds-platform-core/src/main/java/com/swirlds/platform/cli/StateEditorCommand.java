@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.cli;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
@@ -67,7 +69,7 @@ public class StateEditorCommand extends AbstractCommand {
      */
     @Override
     public Integer call() throws IOException {
-        DefaultConfiguration.buildBasicConfiguration(configurationPaths);
+        DefaultConfiguration.buildBasicConfiguration(getAbsolutePath("settings.txt"), configurationPaths);
         BootstrapUtils.setupConstructableRegistry();
 
         new StateEditor(statePath).start();

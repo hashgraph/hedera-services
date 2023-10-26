@@ -20,7 +20,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.spi.validation.Validations.mustExist;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_HEADER;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_TX_ID_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_TX_RECORD_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_MATRICES_CONST;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.STATE_PROOF_SIZE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -28,18 +33,20 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.hapi.node.transaction.TransactionGetRecordQuery;
 import com.hedera.hapi.node.transaction.TransactionGetRecordResponse;
-import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
-import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -73,7 +80,9 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         final var op = context.query().transactionGetRecordOrThrow();
 
         // The transaction ID must be specified
-        if (!op.hasTransactionID()) throw new PreCheckException(INVALID_TRANSACTION_ID);
+        if (!op.hasTransactionID()) {
+            throw new PreCheckException(INVALID_TRANSACTION_ID);
+        }
 
         // The record must exist for that transaction ID
         final var txnId = op.transactionIDOrThrow();
@@ -83,10 +92,6 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         if (accountID == null || accountID.equals(AccountID.DEFAULT)) {
             throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
-
-        final var recordCache = context.recordCache();
-        final var receipt = recordCache.getReceipt(txnId);
-        mustExist(receipt, INVALID_TRANSACTION_ID);
     }
 
     @Override
@@ -94,30 +99,30 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
         final var query = context.query();
+        final var recordCache = context.recordCache();
         final var op = query.transactionGetRecordOrThrow();
         final var responseBuilder = TransactionGetRecordResponse.newBuilder();
         final var transactionId = op.transactionIDOrThrow();
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         responseBuilder.header(header);
         if (header.nodeTransactionPrecheckCode() == ResponseCodeEnum.OK && responseType != COST_ANSWER) {
-            final var recordCache = context.recordCache();
-            final var transactionRecordPrimary = recordCache.getRecord(transactionId);
-            if (transactionRecordPrimary == null) {
+            final var history = recordCache.getHistory(transactionId);
+            if (history == null || history.records().isEmpty()) {
+                // Can we even ever hit this case? Doesn't the validate method make sure this doesn't happen?
+                // If we do not yet have a record, then we return this. This has some asymmetry with the call to get
+                // a transaction receipt, which will return a receipt with a status of UNKNOWN if the transactionID
+                // is known but there is not yet any kind of record.
                 responseBuilder.header(header.copyBuilder()
                         .nodeTransactionPrecheckCode(RECORD_NOT_FOUND)
                         .build());
             } else {
-                responseBuilder.transactionRecord(transactionRecordPrimary);
+                // There was definitely a record, so we can return it.
+                responseBuilder.transactionRecord(history.userTransactionRecord());
                 if (op.includeDuplicates()) {
-                    final List<TransactionRecord> allTransactionRecords = recordCache.getRecords(transactionId);
-
-                    // remove the primary record from the list
-                    final List<TransactionRecord> duplicateTransactionRecords =
-                            allTransactionRecords.subList(1, allTransactionRecords.size());
-                    responseBuilder.duplicateTransactionRecords(duplicateTransactionRecords);
+                    responseBuilder.duplicateTransactionRecords(history.duplicateRecords());
                 }
                 if (op.includeChildRecords()) {
-                    responseBuilder.childTransactionRecords(transformedChildrenOf(transactionId, recordCache));
+                    responseBuilder.childTransactionRecords(history.childRecords());
                 }
             }
         }
@@ -125,18 +130,43 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         return Response.newBuilder().transactionGetRecord(responseBuilder).build();
     }
 
-    private List<TransactionRecord> transformedChildrenOf(TransactionID transactionID, RecordCache recordCache) {
-        final List<TransactionRecord> children = new ArrayList<>();
-        // In a transaction id if nonce is 0 it is a parent and if we have any other number it is a child
-        for (int nonce = 1; ; nonce++) {
-            var childTransactionId = transactionID.copyBuilder().nonce(nonce).build();
-            var maybeChildRecord = recordCache.getRecord(childTransactionId);
-            if (maybeChildRecord == null) {
-                break;
-            } else {
-                children.add(maybeChildRecord);
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext queryContext) {
+        final RecordCache recordCache = queryContext.recordCache();
+        final TransactionGetRecordQuery op = queryContext.query().transactionGetRecordOrThrow();
+
+        // fees are the same for all records for a given response type,
+        // so we calculate them once and multiply by the number of records found
+
+        // calculate per-record fees
+        final ResponseType responseType = op.headerOrThrow().responseType();
+        final int stateProofSize =
+                responseType == ResponseType.ANSWER_STATE_PROOF || responseType == ResponseType.COST_ANSWER_STATE_PROOF
+                        ? STATE_PROOF_SIZE
+                        : 0;
+        final FeeComponents feeMatricesForTxNode = FeeComponents.newBuilder()
+                .setConstant(FEE_MATRICES_CONST)
+                .setBpt(BASIC_QUERY_HEADER + BASIC_TX_ID_SIZE)
+                .setBpr(BASIC_QUERY_RES_HEADER + BASIC_TX_RECORD_SIZE + stateProofSize)
+                .build();
+        final FeeData perRecordFeeData = FeeData.newBuilder()
+                .setNetworkdata(FeeComponents.getDefaultInstance())
+                .setNodedata(feeMatricesForTxNode)
+                .setServicedata(FeeComponents.getDefaultInstance())
+                .build();
+
+        int recordCount = 1;
+        if (op.includeDuplicates() || op.includeChildRecords()) {
+            final var history = recordCache.getHistory(op.transactionIDOrThrow());
+            if (history != null) {
+                recordCount += op.includeDuplicates() ? history.duplicateCount() : 0;
+                recordCount += op.includeChildRecords() ? history.childRecords().size() : 0;
             }
         }
-        return children;
+
+        // multiply node fees to include duplicate and/or child records
+        final FeeData feeData = FeeCalcUtils.multiplierOfUsages(perRecordFeeData, recordCount);
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> feeData);
     }
 }

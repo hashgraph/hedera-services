@@ -60,7 +60,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
@@ -279,7 +279,18 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      */
     @Override
     public @Nullable Address getAddress(final long number) {
-        final var account = validatedAccount(number);
+        final var account = nativeOperations.getAccount(number);
+        if (account == null) {
+            final var token = nativeOperations.getToken(number);
+            if (token != null) {
+                // If the token is deleted or expired, the system contract executed by the redirect
+                // bytecode will fail with a more meaningful error message, so don't check that here
+                return asLongZeroAddress(number);
+            } else {
+                throw new IllegalArgumentException("No account or token has number " + number);
+            }
+        }
+
         if (account.deleted()) {
             return null;
         }
@@ -310,6 +321,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public void finalizeHollowAccount(@NonNull final Address address) {
         nativeOperations.finalizeHollowAccountAsContract(tuweniToPbjBytes(address));
+    }
+
+    @Override
+    public long numBytecodesInState() {
+        return contractStateStore.getNumBytecodes();
     }
 
     /**
@@ -415,7 +431,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public @Nullable EvmAccount getMutableAccount(@NonNull final Address address) {
+    public @Nullable MutableAccount getMutableAccount(@NonNull final Address address) {
         final var number = maybeMissingNumberOf(address, nativeOperations);
         if (number == MISSING_ENTITY_NUMBER) {
             return null;

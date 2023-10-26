@@ -106,6 +106,7 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
                 .setCurrentCryptoAllowances(Collections.emptyMap())
                 .setCurrentTokenAllowances(Collections.emptyMap())
                 .setCurrentApproveForAllNftAllowances(Collections.emptySet())
+                .setCurrentlyHasProxy(false)
                 .build();
         return cryptoOpsUsage.cryptoInfoUsage(fromPbj(query), ctx);
     }

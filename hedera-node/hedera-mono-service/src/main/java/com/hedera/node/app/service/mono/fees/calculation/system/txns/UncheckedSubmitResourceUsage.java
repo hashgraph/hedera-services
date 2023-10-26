@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.fees.calculation.system.txns;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;
@@ -38,8 +37,15 @@ public final class UncheckedSubmitResourceUsage implements TxnResourceUsageEstim
     }
 
     @Override
-    public FeeData usageGiven(final TransactionBody txn, final SigValueObj sigUsage, final StateView view)
-            throws InvalidTxBodyException {
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj sigUsage, final StateView view) {
+        return FeeData.getDefaultInstance();
+    }
+    /**
+     * This method is used to calculate the fee for the {@code NetworkUncheckedSubmit}
+     * query in modularized code only.
+     * @return the fee for the query
+     */
+    public static FeeData usageGiven() {
         return FeeData.getDefaultInstance();
     }
 }

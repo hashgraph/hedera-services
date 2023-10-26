@@ -137,7 +137,7 @@ class SolvencyPreCheckTest extends AppTestBase {
         void testGetUnknownPayerAccountFails() {
             assertThatThrownBy(() -> subject.getPayerAccount(storeFactory, BOB.accountID()))
                     .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
+                    .has(responseCode(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND));
         }
 
         @Test
@@ -163,7 +163,7 @@ class SolvencyPreCheckTest extends AppTestBase {
             // then
             assertThatThrownBy(() -> subject.getPayerAccount(storeFactory, ALICE.accountID()))
                     .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
+                    .has(responseCode(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND));
         }
     }
 

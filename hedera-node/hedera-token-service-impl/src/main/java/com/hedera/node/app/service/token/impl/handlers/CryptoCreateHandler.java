@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_I
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
@@ -53,6 +54,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -60,6 +62,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -208,6 +211,11 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        final var accountConfig = context.configuration().getConfigData(AccountsConfig.class);
+
+        if (accountStore.getNumberOfAccounts() + 1 > accountConfig.maxNumber()) {
+            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        }
 
         if (op.initialBalance() > 0) {
             // validate payer account exists and has enough balance
@@ -336,11 +344,14 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         // Variable bytes plus two additional longs for balance and auto-renew period; plus a boolean for receiver sig
         // required.
         final var op = feeContext.body().cryptoCreateAccountOrThrow();
+        return cryptoCreateFees(op, feeContext.feeCalculator(SubType.DEFAULT));
+    }
+
+    public static Fees cryptoCreateFees(final CryptoCreateTransactionBody op, final FeeCalculator feeCalculator) {
         final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.keyOrThrow())) : 0L;
         final var baseSize = op.memo().length() + keySize + (op.maxAutomaticTokenAssociations() > 0 ? INT_SIZE : 0L);
         final var lifeTime = op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
-        return feeContext
-                .feeCalculator(SubType.DEFAULT)
+        return feeCalculator
                 .addBytesPerTransaction(baseSize + 2 * LONG_SIZE + BOOL_SIZE)
                 .addRamByteSeconds((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime)
                 .addRamByteSeconds(op.maxAutomaticTokenAssociations() * lifeTime * CREATE_SLOT_MULTIPLIER)

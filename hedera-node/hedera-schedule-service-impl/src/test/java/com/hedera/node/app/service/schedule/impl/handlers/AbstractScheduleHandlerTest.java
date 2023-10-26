@@ -24,34 +24,27 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.impl.handlers.AbstractScheduleHandler.ScheduleKeysResult;
-import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
-import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.Set;
-import org.assertj.core.api.BDDAssertions;
+import java.util.function.Predicate;
 import org.assertj.core.api.Condition;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
     private static final SchedulableTransactionBody NULL_SCHEDULABLE_BODY = null;
@@ -80,28 +73,32 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
         // missing schedule or schedule ID should throw invalid ID
         assertThatThrownBy(() -> testHandler.preValidate(scheduleStore, false, null))
                 .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_SCHEDULE_ID));
-        BDDMockito.given(schedulesById.get(testScheduleID)).willReturn(null);
+        reset(writableById);
+        scheduleMapById.put(testScheduleID, null);
         assertThatThrownBy(() -> testHandler.preValidate(scheduleStore, false, testScheduleID))
                 .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_SCHEDULE_ID));
         for (final Schedule next : listOfScheduledOptions) {
             final ScheduleID testId = next.scheduleId();
+            reset(writableById);
             // valid schedules should not throw
-            BDDMockito.given(schedulesById.get(testId)).willReturn(next);
+            scheduleMapById.put(testId, next);
             assertThatNoException().isThrownBy(() -> testHandler.preValidate(scheduleStore, false, testId));
             // scheduled without scheduled transaction should throw invalid transaction
             final Schedule missingScheduled = next.copyBuilder()
                     .scheduledTransaction(NULL_SCHEDULABLE_BODY)
                     .build();
-            BDDMockito.given(schedulesById.get(testId)).willReturn(missingScheduled);
+            reset(writableById);
+            scheduleMapById.put(testId, missingScheduled);
             assertThatThrownBy(() -> testHandler.preValidate(scheduleStore, false, testId))
                     .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_TRANSACTION));
             // Non-success codes returned by validate should become exceptions
-            Schedule otherFailures = next.copyBuilder().executed(true).build();
-            BDDMockito.given(schedulesById.get(testId)).willReturn(otherFailures);
+            reset(writableById);
+            scheduleMapById.put(testId, next.copyBuilder().executed(true).build());
             assertThatThrownBy(() -> testHandler.preValidate(scheduleStore, false, testId))
                     .is(new PreCheckExceptionMatch(ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED));
-            otherFailures = next.copyBuilder().deleted(true).build();
-            BDDMockito.given(schedulesById.get(testId)).willReturn(otherFailures);
+
+            reset(writableById);
+            scheduleMapById.put(testId, next.copyBuilder().deleted(true).build());
             assertThatThrownBy(() -> testHandler.preValidate(scheduleStore, false, testId))
                     .is(new PreCheckExceptionMatch(ResponseCodeEnum.SCHEDULE_ALREADY_DELETED));
         }
@@ -146,9 +143,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
             brokenId = idToTest.copyBuilder().accountID((AccountID) null).build();
             assertThatThrownBy(new callCheckValid(brokenId, testHandler))
                     .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID));
-            brokenId = idToTest.copyBuilder()
-                    .transactionValidStart((Timestamp) null)
-                    .build();
+            brokenId = idToTest.copyBuilder().transactionValidStart(nullTime).build();
             assertThatThrownBy(new callCheckValid(brokenId, testHandler))
                     .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_TRANSACTION_START));
         }
@@ -178,7 +173,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void varifyKeysForHandle() throws PreCheckException {
+    void verifyKeysForHandle() throws PreCheckException {
         final TransactionKeys testKeys =
                 new TestTransactionKeys(schedulerKey, Set.of(payerKey, adminKey), Set.of(optionKey, schedulerKey));
         BDDMockito.given(mockContext.allKeysForTransaction(BDDMockito.any(), BDDMockito.any()))
@@ -205,13 +200,12 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void verifyTryExecute() {
         final var mockRecordBuilder = Mockito.mock(SingleTransactionRecordBuilderImpl.class);
         BDDMockito.given(mockContext.dispatchChildTransaction(
-                        Mockito.any(TransactionBody.class),
-                        Mockito.any(),
-                        Mockito.any(ScheduleVerificationAssistant.class)))
+                        Mockito.any(TransactionBody.class), Mockito.any(), Mockito.any(Predicate.class)))
                 .willReturn(mockRecordBuilder);
         for (final Schedule testItem : listOfScheduledOptions) {
             Set<Key> testRemaining = Set.of();
@@ -233,49 +227,6 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
             assertThatThrownBy(() -> testHandler.tryToExecuteSchedule(
                             mockContext, testItem, testRemaining, testSignatories, ResponseCodeEnum.OK, false))
                     .is(new HandleExceptionMatch(ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE));
-        }
-    }
-
-    // This provides Mock answers for Context code.  In order to actually test the Handler code, however, this
-    // class MUST call the callback for each key, and generate an success/failure based on whether the key is in
-    // the required (success) or optional (failure) set in the TransactionKeys provided to the constructor.
-    // Not calling the callback, passing a different key, or not responding with a correct Verification could
-    // cause incorrect test results and permit errors to pass testing.
-    private static final class VerificationForAnswer implements Answer<SignatureVerification> {
-        private static final String TYPE_FAIL_MESSAGE = "Incorrect Argument type, expected %s but got %s";
-        private final TransactionKeys keysForTransaction;
-
-        VerificationForAnswer(TransactionKeys testKeys) {
-            keysForTransaction = testKeys;
-        }
-
-        @Override
-        public SignatureVerification answer(final InvocationOnMock invocation) {
-            final SignatureVerification result;
-            final Object[] arguments = invocation.getArguments();
-            if (arguments.length != 2) {
-                result = null;
-                BDDAssertions.fail("Incorrect Argument count, expected 2 but got %d".formatted(arguments.length));
-            } else if (arguments[0] instanceof Key keyToTest) {
-                if (arguments[1] instanceof VerificationAssistant callback) {
-                    if (keysForTransaction.requiredNonPayerKeys().contains(keyToTest)) {
-                        result = new SignatureVerificationImpl(keyToTest, null, true);
-                        callback.test(keyToTest, result);
-                    } else {
-                        result = new SignatureVerificationImpl(keyToTest, null, false);
-                        callback.test(keyToTest, new SignatureVerificationImpl(keyToTest, null, false));
-                    }
-                } else {
-                    result = null;
-                    final String actualType = arguments[1].getClass().getCanonicalName();
-                    BDDAssertions.fail(TYPE_FAIL_MESSAGE.formatted("VerificationAssistant", actualType));
-                }
-            } else {
-                result = null;
-                final String actualType = arguments[1].getClass().getCanonicalName();
-                BDDAssertions.fail(TYPE_FAIL_MESSAGE.formatted("Key", actualType));
-            }
-            return result;
         }
     }
 
@@ -320,43 +271,6 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
         @Override
         public boolean matches(final Throwable thrown) {
             return thrown instanceof HandleException e && e.getStatus() == codeToMatch;
-        }
-    }
-
-    private static class TestTransactionKeys implements TransactionKeys {
-        private final Key payerKey;
-        private final Set<Key> optionalKeys;
-        private final Set<Key> requiredKeys;
-
-        private TestTransactionKeys(final Key payer, final Set<Key> required, final Set<Key> optional) {
-            payerKey = payer;
-            requiredKeys = required;
-            optionalKeys = optional;
-        }
-
-        @Override
-        public Key payerKey() {
-            return payerKey;
-        }
-
-        @Override
-        public Set<Key> requiredNonPayerKeys() {
-            return requiredKeys;
-        }
-
-        @Override
-        public Set<Account> requiredHollowAccounts() {
-            return null;
-        }
-
-        @Override
-        public Set<Key> optionalNonPayerKeys() {
-            return optionalKeys;
-        }
-
-        @Override
-        public Set<Account> optionalHollowAccounts() {
-            return null;
         }
     }
 }

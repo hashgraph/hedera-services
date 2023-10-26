@@ -16,22 +16,24 @@
 
 package com.swirlds.platform.event.validation;
 
-import static com.swirlds.logging.LogMarker.EVENT_SIG;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.EventStrings;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;
+import java.time.Duration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -41,19 +43,38 @@ import org.apache.logging.log4j.Logger;
  * A {@link GossipEventValidator} which validates the event's signature
  */
 public class SignatureValidator implements GossipEventValidator {
+    public static final String VALIDATOR_NAME = "SIGNATURE_VALIDATOR";
     private static final Logger logger = LogManager.getLogger(SignatureValidator.class);
     private final SignatureVerifier signatureVerifier;
-    private final Map<NodeId, PublicKey> keyMap;
+    private final Map<NodeId, PublicKey> previousKeyMap = new HashMap<>();
+    private final Map<NodeId, PublicKey> currentKeyMap = new HashMap<>();
+    private final SoftwareVersion currentSoftwareVersion;
+    private final RateLimitedLogger versionRateLimitedLogger;
 
+    /**
+     * @param previousAddressBook    the previous address book
+     * @param currentAddressBook     the current address book
+     * @param currentSoftwareVersion the current software version
+     * @param signatureVerifier      the signature verifier
+     * @param time                   the time
+     */
     public SignatureValidator(
-            @NonNull final List<AddressBook> addressBooks, @NonNull final SignatureVerifier signatureVerifier) {
+            @Nullable final AddressBook previousAddressBook,
+            @NonNull final AddressBook currentAddressBook,
+            @NonNull final SoftwareVersion currentSoftwareVersion,
+            @NonNull final SignatureVerifier signatureVerifier,
+            @NonNull final Time time) {
         this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
-        this.keyMap = new HashMap<>();
-        for (final AddressBook addressBook : addressBooks) {
-            for (final Address address : Objects.requireNonNull(addressBook)) {
-                keyMap.put(address.getNodeId(), address.getSigPublicKey());
+        this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
+        if (previousAddressBook != null) {
+            for (final Address address : previousAddressBook) {
+                previousKeyMap.put(address.getNodeId(), address.getSigPublicKey());
             }
         }
+        for (final Address address : Objects.requireNonNull(currentAddressBook)) {
+            currentKeyMap.put(address.getNodeId(), address.getSigPublicKey());
+        }
+        this.versionRateLimitedLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
     }
 
     /**
@@ -66,11 +87,6 @@ public class SignatureValidator implements GossipEventValidator {
      * @return true iff the signature is crypto-verified to be correct
      */
     private boolean isValidSignature(final BaseEvent event, final PublicKey publicKey) {
-        logger.debug(
-                EVENT_SIG.getMarker(),
-                "event signature is about to be verified. {}",
-                () -> EventStrings.toShortString(event));
-
         final boolean valid = signatureVerifier.verifySignature(
                 event.getHashedData().getHash().getValue(),
                 event.getUnhashedData().getSignature(),
@@ -99,12 +115,34 @@ public class SignatureValidator implements GossipEventValidator {
     @Override
     public boolean isEventValid(final GossipEvent event) {
         final NodeId creatorId = event.getHashedData().getCreatorId();
-        final PublicKey publicKey = keyMap.get(creatorId);
+        final SoftwareVersion eventSoftwareVersion = event.getHashedData().getSoftwareVersion();
+        final int softwareComparison = currentSoftwareVersion.compareTo(eventSoftwareVersion);
+        final PublicKey publicKey;
+        if (softwareComparison < 0) {
+            // current software version is less than event software version
+            versionRateLimitedLogger.error(
+                    EXCEPTION.getMarker(),
+                    "Cannot validate events for software version {} that is greater than the current software version {}",
+                    eventSoftwareVersion,
+                    currentSoftwareVersion);
+            return false;
+        } else if (softwareComparison > 0) {
+            // current software version is greater than event software version
+            publicKey = previousKeyMap.get(creatorId);
+        } else {
+            // current software version is equal to event software version
+            publicKey = currentKeyMap.get(creatorId);
+        }
         if (publicKey == null) {
             logger.error(EXCEPTION.getMarker(), "Cannot find publicKey for creator with ID: {}", () -> creatorId);
             return false;
         }
 
         return isValidSignature(event, publicKey);
+    }
+
+    @Override
+    public @NonNull String validatorName() {
+        return VALIDATOR_NAME;
     }
 }

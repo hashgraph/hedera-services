@@ -40,5 +40,6 @@ class TransactionConfigModuleTest {
         assertNotNull(TransactionConfigModule.provideContractsConfig(config));
         assertNotNull(TransactionConfigModule.provideLedgerConfig(config));
         assertNotNull(TransactionConfigModule.provideStakingConfig(config));
+        assertNotNull(TransactionConfigModule.provideHederaConfig(config));
     }
 }

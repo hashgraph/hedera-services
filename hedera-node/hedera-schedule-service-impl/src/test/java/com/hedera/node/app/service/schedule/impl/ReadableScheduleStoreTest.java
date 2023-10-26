@@ -16,94 +16,26 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.schedule.ReadableScheduleStore;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.state.ReadableKVStateBase;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.security.InvalidKeyException;
+import java.util.ArrayList;
+import java.util.List;
 import org.assertj.core.api.BDDAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ReadableScheduleStoreTest {
-    // spotless mangles this section randomly, due to incorrect wrapping rules
-    // spotless:off
-    // A few random values for fake ed25519 test keys
-    private static final String PAYER_KEY_HEX =
-            "badcadfaddad2bedfedbeef959feedbeadcafecadecedebeed4acedecada5ada";
-    private static final String SCHEDULER_KEY_HEX =
-            "feedbeadcafe8675309bafedfacecaeddeedcedebede4adaacecab2badcadfad";
-    // This one is a perfect 10.
-    private static final String ADMIN_KEY_HEX =
-            "0000000000191561942608236107294793378084303638130997321548169216";
-    private final ScheduleID testScheduleID = ScheduleID.newBuilder().scheduleNum(100L).build();
-    private AccountID adminAccount = AccountID.newBuilder().accountNum(626068L).build();
-    private Key adminKey = Key.newBuilder().ed25519(Bytes.fromHex(ADMIN_KEY_HEX)).build();
-    private AccountID scheduler = AccountID.newBuilder().accountNum(1001L).build();
-    private Key schedulerKey = Key.newBuilder().ed25519(Bytes.fromHex(SCHEDULER_KEY_HEX)).build();
-    private AccountID payer = AccountID.newBuilder().accountNum(2001L).build();
-    private Key payerKey = Key.newBuilder().ed25519(Bytes.fromHex(PAYER_KEY_HEX)).build();
-    // spotless:on
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private Account schedulerAccount;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private Account payerAccount;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private ReadableAccountStore accountStore;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private ReadableStates states;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private ReadableKVStateBase<ScheduleID, Schedule> schedulesById;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private Schedule scheduleInState;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private ReadableStoreFactory mockStoreFactory;
-
-    // Non-Mock objects, but may contain or reference mock objects.
-    private ReadableScheduleStore scheduleStore;
-    private SchedulableTransactionBody scheduled;
+class ReadableScheduleStoreTest extends ScheduleTestBase {
 
     @BeforeEach
-    void setUp() throws PreCheckException {
-        BDDMockito.given(states.<ScheduleID, Schedule>get("SCHEDULES_BY_ID")).willReturn(schedulesById);
-        BDDMockito.given(schedulerAccount.key()).willReturn(schedulerKey);
-        BDDMockito.given(payerAccount.key()).willReturn(payerKey);
-
-        scheduleStore = new ReadableScheduleStoreImpl(states);
-
-        BDDMockito.given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
-        BDDMockito.given(accountStore.getAccountById(payer)).willReturn(payerAccount);
-
-        BDDMockito.given(scheduleInState.hasPayerAccountId()).willReturn(Boolean.TRUE);
-        BDDMockito.given(scheduleInState.payerAccountId()).willReturn(payer);
-        BDDMockito.given(scheduleInState.schedulerAccountId()).willReturn(adminAccount);
-        BDDMockito.given(scheduleInState.hasAdminKey()).willReturn(true);
-        BDDMockito.given(scheduleInState.adminKey()).willReturn(adminKey);
-        BDDMockito.given(scheduleInState.scheduledTransaction()).willReturn(scheduled);
-
-        BDDMockito.given(schedulesById.get(testScheduleID)).willReturn(scheduleInState);
-        BDDMockito.given(mockStoreFactory.getStore(ReadableScheduleStore.class)).willReturn(scheduleStore);
-        BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
+    void setUp() throws PreCheckException, InvalidKeyException {
+        setUpBase();
     }
 
     @Test
@@ -114,29 +46,59 @@ class ReadableScheduleStoreTest {
     }
 
     @Test
+    void getsExpectedSize() {
+        assertThat(scheduleStore.numSchedulesInState()).isEqualTo(2);
+    }
+
+    @Test
     void returnsEmptyIfMissingSchedule() {
-        BDDMockito.given(schedulesById.get(testScheduleID)).willReturn(null);
-        BDDAssertions.assertThat(scheduleStore.get(testScheduleID)).isNull();
+        final long missingId = testScheduleID.scheduleNum() + 15_000L;
+        final ScheduleID missing =
+                testScheduleID.copyBuilder().scheduleNum(missingId).build();
+        assertThat(scheduleStore.get(missing)).isNull();
     }
 
     @Test
     void getsScheduleMetaFromFetchedSchedule() {
         final Schedule readSchedule = scheduleStore.get(testScheduleID);
-        BDDAssertions.assertThat(readSchedule).isNotNull();
-        BDDAssertions.assertThat(readSchedule.payerAccountId()).isEqualTo(payer);
-        BDDAssertions.assertThat(readSchedule.adminKey()).isEqualTo(adminKey);
-        BDDAssertions.assertThat(readSchedule.scheduledTransaction()).isEqualTo(scheduled);
+        assertThat(readSchedule).isNotNull();
+        assertThat(readSchedule.payerAccountId()).isEqualTo(payer);
+        assertThat(readSchedule.adminKey()).isEqualTo(adminKey);
+        assertThat(readSchedule.scheduledTransaction()).isEqualTo(scheduled);
     }
 
     @Test
     void getsScheduleMetaFromFetchedScheduleNoExplicitPayer() {
-        BDDMockito.given(scheduleInState.hasPayerAccountId()).willReturn(false);
-        BDDMockito.given(scheduleInState.payerAccountId()).willReturn(null);
-
+        final Schedule modified =
+                scheduleInState.copyBuilder().payerAccountId(nullAccount).build();
+        writableSchedules.put(modified);
         final Schedule readSchedule = scheduleStore.get(testScheduleID);
-        BDDAssertions.assertThat(readSchedule).isNotNull();
-        BDDAssertions.assertThat(readSchedule.payerAccountId()).isNull();
-        BDDAssertions.assertThat(readSchedule.adminKey()).isEqualTo(adminKey);
-        BDDAssertions.assertThat(readSchedule.scheduledTransaction()).isEqualTo(scheduled);
+        assertThat(readSchedule).isNotNull();
+        assertThat(readSchedule.payerAccountId()).isNull();
+        assertThat(readSchedule.adminKey()).isEqualTo(adminKey);
+        assertThat(readSchedule.scheduledTransaction()).isEqualTo(scheduled);
+    }
+
+    @Test
+    void verifyGetByExpiration() {
+        final List<Schedule> schedulesBySecond = scheduleStore.getByExpirationSecond(expirationTime.seconds());
+        assertThat(schedulesBySecond).hasSize(1).containsExactly(scheduleInState);
+        long altTime = testConsensusTime.getEpochSecond() + scheduleConfig.maxExpirationFutureSeconds();
+        final List<Schedule> altSchedulesBySecond = scheduleStore.getByExpirationSecond(altTime);
+        assertThat(altSchedulesBySecond).hasSize(1).containsExactly(otherScheduleInState);
+        final int expandedSize = listOfScheduledOptions.size() + 1;
+        final List<Schedule> expanded = new ArrayList<>(expandedSize);
+        expanded.add(otherScheduleInState);
+        for (Schedule next : listOfScheduledOptions) {
+            Schedule.Builder nextWithExpiry = next.copyBuilder();
+            nextWithExpiry.providedExpirationSecond(altTime).calculatedExpirationSecond(altTime);
+            final Schedule modified = nextWithExpiry.build();
+            expanded.add(modified);
+            writableSchedules.put(modified);
+        }
+        // This works because write/read are the same object.  If that changes then we must commit and reset here
+        // to update the underlying KV states.
+        final List<Schedule> expandedBySecond = scheduleStore.getByExpirationSecond(altTime);
+        assertThat(expandedBySecond).hasSize(expandedSize).containsExactlyInAnyOrderElementsOf(expanded);
     }
 }

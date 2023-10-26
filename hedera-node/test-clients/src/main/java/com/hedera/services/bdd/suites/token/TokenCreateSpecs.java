@@ -158,6 +158,7 @@ public class TokenCreateSpecs extends HapiSuite {
      * It also verifies that these auto-associations don't "count" against the max
      * automatic associations limit defined by https://hips.hedera.com/hip/hip-23.
      */
+    @HapiTest
     private HapiSpec validateNewTokenAssociations() {
         final String notToBeToken = "notToBeToken";
         final String hbarCollector = "hbarCollector";
@@ -259,6 +260,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(getTokenInfo(SENTINEL_VALUE).hasCostAnswerPrecheck(INVALID_TOKEN_ID));
     }
 
+    @HapiTest
     public HapiSpec cannotCreateWithExcessiveLifetime() {
         final var smallBuffer = 12_345L;
         final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
@@ -271,6 +273,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         tokenCreate("neverToBe").expiry(okExpiry));
     }
 
+    @HapiTest
     public HapiSpec autoRenewValidationWorks() {
         final var deletingAccount = "deletingAccount";
         return defaultHapiSpec("AutoRenewValidationWorks")
@@ -320,6 +323,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(getTokenInfo(PRIMARY).logged().hasRegisteredId(PRIMARY).hasName(saltedName));
     }
 
+    @HapiTest
     public HapiSpec creationWithoutKYCSetsCorrectStatus() {
         String saltedName = salted(PRIMARY);
         return defaultHapiSpec("CreationWithoutKYCSetsCorrectStatus")
@@ -415,6 +419,7 @@ public class TokenCreateSpecs extends HapiSuite {
         return tokenSubType + "Txn";
     }
 
+    @HapiTest
     public HapiSpec creationHappyPath() {
         String memo = "JUMP";
         String saltedName = salted(PRIMARY);
@@ -540,6 +545,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         getTokenInfo(PRIMARY).logged().hasRegisteredId(PRIMARY).hasValidExpiry());
     }
 
+    @HapiTest
     public HapiSpec creationValidatesExpiry() {
         return defaultHapiSpec("CreationValidatesExpiry")
                 .given()
@@ -609,6 +615,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY));
     }
 
+    @HapiTest
     public HapiSpec onlyValidCustomFeeScheduleCanBeCreated() {
         return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
                 .given(
@@ -782,6 +789,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 tokenCollector)));
     }
 
+    @HapiTest
     private HapiSpec feeCollectorSigningReqsWorkForTokenCreate() {
         return defaultHapiSpec("feeCollectorSigningReqsWorkForTokenCreate")
                 .given(
@@ -841,6 +849,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         getAccountInfo(htsCollector).hasNoTokenRelationship(token));
     }
 
+    @HapiTest
     public HapiSpec creationValidatesName() {
         AtomicInteger maxUtf8Bytes = new AtomicInteger();
 
@@ -860,6 +869,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasPrecheck(TOKEN_NAME_TOO_LONG)));
     }
 
+    @HapiTest
     public HapiSpec creationValidatesSymbol() {
         AtomicInteger maxUtf8Bytes = new AtomicInteger();
 
@@ -920,6 +930,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         .hasKnownStatus(SUCCESS));
     }
 
+    @HapiTest
     public HapiSpec creationValidatesTreasuryAccount() {
         return defaultHapiSpec("CreationValidatesTreasuryAccount")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
@@ -959,6 +970,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(getAccountBalance(TOKEN_TREASURY).hasTinyBars(1L).hasTokenBalance(token, initialSupply));
     }
 
+    @HapiTest
     private HapiSpec prechecksWork() {
         return defaultHapiSpec("PrechecksWork")
                 .given(

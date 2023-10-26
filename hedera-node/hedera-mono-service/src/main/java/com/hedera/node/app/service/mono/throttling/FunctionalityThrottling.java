@@ -80,4 +80,13 @@ public interface FunctionalityThrottling {
      * @throws UnsupportedOperationException if this throttle cannot provide a meaningful answer
      */
     boolean wasLastTxnGasThrottled();
+
+    /**
+     * Leaks the capacity for the given number of the given function. (We don't need to pass
+     * a time because the amount leaked is going to be constant.)
+     *
+     * @param n - the number of the given function
+     * @param function - the function
+     */
+    void leakCapacityForNOfUnscaled(int n, HederaFunctionality function);
 }

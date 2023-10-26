@@ -31,8 +31,9 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractTokenViewCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,7 +43,7 @@ import java.util.Optional;
 /**
  * Implements the token redirect {@code isApprovedForAll()} call of the HTS system contract.
  */
-public class IsApprovedForAllCall extends AbstractTokenViewCall {
+public class IsApprovedForAllCall extends AbstractRevertibleTokenViewCall {
     public static final Function IS_APPROVED_FOR_ALL =
             new Function("isApprovedForAll(address,address)", ReturnTypes.BOOL);
 
@@ -50,11 +51,12 @@ public class IsApprovedForAllCall extends AbstractTokenViewCall {
     private final Address operator;
 
     public IsApprovedForAllCall(
+            @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @Nullable final Token token,
             @NonNull final Address owner,
             @NonNull final Address operator) {
-        super(enhancement, token);
+        super(gasCalculator, enhancement, token);
         this.owner = requireNonNull(owner);
         this.operator = requireNonNull(operator);
     }
@@ -65,13 +67,12 @@ public class IsApprovedForAllCall extends AbstractTokenViewCall {
     @Override
     protected @NonNull HederaSystemContract.FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
-        // TODO - gas calculation
         if (token.tokenType() != TokenType.NON_FUNGIBLE_UNIQUE) {
-            return revertResult(INVALID_TOKEN_ID, 0L);
+            return revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
         }
         final var ownerNum = accountNumberForEvmReference(owner, nativeOperations());
         if (ownerNum < 0) {
-            return revertResult(INVALID_ACCOUNT_ID, 0L);
+            return revertResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement());
         }
         final var operatorNum = accountNumberForEvmReference(operator, nativeOperations());
         final boolean verdict;
@@ -83,7 +84,8 @@ public class IsApprovedForAllCall extends AbstractTokenViewCall {
                     AccountID.newBuilder().accountNum(operatorNum).build(),
                     token.tokenIdOrThrow());
         }
-        return successResult(IS_APPROVED_FOR_ALL.getOutputs().encodeElements(verdict), 0L);
+        return successResult(
+                IS_APPROVED_FOR_ALL.getOutputs().encodeElements(verdict), gasCalculator.viewGasRequirement());
     }
 
     private boolean operatorMatches(

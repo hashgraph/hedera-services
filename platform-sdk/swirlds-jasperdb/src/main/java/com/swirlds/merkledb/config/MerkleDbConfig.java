@@ -24,7 +24,6 @@ import com.swirlds.config.api.validation.ConfigViolation;
 import com.swirlds.config.api.validation.annotation.ConstraintMethod;
 import com.swirlds.config.api.validation.annotation.Min;
 import com.swirlds.config.api.validation.annotation.Positive;
-import java.time.temporal.ChronoUnit;
 
 /**
  * Instance-wide config for {@code MerkleDbDataSource}.
@@ -40,30 +39,9 @@ import java.time.temporal.ChronoUnit;
  * 		which we swap from ram to disk. This allows a tree where the lower levels of the tree nodes hashes are in ram
  * 		and the upper larger less changing layers are on disk. IMPORTANT: This can only be set before a new database is
  * 		created, changing on an existing database will break it.
- * @param mediumMergeCutoffMb
- * 		The cutoff size in MB of files to include in a "medium" merge.
- * @param smallMergeCutoffMb
- * 		The cutoff size in MB of files to include in a "small" merge.
- * @param mergePeriodUnit
- * 		The time unit to use when interpreting merge periods. Note this requires the {@code merkleDb.mergePeriodUnit}
- * 		to be one of the constants of the {@link ChronoUnit} enum ("SECONDS", "MINUTES", or "HOURS" are the most
- * 		likely to be used). Default is MINUTES.
- * @param maxNumberOfFilesInMerge
- * 		The maximum number of files to include in a single merge. Sets a maximum value for the number of files we will
- * 		permit to be used in a single merge. The merging algorithm scales at something near O(n^2), and under some
- * 		conditions can get into a runaway state where we are never able to merge all the files. By keeping the number
- * 		fixed, we can use a fixed amount of memory no matter how many files there are, and we can keep each merge round
- * 		reasonably short.
- * @param minNumberOfFilesInMerge
- * 		The minimum number of files before we do a merge. Each time it is time for a merge we will gather all files
- * 		available for merging for a small, medium or large merge. If there are less than this number then it is
- * 		acceptable to not do a merge.
- * @param mergeActivatePeriod
- * 		The minimum elapsed time in seconds between merge thread activating to check if merge is needed.
- * @param mediumMergePeriod
- * 		The minimum elapsed time in merge period units between medium merges.
- * @param fullMergePeriod
- * 		The minimum elapsed time in merge period units between full merges.
+ * @param minNumberOfFilesInCompaction
+ * 		The minimum number of files before we do a compaction. If there are less than this number then it is
+ * 		acceptable to not do a compaction.
  * @param reconnectKeyLeakMitigationEnabled
  * 		There currently exists a bug when a virtual map is reconnected that can
  * 		cause some deleted keys to leak into the datasource. If this method returns true then a mitigation strategy is
@@ -109,16 +87,10 @@ import java.time.temporal.ChronoUnit;
 public record MerkleDbConfig(
         @Positive @ConfigProperty(defaultValue = "500000000") long maxNumOfKeys,
         @Min(0) @ConfigProperty(defaultValue = "8388608") long hashesRamToDiskThreshold,
-        @ConfigProperty(defaultValue = "10240") int mediumMergeCutoffMb,
-        @ConfigProperty(defaultValue = "3072") int smallMergeCutoffMb,
-        @ConfigProperty(defaultValue = "MINUTES") ChronoUnit mergePeriodUnit,
-        @ConstraintMethod("maxNumberOfFilesInMergeValidation") @ConfigProperty(defaultValue = "64")
-                int maxNumberOfFilesInMerge,
-        @ConstraintMethod("minNumberOfFilesInMergeValidation") @ConfigProperty(defaultValue = "8")
-                int minNumberOfFilesInMerge,
-        @Min(0) @ConfigProperty(defaultValue = "1") long mergeActivatePeriod,
-        @Min(0) @ConfigProperty(defaultValue = "60") long mediumMergePeriod,
-        @Min(0) @ConfigProperty(defaultValue = "1440") long fullMergePeriod,
+        @Min(1) @ConfigProperty(defaultValue = "3") int compactionThreads,
+        @ConstraintMethod("minNumberOfFilesInCompactionValidation") @ConfigProperty(defaultValue = "8")
+                int minNumberOfFilesInCompaction,
+        @Min(3) @ConfigProperty(defaultValue = "5") int maxCompactionLevel,
         @Positive @ConfigProperty(defaultValue = "16777216") int iteratorInputBufferBytes,
         @ConfigProperty(defaultValue = "false") boolean reconnectKeyLeakMitigationEnabled,
         @ConfigProperty(defaultValue = "10") int keySetBloomFilterHashCount,
@@ -133,33 +105,16 @@ public record MerkleDbConfig(
 
     static double UNIT_FRACTION_PERCENT = 100.0;
 
-    public ConfigViolation maxNumberOfFilesInMergeValidation(final Configuration configuration) {
-        final long maxNumberOfFilesInMerge =
-                configuration.getConfigData(MerkleDbConfig.class).maxNumberOfFilesInMerge();
-        final long minNumberOfFilesInMerge =
-                configuration.getConfigData(MerkleDbConfig.class).minNumberOfFilesInMerge();
-        if (maxNumberOfFilesInMerge <= minNumberOfFilesInMerge) {
+    public ConfigViolation minNumberOfFilesInCompactionValidation(final Configuration configuration) {
+        final long minNumberOfFilesInCompaction =
+                configuration.getConfigData(MerkleDbConfig.class).minNumberOfFilesInCompaction();
+        if (minNumberOfFilesInCompaction < 2) {
             return new DefaultConfigViolation(
-                    "maxNumberOfFilesInMerge",
-                    "%d".formatted(maxNumberOfFilesInMerge),
+                    "minNumberOfFilesInCompaction",
+                    "%d".formatted(minNumberOfFilesInCompaction),
                     true,
-                    "Cannot configure maxNumberOfFilesInMerge to " + maxNumberOfFilesInMerge + ", it must be > "
-                            + minNumberOfFilesInMerge);
-        }
-        return null;
-    }
-
-    public ConfigViolation minNumberOfFilesInMergeValidation(final Configuration configuration) {
-        final long maxNumberOfFilesInMerge =
-                configuration.getConfigData(MerkleDbConfig.class).maxNumberOfFilesInMerge();
-        final long minNumberOfFilesInMerge =
-                configuration.getConfigData(MerkleDbConfig.class).minNumberOfFilesInMerge();
-        if (minNumberOfFilesInMerge < 2) {
-            return new DefaultConfigViolation(
-                    "maxNumberOfFilesInMerge",
-                    "%d".formatted(maxNumberOfFilesInMerge),
-                    true,
-                    "Cannot configure minNumberOfFilesInMerge to " + minNumberOfFilesInMerge + ", it must be >= 2");
+                    "Cannot configure minNumberOfFilesInCompaction to " + minNumberOfFilesInCompaction
+                            + ", it must be >= 2");
         }
         return null;
     }

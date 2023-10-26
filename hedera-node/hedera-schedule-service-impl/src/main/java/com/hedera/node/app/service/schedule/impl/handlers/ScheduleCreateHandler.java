@@ -27,7 +27,8 @@ import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.schedule.impl.WritableScheduleStoreImpl;
+import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -63,27 +64,6 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
             checkLongTermSchedulable(getValidScheduleCreateBody(currentTransaction));
         } else {
             throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
-        }
-    }
-
-    private void checkSchedulableWhitelist(
-            @NonNull final ScheduleCreateTransactionBody scheduleCreate, @NonNull final SchedulingConfig config)
-            throws PreCheckException {
-        final Set<HederaFunctionality> whitelist = config.whitelist().funtionalitySet();
-        // spotless is forced wrapping of fluent expressions at 73 characters.
-        final DataOneOfType transactionType =
-                scheduleCreate.scheduledTransactionBody().data().kind();
-        final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
-        if (!whitelist.contains(functionType)) {
-            throw new PreCheckException(ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-        }
-    }
-
-    private void checkLongTermSchedulable(final ScheduleCreateTransactionBody scheduleCreate) throws PreCheckException {
-        // @todo('long term schedule') HIP needed?, before enabling long term schedule, add a response code for
-        //       INVALID_LONG_TERM_SCHEDULE and fix this exception.
-        if (scheduleCreate.waitForExpiry() && !scheduleCreate.hasExpirationTime()) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION /*INVALID_LONG_TERM_SCHEDULE*/);
         }
     }
 
@@ -137,7 +117,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
     public void handle(@NonNull final HandleContext context) throws HandleException {
         Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
         final Instant currentConsensusTime = context.consensusNow();
-        final WritableScheduleStoreImpl scheduleStore = context.writableStore(WritableScheduleStoreImpl.class);
+        final WritableScheduleStore scheduleStore = context.writableStore(WritableScheduleStore.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
         // Note: We must store the original ScheduleCreate transaction body in the Schedule so that we can compare
@@ -147,13 +127,17 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         if (currentTransaction.hasScheduleCreate()) {
             final Schedule provisionalSchedule = HandlerUtility.createProvisionalSchedule(
                     currentTransaction, currentConsensusTime, schedulingConfig.maxExpirationFutureSeconds());
+            checkSchedulableWhitelistHandle(provisionalSchedule, schedulingConfig);
             context.attributeValidator().validateMemo(provisionalSchedule.memo());
             final ResponseCodeEnum validationResult =
                     validate(provisionalSchedule, currentConsensusTime, isLongTermEnabled);
             if (validationOk(validationResult)) {
                 final List<Schedule> possibleDuplicates = scheduleStore.getByEquality(provisionalSchedule);
                 if (isPresentIn(possibleDuplicates, provisionalSchedule)) {
-                    throw new HandleException(ResponseCodeEnum.DUPLICATE_TRANSACTION);
+                    throw new HandleException(ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED);
+                }
+                if (scheduleStore.numSchedulesInState() + 1 > schedulingConfig.maxNumber()) {
+                    throw new HandleException(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
                 }
                 // Need to process the child transaction again, to get the *primitive* keys possibly required
                 final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(provisionalSchedule, context);
@@ -171,6 +155,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                     finalSchedule = HandlerUtility.markExecuted(finalSchedule, currentConsensusTime);
                 }
                 scheduleStore.put(finalSchedule);
+                final ScheduleRecordBuilder scheduleRecords = context.recordBuilder(ScheduleRecordBuilder.class);
+                scheduleRecords.scheduleID(finalSchedule.scheduleId());
             } else {
                 throw new HandleException(validationResult);
             }
@@ -180,7 +166,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
     }
 
     private boolean isPresentIn(
-            final @Nullable List<Schedule> possibleDuplicates, final @NonNull Schedule provisionalSchedule) {
+            @Nullable final List<Schedule> possibleDuplicates, @NonNull final Schedule provisionalSchedule) {
         if (possibleDuplicates != null) {
             for (final Schedule candidate : possibleDuplicates) {
                 if (compareForDuplicates(candidate, provisionalSchedule)) return true;
@@ -189,13 +175,12 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         return false;
     }
 
-    @SuppressWarnings("DataFlowIssue")
-    private boolean compareForDuplicates(final @NonNull Schedule candidate, final @NonNull Schedule requested) {
+    private boolean compareForDuplicates(@NonNull final Schedule candidate, @NonNull final Schedule requested) {
         return candidate.waitForExpiry() == requested.waitForExpiry()
-                && Objects.equals(candidate.providedExpirationSecond(), requested.providedExpirationSecond())
+                && candidate.providedExpirationSecond() == requested.providedExpirationSecond()
                 && Objects.equals(candidate.memo(), requested.memo())
                 && Objects.equals(candidate.adminKey(), requested.adminKey())
-                && candidate.scheduledTransaction().equals(requested.scheduledTransaction());
+                && Objects.equals(candidate.scheduledTransaction(), requested.scheduledTransaction());
     }
 
     @NonNull
@@ -225,12 +210,52 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
             throws PreCheckException {
         if (scheduleBody.hasPayerAccountID()) {
             final AccountID payerForSchedule = scheduleBody.payerAccountIDOrThrow();
-            final ReadableAccountStore accountStore = context.createStore(ReadableAccountStore.class);
-            final Account accountData = accountStore.getAccountById(payerForSchedule);
-            if (accountData != null && accountData.key() != null) return accountData.key();
-            else throw new PreCheckException(ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID);
+            return getKeyForAccount(context, payerForSchedule);
         } else {
             return null;
+        }
+    }
+
+    @NonNull
+    private static Key getKeyForAccount(@NonNull final PreHandleContext context, final AccountID accountToQuery)
+            throws PreCheckException {
+        final ReadableAccountStore accountStore = context.createStore(ReadableAccountStore.class);
+        final Account accountData = accountStore.getAccountById(accountToQuery);
+        if (accountData != null && accountData.key() != null) return accountData.key();
+        else throw new PreCheckException(ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID);
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    private void checkSchedulableWhitelistHandle(final Schedule provisionalSchedule, final SchedulingConfig config)
+            throws HandleException {
+        final Set<HederaFunctionality> whitelist = config.whitelist().functionalitySet();
+        final SchedulableTransactionBody scheduled =
+                provisionalSchedule.originalCreateTransaction().scheduleCreate().scheduledTransactionBody();
+        final DataOneOfType transactionType = scheduled.data().kind();
+        final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
+        if (!whitelist.contains(functionType)) {
+            throw new HandleException(ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        }
+    }
+
+    private void checkSchedulableWhitelist(
+            @NonNull final ScheduleCreateTransactionBody scheduleCreate, @NonNull final SchedulingConfig config)
+            throws PreCheckException {
+        final Set<HederaFunctionality> whitelist = config.whitelist().functionalitySet();
+        // Argh. Spotless is forced wrapping of fluent expressions at 73 characters.
+        final DataOneOfType transactionType =
+                scheduleCreate.scheduledTransactionBody().data().kind();
+        final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
+        if (!whitelist.contains(functionType)) {
+            throw new PreCheckException(ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        }
+    }
+
+    private void checkLongTermSchedulable(final ScheduleCreateTransactionBody scheduleCreate) throws PreCheckException {
+        // @todo('long term schedule') HIP needed?, before enabling long term schedules, add a response code for
+        //       INVALID_LONG_TERM_SCHEDULE and fix this exception.
+        if (scheduleCreate.waitForExpiry() && !scheduleCreate.hasExpirationTime()) {
+            throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION /*INVALID_LONG_TERM_SCHEDULE*/);
         }
     }
 

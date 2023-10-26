@@ -19,11 +19,11 @@ package com.hedera.node.app.service.contract.impl.state;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.infra.IterableStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
+import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -85,15 +85,16 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         chargeRentFor(sizeEffects);
         // "Rewrite" the pending storage changes to preserve per-contract linked lists
         storageManager.persistChanges(
-                enhancement.operations(),
+                enhancement,
                 changes,
                 sizeEffects.sizeChanges(),
                 enhancement.operations().getStore());
 
         // We now have an apparently valid change set, and want to capture some summary
         // information for the Hedera record
-        createdContractIds = enhancement.operations().createdContractIds();
-        updatedContractNonces = enhancement.operations().updatedContractNonces();
+        final var contractChangeSummary = enhancement.operations().summarizeContractChanges();
+        createdContractIds = contractChangeSummary.newContractIds();
+        updatedContractNonces = contractChangeSummary.updatedContractNonces();
         super.commit();
         // Be sure not to externalize contract ids or nonces without a successful commit
         committed = true;

@@ -31,6 +31,7 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
+import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -50,6 +51,7 @@ class SerializationTest extends MerkleTestBase {
     private Path dir;
     private Configuration config;
     private NetworkInfo networkInfo;
+    private HandleThrottleParser handleThrottling;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -58,6 +60,7 @@ class SerializationTest extends MerkleTestBase {
         this.dir = TemporaryFileBuilder.buildTemporaryDirectory();
         this.config = mock(Configuration.class);
         this.networkInfo = mock(NetworkInfo.class);
+        this.handleThrottling = mock(HandleThrottleParser.class);
         final var hederaConfig = mock(HederaConfig.class);
         lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
     }
@@ -125,7 +128,7 @@ class SerializationTest extends MerkleTestBase {
                 new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
         final var schemaV1 = createV1Schema();
         originalRegistry.register(schemaV1);
-        originalRegistry.migrate(originalTree, null, v1, config, networkInfo);
+        originalRegistry.migrate(originalTree, null, v1, config, networkInfo, handleThrottling);
 
         // When we serialize it to bytes and deserialize it back into a tree
         originalTree.copy(); // make a fast copy because we can only write to disk an immutable copy
@@ -137,14 +140,16 @@ class SerializationTest extends MerkleTestBase {
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
         final Supplier<RuntimeConstructable> constructor = () -> new MerkleHederaState(
-                (tree, state) -> newRegistry.migrate((MerkleHederaState) state, v1, v1, config, networkInfo),
+                (tree, state) ->
+                        newRegistry.migrate((MerkleHederaState) state, v1, v1, config, networkInfo, handleThrottling),
                 (event, meta, provider) -> {},
                 (state, platform, dualState, trigger, version) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
 
         final MerkleHederaState loadedTree = parseTree(serializedBytes, dir);
-        newRegistry.migrate(loadedTree, schemaV1.getVersion(), schemaV1.getVersion(), config, networkInfo);
+        newRegistry.migrate(
+                loadedTree, schemaV1.getVersion(), schemaV1.getVersion(), config, networkInfo, handleThrottling);
         loadedTree.migrate(1);
 
         // Then, we should be able to see all our original states again

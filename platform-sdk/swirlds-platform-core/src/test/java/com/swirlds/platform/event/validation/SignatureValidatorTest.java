@@ -19,8 +19,11 @@ package com.swirlds.platform.event.validation;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
@@ -30,6 +33,7 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -43,28 +47,45 @@ class SignatureValidatorTest {
         final NodeId removedNodeId = full.getNodeId(0);
         final AddressBook reduced = full.remove(removedNodeId);
         final SignatureVerifier signatureVerifier = (data, signature, publicKey) -> true;
-        final SignatureValidator validator = new SignatureValidator(List.of(full, reduced), signatureVerifier);
-        for (final AddressBook ab : List.of(full, reduced)) {
-            for (final Address address : ab) {
-                assertTrue(
-                        validator.isEventValid(createEvent(address.getNodeId())),
-                        "if an event is signed by a node in any address book, it should be valid");
-            }
+        final SoftwareVersion currentSoftwareVersion = new BasicSoftwareVersion(1);
+        final SignatureValidator validator =
+                new SignatureValidator(reduced, full, currentSoftwareVersion, signatureVerifier, Time.getCurrent());
+        for (final Address address : full) {
+            assertTrue(
+                    validator.isEventValid(createEvent(address.getNodeId(), currentSoftwareVersion)),
+                    "if an event has the current software version "
+                            + "and is signed by a node in the current address book, it should be valid");
         }
+        for (final Address address : reduced) {
+            assertTrue(
+                    validator.isEventValid(createEvent(address.getNodeId())),
+                    "if an event has an earlier software version "
+                            + "and is signed by a node in previous address book, it should be valid");
+        }
+        assertFalse(
+                validator.isEventValid(createEvent(removedNodeId)),
+                "the event should be invalid since it is not from the current software version "
+                        + "and from a node not in the previous address book.");
         for (final AddressBook ab : List.of(full, reduced)) {
             assertFalse(
                     validator.isEventValid(createEvent(ab.getNextNodeId())),
-                    "if an event is signed by a node NOT in any address book, it should be valid");
+                    "if an event is signed by a node NOT in any address book, it should not be valid");
         }
     }
 
     private static @NonNull GossipEvent createEvent(@NonNull final NodeId id) {
+        return createEvent(id, null);
+    }
+
+    private static @NonNull GossipEvent createEvent(
+            @NonNull final NodeId id, @Nullable final SoftwareVersion softwareVersion) {
         final GossipEvent event = Mockito.mock(GossipEvent.class);
         final BaseEventHashedData hd = Mockito.mock(BaseEventHashedData.class);
         final BaseEventUnhashedData ud = Mockito.mock(BaseEventUnhashedData.class);
         final Hash hash = Mockito.mock(Hash.class);
         Mockito.when(hd.getCreatorId()).thenReturn(id);
         Mockito.when(hd.getHash()).thenReturn(hash);
+        Mockito.when(hd.getSoftwareVersion()).thenReturn(softwareVersion);
         Mockito.when(event.getHashedData()).thenReturn(hd);
         Mockito.when(event.getUnhashedData()).thenReturn(ud);
 

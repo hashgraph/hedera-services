@@ -17,17 +17,21 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Translates {@code mintToken()} calls to the HTS system contract.
@@ -36,10 +40,11 @@ import org.hyperledger.besu.datatypes.Address;
 public class MintTranslator extends AbstractHtsCallTranslator {
     public static final Function MINT = new Function("mintToken(address,uint64,bytes[])", ReturnTypes.INT);
     public static final Function MINT_V2 = new Function("mintToken(address,int64,bytes[])", ReturnTypes.INT);
+    private final MintDecoder decoder;
 
     @Inject
-    public MintTranslator() {
-        // Dagger2
+    public MintTranslator(@NonNull final MintDecoder decoder) {
+        this.decoder = decoder;
     }
 
     /**
@@ -51,25 +56,38 @@ public class MintTranslator extends AbstractHtsCallTranslator {
                 || Arrays.equals(attempt.selector(), MintTranslator.MINT_V2.selector());
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public @Nullable MintCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        final var selector = attempt.selector();
-        final Tuple call;
-        if (Arrays.equals(selector, MintTranslator.MINT.selector())) {
-            call = MintTranslator.MINT.decodeCall(attempt.input().toArrayUnsafe());
+    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+        final var body = bodyForClassic(attempt);
+        final var isFungibleMint = body.tokenMintOrThrow().metadata().isEmpty();
+        return new DispatchForResponseCodeHtsCall<>(
+                attempt,
+                body,
+                SingleTransactionRecordBuilder.class,
+                isFungibleMint ? MintTranslator::fungibleMintGasRequirement : MintTranslator::nftMintGasRequirement);
+    }
+
+    public static long nftMintGasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final AccountID payerId) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.MINT_NFT, payerId);
+    }
+
+    public static long fungibleMintGasRequirement(
+            @NonNull final TransactionBody body,
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final AccountID payerId) {
+        return systemContractGasCalculator.gasRequirement(body, DispatchType.MINT_FUNGIBLE, payerId);
+    }
+
+    private TransactionBody bodyForClassic(@NonNull final HtsCallAttempt attempt) {
+        if (Arrays.equals(attempt.selector(), MintTranslator.MINT.selector())) {
+            return decoder.decodeMint(attempt);
         } else {
-            call = MintTranslator.MINT_V2.decodeCall(attempt.input().toArrayUnsafe());
-        }
-        final var token = attempt.linkedToken(Address.fromHexString(call.get(0).toString()));
-        if (token == null) {
-            return null;
-        } else {
-            return token.tokenType() == TokenType.FUNGIBLE_COMMON
-                    ? new FungibleMintCall(attempt.enhancement())
-                    : new NonFungibleMintCall(attempt.enhancement());
+            return decoder.decodeMintV2(attempt);
         }
     }
 }

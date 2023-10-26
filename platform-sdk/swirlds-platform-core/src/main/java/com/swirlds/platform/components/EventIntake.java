@@ -18,7 +18,6 @@ package com.swirlds.platform.components;
 
 import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.LogMarker.STALE_EVENTS;
-import static com.swirlds.logging.LogMarker.SYNC;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
@@ -27,12 +26,12 @@ import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.intake.EventIntakePhase;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -64,8 +63,6 @@ public class EventIntake {
     private final EventLinker eventLinker;
     /** A functor that provides access to a {@code Consensus} instance. */
     private final Supplier<Consensus> consensusSupplier;
-
-    private final ConsensusWrapper consensusWrapper;
     /** A reference to the initial address book for this node. */
     private final AddressBook addressBook;
     /** An {@link EventObserverDispatcher} instance */
@@ -85,20 +82,26 @@ public class EventIntake {
     private final PhaseTimer<EventIntakePhase> phaseTimer;
 
     /**
+     * Tracks the number of events from each peer have been received, but aren't yet through the intake pipeline
+     */
+    private final IntakeEventCounter intakeEventCounter;
+
+    /**
      * Constructor
      *
-     * @param platformContext   the platform context
-     * @param threadManager     creates new threading resources
-     * @param time              provides the wall clock time
-     * @param selfId            the ID of this node
-     * @param eventLinker       links events together, holding orphaned events until their parents are found (if
-     *                          operating with the orphan buffer enabled)
-     * @param consensusSupplier provides the current consensus instance
-     * @param addressBook       the current address book
-     * @param dispatcher        invokes event related callbacks
-     * @param phaseTimer        measures the time spent in each phase of intake
-     * @param shadowGraph       tracks events in the hashgraph
-     * @param prehandleEvent    prehandles transactions in an event
+     * @param platformContext    the platform context
+     * @param threadManager      creates new threading resources
+     * @param time               provides the wall clock time
+     * @param selfId             the ID of this node
+     * @param eventLinker        links events together, holding orphaned events until their parents are found (if
+     *                           operating with the orphan buffer enabled)
+     * @param consensusSupplier  provides the current consensus instance
+     * @param addressBook        the current address book
+     * @param dispatcher         invokes event related callbacks
+     * @param phaseTimer         measures the time spent in each phase of intake
+     * @param shadowGraph        tracks events in the hashgraph
+     * @param prehandleEvent     prehandles transactions in an event
+     * @param intakeEventCounter tracks the number of events from each peer that are currently in the intake pipeline
      */
     public EventIntake(
             @NonNull final PlatformContext platformContext,
@@ -111,18 +114,19 @@ public class EventIntake {
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final PhaseTimer<EventIntakePhase> phaseTimer,
             @NonNull final ShadowGraph shadowGraph,
-            @NonNull final Consumer<EventImpl> prehandleEvent) {
+            @NonNull final Consumer<EventImpl> prehandleEvent,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         this.time = Objects.requireNonNull(time);
         this.selfId = Objects.requireNonNull(selfId);
         this.eventLinker = Objects.requireNonNull(eventLinker);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
-        this.consensusWrapper = new ConsensusWrapper(consensusSupplier);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.phaseTimer = Objects.requireNonNull(phaseTimer);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         final Supplier<Integer> prehandlePoolSize;
@@ -170,72 +174,54 @@ public class EventIntake {
      * @param event an event to be added
      */
     public void addEvent(final EventImpl event) {
-        // an expired event will cause ShadowGraph to throw an exception, so we just to discard it
-        if (consensus().isExpired(event)) {
-            return;
-        }
-
-        if (!StaticValidators.isValidTimeCreated(event)) {
-            event.clear();
-            return;
-        }
-
-        logger.debug(SYNC.getMarker(), "{} sees {}", selfId, event);
-
-        phaseTimer.activatePhase(EventIntakePhase.PRECONSENSUS_DISPATCH);
-        dispatcher.preConsensusEvent(event);
-
-        logger.debug(INTAKE_EVENT.getMarker(), "Adding {} ", event::toShortString);
-        final long minGenNonAncientBeforeAdding = consensus().getMinGenerationNonAncient();
-        // #5762 if we cannot calculate its roundCreated, then we use the one that was sent to us
-        final boolean missingSelfParent = event.getSelfParentHash() != null && event.getSelfParent() == null;
-        final boolean missingOtherParent = event.getOtherParentHash() != null && event.getOtherParent() == null;
-        // if we have created the event, it could have a missing parent, in this case we need to calculate the round
-        // since it cannot have been calculated before
-        if (!event.isCreatedBy(selfId) && (missingSelfParent || missingOtherParent)) {
-            if (event.getBaseEvent().isRoundCreatedSet()) {
-                // we then use the round created sent to us
-                event.setRoundCreated(event.getBaseEvent().getRoundCreated());
-            } else {
-                logger.error(
-                        LogMarker.EXCEPTION.getMarker(),
-                        "cannot determine round created for event {}",
-                        event::toMediumString);
+        try {
+            // an expired event will cause ShadowGraph to throw an exception, so we just to discard it
+            if (consensus().isExpired(event)) {
+                return;
             }
+
+            if (!StaticValidators.isValidTimeCreated(event)) {
+                event.clear();
+                return;
+            }
+
+            phaseTimer.activatePhase(EventIntakePhase.PRECONSENSUS_DISPATCH);
+            dispatcher.preConsensusEvent(event);
+
+            logger.debug(INTAKE_EVENT.getMarker(), "Adding {} ", event::toShortString);
+            final long minGenNonAncientBeforeAdding = consensus().getMinGenerationNonAncient();
+
+            if (prehandlePool == null) {
+                // Prehandle transactions on the intake thread (i.e. this thread).
+                phaseTimer.activatePhase(EventIntakePhase.PREHANDLING);
+                prehandleEvent.accept(event);
+            } else {
+                // Prehandle transactions on the thread pool.
+                prehandlePool.submit(buildPrehandleTask(event));
+            }
+
+            // record the event in the hashgraph, which results in the events in consEvent reaching consensus
+            phaseTimer.activatePhase(EventIntakePhase.ADDING_TO_HASHGRAPH);
+            final List<ConsensusRound> consRounds = consensus().addEvent(event);
+
+            phaseTimer.activatePhase(EventIntakePhase.EVENT_ADDED_DISPATCH);
+            dispatcher.eventAdded(event);
+
+            if (consRounds != null) {
+                phaseTimer.activatePhase(EventIntakePhase.HANDLING_CONSENSUS_ROUNDS);
+                consRounds.forEach(this::handleConsensus);
+            }
+
+            if (consensus().getMinGenerationNonAncient() > minGenNonAncientBeforeAdding) {
+                // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
+                // with no consensus events, so we check the diff in generations to look for stale events
+                phaseTimer.activatePhase(EventIntakePhase.HANDLING_STALE_EVENTS);
+                handleStale(minGenNonAncientBeforeAdding);
+            }
+        } finally {
+            phaseTimer.activatePhase(EventIntakePhase.IDLE);
+            intakeEventCounter.eventExitedIntakePipeline(event.getBaseEvent().getSenderId());
         }
-
-        if (prehandlePool == null) {
-            // Prehandle transactions on the intake thread (i.e. this thread).
-            phaseTimer.activatePhase(EventIntakePhase.PREHANDLING);
-            prehandleEvent.accept(event);
-        } else {
-            // Prehandle transactions on the thread pool.
-            prehandlePool.submit(buildPrehandleTask(event));
-        }
-
-        // record the event in the hashgraph, which results in the events in consEvent reaching consensus
-        phaseTimer.activatePhase(EventIntakePhase.ADDING_TO_HASHGRAPH);
-        final List<ConsensusRound> consRounds = consensusWrapper.addEvent(event, addressBook);
-
-        // after we calculate roundCreated, we set its value in GossipEvent so that it can be shared with other nodes
-        event.getBaseEvent().setRoundCreated(event.getRoundCreated());
-
-        phaseTimer.activatePhase(EventIntakePhase.EVENT_ADDED_DISPATCH);
-        dispatcher.eventAdded(event);
-
-        if (consRounds != null) {
-            phaseTimer.activatePhase(EventIntakePhase.HANDLING_CONSENSUS_ROUNDS);
-            consRounds.forEach(this::handleConsensus);
-        }
-
-        if (consensus().getMinGenerationNonAncient() > minGenNonAncientBeforeAdding) {
-            // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
-            // with no consensus events, so we check the diff in generations to look for stale events
-            phaseTimer.activatePhase(EventIntakePhase.HANDLING_STALE_EVENTS);
-            handleStale(minGenNonAncientBeforeAdding);
-        }
-
-        phaseTimer.activatePhase(EventIntakePhase.IDLE);
     }
 
     /**

@@ -28,11 +28,16 @@ import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.fees.congestion.ThrottleMultiplierSource;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
+import com.hedera.node.app.throttle.impl.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
@@ -66,6 +71,9 @@ class IngestComponentTest {
     @Mock
     private Metrics metrics;
 
+    @Mock
+    private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+
     private HederaInjectionComponent app;
 
     @BeforeEach
@@ -88,16 +96,29 @@ class IngestComponentTest {
                         SemanticVersion.newBuilder().major(2).build()));
 
         final var configProvider = new ConfigProviderImpl(false);
-        final var throttleManager = new ThrottleManager();
+        final var handleThrottling = new ThrottleAccumulator(() -> 1, configProvider);
+        final var synchronizedThrottleAccumulator = new ThrottleAccumulator(() -> 5, configProvider);
+        final var monoMultiplierSources = new MonoMultiplierSources(
+                new ThrottleMultiplierSource(null, null, null, null, null, null, null),
+                new ThrottleMultiplierSource(null, null, null, null, null, null, null));
+
         final var exchangeRateManager = new ExchangeRateManager(configProvider);
+
+        final var throttleManager = new ThrottleManager();
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .bootstrapProps(new BootstrapProperties())
                 .configuration(configProvider)
-                .systemFileUpdateFacility(
-                        new SystemFileUpdateFacility(configProvider, throttleManager, exchangeRateManager))
+                .systemFileUpdateFacility(new SystemFileUpdateFacility(
+                        configProvider,
+                        throttleManager,
+                        exchangeRateManager,
+                        monoMultiplierSources,
+                        handleThrottling,
+                        synchronizedThrottleAccumulator))
+                .networkUtilizationManager(new NetworkUtilizationManagerImpl(handleThrottling, monoMultiplierSources))
                 .throttleManager(throttleManager)
                 .self(selfNodeInfo)
                 .maxSignedTxnSize(1024)
@@ -106,6 +127,7 @@ class IngestComponentTest {
                 .instantSource(InstantSource.system())
                 .exchangeRateManager(exchangeRateManager)
                 .genesisRecordsConsensusHook(mock(GenesisRecordsConsensusHook.class))
+                .synchronizedThrottleAccumulator(this.synchronizedThrottleAccumulator)
                 .build();
 
         final var state = new FakeHederaState();

@@ -262,5 +262,5 @@ public class PropertyNames {
     public static final String STATS_SPEEDOMETER_HALF_LIFE_SECS = "stats.speedometerHalfLifeSecs";
     public static final String WORKFLOWS_ENABLED = "hedera.workflows.enabled";
     public static final String ACCOUNTS_BLOCKLIST_ENABLED = "accounts.blocklist.enabled";
-    public static final String ACCOUNTS_BLOCKLIST_RESOURCE = "accounts.blocklist.resource";
+    public static final String ACCOUNTS_BLOCKLIST_PATH = "accounts.blocklist.path";
 }

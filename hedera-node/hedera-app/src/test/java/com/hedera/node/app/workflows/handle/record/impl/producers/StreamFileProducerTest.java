@@ -29,7 +29,7 @@ import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;

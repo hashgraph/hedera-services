@@ -90,6 +90,19 @@ public interface SigningAlgorithm {
     ExtendedSignature signEx(byte[] buffer, int offset, int len) throws SignatureException;
 
     /**
+     * Creates a cryptographic digest compatible with the signature algorithm.
+     *
+     * @param buffer
+     * 		an array containing the data to be signed.
+     * @param offset
+     * 		starting position from which to begin reading in the {@code buffer} array.
+     * @param len
+     * 		the number of array elements to be read.
+     * @return a byte array containing a one-way hash of the data.
+     */
+    byte[] hash(byte[] buffer, int offset, int len);
+
+    /**
      * Called during initialization to ensure that all necessary cryptographic constructs have been created and
      * initialized. This method is only called once; however, implementations should ensure that is idempotent. This
      * method should (in most cases) also create the Public/Private key pair.

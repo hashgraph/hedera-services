@@ -27,10 +27,9 @@ import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -56,7 +55,7 @@ public final class PreconsensusEventReplayWorkflow {
      * @param threadManager                      the thread manager for this node
      * @param preconsensusEventFileManager       manages the preconsensus event files on disk
      * @param preconsensusEventWriter            writes preconsensus events to disk
-     * @param eventTaskDispatcher                where events read from the stream should be passed
+     * @param eventValidator                     validates events and passes valid events further down the pipeline
      * @param intakeQueue                        the queue thread for the event intake component
      * @param consensusRoundHandler              the object responsible for applying transactions to consensus rounds
      * @param stateHashSignQueue                 the queue thread for hashing and signing states
@@ -69,8 +68,8 @@ public final class PreconsensusEventReplayWorkflow {
             @NonNull final Time time,
             @NonNull final PreconsensusEventFileManager preconsensusEventFileManager,
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
-            @NonNull final EventTaskDispatcher eventTaskDispatcher,
-            @NonNull final QueueThread<EventIntakeTask> intakeQueue,
+            @NonNull final EventValidator eventValidator,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue,
             @NonNull final StateManagementComponent stateManagementComponent,
@@ -81,7 +80,7 @@ public final class PreconsensusEventReplayWorkflow {
         Objects.requireNonNull(time);
         Objects.requireNonNull(preconsensusEventFileManager);
         Objects.requireNonNull(preconsensusEventWriter);
-        Objects.requireNonNull(eventTaskDispatcher);
+        Objects.requireNonNull(eventValidator);
         Objects.requireNonNull(intakeQueue);
         Objects.requireNonNull(consensusRoundHandler);
         Objects.requireNonNull(stateHashSignQueue);
@@ -98,8 +97,8 @@ public final class PreconsensusEventReplayWorkflow {
             final IOIterator<GossipEvent> iterator =
                     preconsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient);
 
-            final PreconsensusEventReplayPipeline eventReplayPipeline = new PreconsensusEventReplayPipeline(
-                    platformContext, threadManager, iterator, eventTaskDispatcher::dispatchTask);
+            final PreconsensusEventReplayPipeline eventReplayPipeline =
+                    new PreconsensusEventReplayPipeline(platformContext, threadManager, iterator, eventValidator);
             eventReplayPipeline.replayEvents();
 
             waitForReplayToComplete(intakeQueue, consensusRoundHandler, stateHashSignQueue);
@@ -126,7 +125,7 @@ public final class PreconsensusEventReplayWorkflow {
      * to complete even after we exhaust all available events from the stream.
      */
     private static void waitForReplayToComplete(
-            @NonNull final QueueThread<EventIntakeTask> intakeQueue,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue)
             throws InterruptedException {

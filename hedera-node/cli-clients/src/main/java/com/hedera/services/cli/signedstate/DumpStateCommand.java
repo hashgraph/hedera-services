@@ -66,6 +66,11 @@ public class DumpStateCommand extends AbstractCommand {
         YES
     }
 
+    enum OmitContents {
+        NO,
+        YES
+    }
+
     enum Format {
         CSV,
         ELIDED_DEFAULT_FIELDS
@@ -207,6 +212,10 @@ public class DumpStateCommand extends AbstractCommand {
                             description = "How to dump key summaries")
                     final EnumSet<KeyDetails> keyDetails,
             @Option(
+                            names = {"--omit-contents"},
+                            description = "Omit the contents (bytes) of the file")
+                    final boolean omitContents,
+            @Option(
                             names = {"-s", "--summary"},
                             description = "Emit a summary line")
                     final boolean emitSummary) {
@@ -218,6 +227,7 @@ public class DumpStateCommand extends AbstractCommand {
                 filesPath,
                 null != keyDetails ? keyDetails : EnumSet.noneOf(KeyDetails.class),
                 emitSummary ? EmitSummary.YES : EmitSummary.NO,
+                omitContents ? OmitContents.YES : OmitContents.NO,
                 parent.verbosity);
         finish();
     }

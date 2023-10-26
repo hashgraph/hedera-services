@@ -45,7 +45,11 @@ class AutoAccountCreatorTest extends StepsBase {
 
     @BeforeEach
     public void setUp() {
-        super.setUp();
+        accountCreatorInternalSetup(true);
+    }
+
+    private void accountCreatorInternalSetup(final boolean prepopulateReceiverIds) {
+        super.baseInternalSetUp(prepopulateReceiverIds);
         givenTxn();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
@@ -70,13 +74,14 @@ class AutoAccountCreatorTest extends StepsBase {
     @Test
     // TODO: In end to end tests need to validate other fields set correctly on auto created accounts
     void happyPathECKeyAliasWorks() {
+        accountCreatorInternalSetup(false);
         given(handleContext.dispatchRemovableChildTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
@@ -85,7 +90,7 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
         assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNull();
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
-        assertThat(writableAliases.get(ecKeyAlias)).isNull();
+        assertThat(writableAliases.get(ecEvmAlias)).isNull();
 
         subject.create(ecKeyAlias.value(), 0);
 
@@ -93,12 +98,13 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(3);
         assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
-        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(hbarReceiver);
+        assertThat(writableAliases.get(ecEvmAlias).accountNum()).isEqualTo(hbarReceiver);
     }
 
     @Test
     // TODO: In end to end tests need to validate other fields set correctly on auto created accounts
     void happyPathEDKeyAliasWorks() {
+        accountCreatorInternalSetup(false);
         given(handleContext.dispatchRemovableChildTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
@@ -128,6 +134,7 @@ class AutoAccountCreatorTest extends StepsBase {
     @Test
     // TODO: In end to end tests need to validate other fields set on auto created accounts
     void happyPathWithHollowAccountAliasInHbarTransfersWorks() {
+        accountCreatorInternalSetup(false);
         final var address = new ProtoBytes(Bytes.wrap(evmAddress));
         given(handleContext.dispatchRemovableChildTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))

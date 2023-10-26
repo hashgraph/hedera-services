@@ -27,18 +27,14 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.hapi.node.transaction.ExchangeRate;
-import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.time.Instant;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.hyperledger.besu.datatypes.Address;
@@ -47,22 +43,8 @@ import org.hyperledger.besu.datatypes.Address;
  * Common constants used in "x-test" classes.
  */
 class XTestConstants {
-    /**
-     * The exchange rate long used in dev environments to run HAPI spec; expected to be in effect for
-     * some x-tests to pass.
-     */
-    static final ExchangeRate TRADITIONAL_HAPI_SPEC_RATE = ExchangeRate.newBuilder()
-            .hbarEquiv(1)
-            .centEquiv(12)
-            .expirationTime(TimestampSeconds.newBuilder()
-                    .seconds(Instant.MAX.getEpochSecond())
-                    .build())
-            .build();
 
-    static final ExchangeRateSet SET_OF_TRADITIONAL_RATES = ExchangeRateSet.newBuilder()
-            .currentRate(TRADITIONAL_HAPI_SPEC_RATE)
-            .nextRate(TRADITIONAL_HAPI_SPEC_RATE)
-            .build();
+    static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     static final AccountID MISC_PAYER_ID =
             AccountID.newBuilder().accountNum(950L).build();
 
@@ -80,11 +62,26 @@ class XTestConstants {
             .build();
     static final Bytes SENDER_ADDRESS =
             com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("f91e624b8b8ea7244e8159ba7c0deeea2b6be990");
+    static final com.esaulpaugh.headlong.abi.Address SENDER_HEADLONG_ADDRESS =
+            asHeadlongAddress(SENDER_ADDRESS.toByteArray());
     static final Address SENDER_BESU_ADDRESS = pbjToBesuAddress(SENDER_ADDRESS);
+    static final Bytes BAD_SENDER =
+            com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("e22e624b8b8ea7244e8159ba7c0deeea2b6be991");
+    static final com.esaulpaugh.headlong.abi.Address INVALID_SENDER_HEADLONG_ADDRESS =
+            asHeadlongAddress(BAD_SENDER.toByteArray());
     static final AccountID RECEIVER_ID =
             AccountID.newBuilder().accountNum(987654321L).build();
+    static final AccountID INVALID_ID =
+            AccountID.newBuilder().accountNum(Long.MAX_VALUE).build();
+    static final Key INVALID_CONTRACT_ID_KEY = Key.newBuilder()
+            .contractID(ContractID.newBuilder()
+                    .contractNum(SENDER_ID.accountNumOrThrow())
+                    .build())
+            .build();
     static final com.esaulpaugh.headlong.abi.Address RECEIVER_HEADLONG_ADDRESS =
             asHeadlongAddress(asEvmAddress(RECEIVER_ID.accountNumOrThrow()));
+    static final Address RECEIVER_BESU_ADDRESS =
+            pbjToBesuAddress(Bytes.wrap(asEvmAddress(RECEIVER_ID.accountNumOrThrow())));
     static final TokenID ERC721_TOKEN_ID = TokenID.newBuilder().tokenNum(1028L).build();
     static final NftID SN_1234 =
             NftID.newBuilder().tokenId(ERC721_TOKEN_ID).serialNumber(1234L).build();
@@ -100,14 +97,25 @@ class XTestConstants {
     static final TokenID ERC20_TOKEN_ID = TokenID.newBuilder().tokenNum(1027L).build();
     static final com.esaulpaugh.headlong.abi.Address ERC20_TOKEN_ADDRESS = AbstractContractXTest.asHeadlongAddress(
             asLongZeroAddress(ERC20_TOKEN_ID.tokenNum()).toArray());
+    static final TokenID OTHER_TOKEN_ID = TokenID.newBuilder().tokenNum(1777L).build();
+    static final com.esaulpaugh.headlong.abi.Address OTHER_TOKEN_ADDRESS = AbstractContractXTest.asHeadlongAddress(
+            asLongZeroAddress(OTHER_TOKEN_ID.tokenNum()).toArray());
     static final AccountID OWNER_ID = AccountID.newBuilder().accountNum(121212L).build();
     static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
     static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
     static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
             asHeadlongAddress(OWNER_ADDRESS.toByteArray());
+    static final Bytes INVALID_ACCOUNT_ADDRESS = Bytes.wrap(asEvmAddress(INVALID_ID.accountNumOrThrow()));
+    static final com.esaulpaugh.headlong.abi.Address INVALID_ACCOUNT_HEADLONG_ADDRESS =
+            asHeadlongAddress(asEvmAddress(INVALID_ID.accountNumOrThrow()));
     static final Key AN_ED25519_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
             .build();
+
+    static final TokenID INVALID_TOKEN_ID =
+            TokenID.newBuilder().tokenNum(Long.MAX_VALUE).build();
+    static final com.esaulpaugh.headlong.abi.Address INVALID_TOKEN_ADDRESS = AbstractContractXTest.asHeadlongAddress(
+            asLongZeroAddress(INVALID_TOKEN_ID.tokenNum()).toArray());
 
     public static void addErc721Relation(
             final Map<EntityIDPair, TokenRelation> tokenRelationships, final AccountID accountID, final long balance) {
@@ -144,5 +152,9 @@ class XTestConstants {
 
     public static Consumer<org.apache.tuweni.bytes.Bytes> assertSuccess() {
         return output -> assertEquals(SUCCESS_AS_BYTES, output);
+    }
+
+    public static Consumer<org.apache.tuweni.bytes.Bytes> assertSuccess(String orElseMessage) {
+        return output -> assertEquals(SUCCESS_AS_BYTES, output, orElseMessage);
     }
 }

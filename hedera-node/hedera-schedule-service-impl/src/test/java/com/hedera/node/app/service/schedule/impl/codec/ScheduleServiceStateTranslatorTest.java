@@ -19,258 +19,146 @@ package com.hedera.node.app.service.schedule.impl.codec;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.BDDAssertions.assertThat;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
-import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.schedule.ScheduleList;
-import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
-import com.hedera.node.app.service.schedule.impl.ScheduleStoreTestBase;
-import com.hedera.node.app.spi.state.ReadableKVStateBase;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.service.schedule.impl.ScheduleTestBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.test.utils.IdUtils;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.security.InvalidKeyException;
-import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ScheduleServiceStateTranslatorTest extends ScheduleStoreTestBase {
-    private static final long FEE = 123L;
-    private final List<Key> keyList = Arrays.asList(adminKey, schedulerKey, payerKey);
+class ScheduleServiceStateTranslatorTest extends ScheduleTestBase {
     private final byte[] payerKeyBytes = requireNonNull(payerKey.ed25519()).toByteArray();
     private final byte[] schedulerKeyBytes =
             requireNonNull(schedulerKey.ed25519()).toByteArray();
     private final byte[] adminKeyBytes = requireNonNull(adminKey.ed25519()).toByteArray();
-    private final long expirationSecond = 2281580449L;
-    private final RichInstant providedExpiry = new RichInstant(expirationSecond, 0);
-    private final boolean waitForExpiry = true;
-    private final String entityMemo = "Test";
-    private final EntityId schedulingAccount = new EntityId(0, 0, 1001L);
-    private final RichInstant schedulingTXValidStart = new RichInstant(2281580449L, 0);
-    private final JKey adminKeyVirtual =
-            (JKey) PbjConverter.fromPbjKey(adminKey).orElse(null);
-    private final EntityId payerVirtual = new EntityId(0, 0, 2001L);
 
     // Non-Mock objects that require constructor initialization to avoid unnecessary statics
-    private final com.hederahashgraph.api.proto.java.SchedulableTransactionBody scheduledTxn;
-    private final com.hederahashgraph.api.proto.java.TransactionID parentTxnId;
-    private final com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody creation;
-    private final com.hederahashgraph.api.proto.java.TransactionBody parentTxn;
-    private final byte[] bodyBytes;
+    private EntityNumVirtualKey protoKey;
+    private byte[] protoBodyBytes;
+
+    private List<Key> signatoryList;
+    private Schedule testValue;
 
     // Non-Mock objects, but may contain or reference mock objects.
-    private List<byte[]> signatories;
     private ScheduleVirtualValue subject;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private ReadableStates states;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private ReadableKVStateBase<ScheduleID, Schedule> schedulesById;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private ReadableKVStateBase<ProtoLong, ScheduleList> schedulesByLong;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private ReadableKVStateBase<ProtoString, ScheduleList> schedulesByString;
-
-    ScheduleServiceStateTranslatorTest() {
-        scheduledTxn = createScheduledTransaction();
-        parentTxnId = getParentTransactionId();
-        creation = getCreateTransactionBody();
-        parentTxn = getParentTransaction();
-        bodyBytes = parentTxn.toByteArray();
-    }
 
     @BeforeEach
     void setup() throws PreCheckException, InvalidKeyException {
         setUpBase();
-        signatories = new LinkedList<>();
-        subject = ScheduleVirtualValue.from(bodyBytes, expirationSecond);
-        subject.setKey(new EntityNumVirtualKey(3L));
+        protoKey = new EntityNumVirtualKey(scheduleInState.scheduleId().scheduleNum());
+        protoBodyBytes = getBodyBytes(scheduleInState);
+        subject = ScheduleVirtualValue.from(protoBodyBytes, expirationTime.seconds());
+        subject.setKey(protoKey);
         subject.witnessValidSignature(payerKeyBytes);
         subject.witnessValidSignature(schedulerKeyBytes);
         subject.witnessValidSignature(adminKeyBytes);
+        signatoryList = List.of(adminKey, schedulerKey, payerKey);
+        testValue = scheduleInState.copyBuilder().signatories(signatoryList).build();
+        // make sure our test value is what is in state
+        writableSchedules.put(testValue);
+        commit(writableById);
+        reset(writableById);
+    }
+
+    private byte[] getBodyBytes(final Schedule scheduleInState) {
+        final TransactionBody originalCreateBytes = requireNonNull(scheduleInState.originalCreateTransaction());
+        return PbjConverter.asBytes(TransactionBody.PROTOBUF, originalCreateBytes);
     }
 
     @Test
     void verifyTypicalForwardTranslation() throws IOException {
-        final ScheduleVirtualValue scheduleVirtualValue = ScheduleServiceStateTranslator.pbjToState(getValidSchedule());
+        assertThat(testValue.memo()).isEqualTo(subject.memo().get());
+        final ScheduleVirtualValue actual = ScheduleServiceStateTranslator.pbjToState(testValue);
+        final ScheduleVirtualValue expected = subject;
 
-        assertThat(scheduleVirtualValue).isNotNull();
-        final List<byte[]> expectedSignatories = scheduleVirtualValue.signatories();
-        final List<byte[]> actualSignatories = subject.signatories();
-        assertThat(actualSignatories).isNotNull();
-        assertThat(expectedSignatories).containsExactlyInAnyOrderElementsOf(actualSignatories);
-        assertThat(scheduleVirtualValue.memo()).isEqualTo(subject.memo());
-        assertThat(scheduleVirtualValue.isDeleted()).isEqualTo(subject.isDeleted());
-        assertThat(scheduleVirtualValue.isExecuted()).isEqualTo(subject.isExecuted());
-        assertThat(scheduleVirtualValue.adminKey()).isEqualTo(subject.adminKey());
-        assertThat(scheduleVirtualValue.waitForExpiryProvided()).isEqualTo(subject.waitForExpiryProvided());
-        assertThat(scheduleVirtualValue.payer()).isEqualTo(subject.payer());
-        assertThat(scheduleVirtualValue.schedulingAccount()).isEqualTo(subject.schedulingAccount());
-        assertThat(scheduleVirtualValue.schedulingTXValidStart()).isEqualTo(subject.schedulingTXValidStart());
-        assertThat(scheduleVirtualValue.expirationTimeProvided()).isEqualTo(subject.expirationTimeProvided());
-        assertThat(scheduleVirtualValue.calculatedExpirationTime()).isEqualTo(subject.calculatedExpirationTime());
-        assertThat(scheduleVirtualValue.getResolutionTime()).isEqualTo(subject.getResolutionTime());
-        assertThat(subject.ordinaryViewOfScheduledTxn()).isEqualTo(scheduleVirtualValue.ordinaryViewOfScheduledTxn());
-        assertThat(subject.scheduledTxn()).isEqualTo(scheduleVirtualValue.scheduledTxn());
-        assertThat(subject.bodyBytes()).containsExactly(scheduleVirtualValue.bodyBytes());
+        assertThat(actual).isNotNull();
+        final List<byte[]> actualSignatories = actual.signatories();
+        final List<byte[]> expectedSignatories = expected.signatories();
+        assertThat(actualSignatories).isNotNull().containsExactlyInAnyOrderElementsOf(expectedSignatories);
+        assertThat(actual.memo()).isEqualTo(expected.memo());
+        assertThat(actual.isDeleted()).isEqualTo(expected.isDeleted());
+        assertThat(actual.isExecuted()).isEqualTo(expected.isExecuted());
+        assertThat(actual.adminKey()).isEqualTo(expected.adminKey());
+        assertThat(actual.waitForExpiryProvided()).isEqualTo(expected.waitForExpiryProvided());
+        assertThat(actual.payer()).isEqualTo(expected.payer());
+        assertThat(actual.schedulingAccount()).isEqualTo(expected.schedulingAccount());
+        assertThat(actual.schedulingTXValidStart()).isEqualTo(expected.schedulingTXValidStart());
+        assertThat(actual.expirationTimeProvided()).isEqualTo(expected.expirationTimeProvided());
+        assertThat(actual.calculatedExpirationTime()).isEqualTo(expected.calculatedExpirationTime());
+        assertThat(actual.getResolutionTime()).isEqualTo(expected.getResolutionTime());
+        assertThat(actual.ordinaryViewOfScheduledTxn()).isEqualTo(expected.ordinaryViewOfScheduledTxn());
+        assertThat(actual.scheduledTxn()).isEqualTo(expected.scheduledTxn());
+        assertThat(actual.bodyBytes()).containsExactly(expected.bodyBytes());
     }
 
     @Test
     void verifyTypicalReverseTranslation() throws IOException {
         final Codec<SchedulableTransactionBody> protobufCodec = SchedulableTransactionBody.PROTOBUF;
-        final Schedule schedule = ScheduleServiceStateTranslator.convertScheduleVirtualValueToSchedule(subject);
-        Schedule expected = getValidSchedule();
+        final Schedule actual = ScheduleServiceStateTranslator.convertScheduleVirtualValueToSchedule(subject);
+        // original create has different values from the schedule for test purposes, but SVV uses original create only.
+        // Here we adjust the expected schedule to match the original schedule create values.
+        final Schedule.Builder expectedBuilder = testValue.copyBuilder().payerAccountId(scheduler);
+        final Schedule expected = expectedBuilder.providedExpirationSecond(0L).build();
 
-        assertThat(schedule).isNotNull();
+        assertThat(actual).isNotNull();
         final List<Key> expectedSignatories = expected.signatories();
-        final List<Key> actualSignatories = schedule.signatories();
-        assertThat(actualSignatories).isNotNull();
-        assertThat(expectedSignatories).containsExactlyInAnyOrderElementsOf(actualSignatories);
-        assertThat(expected.memo()).isEqualTo(schedule.memo());
-        assertThat(expected.deleted()).isEqualTo(schedule.deleted());
-        assertThat(expected.executed()).isEqualTo(schedule.executed());
-        assertThat(expected.adminKey()).isEqualTo(schedule.adminKey());
-        assertThat(expected.waitForExpiry()).isEqualTo(schedule.waitForExpiry());
-        assertThat(expected.payerAccountId()).isEqualTo(schedule.payerAccountId());
-        assertThat(expected.schedulerAccountId()).isEqualTo(schedule.schedulerAccountId());
-        assertThat(expected.scheduleValidStart()).isEqualTo(schedule.scheduleValidStart());
-        assertThat(expected.providedExpirationSecond()).isEqualTo(schedule.providedExpirationSecond());
-        assertThat(expected.calculatedExpirationSecond()).isEqualTo(schedule.calculatedExpirationSecond());
-        assertThat(expected.resolutionTime()).isEqualTo(schedule.resolutionTime());
-        assertThat(expected.originalCreateTransaction()).isEqualTo(schedule.originalCreateTransaction());
+        final List<Key> actualSignatories = actual.signatories();
+        assertThat(actualSignatories).isNotNull().containsExactlyInAnyOrderElementsOf(expectedSignatories);
+        assertThat(actual.memo()).isEqualTo(expected.memo());
+        assertThat(actual.deleted()).isEqualTo(expected.deleted());
+        assertThat(actual.executed()).isEqualTo(expected.executed());
+        assertThat(actual.adminKey()).isEqualTo(expected.adminKey());
+        assertThat(actual.waitForExpiry()).isEqualTo(expected.waitForExpiry());
+        assertThat(actual.payerAccountId()).isEqualTo(expected.payerAccountId());
+        assertThat(actual.schedulerAccountId()).isEqualTo(expected.schedulerAccountId());
+        assertThat(actual.scheduleValidStart()).isEqualTo(expected.scheduleValidStart());
+        assertThat(actual.providedExpirationSecond()).isEqualTo(expected.providedExpirationSecond());
+        assertThat(actual.calculatedExpirationSecond()).isEqualTo(expected.calculatedExpirationSecond());
+        assertThat(actual.resolutionTime()).isEqualTo(expected.resolutionTime());
+        assertThat(actual.originalCreateTransaction()).isEqualTo(expected.originalCreateTransaction());
         assertThat(expected.scheduledTransaction()).isNotNull();
-        assertThat(schedule.scheduledTransaction()).isNotNull();
+        assertThat(actual.scheduledTransaction()).isNotNull();
         final byte[] expectedBytes = PbjConverter.asBytes(protobufCodec, expected.scheduledTransaction());
-        final byte[] actualBytes = PbjConverter.asBytes(protobufCodec, schedule.scheduledTransaction());
-        assertThat(expectedBytes).containsExactly(actualBytes);
+        final byte[] actualBytes = PbjConverter.asBytes(protobufCodec, actual.scheduledTransaction());
+        assertThat(actualBytes).containsExactly(expectedBytes);
     }
 
     @Test
     void verifyReverseTranslationOfLookupById() throws InvalidKeyException {
-        BDDMockito.given(states.<ScheduleID, Schedule>get("SCHEDULES_BY_ID")).willReturn(schedulesById);
-        scheduleStore = new ReadableScheduleStoreImpl(states);
-        BDDMockito.given(schedulesById.get(testScheduleID)).willReturn(getValidSchedule());
-
-        final ScheduleVirtualValue scheduleVirtualValue =
-                ScheduleServiceStateTranslator.pbjToState(testScheduleID, scheduleStore);
-        assertThat(scheduleVirtualValue).isNotNull();
-        final List<byte[]> expectedSignatories = scheduleVirtualValue.signatories();
-        final List<byte[]> actualSignatories = subject.signatories();
-        assertThat(actualSignatories).isNotNull();
-        assertThat(expectedSignatories).containsExactlyInAnyOrderElementsOf(actualSignatories);
-        assertThat(scheduleVirtualValue.memo()).isEqualTo(subject.memo());
-        assertThat(scheduleVirtualValue.isDeleted()).isEqualTo(subject.isDeleted());
-        assertThat(scheduleVirtualValue.isExecuted()).isEqualTo(subject.isExecuted());
-        assertThat(scheduleVirtualValue.adminKey()).isEqualTo(subject.adminKey());
-        assertThat(scheduleVirtualValue.waitForExpiryProvided()).isEqualTo(subject.waitForExpiryProvided());
-        assertThat(scheduleVirtualValue.payer()).isEqualTo(subject.payer());
-        assertThat(scheduleVirtualValue.schedulingAccount()).isEqualTo(subject.schedulingAccount());
-        assertThat(scheduleVirtualValue.schedulingTXValidStart()).isEqualTo(subject.schedulingTXValidStart());
-        assertThat(scheduleVirtualValue.expirationTimeProvided()).isEqualTo(subject.expirationTimeProvided());
-        assertThat(scheduleVirtualValue.calculatedExpirationTime()).isEqualTo(subject.calculatedExpirationTime());
-        assertThat(scheduleVirtualValue.getResolutionTime()).isEqualTo(subject.getResolutionTime());
-        assertThat(scheduleVirtualValue.ordinaryViewOfScheduledTxn()).isEqualTo(subject.ordinaryViewOfScheduledTxn());
-        assertThat(scheduleVirtualValue.scheduledTxn()).isEqualTo(subject.scheduledTxn());
-        assertThat(scheduleVirtualValue.bodyBytes()).containsExactly(subject.bodyBytes());
+        final ScheduleVirtualValue actual = ScheduleServiceStateTranslator.pbjToState(testScheduleID, scheduleStore);
+        final ScheduleVirtualValue expected = subject;
+        assertThat(actual).isNotNull();
+        final List<byte[]> expectedSignatories = actual.signatories();
+        final List<byte[]> actualSignatories = expected.signatories();
+        assertThat(actualSignatories).isNotNull().containsExactlyInAnyOrderElementsOf(expectedSignatories);
+        assertThat(actual.memo()).isEqualTo(expected.memo());
+        assertThat(actual.isDeleted()).isEqualTo(expected.isDeleted());
+        assertThat(actual.isExecuted()).isEqualTo(expected.isExecuted());
+        assertThat(actual.adminKey()).isEqualTo(expected.adminKey());
+        assertThat(actual.waitForExpiryProvided()).isEqualTo(expected.waitForExpiryProvided());
+        assertThat(actual.payer()).isEqualTo(expected.payer());
+        assertThat(actual.schedulingAccount()).isEqualTo(expected.schedulingAccount());
+        assertThat(actual.schedulingTXValidStart()).isEqualTo(expected.schedulingTXValidStart());
+        assertThat(actual.expirationTimeProvided()).isEqualTo(expected.expirationTimeProvided());
+        assertThat(actual.calculatedExpirationTime()).isEqualTo(expected.calculatedExpirationTime());
+        assertThat(actual.getResolutionTime()).isEqualTo(expected.getResolutionTime());
+        assertThat(actual.ordinaryViewOfScheduledTxn()).isEqualTo(expected.ordinaryViewOfScheduledTxn());
+        assertThat(actual.scheduledTxn()).isEqualTo(expected.scheduledTxn());
+        assertThat(actual.bodyBytes()).containsExactly(expected.bodyBytes());
     }
 
-    private Schedule getValidSchedule() {
-        testConfig = HederaTestConfigBuilder.create().getOrCreateConfig();
-        scheduled = createSampleScheduled();
-        originalCreateTransaction = originalCreateTransaction(scheduled, payerAccountId, adminKey);
+    // TODO: Create a test with deleted and executed schedules.
 
-        return Schedule.newBuilder()
-                .deleted(false)
-                .executed(false)
-                .waitForExpiry(true)
-                .memo(memo)
-                .scheduleId(testScheduleID)
-                .schedulerAccountId(scheduler)
-                .payerAccountId(payerAccountId)
-                .adminKey(adminKey)
-                .scheduleValidStart(testValidStart)
-                .providedExpirationSecond(expirationTime.seconds())
-                .calculatedExpirationSecond(calculatedExpirationTime.seconds())
-                .scheduledTransaction(scheduled)
-                .originalCreateTransaction(originalCreateTransaction)
-                .signatories(keyList)
-                .build();
-    }
-
-    private SchedulableTransactionBody createSampleScheduled() {
-        final SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
-                .cryptoDelete(CryptoDeleteTransactionBody.newBuilder()
-                        .deleteAccountID(AccountID.newBuilder().accountNum(2))
-                        .transferAccountID(AccountID.newBuilder().accountNum(75231)))
-                .transactionFee(FEE)
-                .memo(SCHEDULED_TRANSACTION_MEMO)
-                .build();
-        return scheduledTxn;
-    }
-
-    @NonNull
-    private com.hederahashgraph.api.proto.java.TransactionID getParentTransactionId() {
-        return com.hederahashgraph.api.proto.java.TransactionID.newBuilder()
-                .setTransactionValidStart(MiscUtils.asTimestamp(schedulingTXValidStart.toJava()))
-                .setNonce(4444)
-                .setAccountID(schedulingAccount.toGrpcAccountId())
-                .build();
-    }
-
-    @NonNull
-    private com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody getCreateTransactionBody() {
-        return com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody.newBuilder()
-                .setAdminKey(MiscUtils.asKeyUnchecked(adminKeyVirtual))
-                .setPayerAccountID(payerVirtual.toGrpcAccountId())
-                .setExpirationTime(providedExpiry.toGrpc())
-                .setWaitForExpiry(waitForExpiry)
-                .setMemo(entityMemo)
-                .setScheduledTransactionBody(scheduledTxn)
-                .build();
-    }
-
-    @NonNull
-    private com.hederahashgraph.api.proto.java.TransactionBody getParentTransaction() {
-        return com.hederahashgraph.api.proto.java.TransactionBody.newBuilder()
-                .setTransactionID(parentTxnId)
-                .setScheduleCreate(creation)
-                .build();
-    }
-
-    @NonNull
-    private com.hederahashgraph.api.proto.java.SchedulableTransactionBody createScheduledTransaction() {
-        return com.hederahashgraph.api.proto.java.SchedulableTransactionBody.newBuilder()
-                .setTransactionFee(FEE)
-                .setMemo(SCHEDULED_TRANSACTION_MEMO)
-                .setCryptoDelete(com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody.newBuilder()
-                        .setDeleteAccountID(IdUtils.asAccount("0.0.2"))
-                        .setTransferAccountID(IdUtils.asAccount("0.0.75231")))
-                .build();
-    }
 }

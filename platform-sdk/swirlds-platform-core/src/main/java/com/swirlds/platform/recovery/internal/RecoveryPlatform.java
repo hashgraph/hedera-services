@@ -190,4 +190,12 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
         immutableState.clear();
         notificationEngine.shutdown();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void start() {
+        // no-op
+    }
 }

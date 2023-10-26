@@ -100,7 +100,7 @@ public class CryptoTransferLoadTest extends LoadTest {
             };
         };
 
-        return defaultHapiSpec("RunCryptoTransfers")
+        return defaultHapiSpec("RunCryptoTransfers-LoadTest")
                 .given(
                         withOpContext(
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),

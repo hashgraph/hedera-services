@@ -37,6 +37,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -82,7 +83,8 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var tokenStore = context.readableStore(ReadableTokenStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
-        final var tokenRel = validateSemantics(op, accountStore, tokenStore, tokenRelStore);
+        final var expiryValidator = context.expiryValidator();
+        final var tokenRel = validateSemantics(op, accountStore, tokenStore, tokenRelStore, expiryValidator);
 
         final var copyBuilder = tokenRel.copyBuilder();
         copyBuilder.frozen(true);
@@ -114,10 +116,15 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
             @NonNull final TokenFreezeAccountTransactionBody op,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableTokenStore tokenStore,
-            @NonNull final WritableTokenRelationStore tokenRelStore)
+            @NonNull final WritableTokenRelationStore tokenRelStore,
+            @NonNull final ExpiryValidator expiryValidator)
             throws HandleException {
         // Check that the token exists
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
+
+        // Validate token is not paused or deleted
+        TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
+
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         validateTrue(tokenMeta != null, INVALID_TOKEN_ID);
 
@@ -126,8 +133,8 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
 
         // Check that the account exists
         final var accountId = op.accountOrElse(AccountID.DEFAULT);
-        final var account = accountStore.getAccountById(accountId);
-        validateTrue(account != null, INVALID_ACCOUNT_ID);
+        final var account =
+                TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
 
         // Check that token exists
         TokenHandlerHelper.getIfUsable(tokenId, tokenStore);

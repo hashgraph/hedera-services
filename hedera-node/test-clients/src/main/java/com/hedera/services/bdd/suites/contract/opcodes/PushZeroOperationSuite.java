@@ -97,6 +97,7 @@ public class PushZeroOperationSuite extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     private HapiSpec pushZeroDisabledInV034() {
         final var pushZeroContract = CONTRACT;
         final var pushResult = "pushResult";

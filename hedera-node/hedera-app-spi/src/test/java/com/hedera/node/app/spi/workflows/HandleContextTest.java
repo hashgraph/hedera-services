@@ -16,9 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -27,6 +25,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
@@ -74,33 +73,6 @@ class HandleContextTest {
         verify(subject)
                 .dispatchPrecedingTransaction(
                         WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest, PAYER_ID);
-    }
-
-    @Test
-    void defaultDispatchChildWithAssistantThrowsOnMissingTransactionId() {
-        final var subject = mock(HandleContext.class);
-        doCallRealMethod()
-                .when(subject)
-                .dispatchChildTransaction(MISSING_PAYER_ID, SingleTransactionRecordBuilder.class, assistant);
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.dispatchChildTransaction(
-                        MISSING_PAYER_ID, SingleTransactionRecordBuilder.class, assistant));
-    }
-
-    @Test
-    void defaultDispatchChildWithAssistantUsesPayerIdFromBodyWhenSet() {
-        final var subject = mock(HandleContext.class);
-        doCallRealMethod()
-                .when(subject)
-                .dispatchChildTransaction(WITH_PAYER_ID, SingleTransactionRecordBuilder.class, assistant);
-        subject.dispatchChildTransaction(WITH_PAYER_ID, SingleTransactionRecordBuilder.class, assistant);
-        verify(subject)
-                .dispatchChildTransaction(
-                        eq(WITH_PAYER_ID),
-                        eq(SingleTransactionRecordBuilder.class),
-                        any(Predicate.class),
-                        eq(PAYER_ID));
     }
 
     @Test

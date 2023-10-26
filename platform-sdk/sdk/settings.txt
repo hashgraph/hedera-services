@@ -20,8 +20,7 @@ sync.syncProtocolPermitCount,             2
 
 freezeSecondsAfterStartup,                0
 event.creation.maxCreationRate,           5
-event.creation.useTipsetAlgorithm,        true
-platformStatus.observingStatusDelay,      1s
+platformStatus.observingStatusDelay,      1ms
 
                                           #############################
                                           #        Event Stream       #

@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -49,11 +50,13 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
     public FullResult computeFully(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
-
+        if (FrameUtils.unqualifiedDelegateDetected(frame)) {
+            return haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
+        }
         final HtsCall call;
         try {
             call = callFactory.createCallFrom(input, frame);
-        } catch (RuntimeException e) {
+        } catch (final RuntimeException e) {
             log.debug("Failed to create HTS call from input {}", input, e);
             return haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         }
@@ -66,7 +69,7 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         final HtsCall.PricedResult pricedResult;
         try {
             pricedResult = call.execute();
-        } catch (Exception internal) {
+        } catch (final Exception internal) {
             log.error("Unhandled failure for input {} to HTS system contract", input, internal);
             return haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
         }

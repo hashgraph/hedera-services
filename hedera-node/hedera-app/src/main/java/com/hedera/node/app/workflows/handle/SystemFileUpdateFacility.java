@@ -22,11 +22,12 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.util.FileUtilities;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -46,6 +47,9 @@ public class SystemFileUpdateFacility {
     private final ConfigProviderImpl configProvider;
     private final ThrottleManager throttleManager;
     private final ExchangeRateManager exchangeRateManager;
+    private final MonoMultiplierSources monoMultiplierSources;
+    private final ThrottleAccumulator backendThrottle;
+    private final ThrottleAccumulator frontendThrottle;
 
     /**
      * Creates a new instance of this class.
@@ -55,10 +59,16 @@ public class SystemFileUpdateFacility {
     public SystemFileUpdateFacility(
             @NonNull final ConfigProviderImpl configProvider,
             @NonNull final ThrottleManager throttleManager,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final MonoMultiplierSources monoMultiplierSources,
+            @NonNull final ThrottleAccumulator backendThrottle,
+            @NonNull final ThrottleAccumulator frontendThrottle) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.throttleManager = requireNonNull(throttleManager, " throttleManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
+        this.monoMultiplierSources = requireNonNull(monoMultiplierSources, "multiplierSources must not be null");
+        this.backendThrottle = requireNonNull(backendThrottle, "backendThrottle must not be null");
+        this.frontendThrottle = requireNonNull(frontendThrottle, "frontendThrottle must not be null");
     }
 
     /**
@@ -68,13 +78,9 @@ public class SystemFileUpdateFacility {
      * @param state the current state (the updated file content needs to be committed to the state)
      * @param txBody the transaction body
      */
-    public void handleTxBody(
-            @NonNull final HederaState state,
-            @NonNull final TransactionBody txBody,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
+    public void handleTxBody(@NonNull final HederaState state, @NonNull final TransactionBody txBody) {
         requireNonNull(state, "state must not be null");
         requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(recordBuilder, "recordBuilder must not be null");
 
         // Try to extract the file ID from the transaction body, if it is FileUpdate or FileAppend.
         final FileID fileID;
@@ -109,10 +115,21 @@ public class SystemFileUpdateFacility {
                 exchangeRateManager.update(FileUtilities.getFileContent(state, fileID), payer);
             } else if (fileNum == config.networkProperties()) {
                 configProvider.update(FileUtilities.getFileContent(state, fileID));
+                backendThrottle.applyGasConfig();
+                frontendThrottle.applyGasConfig();
+
+                // Updating the multiplier source to use the new gas throttle
+                // values that are coming from the network properties
+                monoMultiplierSources.resetExpectations();
             } else if (fileNum == config.hapiPermissions()) {
                 logger.error("Update of HAPI permissions not implemented");
             } else if (fileNum == config.throttleDefinitions()) {
                 throttleManager.update(FileUtilities.getFileContent(state, fileID));
+                backendThrottle.rebuildFor(throttleManager.throttleDefinitions());
+                frontendThrottle.rebuildFor(throttleManager.throttleDefinitions());
+
+                // Updating the multiplier source to use the new throttle definitions
+                monoMultiplierSources.resetExpectations();
             } else if (fileNum == config.upgradeFileNumber()) {
                 logger.error("Update of file number not implemented");
             }

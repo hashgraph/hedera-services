@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
@@ -31,7 +30,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.CreateTopicResourceUsage;
@@ -125,7 +123,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         try {
             final var effectiveExpiryMeta =
-                    handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta);
+                    handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta, true);
             builder.autoRenewPeriod(effectiveExpiryMeta.autoRenewPeriod());
             builder.expirationSecond(effectiveExpiryMeta.expiry());
             builder.autoRenewAccountId(effectiveExpiryMeta.autoRenewAccountId());
@@ -161,12 +159,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         requireNonNull(feeContext);
         final var op = feeContext.body();
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            try {
-                return new CreateTopicResourceUsage().usageGiven(fromPbj(op), sigValueObj, null);
-            } catch (InvalidTxBodyException e) {
-                throw new HandleException(INVALID_TRANSACTION_BODY);
-            }
-        });
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new CreateTopicResourceUsage()
+                .usageGiven(fromPbj(op), sigValueObj, null));
     }
 }

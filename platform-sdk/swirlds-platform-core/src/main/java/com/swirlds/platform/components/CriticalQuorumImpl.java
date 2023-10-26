@@ -21,11 +21,8 @@ import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
 
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.BaseEvent;
-import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -39,15 +36,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Implements the {@link CriticalQuorum} algorithm.
  */
 public class CriticalQuorumImpl implements CriticalQuorum {
-    private static final boolean DEFAULT_BOTH_PARENTS = true;
     private static final int DEFAULT_THRESHOLD_SOFTENING = 0;
 
     /**
      * The current address book for this node.
      */
     private final AddressBook addressBook;
-    /** Should both parents be checked for critical quorum or just the self parent */
-    private final boolean considerBothParents;
     /** 'soften' the threshold by this many events, the higher the number, the less strict the quorum is */
     private final int thresholdSoftening;
 
@@ -79,8 +73,6 @@ public class CriticalQuorumImpl implements CriticalQuorum {
      * @param metrics             the metrics engine
      * @param selfId              the ID of this node
      * @param addressBook         the source address book
-     * @param considerBothParents true if both parents should be checked for critical quorum and false for just the self
-     *                            parent
      * @param thresholdSoftening  'soften' the threshold by this many events, the higher the number, the less strict the
      *                            quorum is
      */
@@ -88,12 +80,11 @@ public class CriticalQuorumImpl implements CriticalQuorum {
             @NonNull final Metrics metrics,
             @NonNull final NodeId selfId,
             @NonNull final AddressBook addressBook,
-            final boolean considerBothParents,
             final int thresholdSoftening) {
+
         Objects.requireNonNull(metrics, "metrics must not be null");
         Objects.requireNonNull(selfId, "selfId must not be null");
         this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
-        this.considerBothParents = considerBothParents;
         this.thresholdSoftening = thresholdSoftening;
 
         eventCounts = new ConcurrentHashMap<>();
@@ -119,7 +110,7 @@ public class CriticalQuorumImpl implements CriticalQuorum {
      */
     public CriticalQuorumImpl(
             @NonNull final Metrics metrics, @NonNull final NodeId selfId, @NonNull final AddressBook addressBook) {
-        this(metrics, selfId, addressBook, DEFAULT_BOTH_PARENTS, DEFAULT_THRESHOLD_SOFTENING);
+        this(metrics, selfId, addressBook, DEFAULT_THRESHOLD_SOFTENING);
     }
 
     /**
@@ -158,6 +149,10 @@ public class CriticalQuorumImpl implements CriticalQuorum {
         handleRoundBoundary(event);
 
         final NodeId nodeId = event.getCreatorId();
+        if (!addressBook.contains(nodeId)) {
+            // No need to consider events from nodes not in the address book
+            return;
+        }
         final long totalWeight = addressBook.getTotalWeight();
 
         // Increase the event count
@@ -176,19 +171,5 @@ public class CriticalQuorumImpl implements CriticalQuorum {
                 weightNotExceedingThreshold.getOrDefault(threshold.get(), totalWeight), totalWeight)) {
             threshold.incrementAndGet();
         }
-    }
-
-    @Override
-    public EventCreationRuleResponse shouldCreateEvent(final BaseEvent selfParent, final BaseEvent otherParent) {
-        // if neither node is part of the superMinority in the latest round, don't create an event
-        final boolean isSelfMinority = isInCriticalQuorum(EventUtils.getCreatorId(selfParent));
-        if (!considerBothParents) {
-            return isSelfMinority ? EventCreationRuleResponse.PASS : EventCreationRuleResponse.DONT_CREATE;
-        }
-        final boolean isOtherMinority = isInCriticalQuorum(EventUtils.getCreatorId(otherParent));
-        if (isSelfMinority || isOtherMinority) {
-            return EventCreationRuleResponse.PASS;
-        }
-        return EventCreationRuleResponse.DONT_CREATE;
     }
 }

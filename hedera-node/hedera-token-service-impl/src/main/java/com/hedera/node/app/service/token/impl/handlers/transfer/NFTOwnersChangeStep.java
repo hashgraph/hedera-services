@@ -89,7 +89,7 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
 
                 final var copyNft = nft.copyBuilder();
                 // If the nft owner is not set then set it to the treasury account
-                if (nft.hasOwnerId() && nft.ownerId().equals(AccountID.DEFAULT)) {
+                if (!nft.hasOwnerId() || nft.ownerId().equals(AccountID.DEFAULT)) {
                     copyNft.ownerId(treasury);
                 }
                 // owner of nft should match the sender in transfer list
@@ -123,7 +123,7 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
      * @param tokenId token id of the nft
      * @param nft nft to be transferred
      */
-    private void validateSpenderHasAllowance(
+    static void validateSpenderHasAllowance(
             final Account owner, final AccountID spender, final TokenID tokenId, final Nft nft) {
         final var approveForAllAllowances = owner.approveForAllNftAllowances();
         final var allowance = AccountApprovalForAllAllowance.newBuilder()

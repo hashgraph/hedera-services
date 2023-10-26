@@ -32,6 +32,7 @@ import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
@@ -95,7 +96,8 @@ class OrphanEventsIntakeTest {
             orphanBuffer = new OrphanBufferingLinker(
                     ConfigurationHolder.getConfigData(ConsensusConfig.class),
                     new ParentFinder(linkedEventMap::get),
-                    100_000);
+                    100_000,
+                    mock(IntakeEventCounter.class));
 
             final PlatformContext platformContext =
                     TestPlatformContextBuilder.create().build();
@@ -113,7 +115,8 @@ class OrphanEventsIntakeTest {
                             (ConsensusRoundObserver) rnd -> consensusEvents.addAll(rnd.getConsensusEvents())),
                     mock(PhaseTimer.class),
                     mock(ShadowGraph.class),
-                    e -> {});
+                    e -> {},
+                    mock(IntakeEventCounter.class));
         }
 
         public void generateAndFeed(final int numEvents) {

@@ -16,17 +16,18 @@
 
 package com.hedera.node.app.fees;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
@@ -40,9 +41,11 @@ public class FeeContextImpl implements FeeContext {
     private final Instant consensusTime;
     private final TransactionInfo txInfo;
     private final Key payerKey;
+    private final AccountID payerId;
     private final FeeManager feeManager;
     private final ReadableStoreFactory storeFactory;
     private final Configuration configuration;
+    private final Authorizer authorizer;
 
     /**
      * Constructor of {@code FeeContextImpl}
@@ -50,6 +53,7 @@ public class FeeContextImpl implements FeeContext {
      * @param consensusTime the approximation of consensus time used during ingest
      * @param txInfo the {@link TransactionInfo} of the transaction
      * @param payerKey the {@link Key} of the payer
+     * @param payerId the {@link AccountID} of the payer
      * @param feeManager the {@link FeeManager} to generate a {@link FeeCalculator}
      * @param storeFactory the {@link ReadableStoreFactory} to create readable stores
      */
@@ -57,15 +61,29 @@ public class FeeContextImpl implements FeeContext {
             @NonNull final Instant consensusTime,
             @NonNull final TransactionInfo txInfo,
             @NonNull final Key payerKey,
+            @NonNull final AccountID payerId,
             @NonNull final FeeManager feeManager,
             @NonNull final ReadableStoreFactory storeFactory,
-            @Nullable final Configuration configuration) {
+            @NonNull final Configuration configuration,
+            @NonNull final Authorizer authorizer) {
         this.consensusTime = consensusTime;
         this.txInfo = txInfo;
         this.payerKey = payerKey;
+        this.payerId = payerId;
         this.feeManager = feeManager;
         this.storeFactory = storeFactory;
         this.configuration = configuration;
+        this.authorizer = authorizer;
+    }
+
+    @Override
+    public Instant currentTime() {
+        return consensusTime;
+    }
+
+    @Override
+    public @NonNull AccountID payer() {
+        return payerId;
     }
 
     @NonNull
@@ -97,8 +115,14 @@ public class FeeContextImpl implements FeeContext {
     }
 
     @Override
-    @Nullable
+    @NonNull
     public Configuration configuration() {
         return configuration;
+    }
+
+    @Override
+    @NonNull
+    public Authorizer authorizer() {
+        return authorizer;
     }
 }

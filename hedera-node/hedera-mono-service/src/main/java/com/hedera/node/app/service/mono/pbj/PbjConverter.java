@@ -45,7 +45,9 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleInfo;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.FixedFee;
@@ -54,8 +56,10 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
+import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -159,6 +163,26 @@ public final class PbjConverter {
         }
     }
 
+    public static @NonNull com.hederahashgraph.api.proto.java.KeyList fromPbj(@NonNull KeyList keyValue) {
+        requireNonNull(keyValue);
+        try {
+            final var bytes = asBytes(KeyList.PROTOBUF, keyValue);
+            return com.hederahashgraph.api.proto.java.KeyList.parseFrom(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.ScheduleInfo fromPbj(@NonNull ScheduleInfo pbjValue) {
+        requireNonNull(pbjValue);
+        try {
+            final var bytes = asBytes(ScheduleInfo.PROTOBUF, pbjValue);
+            return com.hederahashgraph.api.proto.java.ScheduleInfo.parseFrom(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static @NonNull com.hederahashgraph.api.proto.java.AccountID fromPbj(@NonNull AccountID accountID) {
         requireNonNull(accountID);
         final var builder = com.hederahashgraph.api.proto.java.AccountID.newBuilder()
@@ -235,6 +259,19 @@ public final class PbjConverter {
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static @NonNull SubType toPbj(@NonNull com.hederahashgraph.api.proto.java.SubType subType) {
+        requireNonNull(subType);
+        return switch (subType) {
+            case DEFAULT -> SubType.DEFAULT;
+            case TOKEN_FUNGIBLE_COMMON -> SubType.TOKEN_FUNGIBLE_COMMON;
+            case TOKEN_NON_FUNGIBLE_UNIQUE -> SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+            case TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES -> SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
+            case TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES -> SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+            case SCHEDULE_CREATE_CONTRACT_CALL -> SubType.SCHEDULE_CREATE_CONTRACT_CALL;
+            case UNRECOGNIZED -> throw new IllegalArgumentException("Unknown subType UNRECOGNIZED");
+        };
     }
 
     public static @NonNull HederaFunctionality toPbj(
@@ -1501,7 +1538,9 @@ public final class PbjConverter {
         var builder = com.hederahashgraph.api.proto.java.FixedFee.newBuilder();
         if (fixedFee != null) {
             builder.setAmount(fixedFee.amount());
-            builder.setDenominatingTokenId(fromPbj(fixedFee.denominatingTokenId()));
+            if (fixedFee.hasDenominatingTokenId()) {
+                builder.setDenominatingTokenId(fromPbj(fixedFee.denominatingTokenId()));
+            }
         }
         return builder.build();
     }
@@ -1540,5 +1579,23 @@ public final class PbjConverter {
     public static NetworkGetExecutionTimeQuery toPbj(
             com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery query) {
         return protoToPbj(query, NetworkGetExecutionTimeQuery.class);
+    }
+
+    public static DeterministicThrottle.UsageSnapshot fromPbj(ThrottleUsageSnapshot snapshot) {
+        final var lastDecisionTime = snapshot.lastDecisionTime();
+        if (lastDecisionTime == null) {
+            return new DeterministicThrottle.UsageSnapshot(snapshot.used(), null);
+        } else {
+            return new DeterministicThrottle.UsageSnapshot(snapshot.used(), HapiUtils.asInstant(lastDecisionTime));
+        }
+    }
+
+    public static ThrottleUsageSnapshot toPbj(DeterministicThrottle.UsageSnapshot snapshot) {
+        final var lastDecisionTime = snapshot.lastDecisionTime();
+        if (lastDecisionTime == null) {
+            return new ThrottleUsageSnapshot(snapshot.used(), null);
+        } else {
+            return new ThrottleUsageSnapshot(snapshot.used(), HapiUtils.asTimestamp(lastDecisionTime));
+        }
     }
 }

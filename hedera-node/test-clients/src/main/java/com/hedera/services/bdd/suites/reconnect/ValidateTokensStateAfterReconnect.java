@@ -91,7 +91,7 @@ public class ValidateTokensStateAfterReconnect extends HapiSuite {
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS).logging(),
                         cryptoCreate(anotherAccount).balance(ONE_HUNDRED_HBARS).logging())
                 .when(
-                        sleepFor(Duration.ofSeconds(25).toMillis()),
+                        sleepFor(Duration.ofSeconds(26).toMillis()),
                         getAccountBalance(GENESIS).setNode(reconnectingNode).unavailableNode(),
                         tokenCreate(tokenToBeQueried)
                                 .freezeKey(freezeKey)

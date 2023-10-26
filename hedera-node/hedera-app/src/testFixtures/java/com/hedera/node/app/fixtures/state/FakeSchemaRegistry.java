@@ -20,6 +20,7 @@ import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
+import com.hedera.node.app.spi.fixtures.throttle.FakeHandleThrottleParser;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.MigrationContext;
@@ -28,6 +29,7 @@ import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -97,6 +99,12 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                 @Override
                 public GenesisRecordsBuilder genesisRecordsBuilder() {
                     return new NoOpGenesisRecordsBuilder();
+                }
+
+                @NonNull
+                @Override
+                public HandleThrottleParser handleThrottling() {
+                    return new FakeHandleThrottleParser();
                 }
 
                 @Override
