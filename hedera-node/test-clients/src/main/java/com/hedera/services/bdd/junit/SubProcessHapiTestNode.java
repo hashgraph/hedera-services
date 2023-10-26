@@ -168,7 +168,7 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                             // node to stop at startup, you can change the below line so nodeId == the node you want
                             // to suspend at startup and the first "n" to "y".
                             "-agentlib:jdwp=transport=dt_socket,server=y,suspend=" + (nodeId == 0 ? "n" : "n")
-                                            + ",address=*:" + (5005 + nodeId),
+                                    + ",address=*:" + (5005 + nodeId),
                             "-Dhedera.workflows.enabled=true",
                             "-classpath",
                             classPath,
