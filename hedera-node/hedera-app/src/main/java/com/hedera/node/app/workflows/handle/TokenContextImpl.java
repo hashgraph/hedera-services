@@ -92,7 +92,14 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @NonNull
     @Override
     public <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration());
+        final var result = recordListBuilder.addPreceding(configuration(), false);
+        return castRecordBuilder(result, recordBuilderClass);
+    }
+
+    @NonNull
+    @Override
+    public <T> T addPrecedingChildRecordBuilderForGenesis(@NonNull Class<T> recordBuilderClass) {
+        final var result = recordListBuilder.addPreceding(configuration(), true);
         return castRecordBuilder(result, recordBuilderClass);
     }
 

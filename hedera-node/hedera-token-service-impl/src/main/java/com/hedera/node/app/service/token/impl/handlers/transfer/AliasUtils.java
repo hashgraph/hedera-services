@@ -29,6 +29,7 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
 
 public final class AliasUtils {
     private AliasUtils() {
@@ -48,7 +49,7 @@ public final class AliasUtils {
             stream.limit(bais.available());
             final var key = Key.PROTOBUF.parse(stream);
             return (key.hasEcdsaSecp256k1() || key.hasEd25519()) && isValid(key);
-        } catch (final IOException e) {
+        } catch (final IOException | BufferUnderflowException e) {
             return false;
         }
     }

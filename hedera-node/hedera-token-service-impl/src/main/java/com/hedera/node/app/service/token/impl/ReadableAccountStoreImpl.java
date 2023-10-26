@@ -36,6 +36,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
 import java.util.Optional;
 
 /**
@@ -51,9 +52,13 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
         System.arraycopy(Longs.toByteArray(StaticProperties.getRealm()), 0, MIRROR_PREFIX, 4, 8);
     }
 
-    /** The underlying data storage class that holds the account data. */
+    /**
+     * The underlying data storage class that holds the account data.
+     */
     private final ReadableKVState<AccountID, Account> accountState;
-    /** The underlying data storage class that holds the aliases data built from the state. */
+    /**
+     * The underlying data storage class that holds the aliases data built from the state.
+     */
     private final ReadableKVState<ProtoBytes, AccountID> aliases;
 
     /**
@@ -83,7 +88,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
      *
      * @param accountID the {@code AccountID} which {@code Account is requested}
      * @return an {@link Optional} with the {@code Account}, if it was found, an empty {@code
-     *     Optional} otherwise
+     * Optional} otherwise
      */
     @Override
     @Nullable
@@ -154,7 +159,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                 } else {
                     return null;
                 }
-            } catch (IOException ignore) {
+            } catch (IOException | BufferUnderflowException ignore) {
                 return null;
             }
         }

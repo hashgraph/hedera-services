@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -763,7 +764,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     .dispatchHandle(any());
 
             when(childRecordBuilder.status()).thenReturn(ResponseCodeEnum.OK);
-            when(recordListBuilder.addPreceding(any())).thenReturn(childRecordBuilder);
+            when(recordListBuilder.addPreceding(any(), anyBoolean())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
 
@@ -946,7 +947,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                                 VERIFIER_CALLBACK,
                                 AccountID.DEFAULT))
                         .isInstanceOf(IllegalArgumentException.class);
-                verify(recordListBuilder, never()).addPreceding(any());
+                verify(recordListBuilder, never()).addPreceding(any(), anyBoolean());
                 verify(dispatcher, never()).dispatchHandle(any());
                 assertThat(stack.createReadableStates(FOOD_SERVICE)
                                 .get(FRUIT_STATE_KEY)
@@ -968,7 +969,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT))
                     .isInstanceOf(IllegalStateException.class);
-            verify(recordListBuilder, never()).addPreceding(any());
+            verify(recordListBuilder, never()).addPreceding(any(), anyBoolean());
             verify(dispatcher, never()).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
@@ -989,7 +990,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT))
                     .isInstanceOf(IllegalStateException.class);
-            verify(recordListBuilder, never()).addPreceding(any());
+            verify(recordListBuilder, never()).addPreceding(any(), anyBoolean());
             verify(dispatcher, never()).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
@@ -1009,7 +1010,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT))
                     .isInstanceOf(IllegalArgumentException.class);
-            verify(recordListBuilder, never()).addPreceding(any());
+            verify(recordListBuilder, never()).addPreceding(any(), anyBoolean());
             verify(dispatcher, never()).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
@@ -1029,7 +1030,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT))
                     .isInstanceOf(IllegalArgumentException.class);
-            verify(recordListBuilder, never()).addPreceding(any());
+            verify(recordListBuilder, never()).addPreceding(any(), anyBoolean());
             verify(dispatcher, never()).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)

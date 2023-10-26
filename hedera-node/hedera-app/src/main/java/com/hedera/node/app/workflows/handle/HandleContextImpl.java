@@ -446,7 +446,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         // run the transaction
-        final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration());
+        final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration(), false);
         dispatchSyntheticTxn(syntheticPayer, txBody, PRECEDING, precedingRecordBuilder, callback);
 
         return castRecordBuilder(precedingRecordBuilder, recordBuilderClass);
@@ -613,7 +613,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     @NonNull
     public <T> T addPrecedingChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration());
+        final var result = recordListBuilder.addPreceding(configuration(), false);
         return castRecordBuilder(result, recordBuilderClass);
     }
 

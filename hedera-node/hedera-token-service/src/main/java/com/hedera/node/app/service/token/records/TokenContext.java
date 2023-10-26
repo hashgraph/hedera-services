@@ -79,4 +79,7 @@ public interface TokenContext {
      */
     @NonNull
     <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+
+    @NonNull
+    <T> T addPrecedingChildRecordBuilderForGenesis(@NonNull Class<T> recordBuilderClass);
 }

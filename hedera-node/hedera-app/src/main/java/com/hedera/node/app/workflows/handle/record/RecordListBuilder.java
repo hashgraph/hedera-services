@@ -121,7 +121,8 @@ public final class RecordListBuilder {
      * @throws NullPointerException      if {@code consensusConfig} is {@code null}
      * @throws HandleException if no more preceding slots are available
      */
-    public SingleTransactionRecordBuilderImpl addPreceding(@NonNull final Configuration configuration) {
+    public SingleTransactionRecordBuilderImpl addPreceding(
+            @NonNull final Configuration configuration, final boolean isOnGenesis) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
 
         // Lazily create. FUTURE: We should reuse the RecordListBuilder between handle calls, and we should
@@ -136,7 +137,7 @@ public final class RecordListBuilder {
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
         final var precedingCount = precedingTxnRecordBuilders.size();
         final var maxRecords = consensusConfig.handleMaxPrecedingRecords();
-        if (precedingCount >= maxRecords) {
+        if (precedingCount >= maxRecords && !isOnGenesis) {
             // We do not have a MAX_PRECEDING_RECORDS_EXCEEDED error, so use this.
             throw new HandleException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
         }
