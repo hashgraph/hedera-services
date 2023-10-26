@@ -98,12 +98,12 @@ public class ServicesMain implements SwirldMain {
         final NodeId selfId = args != null && args.length > 0 ? new NodeId(Integer.parseInt(args[0])) : new NodeId(0);
 
         final var config = ConfigurationBuilder.create()
-            .withSource(SystemEnvironmentConfigSource.getInstance())
-            .withSource(SystemPropertiesConfigSource.getInstance());
+                .withSource(SystemEnvironmentConfigSource.getInstance())
+                .withSource(SystemPropertiesConfigSource.getInstance());
 
         final PlatformBuilder builder = new PlatformBuilder(
-            Hedera.APP_NAME, Hedera.SWIRLD_NAME, hedera.getSoftwareVersion(), hedera::newState, selfId)
-            .withConfigurationBuilder(config);
+                        Hedera.APP_NAME, Hedera.SWIRLD_NAME, hedera.getSoftwareVersion(), hedera::newState, selfId)
+                .withConfigurationBuilder(config);
 
         final Platform platform = builder.build();
         hedera.init(platform, selfId);
