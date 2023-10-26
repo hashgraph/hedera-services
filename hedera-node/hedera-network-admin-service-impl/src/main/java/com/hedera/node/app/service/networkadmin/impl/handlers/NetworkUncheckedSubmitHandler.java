@@ -20,8 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.SubType;
-import com.hedera.node.app.service.mono.fees.calculation.system.txns.UncheckedSubmitResourceUsage;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -62,11 +60,7 @@ public class NetworkUncheckedSubmitHandler implements TransactionHandler {
 
     @NonNull
     @Override
-    public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        requireNonNull(feeContext);
-
-        return feeContext
-                .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> UncheckedSubmitResourceUsage.usageGiven());
+    public Fees calculateFees(final FeeContext feeContext) {
+        return Fees.FREE;
     }
 }
