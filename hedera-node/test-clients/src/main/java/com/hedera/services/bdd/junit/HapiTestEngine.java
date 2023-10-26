@@ -135,14 +135,20 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 .forEach(engineDescriptor::addChild);
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>We don't need to do anything here, just return our phony context
+     */
     @Override
     protected HapiTestEngineExecutionContext createExecutionContext(ExecutionRequest request) {
         // Populating the data needed for the context
-        return new HapiTestEngineExecutionContext(Path.of("data"), Path.of("eventstreams"));
+        return new HapiTestEngineExecutionContext();
     }
 
     private static final class HapiEngineDescriptor extends EngineDescriptor
             implements Node<HapiTestEngineExecutionContext> {
+
         /** The Hedera test environment to use. We start it once at the start of all tests and reuse it. */
         private HapiTestEnv env;
 
@@ -257,12 +263,14 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                     MethodSource.from(testMethod));
             this.testMethod = testMethod;
             setParent(parent);
-            // TODO: do I need that? Will depend on the location of the filtering argument
             setTags(getTagsIfAny(testMethod));
         }
 
         private Set<TestTag> getTagsIfAny(Method testMethod) {
-            // TODO: add a comment
+            // When a method has a single @Tag annotation, we retrieve it by filtering for Tag.class.
+            // In cases where a method has multiple @Tag annotations, we use Tags.class to access all of them.
+            // Ideally, Tags.class should encompass both single and multiple @Tag annotations,
+            // but the current implementation does not support this.
             final var tagsAnnotation = testMethod.getAnnotation(Tags.class);
             final var tagAnnotation = testMethod.getAnnotation(Tag.class);
 
@@ -294,12 +302,11 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 return SkipResult.skip(msg == null || msg.isBlank() ? "Disabled" : msg);
             }
 
-            // TODO: add comments
-            TestTag tag = TestTag.create("TAG"); // TODO: THIS WILL COME FROM SOMEWHERE
-            Set<TestTag> methodTags = getTagsIfAny(testMethod);
-            if (tag == null && methodTags.isEmpty()) {
+            final var filteringTag = System.getenv("FILTERING_TAG");
+            TestTag tag = filteringTag != null ? TestTag.create(filteringTag) : null;
+            if (tag == null && testTags.isEmpty()) {
                 return SkipResult.doNotSkip();
-            } else if (methodTags.contains(tag)) {
+            } else if (testTags.contains(tag)) {
                 return SkipResult.doNotSkip();
             } else {
                 return SkipResult.skip("Tag not contained");
