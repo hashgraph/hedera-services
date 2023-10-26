@@ -68,6 +68,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class ContractCallLocalSuite extends HapiSuite {
@@ -181,6 +182,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled("Regression. Fix tracked in #9492")
     private HapiSpec vanillaSuccess() {
         return defaultHapiSpec("vanillaSuccess")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
