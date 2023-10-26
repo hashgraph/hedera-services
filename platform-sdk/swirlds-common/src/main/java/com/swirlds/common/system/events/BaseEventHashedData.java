@@ -236,6 +236,17 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         transactions = in.readSerializableArray(
                 ConsensusTransactionImpl[]::new, transactionConfig.maxTransactionCountPerEvent(), true);
 
+        checkUserTransactionsVerifySize(transactionConfig.maxTransactionBytesPerEvent());
+    }
+
+    /**
+     * Check if array of transactions has any user created transaction inside and verify that total size of transactions
+     * does not exceed the maximum allowed size
+     *
+     * @param maxTransactionBytesPerEvent the maximum number of transaction bytes an event may contain
+     * @throws IOException if total size of transactions exceeds the maximum allowed size
+     */
+    private void checkUserTransactionsVerifySize(final int maxTransactionBytesPerEvent) throws IOException {
         int totalTransactionSize = 0;
         for (final Transaction transaction : transactions) {
             if (!hasUserTransactions && !transaction.isSystem()) {
@@ -245,7 +256,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             totalTransactionSize += transaction.getSerializedLength();
         }
 
-        if (totalTransactionSize > transactionConfig.maxTransactionBytesPerEvent()) {
+        if (totalTransactionSize > maxTransactionBytesPerEvent) {
             throw new IOException("Total size of transactions in this event %s exceeds the maximum allowed size"
                     .formatted(totalTransactionSize));
         }
