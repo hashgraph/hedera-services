@@ -100,14 +100,10 @@ class UptimeTests {
         return events;
     }
 
-    private static ConsensusRound mockRound(@NonNull final List<EventImpl> events){
+    private static ConsensusRound mockRound(@NonNull final List<EventImpl> events) {
         final ConsensusSnapshot snapshot = mock(ConsensusSnapshot.class);
         final ConsensusRound round = new ConsensusRound(
-                mock(AddressBook.class),
-                events,
-                mock(EventImpl.class),
-                mock(GraphGenerations.class),
-                snapshot);
+                mock(AddressBook.class), events, mock(EventImpl.class), mock(GraphGenerations.class), snapshot);
         final Instant consensusTimestamp = events.get(events.size() - 1).getConsensusTimestamp();
         when(snapshot.consensusTimestamp()).thenReturn(consensusTimestamp);
         return round;
