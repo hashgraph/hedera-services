@@ -60,7 +60,7 @@ public class TokenTupleUtils {
         return Tuple.of(
                 token.expirationSecond(),
                 headlongAddressOf(token.autoRenewAccountIdOrElse(ZERO_ACCOUNT_ID)),
-                token.autoRenewSeconds());
+                (token.autoRenewSeconds() > 0 ? token.autoRenewSeconds() : 0));
     }
 
     /**

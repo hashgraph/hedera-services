@@ -33,6 +33,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSyst
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNonRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -76,7 +77,7 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         requireNonNull(token);
 
         final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
-        final var ledgerId = hex(ledgerConfig.id().toByteArray());
+        final var ledgerId = Bytes.wrap(ledgerConfig.id().toByteArray()).toString();
         final var nft = enhancement
                 .nativeOperations()
                 .getNft(token.tokenIdOrElse(ZERO_TOKEN_ID).tokenNum(), serialNumber);
