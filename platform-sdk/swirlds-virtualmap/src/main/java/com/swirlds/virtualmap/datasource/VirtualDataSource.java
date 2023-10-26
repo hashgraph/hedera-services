@@ -164,14 +164,14 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
     void registerMetrics(final Metrics metrics);
 
     /**
-     * Start background compaction process, if it is not already running.
+     * Enables background compaction process. Compaction starts on the next flush.
      */
-    default void startBackgroundCompaction() {}
+    void enableBackgroundCompaction();
 
     /**
-     * Stop background compaction process, if it is running.
+     * Cancels all compactions that are currently running and disables background compaction process.
      */
-    default void stopBackgroundCompaction() {}
+    void stopAndDisableBackgroundCompaction();
 
     /**
      * Build an empty {@link VirtualKeySet}. This key set should be compatible with data in this data source,

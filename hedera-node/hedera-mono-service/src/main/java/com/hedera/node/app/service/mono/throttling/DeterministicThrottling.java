@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,6 +49,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.IntSupplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -271,6 +273,12 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void leakCapacityForNOfUnscaled(final int n, @NonNull final HederaFunctionality function) {
+        final var manager = Objects.requireNonNull(functionReqs.get(function));
+        manager.undoClaimedReqsFor(n);
     }
 
     private void logResolvedDefinitions() {
