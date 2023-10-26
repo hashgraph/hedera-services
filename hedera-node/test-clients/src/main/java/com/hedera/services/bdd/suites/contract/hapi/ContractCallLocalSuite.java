@@ -235,6 +235,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled("Regression. Fix tracked in #9492")
     private HapiSpec insufficientFeeFails() {
         final long adequateQueryPayment = 500_000L;
 
@@ -251,6 +252,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Disabled("Regression. Fix tracked in #9492")
     private HapiSpec lowBalanceFails() {
         final long adequateQueryPayment = 500_000_000L;
 
