@@ -18,19 +18,22 @@ package com.swirlds.platform.gossip.sync;
 
 import static com.swirlds.common.io.extendable.ExtendableInputStream.extendInputStream;
 
-import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.config.SocketConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
-import com.swirlds.common.io.extendable.extensions.HashingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.network.ByteConstants;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
 public class SyncInputStream extends SerializableDataInputStream {
 
@@ -38,39 +41,44 @@ public class SyncInputStream extends SerializableDataInputStream {
     private static final int MAX_TIPS_PER_NODE = 1000;
 
     private final CountingStreamExtension syncByteCounter;
-    private final HashingStreamExtension hasher;
 
-    private SyncInputStream(InputStream in, CountingStreamExtension syncByteCounter, HashingStreamExtension hasher) {
+    private SyncInputStream(InputStream in, CountingStreamExtension syncByteCounter) {
         super(in);
         this.syncByteCounter = syncByteCounter;
-        this.hasher = hasher;
     }
 
-    public static SyncInputStream createSyncInputStream(InputStream in, int bufferSize) {
-        CountingStreamExtension syncCounter = new CountingStreamExtension();
-        HashingStreamExtension hasher = new HashingStreamExtension(DigestType.SHA_384);
+    public static SyncInputStream createSyncInputStream(
+            @NonNull final PlatformContext platformContext, @NonNull final InputStream in, final int bufferSize) {
 
-        // the buffered reader reads data first, for efficiency
-        return new SyncInputStream(
-                extendInputStream(new BufferedInputStream(in, bufferSize), syncCounter, hasher), syncCounter, hasher);
+        final CountingStreamExtension syncCounter = new CountingStreamExtension();
+
+        final boolean compress = platformContext
+                .getConfiguration()
+                .getConfigData(SocketConfig.class)
+                .gzipCompression();
+
+        final InputStream meteredStream = extendInputStream(in, syncCounter);
+
+        final InputStream wrappedStream;
+        if (compress) {
+            wrappedStream = new InflaterInputStream(meteredStream, new Inflater(true), bufferSize);
+        } else {
+            wrappedStream = new BufferedInputStream(meteredStream, bufferSize);
+        }
+
+        return new SyncInputStream(wrappedStream, syncCounter);
     }
 
     public CountingStreamExtension getSyncByteCounter() {
         return syncByteCounter;
     }
 
-    public HashingStreamExtension getHasher() {
-        return hasher;
-    }
-
     /**
      * Reads a sync request response from the stream
      *
      * @return true if the sync has been accepted, false if it was rejected
-     * @throws IOException
-     * 		if a stream exception occurs
-     * @throws SyncException
-     * 		if something unexpected has been read from the stream
+     * @throws IOException   if a stream exception occurs
+     * @throws SyncException if something unexpected has been read from the stream
      */
     public boolean readSyncRequestResponse() throws IOException, SyncException {
         final byte b = readByte();
@@ -88,8 +96,7 @@ public class SyncInputStream extends SerializableDataInputStream {
     /**
      * Read the other node's generation numbers from an input stream
      *
-     * @throws IOException
-     * 		if a stream exception occurs
+     * @throws IOException if a stream exception occurs
      */
     public Generations readGenerations() throws IOException {
         return readSerializable(false, Generations::new);
@@ -98,8 +105,7 @@ public class SyncInputStream extends SerializableDataInputStream {
     /**
      * Read the other node's tip hashes
      *
-     * @throws IOException
-     * 		is a stream exception occurs
+     * @throws IOException is a stream exception occurs
      */
     public List<Hash> readTipHashes(final int numberOfNodes) throws IOException {
         return readSerializableList(numberOfNodes * MAX_TIPS_PER_NODE, false, Hash::new);
