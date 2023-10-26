@@ -167,7 +167,7 @@ public class QueryChecker {
                 }
             }
             // this will happen just if it is a payer
-            else if (amount < 0 && (payer.tinybarBalance() - transferTxnFee) < -amount){
+            else if (amount < 0 && (payer.tinybarBalance() - transferTxnFee) < -amount) {
                 throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, transferTxnFee);
             }
         }

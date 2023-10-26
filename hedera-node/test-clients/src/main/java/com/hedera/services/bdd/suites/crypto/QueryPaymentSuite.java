@@ -81,18 +81,21 @@ public class QueryPaymentSuite extends HapiSuite {
                 .when()
                 .then(
                         getAccountInfo(GENESIS)
-                                .withPayment(cryptoTransfer(spec ->
-                                        multiAccountPaymentToNode003AndBeneficiary(spec, "a", "b", "c", 1_000L, 2L)).payingWith("a"))
+                                .withPayment(cryptoTransfer(spec -> multiAccountPaymentToNode003AndBeneficiary(
+                                                spec, "a", "b", "c", 1_000L, 2L))
+                                        .payingWith("a"))
                                 .setNode(NODE)
                                 .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE),
                         getAccountInfo(GENESIS)
-                                .withPayment(cryptoTransfer(spec ->
-                                        multiAccountPaymentToNode003AndBeneficiary(spec, "d", "b", "c", 5000, 200L)).payingWith("a"))
+                                .withPayment(cryptoTransfer(spec -> multiAccountPaymentToNode003AndBeneficiary(
+                                                spec, "d", "b", "c", 5000, 200L))
+                                        .payingWith("a"))
                                 .setNode(NODE)
                                 .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE),
                         getAccountInfo(GENESIS)
                                 .withPayment(cryptoTransfer(spec -> multiAccountPaymentToNode003AndBeneficiary(
-                                        spec, "d", GENESIS, "c", 5000, 200L)).payingWith("a"))
+                                                spec, "d", GENESIS, "c", 5000, 200L))
+                                        .payingWith("a"))
                                 .setNode(NODE)
                                 .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
@@ -143,7 +146,8 @@ public class QueryPaymentSuite extends HapiSuite {
                 .when()
                 .then(
                         getAccountInfo(GENESIS).fee(100L).setNode(NODE).hasAnswerOnlyPrecheck(OK),
-                        getAccountInfo(GENESIS).payingWith("a")
+                        getAccountInfo(GENESIS)
+                                .payingWith("a")
                                 .nodePayment(Long.MAX_VALUE)
                                 .setNode(NODE)
                                 .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE),
@@ -163,7 +167,8 @@ public class QueryPaymentSuite extends HapiSuite {
                         cryptoCreate("c").balance(1_234L))
                 .when()
                 .then(getAccountInfo(GENESIS)
-                        .withPayment(cryptoTransfer(spec -> invalidPaymentToNode(spec, "a", "b", "c", 1200)).payingWith("a"))
+                        .withPayment(cryptoTransfer(spec -> invalidPaymentToNode(spec, "a", "b", "c", 1200))
+                                .payingWith("a"))
                         .setNode(NODE)
                         .fee(10L)
                         .hasAnswerOnlyPrecheck(INVALID_RECEIVING_NODE_ACCOUNT));
