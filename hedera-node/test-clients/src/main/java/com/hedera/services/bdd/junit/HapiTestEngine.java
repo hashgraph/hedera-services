@@ -254,7 +254,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         /** The method under test */
         private final Method testMethod;
 
-        private Set<TestTag> testTags;
+        private final Set<TestTag> testTags;
 
         public MethodTestDescriptor(Method testMethod, ClassTestDescriptor parent) {
             super(
@@ -262,8 +262,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                     testMethod.getName(),
                     MethodSource.from(testMethod));
             this.testMethod = testMethod;
+            this.testTags = getTagsIfAny(testMethod);
             setParent(parent);
-            setTags(getTagsIfAny(testMethod));
         }
 
         private Set<TestTag> getTagsIfAny(Method testMethod) {
@@ -330,15 +330,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 throw new AssertionError();
             }
             return context;
-        }
-
-        @Override
-        public Set<TestTag> getTags() {
-            return testTags;
-        }
-
-        public void setTags(Set<TestTag> testTags) {
-            this.testTags = testTags;
         }
     }
 }
