@@ -18,11 +18,15 @@ package com.swirlds.merkledb;
 
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.merkledb.config.MerkleDbConfig;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Encapsulates statistics for an instance of a {@link MerkleDbDataSource}.
@@ -41,8 +45,17 @@ public class MerkleDbStatistics {
     private static final String FLUSHES_PREFIX = "flushes_";
     /** Prefix for compaction related metrics */
     private static final String COMPACTIONS_PREFIX = "compactions_";
+
+    private static final String LEVEL_PREFIX = "level_";
     /** Prefix for all off-heap related metrics */
     private static final String OFFHEAP_PREFIX = "offheap_";
+
+    /**
+     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
+     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
+     * holder will have been configured by the time this static initializer runs.
+     */
+    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
     private final String label;
 
@@ -77,43 +90,18 @@ public class MerkleDbStatistics {
     private LongAccumulator flushLeafKeysWritten;
     private DoubleAccumulator flushLeafKeysStoreFileSizeMb;
 
-    /** Hashes store small compactions - time in ms */
-    private LongAccumulator hashesStoreSmallCompactionTimeMs;
-    /** Hashes store small compactions - saved space in Mb */
-    private DoubleAccumulator hashesStoreSmallCompactionSavedSpaceMb;
-    /** Hashes store medium compactions - time in ms */
-    private LongAccumulator hashesStoreMediumCompactionTimeMs;
-    /** Hashes store medium compactions - saved space in Mb */
-    private DoubleAccumulator hashesStoreMediumCompactionSavedSpaceMb;
-    /** Hashes store full compactions - time in ms */
-    private LongAccumulator hashesStoreFullCompactionTimeMs;
-    /** Hashes store full compactions - saved space in Mb */
-    private DoubleAccumulator hashesStoreFullCompactionSavedSpaceMb;
+    /** Hashes store compactions - time in ms */
+    private final List<LongAccumulator> hashesStoreCompactionTimeMsList;
+    /** Hashes store compactions - saved space in Mb */
+    private final List<DoubleAccumulator> hashesStoreCompactionSavedSpaceMbList;
     /** Leaves store small compactions - time in ms */
-    private LongAccumulator leavesStoreSmallCompactionTimeMs;
+    private final List<LongAccumulator> leavesStoreCompactionTimeMsList;
     /** Leaves store small compactions - saved space in Mb */
-    private DoubleAccumulator leavesStoreSmallCompactionSavedSpaceMb;
-    /** Leaves store medium compactions - time in ms */
-    private LongAccumulator leavesStoreMediumCompactionTimeMs;
-    /** Leaves store medium compactions - saved space in Mb */
-    private DoubleAccumulator leavesStoreMediumCompactionSavedSpaceMb;
-    /** Leaves store full compactions - time in ms */
-    private LongAccumulator leavesStoreFullCompactionTimeMs;
-    /** Leaves store full compactions - saved space in Mb */
-    private DoubleAccumulator leavesStoreFullCompactionSavedSpaceMb;
+    private final List<DoubleAccumulator> leavesStoreCompactionSavedSpaceMbList;
     /** Leaf keys store small compactions - time in ms */
-    private LongAccumulator leafKeysStoreSmallCompactionTimeMs;
+    private final List<LongAccumulator> leafKeysStoreCompactionTimeMsList;
     /** Leaf keys store small compactions - saved space in Mb */
-    private DoubleAccumulator leafKeysStoreSmallCompactionSavedSpaceMb;
-    /** Leaf keys store medium compactions - time in ms */
-    private LongAccumulator leafKeysStoreMediumCompactionTimeMs;
-    /** Leaf keys store medium compactions - saved space in Mb */
-    private DoubleAccumulator leafKeysStoreMediumCompactionSavedSpaceMb;
-    /** Leaf keys store full compactions - time in ms */
-    private LongAccumulator leafKeysStoreFullCompactionTimeMs;
-    /** Leaf keys store full compactions - saved space in Mb */
-    private DoubleAccumulator leafKeysStoreFullCompactionSavedSpaceMb;
-
+    private final List<DoubleAccumulator> leafKeysStoreCompactionSavedSpaceMbList;
     /** Off-heap usage in MB of hashes store index */
     private IntegerGauge offHeapHashesIndexMb;
     /** Off-heap usage in MB of leaves store index */
@@ -135,6 +123,12 @@ public class MerkleDbStatistics {
      */
     public MerkleDbStatistics(final String label) {
         this.label = CommonUtils.throwArgNull(label, "label");
+        hashesStoreCompactionTimeMsList = new ArrayList<>();
+        hashesStoreCompactionSavedSpaceMbList = new ArrayList<>();
+        leavesStoreCompactionTimeMsList = new ArrayList<>();
+        leavesStoreCompactionSavedSpaceMbList = new ArrayList<>();
+        leafKeysStoreCompactionTimeMsList = new ArrayList<>();
+        leafKeysStoreCompactionSavedSpaceMbList = new ArrayList<>();
     }
 
     private static IntegerGauge buildIntegerGauge(final Metrics metrics, final String name, final String description) {
@@ -234,81 +228,39 @@ public class MerkleDbStatistics {
                 "Size of the new leaf keys store file created during flush, " + label + ", Mb");
 
         // Compaction
-        // Hashes store
-        hashesStoreSmallCompactionTimeMs = buildLongAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "hashesSmallTimeMs_" + label,
-                "Small compactions time, hashes store, " + label + ", ms");
-        hashesStoreSmallCompactionSavedSpaceMb = buildDoubleAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "hashesSmallSavedSpaceMb_" + label,
-                "Saved space during small compactions, hashes store, " + label + ", Mb");
-        hashesStoreMediumCompactionTimeMs = buildLongAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "hashesMediumTimeMs_" + label,
-                "Medium compactions time, hashes store, " + label + ", ms");
-        hashesStoreMediumCompactionSavedSpaceMb = buildDoubleAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "hashesMediumSavedSpaceMb_" + label,
-                "Saved space during medium compactions, hashes store, " + label + ", Mb");
-        hashesStoreFullCompactionTimeMs = buildLongAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "hashesFullTimeMs_" + label,
-                "Full compactions time, hashes store, " + label + ", ms");
-        hashesStoreFullCompactionSavedSpaceMb = buildDoubleAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "hashesFullSavedSpaceMb_" + label,
-                "Saved space during full compactions, hashes store, " + label + ", Mb");
-        // Leaves store
-        leavesStoreSmallCompactionTimeMs = buildLongAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "leavesSmallTimeMs_" + label,
-                "Small compactions time, leaves store, " + label + ", ms");
-        leavesStoreSmallCompactionSavedSpaceMb = buildDoubleAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "leavesSmallSavedSpaceMb_" + label,
-                "Saved space during small compactions, leaves store, " + label + ", Mb");
-        leavesStoreMediumCompactionTimeMs = buildLongAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "leavesMediumTimeMs_" + label,
-                "Medium compactions time, leaves store, " + label + ", ms");
-        leavesStoreMediumCompactionSavedSpaceMb = buildDoubleAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "leavesMediumSavedSpaceMb_" + label,
-                "Saved space during medium compactions, leaves store, " + label + ", Mb");
-        leavesStoreFullCompactionTimeMs = buildLongAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "leavesFullTimeMs_" + label,
-                "Full compactions time, leaves store, " + label + ", ms");
-        leavesStoreFullCompactionSavedSpaceMb = buildDoubleAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "leavesFullSavedSpaceMb_" + label,
-                "Saved space during full compactions, leaves store, " + label + ", Mb");
-        // Leaf keys store
-        leafKeysStoreSmallCompactionTimeMs = buildLongAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysSmallTimeMs_" + label,
-                "Small compactions time, leaf keys store, " + label + ", ms");
-        leafKeysStoreSmallCompactionSavedSpaceMb = buildDoubleAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysSmallSavedSpaceMb_" + label,
-                "Saved space during small compactions, leaf keys store, " + label + ", Mb");
-        leafKeysStoreMediumCompactionTimeMs = buildLongAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysMediumTimeMs_" + label,
-                "Medium compactions time, leaf keys store, " + label + ", ms");
-        leafKeysStoreMediumCompactionSavedSpaceMb = buildDoubleAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysMediumSavedSpaceMb_" + label,
-                "Saved space during medium compactions, leaf keys store, " + label + ", Mb");
-        leafKeysStoreFullCompactionTimeMs = buildLongAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysFullTimeMs_" + label,
-                "Full compactions time, leaf keys store, " + label + ", ms");
-        leafKeysStoreFullCompactionSavedSpaceMb = buildDoubleAccumulator(
-                metrics,
-                DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysFullSavedSpaceMb_" + label,
-                "Saved space during full compactions, leaf keys store, " + label + ", Mb");
+
+        for (int i = 0; i < config.maxCompactionLevel(); i++) {
+            int level = i + 1;
+            // Hashes store
+            hashesStoreCompactionTimeMsList.add(buildLongAccumulator(
+                    metrics,
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_hashesTimeMs_" + label,
+                    "Compactions time of level %s, hashes store, %s, ms".formatted(level, label)));
+            hashesStoreCompactionSavedSpaceMbList.add(buildDoubleAccumulator(
+                    metrics,
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_hashesSavedSpaceMb_" + label,
+                    "Saved space during compactions of level %s, hashes store, %s, Mb".formatted(level, label)));
+
+            // Leaves store
+            leavesStoreCompactionTimeMsList.add(buildLongAccumulator(
+                    metrics,
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_leavesTimeMs_" + label,
+                    "Compactions time of level %s, leaves store, %s, ms".formatted(level, label)));
+            leavesStoreCompactionSavedSpaceMbList.add(buildDoubleAccumulator(
+                    metrics,
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_leavesSavedSpaceMb_" + label,
+                    "Saved space during compactions of level %s, leaves store, %s, Mb".formatted(level, label)));
+
+            // Leaf keys store
+            leafKeysStoreCompactionTimeMsList.add(buildLongAccumulator(
+                    metrics,
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_leafKeysTimeMs_" + label,
+                    "Compactions time of level %s, leaf keys store, %s, ms".formatted(level, label)));
+            leafKeysStoreCompactionSavedSpaceMbList.add(buildDoubleAccumulator(
+                    metrics,
+                    DS_PREFIX + COMPACTIONS_PREFIX + LEVEL_PREFIX + level + "_leafKeysSavedSpaceMb_" + label,
+                    "Saved space during compactions of level %s, leaf keys store, %s, Mb".formatted(level, label)));
+        }
 
         // Off-heap usage
         offHeapHashesIndexMb = metrics.getOrCreate(
@@ -485,117 +437,68 @@ public class MerkleDbStatistics {
     }
 
     /**
-     * Set the current value for the {@link #hashesStoreSmallCompactionTimeMs},
-     * {@link #hashesStoreMediumCompactionTimeMs}, or {@link #hashesStoreFullCompactionTimeMs}
-     * metric based on the given compaction type.
+     * Set the current value for the accumulator corresponding to provided compaction level from
+     * {@link #hashesStoreCompactionTimeMsList}
      *
      * @param value the value to set
      */
-    public void setHashesStoreCompactionTimeMs(final CompactionType type, final long value) {
-        final LongAccumulator metric =
-                switch (type) {
-                    case SMALL -> hashesStoreSmallCompactionTimeMs;
-                    case MEDIUM -> hashesStoreMediumCompactionTimeMs;
-                    case FULL -> hashesStoreFullCompactionTimeMs;
-                };
-        if (metric != null) {
-            metric.update(value);
-        }
+    public void setHashesStoreCompactionTimeMs(final Integer compactionLevel, final long value) {
+        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        hashesStoreCompactionTimeMsList.get(compactionLevel - 1).update(value);
     }
 
     /**
-     * Set the current value for the {@link #hashesStoreSmallCompactionSavedSpaceMb},
-     * {@link #hashesStoreMediumCompactionSavedSpaceMb}, or {@link #hashesStoreFullCompactionSavedSpaceMb}
-     * metric based on the given compaction type.
+     * Set the current value for the accumulator corresponding to provided compaction level from
+     * {@link #hashesStoreCompactionSavedSpaceMbList}
      *
      * @param value the value to set
      */
-    public void setHashesStoreCompactionSavedSpaceMb(final CompactionType type, final double value) {
-        final DoubleAccumulator metric =
-                switch (type) {
-                    case SMALL -> hashesStoreSmallCompactionSavedSpaceMb;
-                    case MEDIUM -> hashesStoreMediumCompactionSavedSpaceMb;
-                    case FULL -> hashesStoreFullCompactionSavedSpaceMb;
-                };
-        if (metric != null) {
-            metric.update(value);
-        }
+    public void setHashesStoreCompactionSavedSpaceMb(final int compactionLevel, final double value) {
+        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        hashesStoreCompactionSavedSpaceMbList.get(compactionLevel - 1).update(value);
     }
 
     /**
-     * Set the current value for the {@link #leavesStoreSmallCompactionTimeMs},
-     * {@link #leavesStoreMediumCompactionTimeMs}, or {@link #leavesStoreFullCompactionTimeMs}
-     * metric based on the given compaction type.
+     * Set the current value for the accumulator corresponding to provided compaction level from
+     * {@link #leavesStoreCompactionTimeMsList}
      *
      * @param value the value to set
      */
-    public void setLeavesStoreCompactionTimeMs(final CompactionType type, final long value) {
-        final LongAccumulator metric =
-                switch (type) {
-                    case SMALL -> leavesStoreSmallCompactionTimeMs;
-                    case MEDIUM -> leavesStoreMediumCompactionTimeMs;
-                    case FULL -> leavesStoreFullCompactionTimeMs;
-                };
-        if (metric != null) {
-            metric.update(value);
-        }
+    public void setLeavesStoreCompactionTimeMs(final int compactionLevel, final long value) {
+        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        leavesStoreCompactionTimeMsList.get(compactionLevel - 1).update(value);
     }
 
     /**
-     * Set the current value for the {@link #leavesStoreSmallCompactionSavedSpaceMb},
-     * {@link #leavesStoreMediumCompactionSavedSpaceMb}, or {@link #leavesStoreFullCompactionSavedSpaceMb}
-     * metric based on the given compaction type.
-     *
+     * Set the current value for the accumulator corresponding to provided compaction level from
+     * {@link #leavesStoreCompactionSavedSpaceMbList}
      * @param value the value to set
      */
-    public void setLeavesStoreCompactionSavedSpaceMb(final CompactionType type, final double value) {
-        final DoubleAccumulator metric =
-                switch (type) {
-                    case SMALL -> leavesStoreSmallCompactionSavedSpaceMb;
-                    case MEDIUM -> leavesStoreMediumCompactionSavedSpaceMb;
-                    case FULL -> leavesStoreFullCompactionSavedSpaceMb;
-                };
-        if (metric != null) {
-            metric.update(value);
-        }
+    public void setLeavesStoreCompactionSavedSpaceMb(final int compactionLevel, final double value) {
+        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        leavesStoreCompactionSavedSpaceMbList.get(compactionLevel - 1).update(value);
     }
 
     /**
-     * Set the current value for the {@link #leafKeysStoreSmallCompactionTimeMs},
-     * {@link #leafKeysStoreMediumCompactionTimeMs}, or {@link #leafKeysStoreFullCompactionTimeMs}
-     * metric based on the given compaction type.
+     * Set the current value for the accumulator corresponding to provided compaction level from
+     * {@link #leafKeysStoreCompactionTimeMsList}
      *
      * @param value the value to set
      */
-    public void setLeafKeysStoreCompactionTimeMs(final CompactionType type, final long value) {
-        final LongAccumulator metric =
-                switch (type) {
-                    case SMALL -> leafKeysStoreSmallCompactionTimeMs;
-                    case MEDIUM -> leafKeysStoreMediumCompactionTimeMs;
-                    case FULL -> leafKeysStoreFullCompactionTimeMs;
-                };
-        if (metric != null) {
-            metric.update(value);
-        }
+    public void setLeafKeysStoreCompactionTimeMs(final int compactionLevel, final long value) {
+        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        leafKeysStoreCompactionTimeMsList.get(compactionLevel - 1).update(value);
     }
 
     /**
-     * Set the current value for the {@link #leafKeysStoreSmallCompactionSavedSpaceMb},
-     * {@link #leafKeysStoreMediumCompactionSavedSpaceMb}, or {@link #leafKeysStoreFullCompactionSavedSpaceMb}
-     * metric based on the given compaction type.
+     * Set the current value for the accumulator corresponding to provided compaction level from
+     * {@link #leafKeysStoreCompactionSavedSpaceMbList}
      *
      * @param value the value to set
      */
-    public void setLeafKeysStoreCompactionSavedSpaceMb(final CompactionType type, final double value) {
-        final DoubleAccumulator metric =
-                switch (type) {
-                    case SMALL -> leafKeysStoreSmallCompactionSavedSpaceMb;
-                    case MEDIUM -> leafKeysStoreMediumCompactionSavedSpaceMb;
-                    case FULL -> leafKeysStoreFullCompactionSavedSpaceMb;
-                };
-        if (metric != null) {
-            metric.update(value);
-        }
+    public void setLeafKeysStoreCompactionSavedSpaceMb(final int compactionLevel, final double value) {
+        assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
+        leafKeysStoreCompactionSavedSpaceMbList.get(compactionLevel - 1).update(value);
     }
 
     /**
