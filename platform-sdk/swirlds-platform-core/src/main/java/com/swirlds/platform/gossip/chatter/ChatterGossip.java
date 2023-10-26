@@ -236,6 +236,7 @@ public class ChatterGossip extends AbstractGossip {
                                     new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash())),
                             new NegotiationProtocols(List.of(
                                     new EmergencyReconnectProtocol(
+                                            time,
                                             threadManager,
                                             notificationEngine,
                                             otherId,
