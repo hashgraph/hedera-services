@@ -445,7 +445,6 @@ public class MerkleDbStatistics {
     public void setHashesStoreCompactionTimeMs(final Integer compactionLevel, final long value) {
         assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
         if (hashesStoreCompactionTimeMsList.isEmpty()) {
-            // if the method called before the metrics are registered, there is nothing to do
             return;
         }
         hashesStoreCompactionTimeMsList.get(compactionLevel - 1).update(value);
@@ -459,8 +458,7 @@ public class MerkleDbStatistics {
      */
     public void setHashesStoreCompactionSavedSpaceMb(final int compactionLevel, final double value) {
         assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
-        if (hashesStoreCompactionTimeMsList.isEmpty()) {
-            // if the method called before the metrics are registered, there is nothing to do
+        if (hashesStoreCompactionSavedSpaceMbList.isEmpty()) {
             return;
         }
         hashesStoreCompactionSavedSpaceMbList.get(compactionLevel - 1).update(value);
@@ -474,8 +472,7 @@ public class MerkleDbStatistics {
      */
     public void setLeavesStoreCompactionTimeMs(final int compactionLevel, final long value) {
         assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
-        if (hashesStoreCompactionTimeMsList.isEmpty()) {
-            // if the method called before the metrics are registered, there is nothing to do
+        if (leavesStoreCompactionTimeMsList.isEmpty()) {
             return;
         }
         leavesStoreCompactionTimeMsList.get(compactionLevel - 1).update(value);
@@ -488,8 +485,7 @@ public class MerkleDbStatistics {
      */
     public void setLeavesStoreCompactionSavedSpaceMb(final int compactionLevel, final double value) {
         assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
-        if (hashesStoreCompactionTimeMsList.isEmpty()) {
-            // if the method called before the metrics are registered, there is nothing to do
+        if (leavesStoreCompactionSavedSpaceMbList.isEmpty()) {
             return;
         }
         leavesStoreCompactionSavedSpaceMbList.get(compactionLevel - 1).update(value);
@@ -503,8 +499,7 @@ public class MerkleDbStatistics {
      */
     public void setLeafKeysStoreCompactionTimeMs(final int compactionLevel, final long value) {
         assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
-        if (hashesStoreCompactionTimeMsList.isEmpty()) {
-            // if the method called before the metrics are registered, there is nothing to do
+        if (leafKeysStoreCompactionTimeMsList.isEmpty()) {
             return;
         }
         leafKeysStoreCompactionTimeMsList.get(compactionLevel - 1).update(value);
@@ -518,8 +513,7 @@ public class MerkleDbStatistics {
      */
     public void setLeafKeysStoreCompactionSavedSpaceMb(final int compactionLevel, final double value) {
         assert compactionLevel >= 1 && compactionLevel <= config.maxCompactionLevel();
-        if (hashesStoreCompactionTimeMsList.isEmpty()) {
-            // if the method called before the metrics are registered, there is nothing to do
+        if (leafKeysStoreCompactionSavedSpaceMbList.isEmpty()) {
             return;
         }
         leafKeysStoreCompactionSavedSpaceMbList.get(compactionLevel - 1).update(value);
