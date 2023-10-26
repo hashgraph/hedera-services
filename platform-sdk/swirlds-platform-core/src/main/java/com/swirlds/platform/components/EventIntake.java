@@ -155,9 +155,6 @@ public class EventIntake {
      * @param event the event
      */
     public void addUnlinkedEvent(final GossipEvent event) {
-        phaseTimer.activatePhase(EventIntakePhase.EVENT_RECEIVED_DISPATCH);
-        dispatcher.receivedEvent(event);
-
         phaseTimer.activatePhase(EventIntakePhase.LINKING);
         eventLinker.linkEvent(event);
 
