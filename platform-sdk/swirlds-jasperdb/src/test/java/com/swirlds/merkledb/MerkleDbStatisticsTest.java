@@ -17,6 +17,7 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static com.swirlds.merkledb.MerkleDbStatistics.STAT_CATEGORY;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -36,8 +37,6 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.concurrent.ScheduledExecutorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 
 class MerkleDbStatisticsTest {
 
@@ -46,6 +45,7 @@ class MerkleDbStatisticsTest {
     private MetricsConfig metricsConfig;
     private MerkleDbStatistics statistics;
     private Metrics metrics;
+    private int compactionLevel;
 
     @BeforeEach
     void setupService() {
@@ -62,6 +62,7 @@ class MerkleDbStatisticsTest {
                 metricsConfig);
         statistics = new MerkleDbStatistics(LABEL);
         statistics.registerMetrics(metrics);
+        compactionLevel = randomCompactionLevel();
     }
 
     @Test
@@ -76,24 +77,12 @@ class MerkleDbStatisticsTest {
         assertDoesNotThrow(() -> statistics.setLeavesStoreFileCount(42));
         assertDoesNotThrow(() -> statistics.setLeavesStoreFileSizeMb(31415));
         assertDoesNotThrow(() -> statistics.setTotalFileSizeMb(314159));
-        assertDoesNotThrow(() -> statistics.setHashesStoreCompactionTimeMs(CompactionType.SMALL, 314));
-        assertDoesNotThrow(() -> statistics.setHashesStoreCompactionSavedSpaceMb(CompactionType.SMALL, Math.PI));
-        assertDoesNotThrow(() -> statistics.setHashesStoreCompactionTimeMs(CompactionType.MEDIUM, 3141));
-        assertDoesNotThrow(() -> statistics.setHashesStoreCompactionSavedSpaceMb(CompactionType.MEDIUM, Math.PI));
-        assertDoesNotThrow(() -> statistics.setHashesStoreCompactionTimeMs(CompactionType.FULL, 31415));
-        assertDoesNotThrow(() -> statistics.setHashesStoreCompactionSavedSpaceMb(CompactionType.FULL, Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionTimeMs(CompactionType.SMALL, 314));
-        assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionSavedSpaceMb(CompactionType.SMALL, Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionTimeMs(CompactionType.MEDIUM, 3141));
-        assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionSavedSpaceMb(CompactionType.MEDIUM, Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionTimeMs(CompactionType.FULL, 31415));
-        assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionSavedSpaceMb(CompactionType.FULL, Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionTimeMs(CompactionType.SMALL, 314));
-        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionSavedSpaceMb(CompactionType.SMALL, Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionTimeMs(CompactionType.MEDIUM, 3141));
-        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionSavedSpaceMb(CompactionType.MEDIUM, Math.PI));
-        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionTimeMs(CompactionType.FULL, 31415));
-        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionSavedSpaceMb(CompactionType.FULL, Math.PI));
+        assertDoesNotThrow(() -> statistics.setHashesStoreCompactionTimeMs(compactionLevel, 314));
+        assertDoesNotThrow(() -> statistics.setHashesStoreCompactionSavedSpaceMb(compactionLevel, Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionTimeMs(compactionLevel, 314));
+        assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionSavedSpaceMb(compactionLevel, Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionTimeMs(compactionLevel, 314));
+        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionSavedSpaceMb(1, Math.PI));
         assertDoesNotThrow(() -> statistics.setOffHeapHashesIndexMb(42));
         assertDoesNotThrow(() -> statistics.setOffHeapLeavesIndexMb(42));
         assertDoesNotThrow(() -> statistics.setOffHeapLongKeysIndexMb(42));
@@ -222,39 +211,28 @@ class MerkleDbStatisticsTest {
         assertValueSet(metric);
     }
 
-    private static String ctypeStr(final CompactionType c) {
-        return switch (c) {
-            case SMALL -> "Small";
-            case MEDIUM -> "Medium";
-            case FULL -> "Full";
-        };
-    }
-
-    @ParameterizedTest
-    @EnumSource(CompactionType.class)
-    void testSetHashesStoreMergeTime(final CompactionType compactionType) {
+    @Test
+    void testSetHashesStoreMergeTime() {
         // given
-        final Metric metric = getMetric("compactions_", "hashes" + ctypeStr(compactionType) + "TimeMs_" + LABEL);
+        final Metric metric = getMetric("compactions_level_" + compactionLevel, "_hashesTimeMs_" + LABEL);
         // when
-        statistics.setHashesStoreCompactionTimeMs(compactionType, 31415);
+        statistics.setHashesStoreCompactionTimeMs(compactionLevel, 31415);
         // then
         assertValueSet(metric);
     }
 
-    @ParameterizedTest
-    @EnumSource(CompactionType.class)
-    void testSetHashesStoreSavedSpace(final CompactionType compactionType) {
+    @Test
+    void testSetHashesStoreSavedSpace() {
         // given
-        final Metric metric = getMetric("compactions_", "hashes" + ctypeStr(compactionType) + "SavedSpaceMb_" + LABEL);
+        final Metric metric = getMetric("compactions_level_" + compactionLevel, "_hashesSavedSpaceMb_" + LABEL);
         // when
-        statistics.setHashesStoreCompactionSavedSpaceMb(compactionType, Math.PI);
+        statistics.setHashesStoreCompactionSavedSpaceMb(compactionLevel, Math.PI);
         // then
         assertValueSet(metric);
     }
 
-    @ParameterizedTest
-    @EnumSource(CompactionType.class)
-    void testSetLeafKeysStoreMergeTime(final CompactionType compactionType) {
+    @Test
+    void testSetLeafKeysStoreMergeTime() {
         // given
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
@@ -266,44 +244,39 @@ class MerkleDbStatisticsTest {
                 metricsConfig);
         final MerkleDbStatistics statistics = new MerkleDbStatistics(LABEL);
         statistics.registerMetrics(metrics);
-        final Metric metric =
-                getMetric(metrics, "compactions_", "leafKeys" + ctypeStr(compactionType) + "TimeMs_" + LABEL);
+        final Metric metric = getMetric(metrics, "compactions_level_" + compactionLevel, "_leafKeysTimeMs_" + LABEL);
         // when
-        statistics.setLeafKeysStoreCompactionTimeMs(compactionType, 31415);
+        statistics.setLeafKeysStoreCompactionTimeMs(compactionLevel, 31415);
         // then
         assertValueSet(metric);
     }
 
-    @ParameterizedTest
-    @EnumSource(CompactionType.class)
-    void testSetLeafKeysStoreSavedSpace(final CompactionType compactionType) {
+    @Test
+    void testSetLeafKeysStoreSavedSpace() {
         // given
-        final Metric metric =
-                getMetric("compactions_", "leafKeys" + ctypeStr(compactionType) + "SavedSpaceMb_" + LABEL);
+        final Metric metric = getMetric("compactions_level_" + compactionLevel, "_leafKeysSavedSpaceMb_" + LABEL);
         // when
-        statistics.setLeafKeysStoreCompactionSavedSpaceMb(compactionType, Math.PI);
+        statistics.setLeafKeysStoreCompactionSavedSpaceMb(compactionLevel, Math.PI);
         // then
         assertValueSet(metric);
     }
 
-    @ParameterizedTest
-    @EnumSource(CompactionType.class)
-    void testSetLeavesStoreMergeTime(final CompactionType compactionType) {
+    @Test
+    void testSetLeavesStoreMergeTime() {
         // given
-        final Metric metric = getMetric("compactions_", "leaves" + ctypeStr(compactionType) + "TimeMs_" + LABEL);
+        final Metric metric = getMetric("compactions_level_" + compactionLevel, "_leavesTimeMs_" + LABEL);
         // when
-        statistics.setLeavesStoreCompactionTimeMs(compactionType, 31415);
+        statistics.setLeavesStoreCompactionTimeMs(compactionLevel, 31415);
         // then
         assertValueSet(metric);
     }
 
-    @ParameterizedTest
-    @EnumSource(CompactionType.class)
-    void testSetLeavesStoreSavedSpace(final CompactionType compactionType) {
+    @Test
+    void testSetLeavesStoreSavedSpace() {
         // given
-        final Metric metric = getMetric("compactions_", "leaves" + ctypeStr(compactionType) + "SavedSpaceMb_" + LABEL);
+        final Metric metric = getMetric("compactions_level_" + compactionLevel, "_leavesSavedSpaceMb_" + LABEL);
         // when
-        statistics.setLeavesStoreCompactionSavedSpaceMb(compactionType, Math.PI);
+        statistics.setLeavesStoreCompactionSavedSpaceMb(compactionLevel, Math.PI);
         // then
         assertValueSet(metric);
     }
@@ -356,5 +329,9 @@ class MerkleDbStatisticsTest {
         statistics.setOffHeapDataSourceMb(42);
         // then
         assertValueSet(metric);
+    }
+
+    private static int randomCompactionLevel() {
+        return nextInt(1, 6);
     }
 }

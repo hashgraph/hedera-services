@@ -17,6 +17,7 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.merkledb.MerkleDbDataSourceTest.assertLeaf;
 import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
@@ -29,21 +30,29 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -53,6 +62,11 @@ class MerkleDbDataSourceSnapshotMergeTest {
 
     private static final int COUNT = 20_000;
     private static final int COUNT2 = 30_000;
+
+    @BeforeAll
+    public static void beforeAll() throws ConstructableRegistryException {
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
+    }
 
     /*
      * RUN THE TEST IN A BACKGROUND THREAD. We do this so that we can kill the thread at the end of the test which will
@@ -95,22 +109,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
         final ExecutorService exec = Executors.newCachedThreadPool();
         try {
             // create some internal and leaf nodes in batches
-            final int count = COUNT / 10;
-            for (int batch = 0; batch < 10; batch++) {
-                final int start = batch * count;
-                final int end = start + count;
-                System.out.printf(
-                        "Creating internal nodes from %,d to %,d and leaves from %,d to %,d\n",
-                        start, end - 1, COUNT + start, COUNT + end - 1);
-                final int lastLeafPath = (COUNT + end) - 1;
-                dataSource.saveRecords(
-                        COUNT,
-                        lastLeafPath,
-                        IntStream.range(start, end).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
-                        IntStream.range(COUNT + start, COUNT + end)
-                                .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i)),
-                        Stream.empty());
-            }
+            populateDataSource(testType, dataSource);
             // check all data
             checkData(COUNT, testType, dataSource);
             // create snapshot and test creating a second snapshot in another thread causes exception
@@ -126,7 +125,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
                 return null;
             });
             MILLISECONDS.sleep(1);
-            exec.submit(() -> {
+            Future<Object> submit = exec.submit(() -> {
                 // try to do a second snapshot
                 try {
                     assertThrows(
@@ -150,7 +149,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
                     dataSource.saveRecords(
                             firstLeafPath,
                             lastLeafPathInclusive,
-                            IntStream.range(0, firstLeafPath /* exclusive */)
+                            IntStream.range(0, lastLeafPathInclusive + 1 /* exclusive */)
                                     .mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
                             IntStream.range(firstLeafPath, lastLeafPathInclusive + 1 /* exclusive */)
                                     .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i)),
@@ -161,6 +160,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
                 return null;
             });
             assertTrue(countDownLatch.await(5, TimeUnit.SECONDS), "Timed out while waiting for threads");
+            submit.get();
             // check data in original dataSource it should have the new data written in another thread while we were
             // doing
             // the snapshot
@@ -177,22 +177,31 @@ class MerkleDbDataSourceSnapshotMergeTest {
             snapshotDataSource.close();
             deleteDirectoryAndContents(snapshotDir);
             // do a merge
-            final AtomicBoolean merging = new AtomicBoolean(true);
+            final AtomicBoolean compacting = new AtomicBoolean(true);
+
             IntStream.range(0, 2).parallel().forEach(thread -> {
-                if (thread == 0) { // thread 0 checks data over and over while we are merging
+                if (thread == 0) { // thread 0 checks data over and over while we are compacting
                     try {
-                        while (merging.get()) {
+                        while (compacting.get()) {
                             checkData(COUNT2, testType, dataSource);
                         }
                     } catch (final IOException e) {
                         e.printStackTrace();
                     }
-                } else { // thread 1 does merge
-                    dataSource.doMerge();
-                    merging.set(false);
+                } else { // thread 1 initiates compaction and waits for its completion
+                    dataSource.compactionCoordinator.compactPathToKeyValueAsync();
+                    dataSource.compactionCoordinator.compactDiskStoreForObjectKeyToPathAsync();
+                    dataSource.compactionCoordinator.compactPathToKeyValueAsync();
+
+                    assertEventuallyTrue(
+                            dataSource.compactionCoordinator.compactionFuturesByName::isEmpty,
+                            Duration.ofSeconds(1),
+                            "compaction tasks should have been completed");
+
+                    compacting.set(false);
                 }
             });
-            dataSource.doMerge();
+
             checkData(COUNT2, testType, dataSource);
 
             // check the database statistics - starting with the five speedometers
@@ -279,11 +288,51 @@ class MerkleDbDataSourceSnapshotMergeTest {
             largeMergeTimeStat = getMetric(metrics, dataSource, "leafHKVLargeMergeTime_");
             largeMergeTime = (double) largeMergeTimeStat.get(VALUE);
             assertEquals(0.0, largeMergeTime, "leafPathToHashKeyValueStoreLargeMergeTime was unexpectedly not 0.0");
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
         } finally {
             // cleanup
             dataSource.close();
             deleteDirectoryAndContents(storeDir);
             exec.shutdown();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void removeCachedDatasource(Path snapshotDir) {
+        Class<?> merkleDbClass = MerkleDb.class;
+
+        try {
+            Field instancesField = merkleDbClass.getDeclaredField("instances");
+            instancesField.setAccessible(true);
+            ConcurrentHashMap<Path, MerkleDb> instancesMap =
+                    (ConcurrentHashMap<Path, MerkleDb>) instancesField.get(null);
+
+            // Remove the entry by key
+            instancesMap.remove(snapshotDir);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void populateDataSource(
+            TestType testType, MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource)
+            throws IOException {
+        final int count = COUNT / 10;
+        for (int batch = 0; batch < 10; batch++) {
+            final int start = batch * count;
+            final int end = start + count;
+            System.out.printf(
+                    "Creating internal nodes from %,d to %,d and leaves from %,d to %,d\n",
+                    start, end - 1, COUNT + start, COUNT + end - 1);
+            final int lastLeafPath = (COUNT + end) - 1;
+            dataSource.saveRecords(
+                    COUNT,
+                    lastLeafPath,
+                    IntStream.range(start, COUNT + end).mapToObj(MerkleDbDataSourceTest::createVirtualInternalRecord),
+                    IntStream.range(COUNT + start, COUNT + end)
+                            .mapToObj(i -> testType.dataType().createVirtualLeafRecord(i)),
+                    Stream.empty());
         }
     }
 
