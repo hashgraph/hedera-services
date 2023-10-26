@@ -21,6 +21,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.Base64;
 
+/**
+ * A POJO for Jackson to use in storing a Base64-encoded {@code (TransactionBody, TransactionRecord)} pair.
+ */
 public class EncodedItem {
     private String b64Body;
     private String b64Record;

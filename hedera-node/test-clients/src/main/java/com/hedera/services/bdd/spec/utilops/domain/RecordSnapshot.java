@@ -18,6 +18,10 @@ package com.hedera.services.bdd.spec.utilops.domain;
 
 import java.util.List;
 
+/**
+ * A POJO for Jackson to use in storing a list of Base64-encoded {@code (TransactionBody, TransactionRecord)} pairs
+ * along with a placeholder entity number used to fuzzy-match the entity ids in these pairs.
+ */
 public class RecordSnapshot {
     private long placeholderNum;
     private List<EncodedItem> encodedItems;

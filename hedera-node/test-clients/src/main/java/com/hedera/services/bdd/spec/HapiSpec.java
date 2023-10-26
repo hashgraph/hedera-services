@@ -483,6 +483,9 @@ public class HapiSpec implements Runnable {
             } else if (op instanceof HapiTxnOp txn && autoScheduled.contains(txn.type())) {
                 op = autoScheduledSequenceFor(txn);
             } else if (op instanceof SnapshotModeOp snapshotModeOp) {
+                if (snapshotOp != null) {
+                    log.warn("Repeated record snapshot op, all but last are no-ops");
+                }
                 snapshotOp = snapshotModeOp;
             }
             Optional<Throwable> error = op.execFor(this);

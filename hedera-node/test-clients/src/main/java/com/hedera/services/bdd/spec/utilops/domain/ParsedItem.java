@@ -22,6 +22,13 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
+/**
+ * A record providing convenient access to just a {@link TransactionBody} and a {@link TransactionRecord}
+ * from a record stream item for use in snapshot fuzzy-matching.
+ *
+ * @param itemBody the transaction body
+ * @param itemRecord the transaction record
+ */
 public record ParsedItem(TransactionBody itemBody, TransactionRecord itemRecord) {
     public static ParsedItem parse(final RecordStreamItem item) throws InvalidProtocolBufferException {
         final var txn = item.getTransaction();
