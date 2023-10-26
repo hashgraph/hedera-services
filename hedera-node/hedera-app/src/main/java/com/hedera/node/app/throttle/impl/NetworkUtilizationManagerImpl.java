@@ -136,14 +136,14 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
             final var genericLevelStarts = congestionLevelStarts.genericLevelStarts().stream()
                     .map(ts -> Instant.ofEpochSecond(ts.seconds(), ts.nanos()))
                     .toArray(Instant[]::new);
-            congestionMultipliers.resetGenericCongestionLevelStarts(genericLevelStarts);
+            congestionMultipliers.resetEntityUtilizationMultiplierStarts(genericLevelStarts);
         }
 
         if (!congestionLevelStarts.gasLevelStarts().isEmpty()) {
             final var gasLevelStarts = congestionLevelStarts.gasLevelStarts().stream()
                     .map(ts -> Instant.ofEpochSecond(ts.seconds(), ts.nanos()))
                     .toArray(Instant[]::new);
-            congestionMultipliers.resetGasCongestionLevelStarts(gasLevelStarts);
+            congestionMultipliers.resetThrottleMultiplierStarts(gasLevelStarts);
         }
     }
 
@@ -170,7 +170,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
                 .filter(Objects::nonNull)
                 .map(inst -> new Timestamp(inst.getEpochSecond(), inst.getNano()))
                 .toList();
-        final var gasCongestionStarts = Arrays.stream(congestionMultipliers.gasCongestionStarts())
+        final var gasCongestionStarts = Arrays.stream(congestionMultipliers.throttleMultiplierCongestionStarts())
                 .filter(Objects::nonNull)
                 .map(inst -> new Timestamp(inst.getEpochSecond(), inst.getNano()))
                 .toList();

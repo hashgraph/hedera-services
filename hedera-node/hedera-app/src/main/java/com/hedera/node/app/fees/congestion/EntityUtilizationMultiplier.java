@@ -49,16 +49,26 @@ import com.hedera.node.config.data.TopicsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
-public class TransactionRateMultiplier {
+/**
+ * An implementation wrapping a {@link ThrottleMultiplier} and applying an additional scaling factor based on
+ * the number of entities saved in state.
+ */
+public class EntityUtilizationMultiplier {
     private final ThrottleMultiplier delegate;
     private final ConfigProvider configProvider;
 
-    public TransactionRateMultiplier(
+    public EntityUtilizationMultiplier(
             @NonNull final ThrottleMultiplier delegate, @NonNull final ConfigProvider configProvider) {
         this.delegate = requireNonNull(delegate, "delegate must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
     }
 
+    /**
+     * Returns the current congestion multiplier applying additional scaling factor based on
+     *  the number of entities saved in state.
+     *
+     * @return the current congestion multiplier
+     */
     public long currentMultiplier(@NonNull final TransactionInfo txnInfo, @NonNull final SavepointStackImpl stack) {
         final var throttleMultiplier = delegate.currentMultiplier();
         final var configuration = configProvider.getConfiguration();
@@ -184,18 +194,36 @@ public class TransactionRateMultiplier {
         return maxNumberOfTopics == 0 ? 100 : (int) ((100 * numOfTopics) / maxNumberOfTopics);
     }
 
-    public void updateMultiplier(@NonNull final Instant consensusNow) {
-        delegate.updateMultiplier(consensusNow);
+    /**
+     * Updates the congestion multiplier for the given consensus time.
+     *
+     * @param consensusTime the consensus time
+     */
+    public void updateMultiplier(@NonNull final Instant consensusTime) {
+        delegate.updateMultiplier(consensusTime);
     }
 
+    /**
+     * Rebuilds the internal state of the ThrottleMultiplier.
+     */
     public void resetExpectations() {
         delegate.resetExpectations();
     }
 
-    public void resetCongestionLevelStarts(@NonNull final Instant[] savedStartTimes) {
-        delegate.resetCongestionLevelStarts(savedStartTimes);
+    /**
+     * Resets the congestion level starts to the given values.
+     *
+     * @param startTimes the saved congestion level starts
+     */
+    public void resetCongestionLevelStarts(@NonNull final Instant[] startTimes) {
+        delegate.resetCongestionLevelStarts(startTimes);
     }
 
+    /**
+     * Returns the congestion level starts.
+     *
+     * @return the congestion level starts
+     */
     @NonNull
     public Instant[] congestionLevelStarts() {
         return delegate.congestionLevelStarts();

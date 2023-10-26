@@ -29,6 +29,9 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Implementation responsible for determining the congestion multiplier based on a single {@link CongestibleThrottle}.
+ */
 public class ThrottleMultiplier {
     private static final long DEFAULT_MULTIPLIER = 1L;
     private static final CongestionMultipliers NO_CONFIG = null;
@@ -66,15 +69,20 @@ public class ThrottleMultiplier {
         this.throttleSource = requireNonNull(throttleSource, "throttleSource must not be null");
     }
 
-    public void updateMultiplier(@NonNull final Instant consensusNow) {
+    /**
+     * Updates the congestion multiplier for the given consensus time.
+     *
+     * @param consensusTime the consensus time
+     */
+    public void updateMultiplier(@NonNull final Instant consensusTime) {
         if (ensureConfigUpToDate()) {
             rebuildState();
         }
 
         long x = maxMultiplierOfActiveConfig(activeConfig.multipliers());
-        updateCongestionLevelStartsWith(activeConfig.multipliers(), x, consensusNow);
+        updateCongestionLevelStartsWith(activeConfig.multipliers(), x, consensusTime);
         long minPeriod = minCongestionPeriodSupplier.getAsLong();
-        multiplier = highestMultiplierNotShorterThan(activeConfig.multipliers(), minPeriod, consensusNow);
+        multiplier = highestMultiplierNotShorterThan(activeConfig.multipliers(), minPeriod, consensusTime);
 
         if (multiplier != previousMultiplier) {
             logMultiplierChange(previousMultiplier, multiplier);
@@ -82,10 +90,19 @@ public class ThrottleMultiplier {
         previousMultiplier = multiplier;
     }
 
+    /**
+     * Returns the current congestion multiplier.
+     *
+     * @return current congestion multiplier
+     */
     public long currentMultiplier() {
         return multiplier;
     }
 
+    /**
+     * Rebuilds the object's internal state based on its dependencies expectations.
+     * Must be called every time when the suppliers {@link throttleSource} or {@link multiplierSupplier} are updated.
+     */
     public void resetExpectations() {
         activeThrottles = throttleSource.get();
         if (activeThrottles.isEmpty()) {
@@ -98,10 +115,20 @@ public class ThrottleMultiplier {
         rebuildState();
     }
 
-    public void resetCongestionLevelStarts(@NonNull final Instant[] savedStartTimes) {
-        congestionLevelStarts = savedStartTimes.clone();
+    /**
+     * Resets the congestion level starts to the given values.
+     *
+     * @param startTimes the saved congestion level starts
+     */
+    public void resetCongestionLevelStarts(@NonNull final Instant[] startTimes) {
+        congestionLevelStarts = startTimes.clone();
     }
 
+    /**
+     * Returns the congestion level starts.
+     *
+     * @return the congestion level starts
+     */
     @NonNull
     public Instant[] congestionLevelStarts() {
         return congestionLevelStarts.clone();

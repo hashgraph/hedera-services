@@ -29,8 +29,8 @@ import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
+import com.hedera.node.app.fees.congestion.EntityUtilizationMultiplier;
 import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
-import com.hedera.node.app.fees.congestion.TransactionRateMultiplier;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -76,7 +76,7 @@ class IngestComponentTest {
     private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     @Mock
-    TransactionRateMultiplier genericFeeMultiplier;
+    EntityUtilizationMultiplier genericFeeMultiplier;
 
     @Mock
     ThrottleMultiplier gasFeeMultiplier;

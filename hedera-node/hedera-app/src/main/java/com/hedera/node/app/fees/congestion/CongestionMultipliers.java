@@ -23,46 +23,88 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
+/**
+ * An implementation for congestion multipliers that uses two types of multiplier implementation ({@link EntityUtilizationMultiplier} and a {@link ThrottleMultiplier})
+ * to determine the current congestion multiplier.
+ */
 public class CongestionMultipliers {
-    private final TransactionRateMultiplier genericFeeMultiplier;
-    private final ThrottleMultiplier gasFeeMultiplier;
+    private final EntityUtilizationMultiplier entityUtilizationMultiplier;
+    private final ThrottleMultiplier throttleMultiplier;
 
     public CongestionMultipliers(
-            @NonNull final TransactionRateMultiplier genericFeeMultiplier,
-            @NonNull final ThrottleMultiplier gasFeeMultiplier) {
-        this.genericFeeMultiplier = requireNonNull(genericFeeMultiplier, "genericFeeMultiplier must not be null");
-        this.gasFeeMultiplier = requireNonNull(gasFeeMultiplier, "gasFeeMultiplier must not be null");
+            @NonNull final EntityUtilizationMultiplier entityUtilizationMultiplier,
+            @NonNull final ThrottleMultiplier throttleMultiplier) {
+        this.entityUtilizationMultiplier =
+                requireNonNull(entityUtilizationMultiplier, "entityUtilizationMultiplier must not be null");
+        this.throttleMultiplier = requireNonNull(throttleMultiplier, "throttleMultiplier must not be null");
     }
 
+    /**
+     * Updates the congestion multipliers for the given consensus time.
+     *
+     * @param consensusTime the consensus time
+     */
     public void updateMultiplier(@NonNull final Instant consensusTime) {
-        gasFeeMultiplier.updateMultiplier(consensusTime);
-        genericFeeMultiplier.updateMultiplier(consensusTime);
+        throttleMultiplier.updateMultiplier(consensusTime);
+        entityUtilizationMultiplier.updateMultiplier(consensusTime);
     }
 
+    /**
+     * Returns the maximum congestion multiplier of the gas and transaction rate based multipliers.
+     *
+     * @param txnInfo transaction info needed for transaction rate based multiplier
+     * @param stack savepoint stack needed for transaction rate based multiplier
+     *
+     * @return the max congestion multiplier
+     */
     public long maxCurrentMultiplier(@NonNull final TransactionInfo txnInfo, @NonNull final SavepointStackImpl stack) {
-        return Math.max(gasFeeMultiplier.currentMultiplier(), genericFeeMultiplier.currentMultiplier(txnInfo, stack));
+        return Math.max(
+                throttleMultiplier.currentMultiplier(), entityUtilizationMultiplier.currentMultiplier(txnInfo, stack));
     }
 
+    /**
+     * Returns the congestion level starts for the transaction rate based multiplier.
+     *
+     * @return the  congestion level starts
+     */
     @NonNull
     public Instant[] genericCongestionStarts() {
-        return genericFeeMultiplier.congestionLevelStarts();
+        return entityUtilizationMultiplier.congestionLevelStarts();
     }
 
+    /**
+     * Returns the congestion level starts for the throttle multiplier.
+     *
+     * @return the congestion level starts
+     */
     @NonNull
-    public Instant[] gasCongestionStarts() {
-        return gasFeeMultiplier.congestionLevelStarts();
+    public Instant[] throttleMultiplierCongestionStarts() {
+        return throttleMultiplier.congestionLevelStarts();
     }
 
-    public void resetGenericCongestionLevelStarts(@NonNull final Instant[] startTimes) {
-        genericFeeMultiplier.resetCongestionLevelStarts(startTimes);
+    /**
+     * Resets the congestion level starts for the entity utilization based multiplier.
+     *
+     * @param startTimes the congestion level starts
+     */
+    public void resetEntityUtilizationMultiplierStarts(@NonNull final Instant[] startTimes) {
+        entityUtilizationMultiplier.resetCongestionLevelStarts(startTimes);
     }
 
-    public void resetGasCongestionLevelStarts(@NonNull final Instant[] startTimes) {
-        gasFeeMultiplier.resetCongestionLevelStarts(startTimes);
+    /**
+     * Resets the congestion level starts for the throttle multiplier.
+     *
+     * @param startTimes the congestion level starts
+     */
+    public void resetThrottleMultiplierStarts(@NonNull final Instant[] startTimes) {
+        throttleMultiplier.resetCongestionLevelStarts(startTimes);
     }
 
+    /**
+     * Resets the state of the underlying congestion multipliers.
+     */
     public void resetExpectations() {
-        gasFeeMultiplier.resetExpectations();
-        genericFeeMultiplier.resetExpectations();
+        throttleMultiplier.resetExpectations();
+        entityUtilizationMultiplier.resetExpectations();
     }
 }
