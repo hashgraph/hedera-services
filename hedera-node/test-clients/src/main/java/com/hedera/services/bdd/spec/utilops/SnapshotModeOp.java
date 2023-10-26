@@ -61,8 +61,8 @@ public class SnapshotModeOp extends UtilOp {
     public enum SnapshotMode {
         TAKE_FROM_MONO_STREAMS,
         TAKE_FROM_HAPI_TEST_STREAMS,
-        FUZZY_MATCH_FROM_MONO_STREAMS,
-        FUZZY_MATCH_FROM_HAPI_TEST_STREAMS
+        FUZZY_MATCH_AGAINST_MONO_STREAMS,
+        FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS
     }
 
     private final SnapshotMode mode;
@@ -73,6 +73,17 @@ public class SnapshotModeOp extends UtilOp {
     private String placeholderMemo;
     private RecordSnapshot snapshotToMatchAgainst;
 
+    public static void main(String... args) throws IOException {
+        final var snapshotToDump = "CryptoTransfer-okToRepeatSerialNumbersInBurnList";
+        final var snapshot = loadSnapshotFor(snapshotToDump);
+        final var items = snapshot.parsedItems();
+        for (int i = 0, n = items.size(); i < n; i++) {
+            final var item = items.get(i);
+            System.out.println("Item #" + i + " body: " + item.itemBody());
+            System.out.println("Item #" + i + " record: " + item.itemRecord());
+        }
+    }
+
     public SnapshotModeOp(@NonNull final SnapshotMode mode) {
         this.mode = Objects.requireNonNull(mode);
         placeholderMemo = PLACEHOLDER_MEMO + Instant.now();
@@ -82,10 +93,10 @@ public class SnapshotModeOp extends UtilOp {
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         this.fullSpecName = spec.getSuitePrefix() + "-" + spec.getName();
         switch (mode) {
-            case TAKE_FROM_MONO_STREAMS -> prepToSnapshotFromLoc(MONO_STREAMS_LOC, spec);
-            case TAKE_FROM_HAPI_TEST_STREAMS -> prepToSnapshotFromLoc(HAPI_TEST_STREAMS_LOC, spec);
-            case FUZZY_MATCH_FROM_MONO_STREAMS -> prepToFuzzyMatchAgainstLoc(MONO_STREAMS_LOC);
-            case FUZZY_MATCH_FROM_HAPI_TEST_STREAMS -> prepToFuzzyMatchAgainstLoc(HAPI_TEST_STREAMS_LOC);
+            case TAKE_FROM_MONO_STREAMS -> computePlaceholderNum(MONO_STREAMS_LOC, spec);
+            case TAKE_FROM_HAPI_TEST_STREAMS -> computePlaceholderNum(HAPI_TEST_STREAMS_LOC, spec);
+            case FUZZY_MATCH_AGAINST_MONO_STREAMS -> prepToFuzzyMatchAgainstLoc(MONO_STREAMS_LOC, spec);
+            case FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS -> prepToFuzzyMatchAgainstLoc(HAPI_TEST_STREAMS_LOC, spec);
         }
         return false;
     }
@@ -115,13 +126,12 @@ public class SnapshotModeOp extends UtilOp {
                     }
                 } else {
                     postPlaceholderItems.add(parsedItem);
-                    System.out.println("Adding post-placeholder item " + parsedItem);
                 }
             }
             switch (mode) {
                 case TAKE_FROM_MONO_STREAMS, TAKE_FROM_HAPI_TEST_STREAMS -> writeSnapshotOf(postPlaceholderItems);
-                case FUZZY_MATCH_FROM_MONO_STREAMS, FUZZY_MATCH_FROM_HAPI_TEST_STREAMS -> fuzzyMatchAgainstSnapshot(
-                        postPlaceholderItems);
+                case FUZZY_MATCH_AGAINST_MONO_STREAMS,
+                        FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS -> fuzzyMatchAgainstSnapshot(postPlaceholderItems);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -129,9 +139,7 @@ public class SnapshotModeOp extends UtilOp {
     }
 
     private void fuzzyMatchAgainstSnapshot(@NonNull final List<ParsedItem> postPlaceholderItems) {
-        final var itemsFromSnapshot = Objects.requireNonNull(snapshotToMatchAgainst).getEncodedItems().stream()
-                .map(EncodedItem::asParsedItem)
-                .toList();
+        final var itemsFromSnapshot = snapshotToMatchAgainst.parsedItems();
         final var minItems = Math.min(postPlaceholderItems.size(), itemsFromSnapshot.size());
         final var snapshotPlaceholderNum = snapshotToMatchAgainst.getPlaceholderNum();
         for (int i = 0; i < minItems; i++) {
@@ -159,15 +167,26 @@ public class SnapshotModeOp extends UtilOp {
         }
     }
 
-    private static final Set<String> FIELDS_TO_SKIP_IN_FUZZY_MATCH = Set.of();
+    private static final Set<String> FIELDS_TO_SKIP_IN_FUZZY_MATCH = Set.of(
+            // These time-dependent fields will necessarily vary each test execution
+            "expiry",
+            "consensusTimestamp",
+            "transactionValidStart",
+            // And transaction hashes as well
+            "transactionHash",
+            // Keys are also regenerated every test execution
+            "ed25519",
+            "ECDSA_secp256k1",
+            // Plus some other fields that we might prefer to make deterministic
+            "symbol");
 
     /**
-     * Given two messages, recursively asserts that they are equal up to certain "fuzziness" in timestamps and entity ids,
-     * since these quantities will vary based on the number of entities in the system and the time at which the test is
-     * run.
+     * Given two messages, recursively asserts that they are equal up to certain "fuzziness" in values like timestamps,
+     * hashes, and entity ids; since these quantities will vary based on the number of entities in the system and the
+     * time at which the test is run.
      *
      * <p>Two {@link GeneratedMessageV3} messages are fuzzy-equal iff they have the same number of fields, where each
-     * unskipped primitive field matches exactly; and each unskipped list field consists of fuzzy-equal elements.
+     * un-skipped primitive field matches exactly; and each un-skipped list field consists of fuzzy-equal elements.
      *
      * @param expectedMessage the expected message
      * @param expectedPlaceholderNum the placeholder number for the expected message
@@ -235,7 +254,12 @@ public class SnapshotModeOp extends UtilOp {
                             + mismatchContext.get());
                 }
             } else {
-                matchValues(expectedValue, expectedPlaceholderNum, actualValue, actualPlaceholderNum, mismatchContext);
+                matchValues(
+                        expectedValue,
+                        expectedPlaceholderNum,
+                        actualValue,
+                        actualPlaceholderNum,
+                        () -> "Matching field '" + expectedName + "' " + mismatchContext.get());
             }
         }
     }
@@ -264,22 +288,33 @@ public class SnapshotModeOp extends UtilOp {
 
     private static GeneratedMessageV3 normalized(@NonNull final GeneratedMessageV3 message, final long placeholderNum) {
         if (message instanceof AccountID accountID) {
-            final var normalizedNum = accountID.getAccountNum() - placeholderNum;
+            final var normalizedNum = placeholderNum < accountID.getAccountNum()
+                    ? accountID.getAccountNum() - placeholderNum
+                    : accountID.getAccountNum();
             return accountID.toBuilder().setAccountNum(normalizedNum).build();
         } else if (message instanceof ContractID contractID) {
-            final var normalizedNum = contractID.getContractNum() - placeholderNum;
+            final var normalizedNum = placeholderNum < contractID.getContractNum()
+                    ? contractID.getContractNum() - placeholderNum
+                    : contractID.getContractNum();
             return contractID.toBuilder().setContractNum(normalizedNum).build();
         } else if (message instanceof TopicID topicID) {
-            final var normalizedNum = topicID.getTopicNum() - placeholderNum;
+            final var normalizedNum = placeholderNum < topicID.getTopicNum()
+                    ? topicID.getTopicNum() - placeholderNum
+                    : topicID.getTopicNum();
             return topicID.toBuilder().setTopicNum(normalizedNum).build();
         } else if (message instanceof TokenID tokenID) {
-            final var normalizedNum = tokenID.getTokenNum() - placeholderNum;
+            final var normalizedNum = placeholderNum < tokenID.getTokenNum()
+                    ? tokenID.getTokenNum() - placeholderNum
+                    : tokenID.getTokenNum();
             return tokenID.toBuilder().setTokenNum(normalizedNum).build();
         } else if (message instanceof FileID fileID) {
-            final var normalizedNum = fileID.getFileNum() - placeholderNum;
+            final var normalizedNum =
+                    placeholderNum < fileID.getFileNum() ? fileID.getFileNum() - placeholderNum : fileID.getFileNum();
             return fileID.toBuilder().setFileNum(normalizedNum).build();
         } else if (message instanceof ScheduleID scheduleID) {
-            final var normalizedNum = scheduleID.getScheduleNum() - placeholderNum;
+            final var normalizedNum = placeholderNum < scheduleID.getScheduleNum()
+                    ? scheduleID.getScheduleNum() - placeholderNum
+                    : scheduleID.getScheduleNum();
             return scheduleID.toBuilder().setScheduleNum(normalizedNum).build();
         } else {
             return message;
@@ -290,7 +325,6 @@ public class SnapshotModeOp extends UtilOp {
         final var recordSnapshot = new RecordSnapshot();
         recordSnapshot.setPlaceholderNum(placeholderAccountNum);
         final var encodedItems = postPlaceholderItems.stream()
-                .peek(parsedItem -> log.info("Parsed item: {}", parsedItem))
                 .map(item -> EncodedItem.fromParsed(item.itemBody(), item.itemRecord()))
                 .toList();
         recordSnapshot.setEncodedItems(encodedItems);
@@ -301,28 +335,32 @@ public class SnapshotModeOp extends UtilOp {
         om.writeValue(fout, recordSnapshot);
     }
 
-    private Path resourceLocOf(@NonNull final String specName) {
+    private static Path resourceLocOf(@NonNull final String specName) {
         return Paths.get(SNAPSHOT_RESOURCES_LOC, specName + ".json");
     }
 
-    private void prepToSnapshotFromLoc(@NonNull final String loc, @NonNull final HapiSpec spec) {
+    private void prepToFuzzyMatchAgainstLoc(@NonNull final String loc, @NonNull final HapiSpec spec)
+            throws IOException {
+        computePlaceholderNum(loc, spec);
+        snapshotToMatchAgainst = loadSnapshotFor(fullSpecName);
+        log.info(
+                "Read {} post-placeholder records from snapshot",
+                snapshotToMatchAgainst.getEncodedItems().size());
+    }
+
+    private static RecordSnapshot loadSnapshotFor(@NonNull final String specName) throws IOException {
+        final var om = new ObjectMapper();
+        final var inputLoc = resourceLocOf(specName);
+        final var fin = Files.newInputStream(inputLoc);
+        return om.reader().readValue(fin, RecordSnapshot.class);
+    }
+
+    private void computePlaceholderNum(@NonNull final String loc, @NonNull final HapiSpec spec) {
         recordsLoc = loc;
         final var placeholderCreation = cryptoCreate("PLACEHOLDER")
                 .memo(placeholderMemo)
                 .exposingCreatedIdTo(id -> this.placeholderAccountNum = id.getAccountNum())
                 .noLogging();
         allRunFor(spec, placeholderCreation);
-    }
-
-    private void prepToFuzzyMatchAgainstLoc(@NonNull final String loc) throws IOException {
-        recordsLoc = loc;
-        final var om = new ObjectMapper();
-        final var inputLoc = resourceLocOf(fullSpecName);
-        final var fin = Files.newInputStream(inputLoc);
-        snapshotToMatchAgainst = om.reader().readValue(fin, RecordSnapshot.class);
-        log.info(
-                "Read {} post-placeholder records from snapshot at {}",
-                snapshotToMatchAgainst.getEncodedItems().size(),
-                inputLoc);
     }
 }

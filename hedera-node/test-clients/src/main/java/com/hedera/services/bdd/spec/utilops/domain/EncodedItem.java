@@ -52,7 +52,7 @@ public class EncodedItem {
         try {
             final var itemBody = TransactionBody.parseFrom(Base64.getDecoder().decode(b64Body));
             final var itemRecord =
-                    TransactionRecord.parseFrom(Base64.getDecoder().decode(b64Body));
+                    TransactionRecord.parseFrom(Base64.getDecoder().decode(b64Record));
             return new ParsedItem(itemBody, itemRecord);
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);

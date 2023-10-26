@@ -37,4 +37,8 @@ public class RecordSnapshot {
     public void setEncodedItems(List<EncodedItem> encodedItems) {
         this.encodedItems = encodedItems;
     }
+
+    public List<ParsedItem> parsedItems() {
+        return encodedItems.stream().map(EncodedItem::asParsedItem).toList();
+    }
 }
