@@ -113,6 +113,16 @@ public class DeterministicThrottle implements CongestibleThrottle {
         return delegate.allow(n, elapsedNanos);
     }
 
+    /**
+     * Leaks a given amount of capacity from the bucket. Useful for refunding capacity from an operation
+     * that was allowed through a throttle; but then failed later.
+     *
+     * @param amount the amount of capacity to leak
+     */
+    public void leakCapacity(final long amount) {
+        delegate.leakCapacity(amount);
+    }
+
     public void leakUntil(final Instant now) {
         final var elapsedNanos = elapsedNanosBetween(lastDecisionTime, now);
         lastDecisionTime = now;
