@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -63,9 +66,13 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
+import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
@@ -111,13 +118,14 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final ServiceApiFactory serviceApiFactory;
     private final WritableStoreFactory writableStoreFactory;
     private final BlockRecordInfo blockRecordInfo;
-    private final RecordCache recordCache;
+    private final HederaRecordCache recordCache;
     private final FeeAccumulator feeAccumulator;
     private final Function<SubType, FeeCalculator> feeCalculatorCreator;
     private final FeeManager feeManager;
     private final Instant userTransactionConsensusTime;
     private final ExchangeRateManager exchangeRateManager;
     private final Authorizer authorizer;
+    private final SolvencyPreCheck solvencyPreCheck;
 
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
@@ -146,6 +154,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param exchangeRateManager   The {@link ExchangeRateManager} used to obtain exchange rate information
      * @param userTransactionConsensusTime The consensus time of the user transaction, not any child transactions
      * @param authorizer            The {@link Authorizer} used to authorize the transaction
+     * @param solvencyPreCheck      The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
@@ -164,11 +173,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final BlockRecordInfo blockRecordInfo,
-            @NonNull final RecordCache recordCache,
+            @NonNull final HederaRecordCache recordCache,
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final Instant userTransactionConsensusTime,
-            @NonNull final Authorizer authorizer) {
+            @NonNull final Authorizer authorizer,
+            @NonNull final SolvencyPreCheck solvencyPreCheck) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.functionality = requireNonNull(functionality, "functionality must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
@@ -211,6 +221,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
+        this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
     }
 
     private WrappedHederaState current() {
@@ -370,7 +381,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     public boolean isSuperUser() {
-        return authorizer.isSuperUser(payer);
+        return authorizer.isSuperUser(payer());
     }
 
     @Override
@@ -582,7 +593,14 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         try {
-            validate(verifier, function, txBody, payer, payerKey, childCategory);
+            validate(
+                    verifier,
+                    function,
+                    body(),
+                    payer(),
+                    payerKey,
+                    childCategory,
+                    networkInfo().selfNodeInfo().nodeId());
         } catch (final PreCheckException e) {
             childRecordBuilder.status(e.responseCode());
             return;
@@ -609,7 +627,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 feeManager,
                 exchangeRateManager,
                 userTransactionConsensusTime,
-                authorizer);
+                authorizer,
+                solvencyPreCheck);
 
         try {
             dispatcher.dispatchHandle(childContext);
@@ -627,13 +646,37 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             final TransactionBody txBody,
             final AccountID payer,
             final Key payerKey,
-            final TransactionCategory txCategory)
+            final TransactionCategory txCategory,
+            final long nodeID)
             throws PreCheckException {
 
         final PreHandleContextImpl preHandleContext;
 
         preHandleContext = new PreHandleContextImpl(readableStoreFactory(), txBody, payer, configuration(), dispatcher);
         dispatcher.dispatchPreHandle(preHandleContext);
+
+        // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
+        // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
+        // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
+        // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
+        // and create an appropriate record to save in state and send to the record stream.
+        final var duplicateCheckResult = recordCache.hasDuplicate(txBody.transactionID(), nodeID);
+        if (duplicateCheckResult != NO_DUPLICATE && duplicateCheckResult != SAME_NODE) {
+            throw new PreCheckException(DUPLICATE_TRANSACTION);
+        }
+
+        // Check the status and solvency of the payer
+        try {
+
+            final var fee = dispatchComputeFees(txBody, payer);
+            final var payerAccount = solvencyPreCheck.getPayerAccount(readableStoreFactory(), payer);
+            solvencyPreCheck.checkSolvency(txBody, payer, functionality, payerAccount, fee);
+        } catch (final InsufficientServiceFeeException | InsufficientNonFeeDebitsException e) {
+            throw new PreCheckException(e.responseCode());
+        }
+
+        // Check the time box of the transaction
+        checker.checkTimeBox(txBody, userTransactionConsensusTime);
 
         // Check if the payer has the required permissions
         if (!authorizer.isAuthorized(payer, function)) {

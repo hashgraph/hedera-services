@@ -66,8 +66,8 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableSingletonState;
@@ -78,7 +78,10 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
@@ -146,7 +149,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private BlockRecordInfo blockRecordInfo;
 
     @Mock
-    private RecordCache recordCache;
+    private HederaRecordCache recordCache;
 
     @Mock
     private FeeManager feeManager;
@@ -159,6 +162,12 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
     @Mock
     private SignatureVerification verification;
+
+    @Mock
+    private SolvencyPreCheck solvencyPreCheck;
+
+    @Mock
+    private SelfNodeInfo selfNodeInfo;
 
     @BeforeEach
     void setup() {
@@ -201,7 +210,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 feeManager,
                 exchangeRateManager,
                 DEFAULT_CONSENSUS_NOW,
-                authorizer);
+                authorizer,
+                solvencyPreCheck);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -228,7 +238,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             feeManager,
             exchangeRateManager,
             DEFAULT_CONSENSUS_NOW,
-            authorizer
+            authorizer,
+            solvencyPreCheck
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
@@ -292,7 +303,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     feeManager,
                     exchangeRateManager,
                     DEFAULT_CONSENSUS_NOW,
-                    authorizer);
+                    authorizer,
+                    solvencyPreCheck);
         }
 
         @Test
@@ -804,7 +816,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     feeManager,
                     exchangeRateManager,
                     DEFAULT_CONSENSUS_NOW,
-                    authorizer);
+                    authorizer,
+                    solvencyPreCheck);
         }
 
         @SuppressWarnings("ConstantConditions")
@@ -868,6 +881,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         void testDispatchSucceeds(final Consumer<HandleContext> contextDispatcher) throws PreCheckException {
             // given
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
+            when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
+            when(selfNodeInfo.nodeId()).thenReturn(0L);
+            when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
@@ -919,6 +935,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         void testDispatchHandleFails(final Consumer<HandleContext> contextDispatcher) {
             // given
             when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
+            when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
+            when(selfNodeInfo.nodeId()).thenReturn(0L);
+            when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
