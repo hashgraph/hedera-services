@@ -74,12 +74,7 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
         final var addressToCreate = frame.getContractAddress();
         final MutableAccount contract;
         try {
-            var updater = (HederaWorldUpdater) frame.getWorldUpdater();
-            contract = updater.getOrCreate(addressToCreate);
-            if (updater.isHollowAccount(addressToCreate)) {
-                updater.externalizeHollowAccountMerge(contract.getAddress());
-            }
-
+            contract = frame.getWorldUpdater().getOrCreate(addressToCreate);
         } catch (ResourceExhaustedException ignore) {
             halt(frame, tracer, FAILED_CREATION_HALT_REASON, HaltShouldTraceAccountCreation.YES);
             return;

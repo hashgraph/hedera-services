@@ -331,10 +331,5 @@ public class HandleHederaOperations implements HederaOperations {
                         .contractID(contractId)
                         .evmAddress(evmAddress)
                         .build());
-
-        //        // Then use the TokenService API to finalize hollow account as a contract
-        //        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        //        tokenServiceApi.finalizeHollowAccountAsContract(
-        //                AccountID.newBuilder().accountNum(contractId.contractNum()).build(), INITIAL_CONTRACT_NONCE);
     }
 }

@@ -274,12 +274,6 @@ public interface HederaWorldUpdater extends WorldUpdater {
     void externalizeSystemContractResults(@NonNull final ContractFunctionResult result, ResultStatus status);
 
     /**
-     * Creates a {@link ContractCreateRecordBuilder}, containing information about the hollow account.
-     * @param address   Address of hollow account
-     */
-    void externalizeHollowAccountMerge(final Address address);
-
-    /**
      * Returns the {@link ExchangeRate} for the current consensus timestamp
      * Delegates to {@link SystemContractOperations#currentExchangeRate()} ()}
      * @return the current exchange rate
