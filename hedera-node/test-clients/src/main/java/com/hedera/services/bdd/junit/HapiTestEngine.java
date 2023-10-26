@@ -309,7 +309,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             } else if (testTags.contains(tag)) {
                 return SkipResult.doNotSkip();
             } else {
-                return SkipResult.skip("Tag not contained");
+                return SkipResult.skip("Tag is not matching");
             }
         }
 
