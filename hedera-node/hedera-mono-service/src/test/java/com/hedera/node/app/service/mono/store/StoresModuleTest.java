@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.ledger.interceptors.UniqueTokensLinkManager;
@@ -36,9 +37,17 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.store.models.NftId;
+import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class StoresModuleTest {
+    @Mock
+    private FunctionalityThrottling hapiThrottle;
 
     @Test
     void testTransactionalLedgerWhenVirtualNftsEnabled() {
@@ -59,6 +68,15 @@ class StoresModuleTest {
         transactionalLedger.put(nftId, token);
         transactionalLedger.commit();
         assertEquals(token, transactionalLedger.getImmutableRef(nftId));
+    }
+
+    @Test
+    void delegatesToCryptoCreateLeakToReclaimAccountCreationCapacity() {
+        final var throttleReclaimer = StoresModule.provideCryptoCreateThrottleReclaimer(hapiThrottle);
+
+        throttleReclaimer.accept(2);
+
+        verify(hapiThrottle).leakCapacityForNOfUnscaled(2, HederaFunctionality.CryptoCreate);
     }
 
     @Test
