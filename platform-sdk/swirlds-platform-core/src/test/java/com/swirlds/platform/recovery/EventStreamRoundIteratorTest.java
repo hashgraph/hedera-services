@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -33,6 +34,7 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamPathIterator;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
@@ -72,8 +74,8 @@ class EventStreamRoundIteratorTest {
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
-        try (final IOIterator<Round> iterator =
-                new EventStreamRoundIterator(directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
+        try (final IOIterator<Round> iterator = new EventStreamRoundIterator(
+                mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
 
             final List<EventImpl> deserializedEvents = new ArrayList<>();
 
@@ -125,7 +127,8 @@ class EventStreamRoundIteratorTest {
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
-        try (final IOIterator<Round> iterator = new EventStreamRoundIterator(directory, firstRoundToRead, true)) {
+        try (final IOIterator<Round> iterator =
+                new EventStreamRoundIterator(mock(AddressBook.class), directory, firstRoundToRead, true)) {
 
             final List<EventImpl> deserializedEvents = new ArrayList<>();
 
@@ -174,8 +177,8 @@ class EventStreamRoundIteratorTest {
 
         boolean exception = false;
 
-        try (final IOIterator<Round> iterator =
-                new EventStreamRoundIterator(directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
+        try (final IOIterator<Round> iterator = new EventStreamRoundIterator(
+                mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
 
             final List<EventImpl> deserializedEvents = new ArrayList<>();
 
@@ -236,7 +239,7 @@ class EventStreamRoundIteratorTest {
 
         assertThrows(
                 NoSuchElementException.class,
-                () -> new EventStreamRoundIterator(directory, 10, true),
+                () -> new EventStreamRoundIterator(mock(AddressBook.class), directory, 10, true),
                 "should be unable to start at requested round");
 
         FileUtils.deleteDirectory(directory);
@@ -260,8 +263,8 @@ class EventStreamRoundIteratorTest {
         final Path lastFile = getLastEventStreamFile(directory);
         truncateFile(lastFile, false);
 
-        try (final IOIterator<Round> iterator =
-                new EventStreamRoundIterator(directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
+        try (final IOIterator<Round> iterator = new EventStreamRoundIterator(
+                mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
 
             final List<EventImpl> deserializedEvents = new ArrayList<>();
 
@@ -322,8 +325,8 @@ class EventStreamRoundIteratorTest {
         final Path lastFile = getLastEventStreamFile(directory);
         truncateFile(lastFile, false);
 
-        try (final IOIterator<Round> iterator =
-                new EventStreamRoundIterator(directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, false)) {
+        try (final IOIterator<Round> iterator = new EventStreamRoundIterator(
+                mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, false)) {
 
             final List<EventImpl> deserializedEvents = new ArrayList<>();
 
