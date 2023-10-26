@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.Hed
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.fungibleTokenInfoTupleFor;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.fungibletokeninfo.FungibleTokenInfoTranslator.FUNGIBLE_TOKEN_INFO;
-import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -34,6 +33,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.tuweni.bytes.Bytes;
 
 public class FungibleTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
     private final Configuration configuration;
@@ -72,7 +72,7 @@ public class FungibleTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         requireNonNull(token);
 
         final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
-        final var ledgerId = hex(ledgerConfig.id().toByteArray());
+        final var ledgerId = Bytes.wrap(ledgerConfig.id().toByteArray()).toString();
         // @Future remove to revert #9073 after modularization is completed
         if (isStaticCall && status != SUCCESS) {
             return revertResult(status, gasRequirement);
