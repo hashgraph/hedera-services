@@ -38,7 +38,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -69,7 +69,7 @@ class HederaSLoadOperationTest {
     HederaStackedWorldStateUpdater worldUpdater;
 
     @Mock
-    EvmAccount evmAccount;
+    MutableAccount evmAccount;
 
     final Bytes keyBytesMock = Bytes.of(1, 2, 3, 4);
     final Bytes valueBytesMock = Bytes.of(4, 3, 2, 1);

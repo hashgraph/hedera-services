@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -66,7 +66,9 @@ public class CustomCallOperation extends CallOperation {
         try {
             final var toAddress = to(frame);
             final var isMissing = mustBePresent(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
-            return isMissing ? new Operation.OperationResult(cost(frame), MISSING_ADDRESS) : super.execute(frame, evm);
+            return isMissing
+                    ? new Operation.OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS)
+                    : super.execute(frame, evm);
         } catch (final FixedStack.UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;
         }

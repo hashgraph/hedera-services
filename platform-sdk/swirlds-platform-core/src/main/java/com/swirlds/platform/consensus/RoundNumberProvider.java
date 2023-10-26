@@ -17,8 +17,6 @@
 package com.swirlds.platform.consensus;
 
 public interface RoundNumberProvider {
-    /** the number used to represent that a round has not been defined */
-    long ROUND_UNDEFINED = -1;
 
     /**
      * return the round number below which the fame of all witnesses has been decided for all earlier rounds.
@@ -35,17 +33,18 @@ public interface RoundNumberProvider {
     }
 
     /**
-     * Return the max round number for which we have an event. If there are none yet, return {@link #ROUND_UNDEFINED}.
+     * Return the max round number for which we have an event. If there are none yet, return {@link
+     * ConsensusConstants#ROUND_UNDEFINED}.
      *
-     * @return the max round number, or {@link #ROUND_UNDEFINED} if none.
+     * @return the max round number, or {@link ConsensusConstants#ROUND_UNDEFINED} if none.
      */
     long getMaxRound();
 
     /**
-     * Return the minimum round number for which we have an event. If there are none yet, return {@link
-     * #ROUND_UNDEFINED}.
+     * Return the minimum round number for which we have an event. If there are none yet, return
+     * {@link ConsensusConstants#ROUND_UNDEFINED}.
      *
-     * @return the minimum round number, or {@link #ROUND_UNDEFINED} if none.
+     * @return the minimum round number, or {@link ConsensusConstants#ROUND_UNDEFINED} if none.
      */
     long getMinRound();
 

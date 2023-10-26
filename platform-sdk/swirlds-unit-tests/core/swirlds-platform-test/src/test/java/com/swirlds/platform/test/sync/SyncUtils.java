@@ -16,11 +16,10 @@
 
 package com.swirlds.platform.test.sync;
 
-import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
+import com.swirlds.platform.internal.EventImpl;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -32,9 +31,9 @@ public class SyncUtils {
         events.forEach(e -> System.out.println(EventStrings.toMediumString(e)));
     }
 
-    public static void printTasks(final String heading, final Collection<EventIntakeTask> events) {
+    public static void printTasks(final String heading, final Collection<GossipEvent> events) {
         System.out.println("\n--- " + heading + " ---");
-        events.forEach(e -> System.out.println(EventStrings.toMediumString((GossipEvent) e)));
+        events.forEach(e -> System.out.println(EventStrings.toMediumString(e)));
     }
 
     public static void printTipSet(final String nodeName, final SyncNode node) {

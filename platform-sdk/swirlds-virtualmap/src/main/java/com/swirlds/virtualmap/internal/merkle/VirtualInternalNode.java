@@ -20,8 +20,8 @@ import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 import static com.swirlds.virtualmap.internal.Path.getLeftChildPath;
 import static com.swirlds.virtualmap.internal.Path.getRightChildPath;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -39,7 +39,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Represents a virtual internal merkle node.
@@ -258,9 +257,7 @@ public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualVa
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append(virtualHashRecord)
-                .toString();
+        return new ToStringBuilder(this).append(virtualHashRecord).toString();
     }
 
     /**

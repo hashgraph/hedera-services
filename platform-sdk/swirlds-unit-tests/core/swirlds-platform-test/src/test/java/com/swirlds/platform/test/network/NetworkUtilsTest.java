@@ -18,6 +18,7 @@ package com.swirlds.platform.test.network;
 
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkUtils;
+import javax.net.ssl.SSLException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +30,10 @@ class NetworkUtilsTest {
                 () -> NetworkUtils.handleNetworkException(new Exception(), c),
                 "handling should not throw an exception");
         Assertions.assertFalse(c.connected(), "method should have disconnected the connection");
+
+        Assertions.assertDoesNotThrow(
+                () -> NetworkUtils.handleNetworkException(new SSLException("test", new NullPointerException()), null),
+                "handling should not throw an exception");
 
         Assertions.assertThrows(
                 InterruptedException.class,

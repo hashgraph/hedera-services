@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
@@ -33,7 +32,6 @@ import org.apache.logging.log4j.Logger;
  * Given a state loaded from a preprod network (usually stable testnet), we want to "re-key" the
  * treasury account for use in dev migration testing.
  */
-@HapiTestSuite
 public class RekeySavedStateTreasury extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RekeySavedStateTreasury.class);
 

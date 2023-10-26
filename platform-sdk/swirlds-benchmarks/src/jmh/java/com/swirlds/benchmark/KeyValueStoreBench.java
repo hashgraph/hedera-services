@@ -17,8 +17,8 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.merkledb.collections.LongListOffHeap;
+import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
-import java.util.concurrent.atomic.AtomicLong;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -41,16 +41,20 @@ public class KeyValueStoreBench extends BaseBench {
 
     @Benchmark
     public void merge() throws Exception {
-        beforeTest("mergeBench");
+        String storeName = "mergeBench";
+        beforeTest(storeName);
 
         final BenchmarkRecord[] map = new BenchmarkRecord[verify ? maxKey : 0];
+        LongListOffHeap keyToDiskLocationIndex = new LongListOffHeap();
         final var store = new MemoryIndexDiskKeyValueStore<>(
                 getTestDir(),
-                "mergeBench",
+                storeName,
                 null,
-                new BenchmarkRecordMerkleDbSerializer(),
+                new BenchmarkRecordSerializer(),
                 (key, dataLocation, dataValue) -> {},
-                new LongListOffHeap());
+                keyToDiskLocationIndex);
+        final DataFileCompactor compactor =
+                new DataFileCompactor(storeName, store.getFileCollection(), keyToDiskLocationIndex, null, null, null);
         System.out.println();
 
         // Write files
@@ -70,16 +74,8 @@ public class KeyValueStoreBench extends BaseBench {
 
         // Merge files
         start = System.currentTimeMillis();
-        final AtomicLong count = new AtomicLong(0);
-        store.merge(
-                list -> {
-                    count.set(list.size());
-                    return list;
-                },
-                2,
-                null,
-                null);
-        System.out.println("Merged " + count.get() + " files in " + (System.currentTimeMillis() - start) + "ms");
+        compactor.compact();
+        System.out.println("Compacted files in " + (System.currentTimeMillis() - start) + "ms");
 
         // Verify merged content
         if (verify) {

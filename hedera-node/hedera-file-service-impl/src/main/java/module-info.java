@@ -1,11 +1,13 @@
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 
 module com.hedera.node.app.service.file.impl {
+    requires com.hedera.node.app.hapi.utils;
     requires com.fasterxml.jackson.databind;
     requires com.swirlds.common;
-    requires com.swirlds.config;
+    requires com.swirlds.config.api;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
+    requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.service.file;
     requires transitive com.hedera.node.app.service.mono;
     requires transitive com.hedera.node.app.spi;
@@ -25,4 +27,5 @@ module com.hedera.node.app.service.file.impl {
     exports com.hedera.node.app.service.file.impl;
     exports com.hedera.node.app.service.file.impl.base;
     exports com.hedera.node.app.service.file.impl.utils;
+    exports com.hedera.node.app.service.file.impl.schemas;
 }

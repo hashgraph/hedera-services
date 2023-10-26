@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 
 import com.google.common.io.Files;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -64,6 +65,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec getByteCodeWorks() {
         final var contract = "EmptyConstructor";
         return HapiSpec.defaultHapiSpec("GetByteCodeWorks")
@@ -83,6 +85,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec invalidContractFromCostAnswer() {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
@@ -91,6 +94,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
                         .hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
     }
 
+    @HapiTest
     private HapiSpec invalidContractFromAnswerOnly() {
         return defaultHapiSpec("InvalidContractFromAnswerOnly")
                 .given()

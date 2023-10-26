@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.state.codec;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -91,10 +90,6 @@ public class VirtualBlobValue implements VirtualValue {
     @Override
     public int getVersion() {
         return CURRENT_VERSION;
-    }
-
-    public static int sizeInBytes() {
-        return DataFileCommon.VARIABLE_DATA_SIZE;
     }
 
     @Override

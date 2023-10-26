@@ -15,26 +15,23 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    `java-library`
-    id("com.swirlds.platform.maven-publish")
+    id("com.hedera.hashgraph.sdk.conventions")
+    id("com.hedera.hashgraph.platform-maven-publish")
     id("com.hedera.hashgraph.benchmark-conventions")
 }
 
-dependencies {
-    // Individual Dependencies
-    implementation(project(":swirlds-base"))
-    api(project(":swirlds-common"))
-    api(project(":swirlds-base"))
-    compileOnly(libs.spotbugs.annotations)
+jmhModuleInfo {
+    requires("com.swirlds.common")
+    requires("jmh.core")
+}
 
-    // Test Dependencies
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-    testImplementation(project(":swirlds-config-impl"))
-    testImplementation(testFixtures(project(":swirlds-common")))
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testLibs.bundles.mocking)
-    testImplementation(testFixtures(project(":swirlds-config-api")))
-    testImplementation(testFixtures(project(":swirlds-common")))
+testModuleInfo {
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.common.testing")
+    requires("com.swirlds.config.api.test.fixtures")
+    requires("com.swirlds.test.framework")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
 }

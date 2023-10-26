@@ -19,12 +19,10 @@ package com.hedera.node.app.service.contract.impl.test.state;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_VALUE_TRANSFER;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_HOLDER_SELFDESTRUCT;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_TREASURY_SELFDESTRUCT;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_IS_TREASURY;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniUInt256;
@@ -133,6 +131,13 @@ class DispatchingEvmFrameStateTest {
         subject.setNonce(ACCOUNT_NUM, 1234);
 
         verify(nativeOperations).setNonce(ACCOUNT_NUM, 1234);
+    }
+
+    @Test
+    void dispatchesToNumBytecodes() {
+        given(contractStateStore.getNumBytecodes()).willReturn(1234L);
+
+        assertEquals(1234L, subject.numBytecodesInState());
     }
 
     @Test
@@ -425,14 +430,14 @@ class DispatchingEvmFrameStateTest {
         final var reasonToHaltDeletion = subject.tryTrackingDeletion(EVM_ADDRESS, LONG_ZERO_ADDRESS);
 
         assertTrue(reasonToHaltDeletion.isPresent());
-        assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
+        assertEquals(INVALID_SOLIDITY_ADDRESS, reasonToHaltDeletion.get());
     }
 
     @Test
     void missingAccountsCannotTransferFunds() {
         final var reasonToHaltDeletion = subject.tryTransfer(EVM_ADDRESS, LONG_ZERO_ADDRESS, 123L, true);
         assertTrue(reasonToHaltDeletion.isPresent());
-        assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
+        assertEquals(INVALID_SOLIDITY_ADDRESS, reasonToHaltDeletion.get());
     }
 
     @Test
@@ -440,7 +445,7 @@ class DispatchingEvmFrameStateTest {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).smartContract(true));
         final var reasonToHaltDeletion = subject.tryTransfer(LONG_ZERO_ADDRESS, EVM_ADDRESS, 123L, true);
         assertTrue(reasonToHaltDeletion.isPresent());
-        assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
+        assertEquals(INVALID_SOLIDITY_ADDRESS, reasonToHaltDeletion.get());
     }
 
     @Test
@@ -461,17 +466,7 @@ class DispatchingEvmFrameStateTest {
         final var reasonLazyCreationFailed = subject.tryLazyCreation(EVM_ADDRESS);
 
         assertTrue(reasonLazyCreationFailed.isPresent());
-        assertEquals(INVALID_VALUE_TRANSFER, reasonLazyCreationFailed.get());
-    }
-
-    @Test
-    void translatesMaxChildRecordsExceeded() {
-        given(nativeOperations.createHollowAccount(tuweniToPbjBytes(EVM_ADDRESS)))
-                .willReturn(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
-        final var reasonLazyCreationFailed = subject.tryLazyCreation(EVM_ADDRESS);
-
-        assertTrue(reasonLazyCreationFailed.isPresent());
-        assertEquals(CustomExceptionalHaltReason.TOO_MANY_CHILD_RECORDS, reasonLazyCreationFailed.get());
+        assertEquals(FAILURE_DURING_LAZY_ACCOUNT_CREATION, reasonLazyCreationFailed.get());
     }
 
     @Test
@@ -490,14 +485,7 @@ class DispatchingEvmFrameStateTest {
         final var reasonLazyCreationFailed = subject.tryLazyCreation(EVM_ADDRESS);
 
         assertTrue(reasonLazyCreationFailed.isPresent());
-        assertEquals(CustomExceptionalHaltReason.ACCOUNTS_LIMIT_REACHED, reasonLazyCreationFailed.get());
-    }
-
-    @Test
-    void throwsOnUnexpectedFailureMode() {
-        given(nativeOperations.createHollowAccount(tuweniToPbjBytes(EVM_ADDRESS)))
-                .willReturn(ResponseCodeEnum.INVALID_ALIAS_KEY);
-        assertThrows(IllegalStateException.class, () -> subject.tryLazyCreation(EVM_ADDRESS));
+        assertEquals(FAILURE_DURING_LAZY_ACCOUNT_CREATION, reasonLazyCreationFailed.get());
     }
 
     @Test
@@ -538,7 +526,7 @@ class DispatchingEvmFrameStateTest {
                 .willReturn(INVALID_SIGNATURE);
         final var reasonToHaltDeletion = subject.tryTransfer(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, 123L, false);
         assertTrue(reasonToHaltDeletion.isPresent());
-        assertEquals(INVALID_RECEIVER_SIGNATURE, reasonToHaltDeletion.get());
+        assertEquals(CustomExceptionalHaltReason.INVALID_SIGNATURE, reasonToHaltDeletion.get());
     }
 
     @Test
@@ -560,7 +548,7 @@ class DispatchingEvmFrameStateTest {
         final var reasonToHaltDeletion = subject.tryTrackingDeletion(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS);
 
         assertTrue(reasonToHaltDeletion.isPresent());
-        assertEquals(TOKEN_TREASURY_SELFDESTRUCT, reasonToHaltDeletion.get());
+        assertEquals(CONTRACT_IS_TREASURY, reasonToHaltDeletion.get());
     }
 
     @Test
@@ -571,7 +559,7 @@ class DispatchingEvmFrameStateTest {
         final var reasonToHaltDeletion = subject.tryTrackingDeletion(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS);
 
         assertTrue(reasonToHaltDeletion.isPresent());
-        assertEquals(TOKEN_HOLDER_SELFDESTRUCT, reasonToHaltDeletion.get());
+        assertEquals(CONTRACT_STILL_OWNS_NFTS, reasonToHaltDeletion.get());
     }
 
     @Test
@@ -590,7 +578,7 @@ class DispatchingEvmFrameStateTest {
         final var reasonToHaltDeletion = subject.tryTrackingDeletion(EVM_ADDRESS, EVM_ADDRESS);
 
         assertTrue(reasonToHaltDeletion.isPresent());
-        assertEquals(SELFDESTRUCT_TO_SELF, reasonToHaltDeletion.get());
+        assertEquals(CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF, reasonToHaltDeletion.get());
     }
 
     @Test
@@ -600,7 +588,7 @@ class DispatchingEvmFrameStateTest {
         final var reasonToHaltDeletion = subject.tryTrackingDeletion(EVM_ADDRESS, TOKEN_ADDRESS);
 
         assertTrue(reasonToHaltDeletion.isPresent());
-        assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
+        assertEquals(INVALID_SOLIDITY_ADDRESS, reasonToHaltDeletion.get());
     }
 
     @Test
@@ -610,7 +598,7 @@ class DispatchingEvmFrameStateTest {
         final var reasonToHaltDeletion = subject.tryTrackingDeletion(EVM_ADDRESS, TOKEN_ADDRESS);
 
         assertTrue(reasonToHaltDeletion.isPresent());
-        assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
+        assertEquals(INVALID_SOLIDITY_ADDRESS, reasonToHaltDeletion.get());
     }
 
     @Test
@@ -640,7 +628,8 @@ class DispatchingEvmFrameStateTest {
     void extantAccountIsHollowOnlyIfHasAnEmptyKey() {
         given(nativeOperations.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
                 .willReturn(ACCOUNT_NUM);
-        givenWellKnownAccount(accountWith(ACCOUNT_NUM).key(Key.newBuilder().keyList(KeyList.DEFAULT)));
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM)
+                .key(Key.newBuilder().keyList(KeyList.DEFAULT).build()));
         assertTrue(subject.isHollowAccount(EVM_ADDRESS));
     }
 

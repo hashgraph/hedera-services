@@ -28,6 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -48,6 +49,7 @@ public class InvalidgRPCValuesTest extends HapiSuite {
         return List.of(new HapiSpec[] {invalidIdCheck()});
     }
 
+    @HapiTest
     private HapiSpec invalidIdCheck() {
         final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
         final String invalidMaxId = MAX_NUM_ALLOWED + 1 + ".2.3";

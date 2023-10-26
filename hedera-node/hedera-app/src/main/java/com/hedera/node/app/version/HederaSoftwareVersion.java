@@ -19,6 +19,7 @@ package com.hedera.node.app.version;
 import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.spi.HapiUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.SoftwareVersion;
@@ -144,5 +145,13 @@ public class HederaSoftwareVersion implements SoftwareVersion {
             return false;
         }
         return compareTo(deserializedVersion) < 0;
+    }
+
+    @Override
+    public String toString() {
+        // This is called by the platform when printing information on saved states to logs
+        return "HederaSoftwareVersion{" + "hapiVersion="
+                + HapiUtils.toString(hapiVersion) + ", servicesVersion="
+                + HapiUtils.toString(servicesVersion) + '}';
     }
 }

@@ -16,12 +16,11 @@
 
 package com.swirlds.merkledb;
 
-import static com.swirlds.jasperdb.utilities.HashTools.DEFAULT_DIGEST;
+import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
+import static com.swirlds.common.test.fixtures.RandomUtils.nextLong;
 import static com.swirlds.merkledb.ExampleFixedSizeVirtualValue.RANDOM_BYTES;
 import static com.swirlds.merkledb.MerkleDbTestUtils.randomString;
 import static com.swirlds.merkledb.serialize.BaseSerializer.VARIABLE_DATA_SIZE;
-import static org.apache.commons.lang3.RandomUtils.nextInt;
-import static org.apache.commons.lang3.RandomUtils.nextLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -135,7 +134,7 @@ class VirtualLeafRecordSerializerTest {
         // RANDOM_BYTES is the size of ExampleFixedSizeVirtualValue data
         final String value = randomString(RANDOM_BYTES, new Random());
         buffer.putLong(path);
-        Hash hash = new HashBuilder(DEFAULT_DIGEST).update(nextInt()).build();
+        Hash hash = new HashBuilder(DigestType.SHA_384).update(nextInt()).build();
         buffer.put(hash.getValue());
         buffer.putLong(key);
         int id = nextInt();
@@ -180,13 +179,14 @@ class VirtualLeafRecordSerializerTest {
                     Long.BYTES
                             + testType.dataType().getKeySerializer().getSerializedSize()
                             + testType.dataType().getValueSerializer().getSerializedSize()
-                            + DEFAULT_DIGEST.digestLength(),
+                            + DigestType.SHA_384.digestLength(),
                     serializer.getSerializedSizeForVersion(version));
         } else {
             assertEquals(VARIABLE_DATA_SIZE, serializer.getSerializedSizeForVersion(version));
         }
     }
 
+    @SuppressWarnings("rawtypes")
     private static VirtualLeafRecordSerializer<VirtualLongKey, ExampleByteArrayVirtualValue> createSerializer(
             TestType testType) {
         final KeySerializer<?> keySerializer = testType.dataType().getKeySerializer();

@@ -32,6 +32,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -107,6 +108,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
                         .hasKnownStatus(SCHEDULE_ALREADY_DELETED));
     }
 
+    @HapiTest
     private HapiSpec deletingNonExistingFails() {
         return defaultHapiSpec("DeletingNonExistingFails")
                 .given()

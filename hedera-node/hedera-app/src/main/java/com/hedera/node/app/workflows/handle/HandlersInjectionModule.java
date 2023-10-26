@@ -29,7 +29,10 @@ import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 @Module
@@ -38,6 +41,13 @@ public interface HandlersInjectionModule {
     @Singleton
     static Supplier<ContractHandlers> provideContractHandlers() {
         return CONTRACT_SERVICE::handlers;
+    }
+
+    @Provides
+    @Named("FreezeService")
+    static Executor provideFreezeServiceExecutor() {
+        return new ForkJoinPool(
+                1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
     }
 
     @Provides

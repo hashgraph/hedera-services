@@ -18,10 +18,12 @@ package com.swirlds.platform.gui.internal;
 
 import com.swirlds.gui.components.ScrollableJPanel;
 import com.swirlds.platform.SwirldsPlatform;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.awt.GraphicsEnvironment;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  * Manages static variables for the browser GUI window.
@@ -81,6 +83,19 @@ public final class BrowserWindowManager {
     }
 
     /**
+     * Add a collection of platforms to the list of platforms running on this machine.
+     *
+     * @param toAdd the platforms to add
+     */
+    public static void addPlatforms(@NonNull final Collection<SwirldsPlatform> toAdd) {
+        Objects.requireNonNull(toAdd);
+
+        synchronized (platforms) {
+            platforms.addAll(toAdd);
+        }
+    }
+
+    /**
      * Make the browser window visible. If it doesn't yet exist, then create it. Then switch to the given tab, with a
      * component name of the form Browser.browserWindow.tab* such as Browser.browserWindow.tabCalls to switch to the
      * "Calls" tab.
@@ -97,5 +112,16 @@ public final class BrowserWindowManager {
         }
         setBrowserWindow(new WinBrowser(new PlatformHashgraphGuiSource()));
         getBrowserWindow().goTab(comp);
+    }
+
+    /**
+     * Move the browser window to the front of the screen.
+     */
+    public static void moveBrowserWindowToFront() {
+        for (final Frame frame : Frame.getFrames()) {
+            if (!frame.equals(getBrowserWindow())) {
+                frame.toFront();
+            }
+        }
     }
 }

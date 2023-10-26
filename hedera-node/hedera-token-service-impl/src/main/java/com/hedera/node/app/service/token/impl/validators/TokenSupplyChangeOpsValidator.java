@@ -159,9 +159,10 @@ public class TokenSupplyChangeOpsValidator {
      */
     private void validateCounts(
             final int nftCount, final long fungibleCount, final boolean nftsAreEnabled, final long maxBatchSize) {
-        if (fungibleCount > 0) {
-            validateTrue(fungibleCount <= maxBatchSize, BATCH_SIZE_LIMIT_EXCEEDED);
-        }
+        // commented out below, checked with Michael T, nfts.maxBatchSizeMint is not for fungibleCount.
+        //        if (fungibleCount > 0) {
+        //            validateTrue(fungibleCount <= maxBatchSize, BATCH_SIZE_LIMIT_EXCEEDED);
+        //        }
         if (nftCount > 0) {
             validateTrue(nftsAreEnabled, NOT_SUPPORTED);
         }

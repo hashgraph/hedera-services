@@ -5,7 +5,7 @@ module com.hedera.node.app.service.token.impl {
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
-    requires transitive com.swirlds.config;
+    requires transitive com.swirlds.config.api;
     requires transitive dagger;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.utils;
@@ -13,10 +13,8 @@ module com.hedera.node.app.service.token.impl {
     requires com.google.common;
     requires com.google.protobuf;
     requires com.swirlds.common;
-    requires com.swirlds.jasperdb;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
-    requires org.slf4j;
     requires static com.github.spotbugs.annotations;
 
     provides com.hedera.node.app.service.token.TokenService with
@@ -37,4 +35,6 @@ module com.hedera.node.app.service.token.impl {
     exports com.hedera.node.app.service.token.impl.handlers.staking to
             com.hedera.node.app,
             com.hedera.node.app.service.token.impl.test;
+    exports com.hedera.node.app.service.token.impl.handlers.transfer to
+            com.hedera.node.app;
 }

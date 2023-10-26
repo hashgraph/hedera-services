@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.node.app.service.token.Units.HBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
@@ -45,6 +46,8 @@ class RewardRateCalculationTest {
     private static final long TYPICAL_800_BALANCE = 69_000_000L * 100_000_000L;
     private static final long HIGH_REWARD_RATE_THRESHOLD = 200_000_000L * 100_000_000L;
     private static final long TYPICAL_STAKED_TO_REWARD = 5000000000000000000L / 6 * 5;
+    private static final long TYPICAL_PER_HBAR_REWARD_RATE =
+            TYPICAL_REWARD_RATE / (TYPICAL_STAKED_TO_REWARD / HBARS_TO_TINYBARS);
 
     @Mock
     private MerkleAccount stakingRewardAccount;
@@ -96,9 +99,9 @@ class RewardRateCalculationTest {
 
         given800Balance(TYPICAL_800_BALANCE);
 
-        final var actualRate = subject.rewardRateForEndingPeriod(TYPICAL_STAKED_TO_REWARD);
+        final var actualRate = subject.perHbarRewardRateForEndingPeriod(TYPICAL_STAKED_TO_REWARD);
 
-        assertEquals(TYPICAL_REWARD_RATE, actualRate);
+        assertEquals(TYPICAL_PER_HBAR_REWARD_RATE, actualRate);
     }
 
     @Test
@@ -109,9 +112,9 @@ class RewardRateCalculationTest {
 
         given800BalanceAndPending(HIGH_REWARD_RATE_THRESHOLD, HIGH_REWARD_RATE_THRESHOLD / 2);
 
-        final var actualRate = subject.rewardRateForEndingPeriod(TYPICAL_STAKED_TO_REWARD);
+        final var actualRate = subject.perHbarRewardRateForEndingPeriod(TYPICAL_STAKED_TO_REWARD);
 
-        assertEquals(3 * TYPICAL_REWARD_RATE / 4, actualRate);
+        assertEquals(3 * TYPICAL_PER_HBAR_REWARD_RATE / 4, actualRate);
     }
 
     @Test
@@ -122,9 +125,9 @@ class RewardRateCalculationTest {
 
         given800BalanceAndPending(HIGH_REWARD_RATE_THRESHOLD, HIGH_REWARD_RATE_THRESHOLD / 2);
 
-        final var actualRate = subject.rewardRateForEndingPeriod(2 * TYPICAL_STAKED_TO_REWARD);
+        final var actualRate = subject.perHbarRewardRateForEndingPeriod(2 * TYPICAL_STAKED_TO_REWARD);
 
-        assertEquals(TYPICAL_REWARD_RATE / 2, actualRate);
+        assertEquals(TYPICAL_PER_HBAR_REWARD_RATE / 2, actualRate);
     }
 
     private void givenRewardBalanceThreshold(final long amount) {
@@ -132,7 +135,7 @@ class RewardRateCalculationTest {
     }
 
     private void givenTypicalRewardRate() {
-        given(dynamicProperties.stakingRewardRate()).willReturn(TYPICAL_REWARD_RATE);
+        given(dynamicProperties.stakingPerHbarRewardRate()).willReturn(TYPICAL_PER_HBAR_REWARD_RATE);
     }
 
     private void given800Balance(final long amount) {

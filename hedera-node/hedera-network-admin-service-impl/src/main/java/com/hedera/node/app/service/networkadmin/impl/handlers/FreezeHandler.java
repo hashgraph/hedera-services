@@ -21,19 +21,23 @@ import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
-import com.hedera.node.app.service.networkadmin.ReadableUpgradeStore;
-import com.hedera.node.app.service.networkadmin.impl.WritableUpgradeStore;
-import com.hedera.node.app.spi.state.WritableFreezeStore;
+import com.hedera.node.app.service.mono.fees.calculation.system.txns.FreezeResourceUsage;
+import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
+import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -46,7 +50,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.concurrent.Executor;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 /**
@@ -58,9 +64,11 @@ public class FreezeHandler implements TransactionHandler {
     // used for a quick sanity check that the file hash is not invalid
     public static final int UPDATE_FILE_HASH_LEN = 48;
 
+    private final Executor freezeExecutor;
+
     @Inject
-    public FreezeHandler() {
-        // Dagger2
+    public FreezeHandler(@NonNull @Named("FreezeService") final Executor freezeExecutor) {
+        this.freezeExecutor = requireNonNull(freezeExecutor);
     }
 
     /**
@@ -83,8 +91,7 @@ public class FreezeHandler implements TransactionHandler {
         }
         if (Arrays.asList(FREEZE_UPGRADE, TELEMETRY_UPGRADE, PREPARE_UPGRADE).contains(freezeType)) {
             // from proto specs, it looks like updateFileId not required for FREEZE_UPGRADE and TELEMETRY_UPGRADE
-            // but specs aren't very clear
-            // previous code in FreezeTransitionLogic checks for it in all 3 cases
+            // but specs aren't very clear previous code in FreezeTransitionLogic checks for it in all 3 cases,
             // so we will do the same
             final ReadableUpgradeFileStore upgradeStore = context.createStore(ReadableUpgradeFileStore.class);
             final var filesConfig = context.configuration().getConfigData(FilesConfig.class);
@@ -124,48 +131,53 @@ public class FreezeHandler implements TransactionHandler {
         requireNonNull(context);
         final var txn = context.body();
         final NetworkAdminConfig adminServiceConfig = context.configuration().getConfigData(NetworkAdminConfig.class);
-        final WritableUpgradeStore upgradeStore = context.writableStore(WritableUpgradeStore.class);
         final ReadableUpgradeFileStore upgradeFileStore = context.readableStore(ReadableUpgradeFileStore.class);
         final WritableFreezeStore freezeStore = context.writableStore(WritableFreezeStore.class);
 
         final FreezeTransactionBody freezeTxn = txn.freezeOrThrow();
 
-        validateSemantics(freezeTxn, upgradeStore, upgradeFileStore);
+        validateSemantics(freezeTxn, freezeStore, upgradeFileStore);
 
-        final FreezeUpgradeActions upgradeActions = new FreezeUpgradeActions(adminServiceConfig, freezeStore);
+        final FreezeUpgradeActions upgradeActions =
+                new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExecutor);
         final Timestamp freezeStartTime = freezeTxn.startTime(); // may be null for some freeze types
-        final Instant freezeStartTimeInstant = freezeStartTime == null
-                ? null
-                : Instant.ofEpochSecond(freezeStartTime.seconds(), freezeStartTime.nanos());
 
-        // @todo('Issue #6761') - the below switch returns a CompletableFuture, need to use this with an ExecutorService
         switch (freezeTxn.freezeType()) {
             case PREPARE_UPGRADE -> {
                 // by the time we get here, we've already checked that fileHash is non-null in preHandle()
-                upgradeStore.updateFileHash(freezeTxn.fileHash());
+                freezeStore.updateFileHash(freezeTxn.fileHash());
                 try {
                     upgradeActions.extractSoftwareUpgrade(upgradeFileStore.getFull());
                 } catch (IOException e) {
                     throw new IllegalStateException("Error extracting upgrade file", e);
                 }
             }
-            case FREEZE_UPGRADE -> upgradeActions.scheduleFreezeUpgradeAt(requireNonNull(freezeStartTimeInstant));
+            case FREEZE_UPGRADE -> upgradeActions.scheduleFreezeUpgradeAt(requireNonNull(freezeStartTime));
             case FREEZE_ABORT -> {
                 upgradeActions.abortScheduledFreeze();
-                upgradeStore.updateFileHash(null);
+                freezeStore.updateFileHash(null);
             }
             case TELEMETRY_UPGRADE -> {
                 try {
-                    upgradeActions.extractTelemetryUpgrade(
-                            upgradeFileStore.getFull(), requireNonNull(freezeStartTimeInstant));
+                    upgradeActions.extractTelemetryUpgrade(upgradeFileStore.getFull(), requireNonNull(freezeStartTime));
                 } catch (IOException e) {
                     throw new IllegalStateException("Error extracting upgrade file", e);
                 }
             }
-            case FREEZE_ONLY -> upgradeActions.scheduleFreezeOnlyAt(requireNonNull(freezeStartTimeInstant));
+            case FREEZE_ONLY -> upgradeActions.scheduleFreezeOnlyAt(requireNonNull(freezeStartTime));
                 // UNKNOWN_FREEZE_TYPE will fail at preHandle, this code should never get called
             case UNKNOWN_FREEZE_TYPE -> throw new HandleException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new FreezeResourceUsage()
+                .usageGiven(fromPbj(op), sigValueObj, null));
     }
 
     /**
@@ -173,10 +185,10 @@ public class FreezeHandler implements TransactionHandler {
      */
     private static void validateSemantics(
             @NonNull final FreezeTransactionBody freezeTxn,
-            @NonNull final ReadableUpgradeStore updateFileStore,
+            @NonNull final ReadableFreezeStore freezeStore,
             @NonNull final ReadableUpgradeFileStore upgradeStore) {
         requireNonNull(freezeTxn);
-        requireNonNull(updateFileStore);
+        requireNonNull(freezeStore);
         requireNonNull(upgradeStore);
 
         if ((freezeTxn.freezeType() == PREPARE_UPGRADE || freezeTxn.freezeType() == TELEMETRY_UPGRADE)
@@ -227,9 +239,9 @@ public class FreezeHandler implements TransactionHandler {
         // this is the *only* place that the FileID is accessed
         // we subsequently ignore it
         final FileID updateFileID = freezeTxn.updateFile();
-        if (updateFileID == null || updateFileID.fileNum() != upgradeFileNumber)
+        if (updateFileID == null || updateFileID.fileNum() != upgradeFileNumber) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
-
+        }
         if (upgradeStore.peek() == null) {
             throw new PreCheckException(ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
         }

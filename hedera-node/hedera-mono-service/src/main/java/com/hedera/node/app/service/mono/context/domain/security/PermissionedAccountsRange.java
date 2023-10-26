@@ -81,4 +81,9 @@ public class PermissionedAccountsRange {
             return from <= num && num <= inclusiveTo;
         }
     }
+
+    @Override
+    public String toString() {
+        return from + "-" + inclusiveTo;
+    }
 }

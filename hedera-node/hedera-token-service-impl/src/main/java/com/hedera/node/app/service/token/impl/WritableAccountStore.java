@@ -23,7 +23,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -57,7 +59,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     @Override
-    protected WritableKVState<Bytes, AccountID> aliases() {
+    protected WritableKVState<ProtoBytes, AccountID> aliases() {
         return super.aliases();
     }
 
@@ -80,12 +82,12 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void putAlias(@NonNull final Bytes alias, final AccountID accountId) {
         Objects.requireNonNull(alias);
-        aliases().put(alias, accountId);
+        aliases().put(new ProtoBytes(alias), accountId);
     }
 
     public void removeAlias(@NonNull final Bytes alias) {
         Objects.requireNonNull(alias);
-        aliases().remove(alias);
+        aliases().remove(new ProtoBytes(alias));
     }
 
     /**
@@ -118,7 +120,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                         if (alias.length() == EVM_ADDRESS_LEN && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
-                            final var accountID = aliases().get(alias);
+                            final var accountID = aliases().get(new ProtoBytes(alias));
                             yield accountID == null ? 0L : accountID.accountNum();
                         }
                     }
@@ -172,11 +174,12 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
-     * Returns the list of contract nonces modified in existing state.
+     * Returns a summary of the changes made to contract state.
      *
-     * @return the list of contract nonces modified in existing state
+     * @return a summary of the changes made to contract state
      */
-    public @NonNull List<ContractNonceInfo> updatedContractNonces() {
+    public @NonNull ContractChangeSummary summarizeContractChanges() {
+        final List<ContractID> newContractIds = new ArrayList<>();
         final List<ContractNonceInfo> updates = new ArrayList<>();
         accountState().modifiedKeys().forEach(accountId -> {
             final var newAccount = accountState().get(accountId);
@@ -187,10 +190,13 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                             .contractNum(accountId.accountNumOrThrow())
                             .build();
                     updates.add(new ContractNonceInfo(contractId, newAccount.ethereumNonce()));
+                    if (oldAccount == null) {
+                        newContractIds.add(contractId);
+                    }
                 }
             }
         });
-        return updates;
+        return new ContractChangeSummary(newContractIds, updates);
     }
 
     /**
@@ -199,7 +205,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @return the set of aliases modified in existing state
      */
     @NonNull
-    public Set<Bytes> modifiedAliasesInState() {
+    public Set<ProtoBytes> modifiedAliasesInState() {
         return aliases().modifiedKeys();
     }
 
@@ -224,7 +230,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                         if (isOfEvmAddressSize(alias) && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
-                            final var entityNum = aliases().getOriginalValue(alias);
+                            final var entityNum = aliases().getOriginalValue(new ProtoBytes(alias));
                             yield entityNum == null ? 0L : entityNum.accountNum();
                         }
                     }

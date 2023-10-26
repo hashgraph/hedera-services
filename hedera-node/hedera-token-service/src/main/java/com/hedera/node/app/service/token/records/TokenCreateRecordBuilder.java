@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -35,4 +36,12 @@ public interface TokenCreateRecordBuilder {
      */
     @NonNull
     TokenCreateRecordBuilder tokenID(@NonNull TokenID tokenID);
+
+    /**
+     * Adds the token relations that are created by auto associations.
+     * This information is needed while setting record cache.
+     * @param tokenAssociation the token association that is created by auto association
+     * @return the builder
+     */
+    TokenUpdateRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
 }

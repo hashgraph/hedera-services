@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
@@ -61,6 +62,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -105,7 +107,11 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
 
     @BeforeEach
     public void setUp() {
-        super.setUp();
+        baseInternalSetUp(true);
+    }
+
+    protected void baseInternalSetUp(final boolean prepopulateReceiverIds) {
+        super.handlerTestBaseInternalSetUp(prepopulateReceiverIds);
         attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         expiryValidator = new StandardizedExpiryValidator(
                 System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);
@@ -113,29 +119,25 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     }
 
     protected final AccountID unknownAliasedId =
-            AccountID.newBuilder().alias(ecKeyAlias).build();
+            AccountID.newBuilder().alias(ecKeyAlias.value()).build();
     protected final AccountID unknownAliasedId1 =
-            AccountID.newBuilder().alias(edKeyAlias).build();
+            AccountID.newBuilder().alias(edKeyAlias.value()).build();
 
     protected static final Key aPrimitiveKey = Key.newBuilder()
             .ed25519(Bytes.wrap("01234567890123456789012345678911"))
             .build();
-    protected static final Bytes edKeyAlias = Bytes.wrap(asBytes(Key.PROTOBUF, aPrimitiveKey));
+    protected static final ProtoBytes edKeyAlias = new ProtoBytes(Bytes.wrap(asBytes(Key.PROTOBUF, aPrimitiveKey)));
     protected static final byte[] ecdsaKeyBytes =
             Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
-    protected static final Bytes ecKeyAlias = Bytes.wrap(ecdsaKeyBytes);
+    protected static final ProtoBytes ecKeyAlias = new ProtoBytes(Bytes.wrap(ecdsaKeyBytes));
+    protected static final ProtoBytes ecEvmAlias =
+            new ProtoBytes(Bytes.fromHex("a94f5374fce5edbc8e2a8697c15331677e6ebf0b"));
 
     protected static final byte[] evmAddress = unhex("0000000000000000000000000000000000000003");
     protected static final byte[] create2Address = unhex("0111111111111111111111111111111111defbbb");
-    protected static final Bytes mirrorAlias = Bytes.wrap(evmAddress);
-    protected static final Bytes create2Alias = Bytes.wrap(create2Address);
+    protected static final ProtoBytes mirrorAlias = new ProtoBytes(Bytes.wrap(evmAddress));
+    protected static final ProtoBytes create2Alias = new ProtoBytes(Bytes.wrap(create2Address));
     protected static final Long mirrorNum = Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
-    protected final int hbarReceiver = 10000000;
-    protected final AccountID hbarReceiverId =
-            AccountID.newBuilder().accountNum(hbarReceiver).build();
-    protected final int tokenReceiver = hbarReceiver + 1;
-    protected final AccountID tokenReceiverId =
-            AccountID.newBuilder().accountNum(tokenReceiver).build();
 
     protected TransactionBody asTxn(final CryptoTransferTransactionBody body, final AccountID payerId) {
         return TransactionBody.newBuilder()
@@ -189,10 +191,12 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected void givenTxn(CryptoTransferTransactionBody txnBody, AccountID payerId) {
         body = txnBody;
         txn = asTxn(body, payerId);
+        given(handleContext.payer()).willReturn(payerId);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+        given(handleContext.dispatchRemovableChildTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .willReturn(cryptoCreateRecordBuilder);
         transferContext = new TransferContextImpl(handleContext);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
@@ -201,19 +205,24 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     }
 
     protected void givenAutoCreationDispatchEffects() {
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+        givenAutoCreationDispatchEffects(spenderId);
+    }
+
+    protected void givenAutoCreationDispatchEffects(AccountID syntheticPayer) {
+        given(handleContext.dispatchRemovableChildTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(syntheticPayer)))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .alias(ecKeyAlias)
+                            .alias(ecEvmAlias.value())
                             .accountId(AccountID.newBuilder().accountNum(hbarReceiver))
                             .build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .alias(edKeyAlias)
+                            .alias(edKeyAlias.value())
                             .accountId(AccountID.newBuilder().accountNum(tokenReceiver))
                             .build();
                     writableAccountStore.put(copy);

@@ -17,76 +17,66 @@
 plugins {
     id("com.hedera.hashgraph.conventions")
     id("com.hedera.hashgraph.benchmark-conventions")
-    `java-test-fixtures`
+    id("java-test-fixtures")
 }
 
 description = "Hedera Application - MONO Service Implementation"
 
-dependencies {
-    javaModuleDependencies {
-        annotationProcessor(gav("dagger.compiler"))
+mainModuleInfo { annotationProcessor("dagger.compiler") }
 
-        testImplementation(project(":app-service-mono"))
-        testImplementation(gav("awaitility"))
-        testImplementation(gav("io.github.classgraph"))
-        testImplementation(gav("net.i2p.crypto.eddsa"))
-        testImplementation(gav("org.apache.logging.log4j.core"))
-        testImplementation(gav("org.apache.logging.log4j.core"))
-        testImplementation(gav("org.assertj.core"))
-        testImplementation(gav("org.hamcrest"))
-        testImplementation(gav("org.hyperledger.besu.plugin.api"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.junit.jupiter.params"))
-        testImplementation(gav("org.junitpioneer"))
-        testImplementation(gav("org.mockito"))
-        testImplementation(gav("org.mockito.junit.jupiter"))
-        testCompileOnly(gav("com.github.spotbugs.annotations"))
-
-        jmhImplementation(project(":app-hapi-utils"))
-        jmhImplementation(project(":app-spi"))
-        jmhImplementation(gav("com.github.spotbugs.annotations"))
-        jmhImplementation(gav("com.google.common"))
-        jmhImplementation(gav("com.google.protobuf"))
-        jmhImplementation(project(":hapi"))
-        jmhImplementation(gav("com.swirlds.common"))
-        jmhImplementation(gav("com.swirlds.fcqueue"))
-        jmhImplementation(gav("com.swirlds.jasperdb"))
-        jmhImplementation(gav("com.swirlds.merkle"))
-        jmhImplementation(gav("com.swirlds.virtualmap"))
-        jmhImplementation(gav("dagger"))
-        jmhImplementation(gav("javax.inject"))
-        jmhImplementation(gav("jmh.core"))
-        jmhImplementation(gav("org.apache.commons.io"))
-        jmhImplementation(gav("org.apache.commons.lang3"))
-        jmhImplementation(gav("org.hyperledger.besu.datatypes"))
-        jmhImplementation(gav("org.hyperledger.besu.evm"))
-        jmhImplementation(gav("tuweni.bytes"))
-        jmhImplementation(gav("tuweni.units"))
-    }
+testModuleInfo {
+    annotationProcessor("dagger.compiler")
+    requires("com.hedera.node.app.service.mono")
+    requires("awaitility")
+    requires("com.github.benmanes.caffeine")
+    requires("io.github.classgraph")
+    requires("net.i2p.crypto.eddsa")
+    requires("org.apache.logging.log4j.core")
+    requires("org.apache.logging.log4j.core")
+    requires("org.assertj.core")
+    requires("org.hamcrest")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.junitpioneer")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
+    requiresStatic("com.github.spotbugs.annotations")
 }
 
-val apt = configurations.create("apt") { extendsFrom(configurations.internal.get()) }
-
-dependencies { @Suppress("UnstableApiUsage") apt(javaModuleDependencies.gav("dagger.compiler")) }
-
-tasks.withType<JavaCompile> { options.annotationProcessorPath = apt }
-
-val jmhDaggerSources = file("build/generated/sources/annotationProcessor/java/jmh")
-
-java.sourceSets["jmh"].java.srcDir(jmhDaggerSources)
-
-val generatedSources = file("build/generated/sources/annotationProcessor/java/main")
-
-java.sourceSets["main"].java.srcDir(generatedSources)
+jmhModuleInfo {
+    annotationProcessor("dagger.compiler")
+    requires("com.hedera.node.app.hapi.utils")
+    requires("com.hedera.node.app.spi")
+    requires("com.hedera.node.hapi")
+    requires("com.github.spotbugs.annotations")
+    requires("com.google.common")
+    requires("com.google.protobuf")
+    requires("com.swirlds.common")
+    requires("com.swirlds.fcqueue")
+    requires("com.swirlds.merkle")
+    requires("com.swirlds.merkledb")
+    requires("com.swirlds.virtualmap")
+    requires("dagger")
+    requires("javax.inject")
+    requires("jmh.core")
+    requires("org.apache.commons.io")
+    requires("org.apache.commons.lang3")
+    requires("org.hyperledger.besu.datatypes")
+    requires("org.hyperledger.besu.evm")
+    requires("tuweni.bytes")
+    requires("tuweni.units")
+}
 
 // Replace variables in semantic-version.properties with build variables
 tasks.processResources {
+    inputs.property("protoVersion", libs.versions.hapi.proto.get())
+    inputs.property("hederaServicesVersion", project.version)
     filesMatching("semantic-version.properties") {
         filter { line: String ->
             if (line.contains("hapi-proto.version")) {
-                "hapi.proto.version=" + libs.versions.hapi.proto.get()
+                "hapi.proto.version=${inputs.properties["protoVersion"]}"
             } else if (line.contains("project.version")) {
-                "hedera.services.version=" + project.version
+                "hedera.services.version=${inputs.properties["hederaServicesVersion"]}"
             } else {
                 line
             }

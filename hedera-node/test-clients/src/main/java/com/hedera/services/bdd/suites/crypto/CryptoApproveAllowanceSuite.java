@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -37,14 +38,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApproveAllowance.MISSING_OWNER;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.allowanceTinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
@@ -59,6 +63,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -66,6 +71,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -74,6 +80,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -144,9 +151,32 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 duplicateKeysAndSerialsInSameTxnDoesntThrow(),
                 scheduledCryptoApproveAllowanceWorks(),
                 canDeleteAllowanceFromDeletedSpender(),
+                cannotPayForAnyTransactionWithContractAccount(),
                 transferringMissingNftViaApprovalFailsWithInvalidNftId());
     }
 
+    @HapiTest
+    private HapiSpec cannotPayForAnyTransactionWithContractAccount() {
+        final var cryptoAdminKey = "cryptoAdminKey";
+        final var contractNum = new AtomicLong();
+        final var contract = "PayableConstructor";
+        return defaultHapiSpec("cannotPayForAnyTransactionWithContractAccount")
+                .given(
+                        newKeyNamed(cryptoAdminKey),
+                        uploadInitCode(contract),
+                        contractCreate(contract)
+                                .adminKey(cryptoAdminKey)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .exposingNumTo(contractNum::set))
+                .when()
+                .then(sourcing(() -> cryptoTransfer(tinyBarsFromTo(contract, FUNDING, 1))
+                        .signedBy(cryptoAdminKey)
+                        .fee(ONE_HBAR)
+                        .payingWith("0.0." + contractNum.longValue())
+                        .hasPrecheck(PAYER_ACCOUNT_NOT_FOUND)));
+    }
+
+    @HapiTest
     private HapiSpec transferringMissingNftViaApprovalFailsWithInvalidNftId() {
         return defaultHapiSpec("TransferringMissingNftViaApprovalFailsWithInvalidNftId")
                 .given(
@@ -186,6 +216,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         .hasKnownStatus(INVALID_NFT_ID));
     }
 
+    @HapiTest
     private HapiSpec canDeleteAllowanceFromDeletedSpender() {
         return defaultHapiSpec("canDeleteAllowanceFromDeletedSpender")
                 .given(
@@ -282,6 +313,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec duplicateKeysAndSerialsInSameTxnDoesntThrow() {
         return defaultHapiSpec("duplicateKeysAndSerialsInSameTxnDoesntThrow")
                 .given(
@@ -367,6 +399,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 3L).hasSpenderID(SPENDER));
     }
 
+    @HapiTest
     private HapiSpec approveForAllSpenderCanDelegateOnNFT() {
         final String delegatingSpender = "delegatingSpender";
         final String newSpender = "newSpender";
@@ -410,11 +443,15 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                         OWNER, NON_FUNGIBLE_TOKEN, delegatingSpender, newSpender, false, List.of(2L))
                                 .signedBy(DEFAULT_PAYER, newSpender)
                                 .hasPrecheck(DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL),
+                        // NOTE: This test in mono-service was failing in pre-check before signing requirements
+                        // (the signing requirements are wrong too).
+                        // In new code since we moved these checks to handle, it failed at signature verification.
+                        // To make it fail with same status code, we need to sign with owner.
                         cryptoApproveAllowance()
                                 .payingWith(DEFAULT_PAYER)
                                 .addDelegatedNftAllowance(
                                         OWNER, NON_FUNGIBLE_TOKEN, newSpender, delegatingSpender, true, List.of())
-                                .signedBy(DEFAULT_PAYER, delegatingSpender)
+                                .signedBy(DEFAULT_PAYER, OWNER)
                                 .hasPrecheck(DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(newSpender),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(delegatingSpender),
@@ -426,6 +463,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(newSpender));
     }
 
+    @HapiTest
     private HapiSpec canGrantFungibleAllowancesWithTreasuryOwner() {
         return defaultHapiSpec("canGrantFungibleAllowancesWithTreasuryOwner")
                 .given(
@@ -460,6 +498,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec canGrantNftAllowancesWithTreasuryOwner() {
         return defaultHapiSpec("canGrantNftAllowancesWithTreasuryOwner")
                 .given(
@@ -503,6 +542,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec invalidOwnerFails() {
         return defaultHapiSpec("invalidOwnerFails")
                 .given(
@@ -567,6 +607,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
     }
 
+    @HapiTest
     private HapiSpec invalidSpenderFails() {
         return defaultHapiSpec("invalidSpenderFails")
                 .given(
@@ -623,6 +664,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec noOwnerDefaultsToPayer() {
         return defaultHapiSpec("noOwnerDefaultsToPayer")
                 .given(
@@ -681,6 +723,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                         .tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 100L)));
     }
 
+    @HapiTest
     private HapiSpec canHaveMultipleOwners() {
         return defaultHapiSpec("canHaveMultipleOwners")
                 .given(
@@ -775,6 +818,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                         .cryptoAllowancesContaining(SPENDER, 2 * ONE_HBAR)));
     }
 
+    @HapiTest
     private HapiSpec feesAsExpected() {
         return defaultHapiSpec("feesAsExpected")
                 .given(
@@ -899,6 +943,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                         .tokenAllowancesContaining(FUNGIBLE_TOKEN, SECOND_SPENDER, 200L)));
     }
 
+    @HapiTest
     private HapiSpec serialsInAscendingOrder() {
         return defaultHapiSpec("serialsInAscendingOrder")
                 .given(
@@ -944,6 +989,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .nftApprovedAllowancesContaining(NON_FUNGIBLE_TOKEN, SPENDER)));
     }
 
+    @HapiTest
     private HapiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
         return defaultHapiSpec("succeedsWhenTokenPausedFrozenKycRevoked")
                 .given(
@@ -1034,6 +1080,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                         .tokenAllowancesCount(4)));
     }
 
+    @HapiTest
     private HapiSpec tokenExceedsMaxSupplyFails() {
         return defaultHapiSpec("tokenExceedsMaxSupplyFails")
                 .given(
@@ -1060,6 +1107,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec validatesSerialNums() {
         return defaultHapiSpec("validatesSerialNums")
                 .given(
@@ -1108,6 +1156,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec invalidTokenTypeFails() {
         return defaultHapiSpec("invalidTokenTypeFails")
                 .given(
@@ -1157,6 +1206,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec emptyAllowancesRejected() {
         return defaultHapiSpec("emptyAllowancesRejected")
                 .given(cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10))
@@ -1164,6 +1214,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec tokenNotAssociatedToAccountFails() {
         return defaultHapiSpec("tokenNotAssociatedToAccountFails")
                 .given(
@@ -1214,6 +1265,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .tokenAllowancesCount(0)));
     }
 
+    @HapiTest
     private HapiSpec negativeAmountFailsForFungible() {
         return defaultHapiSpec("negativeAmountFailsForFungible")
                 .given(
@@ -1268,6 +1320,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .tokenAllowancesCount(0)));
     }
 
+    @HapiTest
     private HapiSpec happyPathWorks() {
         return defaultHapiSpec("happyPathWorks")
                 .given(
@@ -1333,6 +1386,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(SPENDER));
     }
 
+    @HapiTest
     private HapiSpec duplicateEntriesGetsReplacedWithDifferentTxn() {
         return defaultHapiSpec("duplicateEntriesGetsReplacedWithDifferentTxn")
                 .given(
@@ -1424,6 +1478,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 3L).hasSpenderID(SPENDER));
     }
 
+    @HapiTest
     private HapiSpec cannotHaveMultipleAllowedSpendersForTheSameNFTSerial() {
         return defaultHapiSpec("CannotHaveMultipleAllowedSpendersForTheSameNFTSerial")
                 .given(
@@ -1502,6 +1557,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
     }
 
+    @HapiTest
     private HapiSpec approveForAllDoesNotSetExplicitNFTSpender() {
         return defaultHapiSpec("approveForAllDoesNotSetExplicitNFTSpender")
                 .given(
@@ -1541,6 +1597,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged());
     }
 
+    @HapiTest
     private HapiSpec scheduledCryptoApproveAllowanceWorks() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWorks")
                 .given(

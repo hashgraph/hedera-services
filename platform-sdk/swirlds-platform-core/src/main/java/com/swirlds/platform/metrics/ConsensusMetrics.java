@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.metrics;
 
-import com.swirlds.platform.EventImpl;
+import com.swirlds.platform.internal.EventImpl;
 
 /**
  * Collection of metrics related to consensus
@@ -30,13 +30,8 @@ public interface ConsensusMetrics {
      */
     void addedEvent(EventImpl event);
 
-    /**
-     * Update a statistics accumulator when a number coin rounds have occurred.
-     *
-     * @param numCoinRounds
-     * 		a number of coin rounds
-     */
-    void coinRounds(long numCoinRounds);
+    /** Update a statistics accumulator when a coin round has occurred. */
+    void coinRound();
 
     /**
      * Update a statistics accumulator to receive the time when a gossiped event

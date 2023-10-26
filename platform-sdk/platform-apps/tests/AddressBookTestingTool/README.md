@@ -297,3 +297,130 @@ Errors are logged if any of the following conditions are violated.
     * The configuration address book is the same as what is in config.txt
     * The state saved address book is the same as what is in config.txt
     * The used address book text says `The Configuration Address Book Was Used.`
+
+
+## Testing Adding and Removing Nodes With Software Upgrade
+### Test Scenario 7: Software Upgrade, Add New Node To Network
+#### Instructions
+
+1. Delete `sdk/data/saved` directory if it exists
+2. Ensure settings.txt has the following values
+```
+state.saveStatePeriod,                     10
+addressBook.forceUseOfConfigAddressBook,   false
+addressBookTestingTool.testScenario,       SKIP_VALIDATION
+addressBookTestingTool.softwareVersion,    1
+addressBookTestingTool.weightingBehavior,  1
+addressBookTestingTool.freezeAfterGenesis, 1m
+```
+3. Ensure Config.txt has the following values
+```
+swirld, 123
+app,		AddressBookTestingTool.jar,
+address,  0, A, Alice,    10, 127.0.0.1, 15301, 127.0.0.1, 15301
+address,  1, B, Bob,      10, 127.0.0.1, 15302, 127.0.0.1, 15302
+address,  2, C, Carol,    10, 127.0.0.1, 15303, 127.0.0.1, 15303
+address,  3, D, Dave,     10, 127.0.0.1, 15304, 127.0.0.1, 15304
+# address,  4, E, Eric,     10, 127.0.0.1, 15305, 127.0.0.1, 15305
+nextNodeId, 4
+```
+4. Run the app for 60 seconds
+5. Stop the app
+6. Ensure settings.txt has the following values
+```
+state.saveStatePeriod,                    0
+addressBook.forceUseOfConfigAddressBook,  false
+addressBookTestingTool.testScenario,      UPGRADE_ADD_NODE
+addressBookTestingTool.softwareVersion,   2
+addressBookTestingTool.weightingBehavior, 1
+```
+7. Ensure Config.txt has the following values
+```
+swirld, 123
+app,		AddressBookTestingTool.jar,
+address,  0, A, Alice,    10, 127.0.0.1, 15301, 127.0.0.1, 15301
+address,  1, B, Bob,      10, 127.0.0.1, 15302, 127.0.0.1, 15302
+address,  2, C, Carol,    10, 127.0.0.1, 15303, 127.0.0.1, 15303
+address,  3, D, Dave,     10, 127.0.0.1, 15304, 127.0.0.1, 15304
+address,  4, E, Eric,     10, 127.0.0.1, 15305, 127.0.0.1, 15305
+nextNodeId, 5
+```
+8. Run the app for 60 seconds.
+
+#### Validation
+
+* check the swirlds.log for the text
+
+```
+BootstrapUtils: Software upgrade in progress. Previous software version was 1, current version is 2.
+```
+and
+```
+AddressBookTestingToolState: Validating test scenario UPGRADE_ADD_NODE.
+AddressBookTestingToolState: Test scenario UPGRADE_ADD_NODE: finished without errors.
+```
+
+* check that there are no errors or exceptions in the swirlds.log
+
+
+### Test Scenario 8: Software Upgrade, Remove Node From Network
+#### Instructions
+
+1. Delete `sdk/data/saved` directory if it exists
+2. Ensure settings.txt has the following values
+```
+state.saveStatePeriod,                     10
+addressBook.forceUseOfConfigAddressBook,   false
+addressBookTestingTool.testScenario,       SKIP_VALIDATION
+addressBookTestingTool.softwareVersion,    1
+addressBookTestingTool.weightingBehavior,  1
+addressBookTestingTool.freezeAfterGenesis, 1m
+```
+3. Ensure Config.txt has the following values
+```
+swirld, 123
+app,		AddressBookTestingTool.jar,
+address,  0, A, Alice,    10, 127.0.0.1, 15301, 127.0.0.1, 15301
+address,  1, B, Bob,      10, 127.0.0.1, 15302, 127.0.0.1, 15302
+address,  2, C, Carol,    10, 127.0.0.1, 15303, 127.0.0.1, 15303
+address,  3, D, Dave,     10, 127.0.0.1, 15304, 127.0.0.1, 15304
+address,  4, E, Eric,     10, 127.0.0.1, 15305, 127.0.0.1, 15305
+nextNodeId, 5
+```
+4. Run the app for 60 seconds
+5. Stop the app
+6. Ensure settings.txt has the following values
+```
+state.saveStatePeriod,                    0
+addressBook.forceUseOfConfigAddressBook,  false
+addressBookTestingTool.testScenario,      UPGRADE_REMOVE_NODE
+addressBookTestingTool.softwareVersion,   2
+addressBookTestingTool.weightingBehavior, 1
+```
+7. Ensure Config.txt has the following values
+```
+swirld, 123
+app,		AddressBookTestingTool.jar,
+address,  0, A, Alice,    10, 127.0.0.1, 15301, 127.0.0.1, 15301
+address,  1, B, Bob,      10, 127.0.0.1, 15302, 127.0.0.1, 15302
+address,  2, C, Carol,    10, 127.0.0.1, 15303, 127.0.0.1, 15303
+address,  3, D, Dave,     10, 127.0.0.1, 15304, 127.0.0.1, 15304
+# address,  4, E, Eric,     10, 127.0.0.1, 15305, 127.0.0.1, 15305
+nextNodeId, 5
+```
+8. Run the app for 60 seconds.
+
+#### Validation
+
+* check the swirlds.log for the text
+
+```
+BootstrapUtils: Software upgrade in progress. Previous software version was 1, current version is 2.
+```
+and
+```
+AddressBookTestingToolState: Validating test scenario UPGRADE_REMOVE_NODE.
+AddressBookTestingToolState: Test scenario UPGRADE_REMOVE_NODE: finished without errors.
+```
+
+* check that there are no errors or exceptions in the swirlds.log

@@ -19,6 +19,7 @@ package com.swirlds.demo.migration;
 import static com.swirlds.demo.migration.MigrationTestingToolMain.MARKER;
 import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
 
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -35,15 +36,15 @@ import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapKey;
-import com.swirlds.demo.migration.virtual.AccountVirtualMapKeyBuilder;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapKeySerializer;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapValue;
-import com.swirlds.demo.migration.virtual.AccountVirtualMapValueBuilder;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualHashRecordSerializer;
-import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
+import com.swirlds.demo.migration.virtual.AccountVirtualMapValueSerializer;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -202,28 +203,19 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
      */
     private void genesisInit(final Platform platform) {
         setMerkleMap(new MerkleMap<>());
-
-        final AccountVirtualMapKeySerializer keySerializer = new AccountVirtualMapKeySerializer();
-        final VirtualLeafRecordSerializer<AccountVirtualMapKey, AccountVirtualMapValue> leafRecordSerializer =
-                new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        keySerializer.getSerializedSize(),
-                        new AccountVirtualMapKeyBuilder(),
-                        (short) 1,
-                        AccountVirtualMapValue.getSizeInBytes(),
-                        new AccountVirtualMapValueBuilder(),
-                        false);
-
-        final JasperDbBuilder<AccountVirtualMapKey, AccountVirtualMapValue> jasperDbBuilder = new JasperDbBuilder<
-                        AccountVirtualMapKey, AccountVirtualMapValue>()
-                .virtualLeafRecordSerializer(leafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
-                .keySerializer(keySerializer)
-                .maxNumOfKeys(Integer.MAX_VALUE)
-                .hashesRamToDiskThreshold(0)
-                .preferDiskBasedIndexes(false);
-
-        setVirtualMap(new VirtualMap<>("virtualMap", jasperDbBuilder));
+        final MerkleDbTableConfig<AccountVirtualMapKey, AccountVirtualMapValue> tableConfig = new MerkleDbTableConfig<>(
+                (short) 1,
+                DigestType.SHA_384,
+                (short) 1,
+                new AccountVirtualMapKeySerializer(),
+                (short) 1,
+                new AccountVirtualMapValueSerializer());
+        // to make it work for the multiple node in one JVM case, we need reset the default instance path every time
+        // we create another instance of MerkleDB.
+        MerkleDb.resetDefaultInstancePath();
+        final VirtualDataSourceBuilder<AccountVirtualMapKey, AccountVirtualMapValue> dsBuilder =
+                new MerkleDbDataSourceBuilder<>(tableConfig);
+        setVirtualMap(new VirtualMap<>("virtualMap", dsBuilder));
         selfId = platform.getSelfId();
     }
 

@@ -18,7 +18,7 @@ package com.hedera.node.app.service.schedule.impl.handlers;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.workflows.VerificationAssistant;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import java.util.Set;
 
 /**

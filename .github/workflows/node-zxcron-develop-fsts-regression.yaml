@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Node XCron: Develop FSTS Regression"
+name: "ZXCron: [Node] Develop JRS Tests"
 on:
   schedule:
     - cron: '30 6 * * *'

@@ -16,17 +16,11 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
-import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
-
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.SelfSerializableSupplier;
-import com.swirlds.jasperdb.files.DataFileCommon;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -45,13 +39,15 @@ import java.util.Objects;
  *
  * @param <K>
  */
-public final class OnDiskKeySerializer<K>
-        implements KeySerializer<OnDiskKey<K>>, SelfSerializableSupplier<OnDiskKey<K>> {
-    /** This is a hint for virtual maps, but isn't actually useful. We just pick some size. */
+public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>> {
+    /**
+     * This is a hint for virtual maps, it's the best guess as of now. Should be revisited later
+     * based on the information about real mainnet entities.
+     */
     private static final int TYPICAL_SIZE = 256;
 
     @Deprecated(forRemoval = true)
-    private static final long CLASS_ID = 0x9992382838283411L;
+    private static final long CLASS_ID = 0x9992382838283412L;
 
     private final long classId;
     private final Codec<K> codec;
@@ -72,7 +68,7 @@ public final class OnDiskKeySerializer<K>
     }
 
     @Override
-    public int getSerializedSize(long dataVersion) {
+    public int getSerializedSize() {
         // We're going to use variable size keys, always. MerkleDB was designed with
         // fast paths if you knew you were using a Long as the key -- but we really
         // cannot use that. The problem manifests itself with state proofs. We wanted
@@ -95,7 +91,7 @@ public final class OnDiskKeySerializer<K>
         // size, and protobuf would either be fixed > 8 bytes, or variable sized, and being
         // fixed but greater than 8 bytes doesn't help us in performance, so we will
         // have to use variable size always.
-        return DataFileCommon.VARIABLE_DATA_SIZE;
+        return VARIABLE_DATA_SIZE;
     }
 
     @Override
@@ -110,12 +106,7 @@ public final class OnDiskKeySerializer<K>
 
     @Override
     public int deserializeKeySize(@NonNull final ByteBuffer byteBuffer) {
-        try {
-            return codec.measure(BufferedData.wrap(byteBuffer)) + 4;
-        } catch (IOException e) {
-            // Maybe log here?
-            return -1;
-        }
+        return byteBuffer.getInt() + Integer.BYTES;
     }
 
     @Override
@@ -132,9 +123,10 @@ public final class OnDiskKeySerializer<K>
     }
 
     @Override
-    public int serialize(@Nullable final OnDiskKey<K> key, @NonNull final SerializableDataOutputStream out)
-            throws IOException {
-        return writeToStream(out, codec, Objects.requireNonNull(key).getKey());
+    public int serialize(OnDiskKey<K> key, ByteBuffer buffer) throws IOException {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(buffer);
+        return key.serializeReturningWrittenBytes(buffer);
     }
 
     @Override
@@ -156,20 +148,5 @@ public final class OnDiskKeySerializer<K>
     @Override
     public int getVersion() {
         return 1;
-    }
-
-    @Override
-    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        // This class has nothing to serialize
-    }
-
-    @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored) throws IOException {
-        // This class has nothing to deserialize
-    }
-
-    @Override
-    public OnDiskKey<K> get() {
-        return new OnDiskKey<>(md);
     }
 }

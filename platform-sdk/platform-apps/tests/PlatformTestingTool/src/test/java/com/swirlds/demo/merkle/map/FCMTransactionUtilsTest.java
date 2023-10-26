@@ -25,6 +25,7 @@ import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Transfer;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.base.utility.Triple;
 import com.swirlds.demo.platform.fs.stresstest.proto.Activity;
 import com.swirlds.demo.platform.fs.stresstest.proto.CreateAccount;
 import com.swirlds.demo.platform.fs.stresstest.proto.CreateAccountFCQ;
@@ -41,7 +42,6 @@ import com.swirlds.merkle.map.test.pta.MapKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.Test;
 
 public class FCMTransactionUtilsTest {
@@ -59,7 +59,7 @@ public class FCMTransactionUtilsTest {
         // for all FCMTransactions except Activity,
         // extracted TransactionType should match the original TransactionType
         for (int i = 0; i < transactions.size() - 1; i++) {
-            assertEquals(triples.get(i).getLeft(), FCMTransactionUtils.getTransactionType(transactions.get(i)));
+            assertEquals(triples.get(i).left(), FCMTransactionUtils.getTransactionType(transactions.get(i)));
         }
 
         assertEquals(null, FCMTransactionUtils.getTransactionType(activity));
@@ -70,7 +70,7 @@ public class FCMTransactionUtilsTest {
         // for all FCMTransactions except Activity,
         // extracted EntityType should match the original EntityType
         for (int i = 0; i < transactions.size() - 1; i++) {
-            assertEquals(triples.get(i).getMiddle(), FCMTransactionUtils.getEntityType(transactions.get(i)));
+            assertEquals(triples.get(i).middle(), FCMTransactionUtils.getEntityType(transactions.get(i)));
         }
 
         assertEquals(null, FCMTransactionUtils.getEntityType(activity));
@@ -86,16 +86,16 @@ public class FCMTransactionUtilsTest {
             if (FCMTransactionUtils.getTransactionType(transactions.get(i)).equals(Transfer)) {
                 assertEquals(2, mapKeys.size());
                 // compare sender
-                assertEquals(triples.get(i).getRight(), mapKeys.get(0));
+                assertEquals(triples.get(i).right(), mapKeys.get(0));
                 // compare receiver
                 MapKey receiver = mapKeys.get(1);
-                assertEquals(triples.get(i).getRight().getShardId() + 1, receiver.getShardId());
-                assertEquals(triples.get(i).getRight().getRealmId() + 1, receiver.getRealmId());
-                assertEquals(triples.get(i).getRight().getAccountId() + 1, receiver.getAccountId());
+                assertEquals(triples.get(i).right().getShardId() + 1, receiver.getShardId());
+                assertEquals(triples.get(i).right().getRealmId() + 1, receiver.getRealmId());
+                assertEquals(triples.get(i).right().getAccountId() + 1, receiver.getAccountId());
             } else {
                 // for other transactions, the list size should be 1
                 assertEquals(1, mapKeys.size());
-                assertEquals(triples.get(i).getRight(), mapKeys.get(0));
+                assertEquals(triples.get(i).right(), mapKeys.get(0));
             }
         }
 
@@ -124,7 +124,7 @@ public class FCMTransactionUtilsTest {
     private static List<FCMTransaction> buildTransactions(List<Triple<TransactionType, EntityType, MapKey>> triples) {
         List<FCMTransaction> transactions = new ArrayList<>();
         for (Triple<TransactionType, EntityType, MapKey> triple : triples) {
-            transactions.add(generateFCMTransaction(triple.getLeft(), triple.getMiddle(), triple.getRight()));
+            transactions.add(generateFCMTransaction(triple.left(), triple.middle(), triple.right()));
         }
         transactions.add(generateActivity());
         return transactions;

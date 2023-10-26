@@ -45,7 +45,6 @@ import org.apache.logging.log4j.Logger;
 
 @HapiTestSuite
 public class TopicCreateSuite extends HapiSuite {
-
     private static final Logger log = LogManager.getLogger(TopicCreateSuite.class);
 
     public static void main(String... args) {
@@ -145,6 +144,7 @@ public class TopicCreateSuite extends HapiSuite {
                         .hasKnownStatusFrom(INVALID_RENEWAL_PERIOD, AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
+    @HapiTest
     private HapiSpec signingRequirementsEnforced() {
         long PAYER_BALANCE = 1_999_999_999L;
         final var contractWithAdminKey = "nonCryptoAccount";

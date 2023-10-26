@@ -51,6 +51,7 @@ module com.swirlds.common {
     exports com.swirlds.common.metrics.platform.prometheus;
     exports com.swirlds.common.notification;
     exports com.swirlds.common.notification.listeners;
+    exports com.swirlds.common.scratchpad;
     exports com.swirlds.common.sequence;
     exports com.swirlds.common.sequence.map;
     exports com.swirlds.common.sequence.set;
@@ -80,19 +81,19 @@ module com.swirlds.common {
 
     /* Targeted exports */
     exports com.swirlds.common.internal to
-            com.swirlds.platform,
+            com.swirlds.platform.core,
             com.swirlds.platform.test,
-            com.swirlds.common.test,
+            com.swirlds.common.testing,
             com.swirlds.jrs,
             com.swirlds.demo.platform,
             com.swirlds.signingtool;
     exports com.swirlds.common.crypto.internal to
-            com.swirlds.platform,
-            com.swirlds.common.test;
+            com.swirlds.platform.core,
+            com.swirlds.common.testing;
     exports com.swirlds.common.notification.internal to
-            com.swirlds.common.test;
+            com.swirlds.common.testing;
     exports com.swirlds.common.crypto.engine to
-            com.swirlds.common.test,
+            com.swirlds.common.testing,
             com.swirlds.common.test.fixtures;
 
     opens com.swirlds.common.crypto to
@@ -111,12 +112,12 @@ module com.swirlds.common {
     exports com.swirlds.common.io.streams.internal to
             com.swirlds.platform.test;
     exports com.swirlds.common.io.extendable.extensions.internal to
-            com.swirlds.common.test;
+            com.swirlds.common.testing;
     exports com.swirlds.common.system.transaction.internal to
-            com.swirlds.platform,
+            com.swirlds.platform.core,
             com.swirlds.platform.test,
-            com.swirlds.platform.test.fixtures,
-            com.swirlds.common.test,
+            com.swirlds.platform.core.test.fixtures,
+            com.swirlds.common.testing,
             com.swirlds.common.test.fixtures;
 
     opens com.swirlds.common.merkle.impl to
@@ -131,7 +132,7 @@ module com.swirlds.common {
             com.fasterxml.jackson.databind;
 
     exports com.swirlds.common.merkle.crypto.internal to
-            com.swirlds.common.test;
+            com.swirlds.common.testing;
 
     opens com.swirlds.common.merkle.crypto to
             com.fasterxml.jackson.databind;
@@ -150,40 +151,30 @@ module com.swirlds.common {
     exports com.swirlds.common.system.status.actions;
     exports com.swirlds.common.metrics.statistics;
     exports com.swirlds.common.metrics.statistics.internal to
-            com.swirlds.common.test,
+            com.swirlds.common.testing,
             com.swirlds.demo.platform,
             com.swirlds.jrs,
-            com.swirlds.platform,
+            com.swirlds.platform.core,
             com.swirlds.platform.test,
-            com.swirlds.gui;
+            com.swirlds.platform.gui;
+    exports com.swirlds.common.startup;
 
+    requires transitive com.fasterxml.jackson.core;
+    requires transitive com.fasterxml.jackson.databind;
     requires transitive com.swirlds.base;
-    requires com.swirlds.config;
-    requires com.swirlds.logging;
-    requires java.desktop;
-    requires jdk.management;
-    requires jdk.httpserver;
-
-    /* Cryptography Libraries */
-    requires lazysodium.java;
-    requires org.bouncycastle.provider;
-
-    /* Logging Libraries */
-    requires org.apache.logging.log4j;
-    requires org.apache.logging.log4j.core;
-
-    /* Utilities */
+    requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.logging;
+    requires transitive io.prometheus.simpleclient;
+    requires transitive lazysodium.java;
+    requires transitive org.apache.logging.log4j;
     requires io.github.classgraph;
-    requires org.apache.commons.lang3;
-    requires org.apache.commons.codec;
-
-    /* Jackson JSON */
-    requires com.fasterxml.jackson.core;
-    requires com.fasterxml.jackson.databind;
-    requires com.fasterxml.jackson.datatype.jsr310;
-
-    /* Prometheus Java client */
-    requires io.prometheus.simpleclient;
     requires io.prometheus.simpleclient.httpserver;
+    requires java.desktop;
+    requires jdk.httpserver;
+    requires jdk.management;
+    requires org.apache.logging.log4j.core;
+    requires org.bouncycastle.provider;
+    requires org.hyperledger.besu.secp256k1;
+    requires com.sun.jna;
     requires static com.github.spotbugs.annotations;
 }

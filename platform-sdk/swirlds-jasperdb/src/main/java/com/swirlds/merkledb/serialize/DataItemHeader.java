@@ -16,10 +16,8 @@
 
 package com.swirlds.merkledb.serialize;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Each data item needs a header containing at least a numeric key. The key can be any size from byte to long. The size
@@ -54,7 +52,7 @@ public class DataItemHeader {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("size", sizeBytes)
                 .append("key", key)
                 .toString();

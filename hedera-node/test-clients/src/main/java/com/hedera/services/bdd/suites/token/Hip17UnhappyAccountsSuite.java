@@ -42,6 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -130,6 +131,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                         wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L)).hasKnownStatus(INVALID_ACCOUNT_ID));
     }
 
+    @HapiTest
     private HapiSpec uniqueTokenOperationsFailForDeletedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForDeletedAccount")
                 .given(
@@ -209,6 +211,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
+    @HapiTest
     private HapiSpec uniqueTokenOperationsFailForKycRevokedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForKycRevokedAccount")
                 .given(
@@ -245,6 +248,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN));
     }
 
+    @HapiTest
     private HapiSpec uniqueTokenOperationsFailForFrozenAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForFrozenAccount")
                 .given(
@@ -281,6 +285,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
     }
 
+    @HapiTest
     private HapiSpec uniqueTokenOperationsFailForDissociatedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForDissociatedAccount")
                 .given(

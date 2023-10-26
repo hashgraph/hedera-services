@@ -52,8 +52,37 @@ public interface FeeCalculator {
     @NonNull
     FeeCalculator addBytesPerTransaction(long bytes);
 
+    /**
+     * Adds to the "sbs" component the number of storage seconds used by the transaction.
+     * @param seconds The number of seconds. Must not be negative.
+     * @return {@code this} for fluent usage.
+     */
+    @NonNull
+    FeeCalculator addStorageBytesSeconds(long seconds);
+
+    /**
+     * Adds to the "networkRbs" component the number of network ram byte seconds used by the transaction.
+     * @param amount The number of bytes for given lifetime. Must not be negative.
+     * @return {@code this} for fluent usage.
+     */
     @NonNull
     FeeCalculator addNetworkRamByteSeconds(long amount);
+
+    /**
+     * Adds to the "rbs" component the number of ram byte seconds used by the transaction.
+     * @param amount The number of bytes for given lifetime. Must not be negative.
+     * @return {@code this} for fluent usage.
+     */
+    @NonNull
+    FeeCalculator addRamByteSeconds(long amount);
+
+    /**
+     * Adds to the "vpt" component the number of verifications used by the transaction.
+     * @param amount The number of verifications per transaction. Must not be negative.
+     * @return {@code this} for fluent usage.
+     */
+    @NonNull
+    FeeCalculator addVerificationsPerTransaction(long amount);
 
     @NonNull
     Fees legacyCalculate(@NonNull final Function<SigValueObj, FeeData> callback);
@@ -64,4 +93,11 @@ public interface FeeCalculator {
      */
     @NonNull
     Fees calculate();
+
+    /**
+     * Resets the usage of all components to zero.
+     * @return
+     */
+    @NonNull
+    FeeCalculator resetUsage();
 }

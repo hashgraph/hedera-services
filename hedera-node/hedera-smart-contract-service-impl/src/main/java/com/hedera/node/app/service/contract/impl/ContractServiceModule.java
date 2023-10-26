@@ -24,6 +24,7 @@ import com.hedera.node.app.service.contract.impl.annotations.ServicesV030;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV034;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV038;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesVersionKey;
+import com.hedera.node.app.service.contract.impl.exec.QueryComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
@@ -34,11 +35,8 @@ import com.hedera.node.app.service.contract.impl.exec.v038.V038Module;
 import dagger.Binds;
 import dagger.Module;
 import dagger.multibindings.IntoMap;
-import dagger.multibindings.Multibinds;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
 import javax.inject.Singleton;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
@@ -50,14 +48,11 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  */
 @Module(
         includes = {V030Module.class, V034Module.class, V038Module.class, ProcessorModule.class},
-        subcomponents = {TransactionComponent.class})
+        subcomponents = {TransactionComponent.class, QueryComponent.class})
 public interface ContractServiceModule {
     @Binds
     @Singleton
     GasCalculator bindGasCalculator(@NonNull final CustomGasCalculator gasCalculator);
-
-    @Multibinds
-    Map<Address, PrecompiledContract> bindHederaPrecompiles();
 
     @Binds
     @IntoMap

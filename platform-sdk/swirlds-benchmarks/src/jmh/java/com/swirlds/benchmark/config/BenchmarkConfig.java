@@ -16,11 +16,9 @@
 
 package com.swirlds.benchmark.config;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Settimgs for the benchmarks
@@ -63,7 +61,7 @@ public record BenchmarkConfig(
         @ConfigProperty(defaultValue = "false") boolean csvAppend,
         @ConfigProperty(defaultValue = "sda") String deviceName) {
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("benchmarkData", benchmarkData)
                 .append("saveDataDirectory", saveDataDirectory)
                 .append("verifyResult", verifyResult)

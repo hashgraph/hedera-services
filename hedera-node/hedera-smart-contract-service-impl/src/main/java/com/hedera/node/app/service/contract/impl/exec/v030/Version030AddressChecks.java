@@ -17,30 +17,30 @@
 package com.hedera.node.app.service.contract.impl.exec.v030;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 /**
  * The initial implementation of {@link AddressChecks} from v0.30; did not have a concept of system accounts.
  */
 @Singleton
 public class Version030AddressChecks implements AddressChecks {
-    private final int[] precompileAccountNumbers;
+    private final int[] systemContractNumbers;
 
     @Inject
-    public Version030AddressChecks(@NonNull final Map<Address, PrecompiledContract> hederaPrecompiles) {
-        precompileAccountNumbers = new int[hederaPrecompiles.size()];
+    public Version030AddressChecks(@NonNull final Map<Address, HederaSystemContract> systemContracts) {
+        systemContractNumbers = new int[systemContracts.size()];
         int i = 0;
-        for (final var address : hederaPrecompiles.keySet()) {
+        for (final var address : systemContracts.keySet()) {
             if (address.numberOfLeadingZeroBytes() != 18) {
                 throw new IllegalArgumentException("Precompile address " + address + " is outside system range");
             }
-            precompileAccountNumbers[i++] = address.getInt(16);
+            systemContractNumbers[i++] = address.getInt(16);
         }
     }
 
@@ -65,7 +65,7 @@ public class Version030AddressChecks implements AddressChecks {
     }
 
     private boolean isPrecompile(final int number) {
-        for (final var precompileNumber : precompileAccountNumbers) {
+        for (final var precompileNumber : systemContractNumbers) {
             if (precompileNumber == number) {
                 return true;
             }

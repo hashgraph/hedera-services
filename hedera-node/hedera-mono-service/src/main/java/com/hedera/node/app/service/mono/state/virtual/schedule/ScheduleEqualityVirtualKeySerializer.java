@@ -16,10 +16,8 @@
 
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.hashmap.KeyIndexType;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.swirlds.merkledb.serialize.KeyIndexType;
+import com.swirlds.merkledb.serialize.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -35,7 +33,7 @@ public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<Sched
     }
 
     @Override
-    public int getSerializedSize(long dataVersion) {
+    public int getSerializedSize() {
         return ScheduleEqualityVirtualKey.sizeInBytes();
     }
 
@@ -62,19 +60,9 @@ public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<Sched
     }
 
     @Override
-    public int serialize(ScheduleEqualityVirtualKey key, SerializableDataOutputStream out) throws IOException {
-        key.serialize(out);
+    public int serialize(ScheduleEqualityVirtualKey key, ByteBuffer byteBuffer) throws IOException {
+        key.serialize(byteBuffer);
         return ScheduleEqualityVirtualKey.sizeInBytes();
-    }
-
-    @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-        /* No-op */
-    }
-
-    @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
-        /* No-op */
     }
 
     @Override

@@ -16,125 +16,157 @@
 
 import me.champeau.gradle.igp.gitRepositories
 
-// Add local maven build directory to plugin repos
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
-        maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
-    }
-    @Suppress("UnstableApiUsage") includeBuild("build-logic")
-}
+pluginManagement { includeBuild("build-logic") }
 
-plugins {
-    id("com.gradle.enterprise").version("3.11.4")
-    // Use GIT plugin to clone HAPI protobuf files
-    // See documentation https://melix.github.io/includegit-gradle-plugin/latest/index.html
-    id("me.champeau.includegit").version("0.1.6")
-}
+plugins { id("com.hedera.hashgraph.settings") }
 
-includeBuild("hedera-platform")
+// "BOM" with versions of 3rd party dependencies
+include("hedera-dependency-versions")
 
-// If you turn this is on, 'platform-sdk' modules are built from source
-// includeBuild("platform-sdk")
+// Hedera Node projects
+include(":app", "hedera-node/hedera-app")
 
-include(":hedera-node")
+include(":app-hapi-fees", "hedera-node/hapi-fees")
 
-include(":app", "hedera-app")
+include(":app-hapi-utils", "hedera-node/hapi-utils")
 
-include(":app-hapi-fees", "hapi-fees")
+include(":app-service-consensus", "hedera-node/hedera-consensus-service")
 
-include(":app-hapi-utils", "hapi-utils")
+include(":app-service-consensus-impl", "hedera-node/hedera-consensus-service-impl")
 
-include(":app-service-consensus", "hedera-consensus-service")
+include(":app-service-contract", "hedera-node/hedera-smart-contract-service")
 
-include(":app-service-consensus-impl", "hedera-consensus-service-impl")
+include(":app-service-contract-impl", "hedera-node/hedera-smart-contract-service-impl")
 
-include(":app-service-contract", "hedera-smart-contract-service")
+include(":app-service-evm", "hedera-node/hedera-evm")
 
-include(":app-service-contract-impl", "hedera-smart-contract-service-impl")
+include(":app-service-evm-impl", "hedera-node/hedera-evm-impl")
 
-include(":app-service-evm", "hedera-evm")
+include(":app-service-file", "hedera-node/hedera-file-service")
 
-include(":app-service-evm-impl", "hedera-evm-impl")
+include(":app-service-file-impl", "hedera-node/hedera-file-service-impl")
 
-include(":app-service-file", "hedera-file-service")
+include(":app-service-mono", "hedera-node/hedera-mono-service")
 
-include(":app-service-file-impl", "hedera-file-service-impl")
+include(":app-service-network-admin", "hedera-node/hedera-network-admin-service")
 
-include(":app-service-mono", "hedera-mono-service")
+include(":app-service-network-admin-impl", "hedera-node/hedera-network-admin-service-impl")
 
-include(":app-service-network-admin", "hedera-network-admin-service")
+include(":app-service-schedule", "hedera-node/hedera-schedule-service")
 
-include(":app-service-network-admin-impl", "hedera-network-admin-service-impl")
+include(":app-service-schedule-impl", "hedera-node/hedera-schedule-service-impl")
 
-include(":app-service-schedule", "hedera-schedule-service")
+include(":app-service-token", "hedera-node/hedera-token-service")
 
-include(":app-service-schedule-impl", "hedera-schedule-service-impl")
+include(":app-service-token-impl", "hedera-node/hedera-token-service-impl")
 
-include(":app-service-token", "hedera-token-service")
+include(":app-service-util", "hedera-node/hedera-util-service")
 
-include(":app-service-token-impl", "hedera-token-service-impl")
+include(":app-service-util-impl", "hedera-node/hedera-util-service-impl")
 
-include(":app-service-util", "hedera-util-service")
+include(":app-spi", "hedera-node/hedera-app-spi")
 
-include(":app-service-util-impl", "hedera-util-service-impl")
+include(":config", "hedera-node/hedera-config")
 
-include(":app-spi", "hedera-app-spi")
+include(":hapi", "hedera-node/hapi")
 
-include(":config", "hedera-config")
+include(":services-cli", "hedera-node/cli-clients")
 
-include(":hapi", "hapi")
+include(":test-clients", "hedera-node/test-clients")
 
-include(":services-cli", "cli-clients")
+// Platform SDK projects
+include(":swirlds-platform", "platform-sdk")
 
-include(":test-clients", "test-clients")
+include(":swirlds", "platform-sdk/swirlds")
+
+include(":swirlds-base", "platform-sdk/swirlds-base")
+
+include(":swirlds-logging", "platform-sdk/swirlds-logging")
+
+include(":swirlds-common", "platform-sdk/swirlds-common")
+
+include(":swirlds-sign-tool", "platform-sdk/swirlds-sign-tool")
+
+include(":swirlds-config-api", "platform-sdk/swirlds-config-api")
+
+include(":swirlds-config-impl", "platform-sdk/swirlds-config-impl")
+
+include(":swirlds-config-benchmark", "platform-sdk/swirlds-config-benchmark")
+
+include(":swirlds-fchashmap", "platform-sdk/swirlds-fchashmap")
+
+include(":swirlds-fcqueue", "platform-sdk/swirlds-fcqueue")
+
+include(":swirlds-merkle", "platform-sdk/swirlds-merkle")
+
+include(":swirlds-merkledb", "platform-sdk/swirlds-jasperdb")
+
+include(":swirlds-virtualmap", "platform-sdk/swirlds-virtualmap")
+
+include(":swirlds-platform-gui", "platform-sdk/swirlds-platform-gui")
+
+include(":swirlds-platform-core", "platform-sdk/swirlds-platform-core")
+
+include(":swirlds-cli", "platform-sdk/swirlds-cli")
+
+include(":swirlds-benchmarks", "platform-sdk/swirlds-benchmarks")
+
+include(":swirlds-test-framework", "platform-sdk/swirlds-unit-tests/common/swirlds-test-framework")
+
+include(":swirlds-common-testing", "platform-sdk/swirlds-unit-tests/common/swirlds-common-test")
+
+include(":swirlds-platform-test", "platform-sdk/swirlds-unit-tests/core/swirlds-platform-test")
+
+include(":swirlds-merkle-test", "platform-sdk/swirlds-unit-tests/structures/swirlds-merkle-test")
+
+// Platform demo/test applications
+includeAllProjects("platform-sdk/platform-apps/demos")
+
+includeAllProjects("platform-sdk/platform-apps/tests")
 
 fun include(name: String, path: String) {
     include(name)
-    project(name).projectDir = File(rootDir, "hedera-node/$path")
+    project(name).projectDir = File(rootDir, path)
 }
 
-// Enable Gradle Build Scan
-gradleEnterprise {
-    buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
+fun includeAllProjects(containingFolder: String) {
+    File(rootDir, containingFolder).listFiles()?.forEach { folder ->
+        if (File(folder, "build.gradle.kts").exists()) {
+            val name = ":${folder.name}"
+            include(name)
+            project(name).projectDir = folder
+        }
     }
 }
 
 // The HAPI API version to use for Protobuf sources. This can be a tag or branch
 // name from the hedera-protobufs GIT repo.
-val hapiProtoVersion = "0.40.0-blocks-state-SNAPSHOT"
-val hapiProtoBranchOrTag = "add-pbj-types-for-state" // hapiProtoVersion
+val hapiProtoVersion = "0.43.0-rc-SNAPSHOT"
+val hapiProtoBranchOrTag = "add-pbj-types-for-state"
 
 gitRepositories {
     checkoutsDirectory.set(File(rootDir, "hedera-node/hapi"))
     // check branch in repo for updates every second
     refreshIntervalMillis.set(1000)
-    include("hedera-protobufs") {
-        uri.set("https://github.com/hashgraph/hedera-protobufs.git")
-        // HAPI repo version
-        tag.set(hapiProtoBranchOrTag)
-        // do not load project from repo
-        autoInclude.set(false)
+
+    if (!gradle.startParameter.isOffline) {
+        include("hedera-protobufs") {
+            uri.set("https://github.com/hashgraph/hedera-protobufs.git")
+            // HAPI repo version
+            tag.set(hapiProtoBranchOrTag)
+            // do not load project from repo
+            autoInclude.set(false)
+        }
     }
 }
 
-// Define the library catalogs available for projects to make use of
-@Suppress("UnstableApiUsage")
 dependencyResolutionManagement {
-    @Suppress("UnstableApiUsage")
-    versionCatalogs {
-        // The libs of this catalog are the **ONLY** ones that are authorized to be part of the
-        // runtime distribution. These libs can be depended on during compilation, or bundled as
-        // part of runtime.
-        create("libs") {
-            version("google-proto", "3.19.4")
-            version("grpc-proto", "1.45.1")
-            version("hapi-proto", hapiProtoVersion)
+    // Protobuf tool versions
+    versionCatalogs.create("libs") {
+        version("google-proto", "3.19.4")
+        version("grpc-proto", "1.45.1")
+        version("hapi-proto", hapiProtoVersion)
 
-            plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.6.1")
-        }
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.7.4")
     }
 }

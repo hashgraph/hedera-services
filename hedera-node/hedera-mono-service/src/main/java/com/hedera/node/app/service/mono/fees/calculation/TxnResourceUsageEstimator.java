@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.fees.calculation;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -43,8 +42,7 @@ public interface TxnResourceUsageEstimator {
      * @param sigUsage the signature usage
      * @param view the state of the world
      * @return the estimated resource usage
-     * @throws InvalidTxBodyException if the txn is malformed
      * @throws NullPointerException or analogous if the estimator does not apply to the txn
      */
-    FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException;
+    FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view);
 }

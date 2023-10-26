@@ -141,7 +141,9 @@ public class HapiUtils {
         };
     }
 
-    public static final Set<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
+    // Suppressing the warning that this field is not used
+    @SuppressWarnings("java:S1068")
+    private static final Set<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
             HederaFunctionality.CONSENSUS_GET_TOPIC_INFO,
             HederaFunctionality.GET_BY_SOLIDITY_ID,
             HederaFunctionality.CONTRACT_CALL_LOCAL,
@@ -242,7 +244,7 @@ public class HapiUtils {
             case NETWORK_GET_VERSION_INFO -> HederaFunctionality.GET_VERSION_INFO;
             case TRANSACTION_GET_RECEIPT -> HederaFunctionality.TRANSACTION_GET_RECEIPT;
             case TRANSACTION_GET_RECORD -> HederaFunctionality.TRANSACTION_GET_RECORD;
-            case TRANSACTION_GET_FAST_RECORD -> throw new UnknownHederaFunctionality();
+            case TRANSACTION_GET_FAST_RECORD -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }

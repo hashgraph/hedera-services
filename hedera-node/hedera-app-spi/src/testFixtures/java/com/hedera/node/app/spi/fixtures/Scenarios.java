@@ -19,6 +19,7 @@ package com.hedera.node.app.spi.fixtures;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
@@ -294,6 +295,10 @@ public interface Scenarios extends TransactionFactory {
     final TestUser STAKING_REWARD_ACCOUNT =
             new TestUser(account800, Account.newBuilder().accountId(account800).build(), null);
 
+    final AccountID account098 = AccountID.newBuilder().accountNum(98L).build();
+    final TestUser FUNDING_ACCOUNT =
+            new TestUser(account098, Account.newBuilder().accountId(account098).build(), null);
+
     final AccountID account1002 = AccountID.newBuilder().accountNum(1002L).build();
     final TestUser ALICE = new TestUser(
             account1002,
@@ -341,7 +346,7 @@ public interface Scenarios extends TransactionFactory {
                 ERIN.accountID(), ERIN.account());
     }
 
-    default Map<Bytes, AccountID> defaultAliases() {
+    default Map<ProtoBytes, AccountID> defaultAliases() {
         return Map.of();
     }
 
@@ -349,7 +354,7 @@ public interface Scenarios extends TransactionFactory {
         return new MapReadableKVState<>("ACCOUNTS", defaultAccounts());
     }
 
-    default MapReadableKVState<Bytes, AccountID> defaultAliasesKVState() {
+    default MapReadableKVState<ProtoBytes, AccountID> defaultAliasesKVState() {
         return new MapReadableKVState<>("ALIASES", defaultAliases());
     }
 

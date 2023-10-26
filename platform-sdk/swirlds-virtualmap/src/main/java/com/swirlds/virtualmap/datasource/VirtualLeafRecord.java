@@ -16,8 +16,7 @@
 
 package com.swirlds.virtualmap.datasource;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -27,7 +26,6 @@ import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import java.io.IOException;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * An object for leaf data. The leaf record contains the path, key, and value.
@@ -69,7 +67,7 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
      * 		or {@link Path#INVALID_PATH}.
      * @param key
      * 		The key for this record. This should normally never be null, but may be for
-     * 		{@link VirtualNodeCache#DELETED_LEAF_RECORD}
+     *        {@link VirtualNodeCache#DELETED_LEAF_RECORD}
      * 		or other uses where the leaf record is meant to represent some invalid state.
      * @param value
      * 		The value for this record, which can be null.
@@ -88,7 +86,7 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
     /**
      * Gets the key.
      * @return
-     * 		The key. This <strong>may</strong> be null in some cases, such as when the record is meant to
+     *        The key. This <strong>may</strong> be null in some cases, such as when the record is meant to
      *		represent an invalid state, or when it is in the middle of serialization. No leaf that represnts
      *		an actual leaf will ever return null here.
      */
@@ -99,7 +97,7 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
     /**
      * Gets the value.
      * @return
-     * 		The value. May be null.
+     *        The value. May be null.
      */
     public V getValue() {
         return value;
@@ -191,7 +189,7 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("key", key)
                 .append("value", value)
                 .append("path", path)

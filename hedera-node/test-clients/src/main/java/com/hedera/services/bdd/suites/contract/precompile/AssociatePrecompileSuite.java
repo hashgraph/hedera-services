@@ -50,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -112,6 +113,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
+    @HapiTest
     private HapiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
@@ -127,6 +129,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
+    @HapiTest
     private HapiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec("invalidAbiCallGracefullyFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
@@ -144,6 +147,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
+    @HapiTest
     private HapiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec("nonSupportedAbiCallGracefullyFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
@@ -263,6 +267,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
+    @HapiTest
     private HapiSpec associateWithMissingEvmAddressHasSaneTxnAndRecord() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final var missingAddress =

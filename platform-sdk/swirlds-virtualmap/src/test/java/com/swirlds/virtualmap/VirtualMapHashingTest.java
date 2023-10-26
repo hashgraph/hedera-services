@@ -16,8 +16,8 @@
 
 package com.swirlds.virtualmap;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
 import static com.swirlds.virtualmap.VirtualMapTestUtils.createMap;
-import static org.apache.commons.lang3.RandomUtils.nextInt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;

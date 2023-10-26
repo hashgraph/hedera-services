@@ -3,20 +3,15 @@
                                           #############################
 
 numConnections,                                1000
-socket.doUpnp,                                 false
 socket.useLoopbackIp,                          false
-sync.maxOutgoingSyncs,                         1                            # differs from mainnet
-sync.syncAsProtocolEnabled,                    true
 sync.syncProtocolPermitCount,                  2                            # differs from mainnet
 
                                           #############################
                                           #           State           #
                                           #############################
 
-jasperDb.iteratorInputBufferBytes,             16777216
 merkleDb.iteratorInputBufferBytes,             16777216
 merkleDb.hashesRamToDiskThreshold,             8388608
-state.checkSignedStateFromDisk,                true
 state.saveStatePeriod,                         300                          # differs from mainnet
 state.signedStateDisk,                         5
 state.mainClassNameOverride,                   com.hedera.services.ServicesMain
@@ -37,7 +32,6 @@ event.creation.maxCreationRate,                20
                                           #############################
 
 reconnect.active,                              true
-reconnect.asyncStreamTimeoutMilliseconds,      60000
 
                                           #############################
                                           #          Metrics          #
@@ -47,3 +41,9 @@ metrics.csvFileName,                           MainNetStats
 metrics.csvOutputFolder,                       data/stats
 showInternalStats,                             true
 prometheus.endpointEnabled,                    false                        # differs from mainnet
+
+                                          #############################
+                                          #          Security         #
+                                          #############################
+
+loadKeysFromPfxFiles,                          false                        # differs from mainnet

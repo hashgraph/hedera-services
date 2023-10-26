@@ -17,13 +17,10 @@
 package com.hedera.node.app.hapi.utils.fee;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -46,20 +43,12 @@ class CryptoFeeBuilderTest {
     }
 
     @Test
-    void getsCorrectCryptoCreateTxFeeMatrices() throws InvalidTxBodyException {
+    void getsCorrectCryptoCreateTxFeeMatrices() {
         final var sigValueObj = new SigValueObj(2, 1, 10);
         final var networkFee = feeBuilder().setBpt(154L).setVpt(2L).setRbh(3L).build();
         final var nodeFee =
                 feeBuilder().setBpt(154L).setVpt(1L).setBpr(FeeBuilder.INT_SIZE).build();
         final var serviceFee = feeBuilder().setRbh(6L);
-
-        assertThrows(InvalidTxBodyException.class, () -> subject.getCryptoCreateTxFeeMatrices(null, sigValueObj));
-
-        final var cryptoTransfer = CryptoTransferTransactionBody.getDefaultInstance();
-        assertThrows(
-                InvalidTxBodyException.class,
-                () -> subject.getCryptoCreateTxFeeMatrices(
-                        txBuilder().setCryptoTransfer(cryptoTransfer).build(), sigValueObj));
 
         final var defaultCryptoCreate = CryptoCreateTransactionBody.getDefaultInstance();
         var feeData = subject.getCryptoCreateTxFeeMatrices(
@@ -79,20 +68,12 @@ class CryptoFeeBuilderTest {
     }
 
     @Test
-    void getsCorrectCryptoDeleteTxFeeMatrices() throws InvalidTxBodyException {
+    void getsCorrectCryptoDeleteTxFeeMatrices() {
         final var sigValueObj = new SigValueObj(5, 3, 20);
         final var networkFee = feeBuilder().setBpt(144L).setVpt(5L).setRbh(1L).build();
         final var nodeFee =
                 feeBuilder().setBpt(144L).setVpt(3L).setBpr(FeeBuilder.INT_SIZE).build();
         final var serviceFee = feeBuilder().setRbh(6L).build();
-
-        assertThrows(InvalidTxBodyException.class, () -> subject.getCryptoDeleteTxFeeMatrices(null, sigValueObj));
-
-        final var cryptoTransfer = CryptoTransferTransactionBody.getDefaultInstance();
-        assertThrows(
-                InvalidTxBodyException.class,
-                () -> subject.getCryptoDeleteTxFeeMatrices(
-                        txBuilder().setCryptoTransfer(cryptoTransfer).build(), sigValueObj));
 
         final var defaultCryptoDelete = CryptoDeleteTransactionBody.getDefaultInstance();
         var feeData = subject.getCryptoDeleteTxFeeMatrices(

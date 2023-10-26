@@ -27,23 +27,31 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
+import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.spi.info.SelfNodeInfo;
+import com.hedera.node.app.service.mono.fees.congestion.ThrottleMultiplierSource;
+import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.throttle.ThrottleManager;
+import com.hedera.node.app.throttle.impl.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
+import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.config.api.Configuration;
 import java.time.InstantSource;
+import java.util.ArrayDeque;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,6 +61,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class IngestComponentTest {
+
     @Mock
     private Platform platform;
 
@@ -63,10 +72,9 @@ class IngestComponentTest {
     private Metrics metrics;
 
     @Mock
-    private Cryptography cryptography;
+    private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     private HederaInjectionComponent app;
-    private SelfNodeInfo selfNodeInfo;
 
     @BeforeEach
     void setUp() {
@@ -75,31 +83,56 @@ class IngestComponentTest {
         lenient().when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
 
-        final var selfNodeId = new NodeId(1L);
-        selfNodeInfo = new SelfNodeInfoImpl(
+        final var selfNodeInfo = new SelfNodeInfoImpl(
                 1L,
                 AccountID.newBuilder().accountNum(1001).build(),
-                false,
+                10,
+                "127.0.0.1",
+                50211,
+                "0123456789012345678901234567890123456789012345678901234567890123",
                 "memo",
                 new HederaSoftwareVersion(
                         SemanticVersion.newBuilder().major(1).build(),
                         SemanticVersion.newBuilder().major(2).build()));
 
         final var configProvider = new ConfigProviderImpl(false);
+        final var handleThrottling = new ThrottleAccumulator(() -> 1, configProvider);
+        final var synchronizedThrottleAccumulator = new ThrottleAccumulator(() -> 5, configProvider);
+        final var monoMultiplierSources = new MonoMultiplierSources(
+                new ThrottleMultiplierSource(null, null, null, null, null, null, null),
+                new ThrottleMultiplierSource(null, null, null, null, null, null, null));
+
+        final var exchangeRateManager = new ExchangeRateManager(configProvider);
+
+        final var throttleManager = new ThrottleManager();
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .bootstrapProps(new BootstrapProperties())
                 .configuration(configProvider)
-                .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider))
+                .systemFileUpdateFacility(new SystemFileUpdateFacility(
+                        configProvider,
+                        throttleManager,
+                        exchangeRateManager,
+                        monoMultiplierSources,
+                        handleThrottling,
+                        synchronizedThrottleAccumulator))
+                .networkUtilizationManager(new NetworkUtilizationManagerImpl(handleThrottling, monoMultiplierSources))
+                .throttleManager(throttleManager)
                 .self(selfNodeInfo)
-                .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(Set::of)
                 .instantSource(InstantSource.system())
+                .exchangeRateManager(exchangeRateManager)
+                .genesisRecordsConsensusHook(mock(GenesisRecordsConsensusHook.class))
+                .synchronizedThrottleAccumulator(this.synchronizedThrottleAccumulator)
                 .build();
+
+        final var state = new FakeHederaState();
+        state.addService(RecordCacheService.NAME, Map.of("TransactionRecordQueue", new ArrayDeque<String>()));
+        app.workingStateAccessor().setHederaState(state);
     }
 
     @Test

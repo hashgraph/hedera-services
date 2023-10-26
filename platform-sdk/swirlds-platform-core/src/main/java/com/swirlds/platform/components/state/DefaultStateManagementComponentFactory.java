@@ -32,6 +32,7 @@ import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesCons
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,6 +50,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     private final String mainClassName;
     private final NodeId selfId;
     private final String swirldName;
+    private final DispatchBuilder dispatchBuilder;
     private PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter;
     private StateToDiskAttemptConsumer stateToDiskAttemptConsumer;
     private NewLatestCompleteStateConsumer newLatestCompleteStateConsumer;
@@ -72,6 +74,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     public DefaultStateManagementComponentFactory(
             @NonNull final PlatformContext context,
             @NonNull final ThreadManager threadManager,
+            @NonNull final DispatchBuilder dispatchBuilder,
             @NonNull final AddressBook addressBook,
             @NonNull final PlatformSigner signer,
             @NonNull final String mainClassName,
@@ -89,6 +92,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
         this.swirldName = Objects.requireNonNull(swirldName);
         this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
+        this.dispatchBuilder = Objects.requireNonNull(dispatchBuilder);
     }
 
     @Override
@@ -154,6 +158,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
         return new DefaultStateManagementComponent(
                 context,
                 threadManager,
+                dispatchBuilder,
                 addressBook,
                 signer,
                 mainClassName,
@@ -182,12 +187,6 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
         }
         if (newLatestCompleteStateConsumer == null) {
             addLine(errors, "newLatestCompleteStateConsumer must not be null");
-        }
-        if (stateLacksSignaturesEventConsumer == null) {
-            addLine(errors, "stateLacksSignaturesEventConsumer must not be null");
-        }
-        if (stateHasEnoughSignaturesConsumer == null) {
-            addLine(errors, "newCompleteStateConsumer must not be null");
         }
         if (issConsumer == null) {
             addLine(errors, "issConsumer must not be null");

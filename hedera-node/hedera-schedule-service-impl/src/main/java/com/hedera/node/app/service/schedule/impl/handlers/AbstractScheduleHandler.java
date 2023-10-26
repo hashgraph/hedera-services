@@ -23,9 +23,11 @@ import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -38,11 +40,12 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -51,7 +54,7 @@ import java.util.stream.Collectors;
  */
 abstract class AbstractScheduleHandler {
     protected static final String NULL_CONTEXT_MESSAGE =
-            "Dispatcher called the schedule delete handler with a null context; probable internal data corruption.";
+            "Dispatcher called the schedule handler with a null context; probable internal data corruption.";
 
     /**
      * A simple record to return both "deemed valid" signatories and remaining primitive keys that must sign.
@@ -59,12 +62,12 @@ abstract class AbstractScheduleHandler {
      * @param remainingRequiredKeys A Set of Key entries that have not yet signed the scheduled transaction, but
      *     must sign that transaction before it can be executed.
      */
-    public static record ScheduleKeysResult(Set<Key> updatedSignatories, Set<Key> remainingRequiredKeys) {}
+    protected static record ScheduleKeysResult(Set<Key> updatedSignatories, Set<Key> remainingRequiredKeys) {}
 
     @NonNull
     protected Set<Key> allKeysForTransaction(
             @NonNull final Schedule scheduleInState, @NonNull final PreHandleContext context) throws PreCheckException {
-        final TransactionBody scheduledAsOrdinary = ScheduleUtility.asOrdinary(scheduleInState);
+        final TransactionBody scheduledAsOrdinary = HandlerUtility.childAsOrdinary(scheduleInState);
         // note, payerAccount should never be null, but we're dealing with Sonar here.
         final AccountID payerForNested =
                 scheduleInState.payerAccountIdOrElse(scheduleInState.schedulerAccountIdOrThrow());
@@ -73,24 +76,19 @@ abstract class AbstractScheduleHandler {
     }
 
     @NonNull
-    private Set<Key> getKeySetFromTransactionKeys(final TransactionKeys requiredKeys) {
-        final Set<Key> scheduledRequiredKeys = new ConcurrentSkipListSet<>(new RecordIdentityComparator());
-        scheduledRequiredKeys.addAll(requiredKeys.requiredNonPayerKeys());
-        scheduledRequiredKeys.add(requiredKeys.payerKey());
-        return scheduledRequiredKeys;
-    }
-
-    @NonNull
     protected ScheduleKeysResult allKeysForTransaction(
             @NonNull final Schedule scheduleInState, @NonNull final HandleContext context) throws HandleException {
         try {
             // note, payerAccount should never be null, but we're playing it safe here.
             final AccountID payer = scheduleInState.payerAccountIdOrElse(context.payer());
-            final TransactionBody scheduledAsOrdinary = ScheduleUtility.asOrdinary(scheduleInState);
+            final TransactionBody scheduledAsOrdinary = HandlerUtility.childAsOrdinary(scheduleInState);
             final TransactionKeys keyStructure = context.allKeysForTransaction(scheduledAsOrdinary, payer);
             final Set<Key> scheduledRequiredKeys = getKeySetFromTransactionKeys(keyStructure);
             final Set<Key> currentSignatories = setOfKeys(scheduleInState.signatories());
             scheduledRequiredKeys.removeAll(currentSignatories);
+            // Ensure the payer is required, some rare corner cases may not require it otherwise.
+            final Key payerKey = getKeyForAccount(context, payer);
+            if (payerKey != null) scheduledRequiredKeys.add(payerKey);
             final Set<Key> remainingRequiredKeys = scheduledRequiredKeys.parallelStream()
                     .map(new ValidatedKeysMapping(context, currentSignatories))
                     .flatMap(Set::stream)
@@ -103,37 +101,11 @@ abstract class AbstractScheduleHandler {
         }
     }
 
-    /**
-     * Given an arbitrary {@link Iterable<Key>}, return a <strong>modifiable</strong> {@link Set<Key>} containing
-     * the same objects as the input.
-     * If there are any duplicates in the input, only one of each will be in the result.
-     * If there are any null values in the input, those values will be excluded from the result.
-     * Note: The return value of this method is always safe to be read and written by multiple threads
-     *     concurrently, and operates as close to lock-free as possible.
-     * Implementation Note: we use ConcurrentSkipListSet that orders the entries by hash code.  This means that
-     *   object order will be very different from a reasonable natural ordering, but it should (if hashCode is defined
-     *   properly) be consistent with equals, and have sufficient diffusion to work well with the random
-     *   functions inherent in the Skip List data structure. Order is not important, so this approach is reasonable.
-     *   The alternative is a CopyOnWriteArraySet, which has significant GC performance issues.
-     * @param keyCollection an Iterable of Key values.
-     * @return a {@link Set<Key>} containing the same contents as the input.  Duplicates and null values are excluded
-     * from this Set.  This Set is always a modifiable set.
-     */
-    @NonNull
-    private Set<Key> setOfKeys(@Nullable final Iterable<Key> keyCollection) {
-        // We only permit Concurrent sets for this method.
-        if (keyCollection instanceof ConcurrentSkipListSet<Key>) {
-            return (Set<Key>) keyCollection;
-        } else if (keyCollection != null) {
-            final Set<Key> results = new ConcurrentSkipListSet<>(new RecordIdentityComparator());
-            for (final Key next : keyCollection) {
-                if (next != null) results.add(next);
-            }
-            return results;
-        } else {
-            // cannot use Set.of() or Collections.emptySet() here because those are unmodifiable.
-            return new ConcurrentSkipListSet<>(new RecordIdentityComparator());
-        }
+    @Nullable
+    protected Key getKeyForAccount(@NonNull final HandleContext context, @NonNull final AccountID accountToQuery) {
+        final ReadableAccountStore accountStore = context.readableStore(ReadableAccountStore.class);
+        final Account accountData = accountStore.getAccountById(accountToQuery);
+        return (accountData != null && accountData.key() != null) ? accountData.key() : null;
     }
 
     /**
@@ -168,7 +140,7 @@ abstract class AbstractScheduleHandler {
                         throw new PreCheckException(validationResult);
                     }
                 } else {
-                    throw new PreCheckException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
+                    throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION);
                 }
             } else {
                 throw new PreCheckException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
@@ -186,11 +158,10 @@ abstract class AbstractScheduleHandler {
      * <ul>
      *     <li>not null</li>
      *     <li>has a scheduled transaction</li>
-     *      <li>has not been executed</li>
+     *     <li>has not been executed</li>
      *     <li>is not deleted</li>
      *     <li>has not expired</li>
      * </ul>
-     *
      *
      * @param scheduleToValidate the {@link Schedule} to validate.  If this is null then
      *     {@link ResponseCodeEnum#INVALID_SCHEDULE_ID} is returned.
@@ -212,7 +183,7 @@ abstract class AbstractScheduleHandler {
             if (scheduleToValidate.hasScheduledTransaction()) {
                 if (!scheduleToValidate.executed()) {
                     if (!scheduleToValidate.deleted()) {
-                        long expiration = scheduleToValidate.calculatedExpirationSecond();
+                        final long expiration = scheduleToValidate.calculatedExpirationSecond();
                         final Instant calculatedExpiration =
                                 (expiration != Schedule.DEFAULT.calculatedExpirationSecond()
                                         ? Instant.ofEpochSecond(expiration)
@@ -270,14 +241,13 @@ abstract class AbstractScheduleHandler {
             @NonNull final ResponseCodeEnum validationResult,
             final boolean isLongTermEnabled) {
         if (canExecute(remainingSignatories, isLongTermEnabled, validationResult, scheduleToExecute)) {
-            // @note we don't care about the "remaining" keys in this case, just need to set signatories
-            //     so that the child transaction has those as "valid" keys.
-            final var assistant = new ScheduleVerificationAssistant(validSignatories, new HashSet<>());
-            final TransactionBody childTransaction = ScheduleUtility.asOrdinary(scheduleToExecute);
+            final Predicate<Key> assistant = new DispatchPredicate(validSignatories);
+            final TransactionBody childTransaction = HandlerUtility.childAsOrdinary(scheduleToExecute);
             final ScheduleRecordBuilder recordBuilder =
                     context.dispatchChildTransaction(childTransaction, ScheduleRecordBuilder.class, assistant);
             // set the schedule ref for the child transaction
             recordBuilder.scheduleRef(scheduleToExecute.scheduleId());
+            recordBuilder.scheduledTransactionID(childTransaction.transactionID());
             // If the child failed, we fail with the same result.
             // @note the interface below should always be implemented by all record builders,
             //       but we still need to cast it.
@@ -290,6 +260,54 @@ abstract class AbstractScheduleHandler {
         }
     }
 
+    protected boolean validationOk(final ResponseCodeEnum validationResult) {
+        return validationResult == ResponseCodeEnum.OK
+                || validationResult == ResponseCodeEnum.SUCCESS
+                || validationResult == ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION;
+    }
+
+    @NonNull
+    private Set<Key> getKeySetFromTransactionKeys(final TransactionKeys requiredKeys) {
+        final Set<Key> scheduledRequiredKeys = new ConcurrentSkipListSet<>(new RecordIdentityComparator());
+        scheduledRequiredKeys.addAll(requiredKeys.requiredNonPayerKeys());
+        scheduledRequiredKeys.addAll(requiredKeys.optionalNonPayerKeys());
+        scheduledRequiredKeys.add(requiredKeys.payerKey());
+        return scheduledRequiredKeys;
+    }
+
+    /**
+     * Given an arbitrary {@link Iterable<Key>}, return a <strong>modifiable</strong> {@link Set<Key>} containing
+     * the same objects as the input.
+     * If there are any duplicates in the input, only one of each will be in the result.
+     * If there are any null values in the input, those values will be excluded from the result.
+     * Note: The return value of this method is always safe to be read and written by multiple threads
+     *     concurrently, and operates as close to lock-free as possible.
+     * Implementation Note: we use ConcurrentSkipListSet that orders the entries by hash code.  This means that
+     *   object order will be very different from a reasonable natural ordering, but it should (if hashCode is defined
+     *   properly) be consistent with equals, and have sufficient diffusion to work well with the random
+     *   functions inherent in the Skip List data structure. Order is not important, so this approach is reasonable.
+     *   The alternative is a CopyOnWriteArraySet, which has significant GC performance issues.
+     * @param keyCollection an Iterable of Key values.
+     * @return a {@link Set<Key>} containing the same contents as the input.  Duplicates and null values are excluded
+     * from this Set.  This Set is always a modifiable set.
+     */
+    @NonNull
+    private Set<Key> setOfKeys(@Nullable final Iterable<Key> keyCollection) {
+        // We only permit Concurrent sets for this method.
+        if (keyCollection instanceof ConcurrentSkipListSet<Key>) {
+            return (Set<Key>) keyCollection;
+        } else if (keyCollection != null) {
+            final Set<Key> results = new ConcurrentSkipListSet<>(new RecordIdentityComparator());
+            for (final Key next : keyCollection) {
+                if (next != null) results.add(next);
+            }
+            return results;
+        } else {
+            // cannot use Set.of() or Collections.emptySet() here because those are unmodifiable.
+            return new ConcurrentSkipListSet<>(new RecordIdentityComparator());
+        }
+    }
+
     private boolean canExecute(
             final Set<Key> remainingSignatories,
             final boolean isLongTermEnabled,
@@ -299,12 +317,6 @@ abstract class AbstractScheduleHandler {
                 && (!isLongTermEnabled
                         || (scheduleToExecute.waitForExpiry()
                                 && validationResult == ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION));
-    }
-
-    protected boolean validationOk(final ResponseCodeEnum validationResult) {
-        return validationResult == ResponseCodeEnum.OK
-                || validationResult == ResponseCodeEnum.SUCCESS
-                || validationResult == ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION;
     }
 
     /**
@@ -326,7 +338,7 @@ abstract class AbstractScheduleHandler {
          *     are "deemed" to have signed the child transaction.  <strong>This set is modified by the
          *     apply method</strong> of the object created, so it must not be an unmodifiable set.
          */
-        public ValidatedKeysMapping(@NonNull final HandleContext context, @NonNull final Set<Key> signatories) {
+        protected ValidatedKeysMapping(@NonNull final HandleContext context, @NonNull final Set<Key> signatories) {
             this.context = context;
             this.signatories = signatories;
         }
@@ -351,7 +363,7 @@ abstract class AbstractScheduleHandler {
          */
         @Override
         public Set<Key> apply(final Key key) {
-            final Set<Key> remainingUnverifiedKeys = new HashSet<>();
+            final Set<Key> remainingUnverifiedKeys = new LinkedHashSet<>();
             final var assistant = new ScheduleVerificationAssistant(signatories, remainingUnverifiedKeys);
             final SignatureVerification isVerified = context.verificationFor(key, assistant);
             // unverified primitive keys only count if the top-level key failed verification.

@@ -78,12 +78,11 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
         final Wei value = Wei.wrap(frame.getStackItem(0));
 
         final Address address = frame.getRecipientAddress();
-        final MutableAccount account =
-                frame.getWorldUpdater().getAccount(address).getMutable();
+        final MutableAccount account = frame.getWorldUpdater().getAccount(address);
 
         frame.clearReturnData();
 
-        if (value.compareTo(account.getBalance()) > 0 || frame.getMessageStackDepth() >= MAX_STACK_DEPTH) {
+        if (value.compareTo(account.getBalance()) > 0 || frame.getDepth() >= MAX_STACK_DEPTH) {
             fail(frame);
         } else {
             spawnChildMessage(frame);
@@ -116,8 +115,7 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
         frame.decrementRemainingGas(cost);
 
         final Address address = frame.getRecipientAddress();
-        final MutableAccount account =
-                frame.getWorldUpdater().getAccount(address).getMutable();
+        final MutableAccount account = frame.getWorldUpdater().getAccount(address);
 
         account.incrementNonce();
 
@@ -136,9 +134,10 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
         final long childGasStipend = gasCalculator().gasAvailableForChildCreate(frame.getRemainingGas());
         frame.decrementRemainingGas(childGasStipend);
 
-        final MessageFrame childFrame = MessageFrame.builder()
+        // child frame is added to frame stack via build method
+        MessageFrame.builder()
+                .parentMessageFrame(frame)
                 .type(MessageFrame.Type.CONTRACT_CREATION)
-                .messageFrameStack(frame.getMessageFrameStack())
                 .worldUpdater(frame.getWorldUpdater().updater())
                 .initialGas(childGasStipend)
                 .address(contractAddress)
@@ -151,7 +150,6 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
                 .apparentValue(value)
                 .code(CodeFactory.createCode(inputData, 0, false))
                 .blockValues(frame.getBlockValues())
-                .depth(frame.getMessageStackDepth() + 1)
                 .completer(child -> complete(frame, child))
                 .miningBeneficiary(frame.getMiningBeneficiary())
                 .blockHashLookup(frame.getBlockHashLookup())
@@ -160,7 +158,6 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
 
         frame.incrementRemainingGas(cost);
 
-        frame.getMessageFrameStack().addFirst(childFrame);
         frame.setState(MessageFrame.State.CODE_SUSPENDED);
     }
 
@@ -174,7 +171,6 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
         frame.popStackItems(getStackItemsConsumed());
 
         if (childFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
-            frame.mergeWarmedUpFields(childFrame);
             frame.pushStackItem(Words.fromAddress(childFrame.getContractAddress()));
             createOperationExternalizer.externalize(frame, childFrame);
         } else {

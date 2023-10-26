@@ -17,9 +17,9 @@
 package com.swirlds.common.config.sources;
 
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -48,15 +48,14 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
     /**
      * Creates an instance that provides the config properties from the legacy settings.txt file
      *
+     * @param settingsPath the path to the settings.txt file
      * @return config source for the settings.txt file
      * @throws IOException if settings.txt can not be loaded
      */
-    public static LegacyFileConfigSource ofSettingsFile() throws IOException {
-        final Path path = FileSystems.getDefault()
-                .getPath("settings.txt")
-                .toAbsolutePath()
-                .normalize();
-        return new LegacyFileConfigSource(path, ConfigSourceOrdinalConstants.LEGACY_PROPERTY_FILE_ORDINAL_FOR_SETTINGS);
+    @NonNull
+    public static LegacyFileConfigSource ofSettingsFile(@NonNull final Path settingsPath) throws IOException {
+        return new LegacyFileConfigSource(
+                settingsPath, ConfigSourceOrdinalConstants.LEGACY_PROPERTY_FILE_ORDINAL_FOR_SETTINGS);
     }
 
     /**
@@ -78,6 +77,7 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
      */
     public LegacyFileConfigSource(final Path filePath, final int ordinal) throws IOException {
         this.filePath = Objects.requireNonNull(filePath, "filePath must not be null");
+
         this.ordinal = ordinal;
         this.internalProperties = Collections.unmodifiableMap(loadSettings(filePath.toFile()));
     }

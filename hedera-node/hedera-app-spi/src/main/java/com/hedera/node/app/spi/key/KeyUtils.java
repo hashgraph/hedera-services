@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Collections;
 
 /**
  * Utility class for working with keys. This validates if the key is empty and valid.
@@ -30,10 +31,16 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 // NOTE: This class is not in the right place. But is needed by several modules.
 // !!!!!!!!!!🔥🔥🔥 It should be moved once we find where to keep it. 🔥🔥🔥!!!!!!!!!!!
 public class KeyUtils {
+
     public static final int ED25519_BYTE_LENGTH = 32;
     private static final byte ODD_PARITY = (byte) 0x03;
     private static final byte EVEN_PARITY = (byte) 0x02;
     public static final int ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH = 33;
+
+    private KeyUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     /**
      * Checks if the given key is empty.
      * For a KeyList type checks if the list is empty.
@@ -51,13 +58,28 @@ public class KeyUtils {
             return true;
         }
         if (pbjKey.hasKeyList()) {
-            return !((KeyList) key.value()).hasKeys()
-                    || (((KeyList) key.value()).hasKeys()
-                            && ((KeyList) key.value()).keys().isEmpty());
+            final var keyList = (KeyList) key.value();
+            if (!keyList.hasKeys() || keyList.keys().size() == 0) {
+                return true;
+            }
+            for (final var k : keyList.keys()) {
+                if (!isEmpty(k)) {
+                    return false;
+                }
+            }
+            return true;
         } else if (pbjKey.hasThresholdKey()) {
-            return !((ThresholdKey) key.value()).hasKeys()
-                    || (((ThresholdKey) key.value()).hasKeys()
-                            && ((ThresholdKey) key.value()).keys().keys().isEmpty());
+            final var thresholdKey = (ThresholdKey) key.value();
+            if ((!thresholdKey.hasKeys()
+                    || thresholdKey.keys().keysOrElse(Collections.emptyList()).size() == 0)) {
+                return true;
+            }
+            for (final var k : thresholdKey.keys().keys()) {
+                if (!isEmpty(k)) {
+                    return false;
+                }
+            }
+            return true;
         } else if (pbjKey.hasEd25519()) {
             return ((Bytes) key.value()).length() == 0;
         } else if (pbjKey.hasEcdsaSecp256k1()) {
@@ -107,7 +129,7 @@ public class KeyUtils {
         } else if (pbjKey.hasEcdsaSecp256k1()) {
             final var ecKey = ((Bytes) key.value());
             return ecKey.length() == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
-                    && ((ecKey.getByte(0) == EVEN_PARITY || ecKey.getByte(0) == ODD_PARITY));
+                    && (ecKey.getByte(0) == EVEN_PARITY || ecKey.getByte(0) == ODD_PARITY);
         } else if (pbjKey.hasDelegatableContractId()) {
             return ((ContractID) key.value()).contractNum().intValue() > 0;
         } else if (pbjKey.hasContractID()) {

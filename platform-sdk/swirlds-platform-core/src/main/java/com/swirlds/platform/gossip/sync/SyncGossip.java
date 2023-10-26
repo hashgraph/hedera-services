@@ -25,44 +25,44 @@ import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.StatusActionSubmitter;
-import com.swirlds.common.threading.SyncPermitProvider;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
-import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
-import com.swirlds.platform.FreezeManager;
-import com.swirlds.platform.PlatformConstructor;
-import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
-import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
+import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.ProtocolConfig;
+import com.swirlds.platform.gossip.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.heartbeats.HeartbeatProtocol;
-import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
+import com.swirlds.platform.network.communication.handshake.HashCompareHandshake;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
@@ -72,7 +72,9 @@ import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.threading.PauseAndClear;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,7 +93,11 @@ public class SyncGossip extends AbstractGossip {
     private final SyncPermitProvider syncPermitProvider;
     protected final SyncConfig syncConfig;
     protected final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
-    private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
+
+    /**
+     * Keeps track of the number of events in the intake pipeline from each peer
+     */
+    private final IntakeEventCounter intakeEventCounter;
 
     /**
      * Holds a list of objects that need to be cleared when {@link #clear()} is called on this object.
@@ -114,23 +120,20 @@ public class SyncGossip extends AbstractGossip {
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
+     * @param epochHash                     the epoch hash of the initial state
      * @param shadowGraph                   contains non-ancient events
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
-     * @param freezeManager                 handles freezes
-     * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
      * @param stateManagementComponent      manages the lifecycle of the state
-     * @param eventIntakeLambda             a method that is called when something needs to be added to the event intake
-     *                                      queue
      * @param eventObserverDispatcher       the object used to wire event intake
-     * @param eventMapper                   a data structure used to track the most recent event from each node
-     * @param eventIntakeMetrics            metrics for event intake
      * @param syncMetrics                   metrics for sync
-     * @param statusActionSubmitter         enables submitting platform status actions
+     * @param eventLinker                   links events to their parents, buffers orphans if configured to do so
+     * @param platformStatusManager         the platform status manager
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
+     * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
      */
     public SyncGossip(
             @NonNull final PlatformContext platformContext,
@@ -141,22 +144,20 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
+            @Nullable final Hash epochHash,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
-            @NonNull final QueueThread<EventIntakeTask> intakeQueue,
-            @NonNull final FreezeManager freezeManager,
-            @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
-            @NonNull final EventMapper eventMapper,
-            @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
+            @NonNull final EventLinker eventLinker,
+            @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
-            @NonNull final Runnable clearAllPipelinesForReconnect) {
+            @NonNull final Runnable clearAllPipelinesForReconnect,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
         super(
                 platformContext,
                 threadManager,
@@ -166,24 +167,22 @@ public class SyncGossip extends AbstractGossip {
                 selfId,
                 appVersion,
                 intakeQueue,
-                freezeManager,
-                startUpEventFrozenManager,
                 swirldStateManager,
                 stateManagementComponent,
-                eventMapper,
-                eventIntakeMetrics,
                 syncMetrics,
                 eventObserverDispatcher,
-                statusActionSubmitter,
+                platformStatusManager,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
 
+        Objects.requireNonNull(eventLinker);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
+
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
-        this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
-        final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
+        final ParallelExecutor shadowgraphExecutor = new CachedPoolParallelExecutor(threadManager, "node-sync");
         thingsToStart.add(shadowgraphExecutor);
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
                 platformContext,
@@ -191,9 +190,9 @@ public class SyncGossip extends AbstractGossip {
                 addressBook.getSize(),
                 syncMetrics,
                 consensusRef::get,
-                eventTaskCreator::syncDone,
-                eventTaskCreator::addEvent,
+                intakeQueue,
                 syncManager,
+                intakeEventCounter,
                 shadowgraphExecutor,
                 // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
                 false,
@@ -203,16 +202,20 @@ public class SyncGossip extends AbstractGossip {
                 RECONNECT.getMarker(),
                 List.of(
                         Pair.of(intakeQueue, "intakeQueue"),
-                        Pair.of(eventMapper, "eventMapper"),
+                        Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
                         Pair.of(shadowGraph, "shadowGraph")));
 
-        reconnectController = new ReconnectController(threadManager, reconnectHelper, this::resume);
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+
+        reconnectController = new ReconnectController(reconnectConfig, threadManager, reconnectHelper, this::resume);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+        final ProtocolConfig protocolConfig = platformContext.getConfiguration().getConfigData(ProtocolConfig.class);
 
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
-        syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount());
+        syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount(), intakeEventCounter);
 
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
             // If we still need an emergency recovery state, we need it via emergency reconnect.
@@ -223,9 +226,6 @@ public class SyncGossip extends AbstractGossip {
 
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(
                 () -> !gossipHalted.get(), () -> intakeQueue.size() < eventConfig.eventIntakeQueueThrottleSize()));
-
-        final ReconnectConfig reconnectConfig =
-                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
 
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
@@ -239,10 +239,12 @@ public class SyncGossip extends AbstractGossip {
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
                             syncConfig.syncSleepAfterFailedNegotiation(),
                             List.of(
-                                    new VersionCompareHandshake(appVersion, !basicConfig.gossipWithDifferentVersions()),
+                                    new VersionCompareHandshake(
+                                            appVersion, !protocolConfig.tolerateMismatchedVersion()),
                                     new VersionCompareHandshake(
                                             PlatformVersion.locateOrDefault(),
-                                            !basicConfig.gossipWithDifferentVersions())),
+                                            !protocolConfig.tolerateMismatchedVersion()),
+                                    new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash())),
                             new NegotiationProtocols(List.of(
                                     new HeartbeatProtocol(
                                             otherId,
@@ -260,7 +262,7 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectMetrics,
                                             reconnectController,
                                             fallenBehindManager,
-                                            statusActionSubmitter,
+                                            platformStatusManager,
                                             platformContext.getConfiguration()),
                                     new ReconnectProtocol(
                                             threadManager,
@@ -271,10 +273,13 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
-                                            new DefaultSignedStateValidator(),
+                                            new DefaultSignedStateValidator(platformContext),
                                             fallenBehindManager,
-                                            platformContext.getConfiguration()),
+                                            platformStatusManager,
+                                            platformContext.getConfiguration(),
+                                            time),
                                     new SyncProtocol(
+                                            platformContext,
                                             otherId,
                                             syncShadowgraphSynchronizer,
                                             fallenBehindManager,
@@ -355,15 +360,6 @@ public class SyncGossip extends AbstractGossip {
     /**
      * {@inheritDoc}
      */
-    @NonNull
-    @Override
-    public InterruptableConsumer<EventIntakeTask> getEventIntakeLambda() {
-        return eventIntakeLambda;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void clear() {
         clearAllInternalPipelines.clear();
@@ -393,6 +389,7 @@ public class SyncGossip extends AbstractGossip {
     @Override
     public void resume() {
         throwIfNotInPhase(LifecyclePhase.STARTED);
+        intakeEventCounter.reset();
         gossipHalted.set(false);
     }
 }

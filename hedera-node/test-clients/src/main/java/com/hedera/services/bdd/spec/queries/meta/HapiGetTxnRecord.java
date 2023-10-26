@@ -129,6 +129,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
     private OptionalInt childRecordsCount = OptionalInt.empty();
     private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
+
+    @Nullable
+    private Consumer<List<TransactionRecord>> allRecordsObserver = null;
+
     private boolean loggingOnlyFee = false;
 
     private Optional<Integer> pseudorandomNumberRange = Optional.empty();
@@ -187,6 +191,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord exposingTo(final Consumer<TransactionRecord> observer) {
         this.observer = Optional.of(observer);
+        return this;
+    }
+
+    public HapiGetTxnRecord exposingAllTo(final Consumer<List<TransactionRecord>> observer) {
+        allRecordsObserver = observer;
+        requestChildRecords = true;
         return this;
     }
 
@@ -857,6 +867,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 assertEquals(count, observedCount, "Wrong # of non-staking records");
             }
         });
+        if (allRecordsObserver != null) {
+            final List<TransactionRecord> allRecords = new ArrayList<>();
+            allRecords.add(rcd);
+            allRecords.addAll(childRecords);
+            allRecordsObserver.accept(allRecords);
+        }
         final List<String> creations = (createdIdsObserver != null) ? new ArrayList<>() : null;
         final List<TokenID> tokenCreations = (createdTokenIdsObserver != null) ? new ArrayList<>() : null;
         for (final var rec : childRecords) {

@@ -36,6 +36,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.net.SocketException;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
@@ -165,7 +166,27 @@ public class TeachingSynchronizer {
                 root == null ? "[]" : root.getRoute());
 
         // A future improvement might be to reuse threads between subtrees.
-        final StandardWorkGroup workGroup = new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection);
+        final StandardWorkGroup workGroup =
+                new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, ex -> {
+                    Throwable cause = ex;
+                    while (cause != null) {
+                        if (cause instanceof SocketException socketEx) {
+                            if (socketEx.getMessage().equalsIgnoreCase("Connection reset by peer")) {
+                                // Connection issues during reconnects are expected and recoverable, just
+                                // log them as info. All other exceptions should be treated as real errors
+                                logger.info(
+                                        RECONNECT.getMarker(),
+                                        "Connection reset while sending tree at {} with route {}. Aborting",
+                                        root == null ? null : root.getClass().getName(),
+                                        root == null ? "[]" : root.getRoute());
+                                return true;
+                            }
+                        }
+                        cause = cause.getCause();
+                    }
+                    // Let StandardWorkGroup log it as an error using the EXCEPTION marker
+                    return false;
+                });
 
         final AsyncInputStream<QueryResponse> in =
                 new AsyncInputStream<>(inputStream, workGroup, QueryResponse::new, reconnectConfig);

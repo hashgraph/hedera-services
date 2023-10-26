@@ -43,11 +43,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class TransactionSerializationTest {
-
-    private static final int MAX_TRANSACTIONS = 100;
-    private static final int MAX_TRANSACTION_BYTES = 1000;
-    private static final int MAX_ADDRESSBOOK_SIZE = 2048;
-
     Random random = new Random();
 
     @BeforeAll
@@ -65,9 +60,10 @@ class TransactionSerializationTest {
             random.nextBytes(nbyte);
         }
         final Signature signature = randomSignature(random);
-        final Hash hash = randomHash(random);
+        final Hash stateHash = randomHash(random);
+        final Hash epochHash = random.nextBoolean() ? randomHash(random) : null;
         final StateSignatureTransaction systemTransactionSignature =
-                new StateSignatureTransaction(random.nextLong(), signature, hash);
+                new StateSignatureTransaction(random.nextLong(), signature, stateHash, epochHash);
         final StateSignatureTransaction deserialized = serializeDeserialize(systemTransactionSignature);
 
         assertEquals(systemTransactionSignature.getStateSignature(), deserialized.getStateSignature());

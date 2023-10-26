@@ -129,7 +129,7 @@ public enum RecordStreamAccess {
                             sidecarFilesByRecordFile
                                     .getOrDefault(parseRecordFileConsensusTime(f), Collections.emptyList())
                                     .stream()
-                                    .map(this::ensurePresentSidecarFile)
+                                    .map(RecordStreamAccess::ensurePresentSidecarFile)
                                     .toList());
                 })
                 .toList();
@@ -148,7 +148,7 @@ public enum RecordStreamAccess {
         }
     }
 
-    private SidecarFile ensurePresentSidecarFile(final String f) {
+    static SidecarFile ensurePresentSidecarFile(final String f) {
         try {
             return RecordStreamingUtils.readMaybeCompressedSidecarFile(f);
         } catch (IOException e) {

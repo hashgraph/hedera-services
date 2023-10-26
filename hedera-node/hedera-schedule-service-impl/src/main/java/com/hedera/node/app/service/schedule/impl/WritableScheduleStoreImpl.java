@@ -23,7 +23,6 @@ import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
-import com.hedera.node.app.service.schedule.impl.handlers.ScheduleUtility;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -101,7 +100,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     @Override
     public void put(@NonNull final Schedule scheduleToAdd) {
         schedulesByIdMutable.put(scheduleToAdd.scheduleIdOrThrow(), scheduleToAdd);
-        final ProtoString newHash = new ProtoString(ScheduleUtility.calculateStringHash(scheduleToAdd));
+        final ProtoString newHash = new ProtoString(ScheduleStoreUtility.calculateStringHash(scheduleToAdd));
         final ScheduleList inStateEquality = schedulesByEqualityMutable.get(newHash);
         List<Schedule> byEquality = inStateEquality != null ? inStateEquality.schedules() : null;
         if (byEquality == null) {

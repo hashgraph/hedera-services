@@ -22,7 +22,6 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import java.io.IOException;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 public class InternalValue extends PartialMerkleLeaf implements MerkleLeaf {
 
@@ -103,26 +102,22 @@ public class InternalValue extends PartialMerkleLeaf implements MerkleLeaf {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (!(o instanceof InternalValue)) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final InternalValue that = (InternalValue) o;
-        return new EqualsBuilder()
-                .append(balance, that.balance)
-                .append(expirationTime, that.expirationTime)
-                .append(autoRenewPeriod, that.autoRenewPeriod)
-                .append(senderThreshold, that.senderThreshold)
-                .append(receiverThreshold, that.receiverThreshold)
-                .append(isSmartContract, that.isSmartContract)
-                .append(receiverSigRequired, that.receiverSigRequired)
-                .append(memo, that.memo)
-                .isEquals();
+        final InternalValue that = (InternalValue) other;
+        return balance == that.balance
+                && expirationTime == that.expirationTime
+                && autoRenewPeriod == that.autoRenewPeriod
+                && senderThreshold == that.senderThreshold
+                && receiverThreshold == that.receiverThreshold
+                && isSmartContract == that.isSmartContract
+                && receiverSigRequired == that.receiverSigRequired
+                && Objects.equals(memo, that.memo);
     }
 
     /**

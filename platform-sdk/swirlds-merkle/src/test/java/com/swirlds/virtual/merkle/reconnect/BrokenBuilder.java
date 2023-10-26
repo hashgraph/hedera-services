@@ -25,9 +25,11 @@ import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 
-public abstract class BrokenBuilder implements VirtualDataSourceBuilder<TestKey, TestValue> {
+public final class BrokenBuilder implements VirtualDataSourceBuilder<TestKey, TestValue> {
 
-    protected VirtualDataSourceBuilder<TestKey, TestValue> delegate;
+    private static final long CLASS_ID = 0x5a79654cd0f96dd0L;
+
+    VirtualDataSourceBuilder<TestKey, TestValue> delegate;
 
     int numCallsBeforeThrow = Integer.MAX_VALUE;
     int numCalls = 0;
@@ -38,6 +40,16 @@ public abstract class BrokenBuilder implements VirtualDataSourceBuilder<TestKey,
 
     public BrokenBuilder(VirtualDataSourceBuilder<TestKey, TestValue> delegate) {
         this.delegate = delegate;
+    }
+
+    @Override
+    public long getClassId() {
+        return CLASS_ID;
+    }
+
+    @Override
+    public int getVersion() {
+        return 1;
     }
 
     @Override
@@ -59,11 +71,16 @@ public abstract class BrokenBuilder implements VirtualDataSourceBuilder<TestKey,
     }
 
     @Override
-    public abstract BreakableDataSource build(final String label, final boolean withDbCompactionEnabled);
+    public BreakableDataSource build(final String label, final boolean withDbCompactionEnabled) {
+        return new BreakableDataSource(this, delegate.build(label, withDbCompactionEnabled));
+    }
 
     @Override
-    public abstract BreakableDataSource copy(
-            final VirtualDataSource<TestKey, TestValue> snapshotMe, final boolean makeCopyActive);
+    public BreakableDataSource copy(
+            final VirtualDataSource<TestKey, TestValue> snapshotMe, final boolean makeCopyActive) {
+        final var breakableSnapshot = (BreakableDataSource) snapshotMe;
+        return new BreakableDataSource(this, delegate.copy(breakableSnapshot.delegate, makeCopyActive));
+    }
 
     @Override
     public void snapshot(final Path to, final VirtualDataSource<TestKey, TestValue> snapshotMe) {
@@ -72,7 +89,9 @@ public abstract class BrokenBuilder implements VirtualDataSourceBuilder<TestKey,
     }
 
     @Override
-    public abstract BreakableDataSource restore(final String label, final Path from);
+    public BreakableDataSource restore(final String label, final Path from) {
+        return new BreakableDataSource(this, delegate.restore(label, from));
+    }
 
     public void setNumCallsBeforeThrow(final int numCallsBeforeThrow) {
         this.numCallsBeforeThrow = numCallsBeforeThrow;

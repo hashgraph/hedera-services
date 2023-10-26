@@ -67,15 +67,20 @@ public final class SignedStateFileWriter {
      */
     public static void writeHashInfoFile(final Path directory, final State state) throws IOException {
         final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
-        final String platformInfo = state.getPlatformState().getInfoString();
-        final String hashInfo = new MerkleTreeVisualizer(state)
-                .setDepth(stateConfig.debugHashDepth())
-                .render();
+        final String platformInfo = state.getInfoString(stateConfig.debugHashDepth());
+
         logger.info(
-                STATE_TO_DISK.getMarker(), "Information for state written to disk:\n{}\n{}", platformInfo, hashInfo);
+                STATE_TO_DISK.getMarker(),
+                """
+                        Information for state written to disk:
+                        {}""",
+                platformInfo);
 
         final Path hashInfoFile = directory.resolve(HASH_INFO_FILE_NAME);
 
+        final String hashInfo = new MerkleTreeVisualizer(state)
+                .setDepth(stateConfig.debugHashDepth())
+                .render();
         try (final BufferedWriter writer = new BufferedWriter(new FileWriter(hashInfoFile.toFile()))) {
             writer.write(hashInfo);
         }
@@ -84,9 +89,9 @@ public final class SignedStateFileWriter {
     /**
      * Write the signed state metadata file
      *
-     * @param selfId        the id of the platform
-     * @param directory     the directory to write to
-     * @param signedState   the signed state being written
+     * @param selfId      the id of the platform
+     * @param directory   the directory to write to
+     * @param signedState the signed state being written
      */
     public static void writeMetadataFile(
             @Nullable final NodeId selfId, @NonNull final Path directory, @NonNull final SignedState signedState)
@@ -202,9 +207,12 @@ public final class SignedStateFileWriter {
                     savedStateDirectory,
                     directory -> writeSignedStateFilesToDirectory(selfId, directory, signedState, configuration));
 
-            logger.info(
-                    STATE_TO_DISK.getMarker(),
-                    () -> new StateSavedToDiskPayload(signedState.getRound(), signedState.isFreezeState()).toString());
+            logger.info(STATE_TO_DISK.getMarker(), () -> new StateSavedToDiskPayload(
+                            signedState.getRound(),
+                            signedState.isFreezeState(),
+                            stateToDiskReason == null ? "UNKNOWN" : stateToDiskReason.toString(),
+                            savedStateDirectory)
+                    .toString());
         } catch (final Throwable e) {
             logger.error(
                     EXCEPTION.getMarker(),

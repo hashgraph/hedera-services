@@ -37,20 +37,13 @@ import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
-import com.swirlds.platform.FreezeManager;
-import com.swirlds.platform.PlatformConstructor;
-import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.CriticalQuorum;
-import com.swirlds.platform.components.EventCreationRules;
-import com.swirlds.platform.components.EventMapper;
-import com.swirlds.platform.components.EventTaskCreator;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.config.ThreadConfig;
-import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
-import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
@@ -60,6 +53,8 @@ import com.swirlds.platform.network.connectivity.ConnectionServer;
 import com.swirlds.platform.network.connectivity.InboundConnectionHandler;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
+import com.swirlds.platform.network.connectivity.TcpFactory;
+import com.swirlds.platform.network.connectivity.TlsFactory;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
 import com.swirlds.platform.network.topology.StaticTopology;
@@ -70,11 +65,17 @@ import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.PlatformConstructionException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
@@ -88,7 +89,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     private static final Logger logger = LogManager.getLogger(AbstractGossip.class);
 
     private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
-    private final ThreadConfig threadConfig;
 
     protected final PlatformContext platformContext;
     protected final AddressBook addressBook;
@@ -97,7 +97,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected final CriticalQuorum criticalQuorum;
     protected final NetworkMetrics networkMetrics;
     protected final SyncMetrics syncMetrics;
-    protected final EventTaskCreator eventTaskCreator;
     protected final ReconnectHelper reconnectHelper;
     protected final StaticConnectionManagers connectionManagers;
     protected final FallenBehindManagerImpl fallenBehindManager;
@@ -128,14 +127,10 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
      * @param intakeQueue                   the event intake queue
-     * @param freezeManager                 handles freezes
-     * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
      * @param stateManagementComponent      manages the lifecycle of the state queue
-     * @param eventObserverDispatcher       the object used to wire event intake
-     * @param eventMapper                   a data structure used to track the most recent event from each node
-     * @param eventIntakeMetrics            metrics for event intake
      * @param syncMetrics                   metrics for sync
+     * @param eventObserverDispatcher       the object used to wire event intake
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
@@ -148,18 +143,15 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final QueueThread<EventIntakeTask> intakeQueue,
-            @NonNull final FreezeManager freezeManager,
-            @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final EventMapper eventMapper,
-            @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
+
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
@@ -167,7 +159,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
         Objects.requireNonNull(time);
 
-        threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
+        final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         criticalQuorum = buildCriticalQuorum();
         eventObserverDispatcher.addObserver(criticalQuorum);
 
@@ -178,22 +170,20 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         topology = new StaticTopology(
                 addressBook, selfId, basicConfig.numConnections(), unidirectionalConnectionsEnabled());
 
-        final Configuration configuration = platformContext.getConfiguration();
-        final SocketFactory socketFactory =
-                PlatformConstructor.socketFactory(crypto.getKeysAndCerts(), cryptoConfig, socketConfig);
+        final SocketFactory socketFactory = socketFactory(crypto.getKeysAndCerts(), cryptoConfig, socketConfig);
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
-                selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion, configuration);
+                platformContext, selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
+                platformContext,
                 this,
                 selfId,
                 addressBook,
                 connectionManagers::newConnection,
                 shouldDoVersionCheck(),
                 appVersion,
-                time,
-                configuration);
+                time);
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(
@@ -213,35 +203,23 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         fallenBehindManager = buildFallenBehindManager();
 
         syncManager = new SyncManagerImpl(
-                platformContext.getMetrics(),
+                platformContext,
                 intakeQueue,
                 topology.getConnectionGraph(),
                 selfId,
-                new EventCreationRules(
-                        List.of(swirldStateManager.getTransactionPool(), startUpEventFrozenManager, freezeManager)),
                 criticalQuorum,
                 addressBook,
                 fallenBehindManager,
                 platformContext.getConfiguration().getConfigData(EventConfig.class));
 
-        eventTaskCreator = new EventTaskCreator(
-                eventMapper,
-                addressBook,
-                selfId,
-                eventIntakeMetrics,
-                intakeQueue,
-                platformContext.getConfiguration().getConfigData(EventConfig.class),
-                syncManager,
-                ThreadLocalRandom::current);
-
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
-        reconnectThrottle = new ReconnectThrottle(reconnectConfig);
+        reconnectThrottle = new ReconnectThrottle(reconnectConfig, time);
 
         networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, addressBook);
         platformContext.getMetrics().addUpdater(networkMetrics::update);
 
-        reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics());
+        reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), addressBook);
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         reconnectHelper = new ReconnectHelper(
@@ -249,7 +227,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 clearAllPipelinesForReconnect::run,
                 swirldStateManager::getConsensusState,
                 stateManagementComponent::getLastCompleteRound,
-                new ReconnectLearnerThrottle(selfId, reconnectConfig),
+                new ReconnectLearnerThrottle(time, selfId, reconnectConfig),
                 loadReconnectState,
                 new ReconnectLearnerFactory(
                         platformContext,
@@ -258,6 +236,29 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                         reconnectConfig.asyncStreamTimeout(),
                         reconnectMetrics),
                 stateConfig);
+    }
+
+    private static SocketFactory socketFactory(
+            @NonNull final KeysAndCerts keysAndCerts,
+            @NonNull final CryptoConfig cryptoConfig,
+            @NonNull final SocketConfig socketConfig) {
+        Objects.requireNonNull(keysAndCerts);
+        Objects.requireNonNull(cryptoConfig);
+        Objects.requireNonNull(socketConfig);
+
+        if (!socketConfig.useTLS()) {
+            return new TcpFactory(socketConfig);
+        }
+        try {
+            return new TlsFactory(keysAndCerts, socketConfig, cryptoConfig);
+        } catch (final NoSuchAlgorithmException
+                | UnrecoverableKeyException
+                | KeyStoreException
+                | KeyManagementException
+                | CertificateException
+                | IOException e) {
+            throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
+        }
     }
 
     /**

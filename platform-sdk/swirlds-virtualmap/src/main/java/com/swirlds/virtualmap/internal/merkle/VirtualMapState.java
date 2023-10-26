@@ -16,8 +16,7 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -26,7 +25,6 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.Path;
 import java.io.IOException;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Contains state for a {@link VirtualMap}. This state is stored in memory in the merkle tree as
@@ -207,7 +205,7 @@ public class VirtualMapState extends PartialMerkleLeaf implements MerkleLeaf {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("firstLeafPath", firstLeafPath)
                 .append("lastLeafPath", lastLeafPath)
                 .append("size", getSize())

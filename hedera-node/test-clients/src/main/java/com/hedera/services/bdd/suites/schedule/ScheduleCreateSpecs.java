@@ -57,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -135,6 +136,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                 validateSignersInInfo()));
     }
 
+    @HapiTest
     private HapiSpec suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
@@ -517,6 +519,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS));
     }
 
+    @HapiTest
     public HapiSpec rejectsFunctionlessTxn() {
         return defaultHapiSpec("RejectsFunctionlessTxn")
                 .given()

@@ -21,20 +21,29 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.COMPARE;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.TAKE;
-import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.*;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.ERROR;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.FAILED;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.FAILED_AS_EXPECTED;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED_UNEXPECTEDLY;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PENDING;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.RUNNING;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.HapiApiClients.clientsFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.*;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -63,14 +72,19 @@ import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransferList;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -95,12 +109,28 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class HapiSpec implements Runnable {
+    private static final long FIRST_NODE_ACCOUNT_NUM = 3L;
+    private static final int NUM_IN_USE_NODE_ACCOUNTS = 4;
+    private static final TransferList DEFAULT_NODE_BALANCE_FUNDING = TransferList.newBuilder()
+            .addAllAccountAmounts(Stream.concat(
+                            Stream.of(AccountAmount.newBuilder()
+                                    .setAmount(-NUM_IN_USE_NODE_ACCOUNTS * ONE_HBAR)
+                                    .setAccountID(AccountID.newBuilder().setAccountNum(2L))
+                                    .build()),
+                            LongStream.range(FIRST_NODE_ACCOUNT_NUM, FIRST_NODE_ACCOUNT_NUM + NUM_IN_USE_NODE_ACCOUNTS)
+                                    .mapToObj(number -> AccountAmount.newBuilder()
+                                            .setAmount(ONE_HBAR)
+                                            .setAccountID(AccountID.newBuilder().setAccountNum(number))
+                                            .build()))
+                    .toList())
+            .build();
     private static final AtomicLong NEXT_AUTO_SCHEDULE_NUM = new AtomicLong(1);
     private static final SplittableRandom RANDOM = new SplittableRandom();
     private static final String CI_PROPS_FLAG_FOR_NO_UNRECOVERABLE_NETWORK_FAILURES = "suppressNetworkFailures";
@@ -219,8 +249,7 @@ public class HapiSpec implements Runnable {
     public void exportAccountBalances(Supplier<String> dir) {
         AllAccountBalances.Builder allAccountBalancesBuilder =
                 AllAccountBalances.newBuilder().addAllAllAccounts(accountBalances);
-
-        try (FileOutputStream fout = new FileOutputStream(dir.get())) {
+        try (FileOutputStream fout = FileUtils.openOutputStream(new File(dir.get()))) {
             allAccountBalancesBuilder.build().writeTo(fout);
         } catch (IOException e) {
             log.error(String.format("Could not export to '%s'!", dir), e);
@@ -348,7 +377,7 @@ public class HapiSpec implements Runnable {
                 ratesProvider.init();
                 feeCalculator.init();
                 return true;
-            } catch (final Throwable t) {
+            } catch (final IOException t) {
                 secsWait--;
                 if (secsWait < 0) {
                     log.error("Fees failed to initialize! Please check if server is down...", t);
@@ -360,10 +389,14 @@ public class HapiSpec implements Runnable {
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException ignored) {
-                        log.error("Error while waiting to connect to server");
+                        log.error("Interrupted while waiting to connect to server");
                         Thread.currentThread().interrupt();
                     }
                 }
+            } catch (IllegalStateException | ReflectiveOperationException | GeneralSecurityException e) {
+                status = ERROR; // These are unrecoverable; save a lot of time and just fail the test.
+                log.error("Irrecoverable error in test nodes or client JVM. Unable to continue.", e);
+                return false;
             }
         }
         return false;
@@ -377,8 +410,9 @@ public class HapiSpec implements Runnable {
         if (hapiSetup.costSnapshotMode() == COMPARE) {
             try {
                 loadCostSnapshot();
-            } catch (Exception ignore) {
+            } catch (RuntimeException ignore) {
                 status = ERROR;
+                log.warn("Failed to load cost snapshot.", ignore);
                 return false;
             }
         }
@@ -412,6 +446,7 @@ public class HapiSpec implements Runnable {
                 ops = Stream.concat(creationOps.stream(), ops.stream()).toList();
             }
         }
+        log.info("{} test suite started !", logPrefix());
 
         status = RUNNING;
         if (hapiSetup.statusDeferredResolvesDoAsync()) {
@@ -428,6 +463,11 @@ public class HapiSpec implements Runnable {
             log.info("Auto-scheduling {}", autoScheduled);
         }
         @Nullable List<EventualRecordStreamAssertion> assertions = null;
+        // No matter what, just distribute some hbar to the default node accounts
+        cryptoTransfer((ignore, builder) -> builder.setTransfers(DEFAULT_NODE_BALANCE_FUNDING))
+                .deferStatusResolution()
+                .hasAnyStatusAtAll()
+                .execFor(this);
         for (HapiSpecOperation op : ops) {
             if (!autoScheduled.isEmpty() && op.shouldSkipWhenAutoScheduling(autoScheduled)) {
                 continue;
@@ -475,6 +515,9 @@ public class HapiSpec implements Runnable {
                 status = FAILED;
                 failure = maybeRecordStreamError.get();
             }
+        } else if (assertions != null) {
+            assertions.forEach(EventualRecordStreamAssertion::unsubscribe);
+            RECORD_STREAM_ACCESS.stopMonitorIfNoSubscribers();
         }
 
         tearDown();
@@ -791,8 +834,12 @@ public class HapiSpec implements Runnable {
 
     public static Map<String, String> ciPropOverrides() {
         if (ciPropsSource == null) {
-            dynamicNodes =
-                    Stream.of(dynamicNodes.split(",")).map(s -> s + ":" + 50211).collect(joining(","));
+            // Make sure there is a port number specified for each node. Note that the node specification
+            // is expected to be in the form of <host>[:<port>[:<account>]]. If port is not specified we will
+            // default to 50211, if account is not specified, we leave it off.
+            dynamicNodes = Stream.of(dynamicNodes.split(","))
+                    .map(s -> s.contains(":") ? s : s + ":" + 50211)
+                    .collect(joining(","));
             String ciPropertiesMap =
                     Optional.ofNullable(System.getenv("CI_PROPERTIES_MAP")).orElse("");
             log.info("CI_PROPERTIES_MAP: {}", ciPropertiesMap);

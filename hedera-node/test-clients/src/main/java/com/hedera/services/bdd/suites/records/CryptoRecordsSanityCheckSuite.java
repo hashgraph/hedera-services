@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
@@ -73,6 +74,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
         });
     }
 
+    @HapiTest
     private HapiSpec ownershipChangeShowsInRecord() {
         final var firstOwner = "A";
         final var secondOwner = "B";
@@ -105,6 +107,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
                         getTxnRecord(xferRecord).logged());
     }
 
+    @HapiTest
     private HapiSpec cryptoCreateRecordSanityChecks() {
         return defaultHapiSpec("CryptoCreateRecordSanityChecks")
                 .given(takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER))
@@ -115,6 +118,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
+    @HapiTest
     private HapiSpec cryptoDeleteRecordSanityChecks() {
         return defaultHapiSpec("CryptoDeleteRecordSanityChecks")
                 .given(flattened(
@@ -129,6 +133,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
+    @HapiTest
     private HapiSpec cryptoTransferRecordSanityChecks() {
         return defaultHapiSpec("CryptoTransferRecordSanityChecks")
                 .given(flattened(
@@ -141,6 +146,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
+    @HapiTest
     private HapiSpec cryptoUpdateRecordSanityChecks() {
         return defaultHapiSpec("CryptoUpdateRecordSanityChecks")
                 .given(flattened(

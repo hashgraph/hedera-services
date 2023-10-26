@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.fixtures.workflows;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
@@ -34,6 +35,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -255,6 +257,9 @@ public class FakePreHandleContext implements PreHandleContext {
             throw new PreCheckException(responseCode);
         }
 
+        // Verify this key isn't for an immutable account
+        verifyIsNotImmutableAccount(key, responseCode);
+
         return requireKey(key);
     }
 
@@ -366,6 +371,18 @@ public class FakePreHandleContext implements PreHandleContext {
 
     @NonNull
     @Override
+    public PreHandleContext requireSignatureForHollowAccountCreation(@NonNull final Bytes hollowAccountAlias) {
+        requireNonNull(hollowAccountAlias);
+        requiredHollowAccounts.add(Account.newBuilder()
+                .accountId(AccountID.DEFAULT)
+                .key(EMPTY_KEY_LIST)
+                .alias(hollowAccountAlias)
+                .build());
+        return this;
+    }
+
+    @NonNull
+    @Override
     public TransactionKeys allKeysForTransaction(
             @NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested) {
         throw new UnsupportedOperationException("Not yet implemented");
@@ -396,5 +413,23 @@ public class FakePreHandleContext implements PreHandleContext {
                 + requiredNonPayerKeys + ", innerContext="
                 + innerContext + ", stores="
                 + stores + '}';
+    }
+
+    /**
+     * THIS IS A COPY of {@code verifyIsNotImmutableAccount} in the token service package. It should
+     * NOT exist here, but needs to in order for this class to function correctly. However, it
+     * should be removed as soon as possible (along with this deprecated class).
+     * <p>
+     * Checks that a key does not represent an immutable account, e.g. the staking rewards account.
+     * Throws a {@link PreCheckException} with the designated response code otherwise.
+     * @param key the key to check
+     * @param responseCode the response code to throw
+     * @throws PreCheckException if the account is considered immutable
+     */
+    private static void verifyIsNotImmutableAccount(
+            @Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException {
+        if (EMPTY_KEY_LIST.equals(key)) {
+            throw new PreCheckException(responseCode);
+        }
     }
 }

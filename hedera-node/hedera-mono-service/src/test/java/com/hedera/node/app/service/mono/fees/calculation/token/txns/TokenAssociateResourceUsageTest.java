@@ -29,7 +29,6 @@ import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenAssociateUsage;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
@@ -109,7 +108,7 @@ class TokenAssociateResourceUsageTest {
     }
 
     @Test
-    void delegatesToCorrectEstimate() throws InvalidTxBodyException {
+    void delegatesToCorrectEstimate() {
         final var mockStatic = mockStatic(TokenAssociateUsage.class);
         mockStatic
                 .when(() -> TokenAssociateUsage.newEstimate(tokenAssociateTxn, txnUsageEstimator))
@@ -122,7 +121,7 @@ class TokenAssociateResourceUsageTest {
     }
 
     @Test
-    void returnsDefaultIfInfoMissing() throws InvalidTxBodyException {
+    void returnsDefaultIfInfoMissing() {
         given(accounts.get(EntityNum.fromAccountId(target))).willReturn(null);
 
         assertEquals(FeeData.getDefaultInstance(), subject.usageGiven(tokenAssociateTxn, obj, view));

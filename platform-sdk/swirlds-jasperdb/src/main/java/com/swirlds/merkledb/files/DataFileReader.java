@@ -366,8 +366,8 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
             BUFFER_CACHE.set(buffer);
         }
         // Try a few times. It's very unlikely (other than in tests) that a thread is
-        // interrupted more than once in short period of time, so 2 retries should be enough
-        for (int retries = 2; retries > 0; retries--) {
+        // interrupted more than once in short period of time, so 3 retries should be enough
+        for (int retries = 3; retries > 0; retries--) {
             final int fcIndex = leaseFileChannel();
             final FileChannel fileChannel = fileChannels.get(fcIndex);
             try {

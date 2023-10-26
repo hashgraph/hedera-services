@@ -19,7 +19,6 @@ package com.swirlds.merkledb.files;
 import static com.swirlds.merkledb.files.DataFileCommon.FOOTER_SIZE;
 import static com.swirlds.merkledb.files.DataFileCommon.PAGE_SIZE;
 import static com.swirlds.merkledb.files.DataFileCommon.createDataFilePath;
-import static com.swirlds.merkledb.files.DataFileCommon.getLockFilePath;
 
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
@@ -52,12 +51,6 @@ public final class DataFileWriter<D> {
 
     /** Mapped buffer size */
     private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 4;
-
-    /**
-     * The file channel we are writing to. The channel isn't used directly to write bytes, but to
-     * create mapped byte buffers.
-     */
-    private FileChannel writingChannel;
     /**
      * The current mapped byte buffer used for writing. When overflowed, it is released, and another
      * buffer is mapped from the file channel.
@@ -79,8 +72,6 @@ public final class DataFileWriter<D> {
     private final Instant creationInstant;
     /** The path to the data file we are writing */
     private final Path path;
-    /** The path to the lock file for data file we are writing */
-    private final Path lockFilePath;
     /** File metadata */
     private final DataFileMetadata metadata;
     /**
@@ -118,27 +109,23 @@ public final class DataFileWriter<D> {
             final Path dataFileDir,
             final int index,
             final DataItemSerializer<D> dataItemSerializer,
-            final Instant creationTime)
+            final Instant creationTime,
+            final int compactionLevel)
             throws IOException {
         this.index = index;
         this.dataItemSerializer = dataItemSerializer;
         this.creationInstant = creationTime;
         this.path = createDataFilePath(filePrefix, dataFileDir, index, creationInstant);
-        this.lockFilePath = getLockFilePath(path);
-        if (Files.exists(lockFilePath)) {
-            throw new IOException("Tried to start writing to data file [" + path + "] when lock file already existed");
-        }
         metadata = new DataFileMetadata(
                 DataFileCommon.FILE_FORMAT_VERSION,
                 dataItemSerializer.getSerializedSize(),
                 0, // data item count will be updated later in finishWriting()
                 index,
                 creationInstant,
-                dataItemSerializer.getCurrentDataVersion());
-        writingChannel = FileChannel.open(
-                path, StandardOpenOption.CREATE_NEW, StandardOpenOption.READ, StandardOpenOption.WRITE);
+                dataItemSerializer.getCurrentDataVersion(),
+                compactionLevel);
+        Files.createFile(path);
         moveMmapBuffer(0);
-        Files.createFile(lockFilePath);
     }
 
     /**
@@ -149,9 +136,17 @@ public final class DataFileWriter<D> {
      * @throws IOException if I/O error(s) occurred
      */
     private void moveMmapBuffer(final int currentMmapPos) throws IOException {
-        mmapPositionInFile += currentMmapPos;
-        closeMmapBuffer();
-        writingMmap = writingChannel.map(MapMode.READ_WRITE, mmapPositionInFile, MMAP_BUF_SIZE);
+        try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+            final MappedByteBuffer newMap =
+                    channel.map(MapMode.READ_WRITE, mmapPositionInFile + currentMmapPos, MMAP_BUF_SIZE);
+            // theoretically it's possible, we should check it
+            if (newMap == null) {
+                throw new IOException("Failed to map file channel to memory");
+            }
+            closeMmapBuffer();
+            writingMmap = newMap;
+            mmapPositionInFile += currentMmapPos;
+        }
     }
 
     /** Closes (unmaps) the current mapped byte buffer used to write bytes, if not null. */
@@ -301,14 +296,12 @@ public final class DataFileWriter<D> {
         final long totalFileSize = mmapPositionInFile + writingMmap.position();
         // release all the resources
         closeMmapBuffer();
-        writingChannel.truncate(totalFileSize);
-        // after finishWriting(), mmapPositionInFile should be equal to the file size
-        mmapPositionInFile = totalFileSize;
-        writingChannel.force(true);
-        writingChannel.close();
-        writingChannel = null;
-        // delete lock file
-        Files.delete(lockFilePath);
+
+        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+            channel.truncate(totalFileSize);
+            // after finishWriting(), mmapPositionInFile should be equal to the file size
+            mmapPositionInFile = totalFileSize;
+        }
     }
 
     /**

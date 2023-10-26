@@ -23,12 +23,10 @@ import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.PlatformCliLogo;
 import com.swirlds.cli.utility.PlatformCliPreParser;
 import com.swirlds.common.formatting.TextEffect;
-import java.nio.file.Files;
+import com.swirlds.common.startup.Log4jSetup;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LoggerContext;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -157,41 +155,6 @@ public class PlatformCli extends AbstractCommand {
     }
 
     /**
-     * Start log4j on a background thread. Log4j takes a long time to load, and finding
-     * subcommands by walking the class graph takes a long time, so it's good
-     * if we can do both at the same time.
-     *
-     * @param log4jPath
-     * 		the path to the log4j configuration if it exists, or null if it doesn't
-     * @return a latch that counts down when log4j has been started
-     */
-    @SuppressWarnings("java:S106")
-    private static CountDownLatch startLog4j(final Path log4jPath) {
-        final CountDownLatch log4jLoadedLatch = new CountDownLatch(1);
-
-        boolean log4jConfigProvided = false;
-        if (log4jPath != null) {
-            if (Files.exists(log4jPath)) {
-                log4jConfigProvided = true;
-                new Thread(() -> {
-                            final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-                            context.setConfigLocation(log4jPath.toUri());
-                            log4jLoadedLatch.countDown();
-                        })
-                        .start();
-            } else {
-                System.err.println("File " + log4jPath + " does not exist.");
-            }
-        }
-
-        if (!log4jConfigProvided) {
-            log4jLoadedLatch.countDown();
-        }
-
-        return log4jLoadedLatch;
-    }
-
-    /**
      * Main entrypoint for the platform CLI.
      *
      * @param args
@@ -206,7 +169,7 @@ public class PlatformCli extends AbstractCommand {
         // Will lack actual color if color has been disabled
         System.out.println(PlatformCliLogo.getColorizedLogo());
 
-        final CountDownLatch log4jLatch = startLog4j(preParser.getLog4jPath());
+        final CountDownLatch log4jLatch = Log4jSetup.startLoggingFramework(preParser.getLog4jPath());
 
         whitelistCliPackage("com.swirlds.platform.cli");
         whitelistCliPackage("com.swirlds.platform.state.editor");

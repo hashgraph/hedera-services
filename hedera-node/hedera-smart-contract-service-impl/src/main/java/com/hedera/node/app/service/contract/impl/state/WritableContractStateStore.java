@@ -93,6 +93,14 @@ public class WritableContractStateStore implements ContractStateStore {
      * {@inheritDoc}
      */
     @Override
+    public SlotValue getSlotValueForModify(@NonNull SlotKey key) {
+        return storage.getForModify(requireNonNull(key));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public @Nullable SlotValue getOriginalSlotValue(@NonNull final SlotKey key) {
         return storage.getOriginalValue(requireNonNull(key));
     }
@@ -103,5 +111,10 @@ public class WritableContractStateStore implements ContractStateStore {
     @Override
     public long getNumSlots() {
         return storage.size();
+    }
+
+    @Override
+    public long getNumBytecodes() {
+        return bytecode.size();
     }
 }

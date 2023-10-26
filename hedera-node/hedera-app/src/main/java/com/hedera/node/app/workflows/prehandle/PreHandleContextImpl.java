@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyIsNotImmutableAccount;
+import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
@@ -35,6 +37,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -158,7 +161,10 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     @NonNull
     @Override
-    public PreHandleContext optionalKey(@NonNull final Key key) {
+    public PreHandleContext optionalKey(@NonNull final Key key) throws PreCheckException {
+        // Verify this key isn't for an immutable account
+        verifyIsNotImmutableAccount(key, ResponseCodeEnum.INVALID_ACCOUNT_ID);
+
         if (!key.equals(payerKey) && isValid(key)) {
             optionalNonPayerKeys.add(key);
         }
@@ -167,7 +173,7 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     @NonNull
     @Override
-    public PreHandleContext optionalKeys(@NonNull final Set<Key> keys) {
+    public PreHandleContext optionalKeys(@NonNull final Set<Key> keys) throws PreCheckException {
         for (final Key nextKey : keys) {
             optionalKey(nextKey);
         }
@@ -225,6 +231,10 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (!isValid(key)) {
             throw new PreCheckException(responseCode);
         }
+
+        // Verify this key isn't for an immutable account
+        verifyIsNotImmutableAccount(key, responseCode);
+
         return requireKey(key);
     }
 
@@ -251,6 +261,9 @@ public class PreHandleContextImpl implements PreHandleContext {
             throw new PreCheckException(responseCode);
         }
 
+        // Verify this key isn't for an immutable account
+        verifyIsNotImmutableAccount(key, responseCode);
+
         return requireKey(key);
     }
 
@@ -275,6 +288,9 @@ public class PreHandleContextImpl implements PreHandleContext {
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
+
+        // Verify this key isn't for an immutable account
+        verifyIsNotImmutableAccount(key, responseCode);
 
         return requireKey(key);
     }
@@ -310,6 +326,9 @@ public class PreHandleContextImpl implements PreHandleContext {
             throw new PreCheckException(responseCode);
         }
 
+        // Verify this key isn't for an immutable account
+        verifyIsNotImmutableAccount(key, responseCode);
+
         return requireKey(key);
     }
 
@@ -343,6 +362,9 @@ public class PreHandleContextImpl implements PreHandleContext {
             throw new PreCheckException(responseCode);
         }
 
+        // Verify this key isn't for an immutable account
+        verifyIsNotImmutableAccount(key, responseCode);
+
         return requireKey(key);
     }
 
@@ -357,6 +379,18 @@ public class PreHandleContextImpl implements PreHandleContext {
         }
 
         requiredHollowAccounts.add(hollowAccount);
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public PreHandleContext requireSignatureForHollowAccountCreation(@NonNull final Bytes hollowAccountAlias) {
+        requireNonNull(hollowAccountAlias);
+        requiredHollowAccounts.add(Account.newBuilder()
+                .accountId(AccountID.DEFAULT)
+                .key(EMPTY_KEY_LIST)
+                .alias(hollowAccountAlias)
+                .build());
         return this;
     }
 

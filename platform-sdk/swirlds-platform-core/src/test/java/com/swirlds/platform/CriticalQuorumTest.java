@@ -33,6 +33,7 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -83,9 +84,10 @@ class CriticalQuorumTest {
         final BaseEventUnhashedData baseEventUnhashedData = new BaseEventUnhashedData();
 
         final ConsensusData consensusData = new ConsensusData();
-        consensusData.setRoundCreated(roundCreated);
+        final EventImpl event = new EventImpl(baseEventHashedData, baseEventUnhashedData, consensusData);
+        event.setRoundCreated(roundCreated);
 
-        return new EventImpl(baseEventHashedData, baseEventUnhashedData, consensusData);
+        return event;
     }
 
     /**

@@ -43,9 +43,7 @@ import org.apache.logging.log4j.core.LoggerContext;
 public class RecordBlockNumberTool {
     private static final String LOG_CONFIG_PROPERTY = "logConfig";
     private static final String FILE_NAME_PROPERTY = "fileName";
-    private static final String DEST_DIR_PROPERTY = "destDir";
     private static final String DIR_PROPERTY = "dir";
-    private static final String HAPI_PROTOBUF_VERSION = "hapiProtoVersion";
 
     private static final Logger LOGGER = LogManager.getLogger(RecordBlockNumberTool.class);
     private static final Marker MARKER = MarkerManager.getMarker("BLOCK_NUMBER");
@@ -54,7 +52,9 @@ public class RecordBlockNumberTool {
     /** name of RecordStreamType */
     private static final String RECORD_STREAM_EXTENSION = "rcd";
 
-    private static long prevBlockNumber = 0;
+    private static final String COMPRESSED_RECORD_STREAM_EXTENSION = "rcd.gz";
+
+    private static long prevBlockNumber = -1;
 
     public static void prepare() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
@@ -67,6 +67,12 @@ public class RecordBlockNumberTool {
         registry.registerConstructables("com.hedera.services.stream");
     }
 
+    private static Pair<Integer, Optional<RecordStreamFile>> readMaybeCompressedRecordStreamFile(final String loc)
+            throws IOException {
+        final var isCompressed = loc.endsWith(COMPRESSED_RECORD_STREAM_EXTENSION);
+        return isCompressed ? readRecordStreamFile(loc) : readUncompressedRecordStreamFile(loc);
+    }
+
     private static Pair<Integer, Optional<RecordStreamFile>> readUncompressedRecordStreamFile(final String fileLoc)
             throws IOException {
         try (final FileInputStream fin = new FileInputStream(fileLoc)) {
@@ -74,6 +80,16 @@ public class RecordBlockNumberTool {
             final RecordStreamFile recordStreamFile = RecordStreamFile.parseFrom(fin);
             return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamFile));
         }
+    }
+
+    private static Pair<Integer, Optional<RecordStreamFile>> readRecordStreamFile(final String fileLoc)
+            throws IOException {
+        final var uncompressedFileContents = FileCompressionUtils.readUncompressedFileBytes(fileLoc);
+        final var recordFileVersion =
+                ByteBuffer.wrap(uncompressedFileContents, 0, 4).getInt();
+        final var recordStreamFile = RecordStreamFile.parseFrom(
+                ByteBuffer.wrap(uncompressedFileContents, 4, uncompressedFileContents.length - 4));
+        return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamFile));
     }
 
     private static void trackBlockNumber(final long currentBlockNumber) {
@@ -96,21 +112,47 @@ public class RecordBlockNumberTool {
         prevBlockNumber = currentBlockNumber;
     }
 
-    private static void readRecordFile(final String recordFile) {
-        // extract latest app version from system property if available
-        final String appVersionString = System.getProperty(HAPI_PROTOBUF_VERSION);
+    // Suppressing the warning that Optional.isEmpty is not called before using the Optional.
+    // In reality, it is called, Sonar just can't detect it.
+    // Ignoring also that we use generic exception instead of custom
+    @SuppressWarnings({"java:S3655", "java:S112"})
+    private static Pair<byte[], byte[]> readRecordFile(final String recordFile) {
         try {
             // parse record file
-            final Pair<Integer, Optional<RecordStreamFile>> recordResult = readUncompressedRecordStreamFile(recordFile);
+            final Pair<Integer, Optional<RecordStreamFile>> recordResult =
+                    readMaybeCompressedRecordStreamFile(recordFile);
+
+            if (recordResult.getValue().isEmpty()) {
+                throw new RuntimeException("Record result is empty");
+            }
+
             final long blockNumber = recordResult.getValue().get().getBlockNumber();
 
             trackBlockNumber(blockNumber);
+
+            final byte[] startRunningHash = recordResult
+                    .getValue()
+                    .get()
+                    .getStartObjectRunningHash()
+                    .getHash()
+                    .toByteArray();
+            final byte[] endRunningHash = recordResult
+                    .getValue()
+                    .get()
+                    .getEndObjectRunningHash()
+                    .getHash()
+                    .toByteArray();
+
+            return Pair.of((startRunningHash), (endRunningHash));
         } catch (final IOException e) {
             Thread.currentThread().interrupt();
-            LOGGER.error(MARKER, "Got IOException when reading record file {}", recordFile, e);
+            LOGGER.error(MARKER, "Got IOException when reading record file {} : {}", recordFile, e);
+            return Pair.of(null, null);
         }
     }
 
+    // Suppressing the warning that we use generic exception instead of custom
+    @SuppressWarnings("java:S112")
     public static void main(final String[] args) {
         // register constructables and set settings
         try {
@@ -150,15 +192,36 @@ public class RecordBlockNumberTool {
      *
      * @param sourceDir the directory where the files to read are located
      */
+    // Suppressing the warning that we are declaring generic exception that is thrown
+    @SuppressWarnings("java:S1130")
     public static void readAllFiles(final String sourceDir) throws IOException {
         final File folder = new File(sourceDir);
-        final File[] streamFiles = folder.listFiles(f -> f.getAbsolutePath().endsWith(RECORD_STREAM_EXTENSION));
+        final File[] streamFiles =
+                folder.listFiles(f -> f.getAbsolutePath().endsWith(COMPRESSED_RECORD_STREAM_EXTENSION)
+                        || f.getAbsolutePath().endsWith(RECORD_STREAM_EXTENSION));
         Arrays.sort(streamFiles); // sort by file names and timestamps
 
         final List<File> totalList = new ArrayList<>();
         totalList.addAll(Arrays.asList(Optional.ofNullable(streamFiles).orElse(new File[0])));
+        byte[] startRunningHash = null;
+        byte[] endRunningHash = null;
         for (final File item : totalList) {
-            readRecordFile(item.getAbsolutePath());
+            final Pair<byte[], byte[]> hashes = readRecordFile(item.getAbsolutePath());
+            // check if pair left and right are null
+            if (hashes.getLeft() == null || hashes.getRight() == null) {
+                LOGGER.error(MARKER, "startRunningHash or endRunningHash of file {} is null", item.getAbsolutePath());
+                return;
+            }
+            startRunningHash = hashes.getLeft();
+            if (endRunningHash != null) {
+                if (!Arrays.equals(startRunningHash, endRunningHash)) {
+                    LOGGER.error(
+                            MARKER,
+                            "startRunningHash of file {} is not equal to endRunningHash of previous file",
+                            item.getAbsolutePath());
+                }
+            }
+            endRunningHash = hashes.getRight();
         }
     }
 }

@@ -473,7 +473,6 @@ public class VirtualPipeline {
         for (PipelineListNode<VirtualRoot> node = copies.getFirst(); node != null; node = node.getNext()) {
             final VirtualRoot copy = node.getValue();
             if (!copy.isImmutable()) {
-                assert node.getNext() == null;
                 break;
             }
             final long estimatedSize = copy.estimatedSize();
@@ -562,8 +561,10 @@ public class VirtualPipeline {
                 logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Merge {}", copy.getFastCopyVersion());
                 merge(next);
                 copies.remove(next);
-                statistics.setPipelineSize(copies.getSize());
             }
+            statistics.setPipelineSize(copies.getSize());
+            final long totalSize = currentTotalSize();
+            statistics.setNodeCacheSize(totalSize);
             next = next.getNext();
         }
     }

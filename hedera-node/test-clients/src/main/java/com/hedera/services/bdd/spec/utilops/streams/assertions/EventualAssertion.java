@@ -34,4 +34,8 @@ public abstract class EventualAssertion extends UtilOp {
     protected EventualAssertion(final Duration timeout) {
         result = new EventualAssertionResult(timeout);
     }
+
+    protected EventualAssertion(final boolean hasPassedIfNothingFailed) {
+        result = new EventualAssertionResult(hasPassedIfNothingFailed, DEFAULT_TIMEOUT);
+    }
 }

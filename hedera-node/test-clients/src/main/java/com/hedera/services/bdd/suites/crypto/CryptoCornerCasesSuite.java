@@ -26,6 +26,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -39,6 +40,7 @@ import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class CryptoCornerCasesSuite extends HapiSuite {
@@ -66,6 +68,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
                 .build();
     }
 
+    @HapiTest
     public static HapiSpec invalidTransactionBody() {
         return defaultHapiSpec("InvalidTransactionBody")
                 .given()
@@ -87,6 +90,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return TxnUtils.replaceTxnNodeAccount(txn, badNodeAccount);
     }
 
+    @HapiTest
     public static HapiSpec invalidNodeAccount() {
         return defaultHapiSpec("InvalidNodeAccount")
                 .given()
@@ -101,6 +105,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return TxnUtils.replaceTxnDuration(txn, -1L);
     }
 
+    @HapiTest
     public static HapiSpec invalidTransactionDuration() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
@@ -116,6 +121,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return TxnUtils.replaceTxnMemo(txn, newMemo);
     }
 
+    @HapiTest
     public static HapiSpec invalidTransactionMemoTooLong() {
         return defaultHapiSpec("InvalidTransactionMemoTooLong")
                 .given()
@@ -135,6 +141,8 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return TxnUtils.replaceTxnPayerAccount(txn, badPayerAccount);
     }
 
+    @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
     public static HapiSpec invalidTransactionPayerAccountNotFound() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
@@ -150,6 +158,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return TxnUtils.replaceTxnStartTime(txn, newStartTimeSecs, 0);
     }
 
+    @HapiTest
     public static HapiSpec invalidTransactionStartTime() {
         return defaultHapiSpec("InvalidTransactionStartTime")
                 .given()

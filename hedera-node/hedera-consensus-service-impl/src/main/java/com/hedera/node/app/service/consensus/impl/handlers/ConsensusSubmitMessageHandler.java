@@ -43,6 +43,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -99,14 +101,6 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
         final var txn = handleContext.body();
         final var op = txn.consensusSubmitMessageOrThrow();
-
-        final var fees = handleContext
-                .feeCalculator(SubType.DEFAULT)
-                .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE + op.message().length())
-                .addNetworkRamByteSeconds((LONG_SIZE + TX_HASH_SIZE) * RECEIPT_STORAGE_TIME_SEC)
-                .calculate();
-
-        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
 
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         final var topic = topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT));
@@ -262,5 +256,18 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         } catch (final NoSuchAlgorithmException fatal) {
             throw new IllegalStateException(fatal);
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body().consensusSubmitMessageOrThrow();
+
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE + op.message().length())
+                .addNetworkRamByteSeconds((LONG_SIZE + TX_HASH_SIZE) * RECEIPT_STORAGE_TIME_SEC)
+                .calculate();
     }
 }

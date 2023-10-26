@@ -56,7 +56,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
     private final HydratedEthTxData hydratedEthTxData;
 
     private final ActionSidecarContentTracer tracer;
-    private final RootProxyWorldUpdater worldUpdater;
+    private final RootProxyWorldUpdater rootProxyWorldUpdater;
     private final HevmTransactionFactory hevmTransactionFactory;
     private final Supplier<HederaWorldUpdater> feesOnlyUpdater;
     private final Map<HederaEvmVersion, TransactionProcessor> processors;
@@ -78,7 +78,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         this.tracer = Objects.requireNonNull(tracer);
         this.feesOnlyUpdater = Objects.requireNonNull(feesOnlyUpdater);
         this.processors = Objects.requireNonNull(processors);
-        this.worldUpdater = Objects.requireNonNull(worldUpdater);
+        this.rootProxyWorldUpdater = Objects.requireNonNull(worldUpdater);
         this.configuration = Objects.requireNonNull(configuration);
         this.contractsConfig = Objects.requireNonNull(contractsConfig);
         this.hederaEvmContext = Objects.requireNonNull(hederaEvmContext);
@@ -98,10 +98,11 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
 
         // Process the transaction
         final var result = processor.processTransaction(
-                hevmTransaction, worldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
+                hevmTransaction, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
 
         // Return the outcome, maybe enriched with details of the base commit and Ethereum transaction
-        return new CallOutcome(result.asProtoResultOf(ethTxDataIfApplicable(), worldUpdater), result.finalStatus());
+        return new CallOutcome(
+                result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result.finalStatus());
     }
 
     private void assertEthTxDataValidIfApplicable() {

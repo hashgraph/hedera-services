@@ -17,8 +17,6 @@
 package com.swirlds.platform.gossip;
 
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.system.EventCreationRule;
-import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.StatusActionSubmitter;
@@ -36,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * A thread-safe implementation of {@link FallenBehindManager}
  */
-public class FallenBehindManagerImpl implements FallenBehindManager, EventCreationRule {
+public class FallenBehindManagerImpl implements FallenBehindManager {
     /**
      * a set of all neighbors of this node
      */
@@ -159,13 +157,5 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
     @Override
     public int numReportedFallenBehind() {
         return numReportFallenBehind;
-    }
-
-    @Override
-    public EventCreationRuleResponse shouldCreateEvent() {
-        if (hasFallenBehind()) {
-            return EventCreationRuleResponse.DONT_CREATE;
-        }
-        return EventCreationRuleResponse.PASS;
     }
 }

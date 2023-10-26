@@ -14,7 +14,7 @@ module com.hedera.node.app.service.network.admin.impl {
     requires com.hedera.node.app.service.file;
     requires com.hedera.node.app.service.token;
     requires com.google.common;
-    requires com.swirlds.config;
+    requires com.swirlds.config.api;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
 

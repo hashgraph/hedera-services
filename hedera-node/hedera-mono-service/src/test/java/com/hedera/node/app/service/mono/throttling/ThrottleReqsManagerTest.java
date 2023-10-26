@@ -91,6 +91,26 @@ class ThrottleReqsManagerTest {
     }
 
     @Test
+    void undoingClaimedReqsResetsUsageSnapshotToZero() {
+        // when:
+        var result = subject.allReqsMetAt(now);
+
+        // then:
+        assertTrue(result);
+        // and:
+        assertEquals(
+                aReq * BucketThrottle.capacityUnitsPerTxn(), a.usageSnapshot().used());
+        assertEquals(
+                bReq * BucketThrottle.capacityUnitsPerTxn(), b.usageSnapshot().used());
+
+        // and when:
+        subject.undoClaimedReqsFor(1);
+
+        assertEquals(0, a.usageSnapshot().used());
+        assertEquals(0, b.usageSnapshot().used());
+    }
+
+    @Test
     void usesExpectedCapacityWithOnlyOneReqMet() {
         // given:
         a.allow(aReq, lastDecision);

@@ -32,6 +32,7 @@ import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -43,7 +44,6 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 
 public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
@@ -71,6 +71,9 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     @Nullable
     private Consumer<byte[]> aliasObserver = null;
+
+    @Nullable
+    private Consumer<ByteString> ledgerIdObserver = null;
 
     private Optional<Consumer<String>> contractAccountIdObserver = Optional.empty();
     private Optional<Integer> tokenAssociationsCount = Optional.empty();
@@ -136,6 +139,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     public HapiGetAccountInfo exposingAliasTo(Consumer<byte[]> obs) {
         this.aliasObserver = obs;
+        return this;
+    }
+
+    public HapiGetAccountInfo exposingLedgerIdTo(Consumer<ByteString> obs) {
+        this.ledgerIdObserver = obs;
         return this;
     }
 
@@ -240,7 +248,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
             }
             assertEquals(actualCount, usedCount);
         });
-        expectedLedgerId.ifPresent(id -> assertEquals(rationalize(id), actualInfo.getLedgerId()));
+        expectedLedgerId.ifPresent(id -> assertEquals(id, actualInfo.getLedgerId()));
 
         tokenAssociationsCount.ifPresent(count -> assertEquals(count, actualInfo.getTokenRelationshipsCount()));
     }
@@ -275,6 +283,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
             Optional.ofNullable(aliasObserver)
                     .ifPresent(cb ->
                             cb.accept(infoResponse.getAccountInfo().getAlias().toByteArray()));
+            Optional.ofNullable(ledgerIdObserver)
+                    .ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getLedgerId()));
             contractAccountIdObserver.ifPresent(
                     cb -> cb.accept(infoResponse.getAccountInfo().getContractAccountID()));
         }

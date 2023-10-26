@@ -22,6 +22,7 @@ import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Properties;
@@ -67,7 +68,7 @@ public class PropertyConfigSource implements ConfigSource {
             props.load(in);
             return props;
         } catch (IOException e) {
-            throw new RuntimeException("Unable to load resource " + resourceName + " as property file", e);
+            throw new UncheckedIOException("Unable to load resource " + resourceName + " as property file", e);
         }
     }
 

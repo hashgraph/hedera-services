@@ -32,8 +32,6 @@ import java.time.Duration;
  * into config records with a prefix defined by a {@link ConfigData @ConfigData("prefix")} tag. Adding
  * settings to this record pollutes the top level namespace.
  *
- * @param verifyEventSigs
- * 		verify event signatures (rather than just trusting they are correct)?
  * @param showInternalStats
  * 		show the user all statistics, including those with category "internal"?
  * @param verboseStatistics
@@ -56,9 +54,6 @@ import java.time.Duration;
  * 		period of JVMPauseDetectorThread sleeping in the unit of milliseconds
  * @param jvmPauseReportMs
  * 		log an error when JVMPauseDetectorThread detect a pause greater than this many milliseconds
- * @param gossipWithDifferentVersions
- * 		if set to false, the platform will refuse to gossip with a node which has a different version of either
- * 		platform or application
  * @param enablePingTrans
  * 		if set to true, send a transaction every {@code pingTransFreq} providing the ping in milliseconds from self to
  * 		all peers
@@ -77,7 +72,6 @@ import java.time.Duration;
  */
 @ConfigData
 public record BasicConfig(
-        @ConfigProperty(defaultValue = "true") boolean verifyEventSigs,
         @ConfigProperty(defaultValue = "true") boolean showInternalStats,
         @ConfigProperty(defaultValue = "false") boolean verboseStatistics,
         @ConfigProperty(defaultValue = "40") int numConnections,
@@ -88,7 +82,6 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "true") boolean loadKeysFromPfxFiles,
         @ConfigProperty(defaultValue = "1000") int jvmPauseDetectorSleepMs,
         @ConfigProperty(defaultValue = "1000") int jvmPauseReportMs,
-        @ConfigProperty(defaultValue = "false") boolean gossipWithDifferentVersions,
         @ConfigProperty(defaultValue = "true") boolean enablePingTrans,
         @ConfigProperty(defaultValue = "1") long pingTransFreq,
         @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration,

@@ -16,21 +16,29 @@
 
 package com.swirlds.common.io.config;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.time.Duration;
 
 /**
  * Configuration for the {@link com.swirlds.common.io.utility.RecycleBin} class.
  *
- * @param recycleBinPath the directory where recycled files are stored, relative to the saved state directory defined by
- *                       {@link StateConfig#savedStateDirectory()}.
+ * @param maximumFileAge   the maximum age of a file in the recycle bin before it is deleted
+ * @param collectionPeriod the period between recycle bin collection runs
+ * @param recycleBinPath   the directory where recycled files are stored, relative to the saved state directory defined
+ *                         by {@link StateConfig#savedStateDirectory()}.
  */
 @ConfigData("recycleBin")
-public record RecycleBinConfig(@ConfigProperty(defaultValue = "swirlds-recycle-bin") String recycleBinPath) {
+public record RecycleBinConfig(
+        @ConfigProperty(defaultValue = "7d") Duration maximumFileAge,
+        @ConfigProperty(defaultValue = "1d") Duration collectionPeriod,
+        @ConfigProperty(defaultValue = "swirlds-recycle-bin") String recycleBinPath) {
 
     /**
      * Returns the real path to the recycle bin.
@@ -39,7 +47,8 @@ public record RecycleBinConfig(@ConfigProperty(defaultValue = "swirlds-recycle-b
      * @param selfId      the ID of this node
      * @return the location where recycle bin files are stored
      */
-    public Path getRecycleBinPath(@NonNull final StateConfig stateConfig, @NonNull final NodeId selfId) {
-        return stateConfig.savedStateDirectory().resolve(recycleBinPath()).resolve(Long.toString(selfId.id()));
+    public Path getStorageLocation(@NonNull final StateConfig stateConfig, @NonNull final NodeId selfId) {
+        return getAbsolutePath(
+                stateConfig.savedStateDirectory().resolve(recycleBinPath()).resolve(Long.toString(selfId.id())));
     }
 }

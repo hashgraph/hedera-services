@@ -23,8 +23,8 @@ import static com.swirlds.logging.LogMarker.SYNC_INFO;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.EventStrings;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -177,6 +177,16 @@ public class ShadowGraph implements Clearable {
                 "Shadow graph initialized from events. Provided minGeneration = {}. Calculated oldestGeneration = {}",
                 minGeneration,
                 oldestGeneration);
+    }
+
+    /**
+     * Define the starting generation for the shadowgraph, it will not keep any events older than this
+     * @param generation the starting generation
+     */
+    public synchronized void startFromGeneration(final long generation) {
+        expireBelow = generation;
+        oldestGeneration = generation;
+        logger.info(STARTUP.getMarker(), "Shadow graph starting from generation {}", generation);
     }
 
     /**

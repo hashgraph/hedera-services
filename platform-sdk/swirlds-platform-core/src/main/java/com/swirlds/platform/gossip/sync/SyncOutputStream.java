@@ -18,18 +18,23 @@ package com.swirlds.platform.gossip.sync;
 
 import static com.swirlds.common.io.extendable.ExtendableOutputStream.extendOutputStream;
 
+import com.swirlds.common.config.SocketConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.ByteConstants;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 
 public class SyncOutputStream extends SerializableDataOutputStream {
     private final CountingStreamExtension syncByteCounter;
@@ -44,15 +49,28 @@ public class SyncOutputStream extends SerializableDataOutputStream {
         this.requestSent = new AtomicReference<>(null);
     }
 
-    public static SyncOutputStream createSyncOutputStream(OutputStream out, int bufferSize) {
+    public static SyncOutputStream createSyncOutputStream(
+            @NonNull final PlatformContext platformContext, @NonNull final OutputStream out, final int bufferSize) {
         CountingStreamExtension syncByteCounter = new CountingStreamExtension();
         CountingStreamExtension connectionByteCounter = new CountingStreamExtension();
 
+        final boolean compress = platformContext
+                .getConfiguration()
+                .getConfigData(SocketConfig.class)
+                .gzipCompression();
+
+        final OutputStream meteredStream = extendOutputStream(out, connectionByteCounter);
+
+        final OutputStream wrappedStream;
+        if (compress) {
+            wrappedStream = new DeflaterOutputStream(
+                    meteredStream, new Deflater(Deflater.DEFAULT_COMPRESSION, true), bufferSize, true);
+        } else {
+            wrappedStream = new BufferedOutputStream(meteredStream, bufferSize);
+        }
+
         // we write the data to the buffer first, for efficiency
-        return new SyncOutputStream(
-                new BufferedOutputStream(extendOutputStream(out, syncByteCounter, connectionByteCounter), bufferSize),
-                syncByteCounter,
-                connectionByteCounter);
+        return new SyncOutputStream(wrappedStream, syncByteCounter, connectionByteCounter);
     }
 
     public CountingStreamExtension getSyncByteCounter() {
@@ -73,8 +91,7 @@ public class SyncOutputStream extends SerializableDataOutputStream {
     /**
      * Send a sync request
      *
-     * @throws IOException
-     * 		if a stream exception occurs
+     * @throws IOException if a stream exception occurs
      */
     public void requestSync() throws IOException {
         writeByte(ByteConstants.COMM_SYNC_REQUEST);
@@ -84,8 +101,7 @@ public class SyncOutputStream extends SerializableDataOutputStream {
     /**
      * Accepts a previously requested sync
      *
-     * @throws IOException
-     * 		if a stream exception occurs
+     * @throws IOException if a stream exception occurs
      */
     public void acceptSync() throws IOException {
         writeByte(ByteConstants.COMM_SYNC_ACK);
@@ -94,8 +110,7 @@ public class SyncOutputStream extends SerializableDataOutputStream {
     /**
      * Rejects a previously requested sync
      *
-     * @throws IOException
-     * 		if a stream exception occurs
+     * @throws IOException if a stream exception occurs
      */
     public void rejectSync() throws IOException {
         writeByte(ByteConstants.COMM_SYNC_NACK);
@@ -104,8 +119,7 @@ public class SyncOutputStream extends SerializableDataOutputStream {
     /**
      * Write this node's generation numbers to an output stream
      *
-     * @throws IOException
-     * 		if a stream exception occurs
+     * @throws IOException if a stream exception occurs
      */
     public void writeGenerations(final Generations generations) throws IOException {
         writeSerializable(generations, false);
@@ -114,8 +128,7 @@ public class SyncOutputStream extends SerializableDataOutputStream {
     /**
      * Write to the {@link SyncOutputStream} the hashes of the tip events from this node's shadow graph
      *
-     * @throws IOException
-     * 		iff the {@link SyncOutputStream} throws
+     * @throws IOException iff the {@link SyncOutputStream} throws
      */
     public void writeTipHashes(final List<Hash> tipHashes) throws IOException {
         writeSerializableList(tipHashes, false, true);
@@ -124,10 +137,8 @@ public class SyncOutputStream extends SerializableDataOutputStream {
     /**
      * Write event data
      *
-     * @param event
-     * 		the event to write
-     * @throws IOException
-     * 		iff the {@link SyncOutputStream} instance throws
+     * @param event the event to write
+     * @throws IOException iff the {@link SyncOutputStream} instance throws
      */
     public void writeEventData(final EventImpl event) throws IOException {
         writeSerializable(event.getBaseEvent(), false);

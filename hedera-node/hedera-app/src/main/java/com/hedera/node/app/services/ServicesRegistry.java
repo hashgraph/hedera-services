@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.services;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import javax.inject.Singleton;
@@ -27,10 +30,23 @@ import javax.inject.Singleton;
 @Singleton
 public interface ServicesRegistry {
     /**
-     * Gets the full set of services registered.
+     * A record of a service registration.
+     *
+     * @param service The service that was registered
+     * @param registry The schema registry for the service
+     */
+    record Registration(@NonNull Service service, @NonNull SchemaRegistry registry) {
+        public Registration {
+            requireNonNull(service);
+            requireNonNull(registry);
+        }
+    }
+
+    /**
+     * Gets the full set of services registered, sorted deterministically.
      *
      * @return The set of services. May be empty.
      */
     @NonNull
-    Set<Service> services();
+    Set<Registration> registrations();
 }

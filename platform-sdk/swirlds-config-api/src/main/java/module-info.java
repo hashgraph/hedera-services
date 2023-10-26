@@ -1,6 +1,6 @@
 import com.swirlds.config.api.spi.ConfigurationBuilderFactory;
 
-module com.swirlds.config {
+module com.swirlds.config.api {
     exports com.swirlds.config.api;
     exports com.swirlds.config.api.spi;
     exports com.swirlds.config.api.converter;

@@ -95,7 +95,7 @@ import org.apache.logging.log4j.Logger;
 public class BaseOperationUsage {
     static final Logger log = LogManager.getLogger(BaseOperationUsage.class);
     public static final int CANONICAL_NUM_CONTRACT_KV_PAIRS = 64;
-    private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
+    public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     private static final ByteString CANONICAL_SIG =
             ByteString.copyFromUtf8("0123456789012345678901234567890123456789012345678901234567890123");
     private static final List<Long> SINGLE_SERIAL_NUM = List.of(1L);

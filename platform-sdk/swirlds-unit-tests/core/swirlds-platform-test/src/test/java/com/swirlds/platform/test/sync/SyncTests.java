@@ -34,10 +34,10 @@ import com.swirlds.common.test.fixtures.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
@@ -1021,5 +1021,38 @@ public class SyncTests {
         // both should be aware that the sync was aborted
         assertFalse(executor.getCaller().getSynchronizerReturn());
         assertFalse(executor.getListener().getSynchronizerReturn());
+    }
+
+    /**
+     * Tests that a sync works if one node has no events at all in the graph and also has a non-ancient generation that
+     * is not 0
+     */
+    @Test
+    void noEventsStartGeneration() throws Exception {
+        final SyncTestParams params = new SyncTestParams(4, 0, 100, 0);
+        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        executor.setGraphCustomization((caller, listener) -> {
+            caller.setSaveGeneratedEvents(true);
+            listener.setSaveGeneratedEvents(true);
+        });
+        executor.setGenerationDefinitions((caller, listener) -> {
+            long callerMaxGen = SyncUtils.getMaxGen(caller.getShadowGraph().getTips());
+            long callerMinGen = SyncUtils.getMinGen(caller.getShadowGraph()
+                    .findAncestors(caller.getShadowGraph().getTips(), (e) -> true));
+
+            when(listener.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
+            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMaxGen / 2);
+            when(listener.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
+
+            when(caller.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
+            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMaxGen / 2);
+            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
+        });
+        executor.setCustomPreSyncConfiguration((caller, listener) -> {
+            listener.getShadowGraph().startFromGeneration(caller.getConsensus().getMinGenerationNonAncient());
+        });
+        executor.execute();
+        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
     }
 }

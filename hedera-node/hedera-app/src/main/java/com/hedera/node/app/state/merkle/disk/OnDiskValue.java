@@ -50,8 +50,7 @@ public class OnDiskValue<V> implements VirtualValue {
     private V value;
     private boolean immutable = false;
 
-    // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
-    @Deprecated(forRemoval = true)
+    // Default constructor is for deserialization
     public OnDiskValue() {
         this.codec = null;
         this.md = null;
@@ -96,12 +95,19 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
+        serializeReturningWrittenBytes(byteBuffer);
+    }
+
+    public int serializeReturningWrittenBytes(@NonNull ByteBuffer byteBuffer) throws IOException {
         final var output = BufferedData.wrap(byteBuffer);
-        output.skip(4);
+        final var initPos = output.position();
+        output.skip(Integer.BYTES);
         codec.write(value, output);
         final var pos = output.position();
-        output.writeInt((int) pos - 4);
+        output.position(initPos);
+        output.writeInt((int) (pos - initPos - Integer.BYTES));
         output.position(pos);
+        return (int) (pos - initPos);
     }
 
     /** {@inheritDoc} */

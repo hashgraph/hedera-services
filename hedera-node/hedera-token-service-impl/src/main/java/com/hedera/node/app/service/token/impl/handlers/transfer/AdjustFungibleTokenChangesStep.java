@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANC
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -29,8 +28,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
@@ -69,8 +68,8 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
 
         // two maps for aggregating the changes to the token balances and allowances.
-        final Map<EntityNumPair, Long> aggregatedFungibleTokenChanges = new HashMap<>();
-        final Map<EntityNumPair, Long> allowanceTransfers = new HashMap<>();
+        final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges = new HashMap<>();
+        final Map<EntityIDPair, Long> allowanceTransfers = new HashMap<>();
 
         // Look at all fungible token transfers and put into aggregatedFungibleTokenChanges map.
         // Also, put any transfers happening with allowances in allowanceTransfers map.
@@ -89,7 +88,12 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
 
                 final var accountId = aa.accountIDOrThrow();
                 getIfUsable(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
-                final var pair = EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum());
+                final var pair = new EntityIDPair(accountId, tokenId);
+
+                // Validate freeze status and kyc granted
+                final var accountID = aa.accountIDOrThrow();
+                final var tokenRel = getIfUsable(accountID, tokenId, tokenRelStore);
+                validateNotFrozenAndKycOnRelation(tokenRel);
 
                 // Add the amount to the aggregatedFungibleTokenChanges map.
                 // If the (accountId, tokenId) pair doesn't exist in the map, add it.
@@ -117,15 +121,15 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
      * @param transferContext - transfer context
      */
     private void modifyAggregatedAllowances(
-            @NonNull final Map<EntityNumPair, Long> allowanceTransfers,
+            @NonNull final Map<EntityIDPair, Long> allowanceTransfers,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final TransferContext transferContext) {
         // Look at all the allowanceTransfers and adjust the allowances in the accountStore.
         for (final var entry : allowanceTransfers.entrySet()) {
             final var atPair = entry.getKey();
             final var amount = entry.getValue();
-            final var accountId = asAccount(atPair.getHiOrderAsLong());
-            final var tokenId = asToken(atPair.getLowOrderAsLong());
+            final var accountId = atPair.accountIdOrThrow();
+            final var tokenId = atPair.tokenIdOrThrow();
 
             final var account = getIfUsable(
                     accountId, accountStore, transferContext.getHandleContext().expiryValidator(), INVALID_ACCOUNT_ID);
@@ -165,16 +169,15 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
      * @param accountStore - account store
      */
     private void modifyAggregatedTokenBalances(
-            @NonNull final Map<EntityNumPair, Long> aggregatedFungibleTokenChanges,
+            @NonNull final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges,
             @NonNull final WritableTokenRelationStore tokenRelStore,
             @NonNull final WritableAccountStore accountStore) {
         // Look at all the aggregatedFungibleTokenChanges and adjust the balances in the tokenRelStore.
         for (final var entry : aggregatedFungibleTokenChanges.entrySet()) {
             final var atPair = entry.getKey();
             final var amount = entry.getValue();
-            final var rel = getIfUsable(
-                    asAccount(atPair.getHiOrderAsLong()), asToken(atPair.getLowOrderAsLong()), tokenRelStore);
-            final var account = accountStore.get(asAccount(atPair.getHiOrderAsLong()));
+            final var rel = getIfUsable(atPair.accountIdOrThrow(), atPair.tokenIdOrThrow(), tokenRelStore);
+            final var account = requireNonNull(accountStore.get(atPair.accountIdOrThrow()));
             adjustBalance(rel, account, amount, tokenRelStore, accountStore);
         }
     }

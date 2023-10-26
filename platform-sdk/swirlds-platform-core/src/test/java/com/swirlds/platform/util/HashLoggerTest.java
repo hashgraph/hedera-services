@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.platform.state.PlatformData;
@@ -52,12 +51,22 @@ public class HashLoggerTest {
     private HashLogger hashLogger;
     private List<String> logged;
 
+    /**
+     * Get a regex that will match a log message containing the given round number
+     *
+     * @param round the round number
+     * @return the regex
+     */
+    private String getRoundEqualsRegex(final long round) {
+        return String.format("State Info, round = %s[\\S\\s]*", round);
+    }
+
     @BeforeEach
     public void setUp() {
         mockLogger = mock(Logger.class);
         final StateConfig stateConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
-        hashLogger = new HashLogger(getStaticThreadManager(), new NodeId(123), stateConfig, mockLogger);
+        hashLogger = new HashLogger(getStaticThreadManager(), stateConfig, mockLogger);
         logged = new ArrayList<>();
 
         doAnswer(invocation -> {
@@ -77,9 +86,9 @@ public class HashLoggerTest {
         hashLogger.logHashes(createSignedState(3));
         flush();
         assertThat(logged).hasSize(3);
-        assertThat(logged.get(0)).contains("Round = 1");
-        assertThat(logged.get(1)).contains("Round = 2");
-        assertThat(logged.get(2)).contains("Round = 3");
+        assertThat(logged.get(0)).matches(getRoundEqualsRegex(1));
+        assertThat(logged.get(1)).matches(getRoundEqualsRegex(2));
+        assertThat(logged.get(2)).matches(getRoundEqualsRegex(3));
     }
 
     @Test
@@ -93,9 +102,9 @@ public class HashLoggerTest {
         hashLogger.logHashes(createSignedState(2));
         flush();
         assertThat(logged).hasSize(3);
-        assertThat(logged.get(0)).contains("Round = 1");
-        assertThat(logged.get(1)).contains("Round = 2");
-        assertThat(logged.get(2)).contains("Round = 3");
+        assertThat(logged.get(0)).matches(getRoundEqualsRegex(1));
+        assertThat(logged.get(1)).matches(getRoundEqualsRegex(2));
+        assertThat(logged.get(2)).matches(getRoundEqualsRegex(3));
     }
 
     @Test
@@ -106,10 +115,10 @@ public class HashLoggerTest {
         hashLogger.logHashes(createSignedState(4));
         flush();
         assertThat(logged).hasSize(4);
-        assertThat(logged.get(0)).contains("Round = 1");
-        assertThat(logged.get(1)).contains("Round = 2");
+        assertThat(logged.get(0)).matches(getRoundEqualsRegex(1));
+        assertThat(logged.get(1)).matches(getRoundEqualsRegex(2));
         assertThat(logged.get(2)).contains("Several rounds skipped. Round received 5. Previously received 2.");
-        assertThat(logged.get(3)).contains("Round = 5");
+        assertThat(logged.get(3)).matches(getRoundEqualsRegex(5));
     }
 
     @Test
@@ -119,7 +128,7 @@ public class HashLoggerTest {
                 .getOrCreateConfig()
                 .getConfigData(StateConfig.class);
 
-        hashLogger = new HashLogger(getStaticThreadManager(), new NodeId(123), stateConfig, mockLogger);
+        hashLogger = new HashLogger(getStaticThreadManager(), stateConfig, mockLogger);
         hashLogger.logHashes(createSignedState(1));
         assertThat(logged).isEmpty();
         assertThat(hashLogger.queue()).isNullOrEmpty();
@@ -131,7 +140,7 @@ public class HashLoggerTest {
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
 
         assertDoesNotThrow(() -> {
-            hashLogger = new HashLogger(getStaticThreadManager(), new NodeId(123), stateConfig);
+            hashLogger = new HashLogger(getStaticThreadManager(), stateConfig);
             hashLogger.logHashes(createSignedState(1));
             flush();
         });

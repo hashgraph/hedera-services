@@ -44,7 +44,8 @@ import java.util.Objects;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
 public class ReadableUpgradeFileStoreImpl implements ReadableUpgradeFileStore {
-    private final FileID UPGRADE_FILE_ID = new FileID(0, 0, 150);
+
+    private static final FileID UPGRADE_FILE_ID = new FileID(0, 0, 150);
 
     /** The underlying data storage class that holds the file data. */
     private final ReadableQueueState<ProtoBytes> upgradeState;

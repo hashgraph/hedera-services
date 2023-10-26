@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -43,15 +44,21 @@ public class Issue1648Suite extends HapiSuite {
         return List.of(recordStorageFeeIncreasesWithNumTransfers());
     }
 
+    @HapiTest
     public static HapiSpec recordStorageFeeIncreasesWithNumTransfers() {
         return defaultHapiSpec("RecordStorageFeeIncreasesWithNumTransfers")
                 .given(
-                        UtilVerbs.inParallel(
-                                cryptoCreate("A"), cryptoCreate("B"), cryptoCreate("C"), cryptoCreate("D")),
-                        UtilVerbs.inParallel(
-                                cryptoTransfer(tinyBarsFromTo("A", "B", 1L)).via("txn1"),
-                                cryptoTransfer(tinyBarsFromTo("A", "B", 1L), tinyBarsFromTo("C", "D", 1L))
-                                        .via("txn2")))
+                        cryptoCreate("civilian").balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate("A"),
+                        cryptoCreate("B"),
+                        cryptoCreate("C"),
+                        cryptoCreate("D"),
+                        cryptoTransfer(tinyBarsFromTo("A", "B", 1L))
+                                .payingWith("civilian")
+                                .via("txn1"),
+                        cryptoTransfer(tinyBarsFromTo("A", "B", 1L), tinyBarsFromTo("C", "D", 1L))
+                                .payingWith("civilian")
+                                .via("txn2"))
                 .when(UtilVerbs.recordFeeAmount("txn1", "feeForOne"), UtilVerbs.recordFeeAmount("txn2", "feeForTwo"))
                 .then(UtilVerbs.assertionsHold((spec, assertLog) -> {
                     long feeForOne = spec.registry().getAmount("feeForOne");

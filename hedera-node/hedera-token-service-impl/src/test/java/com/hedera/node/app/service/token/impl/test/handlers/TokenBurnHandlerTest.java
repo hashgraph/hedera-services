@@ -72,14 +72,17 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
+import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,6 +95,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenBurnHandlerTest extends ParityTestBase {
     private static final AccountID ACCOUNT_1339 = BaseCryptoHandler.asAccount(1339);
     private static final TokenID TOKEN_123 = BaseTokenHandler.asToken(123);
+    private static final Instant SOMETIME = Instant.ofEpochSecond(1_234_567, 890);
     private TokenSupplyChangeOpsValidator validator = new TokenSupplyChangeOpsValidator();
     private final TokenBurnHandler subject = new TokenBurnHandler(validator);
     private Configuration configuration;
@@ -323,21 +327,21 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
         }
 
-        @Test
-        void fungibleAmountExceedsBatchSize() {
-            configuration = HederaTestConfigBuilder.create()
-                    .withValue("tokens.nfts.areEnabled", true)
-                    .withValue("tokens.nfts.maxBatchSizeBurn", 1)
-                    .getOrCreateConfig();
-            validator = new TokenSupplyChangeOpsValidator();
-
-            final var txn = newBurnTxn(TOKEN_123, 2);
-            final var context = mockContext(txn);
-
-            Assertions.assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
-                    .has(responseCode(BATCH_SIZE_LIMIT_EXCEEDED));
-        }
+        // @Test removed this test as nfts.maxBatchSizeBurn is not for fungible tokens
+        //        void fungibleAmountExceedsBatchSize() {
+        //            configuration = HederaTestConfigBuilder.create()
+        //                    .withValue("tokens.nfts.areEnabled", true)
+        //                    .withValue("tokens.nfts.maxBatchSizeBurn", 1)
+        //                    .getOrCreateConfig();
+        //            validator = new TokenSupplyChangeOpsValidator();
+        //
+        //            final var txn = newBurnTxn(TOKEN_123, 2);
+        //            final var context = mockContext(txn);
+        //
+        //            Assertions.assertThatThrownBy(() -> subject.handle(context))
+        //                    .isInstanceOf(HandleException.class)
+        //                    .has(responseCode(BATCH_SIZE_LIMIT_EXCEEDED));
+        //        }
 
         @Test
         void fungibleTokenTreasuryAccountDoesntExist() {
@@ -434,12 +438,15 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 8);
             final var context = mockContext(txn);
+            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
+            given(context.recordBuilder(TokenBurnRecordBuilder.class)).willReturn(recordBuilder);
 
             subject.handle(context);
 
             final var updatedToken = writableTokenStore.get(TOKEN_123);
             // Total supply of 10 is reduced by the burn of 8 units, so the new total supply should be 2
             Assertions.assertThat(updatedToken.totalSupply()).isEqualTo(2);
+            Assertions.assertThat(recordBuilder.getNewTotalSupply()).isEqualTo(2);
             final var updatedTreasuryRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_123);
             Assertions.assertThat(updatedTreasuryRel.balance()).isEqualTo(1);
             final var updatedTreasuryAcct = writableAccountStore.get(ACCOUNT_1339);
@@ -470,12 +477,16 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 8);
             final var context = mockContext(txn);
+            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
+            given(context.recordBuilder(TokenBurnRecordBuilder.class)).willReturn(recordBuilder);
 
             subject.handle(context);
 
             final var updatedToken = writableTokenStore.get(TOKEN_123);
             // Total supply of 10 is reduced by the burn of 8 units, so the new total supply should be 2
             Assertions.assertThat(updatedToken.totalSupply()).isEqualTo(2);
+            // The record also contains the new total supply
+            Assertions.assertThat(recordBuilder.getNewTotalSupply()).isEqualTo(2);
             final var updatedTreasuryRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_123);
             Assertions.assertThat(updatedTreasuryRel.balance()).isZero();
             final var updatedTreasuryAcct = writableAccountStore.get(ACCOUNT_1339);
@@ -743,6 +754,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
             final var context = mockContext(txn);
+            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
+            given(context.recordBuilder(TokenBurnRecordBuilder.class)).willReturn(recordBuilder);
 
             subject.handle(context);
             final var treasuryAcct = writableAccountStore.get(ACCOUNT_1339);
@@ -803,6 +816,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L);
             final var context = mockContext(txn);
+            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
+            given(context.recordBuilder(TokenBurnRecordBuilder.class)).willReturn(recordBuilder);
 
             subject.handle(context);
             final var treasuryAcct = writableAccountStore.get(ACCOUNT_1339);
@@ -864,6 +879,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L, 1L, 2L, 3L, 3L, 1L, 1L, 2L);
             final var context = mockContext(txn);
+            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
+            given(context.recordBuilder(TokenBurnRecordBuilder.class)).willReturn(recordBuilder);
 
             subject.handle(context);
             final var treasuryAcct = writableAccountStore.get(ACCOUNT_1339);

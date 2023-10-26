@@ -973,7 +973,9 @@ class QueueThreadTests {
                 Thread.currentThread().interrupt();
             }
         });
-        for (int i = 0; i < 100; i++) {
+        // The default max queue size is 100, and we just added one item. Do not add
+        // more than 99 or the queue may throw because it is full.
+        for (int i = 0; i < 99; i++) {
             queue.add(() -> {});
         }
 

@@ -39,6 +39,7 @@ import java.util.Objects;
 /**
  * Utility class for signing account balance files
  */
+@SuppressWarnings("java:S106") // Suppressing the usage of System.out.println instead of a logger
 public class AccountBalanceSigningUtils {
 
     /**
@@ -54,6 +55,7 @@ public class AccountBalanceSigningUtils {
      * @param keyPair                  the keyPair used for signing
      * @return true if the signature file was generated successfully, false otherwise
      */
+    @SuppressWarnings("java:S112") // Suppressing that we are throwing RuntimeException(generic exception)
     public static boolean signAccountBalanceFile(
             @NonNull final Path signatureFileDestination,
             @NonNull final Path streamFileToSign,
@@ -74,13 +76,11 @@ public class AccountBalanceSigningUtils {
 
             return true;
         } catch (final SignatureException | InvalidKeyException | IOException e) {
-            System.err.printf(
-                    "signAccountBalanceFile :: Failed to sign file [%s] with exception : [%s]%n", streamFileToSign, e);
+            System.err.printf("signAccountBalanceFile :: Failed to sign file [%s]", streamFileToSign);
             return false;
         } catch (final NoSuchAlgorithmException | NoSuchProviderException e) {
             System.err.printf(
-                    "signAccountBalanceFile :: Irrecoverable error encountered when signing [%s] with exception : [%s]%n",
-                    streamFileToSign, e);
+                    "signAccountBalanceFile :: Irrecoverable error encountered when signing [%s]", streamFileToSign);
             throw new RuntimeException("signAccountBalanceFile :: Irrecoverable error encountered", e);
         }
     }

@@ -25,7 +25,7 @@ import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.spi.workflows.PaidQueryHandler;
+import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,7 +39,7 @@ import javax.inject.Singleton;
  * we cannot remove it. However, it should not be used.
  */
 @Singleton
-public class NetworkGetExecutionTimeHandler extends PaidQueryHandler {
+public class NetworkGetExecutionTimeHandler extends FreeQueryHandler {
     @Inject
     public NetworkGetExecutionTimeHandler() {
         // Exists for injection

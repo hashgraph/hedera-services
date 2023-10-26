@@ -16,9 +16,14 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
+import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
+import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.merkledb.files.hashmap.HalfDiskVirtualKeySet;
 import com.swirlds.virtual.merkle.TestKey;
+import com.swirlds.virtual.merkle.TestKeySerializer;
 import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
@@ -30,7 +35,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public abstract class BreakableDataSource implements VirtualDataSource<TestKey, TestValue> {
+public final class BreakableDataSource implements VirtualDataSource<TestKey, TestValue> {
 
     final VirtualDataSource<TestKey, TestValue> delegate;
     private final BrokenBuilder builder;
@@ -102,7 +107,10 @@ public abstract class BreakableDataSource implements VirtualDataSource<TestKey, 
     public void registerMetrics(final Metrics metrics) {}
 
     @Override
-    public abstract VirtualKeySet<TestKey> buildKeySet();
+    public VirtualKeySet<TestKey> buildKeySet() {
+        return new HalfDiskVirtualKeySet<>(
+                new TestKeySerializer(), 10, 2L * MEBIBYTES_TO_BYTES * BYTES_TO_BITS, 1_000_000, 10_000);
+    }
 
     @Override
     public long getFirstLeafPath() {
@@ -117,5 +125,15 @@ public abstract class BreakableDataSource implements VirtualDataSource<TestKey, 
     @Override
     public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
         return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
+    }
+
+    @Override
+    public void enableBackgroundCompaction() {
+        delegate.enableBackgroundCompaction();
+    }
+
+    @Override
+    public void stopAndDisableBackgroundCompaction() {
+        delegate.stopAndDisableBackgroundCompaction();
     }
 }

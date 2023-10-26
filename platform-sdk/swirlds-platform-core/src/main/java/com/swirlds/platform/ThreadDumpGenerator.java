@@ -42,7 +42,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * This class generates augmented thread dumps which include lock information.
  */
-class ThreadDumpGenerator {
+public class ThreadDumpGenerator {
 
     private static final Logger logger = LogManager.getLogger(ThreadDumpGenerator.class);
 

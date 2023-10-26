@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
@@ -42,13 +43,18 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ReplaceAliasesWithIDsInOpTest extends StepsBase {
     @BeforeEach
     public void setUp() {
-        super.setUp();
+        replaceAliasesInternalSetup(true);
+    }
+
+    private void replaceAliasesInternalSetup(final boolean prepopulateReceiverIds) {
+        super.baseInternalSetUp(prepopulateReceiverIds);
         givenTxn();
         givenStoresAndConfig(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
@@ -57,12 +63,14 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
 
     @Test
     void autoCreatesAccounts() {
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+        replaceAliasesInternalSetup(false);
+        given(handleContext.dispatchRemovableChildTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
@@ -78,7 +86,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
         assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNull();
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
-        assertThat(writableAliases.get(ecKeyAlias)).isNull();
+        assertThat(writableAliases.get(ecEvmAlias)).isNull();
         assertThat(writableAliases.get(edKeyAlias)).isNull();
 
         ensureAliasesStep.doIn(transferContext);
@@ -88,43 +96,46 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(4);
         assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNotNull();
-        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(hbarReceiver);
+        assertThat(writableAliases.get(ecEvmAlias).accountNum()).isEqualTo(hbarReceiver);
         assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(tokenReceiver);
 
         assertThat(transferContext.numOfAutoCreations()).isEqualTo(2);
         assertThat(transferContext.numOfLazyCreations()).isZero();
-        assertThat(transferContext.resolutions()).containsKey(edKeyAlias);
-        assertThat(transferContext.resolutions()).containsKey(ecKeyAlias);
+        assertThat(transferContext.resolutions()).containsKey(edKeyAlias.value());
+        assertThat(transferContext.resolutions()).containsKey(ecKeyAlias.value());
     }
 
     @Test
     void autoCreateEvmAddressesAccounts() {
-        final var evmAddressAlias1 = Bytes.wrap(unhex("0000000000000000000000000000000000000004"));
-        final var evmAddressAlias2 = Bytes.wrap(unhex("0000000000000000000000000000000000000005"));
-        final var evmAddressAlias3 = Bytes.wrap(unhex("0000000000000000000000000000000000000002"));
+        final var evmAddressAlias1 = new ProtoBytes(Bytes.wrap(unhex("0000000000000000000000000000000000000004")));
+        final var evmAddressAlias2 = new ProtoBytes(Bytes.wrap(unhex("0000000000000000000000000000000000000005")));
+        final var evmAddressAlias3 = new ProtoBytes(Bytes.wrap(unhex("0000000000000000000000000000000000000002")));
         body = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
-                        .accountAmounts(AccountAmountUtils.aaWith(ownerId, -1_000), aaAlias(evmAddressAlias1, +1_000))
+                        .accountAmounts(
+                                AccountAmountUtils.aaWith(ownerId, -1_000), aaAlias(evmAddressAlias1.value(), +1_000))
                         .build())
                 .tokenTransfers(
                         TokenTransferList.newBuilder()
                                 .token(fungibleTokenId)
                                 .transfers(List.of(
-                                        AccountAmountUtils.aaWith(ownerId, -1_000), aaAlias(evmAddressAlias2, +1_000)))
+                                        AccountAmountUtils.aaWith(ownerId, -1_000),
+                                        aaAlias(evmAddressAlias2.value(), +1_000)))
                                 .build(),
                         TokenTransferList.newBuilder()
                                 .token(nonFungibleTokenId)
                                 .nftTransfers(AccountAmountUtils.nftTransferWith(
-                                        ownerId, asAccountWithAlias(evmAddressAlias3), 1))
+                                        ownerId, asAccountWithAlias(evmAddressAlias3.value()), 1))
                                 .build())
                 .build();
         givenTxn(body, payerId);
 
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+        given(handleContext.dispatchRemovableChildTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
                             .accountId(hbarReceiverId)
-                            .alias(evmAddressAlias1)
+                            .alias(evmAddressAlias1.value())
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(evmAddressAlias1, asAccount(hbarReceiver));
@@ -133,7 +144,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
                             .accountId(tokenReceiverId)
-                            .alias(evmAddressAlias2)
+                            .alias(evmAddressAlias2.value())
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(evmAddressAlias2, asAccount(tokenReceiver));
@@ -142,7 +153,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
                             .accountId(AccountID.newBuilder().accountNum(hbarReceiver + 2))
-                            .alias(evmAddressAlias3)
+                            .alias(evmAddressAlias3.value())
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(evmAddressAlias3, asAccount(hbarReceiver + 2));
@@ -166,9 +177,9 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
 
         assertThat(transferContext.numOfAutoCreations()).isZero();
         assertThat(transferContext.numOfLazyCreations()).isEqualTo(3);
-        assertThat(transferContext.resolutions()).containsKey(evmAddressAlias1);
-        assertThat(transferContext.resolutions()).containsKey(evmAddressAlias2);
-        assertThat(transferContext.resolutions()).containsKey(evmAddressAlias3);
+        assertThat(transferContext.resolutions()).containsKey(evmAddressAlias1.value());
+        assertThat(transferContext.resolutions()).containsKey(evmAddressAlias2.value());
+        assertThat(transferContext.resolutions()).containsKey(evmAddressAlias3.value());
     }
 
     @Test
@@ -189,8 +200,8 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
 
         assertThat(transferContext.numOfAutoCreations()).isZero();
         assertThat(transferContext.numOfLazyCreations()).isZero();
-        assertThat(transferContext.resolutions()).containsKey(edKeyAlias);
-        assertThat(transferContext.resolutions()).containsKey(ecKeyAlias);
+        assertThat(transferContext.resolutions()).containsKey(edKeyAlias.value());
+        assertThat(transferContext.resolutions()).containsKey(ecKeyAlias.value());
     }
 
     @Test
@@ -220,12 +231,13 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         ensureAliasesStep = new EnsureAliasesStep(body);
         transferContext = new TransferContextImpl(handleContext);
 
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+        given(handleContext.dispatchRemovableChildTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
@@ -259,12 +271,13 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         ensureAliasesStep = new EnsureAliasesStep(body);
         transferContext = new TransferContextImpl(handleContext);
 
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+        given(handleContext.dispatchRemovableChildTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
@@ -283,7 +296,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
 
     @Test
     void resolvesMirrorAddressInHbarList() {
-        final var mirrorAdjust = aaAlias(mirrorAlias, +100);
+        final var mirrorAdjust = aaAlias(mirrorAlias.value(), +100);
         body = CryptoTransferTransactionBody.newBuilder()
                 .transfers(
                         TransferList.newBuilder().accountAmounts(mirrorAdjust).build())
@@ -295,7 +308,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
 
         ensureAliasesStep.doIn(transferContext);
 
-        assertThat(transferContext.resolutions()).containsEntry(mirrorAlias, payerId);
+        assertThat(transferContext.resolutions()).containsEntry(mirrorAlias.value(), payerId);
         assertThat(transferContext.numOfLazyCreations()).isZero();
     }
 
@@ -306,7 +319,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
                         .token(nonFungibleTokenId)
                         .nftTransfers(NftTransfer.newBuilder()
                                 .receiverAccountID(AccountID.newBuilder()
-                                        .alias(mirrorAlias)
+                                        .alias(mirrorAlias.value())
                                         .build())
                                 .senderAccountID(payerId)
                                 .serialNumber(1)
@@ -320,7 +333,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
 
         ensureAliasesStep.doIn(transferContext);
 
-        assertThat(transferContext.resolutions()).containsEntry(mirrorAlias, payerId);
+        assertThat(transferContext.resolutions()).containsEntry(mirrorAlias.value(), payerId);
         assertThat(transferContext.numOfLazyCreations()).isZero();
     }
 
@@ -335,16 +348,16 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         writableBuilder.value(edKeyAlias, asAccount(tokenReceiver));
         writableAliases = writableBuilder.build();
 
-        given(writableStates.<Bytes, AccountID>get(ALIASES)).willReturn(writableAliases);
+        given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         writableAccountStore = new WritableAccountStore(writableStates);
 
         writableAccountStore.put(account.copyBuilder()
                 .accountId(hbarReceiverId)
-                .alias(ecKeyAlias)
+                .alias(ecKeyAlias.value())
                 .build());
         writableAccountStore.put(account.copyBuilder()
                 .accountId(tokenReceiverId)
-                .alias(edKeyAlias)
+                .alias(edKeyAlias.value())
                 .build());
 
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);

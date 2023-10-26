@@ -3,20 +3,15 @@
                                           #############################
 
 numConnections,                                1000
-socket.doUpnp,                                 false
 socket.useLoopbackIp,                          false
-sync.maxOutgoingSyncs,                         8
-sync.syncAsProtocolEnabled,                    true
 sync.syncProtocolPermitCount,                  17
 
                                           #############################
                                           #           State           #
                                           #############################
 
-jasperDb.iteratorInputBufferBytes,             16777216
 merkleDb.iteratorInputBufferBytes,             16777216
 merkleDb.hashesRamToDiskThreshold,             8388608
-state.checkSignedStateFromDisk,                true
 state.saveStatePeriod,                         900
 state.signedStateDisk,                         5
 state.mainClassNameOverride,                   com.hedera.services.ServicesMain
@@ -36,7 +31,6 @@ event.maxEventQueueForCons,                    1000
                                           #############################
 
 reconnect.active,                              true
-reconnect.asyncStreamTimeoutMilliseconds,      60000
 
                                           #############################
                                           #          Metrics          #

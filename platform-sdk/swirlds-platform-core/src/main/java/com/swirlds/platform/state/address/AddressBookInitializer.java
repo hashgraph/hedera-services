@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookValidator;
@@ -63,6 +64,8 @@ public class AddressBookInitializer {
             DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss").withZone(ZoneId.systemDefault());
     /** For logging info, warn, and error. */
     private static final Logger logger = LogManager.getLogger(AddressBookInitializer.class);
+    /** The id of this node. */
+    private final NodeId selfId;
     /** The context for the platform */
     @NonNull
     private final PlatformContext platformContext;
@@ -82,7 +85,10 @@ public class AddressBookInitializer {
     private final AddressBook configAddressBook;
     /** The address book determined for use after {@link AddressBookInitializer#initialize()} is called. */
     @NonNull
-    private final AddressBook initialAddressBook;
+    private final AddressBook currentAddressBook;
+    /** The address book used before the restart */
+    @Nullable
+    private final AddressBook previousAddressBook;
     /** The path to the directory for writing address books. */
     @NonNull
     private final Path pathToAddressBookDirectory;
@@ -95,6 +101,7 @@ public class AddressBookInitializer {
      * Constructs an AddressBookInitializer to initialize an address book from config.txt, the saved state from disk, or
      * the SwirldState on upgrade.
      *
+     * @param selfId            The id of this node.
      * @param currentVersion    The current version of the application.
      * @param softwareUpgrade   Indicate that the software version has upgraded.
      * @param initialState      The initial state to start from.
@@ -102,11 +109,13 @@ public class AddressBookInitializer {
      * @param platformContext   The context for the platform.
      */
     public AddressBookInitializer(
+            @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion currentVersion,
             final boolean softwareUpgrade,
             @NonNull final SignedState initialState,
             @NonNull final AddressBook configAddressBook,
             @NonNull final PlatformContext platformContext) {
+        this.selfId = Objects.requireNonNull(selfId, "The selfId must not be null.");
         this.currentVersion = Objects.requireNonNull(currentVersion, "The currentVersion must not be null.");
         this.softwareUpgrade = softwareUpgrade;
         this.configAddressBook = Objects.requireNonNull(configAddressBook, "The configAddressBook must not be null.");
@@ -125,10 +134,12 @@ public class AddressBookInitializer {
         this.useConfigAddressBook = addressBookConfig.forceUseOfConfigAddressBook();
         this.maxNumFiles = addressBookConfig.maxRecordedAddressBookFiles();
 
-        initialAddressBook = initialize();
+        final InitializedAddressBooks addressBooks = initialize();
+        currentAddressBook = addressBooks.currentAddressBook();
         if (!useConfigAddressBook) {
-            AddressBookValidator.validateNewAddressBook(stateAddressBook, initialAddressBook);
+            AddressBookValidator.validateNewAddressBook(stateAddressBook, currentAddressBook);
         }
+        previousAddressBook = addressBooks.previousAddressBook();
     }
 
     /**
@@ -137,8 +148,28 @@ public class AddressBookInitializer {
      * @return the address book to use in the platform.
      */
     @NonNull
-    public AddressBook getInitialAddressBook() {
-        return initialAddressBook;
+    public AddressBook getCurrentAddressBook() {
+        return currentAddressBook;
+    }
+
+    /**
+     * Returns the address book used before the restart.
+     *
+     * @return the address book used before the restart.
+     */
+    @Nullable
+    public AddressBook getPreviousAddressBook() {
+        return previousAddressBook;
+    }
+
+    /**
+     * Checks whether there has been a change in the address book on initialization. If there was no change, the
+     * previous address book will be null.
+     *
+     * @return true if the address book has changed on initialization
+     */
+    public boolean hasAddressBookChanged() {
+        return previousAddressBook != null;
     }
 
     /**
@@ -148,17 +179,19 @@ public class AddressBookInitializer {
      * address book is the one to use.  All three address books, the configuration address book, the save state address
      * book, and the new address book to use are recorded in the address book directory.
      *
-     * @return the address book to use in the platform.
+     * @return the address books to use in the platform.
      */
     @NonNull
-    private AddressBook initialize() {
+    private InitializedAddressBooks initialize() {
         AddressBook candidateAddressBook;
+        final AddressBook previousAddressBook;
         if (useConfigAddressBook) {
             // settings.txt override to use config.txt address book
             logger.info(
                     STARTUP.getMarker(),
                     "Overriding the address book in the state with the address book from config.txt");
             candidateAddressBook = configAddressBook;
+            previousAddressBook = stateAddressBook;
         } else if (initialState.isGenesisState()) {
             // Starting from Genesis, config and state address book should be the same.
             if (!Objects.equals(configAddressBook, initialState.getAddressBook())) {
@@ -167,11 +200,13 @@ public class AddressBookInitializer {
             logger.info(STARTUP.getMarker(), "Starting from genesis: using the config address book.");
             candidateAddressBook = configAddressBook;
             checkCandidateAddressBookValidity(candidateAddressBook);
+            previousAddressBook = null;
         } else if (!softwareUpgrade) {
             // Loaded State From Disk, Non-Genesis, No Software Upgrade
             logger.info(STARTUP.getMarker(), "Using the loaded state's address book and weight values.");
             candidateAddressBook = stateAddressBook;
             // since state address book was checked for validity prior to adoption, no check needed here.
+            previousAddressBook = null;
         } else {
             // Loaded State from Disk, Non-Genesis, There is a software version upgrade
             logger.info(
@@ -182,9 +217,10 @@ public class AddressBookInitializer {
                     .updateWeight(configAddressBook.copy(), platformContext)
                     .copy();
             candidateAddressBook = checkCandidateAddressBookValidity(candidateAddressBook);
+            previousAddressBook = stateAddressBook;
         }
         recordAddressBooks(candidateAddressBook);
-        return candidateAddressBook;
+        return new InitializedAddressBooks(candidateAddressBook, previousAddressBook);
     }
 
     /**
@@ -223,7 +259,8 @@ public class AddressBookInitializer {
      */
     private synchronized void recordAddressBooks(@NonNull final AddressBook usedAddressBook) {
         final String date = DATE_TIME_FORMAT.format(Instant.now());
-        final String addressBookFileName = ADDRESS_BOOK_FILE_PREFIX + "_v" + currentVersion + "_" + date + ".txt";
+        final String addressBookFileName =
+                "%s_v%s_%s_node_%s.txt".formatted(ADDRESS_BOOK_FILE_PREFIX, currentVersion, date, selfId);
         final String addressBookDebugFileName = addressBookFileName + ".debug";
         try {
             final File debugFile = Path.of(this.pathToAddressBookDirectory.toString(), addressBookDebugFileName)
@@ -280,4 +317,13 @@ public class AddressBookInitializer {
     public Path getPathToAddressBookDirectory() {
         return pathToAddressBookDirectory;
     }
+
+    /**
+     *  A record of the address books produced by initialization
+     *
+     *  @param currentAddressBook the address book that should be used by the platform
+     *  @param previousAddressBook the address book that was used before the current address book
+     */
+    private record InitializedAddressBooks(
+            @NonNull AddressBook currentAddressBook, @Nullable AddressBook previousAddressBook) {}
 }

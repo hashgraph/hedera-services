@@ -80,6 +80,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -103,6 +104,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 @SuppressWarnings("java:S5960")
@@ -156,6 +158,8 @@ public class EthereumSuite extends HapiSuite {
                 .toList();
     }
 
+    @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
     HapiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
 
@@ -199,6 +203,7 @@ public class EthereumSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     HapiSpec etx010TransferToCryptoAccountSucceeds() {
         String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";
@@ -549,6 +554,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     // ETX-011 and ETX-030
+    @HapiTest
     HapiSpec originAndSenderAreEthereumSigner() {
         return defaultHapiSpec("originAndSenderAreEthereumSigner")
                 .given(
@@ -592,7 +598,8 @@ public class EthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
-    private HapiSpec etx008ContractCreateExecutesWithExpectedRecord() {
+    @HapiTest
+    HapiSpec etx008ContractCreateExecutesWithExpectedRecord() {
         final var txn = "creation";
         final var contract = "Fuse";
 
@@ -668,7 +675,8 @@ public class EthereumSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec etxSvc003ContractGetBytecodeQueryReturnsDeployedCode() {
+    @HapiTest
+    HapiSpec etxSvc003ContractGetBytecodeQueryReturnsDeployedCode() {
         final var txn = "creation";
         final var contract = "EmptyConstructor";
         return HapiSpec.defaultHapiSpec("etxSvc003ContractGetBytecodeQueryReturnsDeployedCode")
@@ -696,7 +704,7 @@ public class EthereumSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec directTransferWorksForERC20() {
+    HapiSpec directTransferWorksForERC20() {
         final var tokenSymbol = "FDFGF";
         final var tokenTotalSupply = 5;
         final var tokenTransferAmount = 3;
@@ -749,6 +757,7 @@ public class EthereumSuite extends HapiSuite {
                                                         .withErcFungibleTransferStatus(true)))))));
     }
 
+    @HapiTest
     HapiSpec transferHbarsViaEip2930TxSuccessfully() {
         final String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";
