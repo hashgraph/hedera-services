@@ -305,16 +305,8 @@ public class HandleHederaOperations implements HederaOperations {
         recordBuilder
                 .contractID(contractId)
                 .contractCreateResult(ContractFunctionResult.newBuilder()
-                        //                .gasUsed(100)
-                        //                .bloom(bloomForAll(logs))
-                        //                .contractCallResult(output)
                         .contractID(contractId)
                         .evmAddress(evmAddress)
-                        //                .createdContractIDs(createdIds)
-                        //                .logInfo(pbjLogsFrom(logs))
-                        //                .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
-                        //                .contractNonces(updater.getUpdatedContractNonces())
-                        .errorMessage(null)
                         .build());
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
         if (recordBuilder.status() != OK && recordBuilder.status() != SUCCESS) {
@@ -338,7 +330,6 @@ public class HandleHederaOperations implements HederaOperations {
                 .contractCreateResult(ContractFunctionResult.newBuilder()
                         .contractID(contractId)
                         .evmAddress(evmAddress)
-                        .errorMessage(null)
                         .build());
 
         //        // Then use the TokenService API to finalize hollow account as a contract
