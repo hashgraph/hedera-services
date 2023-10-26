@@ -40,7 +40,6 @@ import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class CryptoCornerCasesSuite extends HapiSuite {
@@ -69,7 +68,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    public static HapiSpec invalidTransactionBody() {
+    private HapiSpec invalidTransactionBody() {
         return defaultHapiSpec("InvalidTransactionBody")
                 .given()
                 .when()
@@ -91,7 +90,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    public static HapiSpec invalidNodeAccount() {
+    private HapiSpec invalidNodeAccount() {
         return defaultHapiSpec("InvalidNodeAccount")
                 .given()
                 .when()
@@ -106,7 +105,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    public static HapiSpec invalidTransactionDuration() {
+    private HapiSpec invalidTransactionDuration() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
@@ -122,7 +121,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    public static HapiSpec invalidTransactionMemoTooLong() {
+    private HapiSpec invalidTransactionMemoTooLong() {
         return defaultHapiSpec("InvalidTransactionMemoTooLong")
                 .given()
                 .when()
@@ -142,8 +141,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled("Failing or intermittently failing HAPI Test")
-    public static HapiSpec invalidTransactionPayerAccountNotFound() {
+    private HapiSpec invalidTransactionPayerAccountNotFound() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
@@ -159,7 +157,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    public static HapiSpec invalidTransactionStartTime() {
+    private HapiSpec invalidTransactionStartTime() {
         return defaultHapiSpec("InvalidTransactionStartTime")
                 .given()
                 .when()
