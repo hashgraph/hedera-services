@@ -195,7 +195,7 @@ public class TeacherSendingThread<T> {
      *
      * @throws InterruptedException if the thread is interrupted while sleeping
      */
-    void rateLimit() throws InterruptedException {
+    private void rateLimit() throws InterruptedException {
         if (rateLimiter != null) {
             while (!rateLimiter.requestAndTrigger()) {
                 NANOSECONDS.sleep(sleepNanos);
