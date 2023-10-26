@@ -552,7 +552,7 @@ class MerkleDbDataSourceTest {
             // things that should have changed
             assertEqualsAndPrint(expectedRecord, dataSource.loadLeafRecord(key));
             assertEqualsAndPrint(expectedRecord, dataSource.loadLeafRecord(path));
-            assertEquals(hash(i), dataSource.loadHash(path), "unexpected Hash value");
+            assertEquals(hash(i), dataSource.loadHash(path), "unexpected Hash value for path " + path);
         } catch (final Exception e) {
             e.printStackTrace();
             fail("Exception should not have been thrown here!");

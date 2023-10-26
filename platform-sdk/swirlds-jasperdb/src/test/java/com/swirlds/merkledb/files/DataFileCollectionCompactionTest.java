@@ -42,7 +42,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @SuppressWarnings("unused")
-class DataFileCollectionMergeTest {
+class DataFileCollectionCompactionTest {
 
     // Would be nice to add a test to make sure files get deleted
 
@@ -65,7 +65,8 @@ class DataFileCollectionMergeTest {
     void testMerge() throws Exception {
         final Map<Long, Long> index = new HashMap<>();
         final var serializer = new ExampleFixedSizeDataSerializer();
-        final var coll = new DataFileCollection<>(tempFileDir.resolve("mergeTest"), "mergeTest", serializer, null);
+        String storeName = "mergeTest";
+        final var coll = new DataFileCollection<>(tempFileDir.resolve(storeName), storeName, serializer, null);
 
         coll.startWriting();
         index.put(1L, coll.storeDataItem(new long[] {1, APPLE}));
@@ -111,7 +112,13 @@ class DataFileCollectionMergeTest {
                 }
             }
         };
-        coll.compactFiles(indexUpdater, coll.getAllCompletedFiles());
+        final var compactor = new DataFileCompactor(storeName, coll, indexUpdater, null, null, null) {
+            @Override
+            int getMinNumberOfFilesToCompact() {
+                return 2;
+            }
+        };
+        compactor.compactFiles(indexUpdater, getFilesToMerge(coll), 1);
 
         long prevKey = -1;
         for (int i = 5; i < 10; i++) {
@@ -150,9 +157,10 @@ class DataFileCollectionMergeTest {
     void testDoubleMerge() throws Exception {
         final int MAXKEYS = 100;
         final long[] index = new long[MAXKEYS];
-        final Path testDir = tempFileDir.resolve("testDoubleMerge");
+        String storeName = "testDoubleMerge";
+        final Path testDir = tempFileDir.resolve(storeName);
         final DataFileCollection<long[]> store =
-                new DataFileCollection<>(testDir, "testDoubleMerge", new ExampleFixedSizeDataSerializer(), null);
+                new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
 
         final int numFiles = 2;
         for (long i = 0; i < numFiles; i++) {
@@ -169,7 +177,7 @@ class DataFileCollectionMergeTest {
         // Do merge in a separate thread but pause before files are deleted
         new Thread(() -> {
                     final AtomicInteger updateCount = new AtomicInteger(0);
-                    final List<DataFileReader<long[]>> filesToMerge = store.getAllCompletedFiles();
+                    final List<DataFileReader<?>> filesToMerge = getFilesToMerge(store);
                     final CASableLongIndex indexUpdater = new CASableLongIndex() {
                         public long get(long key) {
                             return index[(int) key];
@@ -197,8 +205,16 @@ class DataFileCollectionMergeTest {
                         }
                     };
 
+                    final DataFileCompactor compactor =
+                            new DataFileCompactor(storeName, store, indexUpdater, null, null, null) {
+                                @Override
+                                int getMinNumberOfFilesToCompact() {
+                                    return 2;
+                                }
+                            };
+
                     try {
-                        store.compactFiles(indexUpdater, filesToMerge);
+                        compactor.compactFiles(indexUpdater, filesToMerge, 1);
                         store.close();
                     } catch (Exception ex) {
                         ex.printStackTrace();
@@ -217,13 +233,13 @@ class DataFileCollectionMergeTest {
         final String[] index2 = new String[MAXKEYS];
         final DataFileCollection<long[]> store2 = new DataFileCollection<>(
                 snapshot,
-                "testDoubleMerge",
+                storeName,
                 new ExampleFixedSizeDataSerializer(),
                 (key, dataLocation, dataValue) ->
                         index2[(int) key] = DataFileCommon.dataLocationToString(dataLocation));
 
         // Merge all files with redundant records
-        final List<DataFileReader<long[]>> filesToMerge = store2.getAllCompletedFiles();
+        final List<DataFileReader<?>> filesToMerge = getFilesToMerge(store2);
         try {
             final CASableLongIndex indexUpdater = new CASableLongIndex() {
                 public long get(long key) {
@@ -243,7 +259,16 @@ class DataFileCollectionMergeTest {
                     }
                 }
             };
-            store2.compactFiles(indexUpdater, filesToMerge);
+
+            final DataFileCompactor compactor =
+                    new DataFileCompactor(storeName, store, indexUpdater, null, null, null) {
+                        @Override
+                        int getMinNumberOfFilesToCompact() {
+                            return 2;
+                        }
+                    };
+
+            compactor.compactFiles(indexUpdater, filesToMerge, 1);
         } finally {
             store2.close();
         }
@@ -255,10 +280,12 @@ class DataFileCollectionMergeTest {
         final int MAXKEYS = 100;
         final int NUM_UPDATES = 5;
         final AtomicLongArray index = new AtomicLongArray(MAXKEYS);
-        final Path testDir = tempFileDir.resolve("testMergeAndFlush");
+        String storeName = "testMergeAndFlush";
+        final Path testDir = tempFileDir.resolve(storeName);
 
         final DataFileCollection<long[]> store =
-                new DataFileCollection<>(testDir, "testMergeAndFlush", new ExampleFixedSizeDataSerializer(), null);
+                new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
+
         try {
             for (long i = 0; i < 2 * NUM_UPDATES; i++) {
                 // Start writing a new copy
@@ -275,7 +302,7 @@ class DataFileCollectionMergeTest {
                 }
 
                 // Intervene with merging earlier copies to disrupt file index order
-                final List<DataFileReader<long[]>> filesToMerge = store.getAllCompletedFiles();
+                final List<DataFileReader<?>> filesToMerge = getFilesToMerge(store);
                 final CASableLongIndex indexUpdater = new CASableLongIndex() {
                     public long get(long key) {
                         return index.get((int) key);
@@ -294,8 +321,10 @@ class DataFileCollectionMergeTest {
                 };
 
                 if (filesToMerge.size() > 1) {
+                    final DataFileCompactor compactor =
+                            new DataFileCompactor(storeName, store, indexUpdater, null, null, null);
                     try {
-                        store.compactFiles(indexUpdater, filesToMerge);
+                        compactor.compactFiles(indexUpdater, filesToMerge, 1);
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
@@ -323,10 +352,11 @@ class DataFileCollectionMergeTest {
         final int MAX_KEYS = 100;
         final int NUM_UPDATES = 3;
         final AtomicLongArray index = new AtomicLongArray(MAX_KEYS);
-        final Path testDir = tempFileDir.resolve("testRestore");
+        String storeName = "testRestore";
+        final Path testDir = tempFileDir.resolve(storeName);
 
         final DataFileCollection<long[]> store =
-                new DataFileCollection<>(testDir, "testRestore", new ExampleFixedSizeDataSerializer(), null);
+                new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
         try {
             // Initial values
             store.startWriting();
@@ -345,7 +375,7 @@ class DataFileCollectionMergeTest {
                 }
 
                 // Intervene with merging earlier copies to disrupt file index order
-                final List<DataFileReader<long[]>> filesToMerge = store.getAllCompletedFiles();
+                final List<DataFileReader<?>> filesToMerge = getFilesToMerge(store);
                 final CASableLongIndex indexUpdater = new CASableLongIndex() {
                     public long get(long key) {
                         return index.get((int) key);
@@ -364,8 +394,10 @@ class DataFileCollectionMergeTest {
                 };
 
                 if (filesToMerge.size() > 1) {
+                    final DataFileCompactor compactor =
+                            new DataFileCompactor(storeName, store, indexUpdater, null, null, null);
                     try {
-                        store.compactFiles(indexUpdater, filesToMerge);
+                        compactor.compactFiles(indexUpdater, filesToMerge, 1);
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
@@ -380,7 +412,7 @@ class DataFileCollectionMergeTest {
             final AtomicLongArray reindex = new AtomicLongArray(MAX_KEYS);
             final DataFileCollection<long[]> restore = new DataFileCollection<>(
                     testDir,
-                    "testRestore",
+                    storeName,
                     new ExampleFixedSizeDataSerializer(),
                     (key, dataLocation, dataValue) -> reindex.set((int) key, dataLocation));
 
@@ -405,11 +437,13 @@ class DataFileCollectionMergeTest {
     void testMergeUpdateSnapshotRestore(final int testParam) throws Throwable {
         final int numFiles = 10;
         final int numValues = 1000;
-        final Path testDir = tempFileDir.resolve("testMergeSnapshotRestore");
+        String storeName = "testMergeSnapshotRestore";
+        final Path testDir = tempFileDir.resolve(storeName);
         Files.createDirectories(testDir);
         final LongListOffHeap index = new LongListOffHeap();
-        final DataFileCollection<long[]> store = new DataFileCollection<>(
-                testDir, "testMergeSnapshotRestore", new ExampleFixedSizeDataSerializer(), null);
+        final DataFileCollection<long[]> store =
+                new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
+        final DataFileCompactor compactor = new DataFileCompactor(storeName, store, index, null, null, null);
         // Create a few files initially
         for (int i = 0; i < numFiles; i++) {
             store.startWriting();
@@ -423,7 +457,7 @@ class DataFileCollectionMergeTest {
         // Test scenario 0: start merging with mergingPaused semaphore locked, so merging
         // won't proceed more than to the first index update
         if (testParam == 0) {
-            store.pauseCompaction();
+            compactor.pauseCompaction();
         }
         final int filesCountBeforeMerge = store.getAllCompletedFiles().size();
         assertEquals(numFiles, filesCountBeforeMerge);
@@ -432,9 +466,9 @@ class DataFileCollectionMergeTest {
         final ExecutorService exec = Executors.newSingleThreadExecutor();
         final Future<?> f = exec.submit(() -> {
             try {
-                final List<DataFileReader<long[]>> filesToMerge = store.getAllCompletedFiles();
+                final List<DataFileReader<?>> filesToMerge = getFilesToMerge(store);
                 assertEquals(numFiles, filesToMerge.size());
-                store.compactFiles(index, filesToMerge);
+                compactor.compactFiles(index, filesToMerge, 1);
                 // Wait for the new file to be available. Without this wait, there
                 // may be 1 or 2
                 // files available for merge, as this thread may be complete before
@@ -457,7 +491,7 @@ class DataFileCollectionMergeTest {
         });
         // Test scenario 1: let compaction and update run in parallel for a while
         if (testParam == 1) {
-            store.pauseCompaction();
+            compactor.pauseCompaction();
         }
         // Update values as if it was a flush before a snapshot. It will create a new file in the
         // store
@@ -475,12 +509,12 @@ class DataFileCollectionMergeTest {
         // be
         // in progress or may be completed
         if (testParam == 2) {
-            store.pauseCompaction();
+            compactor.pauseCompaction();
         }
         // Test scenario 3: wait for compaction to complete, then take a snapshot
         if (testParam == 3) {
             mergeCompleteLatch.await();
-            store.pauseCompaction();
+            compactor.pauseCompaction();
         }
         // Snapshot. It's in the middle of compaction, as compaction should be stopped at this point
         // waiting
@@ -490,7 +524,7 @@ class DataFileCollectionMergeTest {
         index.writeToFile(snapshotDir.resolve("index.ll"));
         store.snapshot(snapshotDir);
         // Release the semaphore to unpause merging and wait for it to complete
-        store.resumeCompaction();
+        compactor.resumeCompaction();
         if (testParam != 3) {
             mergeCompleteLatch.await();
         }
@@ -499,8 +533,8 @@ class DataFileCollectionMergeTest {
 
         // Restore
         final LongListOffHeap index2 = new LongListOffHeap(snapshotDir.resolve("index.ll"));
-        final DataFileCollection<long[]> store2 = new DataFileCollection<>(
-                snapshotDir, "testMergeSnapshotRestore", new ExampleFixedSizeDataSerializer(), null);
+        final DataFileCollection<long[]> store2 =
+                new DataFileCollection<>(snapshotDir, storeName, new ExampleFixedSizeDataSerializer(), null);
         // Check index size
         assertEquals(numFiles * numValues, index2.size());
         // Check the values
@@ -516,14 +550,17 @@ class DataFileCollectionMergeTest {
         f.get();
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     @DisplayName("Restore with inconsistent index")
     void testInconsistentIndex() throws Exception {
         final int MAXKEYS = 100;
         final LongList index = new LongListOffHeap();
-        final Path testDir = tempFileDir.resolve("testInconsistentIndex");
+        String storeName = "testInconsistentIndex";
+        final Path testDir = tempFileDir.resolve(storeName);
         final DataFileCollection<long[]> store =
-                new DataFileCollection<>(testDir, "testInconsistentIndex", new ExampleFixedSizeDataSerializer(), null);
+                new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
+        final DataFileCompactor compactor = new DataFileCompactor(storeName, store, index, null, null, null);
 
         final int numFiles = 2;
         for (long i = 0; i < numFiles; i++) {
@@ -538,7 +575,7 @@ class DataFileCollectionMergeTest {
         final Path savedIndex = testDir.resolve("index.ll");
 
         final AtomicInteger updateCount = new AtomicInteger(0);
-        final List<DataFileReader<long[]>> filesToMerge = store.getAllCompletedFiles();
+        final List<DataFileReader<?>> filesToMerge = getFilesToMerge(store);
         final CASableLongIndex indexUpdater = new CASableLongIndex() {
             public long get(long key) {
                 return index.get(key);
@@ -568,7 +605,7 @@ class DataFileCollectionMergeTest {
         };
 
         try {
-            store.compactFiles(indexUpdater, filesToMerge);
+            compactor.compactFiles(indexUpdater, filesToMerge, 1);
             store.close();
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -577,10 +614,10 @@ class DataFileCollectionMergeTest {
         // Create a new data collection from the snapshot
         LongList index2 = new LongListOffHeap(savedIndex);
         final DataFileCollection<long[]> store2 =
-                new DataFileCollection<>(snapshot, "testInconsistentIndex", new ExampleFixedSizeDataSerializer(), null);
+                new DataFileCollection<>(snapshot, storeName, new ExampleFixedSizeDataSerializer(), null);
 
         // Merge all files with redundant records
-        final List<DataFileReader<long[]>> filesToMerge2 = store2.getAllCompletedFiles();
+        final List<DataFileReader<?>> filesToMerge2 = getFilesToMerge(store2);
         final CASableLongIndex indexUpdater2 = new CASableLongIndex() {
             public long get(long key) {
                 return index2.get(key);
@@ -601,9 +638,14 @@ class DataFileCollectionMergeTest {
         };
 
         try {
-            store2.compactFiles(indexUpdater2, filesToMerge2);
+            compactor.compactFiles(indexUpdater2, filesToMerge2, 1);
         } finally {
             store2.close();
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<DataFileReader<?>> getFilesToMerge(DataFileCollection<long[]> store) {
+        return (List<DataFileReader<?>>) (Object) store.getAllCompletedFiles();
     }
 }
