@@ -98,7 +98,9 @@ public class IterableStorageManager {
                 enhancement
                         .operations()
                         .updateStorageMetadata(
-                                change.contractNumber(), firstKeys.get(change.contractNumber()), change.netChange());
+                                change.contractNumber(),
+                                firstKeys.getOrDefault(change.contractNumber(), Bytes.EMPTY),
+                                change.netChange());
             }
         });
     }
