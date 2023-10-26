@@ -86,6 +86,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -703,9 +704,10 @@ class QueueThreadTests {
         assertSame(configuration.getQueue(), copy2.getQueue(), "copy configuration should match");
     }
 
-    @Test
+    //@Test
     @DisplayName("Queue Max/Min Size Metrics Test - With Thread Start")
-    void testQueueMaxMinSizeMetricsWithThreadStart() throws InterruptedException {
+    @RepeatedTest(100)
+    void testQueueMaxMinSizeMetricsWithThreadStart() {
         // given
         final BlockingQueue<Integer> queue = new LinkedBlockingQueue<>(List.of(0, 1, 2, 3, 4));
         final Queue<Integer> handler = new LinkedList<>();
@@ -735,7 +737,7 @@ class QueueThreadTests {
         // when
         queueThread.start();
         IntStream.range(0, 100).boxed().forEach(queueThread::add);
-        MILLISECONDS.sleep(50);
+        assertEventuallyTrue(queue::isEmpty, Duration.ofSeconds(1), "queue should have been emptied");
 
         // then
         assertThat(maxSizeMetric.get()).isPositive().isLessThanOrEqualTo(105);
@@ -743,8 +745,10 @@ class QueueThreadTests {
         assertThat(handler).hasSize(105);
 
         // when
+        maxSizeMetric.reset();
+        minSizeMetric.reset();
         IntStream.range(0, 100).boxed().forEach(queueThread::add);
-        MILLISECONDS.sleep(50);
+        assertEventuallyTrue(queue::isEmpty, Duration.ofSeconds(1), "queue should have been emptied");
         queueThread.stop();
 
         // then
