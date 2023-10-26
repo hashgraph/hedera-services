@@ -336,6 +336,16 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
+    public void externalizeHollowAccountMerge(final Address address) {
+        var contractId = getHederaContractId(address);
+        var evmAddress = aliasFrom(address);
+        enhancement.operations().externalizeHollowAccountMerge(contractId, evmAddress);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void deleteAccount(@NonNull final Address address) {
         if (isLongZero(address)) {
             enhancement.operations().deleteUnaliasedContract(numberOfLongZero(address));
@@ -358,6 +368,14 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         // to take special measures here to avoid popping the savepoint stack twice for
         // this frame
         reverted = true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void revertChildRecords() {
+        enhancement.operations().revertChildRecords();
     }
 
     /**

@@ -365,7 +365,6 @@ public class Create2OperationSuite extends HapiSuite {
     // https://github.com/hashgraph/hedera-services/issues/2867
     // https://github.com/hashgraph/hedera-services/issues/2868
     @SuppressWarnings("java:S5960")
-    //todo check when contract update is implemented!!
     private HapiSpec create2FactoryWorksAsExpected() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
@@ -497,6 +496,7 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
+    @HapiTest
     private HapiSpec canMergeCreate2ChildWithHollowAccount() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
@@ -999,6 +999,7 @@ public class Create2OperationSuite extends HapiSuite {
     // https://github.com/hashgraph/hedera-services/issues/2874
     // https://github.com/hashgraph/hedera-services/issues/2925
     @SuppressWarnings("java:S5669")
+    @HapiTest
     private HapiSpec cannotSelfDestructToMirrorAddress() {
         final var creation2 = CREATE_2_TXN;
         final var messyCreation2 = "messyCreate2Txn";

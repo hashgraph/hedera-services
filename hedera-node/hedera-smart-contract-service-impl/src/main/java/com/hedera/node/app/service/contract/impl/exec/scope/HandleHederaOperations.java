@@ -34,15 +34,12 @@ import com.hedera.node.app.service.contract.impl.state.WritableContractStateStor
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.hyperledger.besu.evm.account.MutableAccount;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -96,6 +93,14 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void revert() {
         context.savepointStack().rollback();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void revertChildRecords() {
+        context.revertChildRecords();
     }
 
     /**
@@ -288,27 +293,29 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final CryptoCreateTransactionBody body,
             @Nullable final AccountID autoRenewAccountId,
             @Nullable final Bytes evmAddress) {
-        final var recordBuilder = context.dispatchChildTransaction(
+        // create should have conditional child record
+        final var recordBuilder = context.dispatchRemovableChildTransaction(
                 TransactionBody.newBuilder().cryptoCreateAccount(body).build(),
-                CryptoCreateRecordBuilder.class,
+                ContractCreateRecordBuilder.class,
                 key -> true,
                 context.payer());
 
         final var contractId = ContractID.newBuilder().contractNum(number).build();
-        //TODO Build whole child record
-        ((ContractCreateRecordBuilder)recordBuilder)
+        // add additional create record fields
+        recordBuilder
                 .contractID(contractId)
-                .contractCreateResult( ContractFunctionResult.newBuilder()
-    //                .gasUsed(100)
-    //                .bloom(bloomForAll(logs))
-    //                .contractCallResult(output)
-                    .contractID(contractId)
-                    .evmAddress(evmAddress)
-    //                .createdContractIDs(createdIds)
-    //                .logInfo(pbjLogsFrom(logs))
-    //                .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
-    //                .contractNonces(updater.getUpdatedContractNonces())
-                    .errorMessage(null).build());
+                .contractCreateResult(ContractFunctionResult.newBuilder()
+                        //                .gasUsed(100)
+                        //                .bloom(bloomForAll(logs))
+                        //                .contractCallResult(output)
+                        .contractID(contractId)
+                        .evmAddress(evmAddress)
+                        //                .createdContractIDs(createdIds)
+                        //                .logInfo(pbjLogsFrom(logs))
+                        //                .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
+                        //                .contractNonces(updater.getUpdatedContractNonces())
+                        .errorMessage(null)
+                        .build());
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
         if (recordBuilder.status() != OK && recordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
@@ -318,5 +325,25 @@ public class HandleHederaOperations implements HederaOperations {
         final var accountId = AccountID.newBuilder().accountNum(number).build();
 
         tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
+    }
+
+    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
+        var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class);
+        recordBuilder
+                .contractID(contractId)
+                // add dummy transaction, because SingleTransactionRecord require NonNull on build
+                .transaction(Transaction.newBuilder()
+                        .signedTransactionBytes(Bytes.EMPTY)
+                        .build())
+                .contractCreateResult(ContractFunctionResult.newBuilder()
+                        .contractID(contractId)
+                        .evmAddress(evmAddress)
+                        .errorMessage(null)
+                        .build());
+
+        //        // Then use the TokenService API to finalize hollow account as a contract
+        //        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        //        tokenServiceApi.finalizeHollowAccountAsContract(
+        //                AccountID.newBuilder().accountNum(contractId.contractNum()).build(), INITIAL_CONTRACT_NONCE);
     }
 }

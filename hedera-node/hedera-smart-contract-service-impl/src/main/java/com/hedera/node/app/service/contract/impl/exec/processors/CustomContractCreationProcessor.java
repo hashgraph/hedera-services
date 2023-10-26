@@ -74,7 +74,12 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
         final var addressToCreate = frame.getContractAddress();
         final MutableAccount contract;
         try {
-            contract = frame.getWorldUpdater().getOrCreate(addressToCreate);
+            var updater = (HederaWorldUpdater) frame.getWorldUpdater();
+            contract = updater.getOrCreate(addressToCreate);
+            if (updater.isHollowAccount(addressToCreate)) {
+                updater.externalizeHollowAccountMerge(contract.getAddress());
+            }
+
         } catch (ResourceExhaustedException ignore) {
             halt(frame, tracer, FAILED_CREATION_HALT_REASON, HaltShouldTraceAccountCreation.YES);
             return;
@@ -112,5 +117,11 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
 
     private boolean alreadyCreated(final MutableAccount account) {
         return account.getNonce() > 0 || account.getCode().size() > 0;
+    }
+
+    protected void revert(final MessageFrame frame) {
+        super.revert(frame);
+        // clear child records on revert operation
+        ((HederaWorldUpdater) frame.getWorldUpdater()).revertChildRecords();
     }
 }

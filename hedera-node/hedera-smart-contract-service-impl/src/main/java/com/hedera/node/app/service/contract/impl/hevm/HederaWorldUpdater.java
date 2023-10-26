@@ -26,6 +26,7 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
@@ -273,10 +274,21 @@ public interface HederaWorldUpdater extends WorldUpdater {
     void externalizeSystemContractResults(@NonNull final ContractFunctionResult result, ResultStatus status);
 
     /**
+     * Creates a {@link ContractCreateRecordBuilder}, containing information about the hollow account.
+     * @param address   Address of hollow account
+     */
+    void externalizeHollowAccountMerge(final Address address);
+
+    /**
      * Returns the {@link ExchangeRate} for the current consensus timestamp
      * Delegates to {@link SystemContractOperations#currentExchangeRate()} ()}
      * @return the current exchange rate
      */
     @NonNull
     ExchangeRate currentExchangeRate();
+
+    /**
+     * Revert child records.
+     */
+    void revertChildRecords();
 }
