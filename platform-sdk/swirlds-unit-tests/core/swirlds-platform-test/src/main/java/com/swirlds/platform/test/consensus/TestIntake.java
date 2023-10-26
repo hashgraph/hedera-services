@@ -101,7 +101,6 @@ public class TestIntake implements LoadableFromSignedState {
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(new TestConfigBuilder()
-                        .withValue("event.asyncPrehandle", false)
                         .getOrCreateConfig())
                 .build();
 

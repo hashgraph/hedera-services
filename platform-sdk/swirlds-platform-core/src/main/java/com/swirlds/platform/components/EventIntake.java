@@ -129,23 +129,17 @@ public class EventIntake {
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
-        final Supplier<Integer> prehandlePoolSize;
-        if (eventConfig.asyncPrehandle()) {
-            final BlockingQueue<Runnable> prehandlePoolQueue = new LinkedBlockingQueue<>();
-            prehandlePoolSize = prehandlePoolQueue::size;
-            prehandlePool = new ThreadPoolExecutor(
-                    eventConfig.prehandlePoolSize(),
-                    eventConfig.prehandlePoolSize(),
-                    0L,
-                    TimeUnit.MILLISECONDS,
-                    prehandlePoolQueue,
-                    threadManager.createThreadFactory("platform", "txn-prehandle"));
-        } else {
-            prehandlePool = null;
-            prehandlePoolSize = () -> 0;
-        }
 
-        metrics = new EventIntakeMetrics(platformContext, prehandlePoolSize);
+        final BlockingQueue<Runnable> prehandlePoolQueue = new LinkedBlockingQueue<>();
+        prehandlePool = new ThreadPoolExecutor(
+                eventConfig.prehandlePoolSize(),
+                eventConfig.prehandlePoolSize(),
+                0L,
+                TimeUnit.MILLISECONDS,
+                prehandlePoolQueue,
+                threadManager.createThreadFactory("platform", "txn-prehandle"));
+
+        metrics = new EventIntakeMetrics(platformContext, prehandlePoolQueue::size);
     }
 
     /**
