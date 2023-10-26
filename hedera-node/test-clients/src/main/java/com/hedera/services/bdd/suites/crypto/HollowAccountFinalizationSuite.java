@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.crypto;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
@@ -251,7 +252,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    @HapiTest // here
+    @HapiTest
     private HapiSpec hollowAccountFinalizationWhenAccountNotPresentInPreHandle() {
         final var ECDSA_2 = "ECDSA_2";
         return defaultHapiSpec("hollowAccountFinalizationWhenAccountNotPresentInPreHandle")
@@ -694,7 +695,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
         final var recipientKey2 = "recipient2";
-        return defaultHapiSpec("txnWith2CompletionsAndAnother2PrecedingChildRecords")
+        return onlyDefaultHapiSpec("txnWith2CompletionsAndAnother2PrecedingChildRecords")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ecdsaKey2).shape(SECP_256K1_SHAPE),
@@ -711,7 +712,6 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                     final var newAccountID =
                             hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
                     spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
-                    System.out.println("newAccountID: " + newAccountID);
                 }))
                 .then(withOpContext((spec, opLog) -> {
                     // send a crypto transfer from the hollow payer
@@ -729,7 +729,8 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                             .signedBy(SECP_256K1_SOURCE_KEY, ecdsaKey2)
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY, ecdsaKey2))
                             .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)
-                            .via(TRANSFER_TXN_2);
+                            .via(TRANSFER_TXN_2)
+                            .logged();
                     final var childRecordCheck = childRecordsCheck(
                             TRANSFER_TXN_2,
                             MAX_CHILD_RECORDS_EXCEEDED,

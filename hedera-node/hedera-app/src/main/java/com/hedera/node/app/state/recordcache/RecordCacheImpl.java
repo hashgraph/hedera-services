@@ -41,6 +41,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -181,9 +182,14 @@ public class RecordCacheImpl implements HederaRecordCache {
         final var queue = getQueue();
         final var firstRecord = transactionRecords.get(0);
         removeExpiredTransactions(queue, firstRecord.transactionRecord().consensusTimestampOrElse(Timestamp.DEFAULT));
-
+        // Sort the transaction records based on nonce, so that the user transaction is always first,
+        // followed by any preceding transactions, followed by any child transactions.
+        final var sortedRecords = transactionRecords.stream()
+                .sorted(Comparator.comparingLong(
+                        a -> a.transactionRecord().transactionIDOrThrow().nonce()))
+                .toList();
         // For each transaction, in order, add to the queue and to the in-memory data structures.
-        for (final var singleTransactionRecord : transactionRecords) {
+        for (final var singleTransactionRecord : sortedRecords) {
             final var rec = singleTransactionRecord.transactionRecord();
             addToInMemoryCache(nodeId, payerAccountId, rec);
             queue.add(new TransactionRecordEntry(nodeId, payerAccountId, rec));
@@ -228,7 +234,9 @@ public class RecordCacheImpl implements HederaRecordCache {
         // For the preceding child records parentConsensusTimestamp is not set, but the nonce will be greater than 1
         // For the following child records parentConsensusTimestamp is also set. So to differentiate child records
         // from user records, we check if the nonce is greater than 0.
-        final var isChildTx = transactionRecord.hasParentConsensusTimestamp() || txId.nonce() > 0;
+        final var isChildTx = transactionRecord.hasParentConsensusTimestamp()
+                || txId.nonce() > 0
+                || transactionRecord.hasScheduleRef();
         final var userTxId = isChildTx ? txId.copyBuilder().nonce(0).build() : txId;
 
         // Get or create the history for this transaction ID.
