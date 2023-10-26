@@ -75,7 +75,7 @@ class DataFileWriterTest {
                 });
 
         Path dataFileWriterPath = Files.createTempDirectory("dataFileWriter");
-        dataFileWriter = new DataFileWriter<>("test", dataFileWriterPath, 1, dataItemSerializer, Instant.now());
+        dataFileWriter = new DataFileWriter<>("test", dataFileWriterPath, 1, dataItemSerializer, Instant.now(), 1);
     }
 
     /**
