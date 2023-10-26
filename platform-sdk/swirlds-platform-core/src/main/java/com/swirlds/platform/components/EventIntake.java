@@ -185,14 +185,8 @@ public class EventIntake {
             logger.debug(INTAKE_EVENT.getMarker(), "Adding {} ", event::toShortString);
             final long minGenNonAncientBeforeAdding = consensus().getMinGenerationNonAncient();
 
-            if (prehandlePool == null) {
-                // Prehandle transactions on the intake thread (i.e. this thread).
-                phaseTimer.activatePhase(EventIntakePhase.PREHANDLING);
-                prehandleEvent.accept(event);
-            } else {
-                // Prehandle transactions on the thread pool.
-                prehandlePool.submit(buildPrehandleTask(event));
-            }
+            // Prehandle transactions on the thread pool.
+            prehandlePool.submit(buildPrehandleTask(event));
 
             // record the event in the hashgraph, which results in the events in consEvent reaching consensus
             phaseTimer.activatePhase(EventIntakePhase.ADDING_TO_HASHGRAPH);
@@ -255,16 +249,13 @@ public class EventIntake {
      */
     private void handleConsensus(final ConsensusRound consensusRound) {
         if (consensusRound != null) {
+            // We need to wait for prehandles to finish before proceeding.
+            // It is critically important that prehandle is always called prior to handleConsensusRound().
 
-            // If we are asynchronously prehandling transactions, we need to
-            // wait for prehandles to finish before proceeding. It is critically
-            // important that prehandle is always called prior to handleConsensusRound().
-            if (prehandlePool != null) {
-                final long start = time.nanoTime();
-                consensusRound.forEach(e -> ((EventImpl) e).awaitPrehandleCompletion());
-                final long end = time.nanoTime();
-                metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
-            }
+            final long start = time.nanoTime();
+            consensusRound.forEach(e -> ((EventImpl) e).awaitPrehandleCompletion());
+            final long end = time.nanoTime();
+            metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
 
             eventLinker.updateGenerations(consensusRound.getGenerations());
             dispatcher.consensusRound(consensusRound);
