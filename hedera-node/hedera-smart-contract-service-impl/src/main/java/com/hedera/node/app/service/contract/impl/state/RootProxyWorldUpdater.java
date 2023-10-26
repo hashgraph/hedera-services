@@ -85,7 +85,7 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         chargeRentFor(sizeEffects);
         // "Rewrite" the pending storage changes to preserve per-contract linked lists
         storageManager.persistChanges(
-                enhancement,
+                enhancement.operations(),
                 changes,
                 sizeEffects.sizeChanges(),
                 enhancement.operations().getStore());

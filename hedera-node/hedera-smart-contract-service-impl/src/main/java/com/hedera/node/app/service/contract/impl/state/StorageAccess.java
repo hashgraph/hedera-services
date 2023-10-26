@@ -96,25 +96,4 @@ public record StorageAccess(@NonNull UInt256 key, @NonNull UInt256 value, @Nulla
     public boolean isUpdate() {
         return writtenValue != null;
     }
-
-    public enum StorageAccessType {
-        UNKNOWN,
-        READ_ONLY,
-        REMOVAL,
-        INSERTION,
-        UPDATE;
-
-        public static StorageAccessType getAccessType(StorageAccess storageAccess) {
-            if (storageAccess.isReadOnly()) {
-                return READ_ONLY;
-            } else if (storageAccess.isRemoval()) {
-                return REMOVAL;
-            } else if (storageAccess.isInsertion()) {
-                return INSERTION;
-            } else if (storageAccess.isUpdate()) {
-                return UPDATE;
-            }
-            return UNKNOWN;
-        }
-    }
 }
