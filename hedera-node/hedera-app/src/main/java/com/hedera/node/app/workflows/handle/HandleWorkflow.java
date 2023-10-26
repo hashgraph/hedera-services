@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
@@ -91,6 +92,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -426,10 +428,20 @@ public class HandleWorkflow {
 
                     // Any hollow accounts that must sign to have all needed signatures, need to be finalized
                     // as a result of transaction being handled.
-                    for (final var hollowAccount : preHandleResult.hollowAccounts()) {
-                        final var verification = verifier.verificationFor(hollowAccount.alias());
-                        if (verification.key() != null) {
-                            finalizeHollowAccounts(context, hollowAccount, verification.key());
+                    final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
+                    final var precedingHollowAccountRecords =
+                            preHandleResult.hollowAccounts().size();
+                    final var maxRecords = consensusConfig.handleMaxPrecedingRecords();
+                    // If the hollow accounts that need to be finalized is greater than the max preceding
+                    // records allowed throw an exception
+                    if (precedingHollowAccountRecords >= maxRecords) {
+                        throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
+                    } else {
+                        for (final var hollowAccount : preHandleResult.hollowAccounts()) {
+                            final var verification = verifier.verificationFor(hollowAccount.alias());
+                            if (verification.key() != null) {
+                                finalizeHollowAccounts(context, hollowAccount, verification.key());
+                            }
                         }
                     }
 
