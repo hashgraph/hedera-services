@@ -169,7 +169,6 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                             // to suspend at startup and the first "n" to "y".
                             "-agentlib:jdwp=transport=dt_socket,server=y,suspend=" + (nodeId == 0 ? "n" : "n")
                                     + ",address=*:" + (5005 + nodeId),
-                            "-Dhedera.workflows.enabled=true",
                             "-classpath",
                             classPath,
                             "-Dfile.encoding=utf-8",
