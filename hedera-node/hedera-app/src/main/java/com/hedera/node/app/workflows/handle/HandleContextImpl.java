@@ -643,6 +643,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         return stack;
     }
 
+    @Override
+    public void revertChildRecords() {
+        recordListBuilder.revertChildrenOf(recordBuilder);
+    }
+
     public enum PrecedingTransactionCategory {
         GENESIS,
         NON_GENESIS
