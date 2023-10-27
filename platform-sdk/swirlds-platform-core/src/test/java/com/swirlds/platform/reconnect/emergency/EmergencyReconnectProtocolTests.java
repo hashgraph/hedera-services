@@ -104,6 +104,7 @@ public class EmergencyReconnectProtocolTests {
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 PEER_ID,
@@ -131,6 +132,7 @@ public class EmergencyReconnectProtocolTests {
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 PEER_ID,
@@ -166,6 +168,7 @@ public class EmergencyReconnectProtocolTests {
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 PEER_ID,
@@ -220,6 +223,7 @@ public class EmergencyReconnectProtocolTests {
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 PEER_ID,
