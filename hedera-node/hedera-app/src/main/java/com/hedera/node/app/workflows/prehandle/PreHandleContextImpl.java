@@ -253,7 +253,8 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (account == null) {
             throw new PreCheckException(responseCode);
         }
-
+        // If it is hollow account, and we require this to sign, we need to finalize the account
+        // with the corresponding ECDSA key in handle
         if (isHollow(account)) {
             requiredHollowAccounts.add(account);
             return this;

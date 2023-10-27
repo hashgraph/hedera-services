@@ -204,7 +204,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         final var expanded = new HashSet<ExpandedSignaturePair>();
         signatureExpander.expand(originals, expanded);
 
-        // 2a. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
+        // 1a. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
         final PreHandleContext context;
         final VersionedConfiguration configuration = configProvider.getConfiguration();
         try {
@@ -221,7 +221,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                     "Payer account disappeared between preHandle and preHandleContext creation!", preCheck);
         }
 
-        // 1. Expand the Payer signature
+        // 2. Expand the Payer signature
         final Key payerKey;
         if (!isHollow(payerAccount)) {
             // If the account IS a hollow account, then we will discover all such possible signatures when expanding
@@ -231,6 +231,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             signatureExpander.expand(payerKey, originals, expanded);
         } else {
             payerKey = null;
+            // If the account is hollow and since it is the payer that needs to sign the transaction, we need to
+            // add to the list of requiredHollowAccounts so that we can finalize the hollow accounts in handle workflow
             context.requireSignatureForHollowAccount(payerAccount);
         }
 

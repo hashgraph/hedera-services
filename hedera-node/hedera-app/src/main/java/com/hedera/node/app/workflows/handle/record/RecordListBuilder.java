@@ -16,12 +16,14 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.GENESIS;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -123,7 +125,8 @@ public final class RecordListBuilder {
      * @throws HandleException if no more preceding slots are available
      */
     public SingleTransactionRecordBuilderImpl addPreceding(
-            @NonNull final Configuration configuration, final boolean isOnGenesis) {
+            @NonNull final Configuration configuration,
+            final HandleContextImpl.PrecedingTransactionCategory precedingTxnCategory) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
 
         // Lazily create. FUTURE: We should reuse the RecordListBuilder between handle calls, and we should
@@ -138,7 +141,10 @@ public final class RecordListBuilder {
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
         final var precedingCount = precedingTxnRecordBuilders.size();
         final var maxRecords = consensusConfig.handleMaxPrecedingRecords();
-        if (precedingTxnRecordBuilders.size() >= maxRecords && !isOnGenesis) {
+        // On genesis start we create almost 700 preceding child records for creating system accounts.
+        // Also, we should not be failing for stake update transaction records that happen every midnight.
+        // In these two cases need to allow for this, but we don't want to allow for this on every handle call.
+        if (precedingTxnRecordBuilders.size() >= maxRecords && (precedingTxnCategory != GENESIS)) {
             // We do not have a MAX_PRECEDING_RECORDS_EXCEEDED error, so use this.
             throw new HandleException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
         }
@@ -284,8 +290,9 @@ public final class RecordListBuilder {
             childRecordBuilders.remove(i);
         }
 
-        // If there are preceding child records that are more than 3 deep,
+        // If there are preceding child records somehow are added that are more than allowed preceding records,
         // then we need to revert them as well.
+        // TODO: need to discuss if this is needed with team.
         precedingTxnRecordBuilders.stream()
                 .filter(Predicate.not(SingleTransactionRecordBuilderImpl::removable))
                 .skip(3)

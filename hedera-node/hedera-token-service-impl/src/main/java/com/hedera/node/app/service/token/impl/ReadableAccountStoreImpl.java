@@ -152,6 +152,8 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
             return maybeDirectReference;
         } else {
             try {
+                // If the alias is an evmAddress we don't need to parse with Key.PROTOBUF.
+                // This will cause BufferUnderflowException
                 if (!isAliasSizeGreaterThanEvmAddress(alias)) {
                     return null;
                 }

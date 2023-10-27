@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.record;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.NON_GENESIS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -83,7 +84,7 @@ class RecordListBuilderTest extends AppTestBase {
         addUserTransaction(recordListBuilder);
 
         // when
-        recordListBuilder.addPreceding(CONFIGURATION, false).transaction(simpleCryptoTransfer());
+        recordListBuilder.addPreceding(CONFIGURATION, NON_GENESIS).transaction(simpleCryptoTransfer());
         final var result = recordListBuilder.build();
         final var records = result.records();
 
@@ -108,8 +109,8 @@ class RecordListBuilderTest extends AppTestBase {
         addUserTransaction(recordListBuilder);
 
         // when
-        recordListBuilder.addPreceding(CONFIGURATION, false).transaction(simpleCryptoTransfer());
-        recordListBuilder.addPreceding(CONFIGURATION, false).transaction(simpleCryptoTransfer());
+        recordListBuilder.addPreceding(CONFIGURATION, NON_GENESIS).transaction(simpleCryptoTransfer());
+        recordListBuilder.addPreceding(CONFIGURATION, NON_GENESIS).transaction(simpleCryptoTransfer());
         final var result = recordListBuilder.build();
         final var records = result.records();
 
@@ -140,11 +141,11 @@ class RecordListBuilderTest extends AppTestBase {
         addUserTransaction(recordListBuilder);
 
         // when
-        recordListBuilder.addPreceding(config, false);
-        recordListBuilder.addPreceding(config, false);
+        recordListBuilder.addPreceding(config, NON_GENESIS);
+        recordListBuilder.addPreceding(config, NON_GENESIS);
 
         // then
-        assertThatThrownBy(() -> recordListBuilder.addPreceding(config, false))
+        assertThatThrownBy(() -> recordListBuilder.addPreceding(config, NON_GENESIS))
                 .isInstanceOf(HandleException.class)
                 .hasFieldOrPropertyWithValue("status", ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
     }
@@ -234,8 +235,8 @@ class RecordListBuilderTest extends AppTestBase {
         final var fifth = simpleCryptoTransfer();
         // mixing up preceding vs. following, but within which, in order
         recordListBuilder.addChild(CONFIGURATION).transaction(fourth);
-        recordListBuilder.addPreceding(CONFIGURATION, false).transaction(first);
-        recordListBuilder.addPreceding(CONFIGURATION, false).transaction(second);
+        recordListBuilder.addPreceding(CONFIGURATION, NON_GENESIS).transaction(first);
+        recordListBuilder.addPreceding(CONFIGURATION, NON_GENESIS).transaction(second);
         recordListBuilder.addChild(CONFIGURATION).transaction(fifth);
         final var result = recordListBuilder.build();
         final var records = result.records();

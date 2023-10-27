@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.GENESIS;
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.NON_GENESIS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.TokenService;
@@ -92,14 +94,14 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @NonNull
     @Override
     public <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration(), false);
+        final var result = recordListBuilder.addPreceding(configuration(), NON_GENESIS);
         return castRecordBuilder(result, recordBuilderClass);
     }
 
     @NonNull
     @Override
     public <T> T addUncheckedPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration(), true);
+        final var result = recordListBuilder.addPreceding(configuration(), GENESIS);
         return castRecordBuilder(result, recordBuilderClass);
     }
 

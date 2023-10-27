@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.NON_GENESIS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -444,9 +445,21 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (category != TransactionCategory.USER) {
             throw new IllegalArgumentException("Only user-transactions can dispatch preceding transactions");
         }
+        // In mono-service preceding records is just the way we arrange the records,
+        // it doesn't mean state is not changed. Since we need to dispatch hollow accounts before dispatching
+        // the user transaction and state could be changed by then. Topic for discussion.
+        //        if (stack.depth() > 1) {
+        //            throw new IllegalStateException(
+        //                    "Cannot dispatch a preceding transaction when a savepoint has been created");
+        //        }
+        //
+        //        if (current().isModified()) {
+        //            throw new IllegalStateException("Cannot dispatch a preceding transaction when the state has been
+        // modified");
+        //        }
 
         // run the transaction
-        final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration(), false);
+        final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration(), NON_GENESIS);
         dispatchSyntheticTxn(syntheticPayer, txBody, PRECEDING, precedingRecordBuilder, callback);
 
         return castRecordBuilder(precedingRecordBuilder, recordBuilderClass);
@@ -613,7 +626,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     @NonNull
     public <T> T addPrecedingChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration(), false);
+        final var result = recordListBuilder.addPreceding(configuration(), NON_GENESIS);
         return castRecordBuilder(result, recordBuilderClass);
     }
 
@@ -628,5 +641,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @NonNull
     public SavepointStack savepointStack() {
         return stack;
+    }
+
+    public enum PrecedingTransactionCategory {
+        GENESIS,
+        NON_GENESIS
     }
 }

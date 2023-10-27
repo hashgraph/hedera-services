@@ -731,8 +731,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                             .signedBy(SECP_256K1_SOURCE_KEY, ecdsaKey2)
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY, ecdsaKey2))
                             .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)
-                            .via(TRANSFER_TXN_2)
-                            .logged();
+                            .via(TRANSFER_TXN_2);
                     final var childRecordCheck = childRecordsCheck(
                             TRANSFER_TXN_2,
                             MAX_CHILD_RECORDS_EXCEEDED,
@@ -754,7 +753,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                             otherEcdsaKey.getECDSASecp256K1().toByteArray()));
                     final var op5 = getAliasedAccountInfo(otherEvmAddress)
                             .has(accountWith().key(ecdsaKey2).noAlias().evmAddress(otherEvmAddress));
-                    allRunFor(spec, op3, op4, op5);
+                    allRunFor(spec, op3, childRecordCheck, op4, op5);
                 }));
     }
 

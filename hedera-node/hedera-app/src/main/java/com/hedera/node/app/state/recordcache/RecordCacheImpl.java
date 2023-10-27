@@ -234,9 +234,7 @@ public class RecordCacheImpl implements HederaRecordCache {
         // For the preceding child records parentConsensusTimestamp is not set, but the nonce will be greater than 1
         // For the following child records parentConsensusTimestamp is also set. So to differentiate child records
         // from user records, we check if the nonce is greater than 0.
-        final var isChildTx = transactionRecord.hasParentConsensusTimestamp()
-                || txId.nonce() > 0
-                || transactionRecord.hasScheduleRef();
+        final var isChildTx = transactionRecord.hasParentConsensusTimestamp() || txId.nonce() > 0;
         final var userTxId = isChildTx ? txId.copyBuilder().nonce(0).build() : txId;
 
         // Get or create the history for this transaction ID.

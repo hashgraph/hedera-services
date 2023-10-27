@@ -123,7 +123,7 @@ public class AutoAccountCreator {
         // TODO: Check if this is the correct verifier
         final Predicate<Key> verifier =
                 key -> handleContext.verificationFor(key).passed();
-
+        // dispatch the auto-creation record as a preceding record
         final var childRecord = handleContext.dispatchPrecedingTransaction(
                 syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier, handleContext.payer());
 

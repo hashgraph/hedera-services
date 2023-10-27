@@ -69,6 +69,7 @@ import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
@@ -107,6 +108,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -287,7 +289,7 @@ public class HandleWorkflow {
             stakingPeriodTimeHook.process(tokenServiceContext);
         } catch (Exception e) {
             // If anything goes wrong, we log the error and continue
-            logger.error("Failed to process genesis record time hook and staking period time hook", e);
+            logger.error("Failed to process staking period time hook", e);
         }
         // @future('7836'): update the exchange rate and call from here
 
@@ -428,22 +430,7 @@ public class HandleWorkflow {
 
                     // Any hollow accounts that must sign to have all needed signatures, need to be finalized
                     // as a result of transaction being handled.
-                    final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
-                    final var precedingHollowAccountRecords =
-                            preHandleResult.hollowAccounts().size();
-                    final var maxRecords = consensusConfig.handleMaxPrecedingRecords();
-                    // If the hollow accounts that need to be finalized is greater than the max preceding
-                    // records allowed throw an exception
-                    if (precedingHollowAccountRecords >= maxRecords) {
-                        throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
-                    } else {
-                        for (final var hollowAccount : preHandleResult.hollowAccounts()) {
-                            final var verification = verifier.verificationFor(hollowAccount.alias());
-                            if (verification.key() != null) {
-                                finalizeHollowAccounts(context, hollowAccount, verification.key());
-                            }
-                        }
-                    }
+                    finalizeHollowAccounts(context, configuration, preHandleResult.hollowAccounts(), verifier);
 
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
@@ -507,21 +494,43 @@ public class HandleWorkflow {
      * for the alias.
      *
      * @param context the handle context
-     * @param hollowAccount the hollow account
-     * @param key the key to update to
+     * @param configuration the configuration
+     * @param accounts the set of hollow accounts that need to be finalized
+     * @param verifier the key verifier
      */
-    private void finalizeHollowAccounts(final HandleContextImpl context, final Account hollowAccount, final Key key) {
-        if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
-            logger.error("Hollow account {} has a key other than the sentinel key", hollowAccount);
+    private void finalizeHollowAccounts(
+            @NonNull final HandleContext context,
+            @NonNull final Configuration configuration,
+            @NonNull final Set<Account> accounts,
+            @NonNull final DefaultKeyVerifier verifier) {
+        final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
+        final var precedingHollowAccountRecords = accounts.size();
+        final var maxRecords = consensusConfig.handleMaxPrecedingRecords();
+        // If the hollow accounts that need to be finalized is greater than the max preceding
+        // records allowed throw an exception
+        if (precedingHollowAccountRecords >= maxRecords) {
+            throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
+        } else {
+            for (final var hollowAccount : accounts) {
+                // get the verified key for this hollow account
+                final var verification = verifier.verificationFor(hollowAccount.alias());
+                if (verification.key() != null) {
+                    if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
+                        logger.error("Hollow account {} has a key other than the sentinel key", hollowAccount);
+                        return;
+                    }
+                    // dispatch synthetic update transaction for updating key on this hollow account
+                    final var syntheticUpdateTxn = TransactionBody.newBuilder()
+                            .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
+                                    .accountIDToUpdate(hollowAccount.accountId())
+                                    .key(verification.key())
+                                    .build())
+                            .build();
+                    context.dispatchPrecedingTransaction(
+                            syntheticUpdateTxn, SingleTransactionRecordBuilder.class, k -> true, context.payer());
+                }
+            }
         }
-        final var syntheticUpdateTxn = TransactionBody.newBuilder()
-                .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
-                        .accountIDToUpdate(hollowAccount.accountId())
-                        .key(key)
-                        .build())
-                .build();
-        context.dispatchPrecedingTransaction(
-                syntheticUpdateTxn, SingleTransactionRecordBuilder.class, k -> true, context.payer());
     }
 
     @NonNull
@@ -738,6 +747,7 @@ public class HandleWorkflow {
         signatureExpander.expand(sigPairs, expanded);
         if (payerKey != null && !isHollow(payer)) {
             signatureExpander.expand(payerKey, sigPairs, expanded);
+        } else if (isHollow(payer)) {
             context.requireSignatureForHollowAccount(payer);
         }
         signatureExpander.expand(currentRequiredPayerKeys, sigPairs, expanded);
@@ -765,7 +775,7 @@ public class HandleWorkflow {
                 previousResult.responseCode(),
                 previousResult.txInfo(),
                 context.requiredNonPayerKeys(),
-                previousResult.hollowAccounts(),
+                context.requiredHollowAccounts(),
                 verifications,
                 previousResult.innerResult(),
                 previousResult.configVersion());

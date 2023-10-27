@@ -45,6 +45,8 @@ public final class AliasUtils {
      */
     public static boolean isSerializedProtoKey(@NonNull final Bytes alias) {
         requireNonNull(alias);
+        // If the alias is an evmAddress we don't need to parse with Key.PROTOBUF.
+        // This will cause BufferUnderflowException
         if (!isAliasSizeGreaterThanEvmAddress(alias)) {
             return false;
         }
