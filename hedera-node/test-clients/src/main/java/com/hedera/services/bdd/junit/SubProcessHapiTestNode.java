@@ -163,7 +163,6 @@ final class SubProcessHapiTestNode implements HapiTestNode {
             environment.put("grpc.port", Integer.toString(grpcPort));
             builder.command(
                             javaCmd,
-                            "-Dfile.encoding=UTF-8",
                             // You can attach to any node. Node 0 at 5005, node 1 at 5006, etc. But if you need the
                             // node to stop at startup, you can change the below line so nodeId == the node you want
                             // to suspend at startup and the first "n" to "y".
@@ -171,7 +170,7 @@ final class SubProcessHapiTestNode implements HapiTestNode {
                                     + ",address=*:" + (5005 + nodeId),
                             "-classpath",
                             classPath,
-                            "-Dfile.encoding=utf-8",
+                            "-Dfile.encoding=UTF-8",
                             "-Dhedera.workflows.enabled=true",
                             "-Dprometheus.endpointPortNumber=" + (10000 + nodeId),
                             "com.hedera.node.app.ServicesMain",
