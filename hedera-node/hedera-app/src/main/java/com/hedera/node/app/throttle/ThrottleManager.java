@@ -78,7 +78,7 @@ public class ThrottleManager {
         throttleDefinitions = tempThrottleDefinitions;
         throttleBuckets = throttleDefinitions.throttleBuckets();
 
-        return allExpectedOperations(throttleDefinitions)? SUCCESS : SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
+        return allExpectedOperations(throttleDefinitions) ? SUCCESS : SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
     }
 
     /**

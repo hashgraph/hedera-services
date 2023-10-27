@@ -59,16 +59,13 @@ public final class FeeManager {
 
     private static final long DEFAULT_FEE = 100_000L;
 
-    private static final FeeComponents DEFAULT_FEE_COMPONENTS = FeeComponents.newBuilder()
-            .min(DEFAULT_FEE)
-            .max(DEFAULT_FEE)
-            .build();
+    private static final FeeComponents DEFAULT_FEE_COMPONENTS =
+            FeeComponents.newBuilder().min(DEFAULT_FEE).max(DEFAULT_FEE).build();
     private static final FeeData DEFAULT_FEE_DATA = FeeData.newBuilder()
             .networkdata(DEFAULT_FEE_COMPONENTS)
             .nodedata(DEFAULT_FEE_COMPONENTS)
             .servicedata(DEFAULT_FEE_COMPONENTS)
             .build();
-
 
     /** The current fee schedule, cached for speed. */
     private Map<Entry, FeeData> currentFeeDataMap = Collections.emptyMap();
