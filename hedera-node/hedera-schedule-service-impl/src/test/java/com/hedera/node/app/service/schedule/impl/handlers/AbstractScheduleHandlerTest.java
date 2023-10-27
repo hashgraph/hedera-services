@@ -54,7 +54,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
     @BeforeEach
     void setUp() throws PreCheckException, InvalidKeyException {
         setUpBase();
-        testHandler = new testScheduleHandler();
+        testHandler = new TestScheduleHandler();
     }
 
     @Test
@@ -132,19 +132,19 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
 
     @Test
     void verifyCheckTxnId() throws PreCheckException {
-        assertThatThrownBy(new callCheckValid(null, testHandler))
+        assertThatThrownBy(new CallCheckValid(null, testHandler))
                 .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_TRANSACTION_ID));
         for (final Schedule next : listOfScheduledOptions) {
             final TransactionID idToTest = next.originalCreateTransaction().transactionID();
-            assertThatNoException().isThrownBy(new callCheckValid(idToTest, testHandler));
+            assertThatNoException().isThrownBy(new CallCheckValid(idToTest, testHandler));
             TransactionID brokenId = idToTest.copyBuilder().scheduled(true).build();
-            assertThatThrownBy(new callCheckValid(brokenId, testHandler))
+            assertThatThrownBy(new CallCheckValid(brokenId, testHandler))
                     .is(new PreCheckExceptionMatch(ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST));
             brokenId = idToTest.copyBuilder().accountID((AccountID) null).build();
-            assertThatThrownBy(new callCheckValid(brokenId, testHandler))
+            assertThatThrownBy(new CallCheckValid(brokenId, testHandler))
                     .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID));
             brokenId = idToTest.copyBuilder().transactionValidStart(nullTime).build();
-            assertThatThrownBy(new callCheckValid(brokenId, testHandler))
+            assertThatThrownBy(new CallCheckValid(brokenId, testHandler))
                     .is(new PreCheckExceptionMatch(ResponseCodeEnum.INVALID_TRANSACTION_START));
         }
     }
@@ -169,7 +169,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
         BDDMockito.doReturn(testKeys).when(spiedContext).allKeysForTransaction(BDDMockito.any(), BDDMockito.any());
         final Set<Key> keysObtained = testHandler.allKeysForTransaction(scheduleInState, spiedContext);
         assertThat(keysObtained).isNotEmpty();
-        assertThat(keysObtained).containsExactlyInAnyOrder(payerKey, schedulerKey, adminKey, optionKey, otherKey);
+        assertThat(keysObtained).containsExactly(otherKey, optionKey, payerKey, schedulerKey, adminKey);
     }
 
     @Test
@@ -195,8 +195,8 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
             // we *mock* verificationFor side effects, which is what fills in/clears the sets,
             // so results should all be the same, despite empty signatories and mocked HandleContext.
             // We do so based on verifier calls, so it still exercises the code to be tested, however.
-            assertThat(keysRequired).isNotEmpty().hasSize(2).containsExactlyInAnyOrder(optionKey, schedulerKey);
-            assertThat(keysObtained).isNotEmpty().hasSize(2).containsExactlyInAnyOrder(payerKey, adminKey);
+            assertThat(keysRequired).isNotEmpty().hasSize(2).containsExactly(optionKey, schedulerKey);
+            assertThat(keysObtained).isNotEmpty().hasSize(2).containsExactly(payerKey, adminKey);
         }
     }
 
@@ -231,11 +231,11 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
     }
 
     // Callable required by AssertJ throw assertions; unavoidable due to limitations on lambda syntax.
-    private static final class callCheckValid implements ThrowingCallable {
+    private static final class CallCheckValid implements ThrowingCallable {
         private final TransactionID idToTest;
         private final AbstractScheduleHandler testHandler;
 
-        callCheckValid(final TransactionID idToTest, final AbstractScheduleHandler testHandler) {
+        CallCheckValid(final TransactionID idToTest, final AbstractScheduleHandler testHandler) {
             this.idToTest = idToTest;
             this.testHandler = testHandler;
         }
@@ -246,7 +246,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
         }
     }
 
-    private static final class testScheduleHandler extends AbstractScheduleHandler {}
+    private static final class TestScheduleHandler extends AbstractScheduleHandler {}
 
     private static final class PreCheckExceptionMatch extends Condition<Throwable> {
         private final ResponseCodeEnum codeToMatch;
