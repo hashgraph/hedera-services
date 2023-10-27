@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.throttling;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -65,6 +66,12 @@ class HapiThrottlingTest {
         assertTrue(ans);
         // and:
         verify(delegate).shouldThrottleQuery(eq(ContractCallLocal), any(), any());
+    }
+
+    @Test
+    void delegatesCapacityLeak() {
+        subject.leakCapacityForNOfUnscaled(2, CryptoCreate);
+        verify(delegate).leakCapacityForNOfUnscaled(2, CryptoCreate);
     }
 
     @Test

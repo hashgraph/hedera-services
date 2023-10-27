@@ -16,10 +16,14 @@
 
 package com.swirlds.platform.test.network.communication;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.IOConsumer;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.test.network.FakeConnection;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,10 +32,16 @@ public class ReadWriteFakeConnection extends FakeConnection {
     private final SyncInputStream in;
     private final SyncOutputStream out;
 
+    private final Configuration configuration =
+            new TestConfigBuilder().withValue("socket.gzipCompression", false).getOrCreateConfig();
+
+    private final PlatformContext platformContext =
+            TestPlatformContextBuilder.create().withConfiguration(configuration).build();
+
     public ReadWriteFakeConnection(final InputStream in, final OutputStream out) {
         super();
-        this.in = SyncInputStream.createSyncInputStream(in, 100);
-        this.out = SyncOutputStream.createSyncOutputStream(out, 100);
+        this.in = SyncInputStream.createSyncInputStream(platformContext, in, 100);
+        this.out = SyncOutputStream.createSyncOutputStream(platformContext, out, 100);
     }
 
     /**
@@ -48,7 +58,7 @@ public class ReadWriteFakeConnection extends FakeConnection {
             final InputStream in, final OutputStream out, final IOConsumer<Integer> outputInterceptor) {
 
         super();
-        this.in = SyncInputStream.createSyncInputStream(in, 100);
+        this.in = SyncInputStream.createSyncInputStream(platformContext, in, 100);
         final OutputStream baseOutput = new OutputStream() {
             @Override
             public void write(final int b) throws IOException {
@@ -58,7 +68,7 @@ public class ReadWriteFakeConnection extends FakeConnection {
                 out.write(b);
             }
         };
-        this.out = SyncOutputStream.createSyncOutputStream(baseOutput, 100);
+        this.out = SyncOutputStream.createSyncOutputStream(platformContext, baseOutput, 100);
     }
 
     @Override

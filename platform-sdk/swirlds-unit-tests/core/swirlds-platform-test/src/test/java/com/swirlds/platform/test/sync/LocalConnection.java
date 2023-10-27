@@ -16,11 +16,15 @@
 
 package com.swirlds.platform.test.sync;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkUtils;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -35,6 +39,13 @@ public class LocalConnection implements Connection {
     private final boolean outbound;
     private boolean connected = true;
 
+    // Current test usage of this utility class is incompatible with gzip compression.
+    final Configuration configuration =
+            new TestConfigBuilder().withValue("socket.gzipCompression", false).getOrCreateConfig();
+
+    final PlatformContext platformContext =
+            TestPlatformContextBuilder.create().withConfiguration(configuration).build();
+
     public LocalConnection(
             final NodeId selfId,
             final NodeId otherId,
@@ -44,8 +55,8 @@ public class LocalConnection implements Connection {
             final boolean outbound) {
         this.selfId = selfId;
         this.otherId = otherId;
-        dis = SyncInputStream.createSyncInputStream(in, bufferSize);
-        dos = SyncOutputStream.createSyncOutputStream(out, bufferSize);
+        dis = SyncInputStream.createSyncInputStream(platformContext, in, bufferSize);
+        dos = SyncOutputStream.createSyncOutputStream(platformContext, out, bufferSize);
         this.outbound = outbound;
     }
 

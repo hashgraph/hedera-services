@@ -113,7 +113,7 @@ public class UptimeTracker {
         final Map<NodeId, ConsensusEvent> judgesByCreator = new HashMap<>();
         scanRound(round, lastEventsInRoundByCreator, judgesByCreator);
         updateState(addressBook, uptimeData, lastEventsInRoundByCreator, judgesByCreator);
-        reportUptime(uptimeData, round.getLastEvent().getConsensusTimestamp(), round.getRoundNum());
+        reportUptime(uptimeData, round.getConsensusTimestamp(), round.getRoundNum());
 
         final Instant end = time.now();
         final Duration elapsed = Duration.between(start, end);
