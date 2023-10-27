@@ -73,6 +73,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.IntConsumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -145,7 +146,10 @@ class TransferLogicTest {
     @Mock
     private AliasManager aliasManager;
 
-    private FeeDistribution feeDistribution = new FeeDistribution(accountNums, dynamicProperties);
+    @Mock
+    private IntConsumer cryptoCreateThrottleReclaimer;
+
+    private final FeeDistribution feeDistribution = new FeeDistribution(accountNums, dynamicProperties);
 
     private TransferLogic subject;
 
@@ -165,7 +169,8 @@ class TransferLogicTest {
                 recordsHistorian,
                 txnCtx,
                 aliasManager,
-                feeDistribution);
+                feeDistribution,
+                cryptoCreateThrottleReclaimer);
     }
 
     @Test
@@ -190,7 +195,8 @@ class TransferLogicTest {
                 recordsHistorian,
                 txnCtx,
                 aliasManager,
-                feeDistribution);
+                feeDistribution,
+                cryptoCreateThrottleReclaimer);
 
         final var triggerList = List.of(inappropriateTrigger);
         assertThrows(IllegalStateException.class, () -> subject.doZeroSum(triggerList));

@@ -134,21 +134,17 @@ public class ScheduleTestBase {
             Bytes.fromHex("983470192754092657adbdbeef61948794713207439248567184729049081327");
     // A few random values for fake schedule hashes
     protected static final String SCHEDULE_IN_STATE_SHA256 =
-            "6d850a46e97dd8a4eafd3d7c114d0d151349e4f8531301b22c5fe508f712b6e4";
+            "5a89e2e2ef363aa047e2ca032cc8fbff02cf64f5536e350bc252dcbc6e76fd76";
     protected static final String SCHEDULE_IN_STATE_0_EXPIRE_SHA256 =
-            "d08c66b1aea67d7b26d12f3eb049c9cd5c62a704355ae9e4afcc20220242aeb8";
+            "4a9a1bd0a6487bac0924da771d4bb62ed72391c15602eaee394991929bdde427";
     protected static final String SCHEDULE_IN_STATE_PAYER_IS_ADMIN_SHA256 =
-            "eb2a14bfa714e03b8b638d0a869307c40edcc582d1e422f7e7cbdfae9e94e179";
+            "ef76f6e13f805b9ab5ae0e6fd9fd5976aba14e1b1f7cb4ecbd07fbc298f90ee5";
     protected static final String SCHEDULE_IN_STATE_ALTERNATE_SCHEDULED_SHA256 =
-            "a8faabddb49666f87fe5b392f617898437efe55ed43e03f5939583a44dbf0394";
-    protected static final String SCHEDULE_IN_STATE_ADMIN_IS_PAYER_SHA256 =
-            "a90f258d2f17458813e94ee8300d9e14573879e4c7a6b7a8d7787c2b294e5aa2";
-    protected static final String SCHEDULE_IN_STATE_PAYER_IS_SCHEDULER_SHA256 =
-            "8bb64547bbe47ff03ce476eef60746935367c5e9eaa47c02e16d3d697ee4e409";
+            "1e2ec1fa33fce66166497aeffa8a0af690e257cafad02063a13191cabc2c2de3";
     protected static final String SCHEDULE_IN_STATE_ODD_MEMO_SHA256 =
-            "f545d65f1351319764fb2934dcc2db44775c8e42291d41168f32fe0e217d51ca";
+            "7788f7de741c9ef2e7bf371095ea497a0eaed1ad9b6cba2489f34f565ee70556";
     protected static final String SCHEDULE_IN_STATE_WAIT_EXPIRE_SHA256 =
-            "8b91851ebd425c9e658fd3ad6d0ad72e6e4cedab58c518485ae3876f551bb001";
+            "87cfae9fd8f15126af9ba8be0155c57f1cf0838c4915f4e0ea297a15d5d3a3b9";
     protected static final String SCHEDULED_TRANSACTION_MEMO = "Les ħ2ᛏᚺᛂ🌕 goo";
     protected static final String ODD_MEMO = "she had marvelous judgement, Don... if not particularly good taste.";
     // a few typed null values to avoid casting null

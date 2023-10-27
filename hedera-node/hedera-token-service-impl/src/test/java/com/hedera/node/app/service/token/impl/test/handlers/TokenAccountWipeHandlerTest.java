@@ -40,6 +40,7 @@ import static com.hedera.test.factories.scenarios.TokenWipeScenarios.WIPE_FOR_TO
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.WIPE_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -159,10 +160,9 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
         @Test
         void emptyNftSerialNumbers() {
+            // This is a success case
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 0);
-            Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
-                    .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(INVALID_WIPING_AMOUNT));
+            assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
         }
 
         @Test

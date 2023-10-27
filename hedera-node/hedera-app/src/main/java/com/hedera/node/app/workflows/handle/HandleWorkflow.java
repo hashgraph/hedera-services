@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
@@ -52,7 +53,9 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
+import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
@@ -79,8 +82,6 @@ import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
-import com.hedera.node.app.workflows.handle.verifier.BaseHandleContextVerifier;
-import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
@@ -332,7 +333,7 @@ public class HandleWorkflow {
 
             // Set up the verifier
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
-            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+            final var verifier = new DefaultKeyVerifier(hederaConfig, preHandleResult.verificationResults());
             final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(transactionInfo.signatureMap());
 
             // Setup context
@@ -498,7 +499,7 @@ public class HandleWorkflow {
 
     private ValidationResult validate(
             @NonNull final Instant consensusNow,
-            @NonNull final HandleContextVerifier verifier,
+            @NonNull final KeyVerifier verifier,
             @NonNull final PreHandleResult preHandleResult,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Fees fees,
@@ -508,6 +509,7 @@ public class HandleWorkflow {
         final var payerID = txInfo.payerID();
         final var functionality = txInfo.functionality();
         final var txBody = txInfo.txBody();
+        boolean isPayerHollow = false;
 
         // Check if pre-handle was successful
         if (preHandleResult.status() != SO_FAR_SO_GOOD) {
@@ -527,9 +529,11 @@ public class HandleWorkflow {
         }
 
         // Check the status and solvency of the payer
+
         try {
             final var payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
             solvencyPreCheck.checkSolvency(txInfo, payer, fees);
+            isPayerHollow = isHollow(payer);
         } catch (final InsufficientServiceFeeException e) {
             return new ValidationResult(PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE, e.responseCode());
         } catch (final InsufficientNonFeeDebitsException e) {
@@ -565,7 +569,7 @@ public class HandleWorkflow {
 
         // Check all signature verifications. This will also wait, if validation is still ongoing.
         final var payerKeyVerification = verifier.verificationFor(preHandleResult.payerKey());
-        if (payerKeyVerification.failed()) {
+        if (!isPayerHollow && payerKeyVerification.failed()) {
             return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_SIGNATURE);
         }
 
@@ -678,12 +682,15 @@ public class HandleWorkflow {
 
         // prepare signature verification
         final var verifications = new HashMap<Key, SignatureVerificationFuture>();
-        final var payerKey = previousResult.payerKey();
-        verifications.put(payerKey, previousResult.verificationResults().get(payerKey));
+        final var payer = solvencyPreCheck.getPayerAccount(storeFactory, previousResult.payer());
+        final var payerKey = payer.key();
 
         // expand all keys
         final var expanded = new HashSet<ExpandedSignaturePair>();
         signatureExpander.expand(sigPairs, expanded);
+        if (payerKey != null && !isHollow(payer)) {
+            signatureExpander.expand(payerKey, sigPairs, expanded);
+        }
         signatureExpander.expand(currentRequiredPayerKeys, sigPairs, expanded);
         signatureExpander.expand(currentOptionalPayerKeys, sigPairs, expanded);
 

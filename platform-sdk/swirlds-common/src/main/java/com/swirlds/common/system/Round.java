@@ -16,6 +16,7 @@
 
 package com.swirlds.common.system;
 
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,6 +43,7 @@ public interface Round extends Iterable<ConsensusEvent> {
      * @return an iterator of consensus events
      */
     @Override
+    @NonNull
     Iterator<ConsensusEvent> iterator();
 
     /**
@@ -65,6 +67,14 @@ public interface Round extends Iterable<ConsensusEvent> {
      * @return the number of events in the round
      */
     int getEventCount();
+
+    /**
+     * Get the roster that was used to compute consensus for this round.
+     *
+     * @return the roster that was used to compute consensus for this round
+     */
+    @NonNull
+    AddressBook getConsensusRoster();
 
     /**
      * A convenience method that supplies every transaction in this round to a consumer.

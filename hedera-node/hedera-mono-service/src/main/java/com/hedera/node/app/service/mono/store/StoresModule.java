@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_STORE_RELS_ON_DISK;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -70,12 +71,16 @@ import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.store.tokens.TokenStore;
 import com.hedera.node.app.service.mono.store.tokens.annotations.AreTreasuryWildcardsEnabled;
+import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.throttling.annotations.HapiThrottle;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
@@ -169,6 +174,13 @@ public interface StoresModule {
                 usageLimits, txnCtx, sideEffectsTracker, relsLinkManager, tokenRelSupplier);
         tokenRelsLedger.setCommitInterceptor(interceptor);
         return tokenRelsLedger;
+    }
+
+    @Provides
+    @Singleton
+    static IntConsumer provideCryptoCreateThrottleReclaimer(
+            @NonNull @HapiThrottle final FunctionalityThrottling hapiThrottling) {
+        return n -> hapiThrottling.leakCapacityForNOfUnscaled(n, CryptoCreate);
     }
 
     @Provides
