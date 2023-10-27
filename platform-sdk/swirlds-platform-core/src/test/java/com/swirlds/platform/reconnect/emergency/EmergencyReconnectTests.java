@@ -25,6 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -282,6 +283,7 @@ class EmergencyReconnectTests {
     private EmergencyReconnectProtocol createTeacherProtocol(
             final NotificationEngine notificationEngine, final ReconnectController reconnectController) {
         return new EmergencyReconnectProtocol(
+                Time.getCurrent(),
                 getStaticThreadManager(),
                 notificationEngine,
                 teacherId,
@@ -304,6 +306,7 @@ class EmergencyReconnectTests {
         when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
         when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
         return new EmergencyReconnectProtocol(
+                Time.getCurrent(),
                 getStaticThreadManager(),
                 notificationEngine,
                 learnerId,
