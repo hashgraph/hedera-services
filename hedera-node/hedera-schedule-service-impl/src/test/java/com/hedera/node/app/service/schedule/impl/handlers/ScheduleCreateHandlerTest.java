@@ -112,7 +112,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final TransactionBody createBody = scheduleCreateTransaction(payer);
         realPreContext = new PreHandleContextImpl(mockStoreFactory, createBody, testConfig, mockDispatcher);
         Assertions.assertThrowsPreCheck(
-                () -> subject.preHandle(realPreContext), ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID);
+                () -> subject.preHandle(realPreContext), ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST);
     }
 
     @Test
