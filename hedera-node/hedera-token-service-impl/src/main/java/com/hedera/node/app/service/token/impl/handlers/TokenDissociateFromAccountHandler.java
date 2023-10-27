@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -25,14 +26,18 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenDissociateResourceUsage;
@@ -43,6 +48,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.util.TokenRelListCalculator;
 import com.hedera.node.app.service.token.impl.validators.TokenListChecks;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -133,6 +139,23 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                     // Confusing, but we're _adding_ the number of NFTs to _subtract_ from the account. The total
                     // subtraction will be done outside the dissociation loop
                     numNftsToSubtract += tokenRelBalance;
+
+                    final var newBuilder = CryptoTransferTransactionBody.newBuilder();
+                    final var transferList = TransferList.newBuilder();
+                    newBuilder.transfers(transferList.build());
+                    final var tokenTransferList = TokenTransferList.newBuilder().token(token.tokenId());
+                    final List<AccountAmount> aaList = new ArrayList<>();
+                        aaList.add(AccountAmount.newBuilder()
+                                .accountID(tokenRel.accountId())
+                                .amount(tokenRelBalance * -1)
+                                .build());
+                    tokenTransferList.transfers(aaList);
+
+                    final ArrayList<TokenTransferList> newTokenTransferLists = new ArrayList<>();
+                    newTokenTransferLists.add(tokenTransferList.build());
+
+                    final var recordBuilder = context.userTransactionRecordBuilder(CryptoTransferRecordBuilder.class);
+                    recordBuilder.tokenTransferLists(newTokenTransferLists);
                 }
             } else {
                 // Handle active tokens
@@ -141,24 +164,22 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                                 && token.treasuryAccountId().equals(tokenRel.accountId()),
                         ACCOUNT_IS_TREASURY);
                 validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
+                validateFalse(tokenRelBalance > 0, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+                validateFalse(token.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE, ACCOUNT_STILL_OWNS_NFTS);
+                // If the fungible token is NOT expired, then we throw an exception because we
+                // can only dissociate tokens with a zero balance by this time in the code
+                // @future('6864'): uncomment when token expiry is implemented
+                // validateTrue(tokenIsExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 
-                if (tokenRelBalance > 0) {
-                    validateFalse(token.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE, ACCOUNT_STILL_OWNS_NFTS);
-                    // If the fungible token is NOT expired, then we throw an exception because we
-                    // can only dissociate tokens with a zero balance by this time in the code
-                    // @future('6864'): uncomment when token expiry is implemented
-                    // validateTrue(tokenIsExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
-
-                    // If the fungible common token is expired, we automatically transfer the
-                    // dissociating account's balance back to the token's treasury
-                    final var treasuryTokenRel = dissociation.treasuryTokenRel();
-                    if (treasuryTokenRel != null) {
-                        final var updatedTreasuryBalanceTokenRel = treasuryTokenRel.balance() + tokenRelBalance;
-                        treasuryBalancesToUpdate.add(treasuryTokenRel
-                                .copyBuilder()
-                                .balance(updatedTreasuryBalanceTokenRel)
-                                .build());
-                    }
+                // If the fungible common token is expired, we automatically transfer the
+                // dissociating account's balance back to the token's treasury
+                final var treasuryTokenRel = dissociation.treasuryTokenRel();
+                if (treasuryTokenRel != null) {
+                    final var updatedTreasuryBalanceTokenRel = treasuryTokenRel.balance() + tokenRelBalance;
+                    treasuryBalancesToUpdate.add(treasuryTokenRel
+                            .copyBuilder()
+                            .balance(updatedTreasuryBalanceTokenRel)
+                            .build());
                 }
             }
 

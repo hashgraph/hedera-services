@@ -369,7 +369,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                                                 .including(TBD_TOKEN, aNonTreasuryAcquaintance, -nonZeroXfer / 2))));
     }
 
-    //    @HapiTest Will pass after fees in NetworkTransactionGetRecordHandler are implemented
+    @HapiTest
     public HapiSpec dissociateHasExpectedSemanticsForDeletedTokens() {
         final String tbdUniqToken = "UniqToBeDeleted";
         final String zeroBalanceFrozen = "0bFrozen";
@@ -440,8 +440,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
     }
 
-    // enable when TokenDissociateFromAccountHandler.tokenIsExpired is implemented
-    // @HapiTest
+    @HapiTest
     public HapiSpec dissociateHasExpectedSemantics() {
         return defaultHapiSpec("DissociateHasExpectedSemantics")
                 .given(basicKeysAndTokens())
