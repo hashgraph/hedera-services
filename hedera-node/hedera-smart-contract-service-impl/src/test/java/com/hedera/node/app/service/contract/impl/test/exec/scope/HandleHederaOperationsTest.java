@@ -42,6 +42,7 @@ import com.hedera.node.app.service.contract.impl.state.WritableContractStateStor
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.fees.*;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -78,6 +79,12 @@ class HandleHederaOperationsTest {
 
     @Mock
     private TinybarValues tinybarValues;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private Fees fees;
 
     private HandleHederaOperations subject;
 
@@ -155,6 +162,11 @@ class HandleHederaOperationsTest {
     @Test
     void lazyCreationCostInGasHardcoded() {
         assertEquals(1L, subject.lazyCreationCostInGas());
+        given(context.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
+        given(feeCalculator.calculate()).willReturn(fees);
+        given(fees.totalFee()).willReturn(20_000_000L);
+        given(tinybarValues.topLevelTinybarGasPrice()).willReturn(50L);
+        assertEquals(400_000L, subject.lazyCreationCostInGas());
     }
 
     @Test

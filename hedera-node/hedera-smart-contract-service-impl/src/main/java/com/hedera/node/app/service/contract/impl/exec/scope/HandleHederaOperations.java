@@ -146,8 +146,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long lazyCreationCostInGas() {
-        // TODO - implement correctly
-        return 500_000L;
+        return context.feeCalculator(SubType.DEFAULT).calculate().totalFee() / gasPriceInTinybars();
     }
 
     /**
