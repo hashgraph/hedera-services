@@ -18,6 +18,7 @@ package com.swirlds.platform.reconnect;
 
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
@@ -28,6 +29,7 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
@@ -43,22 +45,26 @@ public class DummyConnection extends SocketConnection {
     private final Socket socket;
 
     public DummyConnection(
-            final NodeId selfId,
-            final NodeId otherId,
-            final SerializableDataInputStream in,
-            final SerializableDataOutputStream out) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final NodeId selfId,
+            @NonNull final NodeId otherId,
+            @NonNull final SerializableDataInputStream in,
+            @NonNull final SerializableDataOutputStream out) {
         this(
                 selfId,
                 otherId,
-                SyncInputStream.createSyncInputStream(in, 1024 * 8),
-                SyncOutputStream.createSyncOutputStream(out, 1024 * 8),
+                SyncInputStream.createSyncInputStream(platformContext, in, 1024 * 8),
+                SyncOutputStream.createSyncOutputStream(platformContext, out, 1024 * 8),
                 mock(Socket.class));
     }
 
-    public DummyConnection(final SerializableDataInputStream in, final SerializableDataOutputStream out) {
+    public DummyConnection(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final SerializableDataInputStream in,
+            @NonNull final SerializableDataOutputStream out) {
         this(
-                SyncInputStream.createSyncInputStream(in, 1024 * 8),
-                SyncOutputStream.createSyncOutputStream(out, 1024 * 8),
+                SyncInputStream.createSyncInputStream(platformContext, in, 1024 * 8),
+                SyncOutputStream.createSyncOutputStream(platformContext, out, 1024 * 8),
                 mock(Socket.class));
     }
 

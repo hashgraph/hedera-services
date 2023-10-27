@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.observers;
+package com.swirlds.merkledb;
 
-import com.swirlds.platform.event.GossipEvent;
+import java.util.LongSummaryStatistics;
 
 /**
- * An observer that is notified when an event is received, deduplicated and validated, but before it is added to
- * consensus. We might not have the parents of this event, so it might be added to consensus later, or never.
+ * This interface indicates that the implementing class can provide statistics for the sizes of the files it uses.
  */
-@FunctionalInterface
-public interface EventReceivedObserver {
+public interface FileStatisticAware {
     /**
-     * The given event has been received, deduplicated and validated
+     * Get statistics for sizes of the files it uses.
      *
-     * @param event
-     * 		the event
+     * @return statistics for sizes of all fully written files, in bytes
      */
-    void receivedEvent(GossipEvent event);
+    LongSummaryStatistics getFilesSizeStatistics();
 }
