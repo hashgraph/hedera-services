@@ -83,6 +83,7 @@ class InternalEventValidatorTests {
     private GossipEvent generateEvent(
             @Nullable final Hash selfParentHash,
             @Nullable final Hash otherParentHash,
+            final long eventGeneration,
             final long selfParentGeneration,
             final long otherParentGeneration,
             final int totalTransactionBytes) {
@@ -105,6 +106,7 @@ class InternalEventValidatorTests {
         final GossipEvent event = mock(GossipEvent.class);
         when(event.getHashedData()).thenReturn(hashedData);
         when(event.getUnhashedData()).thenReturn(unhashedData);
+        when(event.getGeneration()).thenReturn(eventGeneration);
 
         return event;
     }
@@ -112,7 +114,7 @@ class InternalEventValidatorTests {
     @Test
     @DisplayName("An event with null hashed data is invalid")
     void nullHashedData() {
-        final GossipEvent event = generateEvent(randomHash(random), randomHash(random), 5, 6, 1111);
+        final GossipEvent event = generateEvent(randomHash(random), randomHash(random), 7, 5, 6, 1111);
         when(event.getHashedData()).thenReturn(null);
 
         multinodeValidator.handleEvent(event);
@@ -125,7 +127,7 @@ class InternalEventValidatorTests {
     @Test
     @DisplayName("An event with null unhashed data is invalid")
     void nullUnhashedData() {
-        final GossipEvent event = generateEvent(randomHash(random), randomHash(random), 5, 6, 1111);
+        final GossipEvent event = generateEvent(randomHash(random), randomHash(random), 7, 5, 6, 1111);
         when(event.getUnhashedData()).thenReturn(null);
 
         multinodeValidator.handleEvent(event);
@@ -139,7 +141,7 @@ class InternalEventValidatorTests {
     @DisplayName("An event with too many transaction bytes is invalid")
     void tooManyTransactionBytes() {
         // default max is 245_760 bytes
-        final GossipEvent event = generateEvent(randomHash(random), randomHash(random), 5, 6, 500_000);
+        final GossipEvent event = generateEvent(randomHash(random), randomHash(random), 7, 5, 6, 500_000);
 
         multinodeValidator.handleEvent(event);
         singleNodeValidator.handleEvent(event);
@@ -152,15 +154,15 @@ class InternalEventValidatorTests {
     @DisplayName("An event with parent inconsistency is invalid")
     void inconsistentParents() {
         // has null self parent hash, but valid self parent generation
-        final GossipEvent nullSelfParentHash = generateEvent(null, randomHash(random), 5, 6, 1111);
+        final GossipEvent nullSelfParentHash = generateEvent(null, randomHash(random), 7, 5, 6, 1111);
         // has valid self parent hash, but invalid self parent generation
         final GossipEvent invalidSelfParentGeneration =
-                generateEvent(randomHash(random), randomHash(random), -1, 6, 1111);
+                generateEvent(randomHash(random), randomHash(random), -1, 7, 6, 1111);
         // has null other parent hash, but valid other parent generation
-        final GossipEvent nullOtherParentHash = generateEvent(randomHash(random), null, 5, 6, 1111);
+        final GossipEvent nullOtherParentHash = generateEvent(randomHash(random), null, 7, 5, 6, 1111);
         // has valid other parent hash, but invalid other parent generation
         final GossipEvent invalidOtherParentGeneration =
-                generateEvent(randomHash(random), randomHash(random), 5, -1, 1111);
+                generateEvent(randomHash(random), randomHash(random), 6, 5, -1, 1111);
 
         multinodeValidator.handleEvent(nullSelfParentHash);
         multinodeValidator.handleEvent(invalidSelfParentGeneration);
@@ -180,7 +182,7 @@ class InternalEventValidatorTests {
     @DisplayName("An event with identical parents is only valid in a single node network")
     void identicalParents() {
         final Hash sharedHash = randomHash(random);
-        final GossipEvent event = generateEvent(sharedHash, sharedHash, 5, 6, 1111);
+        final GossipEvent event = generateEvent(sharedHash, sharedHash, 7, 5, 6, 1111);
 
         multinodeValidator.handleEvent(event);
         singleNodeValidator.handleEvent(event);
@@ -190,11 +192,26 @@ class InternalEventValidatorTests {
     }
 
     @Test
+    @DisplayName("An event must have a generation of the max parent generation + 1")
+    void invalidGeneration() {
+        final GossipEvent highGeneration = generateEvent(randomHash(random), randomHash(random), 8, 5, 6, 1111);
+        final GossipEvent lowGeneration = generateEvent(randomHash(random), randomHash(random), 4, 5, 6, 1111);
+
+        multinodeValidator.handleEvent(highGeneration);
+        multinodeValidator.handleEvent(lowGeneration);
+        singleNodeValidator.handleEvent(highGeneration);
+        singleNodeValidator.handleEvent(lowGeneration);
+
+        assertEquals(0, consumedEventCount.get());
+        assertEquals(4, exitedIntakePipelineCount.get());
+    }
+
+    @Test
     @DisplayName("Test that an event with no issues passes validation")
     void successfulValidation() {
-        final GossipEvent normalEvent = generateEvent(randomHash(random), randomHash(random), 5, 6, 1111);
-        final GossipEvent missingSelfParent = generateEvent(null, randomHash(random), -1, 6, 1111);
-        final GossipEvent missingOtherParent = generateEvent(randomHash(random), null, 5, -1, 1111);
+        final GossipEvent normalEvent = generateEvent(randomHash(random), randomHash(random), 7, 5, 6, 1111);
+        final GossipEvent missingSelfParent = generateEvent(null, randomHash(random), 7, -1, 6, 1111);
+        final GossipEvent missingOtherParent = generateEvent(randomHash(random), null, 6, 5, -1, 1111);
 
         multinodeValidator.handleEvent(normalEvent);
         multinodeValidator.handleEvent(missingSelfParent);

@@ -71,6 +71,7 @@ public class InternalEventValidator {
     private final RateLimitedLogger inconsistentSelfParentLogger;
     private final RateLimitedLogger inconsistentOtherParentLogger;
     private final RateLimitedLogger identicalParentsLogger;
+    private final RateLimitedLogger invalidGenerationLogger;
 
     private final LongAccumulator nullHashedDataAccumulator;
     private final LongAccumulator nullUnhashedDataAccumulator;
@@ -78,6 +79,7 @@ public class InternalEventValidator {
     private final LongAccumulator inconsistentSelfParentAccumulator;
     private final LongAccumulator inconsistentOtherParentAccumulator;
     private final LongAccumulator identicalParentsAccumulator;
+    private final LongAccumulator invalidGenerationAccumulator;
 
     /**
      * Constructor
@@ -109,6 +111,7 @@ public class InternalEventValidator {
         this.inconsistentSelfParentLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.inconsistentOtherParentLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
         this.identicalParentsLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
+        this.invalidGenerationLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
 
         this.nullHashedDataAccumulator = platformContext
                 .getMetrics()
@@ -139,6 +142,11 @@ public class InternalEventValidator {
                 .getMetrics()
                 .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithIdenticalParents")
                         .withDescription("Events with identical self-parent and other-parent hash")
+                        .withUnit("events"));
+        this.invalidGenerationAccumulator = platformContext
+                .getMetrics()
+                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithInvalidGeneration")
+                        .withDescription("Events with an invalid generation")
                         .withUnit("events"));
     }
 
@@ -237,6 +245,30 @@ public class InternalEventValidator {
     }
 
     /**
+     * Checks whether the generation of an event is valid. A valid generation is one greater than the maximum generation
+     * of the event's parents.
+     *
+     * @param event the event to check
+     * @return true if the generation of the event is valid, otherwise false
+     */
+    private boolean isEventGenerationValid(@NonNull final GossipEvent event) {
+        final long eventGeneration = event.getGeneration();
+        final long selfParentGeneration = event.getHashedData().getSelfParentGen();
+        final long otherParentGeneration = event.getHashedData().getOtherParentGen();
+
+        if (eventGeneration != Math.max(selfParentGeneration, otherParentGeneration) + 1) {
+            invalidGenerationLogger.error(
+                    INVALID_EVENT_ERROR.getMarker(),
+                    "Event %s has an invalid generation. Event generation: %s, self-parent generation: %s, other-parent generation: %s"
+                            .formatted(event, eventGeneration, selfParentGeneration, otherParentGeneration));
+            invalidGenerationAccumulator.update(1);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Validate the internal data integrity of an event.
      * <p>
      * If the event is determined to be valid, it is passed to the event consumer.
@@ -246,7 +278,8 @@ public class InternalEventValidator {
     public void handleEvent(@NonNull final GossipEvent event) {
         if (areRequiredFieldsNonNull(event)
                 && isTransactionByteCountValid(event)
-                && areParentsInternallyConsistent(event)) {
+                && areParentsInternallyConsistent(event)
+                && isEventGenerationValid(event)) {
             eventConsumer.accept(event);
         } else {
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
