@@ -42,6 +42,7 @@ import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_WITH_M
 import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_WITH_SUPPLY_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_SUPPLY_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -154,10 +155,9 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void emptyNftSerialNumbers() {
+            // This is a success case
             final var txn = newBurnTxn(TOKEN_123, 0);
-            Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
-                    .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(INVALID_TOKEN_BURN_AMOUNT));
+            assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
         }
 
         @Test
