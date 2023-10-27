@@ -256,6 +256,8 @@ public class PreHandleContextImpl implements PreHandleContext {
         // If it is hollow account, and we require this to sign, we need to finalize the account
         // with the corresponding ECDSA key in handle
         if (isHollow(account)) {
+            // Verify this key isn't for an immutable account
+            verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
             requiredHollowAccounts.add(account);
             return this;
         }
@@ -265,9 +267,6 @@ public class PreHandleContextImpl implements PreHandleContext {
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
-
-        // Verify this key isn't for an immutable account
-        verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
 
         return requireKey(key);
     }
@@ -289,6 +288,8 @@ public class PreHandleContextImpl implements PreHandleContext {
         // If it is hollow account, and we require this to sign, we need to finalize the account
         // with the corresponding ECDSA key in handle
         if (isHollow(account)) {
+            // Verify this key isn't for an immutable account
+            verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
             requiredHollowAccounts.add(account);
             return this;
         }
@@ -298,10 +299,6 @@ public class PreHandleContextImpl implements PreHandleContext {
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
-
-        // Verify this key isn't for an immutable account
-        verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
-
         return requireKey(key);
     }
 
@@ -329,6 +326,8 @@ public class PreHandleContextImpl implements PreHandleContext {
         // If it is hollow account, and we require this to sign, we need to finalize the account
         // with the corresponding ECDSA key in handle
         if (isHollow(account)) {
+            // Verify this key isn't for an immutable account
+            verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
             requiredHollowAccounts.add(account);
             return this;
         }
@@ -340,10 +339,6 @@ public class PreHandleContextImpl implements PreHandleContext {
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
-
-        // Verify this key isn't for an immutable account
-        verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
-
         return requireKey(key);
     }
 
@@ -371,6 +366,8 @@ public class PreHandleContextImpl implements PreHandleContext {
         // If it is hollow account, and we require this to sign, we need to finalize the account
         // with the corresponding ECDSA key in handle
         if (isHollow(account)) {
+            // Verify this key isn't for an immutable account
+            verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
             requiredHollowAccounts.add(account);
             return this;
         }
@@ -381,10 +378,6 @@ public class PreHandleContextImpl implements PreHandleContext {
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
-
-        // Verify this key isn't for an immutable account
-        verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
-
         return requireKey(key);
     }
 

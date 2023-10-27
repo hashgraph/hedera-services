@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.NON_GENESIS;
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -767,7 +767,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     .dispatchHandle(any());
 
             when(childRecordBuilder.status()).thenReturn(ResponseCodeEnum.OK);
-            when(recordListBuilder.addPreceding(any(), eq(NON_GENESIS))).thenReturn(childRecordBuilder);
+            when(recordListBuilder.addPreceding(any(), eq(LIMITED_CHILD_RECORDS)))
+                    .thenReturn(childRecordBuilder);
             when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
 
@@ -950,7 +951,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                                 VERIFIER_CALLBACK,
                                 AccountID.DEFAULT))
                         .isInstanceOf(IllegalArgumentException.class);
-                verify(recordListBuilder, never()).addPreceding(any(), eq(NON_GENESIS));
+                verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
                 verify(dispatcher, never()).dispatchHandle(any());
                 assertThat(stack.createReadableStates(FOOD_SERVICE)
                                 .get(FRUIT_STATE_KEY)
@@ -972,7 +973,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT));
-            verify(recordListBuilder, times(1)).addPreceding(any(), eq(NON_GENESIS));
+            verify(recordListBuilder, times(1)).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, times(1)).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
@@ -993,7 +994,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT));
-            verify(recordListBuilder, times(1)).addPreceding(any(), eq(NON_GENESIS));
+            verify(recordListBuilder, times(1)).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, times(1)).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
@@ -1013,7 +1014,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT))
                     .isInstanceOf(IllegalArgumentException.class);
-            verify(recordListBuilder, never()).addPreceding(any(), eq(NON_GENESIS));
+            verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, never()).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
@@ -1033,7 +1034,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT))
                     .isInstanceOf(IllegalArgumentException.class);
-            verify(recordListBuilder, never()).addPreceding(any(), eq(NON_GENESIS));
+            verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, never()).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)

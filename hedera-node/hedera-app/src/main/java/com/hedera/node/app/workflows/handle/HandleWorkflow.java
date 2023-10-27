@@ -108,6 +108,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
@@ -513,7 +514,9 @@ public class HandleWorkflow {
         } else {
             for (final var hollowAccount : accounts) {
                 // get the verified key for this hollow account
-                final var verification = verifier.verificationFor(hollowAccount.alias());
+                final var verification = Objects.requireNonNull(
+                        verifier.verificationFor(hollowAccount.alias()),
+                        "Required hollow account verified signature did not exist");
                 if (verification.key() != null) {
                     if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
                         logger.error("Hollow account {} has a key other than the sentinel key", hollowAccount);
@@ -729,8 +732,8 @@ public class HandleWorkflow {
 
         // re-expand keys only if any of the keys have changed
         final var previousResults = previousResult.verificationResults();
-        final var currentRequiredPayerKeys = context.requiredNonPayerKeys();
-        final var currentOptionalPayerKeys = context.optionalNonPayerKeys();
+        final var currentRequiredNonPayerKeys = context.requiredNonPayerKeys();
+        final var currentOptionalNonPayerKeys = context.optionalNonPayerKeys();
         final var anyKeyChanged = haveKeyChanges(previousResults, context);
         // If none of the keys changed then non need to re-expand all signatures.
         if (!anyKeyChanged) {
@@ -750,8 +753,8 @@ public class HandleWorkflow {
         } else if (isHollow(payer)) {
             context.requireSignatureForHollowAccount(payer);
         }
-        signatureExpander.expand(currentRequiredPayerKeys, sigPairs, expanded);
-        signatureExpander.expand(currentOptionalPayerKeys, sigPairs, expanded);
+        signatureExpander.expand(currentRequiredNonPayerKeys, sigPairs, expanded);
+        signatureExpander.expand(currentOptionalNonPayerKeys, sigPairs, expanded);
 
         // remove all keys that were already verified
         for (final var it = expanded.iterator(); it.hasNext(); ) {

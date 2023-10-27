@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
-import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.NON_GENESIS;
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -459,7 +459,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         //        }
 
         // run the transaction
-        final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration(), NON_GENESIS);
+        final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration(), LIMITED_CHILD_RECORDS);
         dispatchSyntheticTxn(syntheticPayer, txBody, PRECEDING, precedingRecordBuilder, callback);
 
         return castRecordBuilder(precedingRecordBuilder, recordBuilderClass);
@@ -626,7 +626,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     @NonNull
     public <T> T addPrecedingChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration(), NON_GENESIS);
+        final var result = recordListBuilder.addPreceding(configuration(), LIMITED_CHILD_RECORDS);
         return castRecordBuilder(result, recordBuilderClass);
     }
 
@@ -649,7 +649,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     public enum PrecedingTransactionCategory {
-        GENESIS,
-        NON_GENESIS
+        UNLIMITED_CHILD_RECORDS,
+        LIMITED_CHILD_RECORDS
     }
 }

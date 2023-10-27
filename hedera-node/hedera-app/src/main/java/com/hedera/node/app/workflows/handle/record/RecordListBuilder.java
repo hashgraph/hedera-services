@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
-import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.GENESIS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.UNLIMITED_CHILD_RECORDS;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
@@ -144,7 +146,7 @@ public final class RecordListBuilder {
         // On genesis start we create almost 700 preceding child records for creating system accounts.
         // Also, we should not be failing for stake update transaction records that happen every midnight.
         // In these two cases need to allow for this, but we don't want to allow for this on every handle call.
-        if (precedingTxnRecordBuilders.size() >= maxRecords && (precedingTxnCategory != GENESIS)) {
+        if (precedingTxnRecordBuilders.size() >= maxRecords && (precedingTxnCategory != UNLIMITED_CHILD_RECORDS)) {
             // We do not have a MAX_PRECEDING_RECORDS_EXCEEDED error, so use this.
             throw new HandleException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
         }
@@ -274,7 +276,7 @@ public final class RecordListBuilder {
                 // kept will be moved into this position.
                 childRecordBuilders.set(i, null);
             } else {
-                if (child.status() == ResponseCodeEnum.OK) child.status(ResponseCodeEnum.REVERTED_SUCCESS);
+                if (child.status() == ResponseCodeEnum.OK) child.status(REVERTED_SUCCESS);
 
                 if (into != i) {
                     childRecordBuilders.set(into, child);
@@ -292,11 +294,10 @@ public final class RecordListBuilder {
 
         // If there are preceding child records somehow are added that are more than allowed preceding records,
         // then we need to revert them as well.
-        // TODO: need to discuss if this is needed with team.
         precedingTxnRecordBuilders.stream()
                 .filter(Predicate.not(SingleTransactionRecordBuilderImpl::removable))
-                .skip(3)
-                .forEach(child -> child.status(ResponseCodeEnum.REVERTED_SUCCESS));
+                .map(child -> child.status(child.status() == SUCCESS ? REVERTED_SUCCESS : child.status()))
+                .toList();
     }
 
     /**
