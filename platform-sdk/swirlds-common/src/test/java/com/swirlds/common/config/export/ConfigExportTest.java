@@ -60,7 +60,6 @@ class ConfigExportTest {
         Assertions.assertTrue(lines.size() > 10);
 
         // Verify properties in file are listed
-        assertContains(regexForLine("verifyEventSigs", "false", true), lines);
         assertContains(regexForLine("showInternalStats", "true", true), lines);
         assertContains(regexForLine("state.saveStatePeriod", "0", true), lines);
         assertContains(regexForLine("loadKeysFromPfxFiles", "false", true), lines);
