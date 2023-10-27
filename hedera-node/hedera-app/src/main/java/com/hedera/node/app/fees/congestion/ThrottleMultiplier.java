@@ -27,12 +27,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * Implementation responsible for determining the congestion multiplier based on a single {@link CongestibleThrottle}.
  */
 public class ThrottleMultiplier {
+    private static final Logger logger = LogManager.getLogger(ThrottleMultiplier.class);
     private static final long DEFAULT_MULTIPLIER = 1L;
     private static final CongestionMultipliers NO_CONFIG = null;
     private static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
@@ -40,7 +42,6 @@ public class ThrottleMultiplier {
     private final String congestionType;
     private final String usageType;
     private final String abbrevUsageType;
-    private final Logger log;
     private final LongSupplier minCongestionPeriodSupplier;
     private final Supplier<List<? extends CongestibleThrottle>> throttleSource;
 
@@ -55,14 +56,12 @@ public class ThrottleMultiplier {
             @NonNull final String usageType,
             @NonNull final String abbrevUsageType,
             @NonNull final String congestionType,
-            @NonNull final Logger log,
             @NonNull final LongSupplier minCongestionPeriodSupplier,
             @NonNull final Supplier<CongestionMultipliers> multiplierSupplier,
             @NonNull final Supplier<List<? extends CongestibleThrottle>> throttleSource) {
         this.usageType = requireNonNull(usageType, "usageType must not be null");
         this.abbrevUsageType = requireNonNull(abbrevUsageType, "abbrevUsageType must not be null");
         this.congestionType = requireNonNull(congestionType, "congestionType must not be null");
-        this.log = requireNonNull(log, "log must not be null");
         this.minCongestionPeriodSupplier =
                 requireNonNull(minCongestionPeriodSupplier, "minCongestionPeriodSupplier must not be null");
         this.multiplierSupplier = requireNonNull(multiplierSupplier, "multiplierSupplier must not be null");
@@ -106,7 +105,7 @@ public class ThrottleMultiplier {
     public void resetExpectations() {
         activeThrottles = throttleSource.get();
         if (activeThrottles.isEmpty()) {
-            log.warn(
+            logger.warn(
                     "Throttle multiplier for {} congestion has no throttle buckets, "
                             + "fee multiplier will remain at one!",
                     congestionType);
@@ -239,17 +238,17 @@ public class ThrottleMultiplier {
     }
 
     private void logReadableCutoffs() {
-        log.info("The new cutoffs for {} congestion pricing are : {}", congestionType, this);
+        logger.info("The new cutoffs for {} congestion pricing are : {}", congestionType, this);
     }
 
     public void logMultiplierChange(long prev, long cur) {
         if (prev == DEFAULT_MULTIPLIER) {
-            log.info("Congestion pricing beginning w/ {}x multiplier", cur);
+            logger.info("Congestion pricing beginning w/ {}x multiplier", cur);
         } else {
             if (cur > prev) {
-                log.info("Congestion pricing continuing, reached {}x multiplier", cur);
+                logger.info("Congestion pricing continuing, reached {}x multiplier", cur);
             } else if (cur == DEFAULT_MULTIPLIER) {
-                log.info("Congestion pricing ended");
+                logger.info("Congestion pricing ended");
             }
         }
     }

@@ -703,7 +703,6 @@ public final class Hedera implements SwirldMain {
                 "logical TPS",
                 "TPS",
                 "CryptoTransfer throughput",
-                logger,
                 () -> configProvider
                         .getConfiguration()
                         .getConfigData(FeesConfig.class)
@@ -720,7 +719,6 @@ public final class Hedera implements SwirldMain {
                 "EVM gas/sec",
                 "gas/sec",
                 "EVM utilization",
-                logger,
                 () -> configProvider
                         .getConfiguration()
                         .getConfigData(FeesConfig.class)
