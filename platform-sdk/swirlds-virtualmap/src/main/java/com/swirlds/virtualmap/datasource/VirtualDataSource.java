@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.datasource;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
@@ -130,6 +131,15 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
      * 		If there was a problem loading the leaf's hash from data source
      */
     Hash loadHash(final long path) throws IOException;
+
+    default boolean loadAndWriteHash(final long path, final SerializableDataOutputStream out) throws IOException {
+        final Hash hash = loadHash(path);
+        if (hash == null) {
+            return false;
+        }
+        hash.serialize(out);
+        return true;
+    }
 
     /**
      * Write a snapshot of the current state of the database at this moment in time. This will need to be called between

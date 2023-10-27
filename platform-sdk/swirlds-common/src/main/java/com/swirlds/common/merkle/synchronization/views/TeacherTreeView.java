@@ -16,11 +16,9 @@
 
 package com.swirlds.common.merkle.synchronization.views;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import java.io.IOException;
-import java.util.List;
 
 /**
  * A "view" into a merkle tree (or subtree) used to perform a reconnect operation. This view is used to access
@@ -66,17 +64,8 @@ public interface TeacherTreeView<T>
      */
     void serializeInternal(SerializableDataOutputStream out, T internal) throws IOException;
 
-    /**
-     * Get the hashes of the children. Hashes should be in the same order as the children. Null children should
-     * cause the null hash to be in the returned list.
-     *
-     * @param parent
-     * 		the parent in question
-     * @return a list of the parent's child hashes
-     * @throws MerkleSynchronizationException
-     * 		if the parent is actually a leaf node or if any of the children don't have a hash
-     */
-    List<Hash> getChildHashes(T parent);
+    // Must be binary compatible with out.writeSerializableList(hashesList, false, true);
+    void writeChildHashes(T parent, SerializableDataOutputStream out) throws IOException;
 
     /**
      * Check if a node is the root of the tree with a custom view.
