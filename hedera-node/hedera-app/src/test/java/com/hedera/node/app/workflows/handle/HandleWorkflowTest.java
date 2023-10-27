@@ -188,7 +188,7 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock
     private ParentRecordFinalizer finalizer;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private SystemFileUpdateFacility systemFileUpdateFacility;
 
     @Mock
@@ -257,6 +257,7 @@ class HandleWorkflowTest extends AppTestBase {
         when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
         when(authorizer.hasPrivilegedAuthorization(eq(ALICE.accountID()), any(), any()))
                 .thenReturn(SystemPrivilege.UNNECESSARY);
+        when(systemFileUpdateFacility.handleTxBody(any(), any())).thenReturn(SUCCESS);
 
         workflow = new HandleWorkflow(
                 networkInfo,
