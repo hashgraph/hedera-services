@@ -623,14 +623,12 @@ public class SwirldsPlatform implements Platform {
         validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
         // some events in the PCES might have been created by nodes that are no longer in the current
         // address book but are in the previous one, so we need both for signature validation
-        if (basicConfig.verifyEventSigs()) {
-            validators.add(new SignatureValidator(
-                    initialState.getState().getPlatformState().getPreviousAddressBook(),
-                    currentAddressBook,
-                    appVersion,
-                    CryptoStatic::verifySignature,
-                    time));
-        }
+        validators.add(new SignatureValidator(
+                initialState.getState().getPlatformState().getPreviousAddressBook(),
+                currentAddressBook,
+                appVersion,
+                CryptoStatic::verifySignature,
+                time));
 
         eventValidators = new GossipEventValidators(validators);
         eventValidator = new EventValidator(
