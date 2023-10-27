@@ -63,8 +63,10 @@ public class SyncOutputStream extends SerializableDataOutputStream {
 
         final OutputStream wrappedStream;
         if (compress) {
+//            final int level = Deflater.DEFAULT_COMPRESSION;
+            final int level = 0;
             wrappedStream = new DeflaterOutputStream(
-                    meteredStream, new Deflater(Deflater.DEFAULT_COMPRESSION, true), bufferSize, true);
+                    meteredStream, new Deflater(level, true), bufferSize, true);
         } else {
             wrappedStream = new BufferedOutputStream(meteredStream, bufferSize);
         }

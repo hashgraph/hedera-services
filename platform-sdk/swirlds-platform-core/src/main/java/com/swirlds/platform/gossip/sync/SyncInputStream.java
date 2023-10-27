@@ -61,7 +61,10 @@ public class SyncInputStream extends SerializableDataInputStream {
 
         final InputStream wrappedStream;
         if (compress) {
+            //            final int level = Deflater.DEFAULT_COMPRESSION;
+            final int level = 0;
             wrappedStream = new InflaterInputStream(meteredStream, new Inflater(true), bufferSize);
+
         } else {
             wrappedStream = new BufferedInputStream(meteredStream, bufferSize);
         }
