@@ -18,8 +18,8 @@ package com.hedera.node.app.fees.congestion;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -50,20 +50,20 @@ public class CongestionMultipliers {
     }
 
     /**
-     * Returns the maximum congestion multiplier of the gas and transaction rate based multipliers.
+     * Returns the maximum congestion multiplier of the gas and entity utilization based multipliers.
      *
-     * @param txnInfo transaction info needed for transaction rate based multiplier
-     * @param stack savepoint stack needed for transaction rate based multiplier
+     * @param txnInfo transaction info needed for entity utilization based multiplier
+     * @param state  the state needed for entity utilization based multiplier
      *
      * @return the max congestion multiplier
      */
-    public long maxCurrentMultiplier(@NonNull final TransactionInfo txnInfo, @NonNull final SavepointStackImpl stack) {
+    public long maxCurrentMultiplier(@NonNull final TransactionInfo txnInfo, @NonNull final HederaState state) {
         return Math.max(
-                throttleMultiplier.currentMultiplier(), entityUtilizationMultiplier.currentMultiplier(txnInfo, stack));
+                throttleMultiplier.currentMultiplier(), entityUtilizationMultiplier.currentMultiplier(txnInfo, state));
     }
 
     /**
-     * Returns the congestion level starts for the transaction rate based multiplier.
+     * Returns the congestion level starts for the entity utilization based multiplier.
      *
      * @return the  congestion level starts
      */
