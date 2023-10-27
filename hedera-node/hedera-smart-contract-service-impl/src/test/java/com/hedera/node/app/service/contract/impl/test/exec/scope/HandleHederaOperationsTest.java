@@ -247,9 +247,13 @@ class HandleHederaOperationsTest {
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(contractCreateRecordBuilder.contractID(any(ContractID.class))).willReturn(contractCreateRecordBuilder);
-        given(contractCreateRecordBuilder.contractCreateResult(any(ContractFunctionResult.class))).willReturn(contractCreateRecordBuilder);
+        given(contractCreateRecordBuilder.contractCreateResult(any(ContractFunctionResult.class)))
+                .willReturn(contractCreateRecordBuilder);
         given(context.dispatchRemovableChildTransaction(
-                eq(synthTxn), eq(ContractCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthTxn),
+                        eq(ContractCreateRecordBuilder.class),
+                        any(Predicate.class),
+                        eq(A_NEW_ACCOUNT_ID)))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(OK);
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
@@ -260,7 +264,10 @@ class HandleHederaOperationsTest {
 
         verify(context)
                 .dispatchRemovableChildTransaction(
-                        eq(synthTxn), eq(ContractCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID));
+                        eq(synthTxn),
+                        eq(ContractCreateRecordBuilder.class),
+                        any(Predicate.class),
+                        eq(A_NEW_ACCOUNT_ID));
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }
@@ -279,9 +286,13 @@ class HandleHederaOperationsTest {
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(contractCreateRecordBuilder.contractID(any(ContractID.class))).willReturn(contractCreateRecordBuilder);
-        given(contractCreateRecordBuilder.contractCreateResult(any(ContractFunctionResult.class))).willReturn(contractCreateRecordBuilder);
+        given(contractCreateRecordBuilder.contractCreateResult(any(ContractFunctionResult.class)))
+                .willReturn(contractCreateRecordBuilder);
         given(context.dispatchRemovableChildTransaction(
-                eq(synthTxn), eq(ContractCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthTxn),
+                        eq(ContractCreateRecordBuilder.class),
+                        any(Predicate.class),
+                        eq(A_NEW_ACCOUNT_ID)))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(OK);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
@@ -290,7 +301,10 @@ class HandleHederaOperationsTest {
 
         verify(context)
                 .dispatchRemovableChildTransaction(
-                        eq(synthTxn), eq(ContractCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID));
+                        eq(synthTxn),
+                        eq(ContractCreateRecordBuilder.class),
+                        any(Predicate.class),
+                        eq(A_NEW_ACCOUNT_ID));
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }
@@ -308,9 +322,13 @@ class HandleHederaOperationsTest {
                 .build();
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(contractCreateRecordBuilder.contractID(any(ContractID.class))).willReturn(contractCreateRecordBuilder);
-        given(contractCreateRecordBuilder.contractCreateResult(any(ContractFunctionResult.class))).willReturn(contractCreateRecordBuilder);
+        given(contractCreateRecordBuilder.contractCreateResult(any(ContractFunctionResult.class)))
+                .willReturn(contractCreateRecordBuilder);
         given(context.dispatchRemovableChildTransaction(
-                        eq(synthTxn), eq(ContractCreateRecordBuilder.class), any(Predicate.class), eq(A_NEW_ACCOUNT_ID)))
+                        eq(synthTxn),
+                        eq(ContractCreateRecordBuilder.class),
+                        any(Predicate.class),
+                        eq(A_NEW_ACCOUNT_ID)))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
