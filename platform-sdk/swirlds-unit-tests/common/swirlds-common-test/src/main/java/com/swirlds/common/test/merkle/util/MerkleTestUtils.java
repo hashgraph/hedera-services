@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -1012,6 +1013,7 @@ public final class MerkleTestUtils {
                         },
                         reconnectConfig);
                 teacher = new TeachingSynchronizer(
+                        Time.getCurrent(),
                         getStaticThreadManager(),
                         streams.getTeacherInput(),
                         streams.getTeacherOutput(),
