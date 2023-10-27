@@ -20,18 +20,16 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
-import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
-import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
-import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
-import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.units.UnitConstants;
+import com.swirlds.merkledb.FileStatisticAware;
 import com.swirlds.merkledb.Snapshotable;
+import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
 import com.swirlds.merkledb.collections.LongListOffHeap;
+import com.swirlds.merkledb.collections.OffHeapUser;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
@@ -45,15 +43,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.DoubleConsumer;
-import java.util.function.Function;
-import java.util.function.LongConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
@@ -64,14 +58,15 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  * It maps a VirtualKey to a long value. This allows very large maps with minimal RAM usage and the
  * best performance profile as by using an in memory index we avoid the need for random disk writes.
  * Random disk writes are horrible performance wise in our testing.
- *
+ * <p>
  * This implementation depends on good hashCode() implementation on the keys, if there are too
  * many hash collisions the performance can get bad.
- *
+ * <p>
  * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
  * readers while writing is happening.</b>
  */
-public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Snapshotable {
+public class HalfDiskHashMap<K extends VirtualKey>
+        implements AutoCloseable, Snapshotable, FileStatisticAware, OffHeapUser {
     private static final Logger logger = LogManager.getLogger(HalfDiskHashMap.class);
 
     /** The version number for format of current data files */
@@ -107,6 +102,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     private final LongList bucketIndexToBucketLocation;
     /** DataFileCollection manages the files storing the buckets on disk */
     private final DataFileCollection<Bucket<K>> fileCollection;
+
     /**
      * This is the number of buckets needed to store mapSize entries if we ere only LOADING_FACTOR
      * percent full
@@ -150,19 +146,19 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     /**
      * Construct a new HalfDiskHashMap
      *
-     * @param mapSize The maximum map number of entries. This should be more than big enough to
-     *     avoid too many key collisions.
-     * @param keySerializer Serializer for converting raw data to/from keys
-     * @param storeDir The directory to use for storing data files.
-     * @param storeName The name for the data store, this allows more than one data store in a
-     *     single directory.
-     * @param legacyStoreName Base name for the data store. If not null, the store will process
-     *     files with this prefix at startup. New files in the store will be prefixed with {@code
-     *     storeName}
-     * @param preferDiskBasedIndex When true we will use disk based index rather than ram where
-     *     possible. This will come with a significant performance cost, especially for writing. It
-     *     is possible to load a data source that was written with memory index with disk based
-     *     index and vice versa.
+     * @param mapSize                        The maximum map number of entries. This should be more than big enough to
+     *                                       avoid too many key collisions.
+     * @param keySerializer                  Serializer for converting raw data to/from keys
+     * @param storeDir                       The directory to use for storing data files.
+     * @param storeName                      The name for the data store, this allows more than one data store in a
+     *                                       single directory.
+     * @param legacyStoreName                Base name for the data store. If not null, the store will process
+     *                                       files with this prefix at startup. New files in the store will be prefixed with {@code
+     *                                       storeName}
+     * @param preferDiskBasedIndex           When true we will use disk based index rather than ram where
+     *                                       possible. This will come with a significant performance cost, especially for writing. It
+     *                                       is possible to load a data source that was written with memory index with disk based
+     *                                       index and vice versa.
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
     public HalfDiskHashMap(
@@ -260,94 +256,6 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
         return bucketSerializer.getKeySerializer();
     }
 
-    /**
-     * Merge all read only files that match provided filter. Important the set of files must be
-     * contiguous in time otherwise the merged data will be invalid.
-     *
-     * @param filterForFilesToMerge filter to choose which subset of files to merge
-     * @param minNumberOfFilesToMerge the minimum number of files to consider for a merge
-     * @param reportDurationMetricFunction function to report how long compaction took, in ms
-     * @param reportSavedSpaceMetricFunction function to report how much space was compacted, in Mb
-     * @throws IOException if there was a problem merging
-     * @throws InterruptedException If the merge thread was interupted
-     */
-    public void merge(
-            final Function<List<DataFileReader<Bucket<K>>>, List<DataFileReader<Bucket<K>>>> filterForFilesToMerge,
-            final int minNumberOfFilesToMerge,
-            @Nullable final LongConsumer reportDurationMetricFunction,
-            @Nullable final DoubleConsumer reportSavedSpaceMetricFunction)
-            throws IOException, InterruptedException {
-        final List<DataFileReader<Bucket<K>>> allFilesBefore = fileCollection.getAllCompletedFiles();
-        final List<DataFileReader<Bucket<K>>> filesToMerge = filterForFilesToMerge.apply(allFilesBefore);
-        if (filesToMerge == null) {
-            // nothing to do
-            return;
-        }
-        final int filesCount = filesToMerge.size();
-        if (filesCount < minNumberOfFilesToMerge) {
-            logger.debug(
-                    MERKLE_DB.getMarker(),
-                    "[{}] No need to merge as {} is less than the minimum {} files to merge.",
-                    storeName,
-                    filesCount,
-                    minNumberOfFilesToMerge);
-            return;
-        }
-
-        final long start = System.currentTimeMillis();
-
-        final long filesToMergeSize = getSizeOfFiles(filesToMerge);
-        logger.debug(
-                MERKLE_DB.getMarker(),
-                "[{}] Starting merging {} files / {}",
-                storeName,
-                filesCount,
-                formatSizeBytes(filesToMergeSize));
-        final List<Path> newFilesCreated = fileCollection.compactFiles(bucketIndexToBucketLocation, filesToMerge);
-
-        final long end = System.currentTimeMillis();
-        final long tookMillis = end - start;
-        if (reportDurationMetricFunction != null) {
-            reportDurationMetricFunction.accept(tookMillis);
-        }
-
-        final long mergedFilesSize = getSizeOfFilesByPath(newFilesCreated);
-        if (reportSavedSpaceMetricFunction != null) {
-            reportSavedSpaceMetricFunction.accept(
-                    (filesToMergeSize - mergedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
-        }
-
-        logMergeStats(storeName, tookMillis, filesToMerge, filesToMergeSize, newFilesCreated, fileCollection);
-        logger.debug(
-                MERKLE_DB.getMarker(),
-                "[{}] Finished merging {} files / {} in {} ms",
-                storeName,
-                filesCount,
-                formatSizeBytes(filesToMergeSize),
-                tookMillis);
-    }
-
-    /**
-     * Puts this store compaction on hold, if in progress, until {@link #resumeMerging()} is called.
-     * If compaction is not in progress, calling this method will prevent new compactions from
-     * starting until resumed.
-     *
-     * @throws IOException If an I/O error occurs.
-     */
-    public void pauseMerging() throws IOException {
-        fileCollection.pauseCompaction();
-    }
-
-    /**
-     * Resumes this store compaction if it was in progress, or unblocks a new compaction if it was
-     * blocked to start because of {@link #pauseMerging()}.
-     *
-     * @throws IOException If an I/O error occurs.
-     */
-    public void resumeMerging() throws IOException {
-        fileCollection.resumeCompaction();
-    }
-
     /** {@inheritDoc} */
     public void snapshot(final Path snapshotDirectory) throws IOException {
         // create snapshot directory if needed
@@ -366,6 +274,10 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public long getOffHeapConsumption() {
         if (bucketIndexToBucketLocation instanceof LongListOffHeap offheapIndex) {
             return offheapIndex.getOffHeapConsumption();
@@ -374,9 +286,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     }
 
     /**
-     * Get statistics for sizes of all files
-     *
-     * @return statistics for sizes of all fully written files, in bytes
+     * {@inheritDoc}
      */
     public LongSummaryStatistics getFilesSizeStatistics() {
         return fileCollection.getAllCompletedFilesSizeStatistics();
@@ -634,6 +544,14 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
             }
         }
         logger.info(MERKLE_DB.getMarker(), "========================================================");
+    }
+
+    public DataFileCollection<Bucket<K>> getFileCollection() {
+        return fileCollection;
+    }
+
+    public CASableLongIndex getBucketIndexToBucketLocation() {
+        return bucketIndexToBucketLocation;
     }
 
     // =================================================================================================================

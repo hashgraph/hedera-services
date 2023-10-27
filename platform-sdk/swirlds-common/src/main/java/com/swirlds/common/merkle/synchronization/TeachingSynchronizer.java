@@ -18,6 +18,7 @@ package com.swirlds.common.merkle.synchronization;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -93,6 +94,8 @@ public class TeachingSynchronizer {
     @Nullable
     private final BooleanSupplier requestToStopTeaching;
 
+    private final Time time;
+
     /**
      * Create a new teaching synchronizer.
      *
@@ -116,6 +119,7 @@ public class TeachingSynchronizer {
      *      reconnect configuration from platform
      */
     public TeachingSynchronizer(
+            @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
             @NonNull final MerkleDataInputStream in,
             @NonNull final MerkleDataOutputStream out,
@@ -124,6 +128,7 @@ public class TeachingSynchronizer {
             @Nullable final BooleanSupplier requestToStopTeaching,
             @NonNull final ReconnectConfig reconnectConfig) {
 
+        this.time = Objects.requireNonNull(time);
         this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
         inputStream = Objects.requireNonNull(in, "in must not be null");
         outputStream = Objects.requireNonNull(out, "out must not be null");
@@ -197,7 +202,16 @@ public class TeachingSynchronizer {
 
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
-        new TeacherSendingThread<T>(workGroup, in, out, subtrees, view, requestToStopTeaching, senderIsFinished)
+        new TeacherSendingThread<T>(
+                        time,
+                        reconnectConfig,
+                        workGroup,
+                        in,
+                        out,
+                        subtrees,
+                        view,
+                        requestToStopTeaching,
+                        senderIsFinished)
                 .start();
         new TeacherReceivingThread<>(workGroup, in, view, senderIsFinished).start();
 

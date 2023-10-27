@@ -22,6 +22,7 @@ import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
 
@@ -99,5 +100,10 @@ public class HapiThrottling implements FunctionalityThrottling {
     @Override
     public boolean wasLastTxnGasThrottled() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void leakCapacityForNOfUnscaled(final int n, @NonNull final HederaFunctionality function) {
+        delegate.leakCapacityForNOfUnscaled(n, function);
     }
 }

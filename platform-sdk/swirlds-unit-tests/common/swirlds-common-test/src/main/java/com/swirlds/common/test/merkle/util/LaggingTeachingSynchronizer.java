@@ -18,6 +18,7 @@ package com.swirlds.common.test.merkle.util;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -48,7 +49,15 @@ public class LaggingTeachingSynchronizer extends TeachingSynchronizer {
             @Nullable final BooleanSupplier shouldKeepTeaching,
             final Runnable breakConnection,
             final ReconnectConfig reconnectConfig) {
-        super(getStaticThreadManager(), in, out, root, breakConnection, shouldKeepTeaching, reconnectConfig);
+        super(
+                Time.getCurrent(),
+                getStaticThreadManager(),
+                in,
+                out,
+                root,
+                breakConnection,
+                shouldKeepTeaching,
+                reconnectConfig);
         this.latencyMilliseconds = latencyMilliseconds;
     }
 

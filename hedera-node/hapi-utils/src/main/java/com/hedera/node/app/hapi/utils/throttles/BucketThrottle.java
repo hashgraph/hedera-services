@@ -120,6 +120,15 @@ public class BucketThrottle {
         return allowInstantaneous(n);
     }
 
+    /**
+     * Leaks the given number of capacity units from the bucket.
+     *
+     * @param capacity the number of capacity units to leak
+     */
+    void leakCapacity(final long capacity) {
+        bucket.leak(capacity);
+    }
+
     void leakFor(final long elapsedNanos) {
         final var leakedUnits = effectiveLeak(elapsedNanos);
         bucket.leak(leakedUnits);
