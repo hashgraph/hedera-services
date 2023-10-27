@@ -49,6 +49,18 @@ public interface RecordAccessor<K extends VirtualKey, V extends VirtualValue> {
      */
     Hash findHash(long path);
 
+    /**
+     * Looks up a virtual node hash for a given path. If the hash is found, writes it to a
+     * specified output stream.
+     *
+     * <p>Written bytes must be 100% identical to how hashes are serialized using {@link
+     * Hash#serialize(SerializableDataOutputStream)} method.
+     *
+     * @param path Virtual node path
+     * @param out Output stream to write the hash to
+     * @return If the hash is found and written to the stream
+     * @throws IOException If an I/O error occurred
+     */
     boolean findAndWriteHash(long path, SerializableDataOutputStream out) throws IOException;
 
     /**

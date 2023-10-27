@@ -185,6 +185,8 @@ public class VirtualMapReconnectTestBase {
     protected void reconnectMultipleTimes(
             final int attempts, final Function<VirtualMap<TestKey, TestValue>, MerkleNode> brokenTeacherMapBuilder) {
 
+        // Make sure virtual map data is flushed to disk (data source), otherwise all
+        // data for reconnects would be loaded from virtual node cache
         final VirtualRootNode<TestKey, TestValue> virtualRootNode =
                 teacherMap.asInternal().getChild(1);
         virtualRootNode.enableFlush();
@@ -194,7 +196,7 @@ public class VirtualMapReconnectTestBase {
         try {
             virtualRootNode.waitUntilFlushed();
         } catch (final InterruptedException z) {
-            throw new RuntimeException("Interrrupted exception while waiting for virtual map to flush");
+            throw new RuntimeException("Interrupted exception while waiting for virtual map to flush");
         }
         teacherMap = teacherCopy;
 

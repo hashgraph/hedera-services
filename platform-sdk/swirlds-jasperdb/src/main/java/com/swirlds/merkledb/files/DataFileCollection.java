@@ -126,14 +126,14 @@ public class DataFileCollection<D> implements Snapshotable {
      * before compaction is complete. In the end of compaction, all the compacted files are removed
      * from this list.
      *
-     * The list is used to read data items and to make snapshots. Reading from the file, which is
+     * <p>The list is used to read data items and to make snapshots. Reading from the file, which is
      * being written to during compaction, is possible because both readers and writers use Java
      * file channel APIs. Snapshots are an issue, though. Snapshots must be as fast as possible, so
      * they are implemented as to make hard links in the target folder to all data files in
      * collection. If compaction is in progress, the last file in the list isn't fully written yet,
      * so it can't be hard linked easily. To solve it, before a snapshot is taken, the current
      * compaction file is flushed to disk, and compaction is put on hold using {@link
-     * DataFileCompactor#snapshotCompactionLock} and then resumed after snapshot is complete.
+     * DataFileCompactor#pauseCompaction()} and then resumed after snapshot is complete.
      */
     private final AtomicReference<ImmutableIndexedObjectList<DataFileReader<D>>> dataFiles = new AtomicReference<>();
 
@@ -411,6 +411,13 @@ public class DataFileCollection<D> implements Snapshotable {
         return dataReader;
     }
 
+    /**
+     * Gets the data file reader for a given data location. This method checks that a file with
+     * the specified index exists in this file collection, and that the file is open. Note,
+     * however, there is unavoidable race here, when the file reader is open while this method
+     * is running, but closed immediately after the method is complete. This is why calls to
+     * this method are wrapped into a retry loop in {@link #retryReadUsingIndex}.
+     */
     private DataFileReader<D> readerForDataLocation(final long dataLocation) throws IOException {
         // check if found
         if (dataLocation == 0) {
@@ -432,7 +439,7 @@ public class DataFileCollection<D> implements Snapshotable {
                     + "\ncurrentIndexedFileList="
                     + currentIndexedFileList);
         }
-        // read data, check at last second that file is not closed
+        // Check that file is not closed
         if (file.isOpen()) {
             return file;
         } else {
@@ -445,13 +452,15 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Read data item bytes from any file that has finished being written. This is not 100% thread
-     * safe, for example, it is possible that the data file is deleted by compaction running in parallel.
-     * This is why this method is retried multiple times from {@link #readDataItemBytesUsingIndex},
-     * assuming that during compaction the index is updated to point to a new data file.
+     * Read data item bytes at a given location (file index + offset). If the file is not found or
+     * alread closed, this method returns {@code null}. This may happen, if the index, where the data
+     * location originated from, has just been updated in a parallel compaction thread.
      *
-     * @param dataLocation the location of the data item to read. This contains both the file and
-     *     the location within the file.
+     * <p>NOTE: this method may not be used for data types, which can be of multiple different
+     * versions. This is because there is no way for a caller to know the version of the returned
+     * bytes.
+     *
+     * @param dataLocation Data item location, which combines file index and offset
      * @return Data item bytes if the data location was found in files
      *
      * @throws IOException If there was a problem reading the data item.
@@ -463,6 +472,17 @@ public class DataFileCollection<D> implements Snapshotable {
         return (file != null) ? file.readDataItemBytes(dataLocation) : null;
     }
 
+    /**
+     * Read data item at a given location (file index + offset). If the file is not found or already
+     * closed, this method returns {@code null}. This may happen, if the index, where the data
+     * location originated from, has just been updated in a parallel compaction thread.
+     *
+     * <p>The data item is deserialized according to its version from the data file.
+     *
+     * @param dataLocation Data item location, which combines file index and offset
+     * @return Deserialized data item if the data location was found in files
+     * @throws IOException If an I/O error occurred
+     */
     protected D readDataItem(final long dataLocation) throws IOException {
         final DataFileReader<D> file = readerForDataLocation(dataLocation);
         if (file == null) {

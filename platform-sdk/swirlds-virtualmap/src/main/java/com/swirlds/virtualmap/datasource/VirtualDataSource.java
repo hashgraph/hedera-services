@@ -122,8 +122,6 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
     /**
      * Load a virtual node hash by path.
      *
-     * NOTE: Called during the hashing phase ONLY. Never called on non-existent nodes.
-     *
      * @param path virtual node path
      * @return The node's record if one was stored for the given path; {@code null} if not stored or
      * 	  		deserialization is not requested
@@ -132,6 +130,20 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
      */
     Hash loadHash(final long path) throws IOException;
 
+    /**
+     * Load a virtual node hash by path and, if found, write it to the specified output stream. This
+     * method helps avoid (de)serialization overhead during reconnects on the teacher side. Instead of
+     * loading bytes from disk, then deserializing them into {@link Hash} objects, and then serializing
+     * again to socket output stream, this method can write the bytes directly to the stream.
+     *
+     * <p>Written bytes must be 100% identical to how hashes are serialized using {@link
+     * Hash#serialize(SerializableDataOutputStream)} method.
+     *
+     * @param path Virtual node path
+     * @param out Output stream to write the hash, if found
+     * @return If the hash was found and written to the stream
+     * @throws IOException If an I/O error occurred
+     */
     default boolean loadAndWriteHash(final long path, final SerializableDataOutputStream out) throws IOException {
         final Hash hash = loadHash(path);
         if (hash == null) {

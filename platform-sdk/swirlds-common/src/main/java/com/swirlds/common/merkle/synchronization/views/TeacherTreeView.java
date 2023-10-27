@@ -64,7 +64,14 @@ public interface TeacherTreeView<T>
      */
     void serializeInternal(SerializableDataOutputStream out, T internal) throws IOException;
 
-    // Must be binary compatible with out.writeSerializableList(hashesList, false, true);
+    /**
+     * Serialize all child hashes for a given node into a stream. Serialized bytes must be
+     * identical to what out.writeSerializableList(hashesList, false, true) method writes.
+     *
+     * @param parent Merkle node
+     * @param out The output stream
+     * @throws IOException If an I/O error occurred
+     */
     void writeChildHashes(T parent, SerializableDataOutputStream out) throws IOException;
 
     /**

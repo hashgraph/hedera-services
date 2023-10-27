@@ -201,6 +201,17 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         return fileCollection.readDataItemUsingIndex(index, key);
     }
 
+    /**
+     * Get raw value bytes by reading it from disk.
+     *
+     * <p>NOTE: this method may not be used for data types, which can be of multiple different
+     * versions. This is because there is no way for a caller to know the version of the returned
+     * bytes.
+     *
+     * @param key The key to find and read value for
+     * @return Array of serialization version for data if the value was read or null if not found
+     * @throws IOException If there was a problem reading the value from file
+     */
     public ByteBuffer getBytes(final long key) throws IOException {
         if (!checkKeyInRange(key)) {
             return null;

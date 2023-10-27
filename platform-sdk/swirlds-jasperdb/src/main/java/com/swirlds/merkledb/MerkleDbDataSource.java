@@ -681,11 +681,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Load hash for a leaf node with given path
-     *
-     * @param path the path to get hash for
-     * @return loaded hash or null if hash is not stored
-     * @throws IOException if there was a problem loading hash
+     * {@inheritDoc}
      */
     @Override
     public Hash loadHash(final long path) throws IOException {
@@ -715,6 +711,9 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         return hash;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean loadAndWriteHash(long path, SerializableDataOutputStream out) throws IOException {
         if (path < 0) {
@@ -724,6 +723,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         if (path > lastLeaf) {
             return false;
         }
+        // This method must write hashes in the same binary format as Hash.(de)serialize(). If a
+        // hash comes from hashStoreRam, it's enough to just serialize it to the output stream.
+        // However, if a hash is stored in the files as a VirtualHashRecord, its bytes are
+        // slightly different, so additional processing is required
         if (path < tableConfig.getHashesRamToDiskThreshold()) {
             final Hash hash = hashStoreRam.get(path);
             if (hash == null) {

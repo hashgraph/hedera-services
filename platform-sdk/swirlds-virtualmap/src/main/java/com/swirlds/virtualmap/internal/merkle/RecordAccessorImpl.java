@@ -107,6 +107,9 @@ public class RecordAccessorImpl<K extends VirtualKey, V extends VirtualValue> im
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean findAndWriteHash(long path, SerializableDataOutputStream out) throws IOException {
         assert path >= 0;
