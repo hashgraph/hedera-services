@@ -128,9 +128,6 @@ module com.swirlds.platform.core {
             com.hedera.node.test.clients,
             com.swirlds.common,
             com.swirlds.config.impl;
-    exports com.swirlds.platform.state.roster;
-    exports com.swirlds.platform.roster;
-    exports com.swirlds.platform.roster.state;
 
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
