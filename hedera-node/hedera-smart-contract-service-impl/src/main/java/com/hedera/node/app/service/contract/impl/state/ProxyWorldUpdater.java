@@ -275,6 +275,10 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public void finalizeHollowAccount(@NonNull final Address alias) {
         evmFrameState.finalizeHollowAccount(alias);
+        // add child record on merge
+        var contractId = getHederaContractId(alias);
+        var evmAddress = aliasFrom(alias);
+        enhancement.operations().externalizeHollowAccountMerge(contractId, evmAddress);
     }
 
     @Override
@@ -358,6 +362,14 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         // to take special measures here to avoid popping the savepoint stack twice for
         // this frame
         reverted = true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void revertChildRecords() {
+        enhancement.operations().revertChildRecords();
     }
 
     /**
