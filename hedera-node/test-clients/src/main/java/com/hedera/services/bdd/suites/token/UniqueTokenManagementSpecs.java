@@ -772,7 +772,6 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .hasKnownStatus(INVALID_WIPING_AMOUNT)
                                 .via("wipeTx"),
                         wipeTokenAccount(A_TOKEN, ACCOUNT, List.of())
-                                .hasPrecheck(OK)
                                 .hasKnownStatus(SUCCESS)
                                 .via("wipeEmptySerialTx"))
                 .then(
