@@ -213,6 +213,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void delegatesHollowFinalization() {
+        subject.setupTopLevelLazyCreate(EIP_1014_ADDRESS);
         subject.finalizeHollowAccount(EIP_1014_ADDRESS);
         verify(evmFrameState).finalizeHollowAccount(EIP_1014_ADDRESS);
     }

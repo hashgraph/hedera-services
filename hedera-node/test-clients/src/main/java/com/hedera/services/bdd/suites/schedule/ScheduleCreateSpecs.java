@@ -144,6 +144,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                 .then(overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry));
     }
 
+    @HapiTest
     private HapiSpec worksAsExpectedWithDefaultScheduleId() {
         return defaultHapiSpec("WorksAsExpectedWithDefaultScheduleId")
                 .given()
@@ -151,10 +152,11 @@ public class ScheduleCreateSpecs extends HapiSuite {
                 .then(getScheduleInfo("0.0.0").hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
 
+    @HapiTest
     private HapiSpec bodyOnlyCreation() {
         return customHapiSpec("bodyOnlyCreation")
                 .withProperties(Map.of("default.keyAlgorithm", "SECP256K1"))
-                .given(cryptoCreate(SENDER))
+                .given(overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"), cryptoCreate(SENDER))
                 .when(
                         scheduleCreate(ONLY_BODY, cryptoTransfer(tinyBarsFromTo(SENDER, GENESIS, 1)))
                                 .recordingScheduledTxn(),
@@ -165,6 +167,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     private HapiSpec validateSignersInInfo() {
         return customHapiSpec(VALID_SCHEDULE)
                 .withProperties(Map.of("default.keyAlgorithm", "SECP256K1"))
@@ -179,6 +182,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .hasSignatories(SENDER));
     }
 
+    @HapiTest
     private HapiSpec onlyBodyAndAdminCreation() {
         return defaultHapiSpec("OnlyBodyAndAdminCreation")
                 .given(newKeyNamed(ADMIN), cryptoCreate(SENDER))
@@ -191,9 +195,10 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .hasRecordedScheduledTxn());
     }
 
+    @HapiTest
     private HapiSpec onlyBodyAndMemoCreation() {
         return defaultHapiSpec("OnlyBodyAndMemoCreation")
-                .given(cryptoCreate(SENDER))
+                .given(overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"), cryptoCreate(SENDER))
                 .when(scheduleCreate(ONLY_BODY_AND_MEMO, cryptoTransfer(tinyBarsFromTo(SENDER, GENESIS, 1)))
                         .recordingScheduledTxn()
                         .withEntityMemo("sample memo"))
@@ -203,12 +208,13 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .hasRecordedScheduledTxn());
     }
 
+    @HapiTest
     private HapiSpec bodyAndPayerCreation() {
         return defaultHapiSpec("BodyAndPayerCreation")
                 .given(cryptoCreate(PAYER))
                 .when(scheduleCreate(
                                 ONLY_BODY_AND_PAYER,
-                                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+                                cryptoTransfer(tinyBarsFromTo(PAYER, GENESIS, 1))
                                         .memo("SURPRISE!!!"))
                         .recordingScheduledTxn()
                         // prevent multiple runs of this test causing duplicates
@@ -220,12 +226,14 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .hasRecordedScheduledTxn());
     }
 
+    @HapiTest
     private HapiSpec bodyAndSignatoriesCreation() {
         var scheduleName = "onlyBodyAndSignatories";
         var scheduledTxn = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
         return defaultHapiSpec("BodyAndSignatoriesCreation")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate("payingAccount"),
                         newKeyNamed("adminKey"),
                         cryptoCreate(SENDER),
@@ -241,15 +249,17 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .hasRecordedScheduledTxn());
     }
 
+    @HapiTest
     private HapiSpec failsWithNonExistingPayerAccountId() {
         return defaultHapiSpec("FailsWithNonExistingPayerAccountId")
-                .given()
+                .given(overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"))
                 .when(scheduleCreate("invalidPayer", cryptoCreate("secondary"))
                         .designatingPayer(DESIGNATING_PAYER)
                         .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST))
                 .then();
     }
 
+    @HapiTest
     private HapiSpec failsWithTooLongMemo() {
         return defaultHapiSpec("FailsWithTooLongMemo")
                 .given()
@@ -259,9 +269,11 @@ public class ScheduleCreateSpecs extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec notIdenticalScheduleIfScheduledTxnChanges() {
         return defaultHapiSpec("NotIdenticalScheduleIfScheduledTxnChanges")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate(SENDER).balance(1L),
                         cryptoCreate(FIRST_PAYER),
                         scheduleCreate(
@@ -279,9 +291,11 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .payingWith(FIRST_PAYER));
     }
 
+    @HapiTest
     private HapiSpec notIdenticalScheduleIfMemoChanges() {
         return defaultHapiSpec("NotIdenticalScheduleIfMemoChanges")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate(SENDER).balance(1L),
                         scheduleCreate(
                                         ORIGINAL,
@@ -296,6 +310,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .withEntityMemo("The whole time he was at the Bodies, til"));
     }
 
+    @HapiTest
     private HapiSpec notIdenticalScheduleIfAdminKeyChanges() {
         return defaultHapiSpec("notIdenticalScheduleIfAdminKeyChanges")
                 .given(
@@ -322,9 +337,11 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .payingWith(FIRST_PAYER));
     }
 
+    @HapiTest
     private HapiSpec recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer() {
         return defaultHapiSpec("recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate(SENDER).balance(1L),
                         cryptoCreate(FIRST_PAYER),
                         scheduleCreate(
@@ -379,6 +396,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
     private HapiSpec infoIncludesTxnIdFromCreationReceipt() {
         return defaultHapiSpec("InfoIncludesTxnIdFromCreationReceipt")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate(SENDER),
                         scheduleCreate(CREATION, cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1)))
                                 .savingExpectedScheduledTxnId())
@@ -422,6 +440,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         overriding(SCHEDULING_WHITELIST, defaultWhitelist));
     }
 
+    @HapiTest
     public HapiSpec detectsKeysChangedBetweenExpandSigsAndHandleTxn() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
         String aKey = "a", bKey = "b";
@@ -447,9 +466,11 @@ public class ScheduleCreateSpecs extends HapiSuite {
                                 .hasKnownStatusFrom(SOME_SIGNATURES_WERE_INVALID, SUCCESS));
     }
 
+    @HapiTest
     public HapiSpec onlySchedulesWithMissingReqSimpleSigs() {
         return defaultHapiSpec("OnlySchedulesWithMissingReqSimpleSigs")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate(SENDER).balance(1L),
                         cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
                 .when(scheduleCreate(BASIC_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
@@ -457,6 +478,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                 .then(getAccountBalance(SENDER).hasTinyBars(1L));
     }
 
+    @HapiTest
     public HapiSpec requiresExtantPayer() {
         return defaultHapiSpec("RequiresExtantPayer")
                 .given()
@@ -538,6 +560,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         scheduleCreateFunctionless("unknown").hasPrecheck(BUSY).payingWith(SENDER));
     }
 
+    @HapiTest
     public HapiSpec whitelistWorks() {
         return defaultHapiSpec("whitelistWorks")
                 .given(scheduleCreate("nope", createTopic(NEVER_TO_BE))

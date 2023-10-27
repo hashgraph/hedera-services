@@ -28,6 +28,7 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -137,6 +138,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
                                 .contractCallResult(resultWith().gasUsed(100L))));
     }
 
+    @HapiTest
     private HapiSpec redirectToNullSelector() {
         return defaultHapiSpec("redirectToNullSelector")
                 .given(

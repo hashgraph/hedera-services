@@ -68,18 +68,6 @@ class ScheduleStoreUtilityTest extends ScheduleTestBase {
         assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_ALTERNATE_SCHEDULED_SHA256);
         testSchedule.scheduledTransaction(scheduleInState.scheduledTransaction());
 
-        testSchedule.payerAccountId(admin);
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_ADMIN_IS_PAYER_SHA256);
-        testSchedule.payerAccountId(scheduleInState.payerAccountId());
-
-        testSchedule.schedulerAccountId(payer);
-        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
-        assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
-        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_PAYER_IS_SCHEDULER_SHA256);
-        testSchedule.schedulerAccountId(scheduleInState.schedulerAccountId());
-
         testSchedule.memo(ODD_MEMO);
         hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
         assertThat(hashValue).isNotEqualTo(SCHEDULE_IN_STATE_SHA256);
@@ -119,6 +107,16 @@ class ScheduleStoreUtilityTest extends ScheduleTestBase {
         hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
         assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
         testSchedule.executed(scheduleInState.executed());
+
+        testSchedule.payerAccountId(admin);
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
+        testSchedule.payerAccountId(scheduleInState.payerAccountId());
+
+        testSchedule.schedulerAccountId(payer);
+        hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());
+        assertThat(hashValue).isEqualTo(SCHEDULE_IN_STATE_SHA256);
+        testSchedule.schedulerAccountId(scheduleInState.schedulerAccountId());
 
         testSchedule.resolutionTime(modifiedResolutionTime);
         hashValue = ScheduleStoreUtility.calculateStringHash(testSchedule.build());

@@ -25,7 +25,6 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
@@ -38,8 +37,6 @@ public class ConsensusRound implements Round {
     private final List<EventImpl> consensusEvents;
     /** the consensus generations when this round reached consensus */
     private final GraphGenerations generations;
-    /** the last event in the round */
-    private final EventImpl lastEvent;
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
     /** A snapshot of consensus at this consensus round */
@@ -77,8 +74,6 @@ public class ConsensusRound implements Round {
         for (final EventImpl e : consensusEvents) {
             numAppTransactions += e.getNumAppTransactions();
         }
-
-        lastEvent = consensusEvents.isEmpty() ? null : consensusEvents.get(consensusEvents.size() - 1);
     }
 
     /**
@@ -153,15 +148,6 @@ public class ConsensusRound implements Round {
 
     public @NonNull Instant getConsensusTimestamp() {
         return snapshot.consensusTimestamp();
-    }
-
-    /**
-     * @return the last event of this round, or null if this round is not complete
-     * @deprecated a round might not have any events, the code should not expect this to be non-null
-     */
-    @Deprecated(forRemoval = true)
-    public @Nullable EventImpl getLastEvent() {
-        return lastEvent;
     }
 
     @Override
