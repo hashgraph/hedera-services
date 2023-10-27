@@ -250,7 +250,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      */
     @Override
     public void updateStorageMetadata(
-            @NonNull final AccountID accountId, @Nullable final Bytes firstKey, final int netChangeInSlotsUsed) {
+            @NonNull final AccountID accountId, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
         requireNonNull(firstKey);
         requireNonNull(accountId);
         final var target = requireNonNull(accountStore.get(accountId));
