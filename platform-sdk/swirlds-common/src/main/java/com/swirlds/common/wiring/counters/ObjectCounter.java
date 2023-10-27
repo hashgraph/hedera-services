@@ -17,7 +17,7 @@
 package com.swirlds.common.wiring.counters;
 
 /**
- * A class that counts the number of objects in a various part of the pipeline.
+ * A class that counts the number of objects in various parts of the pipeline.
  */
 public abstract class ObjectCounter {
 

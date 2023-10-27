@@ -23,7 +23,7 @@ import java.util.concurrent.ForkJoinPool.ManagedBlocker;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * A utility for counting the number of objects in a various part of the pipeline.
+ * A utility for counting the number of objects in various parts of the pipeline.
  */
 public class StandardObjectCounter extends ObjectCounter {
 

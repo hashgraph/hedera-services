@@ -39,7 +39,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * A builder for {@link TaskScheduler}s.
  *
- * @param <O> the output time of the primary output wire for this task scheduler (use {@link Void}) for a scheduler with
+ * @param <O> the output type of the primary output wire for this task scheduler (use {@link Void} for a scheduler with
  *            no output)
  */
 public class TaskSchedulerBuilder<O> {
@@ -76,7 +76,7 @@ public class TaskSchedulerBuilder<O> {
         // are very fussy about what characters are allowed in metric names.
         if (!name.matches("^[a-zA-Z0-9_]*$")) {
             throw new IllegalArgumentException(
-                    "Task Schedulers name must only contain alphanumeric characters, underscores, and hyphens");
+                    "Task Schedulers name must only contain alphanumeric characters and underscores");
         }
         if (name.isEmpty()) {
             throw new IllegalArgumentException("TaskScheduler name must not be empty");
@@ -109,8 +109,8 @@ public class TaskSchedulerBuilder<O> {
     }
 
     /**
-     * Set whether the task scheduler should enable flushing. Default false. Flushing a wire with this disabled will
-     * cause the wire to throw an exception. Enabling flushing may add overhead.
+     * Set whether the task scheduler should enable flushing. Default false. Flushing a scheduler with this disabled
+     * will cause the scheduler to throw an exception. Enabling flushing may add overhead.
      *
      * @param requireFlushCapability true if the wire should require flush capability, false otherwise
      * @return this
@@ -150,7 +150,7 @@ public class TaskSchedulerBuilder<O> {
     /**
      * If true then the framework will assume that back pressure is being applied via external mechanisms.
      * <p>
-     * This method does not change the runtime behavior of the wiring framework. But it does effect cyclical back
+     * This method does not change the runtime behavior of the wiring framework. But it does affect cyclical back
      * pressure detection and automatically generated wiring diagrams.
      *
      * @param externalBackPressure true if back pressure is being applied externally, false otherwise
@@ -265,9 +265,20 @@ public class TaskSchedulerBuilder<O> {
     private Counters buildCounters() {
         final ObjectCounter innerCounter;
 
+        // If we need to enforce a maximum capacity, we have no choice but to use a backpressure object counter.
+        //
+        // If we don't need to enforce a maximum capacity, we need to use a standard object counter if any
+        // of the following conditions are true:
+        //  - we have unhandled task metrics enabled
+        //  - the scheduler is concurrent and flushing is enabled. This is because the concurrent scheduler's
+        //    flush implementation requires a counter that is not a no-op counter.
+        //
+        // In all other cases, better to use a no-op counter. Counters have overhead, and if we don't need one
+        // then we shouldn't use one.
+
         if (unhandledTaskCapacity != UNLIMITED_CAPACITY) {
             innerCounter = new BackpressureObjectCounter(unhandledTaskCapacity, sleepDuration);
-        } else if (metricsBuilder != null && metricsBuilder.isUnhandledTaskMetricEnabled()
+        } else if ((metricsBuilder != null && metricsBuilder.isUnhandledTaskMetricEnabled())
                 || (concurrent && flushingEnabled)) {
             innerCounter = new StandardObjectCounter(sleepDuration);
         } else {

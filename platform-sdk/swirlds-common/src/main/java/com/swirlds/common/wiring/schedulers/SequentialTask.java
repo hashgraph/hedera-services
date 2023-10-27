@@ -39,21 +39,19 @@ class SequentialTask extends AbstractTask {
      * Constructor.
      *
      * @param pool                     the fork join pool that will execute tasks on this task scheduler
-     * @param offRamp                  an object counter that is decremented when data is removed from the task scheduler
+     * @param offRamp                  an object counter that is decremented when data is removed from the task
+     *                                 scheduler
      * @param busyTimer                a timer that tracks the amount of time the task scheduler is busy
      * @param uncaughtExceptionHandler the uncaught exception handler
-     * @param dependencyCount          the number of dependencies that must be satisfied before this task is eligible
-     *                                 for execution. The first task in a sequence has a dependency count of 1 (data
-     *                                 must be provided), and subsequent tasks have a dependency count of 2 (the
-     *                                 previous task must be executed and data must be provided).
+     * @param firstTask                true if this is the first task in the scheduler, false otherwise
      */
     SequentialTask(
             @NonNull final ForkJoinPool pool,
             @NonNull final ObjectCounter offRamp,
             @NonNull final FractionalTimer busyTimer,
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
-            final int dependencyCount) {
-        super(pool, dependencyCount);
+            final boolean firstTask) {
+        super(pool, firstTask ? 1 : 2);
         this.offRamp = offRamp;
         this.busyTimer = busyTimer;
         this.uncaughtExceptionHandler = uncaughtExceptionHandler;

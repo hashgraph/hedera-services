@@ -21,32 +21,26 @@ import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.validation.EventValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
-
-// Future work: it may actually make more sense to colocate the wire classes with the implementations.
-//              This decision can be delayed until we begin migration in earnest.
 
 /**
- * Wiring for the {@link OrphanBuffer}.
+ * Wiring for the event signature validator.
  */
-public class OrphanBufferWire {
+public class EventSignatureValidationScheduler {
 
-    private final TaskScheduler<List<GossipEvent>> taskScheduler;
+    private final TaskScheduler<GossipEvent> taskScheduler;
 
-    private final InputWire<GossipEvent, List<GossipEvent>> eventInput;
-    private final InputWire<Long, List<GossipEvent>> minimumGenerationNonAncientInput;
-
-    private final OutputWire<GossipEvent> eventOutput;
+    private final InputWire<GossipEvent, GossipEvent> eventInput;
+    private final InputWire<Long, GossipEvent> minimumGenerationNonAncientInput;
 
     /**
      * Constructor.
      *
      * @param model the wiring model
      */
-    public OrphanBufferWire(@NonNull final WiringModel model) {
-        taskScheduler = model.schedulerBuilder("orphanBuffer")
+    public EventSignatureValidationScheduler(@NonNull final WiringModel model) {
+        taskScheduler = model.schedulerBuilder("eventSignatureValidator")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
@@ -54,52 +48,49 @@ public class OrphanBufferWire {
                 .build()
                 .cast();
 
-        eventInput = taskScheduler.buildInputWire("unordered events");
+        eventInput = taskScheduler.buildInputWire("unvalidated events");
         minimumGenerationNonAncientInput = taskScheduler.buildInputWire("minimum generation non ancient");
-
-        eventOutput = taskScheduler.buildSplitter();
     }
 
     /**
-     * Passes events to the orphan buffer.
+     * Passes events to the signature validator.
      *
      * @return the event input channel
      */
     @NonNull
-    public InputWire<GossipEvent, List<GossipEvent>> getEventInput() {
+    public InputWire<GossipEvent, GossipEvent> getEventInput() {
         return eventInput;
     }
 
     /**
-     * Passes the minimum generation non ancient to the orphan buffer.
+     * Passes the minimum generation non ancient to the signature validator.
      *
      * @return the minimum generation non ancient input channel
      */
     @NonNull
-    public InputWire<Long, List<GossipEvent>> getMinimumGenerationNonAncientInput() {
+    public InputWire<Long, GossipEvent> getMinimumGenerationNonAncientInput() {
         return minimumGenerationNonAncientInput;
     }
 
     /**
-     * Get the output of the orphan buffer, i.e. a stream of events in topological order.
+     * Get the output of the signature validator, i.e. a stream of events with valid signatures.
      *
      * @return the event output channel
      */
     @NonNull
     public OutputWire<GossipEvent> getEventOutput() {
-        return eventOutput;
+        return taskScheduler;
     }
 
     /**
      * Bind an orphan buffer to this wiring.
      *
-     * @param orphanBuffer the orphan buffer to bind
+     * @param eventValidator the orphan buffer to bind
      */
-    public void bind(@NonNull final OrphanBuffer orphanBuffer) {
-        // Future work: these handlers currently do not return anything. They need to be refactored so that
-        // they return a list of events (as opposed to passing them to a handler lambda).
-
-        eventInput.bind(orphanBuffer::handleEvent);
-        minimumGenerationNonAncientInput.bind(orphanBuffer::setMinimumGenerationNonAncient);
+    public void bind(@NonNull final EventValidator eventValidator) {
+        // Future work:
+        //   - ensure that the signature validator passed in is the new implementation.
+        //   - Bind the input channels to the appropriate functions.
+        //   - Ensure that functions return a value instead of passing it to an internal lambda.
     }
 }

@@ -21,26 +21,30 @@ import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.validation.EventValidator;
+import com.swirlds.platform.event.orphan.OrphanBuffer;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+
+// Future work: it may actually make more sense to colocate the scheduler classes with the implementations.
+//              This decision can be delayed until we begin migration in earnest.
 
 /**
- * Wiring for the event signature validator.
+ * Wiring for the {@link OrphanBuffer}.
  */
-public class EventSignatureValidationWire {
+public class OrphanBufferScheduler {
 
-    private final TaskScheduler<GossipEvent> taskScheduler;
+    private final InputWire<GossipEvent, List<GossipEvent>> eventInput;
+    private final InputWire<Long, List<GossipEvent>> minimumGenerationNonAncientInput;
 
-    private final InputWire<GossipEvent, GossipEvent> eventInput;
-    private final InputWire<Long, GossipEvent> minimumGenerationNonAncientInput;
+    private final OutputWire<GossipEvent> eventOutput;
 
     /**
      * Constructor.
      *
      * @param model the wiring model
      */
-    public EventSignatureValidationWire(@NonNull final WiringModel model) {
-        taskScheduler = model.schedulerBuilder("eventSignatureValidator")
+    public OrphanBufferScheduler(@NonNull final WiringModel model) {
+        final TaskScheduler<List<GossipEvent>> taskScheduler = model.schedulerBuilder("orphanBuffer")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
@@ -48,49 +52,52 @@ public class EventSignatureValidationWire {
                 .build()
                 .cast();
 
-        eventInput = taskScheduler.buildInputWire("unvalidated events");
+        eventInput = taskScheduler.buildInputWire("unordered events");
         minimumGenerationNonAncientInput = taskScheduler.buildInputWire("minimum generation non ancient");
+
+        eventOutput = taskScheduler.buildSplitter();
     }
 
     /**
-     * Passes events to the signature validator.
+     * Passes events to the orphan buffer.
      *
      * @return the event input channel
      */
     @NonNull
-    public InputWire<GossipEvent, GossipEvent> getEventInput() {
+    public InputWire<GossipEvent, List<GossipEvent>> getEventInput() {
         return eventInput;
     }
 
     /**
-     * Passes the minimum generation non ancient to the signature validator.
+     * Passes the minimum generation non ancient to the orphan buffer.
      *
      * @return the minimum generation non ancient input channel
      */
     @NonNull
-    public InputWire<Long, GossipEvent> getMinimumGenerationNonAncientInput() {
+    public InputWire<Long, List<GossipEvent>> getMinimumGenerationNonAncientInput() {
         return minimumGenerationNonAncientInput;
     }
 
     /**
-     * Get the output of the signature validator, i.e. a stream of events with valid signatures.
+     * Get the output of the orphan buffer, i.e. a stream of events in topological order.
      *
      * @return the event output channel
      */
     @NonNull
     public OutputWire<GossipEvent> getEventOutput() {
-        return taskScheduler;
+        return eventOutput;
     }
 
     /**
      * Bind an orphan buffer to this wiring.
      *
-     * @param eventValidator the orphan buffer to bind
+     * @param orphanBuffer the orphan buffer to bind
      */
-    public void bind(@NonNull final EventValidator eventValidator) {
-        // Future work:
-        //   - ensure that the signature validator passed in is the new implementation.
-        //   - Bind the input channels to the appropriate functions.
-        //   - Ensure that functions return a value instead of passing it to an internal lambda.
+    public void bind(@NonNull final OrphanBuffer orphanBuffer) {
+        // Future work: these handlers currently do not return anything. They need to be refactored so that
+        // they return a list of events (as opposed to passing them to a handler lambda).
+
+        eventInput.bind(orphanBuffer::handleEvent);
+        minimumGenerationNonAncientInput.bind(orphanBuffer::setMinimumGenerationNonAncient);
     }
 }

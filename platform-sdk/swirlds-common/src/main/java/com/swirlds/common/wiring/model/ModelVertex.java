@@ -38,7 +38,7 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
      * @param name                the name of the vertex
      * @param insertionIsBlocking true if the insertion of this vertex may block until capacity is available
      */
-    public ModelVertex(@NonNull String name, boolean insertionIsBlocking) {
+    public ModelVertex(@NonNull final String name, final boolean insertionIsBlocking) {
         this.name = name;
         this.insertionIsBlocking = insertionIsBlocking;
     }
@@ -105,7 +105,10 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
      */
     @Override
     public boolean equals(Object obj) {
-        return (obj instanceof ModelVertex) && name.equals(((ModelVertex) obj).name);
+        if (obj instanceof final ModelVertex that) {
+            return name.equals(that.name);
+        }
+        return false;
     }
 
     /**

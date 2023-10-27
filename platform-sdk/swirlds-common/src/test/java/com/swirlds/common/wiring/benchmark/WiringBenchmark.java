@@ -58,8 +58,6 @@ class WiringBenchmark {
                 TestPlatformContextBuilder.create().build();
         final WiringModel model = WiringModel.create(platformContext, Time.getCurrent());
 
-        // Step 1: construct wires
-
         // Ensures that we have no more than 10,000 events in the pipeline at any given time
         final ObjectCounter backpressure = new BackpressureObjectCounter(10_000, Duration.ZERO);
 
@@ -86,7 +84,6 @@ class WiringBenchmark {
                 .build()
                 .cast();
 
-        // Step 2: create channels
         final InputWire<WiringBenchmarkEvent, WiringBenchmarkEvent> eventsToOrphanBuffer =
                 orphanBufferTaskScheduler.buildInputWire("unordered events");
 
@@ -96,25 +93,17 @@ class WiringBenchmark {
         final InputWire<WiringBenchmarkEvent, Void> eventsToInsertBackIntoEventPool =
                 eventPoolTaskScheduler.buildInputWire("verified events");
 
-        // Step 3: solder wire outputs to the channels that want that output
-
         verificationTaskScheduler.solderTo(eventsToOrphanBuffer);
         orphanBufferTaskScheduler.solderTo(eventsToInsertBackIntoEventPool);
-
-        // Step 4: construct components
 
         final WiringBenchmarkEventPool eventPool = new WiringBenchmarkEventPool();
         final WiringBenchmarkTopologicalEventSorter orphanBuffer = new WiringBenchmarkTopologicalEventSorter();
         final WiringBenchmarkEventVerifier verifier = new WiringBenchmarkEventVerifier();
         final WiringBenchmarkGossip gossip = new WiringBenchmarkGossip(executor, eventPool, eventsToBeVerified::put);
 
-        // Step 5: bind channels to components that will handle the data in the channels
-
         eventsToOrphanBuffer.bind(orphanBuffer);
         eventsToBeVerified.bind(verifier);
         eventsToInsertBackIntoEventPool.bind(eventPool::checkin);
-
-        // Step 6: run
 
         // Create a user thread for running "gossip". It will continue to generate events until explicitly stopped.
         System.out.println("Starting gossip");

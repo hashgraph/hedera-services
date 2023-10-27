@@ -24,7 +24,8 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * A wiring model is a collection of wires. It can be used to analyze the wiring of a system and to generate diagrams.
+ * A wiring model is a collection of task schedulers and the wires connecting them. It can be used to analyze the wiring
+ * of a system and to generate diagrams.
  */
 public abstract class WiringModel {
 
@@ -57,9 +58,8 @@ public abstract class WiringModel {
     /**
      * Get a new task scheduler builder.
      *
-     * @param name the name of the task scheduler. Used for metrics and debugging. Must be unique (not enforced by
-     *             framework). Must only contain alphanumeric characters, underscores, and hyphens (enforced by
-     *             framework).
+     * @param name the name of the task scheduler. Used for metrics and debugging. Must be unique. Must only contain
+     *             alphanumeric characters and underscores.
      * @return a new wire builder
      */
     @NonNull

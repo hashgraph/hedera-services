@@ -27,10 +27,9 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
 /**
- * A {@link TaskScheduler} that permits parallel execution of tasks. Similar to {@link ConcurrentTaskScheduler} but with
- * extra metering.
+ * A {@link TaskScheduler} that permits parallel execution of tasks.
  *
- * @param <O> the output time of the wire (use {@link Void}) for a task scheduler with no output type)
+ * @param <O> the output type of the scheduler (use {@link Void} for a task scheduler with no output type)
  */
 public class ConcurrentTaskScheduler<O> extends TaskScheduler<O> {
 
@@ -42,16 +41,14 @@ public class ConcurrentTaskScheduler<O> extends TaskScheduler<O> {
     /**
      * Constructor.
      *
-     * @param model                    the wiring model containing this wire
-     * @param name                     the name of the wire
-     * @param pool                     the fork join pool that will execute tasks on this wire
+     * @param model                    the wiring model containing this scheduler
+     * @param name                     the name of the scheduler
+     * @param pool                     the fork join pool that will execute tasks on this scheduler
      * @param uncaughtExceptionHandler the handler for uncaught exceptions
-     * @param onRamp                   an object counter that is incremented when data is added to the wire, ignored if
-     *                                 null
-     * @param offRamp                  an object counter that is decremented when data is removed from the wire, ignored
-     *                                 if null
+     * @param onRamp                   an object counter that is incremented when data is added to the scheduler
+     * @param offRamp                  an object counter that is decremented when data is removed from the scheduler
      * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
-     * @param insertionIsBlocking      when data is inserted into this wire, will it block until capacity is available?
+     * @param insertionIsBlocking      when data is inserted into this scheduler, will it block until capacity is available?
      */
     public ConcurrentTaskScheduler(
             @NonNull final WiringModel model,

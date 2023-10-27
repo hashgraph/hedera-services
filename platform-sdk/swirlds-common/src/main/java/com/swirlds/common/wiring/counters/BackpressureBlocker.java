@@ -28,8 +28,21 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 class BackpressureBlocker implements ManagedBlocker {
 
+    /**
+     * The current count. This object will attempt to block until this count can be increased by one without exceeding
+     * the maximum capacity.
+     */
     private final AtomicLong count;
+
+    /**
+     * The maximum desired capacity. It is possible that the current count may exceed this capacity (i.e. if
+     * {@link ObjectCounter#forceOnRamp()} is used to bypass the capacity).
+     */
     private final long capacity;
+
+    /**
+     * The amount of time to sleep while waiting for capacity to become available, or 0 to not sleep.
+     */
     private final int sleepNanos;
 
     /**
@@ -38,7 +51,7 @@ class BackpressureBlocker implements ManagedBlocker {
      * @param count      the counter to use
      * @param capacity   the maximum number of objects that can be in the part of the system that this object is being
      *                   used to monitor before backpressure is applied
-     * @param sleepNanos the number of nanoseconds to sleep while blocking, or -1 to not sleep
+     * @param sleepNanos the number of nanoseconds to sleep while blocking, or 0 to not sleep
      */
     public BackpressureBlocker(@NonNull final AtomicLong count, final long capacity, final int sleepNanos) {
         this.count = Objects.requireNonNull(count);

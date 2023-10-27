@@ -186,13 +186,13 @@ public final class WiringFlowchart {
     }
 
     /**
-     * For all verticies that are in collapsed groups, we want to draw edges to the collapsed group instead of to the
-     * individual vertices in the group. This method builds a map from the collapsed verticies to the group name that
+     * For all vertices that are in collapsed groups, we want to draw edges to the collapsed group instead of to the
+     * individual vertices in the group. This method builds a map from the collapsed vertices to the group name that
      * they should be replaced with.
      *
      * @param groups   the groups
      * @param vertices a map from vertex names to vertices
-     * @return a map from collapsed verticies to the group name that they should be replaced with
+     * @return a map from collapsed vertices to the group name that they should be replaced with
      */
     @NonNull
     private static Map<ModelVertex, String> getCollapsedVertexMap(
@@ -213,6 +213,14 @@ public final class WiringFlowchart {
         return collapsedVertexMap;
     }
 
+    /**
+     * Generate a mermaid flowchart of the wiring model.
+     *
+     * @param vertices the vertices in the wiring model
+     * @param edges    the edges in the wiring model
+     * @param groups   the groups in the wiring model
+     * @return a mermaid flowchart of the wiring model, in string form
+     */
     @NonNull
     public static String generateWiringDiagram(
             @NonNull final Map<String, ModelVertex> vertices,

@@ -32,11 +32,16 @@ import java.util.function.Consumer;
 /**
  * A {@link TaskScheduler} that guarantees that tasks are executed sequentially in the order they are received.
  *
- * @param <O> the output time of the wire (use {@link Void}) for a task scheduler with no output type)
+ * @param <O> the output type of the scheduler (use {@link Void} for a task scheduler with no output type)
  */
 public class SequentialTaskScheduler<O> extends TaskScheduler<O> {
 
-    private final AtomicReference<SequentialTask> lastTask;
+    /**
+     * The next task to be scheduled will be inserted into this placeholder task. When that happens, a new task will be
+     * created and inserted into this placeholder.
+     */
+    private final AtomicReference<SequentialTask> nextTaskPlaceholder;
+
     private final ObjectCounter onRamp;
     private final ObjectCounter offRamp;
     private final FractionalTimer busyTimer;
@@ -46,14 +51,13 @@ public class SequentialTaskScheduler<O> extends TaskScheduler<O> {
     /**
      * Constructor.
      *
-     * @param model                    the wiring model containing this wire
+     * @param model                    the wiring model containing this scheduler
      * @param name                     the name of the task scheduler
      * @param pool                     the fork join pool that will execute tasks on this scheduler
      * @param uncaughtExceptionHandler the uncaught exception handler
-     * @param onRamp                   an object counter that is incremented when data is added to the task scheduler,
-     *                                 ignored if null
+     * @param onRamp                   an object counter that is incremented when data is added to the task scheduler
      * @param offRamp                  an object counter that is decremented when data is removed from the task
-     *                                 scheduler, ignored if null
+     *                                 scheduler
      * @param busyTimer                a timer that tracks the amount of time the scheduler is busy
      * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
      * @param insertionIsBlocking      when data is inserted into this task scheduler, will it block until capacity is
@@ -78,8 +82,8 @@ public class SequentialTaskScheduler<O> extends TaskScheduler<O> {
         this.offRamp = Objects.requireNonNull(offRamp);
         this.busyTimer = Objects.requireNonNull(busyTimer);
 
-        this.lastTask =
-                new AtomicReference<>(new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, 1));
+        this.nextTaskPlaceholder =
+                new AtomicReference<>(new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, true));
     }
 
     /**
@@ -119,15 +123,15 @@ public class SequentialTaskScheduler<O> extends TaskScheduler<O> {
      * @param data    the data to be passed to the consumer for this task
      */
     private void scheduleTask(@NonNull final Consumer<Object> handler, @Nullable final Object data) {
-        // This method may be called by may threads, but it must serialize the results a sequence of tasks that are
-        // guaranteed to be executed one at a time on the target processor. We do this by forming a dependency graph
-        // from task to task, such that each task depends on the previous task.
+        // This method may be called by many threads, but actual execution is required to happen serially. This method
+        // organizes tasks into a linked list. Tasks in this linked list are executed one at a time in order.
+        // When execution of one task is completed, execution of the next task is scheduled on the pool.
 
-        final SequentialTask nextTask = new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, 2);
+        final SequentialTask nextTask = new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, false);
         SequentialTask currentTask;
         do {
-            currentTask = lastTask.get();
-        } while (!lastTask.compareAndSet(currentTask, nextTask));
+            currentTask = nextTaskPlaceholder.get();
+        } while (!nextTaskPlaceholder.compareAndSet(currentTask, nextTask));
         currentTask.send(nextTask, handler, data);
     }
 
@@ -159,11 +163,11 @@ public class SequentialTaskScheduler<O> extends TaskScheduler<O> {
         final Semaphore semaphore = new Semaphore(1);
         semaphore.acquireUninterruptibly();
 
-        final SequentialTask nextTask = new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, 2);
+        final SequentialTask nextTask = new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, false);
         SequentialTask currentTask;
         do {
-            currentTask = lastTask.get();
-        } while (!lastTask.compareAndSet(currentTask, nextTask));
+            currentTask = nextTaskPlaceholder.get();
+        } while (!nextTaskPlaceholder.compareAndSet(currentTask, nextTask));
         currentTask.send(nextTask, x -> semaphore.release(), null);
 
         return semaphore;

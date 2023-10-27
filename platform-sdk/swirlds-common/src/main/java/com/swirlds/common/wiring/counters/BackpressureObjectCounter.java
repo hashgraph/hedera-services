@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongUnaryOperator;
 
 /**
- * A utility for counting the number of objects in a various part of the pipeline. Will apply backpressure if the number
+ * A utility for counting the number of objects in various parts of the pipeline. Will apply backpressure if the number
  * of objects exceeds a specified capacity.
  */
 public class BackpressureObjectCounter extends ObjectCounter {
@@ -67,7 +67,7 @@ public class BackpressureObjectCounter extends ObjectCounter {
     public void onRamp() {
         try {
             count.updateAndGet(increment);
-            // Best case scenario: capacity is was immediately available.
+            // Best case scenario: capacity was immediately available.
         } catch (final NoCapacityException e) {
             // Slow case. Capacity wasn't available, so we need to block.
             try {

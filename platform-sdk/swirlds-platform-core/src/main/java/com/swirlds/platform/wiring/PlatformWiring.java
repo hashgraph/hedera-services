@@ -33,8 +33,8 @@ public class PlatformWiring {
 
     private final WiringModel model;
 
-    private final EventSignatureValidationWire eventSignatureValidationWire;
-    private final OrphanBufferWire orphanBufferWire;
+    private final EventSignatureValidationScheduler eventSignatureValidationScheduler;
+    private final OrphanBufferScheduler orphanBufferScheduler;
     private final boolean cyclicalBackpressurePresent;
 
     /**
@@ -46,8 +46,8 @@ public class PlatformWiring {
     public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
         model = WiringModel.create(platformContext, time);
 
-        orphanBufferWire = new OrphanBufferWire(model);
-        eventSignatureValidationWire = new EventSignatureValidationWire(model);
+        orphanBufferScheduler = new OrphanBufferScheduler(model);
+        eventSignatureValidationScheduler = new EventSignatureValidationScheduler(model);
 
         wire();
 
@@ -79,7 +79,7 @@ public class PlatformWiring {
      * Wire the components together.
      */
     private void wire() {
-        eventSignatureValidationWire.getEventOutput().solderTo(orphanBufferWire.getEventInput());
+        eventSignatureValidationScheduler.getEventOutput().solderTo(orphanBufferScheduler.getEventInput());
         // FUTURE WORK: solder all the things!
     }
 
@@ -89,7 +89,7 @@ public class PlatformWiring {
      * @param orphanBuffer the orphan buffer to bind
      */
     public void bind(@NonNull final EventValidator eventValidator, @NonNull final OrphanBuffer orphanBuffer) {
-        eventSignatureValidationWire.bind(eventValidator);
-        orphanBufferWire.bind(orphanBuffer);
+        eventSignatureValidationScheduler.bind(eventValidator);
+        orphanBufferScheduler.bind(orphanBuffer);
     }
 }

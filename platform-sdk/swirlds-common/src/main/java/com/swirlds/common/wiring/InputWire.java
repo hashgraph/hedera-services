@@ -32,12 +32,12 @@ public class InputWire<I, O> {
 
     private final TaskScheduler<O> taskScheduler;
     private Consumer<Object> handler;
-    private String name;
+    private final String name;
 
     /**
      * Constructor.
      *
-     * @param taskScheduler the wire to insert data into
+     * @param taskScheduler the scheduler to insert data into
      * @param name          the name of the input wire
      */
     InputWire(@NonNull final TaskScheduler<O> taskScheduler, @NonNull final String name) {

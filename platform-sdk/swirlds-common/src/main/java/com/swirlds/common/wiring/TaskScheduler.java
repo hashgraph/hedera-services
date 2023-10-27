@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 /**
  * Schedules tasks for a component.
  *
- * @param <O> the output type of the primary output wire (use {@link Void}) if no output is needed)
+ * @param <O> the output type of the primary output wire (use {@link Void} if no output is needed)
  */
 public abstract class TaskScheduler<O> extends OutputWire<O> {
 
@@ -35,8 +35,7 @@ public abstract class TaskScheduler<O> extends OutputWire<O> {
      *
      * @param model               the wiring model containing this task scheduler
      * @param name                the name of the task scheduler
-     * @param flushEnabled        if true, then {@link #flush()} will be enabled,
-     *                            otherwise it will throw.
+     * @param flushEnabled        if true, then {@link #flush()} will be enabled, otherwise it will throw.
      * @param insertionIsBlocking when data is inserted into this task scheduler, will it block until capacity is
      *                            available?
      */
@@ -103,8 +102,8 @@ public abstract class TaskScheduler<O> extends OutputWire<O> {
      * Some implementations do not have this restriction, and will return as soon as all of the in flight work has been
      * processed, regardless of whether or not new work is being added.
      *
-     * @throws UnsupportedOperationException if {@link TaskSchedulerBuilder#withFlushingEnabled(boolean)} was set to false (or
-     *                                       was unset, default is false)
+     * @throws UnsupportedOperationException if {@link TaskSchedulerBuilder#withFlushingEnabled(boolean)} was set to
+     *                                       false (or was unset, default is false)
      */
     public abstract void flush();
 
@@ -137,7 +136,8 @@ public abstract class TaskScheduler<O> extends OutputWire<O> {
      * Add a task to the scheduler. If backpressure is enabled and there is not immediately capacity available, this
      * method will not accept the data.
      *
-     * @param data the data to be processed by the scheduler
+     * @param handler handles the provided data
+     * @param data    the data to be processed by the scheduler
      * @return true if the data was accepted, false otherwise
      */
     protected abstract boolean offer(@NonNull Consumer<Object> handler, @Nullable Object data);
@@ -147,7 +147,8 @@ public abstract class TaskScheduler<O> extends OutputWire<O> {
      * specified by configured back pressure. If backpressure is disabled, this operation is logically equivalent to
      * {@link #put(Consumer, Object)}.
      *
-     * @param data the data to be processed by the scheduler
+     * @param handler handles the provided data
+     * @param data    the data to be processed by the scheduler
      */
     protected abstract void inject(@NonNull Consumer<Object> handler, @Nullable Object data);
 

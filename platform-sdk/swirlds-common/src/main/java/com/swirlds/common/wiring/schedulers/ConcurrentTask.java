@@ -36,8 +36,11 @@ class ConcurrentTask extends AbstractTask {
     /**
      * Constructor.
      *
-     * @param handler the method that will be called when this task is executed
-     * @param data    the data to be passed to the consumer for this task
+     * @param pool                     the fork join pool that will execute this task
+     * @param offRamp                  an object counter that is decremented when this task is executed
+     * @param uncaughtExceptionHandler the handler for uncaught exceptions
+     * @param handler                  the method that will be called when this task is executed
+     * @param data                     the data to be passed to the consumer for this task
      */
     protected ConcurrentTask(
             @NonNull final ForkJoinPool pool,
@@ -52,6 +55,9 @@ class ConcurrentTask extends AbstractTask {
         this.uncaughtExceptionHandler = uncaughtExceptionHandler;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected boolean exec() {
         try {

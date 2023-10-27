@@ -98,7 +98,6 @@ public abstract class OutputWire<O> {
             try {
                 destination.accept(data);
             } catch (final Exception e) {
-                // Future work: if we ever add a name to output wires, include that name in this log message.
                 logger.error(
                         EXCEPTION.getMarker(),
                         "Exception thrown on output wire {} while forwarding data {}",
@@ -114,7 +113,7 @@ public abstract class OutputWire<O> {
      *
      * <p>
      * Soldering is the act of connecting two wires together, usually by melting a metal alloy between them. See
-     * https://en.wikipedia.org/wiki/Soldering
+     * <a href="https://en.wikipedia.org/wiki/Soldering">wikipedia's entry on soldering</a>.
      *
      * <p>
      * Forwarding should be fully configured prior to data being inserted into the system. Adding forwarding
@@ -191,7 +190,7 @@ public abstract class OutputWire<O> {
 
     /**
      * Build a {@link WireListSplitter} that is soldered to the output of this wire. Creating a splitter for wires
-     * without a list output type will cause to runtime exceptions.
+     * without a list output type will cause runtime exceptions.
      *
      * @param <E> the type of the list elements
      * @return the splitter
@@ -206,7 +205,7 @@ public abstract class OutputWire<O> {
 
     /**
      * Build a {@link WireListSplitter} that is soldered to the output of this wire. Creating a splitter for wires
-     * without a list output type will cause to runtime exceptions.
+     * without a list output type will cause runtime exceptions.
      *
      * @param clazz the class of the list elements, convince parameter for hinting generic type to the compiler
      * @param <T>   the type of the list elements

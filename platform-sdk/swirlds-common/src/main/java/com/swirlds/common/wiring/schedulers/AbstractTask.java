@@ -39,6 +39,7 @@ public abstract class AbstractTask extends ForkJoinTask<Void> {
     /**
      * Constructor.
      *
+     * @param pool            the fork join pool that will execute this task
      * @param dependencyCount the number of dependencies that must be satisfied before this task is eligible for
      *                        execution
      */
