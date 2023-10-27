@@ -16,15 +16,16 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
@@ -84,7 +85,7 @@ public class SystemFileUpdateFacility {
      * @param state the current state (the updated file content needs to be committed to the state)
      * @param txBody the transaction body
      */
-    public void handleTxBody(@NonNull final HederaState state, @NonNull final TransactionBody txBody) {
+    public ResponseCodeEnum handleTxBody(@NonNull final HederaState state, @NonNull final TransactionBody txBody) {
         requireNonNull(state, "state must not be null");
         requireNonNull(txBody, "txBody must not be null");
 
@@ -95,7 +96,7 @@ public class SystemFileUpdateFacility {
         } else if (txBody.hasFileAppend()) {
             fileID = txBody.fileAppendOrThrow().fileIDOrThrow();
         } else {
-            return;
+            return SUCCESS;
         }
 
         // Check if the file is a special file
@@ -104,50 +105,43 @@ public class SystemFileUpdateFacility {
         final var fileNum = fileID.fileNum();
         final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
         if (fileNum > ledgerConfig.numReservedSystemEntities()) {
-            return;
+            return SUCCESS;
         }
 
         // If it is a special file, call the updater.
         // We load the file only, if there is an updater for it.
         final var config = configuration.getConfigData(FilesConfig.class);
-        try {
-            if (fileNum == config.feeSchedules()) {
-                feeManager.update(FileUtilities.getFileContent(state, fileID));
-            } else if (fileNum == config.exchangeRates()) {
-                exchangeRateManager.update(FileUtilities.getFileContent(state, fileID), payer);
-            } else if (fileNum == config.networkProperties()) {
-                final var networkProperties = FileUtilities.getFileContent(state, fileID);
-                final var permissions =
-                        FileUtilities.getFileContent(state, createFileID(config.hapiPermissions(), configuration));
-                configProvider.update(networkProperties, permissions);
-                backendThrottle.applyGasConfig();
-                frontendThrottle.applyGasConfig();
 
-                // Updating the multiplier source to use the new gas throttle
-                // values that are coming from the network properties
-                monoMultiplierSources.resetExpectations();
-            } else if (fileNum == config.hapiPermissions()) {
-                final var networkProperties =
-                        FileUtilities.getFileContent(state, createFileID(config.networkProperties(), configuration));
-                final var permissions = FileUtilities.getFileContent(state, fileID);
-                configProvider.update(networkProperties, permissions);
-            } else if (fileNum == config.throttleDefinitions()) {
-                throttleManager.update(FileUtilities.getFileContent(state, fileID));
-                backendThrottle.rebuildFor(throttleManager.throttleDefinitions());
-                frontendThrottle.rebuildFor(throttleManager.throttleDefinitions());
+        if (fileNum == config.feeSchedules()) {
+            return feeManager.update(FileUtilities.getFileContent(state, fileID));
+        } else if (fileNum == config.exchangeRates()) {
+            exchangeRateManager.update(FileUtilities.getFileContent(state, fileID), payer);
+        } else if (fileNum == config.networkProperties()) {
+            final var networkProperties = FileUtilities.getFileContent(state, fileID);
+            final var permissions =
+                    FileUtilities.getFileContent(state, createFileID(config.hapiPermissions(), configuration));
+            configProvider.update(networkProperties, permissions);
+            backendThrottle.applyGasConfig();
+            frontendThrottle.applyGasConfig();
 
-                // Updating the multiplier source to use the new throttle definitions
-                monoMultiplierSources.resetExpectations();
-            }
-        } catch (HandleException e) {
-            // handle exception suppose to propagate the exception to the caller
-            throw e;
-        } catch (final RuntimeException e) {
-            logger.warn(
-                    "Exception while calling updater for file {}. " + "If the file is incomplete, this is expected.",
-                    fileID,
-                    e);
+            // Updating the multiplier source to use the new gas throttle
+            // values that are coming from the network properties
+            monoMultiplierSources.resetExpectations();
+        } else if (fileNum == config.hapiPermissions()) {
+            final var networkProperties =
+                    FileUtilities.getFileContent(state, createFileID(config.networkProperties(), configuration));
+            final var permissions = FileUtilities.getFileContent(state, fileID);
+            configProvider.update(networkProperties, permissions);
+        } else if (fileNum == config.throttleDefinitions()) {
+            final var result = throttleManager.update(FileUtilities.getFileContent(state, fileID));
+            backendThrottle.rebuildFor(throttleManager.throttleDefinitions());
+            frontendThrottle.rebuildFor(throttleManager.throttleDefinitions());
+
+            // Updating the multiplier source to use the new throttle definitions
+            monoMultiplierSources.resetExpectations();
+            return result;
         }
+        return SUCCESS;
     }
 
     private FileID createFileID(final long fileNum, @NonNull final Configuration configuration) {
