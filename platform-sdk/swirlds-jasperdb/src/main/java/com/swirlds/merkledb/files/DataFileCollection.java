@@ -453,7 +453,7 @@ public class DataFileCollection<D> implements Snapshotable {
 
     /**
      * Read data item bytes at a given location (file index + offset). If the file is not found or
-     * alread closed, this method returns {@code null}. This may happen, if the index, where the data
+     * already closed, this method returns {@code null}. This may happen, if the index, where the data
      * location originated from, has just been updated in a parallel compaction thread.
      *
      * <p>NOTE: this method may not be used for data types, which can be of multiple different
