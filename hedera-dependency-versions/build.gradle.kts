@@ -21,6 +21,7 @@ plugins {
 val besuNativeVersion = "0.8.2"
 val besuVersion = "23.10.0"
 val bouncycastleVersion = "1.70"
+val lz4Version = "1.8.0"
 val daggerVersion = "2.42"
 val eclipseCollectionsVersion = "10.4.0"
 val grpcVersion = "1.54.1"
@@ -89,6 +90,7 @@ moduleInfo {
     version("org.assertj.core", "3.23.1")
     version("org.bouncycastle.pkix", bouncycastleVersion)
     version("org.bouncycastle.provider", bouncycastleVersion)
+    version("org.lz4", lz4Version)
     version("org.eclipse.collections.api", eclipseCollectionsVersion)
     version("org.eclipse.collections.impl", eclipseCollectionsVersion)
     version("org.hamcrest", "2.2")

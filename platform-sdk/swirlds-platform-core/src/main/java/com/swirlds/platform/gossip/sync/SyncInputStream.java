@@ -32,8 +32,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
+import net.jpountz.lz4.LZ4BlockInputStream;
 
 public class SyncInputStream extends SerializableDataInputStream {
 
@@ -62,8 +61,9 @@ public class SyncInputStream extends SerializableDataInputStream {
         final InputStream wrappedStream;
         if (compress) {
             //            final int level = Deflater.DEFAULT_COMPRESSION;
-            final int level = 0;
-            wrappedStream = new InflaterInputStream(meteredStream, new Inflater(true), bufferSize);
+            //            wrappedStream = new InflaterInputStream(meteredStream, new Inflater(true), bufferSize);
+
+            wrappedStream = new LZ4BlockInputStream(meteredStream);
 
         } else {
             wrappedStream = new BufferedInputStream(meteredStream, bufferSize);

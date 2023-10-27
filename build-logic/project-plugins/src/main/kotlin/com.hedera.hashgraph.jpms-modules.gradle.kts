@@ -222,6 +222,7 @@ extraJavaModuleInfo {
     automaticModule("net.java.dev.jna:jna", "com.sun.jna")
     automaticModule("org.bouncycastle:bcprov-jdk15on", "org.bouncycastle.provider")
     automaticModule("org.bouncycastle:bcpkix-jdk15on", "org.bouncycastle.pkix")
+    automaticModule("org.lz4:lz4-java", "org.lz4") // TODO get permission
 
     // automatic modules to make it build, might be able to move them full modules
     automaticModule("com.google.android:annotations", "com.google.android.annotations")

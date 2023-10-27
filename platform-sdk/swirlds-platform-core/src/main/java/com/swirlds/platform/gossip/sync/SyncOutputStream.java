@@ -33,8 +33,11 @@ import java.io.OutputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
+import java.util.zip.Checksum;
+import net.jpountz.lz4.LZ4BlockOutputStream;
+import net.jpountz.lz4.LZ4Compressor;
+import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.xxhash.XXHashFactory;
 
 public class SyncOutputStream extends SerializableDataOutputStream {
     private final CountingStreamExtension syncByteCounter;
@@ -63,10 +66,19 @@ public class SyncOutputStream extends SerializableDataOutputStream {
 
         final OutputStream wrappedStream;
         if (compress) {
-//            final int level = Deflater.DEFAULT_COMPRESSION;
-            final int level = 0;
-            wrappedStream = new DeflaterOutputStream(
-                    meteredStream, new Deflater(level, true), bufferSize, true);
+            //            final int level = Deflater.DEFAULT_COMPRESSION;
+            //            final int level = 0;
+            //            wrappedStream = new DeflaterOutputStream(
+            //                    meteredStream, new Deflater(level, true), bufferSize, true);
+
+            final LZ4Compressor compressor = LZ4Factory.fastestInstance().fastCompressor();
+            // TODO can we get away with not using a checksum?
+            final Checksum checksum = XXHashFactory.fastestInstance()
+                    .newStreamingHash32(0x9747b28c)
+                    .asChecksum();
+
+            wrappedStream = new LZ4BlockOutputStream(meteredStream, bufferSize, compressor, checksum, true);
+
         } else {
             wrappedStream = new BufferedOutputStream(meteredStream, bufferSize);
         }
