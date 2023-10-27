@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -72,6 +73,7 @@ import org.junit.jupiter.api.Assertions;
 // too many parameters, repeated string literals
 @SuppressWarnings({"java:S5960", "java:S1192"})
 public class SnapshotModeOp extends UtilOp {
+    private static final long MIN_GZIP_SIZE_IN_BYTES = 20;
     private static final Logger log = LogManager.getLogger(SnapshotModeOp.class);
 
     private static final Set<String> FIELDS_TO_SKIP_IN_FUZZY_MATCH = Set.of(
@@ -199,7 +201,8 @@ public class SnapshotModeOp extends UtilOp {
      */
     public void finishLifecycle() {
         try {
-            final var data = RECORD_STREAM_ACCESS.readStreamDataFrom(recordsLoc, "sidecar");
+            final var data = RECORD_STREAM_ACCESS.readStreamDataFrom(
+                    recordsLoc, "sidecar", f -> new File(f).length() > MIN_GZIP_SIZE_IN_BYTES);
             final List<ParsedItem> postPlaceholderItems = new ArrayList<>();
             final var allItems = data.records().stream()
                     .flatMap(recordWithSidecars -> recordWithSidecars.recordFile().getRecordStreamItemsList().stream())

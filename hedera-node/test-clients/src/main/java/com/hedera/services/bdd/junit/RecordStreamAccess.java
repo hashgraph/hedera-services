@@ -27,6 +27,7 @@ import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPre
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.RecordStreamFile;
 import com.hedera.services.stream.proto.SidecarFile;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -35,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
@@ -106,9 +108,27 @@ public enum RecordStreamAccess {
      * @throws IOException if there is an error reading the files
      */
     public Data readStreamDataFrom(String loc, final String relativeSidecarLoc) throws IOException {
+        return readStreamDataFrom(loc, relativeSidecarLoc, f -> true);
+    }
+
+    /**
+     * Reads the record and sidecar stream files from a given directory, skipping any record files that do
+     * not pass the given inclusion test.
+     *
+     * @param loc the directory to read from
+     * @param relativeSidecarLoc the relative location of the sidecar files
+     * @param inclusionTest a predicate to filter the record files
+     * @return the list of record and sidecar files
+     * @throws IOException if there is an error reading the files
+     */
+    public Data readStreamDataFrom(
+            @NonNull String loc,
+            @NonNull final String relativeSidecarLoc,
+            @NonNull final Predicate<String> inclusionTest)
+            throws IOException {
         final var fAtLoc = relocatedIfNotPresentWithCurrentPathPrefix(new File(loc), "..", TEST_CLIENTS_PREFIX);
         loc = fAtLoc.getAbsolutePath();
-        final var recordFiles = orderedRecordFilesFrom(loc, f -> true);
+        final var recordFiles = orderedRecordFilesFrom(loc, inclusionTest);
         final var sidecarLoc = loc + File.separator + relativeSidecarLoc;
         final List<String> sidecarFiles;
         if (new File(sidecarLoc).exists()) {
