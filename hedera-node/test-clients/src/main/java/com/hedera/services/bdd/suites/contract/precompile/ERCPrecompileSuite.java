@@ -313,7 +313,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                         sourcing(() -> contractCallLocal(ERC_20_CONTRACT, SYMBOL, asHeadlongAddress(tokenAddr.get()))));
     }
 
-    @HapiTest
     private HapiSpec getErc20TokenDecimals() {
         final var decimals = 10;
         final var decimalsTxn = "decimalsTxn";
@@ -3039,7 +3038,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withAllowance(0)))));
     }
 
-    @HapiTest
     private HapiSpec erc20TransferFromSelf() {
         return defaultHapiSpec("erc20TransferFromSelf")
                 .given(
@@ -3085,7 +3083,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
     }
 
-    @HapiTest
     private HapiSpec erc721TransferFromWithApproval() {
         return defaultHapiSpec("erc721TransferFromWithApproval")
                 .given(
