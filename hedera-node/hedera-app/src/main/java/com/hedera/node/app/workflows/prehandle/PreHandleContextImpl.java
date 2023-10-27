@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyNotEmptyKey;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyNotStakingAccounts;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
@@ -38,6 +37,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -451,5 +451,22 @@ public class PreHandleContextImpl implements PreHandleContext {
                 + requiredNonPayerKeys + ", innerContext="
                 + innerContext + ", storeFactory="
                 + storeFactory + '}';
+    }
+
+    /**
+     * Checks that an account does not represent one of the staking accounts
+     * Throws a {@link PreCheckException} with the designated response code otherwise.
+     * @param accountID the accountID to check
+     * @param responseCode the response code to throw
+     * @throws PreCheckException if the account is considered immutable
+     */
+    private void verifyNotStakingAccounts(
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException {
+        final var accountNum = accountID != null ? accountID.accountNum() : 0;
+        final var accountsConfig = configuration.getConfigData(AccountsConfig.class);
+        if (accountNum == accountsConfig.stakingRewardAccount() || accountNum == accountsConfig.nodeRewardAccount()) {
+            throw new PreCheckException(responseCode);
+        }
     }
 }

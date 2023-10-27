@@ -71,8 +71,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * multiple handlers.
  */
 public class TokenHandlerHelper {
-    private static final int STAKING_REWARD_ACCOUNT = 800;
-    private static final int NODE_REWARD_ACCOUNT = 801;
 
     private TokenHandlerHelper() {
         throw new UnsupportedOperationException("Utility class only");
@@ -206,22 +204,6 @@ public class TokenHandlerHelper {
         validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
 
         return tokenRel;
-    }
-
-    /**
-     * Checks that an account does not represent one of the staking accounts
-     * Throws a {@link PreCheckException} with the designated response code otherwise.
-     * @param accountID the accountID to check
-     * @param responseCode the response code to throw
-     * @throws PreCheckException if the account is considered immutable
-     */
-    public static void verifyNotStakingAccounts(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
-        final var accountNum = accountID != null ? accountID.accountNum() : 0;
-        if (accountNum == STAKING_REWARD_ACCOUNT || accountNum == NODE_REWARD_ACCOUNT) {
-            throw new PreCheckException(responseCode);
-        }
     }
 
     public static void verifyNotEmptyKey(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
