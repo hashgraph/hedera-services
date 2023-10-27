@@ -340,7 +340,8 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         mintToken(NFT, List.of(metadata("memo"))))
                 .when()
-                .then(burnToken(NFT, LongStream.range(0, 1000).boxed().collect(Collectors.toList()))
+                // This ID range needs to be exclusively positive (i.e. not zero)
+                .then(burnToken(NFT, LongStream.range(1, 1001).boxed().collect(Collectors.toList()))
                         .via(BURN_TXN)
                         .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
@@ -716,7 +717,8 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         cryptoTransfer(movingUnique(NFT, 1, 2).between(TOKEN_TREASURY, ACCOUNT)))
                 .when()
                 .then(wipeTokenAccount(
-                                NFT, ACCOUNT, LongStream.range(0, 1000).boxed().collect(Collectors.toList()))
+                                // This ID range needs to be exclusively positive (i.e. not zero)
+                                NFT, ACCOUNT, LongStream.range(1, 1001).boxed().collect(Collectors.toList()))
                         .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
