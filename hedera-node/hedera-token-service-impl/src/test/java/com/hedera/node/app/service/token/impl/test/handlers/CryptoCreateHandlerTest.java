@@ -72,6 +72,7 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -114,6 +115,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private NetworkInfo networkInfo;
 
+    @Mock
+    private NodeInfo nodeInfo;
+
     @Mock(strictness = LENIENT)
     private ExpiryValidator expiryValidator;
 
@@ -133,6 +137,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     private Configuration configuration;
     private static final long defaultInitialBalance = 100L;
     private static final Fees fee = new Fees(1, 1, 1);
+    private static final long stakeNodeId = 3L;
 
     @BeforeEach
     public void setUp() {
@@ -323,6 +328,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void handleCryptoCreateVanillaWithStakedAccountId() {
         txn = new CryptoCreateBuilder().withStakedAccountId(3).build();
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.payer()).willReturn(accountID(id.accountNum()));
         given(handleContext.consensusNow()).willReturn(consensusInstant);
         given(handleContext.newEntityNum()).willReturn(1000L);
         setupConfig();
@@ -405,6 +411,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void handleFailsWhenPayerHasInsufficientBalance() {
         txn = new CryptoCreateBuilder().withInitialBalance(payerBalance + 1L).build();
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.networkInfo().nodeInfo(stakeNodeId)).willReturn(nodeInfo);
+        given(handleContext.payer()).willReturn(accountID(id.accountNum()));
         setupConfig();
         setupExpiryValidator();
 
@@ -426,6 +434,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("handle fails when payer account is deleted")
     void handleFailsWhenPayerIsDeleted() {
+        given(handleContext.networkInfo().nodeInfo(stakeNodeId)).willReturn(nodeInfo);
+        given(handleContext.payer()).willReturn(accountID(id.accountNum()));
         changeAccountToDeleted();
         setupConfig();
         setupExpiryValidator();
@@ -441,6 +451,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("handle fails when payer account doesn't exist")
     void handleFailsWhenPayerInvalid() {
+        given(handleContext.networkInfo().nodeInfo(stakeNodeId)).willReturn(nodeInfo);
+        given(handleContext.payer()).willReturn(accountID(invalidId.accountNum()));
         txn = new CryptoCreateBuilder()
                 .withPayer(AccountID.newBuilder().accountNum(600L).build())
                 .build();
@@ -466,6 +478,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .withStakedAccountId(3)
                 .build();
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.payer()).willReturn(accountID(id.accountNum()));
 
         given(handleContext.consensusNow()).willReturn(consensusInstant);
         given(handleContext.newEntityNum()).willReturn(1000L);
@@ -518,10 +531,12 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void validateAlias() {
         txn = new CryptoCreateBuilder()
                 .withStakedAccountId(3)
-                .withKey(null)
+                .withKey(key)
                 .withAlias(Bytes.wrap("alias"))
                 .build();
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.payer()).willReturn(accountID(id.accountNum()));
+        given(handleContext.consensusNow()).willReturn(consensusInstant);
         setupConfig();
         setupExpiryValidator();
 
@@ -551,10 +566,12 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void validateAliasInvalid() {
         txn = new CryptoCreateBuilder()
                 .withStakedAccountId(3)
-                .withKey(null)
+                .withKey(key)
                 .withAlias(Bytes.wrap("alias"))
                 .build();
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.payer()).willReturn(accountID(id.accountNum()));
+        given(handleContext.consensusNow()).willReturn(consensusInstant);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("cryptoCreateWithAlias.enabled", true)
                 .getOrCreateConfig();
@@ -586,9 +603,12 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void validateKeyAlias() {
         txn = new CryptoCreateBuilder()
                 .withStakedAccountId(3)
+                .withKey(key)
                 .withAlias(Bytes.wrap("alias"))
                 .build();
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.payer()).willReturn(accountID(id.accountNum()));
+        given(handleContext.consensusNow()).willReturn(consensusInstant);
         setupConfig();
         setupExpiryValidator();
 
@@ -676,7 +696,6 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         private long sendRecordThreshold = 0;
         private long receiveRecordThreshold = 0;
         private AccountID proxyAccountId = null;
-        private long stakeNodeId = 3;
         private long stakedAccountId = 0;
 
         private Key key = otherKey;
