@@ -85,6 +85,15 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             methodCandidate -> AnnotationSupport.isAnnotated(methodCandidate, HapiTest.class)
                     || (methodCandidate.getParameterCount() == 0 && methodCandidate.getReturnType() == HapiSpec.class);
 
+    private static final Comparator<Method> noSorting = (m1, m2) -> 0;
+    private static final Comparator<Method> sortMethodsAscByOrderNumber = (m1, m2) -> {
+        final var m1Order = m1.getAnnotation(Order.class);
+        final var m1OrderValue = m1Order != null ? m1Order.value() : 0;
+        final var m2Order = m2.getAnnotation(Order.class);
+        final var m2OrderValue = m2Order != null ? m2Order.value() : 0;
+        return m1OrderValue - m2OrderValue;
+    };
+
     @Override
     public String getId() {
         return "hapi-suite-test";
@@ -220,14 +229,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             final var sort = testClass.getAnnotation(TestMethodOrder.class) != null
                     && testClass.getAnnotation(TestMethodOrder.class).value() == MethodOrderer.OrderAnnotation.class;
 
-            Comparator<Method> noSorting = (m1, m2) -> 0;
-            Comparator<Method> sortAscByOrderNumber = (m1, m2) -> {
-                final var m1Order = m1.getAnnotation(Order.class);
-                final var m1OrderValue = m1Order != null ? m1Order.value() : 0;
-                final var m2Order = m2.getAnnotation(Order.class);
-                final var m2OrderValue = m2Order != null ? m2Order.value() : 0;
-                return m1OrderValue - m2OrderValue;
-            };
             // Look for any methods supported by this class.
             ReflectionSupport.findMethods(testClass, IS_HAPI_TEST, TOP_DOWN).stream()
                     .filter(method -> {
@@ -243,7 +244,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         }
                         return true;
                     })
-                    .sorted(sort ? sortAscByOrderNumber : noSorting)
+                    .sorted(sort ? sortMethodsAscByOrderNumber : noSorting)
                     .map(method -> new MethodTestDescriptor(method, this))
                     .forEach(this::addChild);
 
