@@ -17,12 +17,14 @@
 package com.swirlds.platform.recovery.internal;
 
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * An implementation of a {@link com.swirlds.common.system.Round} used by streaming classes.
@@ -32,18 +34,22 @@ public class StreamedRound implements Round {
     private final List<EventImpl> events;
     private final long roundNumber;
     private final Instant consensusTimestamp;
+    private final AddressBook consensusRoster;
 
-    public StreamedRound(final List<EventImpl> events, final long roundNumber) {
+    public StreamedRound(
+            @NonNull final AddressBook consensusRoster, @NonNull final List<EventImpl> events, final long roundNumber) {
         this.events = events;
         this.roundNumber = roundNumber;
         events.forEach(EventImpl::consensusReached);
         consensusTimestamp = events.get(events.size() - 1).getConsensusTimestamp();
+        this.consensusRoster = Objects.requireNonNull(consensusRoster);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public Iterator<ConsensusEvent> iterator() {
         final Iterator<EventImpl> iterator = events.iterator();
         return new Iterator<>() {
@@ -81,6 +87,15 @@ public class StreamedRound implements Round {
     @Override
     public int getEventCount() {
         return events.size();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public AddressBook getConsensusRoster() {
+        return consensusRoster;
     }
 
     /**

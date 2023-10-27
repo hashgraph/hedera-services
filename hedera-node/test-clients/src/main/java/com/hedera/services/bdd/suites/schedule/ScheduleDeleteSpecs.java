@@ -25,7 +25,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.withAndWithoutLongTermEnabled;
+import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermSignSpecs.SCHEDULING_WHITELIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
@@ -67,9 +69,11 @@ public class ScheduleDeleteSpecs extends HapiSuite {
                 deletingExecutedIsPointless()));
     }
 
+    @HapiTest
     private HapiSpec deleteWithNoAdminKeyFails() {
         return defaultHapiSpec("DeleteWithNoAdminKeyFails")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate(SENDER),
                         cryptoCreate(RECEIVER),
                         scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))))
@@ -77,9 +81,11 @@ public class ScheduleDeleteSpecs extends HapiSuite {
                 .then(scheduleDelete(VALID_SCHEDULED_TXN).hasKnownStatus(SCHEDULE_IS_IMMUTABLE));
     }
 
+    @HapiTest
     private HapiSpec unauthorizedDeletionFails() {
         return defaultHapiSpec("UnauthorizedDeletionFails")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         newKeyNamed(ADMIN),
                         newKeyNamed("non-admin-key"),
                         cryptoCreate(SENDER),
@@ -92,9 +98,11 @@ public class ScheduleDeleteSpecs extends HapiSuite {
                         .hasKnownStatus(INVALID_SIGNATURE));
     }
 
+    @HapiTest
     private HapiSpec deletingAlreadyDeletedIsObvious() {
         return defaultHapiSpec("DeletingAlreadyDeletedIsObvious")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate"),
                         cryptoCreate(SENDER),
                         cryptoCreate(RECEIVER),
                         newKeyNamed(ADMIN),
@@ -121,6 +129,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     private HapiSpec deletingExecutedIsPointless() {
         return defaultHapiSpec("DeletingExecutedIsPointless")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,CryptoCreate,ConsensusSubmitMessage"),
                         createTopic("ofGreatInterest"),
                         newKeyNamed(ADMIN),
                         scheduleCreate(VALID_SCHEDULED_TXN, submitMessageTo("ofGreatInterest"))
