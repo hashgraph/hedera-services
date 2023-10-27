@@ -22,6 +22,7 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -49,7 +50,7 @@ public class LaggingAsyncOutputStream<T extends SelfSerializable> extends AsyncO
      * {@inheritDoc}
      */
     @Override
-    public void sendAsync(final T message) throws InterruptedException {
+    public void sendAsync(@NonNull final T message) throws InterruptedException {
         if (!isAlive()) {
             throw new MerkleSynchronizationException("Messages can not be sent after close has been called.");
         }
@@ -61,7 +62,7 @@ public class LaggingAsyncOutputStream<T extends SelfSerializable> extends AsyncO
      * {@inheritDoc}
      */
     @Override
-    protected void serializeMessage(final T message) throws IOException {
+    protected void serializeMessage(@NonNull final T message) throws IOException {
         long messageTime = messageTimes.remove();
         long now = System.currentTimeMillis();
         long waitTime = (messageTime + latencyMilliseconds) - now;

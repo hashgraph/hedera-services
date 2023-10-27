@@ -16,8 +16,6 @@
 
 package com.swirlds.common.merkle.synchronization.streams;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
-
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -66,24 +64,20 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
     private final BlockingQueue<T> outgoingMessages;
 
     /**
-     * The time that has elapsed since the last flush was attempted.
+     * If this amount of time passes in between operations then flush the output stream. An operation is defined as
+     * either writing data to the stream or flushing the stream.
      */
-    private final StopWatch timeSinceLastFlush;
+    private final StopWatch timeSinceLastOperation;
 
     /**
-     * The maximum amount of time that is permitted to pass without a flush being attempted.
+     * If this amount of time passes after an operation without another operation happening then flush the stream.
      */
-    private final Duration flushInterval;
+    private final Duration operationInterval;
 
     /**
      * If this becomes false then this object's worker thread will stop transmitting messages.
      */
     private volatile boolean alive;
-
-    /**
-     * The number of messages that have been written to the stream but have not yet been flushed
-     */
-    private int bufferedMessageCount;
 
     /**
      * The maximum amount of time to wait when writing a message.
@@ -110,9 +104,9 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
         this.workGroup = Objects.requireNonNull(workGroup, "workGroup must not be null");
         this.outgoingMessages = new LinkedBlockingQueue<>(config.asyncStreamBufferSize());
         this.alive = true;
-        this.timeSinceLastFlush = new StopWatch();
-        this.timeSinceLastFlush.start();
-        this.flushInterval = config.asyncOutputStreamFlush();
+        this.timeSinceLastOperation = new StopWatch();
+        this.timeSinceLastOperation.start();
+        this.operationInterval = config.asyncOutputStreamFlush();
         this.timeout = config.asyncStreamTimeout();
     }
 
@@ -146,21 +140,8 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
     public void run() {
         while ((isAlive() || !outgoingMessages.isEmpty())
                 && !Thread.currentThread().isInterrupted()) {
+            handleNextMessage();
             flushIfRequired();
-            boolean workDone = handleNextMessage();
-            if (!workDone) {
-                workDone = flush();
-                if (!workDone) {
-                    try {
-                        Thread.sleep(0, 1);
-                    } catch (final InterruptedException e) {
-                        logger.warn(RECONNECT.getMarker(), "AsyncOutputStream interrupted");
-                        alive = false;
-                        Thread.currentThread().interrupt();
-                        return;
-                    }
-                }
-            }
         }
         flush();
     }
@@ -168,7 +149,7 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
     /**
      * Send a message asynchronously. Messages are guaranteed to be delivered in the order sent.
      */
-    public void sendAsync(final T message) throws InterruptedException {
+    public void sendAsync(@NonNull final T message) throws InterruptedException {
         if (!isAlive()) {
             throw new MerkleSynchronizationException("Messages can not be sent after close has been called.");
         }
@@ -195,50 +176,59 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
     }
 
     /**
-     * Send the next message if possible.
-     *
-     * @return true if a message was sent.
+     * Send the next message if possible. Will block for a short time if there is no message to send, but will not block
+     * indefinitely.
      */
-    private boolean handleNextMessage() {
-        if (!outgoingMessages.isEmpty()) {
-            final T message = outgoingMessages.remove();
-            try {
-                serializeMessage(message);
-            } catch (final IOException e) {
-                throw new MerkleSynchronizationException(e);
+    private void handleNextMessage() {
+        try {
+            final T message = outgoingMessages.poll();
+            if (message == null) {
+                Thread.yield();
+                return;
             }
-
-            bufferedMessageCount += 1;
-            return true;
+            serializeMessage(message);
+            resetTimer();
+        } catch (final IOException e) {
+            throw new MerkleSynchronizationException(e);
         }
-        return false;
     }
 
-    protected void serializeMessage(final T message) throws IOException {
+    /**
+     * Serialize the given message to the output stream.
+     *
+     * @param message the message to serialize
+     */
+    protected void serializeMessage(@NonNull final T message) throws IOException {
         message.serialize(outputStream);
     }
 
-    private boolean flush() {
-        timeSinceLastFlush.reset();
-        timeSinceLastFlush.start();
-        if (bufferedMessageCount > 0) {
-            try {
-                outputStream.flush();
-            } catch (final IOException e) {
-                throw new MerkleSynchronizationException(e);
-            }
-            bufferedMessageCount = 0;
-            return true;
-        }
-        return false;
+    /**
+     * Calling this message resets the timer that determines when the stream should be flushed. This should be called
+     * after every operation (i.e. a message is sent or the stream is flushed).
+     */
+    private void resetTimer() {
+        timeSinceLastOperation.reset();
+        timeSinceLastOperation.start();
     }
 
     /**
      * Flush the stream if necessary.
      */
     private void flushIfRequired() {
-        if (timeSinceLastFlush.getElapsedTimeNano() > flushInterval.toNanos()) {
+        if (timeSinceLastOperation.getElapsedTimeNano() > operationInterval.toNanos()) {
             flush();
+        }
+    }
+
+    /**
+     * Flush the stream.
+     */
+    private void flush() {
+        resetTimer();
+        try {
+            outputStream.flush();
+        } catch (final IOException e) {
+            throw new MerkleSynchronizationException(e);
         }
     }
 }
