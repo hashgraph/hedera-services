@@ -28,7 +28,6 @@ import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +98,9 @@ public class IterableStorageManager {
                 enhancement
                         .operations()
                         .updateStorageMetadata(
-                                change.contractNumber(), firstKeys.get(change.contractNumber()), change.netChange());
+                                change.contractNumber(),
+                                firstKeys.getOrDefault(change.contractNumber(), Bytes.EMPTY),
+                                change.netChange());
             }
         });
     }
@@ -110,10 +111,12 @@ public class IterableStorageManager {
      * @param contractNumber the contract number
      * @return the first storage key for the contract or null if none exists.
      */
-    @Nullable
+    @NonNull
     private Bytes contractFirstKeyOf(@NonNull final Enhancement enhancement, long contractNumber) {
         final var account = enhancement.nativeOperations().getAccount(contractNumber);
-        return account != null && account.firstContractStorageKey() != null ? account.firstContractStorageKey() : null;
+        return account != null && account.firstContractStorageKey() != null
+                ? account.firstContractStorageKey()
+                : Bytes.EMPTY;
     }
 
     /**
@@ -125,10 +128,10 @@ public class IterableStorageManager {
      * @param key The slot key to remove
      * @return the new first key in the linked list of storage for the given contract
      */
-    @Nullable
+    @NonNull
     private Bytes removeAccessedValue(
             @NonNull final ContractStateStore store,
-            @Nullable final Bytes firstContractKey,
+            @NonNull final Bytes firstContractKey,
             long contractNumber,
             @NonNull final Bytes key) {
         try {
@@ -139,7 +142,7 @@ public class IterableStorageManager {
             final var nextKey = slotValue.nextKey();
             final var prevKey = slotValue.previousKey();
 
-            if (nextKey != null) {
+            if (!nextKey.equals(Bytes.EMPTY)) {
                 // Look up the next slot value
                 final var nextSlotKey = newSlotKeyFor(contractNumber, nextKey);
                 final var nextValue = slotValueFor(store, true, nextSlotKey, "Missing next key ");
@@ -149,7 +152,7 @@ public class IterableStorageManager {
                         nextValue.copyBuilder().previousKey(prevKey).build();
                 store.putSlot(nextSlotKey, newNextValue);
             }
-            if (prevKey != null) {
+            if (!prevKey.equals(Bytes.EMPTY)) {
                 // Look up the previous slot value
                 final var prevSlotKey = newSlotKeyFor(contractNumber, prevKey);
                 final var prevValue = slotValueFor(store, true, prevSlotKey, "Missing previous key ");
@@ -181,10 +184,10 @@ public class IterableStorageManager {
      * @param newKey The slot key to insert
      * @return the new first key in the linked list of storage for the given contract
      */
-    @Nullable
+    @NonNull
     private Bytes insertAccessedValue(
             @NonNull final ContractStateStore store,
-            @Nullable final Bytes firstContractKey,
+            @NonNull final Bytes firstContractKey,
             @NonNull final Bytes newValue,
             long contractNumber,
             @NonNull final Bytes newKey) {
@@ -196,7 +199,7 @@ public class IterableStorageManager {
             final var newSlotKey = newSlotKeyFor(contractNumber, newKey);
             final var newSlotValue = SlotValue.newBuilder()
                     .value(newValue)
-                    .previousKey(null)
+                    .previousKey(Bytes.EMPTY)
                     .nextKey(firstContractKey)
                     .build();
             store.putSlot(newSlotKey, newSlotValue);
