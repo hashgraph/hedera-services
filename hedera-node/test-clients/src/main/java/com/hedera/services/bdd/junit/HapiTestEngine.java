@@ -26,13 +26,17 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.ReflectionSupport;
 import org.junit.platform.engine.EngineDiscoveryRequest;
@@ -80,6 +84,15 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
     private static final Predicate<Method> IS_HAPI_TEST =
             methodCandidate -> AnnotationSupport.isAnnotated(methodCandidate, HapiTest.class)
                     || (methodCandidate.getParameterCount() == 0 && methodCandidate.getReturnType() == HapiSpec.class);
+
+    private static final Comparator<Method> noSorting = (m1, m2) -> 0;
+    private static final Comparator<Method> sortMethodsAscByOrderNumber = (m1, m2) -> {
+        final var m1Order = m1.getAnnotation(Order.class);
+        final var m1OrderValue = m1Order != null ? m1Order.value() : 0;
+        final var m2Order = m2.getAnnotation(Order.class);
+        final var m2OrderValue = m2Order != null ? m2Order.value() : 0;
+        return m1OrderValue - m2OrderValue;
+    };
 
     @Override
     public String getId() {
@@ -212,6 +225,10 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             this.testClass = testClass;
             setParent(parent);
 
+            // Currently we support only ASC MethodOrderer.OrderAnnotation sorting
+            final var sort = testClass.getAnnotation(TestMethodOrder.class) != null
+                    && testClass.getAnnotation(TestMethodOrder.class).value() == MethodOrderer.OrderAnnotation.class;
+
             // Look for any methods supported by this class.
             ReflectionSupport.findMethods(testClass, IS_HAPI_TEST, TOP_DOWN).stream()
                     .filter(method -> {
@@ -227,6 +244,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         }
                         return true;
                     })
+                    .sorted(sort ? sortMethodsAscByOrderNumber : noSorting)
                     .map(method -> new MethodTestDescriptor(method, this))
                     .forEach(this::addChild);
 
