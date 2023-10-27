@@ -240,7 +240,8 @@ public class TokenAssociationSpecs extends HapiSuite {
                                         .freeze(FreezeNotApplicable)));
     }
 
-    @HapiTest
+    // Enable when token expiration is implemented
+    // @HapiTest
     public HapiSpec dissociationFromExpiredTokensAsExpected() {
         final String treasury = "accountA";
         final String frozenAccount = "frozen";

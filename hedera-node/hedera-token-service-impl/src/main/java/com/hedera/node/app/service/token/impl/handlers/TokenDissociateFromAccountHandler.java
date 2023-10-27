@@ -53,6 +53,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -164,8 +165,14 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                                 && token.treasuryAccountId().equals(tokenRel.accountId()),
                         ACCOUNT_IS_TREASURY);
                 validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
-                validateFalse(tokenRelBalance > 0, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
-                validateFalse(token.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE, ACCOUNT_STILL_OWNS_NFTS);
+
+                if (tokenRelBalance > 0) {
+                    validateFalse(token.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE, ACCOUNT_STILL_OWNS_NFTS);
+
+                    // Remove when token expiry is implemented
+                    throw new HandleException(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+                }
+
                 // If the fungible token is NOT expired, then we throw an exception because we
                 // can only dissociate tokens with a zero balance by this time in the code
                 // @future('6864'): uncomment when token expiry is implemented
