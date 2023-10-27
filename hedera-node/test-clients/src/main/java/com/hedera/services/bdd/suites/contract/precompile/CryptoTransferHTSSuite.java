@@ -1043,6 +1043,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                 .including(NFT_TOKEN, SENDER2, RECEIVER2, 2L))));
     }
 
+    @HapiTest
     private HapiSpec hapiTransferFromForNFTWithCustomFeesWithoutApproveFails() {
         return defaultHapiSpec("HapiTransferFromForNFTWithCustomFeesWithoutApproveFails")
                 .given(
@@ -1185,6 +1186,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails() {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
