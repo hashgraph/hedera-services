@@ -131,25 +131,25 @@ public class SolvencyPreCheck {
         final var totalFee = fees.totalFee();
         final var availableBalance = account.tinybarBalance();
         final var offeredFee = txInfo.txBody().transactionFee();
+        final ResponseCodeEnum insufficientFeeResponseCode;
+        if (ingestCheck) { // throw different exception for ingest
+            insufficientFeeResponseCode = INSUFFICIENT_PAYER_BALANCE;
+        } else {
+            insufficientFeeResponseCode = INSUFFICIENT_ACCOUNT_BALANCE;
+        }
         if (offeredFee < fees.networkFee()) {
             throw new InsufficientNetworkFeeException(INSUFFICIENT_TX_FEE, totalFee);
         }
         if (availableBalance < fees.networkFee()) {
-            if (ingestCheck) { // throw different exception for ingest
-                throw new InsufficientNetworkFeeException(INSUFFICIENT_PAYER_BALANCE, totalFee);
-            } else {
-                throw new InsufficientNetworkFeeException(INSUFFICIENT_ACCOUNT_BALANCE, totalFee);
-            }
+            throw new InsufficientNetworkFeeException(insufficientFeeResponseCode, totalFee);
         }
         if (offeredFee < totalFee) {
             throw new InsufficientServiceFeeException(INSUFFICIENT_TX_FEE, totalFee);
         }
+
         if (availableBalance < totalFee) {
-            if (ingestCheck) { // throw different exception for ingest
-                throw new InsufficientServiceFeeException(INSUFFICIENT_PAYER_BALANCE, totalFee);
-            } else {
-                throw new InsufficientServiceFeeException(INSUFFICIENT_ACCOUNT_BALANCE, totalFee);
-            }
+
+            throw new InsufficientServiceFeeException(insufficientFeeResponseCode, totalFee);
         }
 
         final long additionalCosts;
@@ -164,11 +164,7 @@ public class SolvencyPreCheck {
         if (availableBalance < totalFee + additionalCosts) {
             // FUTURE: This should be checked earlier
             expiryValidation.checkAccountExpiry(account);
-            if (ingestCheck) { // throw different exception for ingest
-                throw new InsufficientNonFeeDebitsException(INSUFFICIENT_PAYER_BALANCE, totalFee);
-            } else {
-                throw new InsufficientNonFeeDebitsException(INSUFFICIENT_ACCOUNT_BALANCE, totalFee);
-            }
+            throw new InsufficientNonFeeDebitsException(insufficientFeeResponseCode, totalFee);
         }
     }
 
