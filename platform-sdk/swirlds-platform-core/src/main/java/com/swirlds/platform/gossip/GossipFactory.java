@@ -29,8 +29,8 @@ import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.Crypto;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -67,7 +67,7 @@ public final class GossipFactory {
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
      * @param time                          the wall clock time
-     * @param crypto                        can be used to sign things
+     * @param keysAndCerts                  private keys and public certificates
      * @param notificationEngine            used to send notifications to the app
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
@@ -93,7 +93,7 @@ public final class GossipFactory {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull Crypto crypto,
+            @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final NotificationEngine notificationEngine,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
@@ -117,7 +117,7 @@ public final class GossipFactory {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
         Objects.requireNonNull(time);
-        Objects.requireNonNull(crypto);
+        Objects.requireNonNull(keysAndCerts);
         Objects.requireNonNull(notificationEngine);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
@@ -145,7 +145,7 @@ public final class GossipFactory {
                     platformContext,
                     threadManager,
                     time,
-                    crypto,
+                    keysAndCerts,
                     notificationEngine,
                     addressBook,
                     selfId,
@@ -171,7 +171,7 @@ public final class GossipFactory {
                         platformContext,
                         threadManager,
                         time,
-                        crypto,
+                        keysAndCerts,
                         addressBook,
                         selfId,
                         appVersion,
@@ -190,7 +190,7 @@ public final class GossipFactory {
                         platformContext,
                         threadManager,
                         time,
-                        crypto,
+                        keysAndCerts,
                         notificationEngine,
                         addressBook,
                         selfId,
