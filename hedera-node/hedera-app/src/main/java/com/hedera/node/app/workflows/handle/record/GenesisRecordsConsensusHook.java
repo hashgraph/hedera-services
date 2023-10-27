@@ -138,7 +138,7 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder, Conse
                 .toList();
         for (final Account key : orderedAccts) {
             final var recordBuilder =
-                    context.addPrecedingChildRecordBuilderForGenesis(GenesisAccountRecordBuilder.class);
+                    context.addUncheckedPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
             final var accountId = requireNonNull(key.accountId());
             recordBuilder.accountID(accountId);
             if (recordMemo != null) {

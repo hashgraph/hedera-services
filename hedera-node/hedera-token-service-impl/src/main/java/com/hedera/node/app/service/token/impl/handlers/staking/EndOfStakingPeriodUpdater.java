@@ -237,7 +237,7 @@ public class EndOfStakingPeriodUpdater {
         log.info("Exporting:\n{}", finalNodeStakes);
 
         final var nodeStakeUpdateBuilder =
-                context.addPrecedingChildRecordBuilderForGenesis(NodeStakeUpdateRecordBuilder.class);
+                context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
         nodeStakeUpdateBuilder.transaction(Transaction.newBuilder()
                 .body(syntheticNodeStakeUpdateTxn.build())
                 .build());
