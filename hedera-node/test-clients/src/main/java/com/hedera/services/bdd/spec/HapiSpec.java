@@ -72,6 +72,7 @@ import com.hedera.services.bdd.spec.utilops.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
+import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -179,6 +180,9 @@ public class HapiSpec implements Runnable {
 
     private final boolean onlySpecToRunInSuite;
     private final List<String> propertiesToPreserve;
+    // Make the STANDALONE_MONO_NETWORK the default target type since we have much fewer touch-points
+    // needed to re-target specs against a @HapiTest or CI Docker network than vice-versa
+    TargetNetworkType targetNetworkType = TargetNetworkType.STANDALONE_MONO_NETWORK;
     List<Payment> costs = new ArrayList<>();
     List<Payment> costSnapshot = Collections.emptyList();
     String name;
@@ -242,6 +246,15 @@ public class HapiSpec implements Runnable {
     public void incrementNumLedgerOps() {
         int newNumLedgerOps = numLedgerOpsExecuted.incrementAndGet();
         ledgerOpCountCallbacks.forEach(c -> c.accept(newNumLedgerOps));
+    }
+
+    public TargetNetworkType targetNetworkType() {
+        return targetNetworkType;
+    }
+
+    public HapiSpec setTargetNetworkType(TargetNetworkType targetNetworkType) {
+        this.targetNetworkType = targetNetworkType;
+        return this;
     }
 
     public synchronized void saveSingleAccountBalances(SingleAccountBalances sab) {
@@ -518,7 +531,7 @@ public class HapiSpec implements Runnable {
             });
         }
         if (status == PASSED) {
-            if (snapshotOp != null) {
+            if (snapshotOp != null && snapshotOp.hasWorkToDo()) {
                 uninterruptiblyTriggerAndCloseAtLeastOneFile(this);
                 try {
                     snapshotOp.finishLifecycle();
