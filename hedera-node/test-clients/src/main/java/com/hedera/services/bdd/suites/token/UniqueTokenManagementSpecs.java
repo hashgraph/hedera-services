@@ -828,7 +828,10 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                         tokenTransferList.getNftTransfersList().size());
                                 tokenTransferList.getNftTransfersList().forEach(nftTransfers -> {
                                     Assertions.assertEquals(
-                                            AccountID.getDefaultInstance(), nftTransfers.getSenderAccountID());
+                                            AccountID.newBuilder()
+                                                    .setAccountNum(0)
+                                                    .build(),
+                                            nftTransfers.getSenderAccountID());
                                     Assertions.assertEquals(
                                             TxnUtils.asId(TOKEN_TREASURY, spec), nftTransfers.getReceiverAccountID());
                                     Assertions.assertEquals(1L, nftTransfers.getSerialNumber());
