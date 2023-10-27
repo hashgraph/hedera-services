@@ -147,8 +147,7 @@ public class RandomOps extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 7L)));
     }
 
-    // Since the freeze tests all shut down the network, they can’t be part of the regular hapi test suite. It was
-    // decided to exclude them from the hapi suite.
+    // @todo('8687') Revisit once isolated tests are enabled
     private HapiSpec freezeDemo() {
         return customHapiSpec("FreezeDemo")
                 .withProperties(Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
