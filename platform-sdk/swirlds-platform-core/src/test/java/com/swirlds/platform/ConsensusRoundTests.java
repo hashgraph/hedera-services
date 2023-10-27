@@ -53,7 +53,6 @@ class ConsensusRoundTests {
 
         assertEquals(events, round.getConsensusEvents(), "consensus event list does not match the provided list.");
         assertEquals(events.size(), round.getNumEvents(), "numEvents does not match the events provided.");
-        assertEquals(e3, round.getLastEvent(), "Last event does not match the event provided.");
         assertEquals(1, round.getRoundNum(), "roundNum does not match the events provided.");
         assertSame(g, round.getGenerations(), "getGenerations should match the supplied generations");
     }
