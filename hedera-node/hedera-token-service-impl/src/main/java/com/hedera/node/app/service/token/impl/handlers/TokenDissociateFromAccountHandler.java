@@ -146,10 +146,10 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                     newBuilder.transfers(transferList.build());
                     final var tokenTransferList = TokenTransferList.newBuilder().token(token.tokenId());
                     final List<AccountAmount> aaList = new ArrayList<>();
-                        aaList.add(AccountAmount.newBuilder()
-                                .accountID(tokenRel.accountId())
-                                .amount(tokenRelBalance * -1)
-                                .build());
+                    aaList.add(AccountAmount.newBuilder()
+                            .accountID(tokenRel.accountId())
+                            .amount(tokenRelBalance * -1)
+                            .build());
                     tokenTransferList.transfers(aaList);
 
                     final ArrayList<TokenTransferList> newTokenTransferLists = new ArrayList<>();
