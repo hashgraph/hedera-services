@@ -33,10 +33,6 @@ public enum EventIntakePhase {
      */
     VALIDATING,
     /**
-     * Event-received dispatch is being performed
-     */
-    EVENT_RECEIVED_DISPATCH,
-    /**
      * Pre-consensus dispatch is being performed
      */
     PRECONSENSUS_DISPATCH,

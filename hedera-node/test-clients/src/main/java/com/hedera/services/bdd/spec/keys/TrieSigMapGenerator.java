@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -79,14 +80,18 @@ public class TrieSigMapGenerator implements SigMapGenerator {
 
     @Override
     public SignatureMap forPrimitiveSigs(final HapiSpec spec, final List<Map.Entry<byte[], byte[]>> keySigs) {
-        List<byte[]> keys = keySigs.stream().map(Map.Entry::getKey).collect(toList());
-        ByteTrie trie = new ByteTrie(keys);
+        Set<ByteString> keys = keySigs.stream()
+                .map(Map.Entry::getKey)
+                .map(ByteString::copyFrom)
+                .collect(Collectors.toSet());
+        ByteTrie trie = new ByteTrie(keys.stream().map(ByteString::toByteArray).collect(toList()));
 
         final Set<ByteString> alwaysFullPrefixes =
                 (fullPrefixKeys == null) ? Collections.emptySet() : fullPrefixSetFor(spec);
 
         final Function<byte[], byte[]> prefixCalc = getPrefixCalcFor(trie);
         return keySigs.stream()
+                .filter(keySig -> keySig.getValue().length > 0)
                 .map(keySig -> {
                     final var key = keySig.getKey();
                     final var wrappedKey = ByteString.copyFrom(key);

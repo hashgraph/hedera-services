@@ -689,6 +689,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             }
         }
         return new ConsensusRound(
+                addressBook,
                 consensusEvents,
                 recentEvents.get(recentEvents.size() - 1),
                 new Generations(this),

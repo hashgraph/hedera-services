@@ -43,6 +43,11 @@ import javax.inject.Singleton;
 
 @Singleton
 public class MockTransactionContext implements TransactionContext {
+    @Override
+    public boolean isSelfSubmitted() {
+        return false;
+    }
+
     private Instant now = Constructables.SOME_TIME;
 
     @Override

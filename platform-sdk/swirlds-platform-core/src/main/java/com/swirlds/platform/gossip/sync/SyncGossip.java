@@ -252,6 +252,7 @@ public class SyncGossip extends AbstractGossip {
                                             networkMetrics,
                                             time),
                                     new EmergencyReconnectProtocol(
+                                            time,
                                             threadManager,
                                             notificationEngine,
                                             otherId,

@@ -18,13 +18,13 @@ package com.swirlds.platform.internal;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
@@ -37,8 +37,6 @@ public class ConsensusRound implements Round {
     private final List<EventImpl> consensusEvents;
     /** the consensus generations when this round reached consensus */
     private final GraphGenerations generations;
-    /** the last event in the round */
-    private final EventImpl lastEvent;
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
     /** A snapshot of consensus at this consensus round */
@@ -47,33 +45,35 @@ public class ConsensusRound implements Round {
     private final EventImpl keystoneEvent;
 
     /**
-     * Create a new instance with the provided consensus info.
+     * The consensus roster for this round.
+     */
+    private final AddressBook consensusRoster;
+
+    /**
+     * Create a new instance with the provided consensus events.
      *
+     * @param consensusRoster the consensus roster for this round
      * @param consensusEvents the events in the round, in consensus order
      * @param keystoneEvent   the event that, when added to the hashgraph, caused this round to reach consensus
-     * @param generations the consensus generations for this round
-     * @param snapshot snapshot of consensus at this round
+     * @param generations     the consensus generations for this round
+     * @param snapshot        snapshot of consensus at this round
      */
     public ConsensusRound(
+            @NonNull final AddressBook consensusRoster,
             @NonNull final List<EventImpl> consensusEvents,
             @NonNull final EventImpl keystoneEvent,
             @NonNull final GraphGenerations generations,
             @NonNull final ConsensusSnapshot snapshot) {
-        Objects.requireNonNull(consensusEvents, "consensusEvents must not be null");
-        Objects.requireNonNull(keystoneEvent, "keystoneEvent must not be null");
-        Objects.requireNonNull(generations, "generations must not be null");
-        Objects.requireNonNull(snapshot, "snapshot must not be null");
 
-        this.consensusEvents = Collections.unmodifiableList(consensusEvents);
-        this.keystoneEvent = keystoneEvent;
-        this.generations = generations;
-        this.snapshot = snapshot;
+        this.consensusRoster = Objects.requireNonNull(consensusRoster);
+        this.consensusEvents = Collections.unmodifiableList(Objects.requireNonNull(consensusEvents));
+        this.keystoneEvent = Objects.requireNonNull(keystoneEvent);
+        this.generations = Objects.requireNonNull(generations);
+        this.snapshot = Objects.requireNonNull(snapshot);
 
         for (final EventImpl e : consensusEvents) {
             numAppTransactions += e.getNumAppTransactions();
         }
-
-        lastEvent = consensusEvents.isEmpty() ? null : consensusEvents.get(consensusEvents.size() - 1);
     }
 
     /**
@@ -141,17 +141,13 @@ public class ConsensusRound implements Round {
 
     /** {@inheritDoc} */
     @Override
-    public @NonNull Instant getConsensusTimestamp() {
-        return snapshot.consensusTimestamp();
+    @NonNull
+    public AddressBook getConsensusRoster() {
+        return consensusRoster;
     }
 
-    /**
-     * @return the last event of this round, or null if this round is not complete
-     * @deprecated a round might not have any events, the code should not expect this to be non-null
-     */
-    @Deprecated(forRemoval = true)
-    public @Nullable EventImpl getLastEvent() {
-        return lastEvent;
+    public @NonNull Instant getConsensusTimestamp() {
+        return snapshot.consensusTimestamp();
     }
 
     @Override
