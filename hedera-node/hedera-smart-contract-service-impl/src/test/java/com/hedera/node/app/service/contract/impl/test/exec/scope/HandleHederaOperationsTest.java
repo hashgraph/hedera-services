@@ -18,14 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_DURATION;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -37,9 +30,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
@@ -51,7 +42,6 @@ import com.hedera.node.app.service.contract.impl.state.WritableContractStateStor
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -82,9 +72,6 @@ class HandleHederaOperationsTest {
 
     @Mock
     private WritableContractStateStore stateStore;
-
-    @Mock
-    private CryptoCreateRecordBuilder cryptoCreateRecordBuilder;
 
     @Mock
     private ContractCreateRecordBuilder contractCreateRecordBuilder;
@@ -361,5 +348,23 @@ class HandleHederaOperationsTest {
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(tokenServiceApi.originalKvUsageFor(A_NEW_ACCOUNT_ID)).willReturn(123L);
         assertEquals(123L, subject.getOriginalSlotsUsed(A_NEW_ACCOUNT_ID.accountNumOrThrow()));
+    }
+
+    @Test
+    void externalizeHollowAccountMerge() {
+        // given
+        given(context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class))
+                .willReturn(contractCreateRecordBuilder);
+        given(contractCreateRecordBuilder.contractID(ContractID.DEFAULT)).willReturn(contractCreateRecordBuilder);
+        given(contractCreateRecordBuilder.transaction(any(Transaction.class))).willReturn(contractCreateRecordBuilder);
+        given(contractCreateRecordBuilder.contractCreateResult(any(ContractFunctionResult.class)))
+                .willReturn(contractCreateRecordBuilder);
+
+        // when
+        subject.externalizeHollowAccountMerge(ContractID.DEFAULT, VALID_CONTRACT_ADDRESS.evmAddress());
+
+        // then
+        verify(contractCreateRecordBuilder).contractID(ContractID.DEFAULT);
+        verify(contractCreateRecordBuilder).contractCreateResult(any(ContractFunctionResult.class));
     }
 }
