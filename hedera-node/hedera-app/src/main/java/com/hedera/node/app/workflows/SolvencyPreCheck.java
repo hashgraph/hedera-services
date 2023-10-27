@@ -111,7 +111,7 @@ public class SolvencyPreCheck {
      * @param txInfo the {@link TransactionInfo} to use during the check
      * @param account the {@link Account} with the balance to check
      * @param fees the fees to use for the check
-     * @param ingestCheck if true, the check is being performed during an ingest workflow. This is to match mono and pass HapiTest. Should reconsider later.ref #9550
+     * @param ingestCheck if true, the check is being performed during an ingest workflow.
      * @throws InsufficientBalanceException if the payer account cannot afford the fees. The exception will have a
      * status of {@code INSUFFICIENT_TX_FEE} and the fee amount that would have satisfied the check.
      */
@@ -119,7 +119,9 @@ public class SolvencyPreCheck {
             @NonNull final TransactionInfo txInfo,
             @NonNull final Account account,
             @NonNull final Fees fees,
-            boolean ingestCheck)
+            // This is to match mono and pass HapiTest. Should reconsider later.
+            // FUTURE ('#9550')
+            final boolean ingestCheck)
             throws PreCheckException {
         // Skip solvency check for privileged transactions or superusers
         if (authorizer.hasWaivedFees(txInfo.payerID(), txInfo.functionality(), txInfo.txBody())) {
@@ -134,9 +136,9 @@ public class SolvencyPreCheck {
         }
         if (availableBalance < fees.networkFee()) {
             if (ingestCheck) { // throw different exception for ingest
-                throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, totalFee);
+                throw new InsufficientNetworkFeeException(INSUFFICIENT_PAYER_BALANCE, totalFee);
             } else {
-                throw new InsufficientNonFeeDebitsException(INSUFFICIENT_ACCOUNT_BALANCE, totalFee);
+                throw new InsufficientNetworkFeeException(INSUFFICIENT_ACCOUNT_BALANCE, totalFee);
             }
         }
         if (offeredFee < totalFee) {
@@ -144,9 +146,9 @@ public class SolvencyPreCheck {
         }
         if (availableBalance < totalFee) {
             if (ingestCheck) { // throw different exception for ingest
-                throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, totalFee);
+                throw new InsufficientServiceFeeException(INSUFFICIENT_PAYER_BALANCE, totalFee);
             } else {
-                throw new InsufficientNonFeeDebitsException(INSUFFICIENT_ACCOUNT_BALANCE, totalFee);
+                throw new InsufficientServiceFeeException(INSUFFICIENT_ACCOUNT_BALANCE, totalFee);
             }
         }
 
@@ -163,7 +165,7 @@ public class SolvencyPreCheck {
             // FUTURE: This should be checked earlier
             expiryValidation.checkAccountExpiry(account);
             if (ingestCheck) { // throw different exception for ingest
-                throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, totalFee);
+                throw new InsufficientNonFeeDebitsException(INSUFFICIENT_PAYER_BALANCE, totalFee);
             } else {
                 throw new InsufficientNonFeeDebitsException(INSUFFICIENT_ACCOUNT_BALANCE, totalFee);
             }
