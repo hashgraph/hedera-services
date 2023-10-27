@@ -72,9 +72,8 @@ public class RandomOps extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
-            //						freezeDemo(),
-            //						retryLimitDemo()
-            //						execTimesDemo(),
+            freezeDemo(),
+            retryLimitDemo(),
             getAccountDetailsDemo()
         });
     }
@@ -152,53 +151,7 @@ public class RandomOps extends HapiSuite {
                                 .hasCostAnswerPrecheck(NOT_SUPPORTED));
     }
 
-    private HapiSpec execTimesDemo() {
-        final var cryptoTransfer = "cryptoTransfer";
-        final var submitMessage = "submitMessage";
-        final var contractCall = "contractCall";
-
-        final var humbleUser = "aamAdmi";
-        final var topic = "ofGeneralInterest";
-        final var contract = "Multipurpose";
-
-        return defaultHapiSpec("execTimesDemo")
-                .given(
-                        inParallel(IntStream.range(0, 1000)
-                                .mapToObj(i -> cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
-                                        .deferStatusResolution()
-                                        .noLogging())
-                                .toArray(HapiSpecOperation[]::new)),
-                        sleepFor(5_000),
-                        cryptoCreate(humbleUser).balance(ONE_HUNDRED_HBARS),
-                        createTopic(topic),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
-                                .payingWith(GENESIS)
-                                .via(cryptoTransfer),
-                        submitMessageTo(topic).message(randomUppercase(256)).via(submitMessage),
-                        contractCall(contract).sending(ONE_HBAR).via(contractCall))
-                .then(
-                        /* NetworkGetExecutionTime requires superuser payer */
-                        getExecTime(cryptoTransfer, submitMessage, contractCall)
-                                .payingWith(GENESIS)
-                                .hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID),
-                        /* Uncomment to validate failure message */
-                        //								.assertingNoneLongerThan(1, ChronoUnit.MILLIS)
-                        //								.logged(),
-                        getExecTimeNoPayment(cryptoTransfer, submitMessage, contractCall)
-                                .payingWith(GENESIS)
-                                .hasCostAnswerPrecheck(NOT_SUPPORTED),
-                        getExecTime(cryptoTransfer, submitMessage, contractCall)
-                                .payingWith(humbleUser)
-                                .hasCostAnswerPrecheck(NOT_SUPPORTED)
-                                .hasAnswerOnlyPrecheck(NOT_SUPPORTED),
-                        getExecTimeNoPayment(cryptoTransfer, submitMessage, contractCall)
-                                .payingWith(humbleUser)
-                                .hasCostAnswerPrecheck(NOT_SUPPORTED));
-    }
-
+    @HapiTest
     private HapiSpec retryLimitDemo() {
         return defaultHapiSpec("RetryLimitDemo")
                 .given()
@@ -211,6 +164,7 @@ public class RandomOps extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 7L)));
     }
 
+    // Since the freeze tests all shut down the network, they can’t be part of the regular hapi test suite. It was decided to exclude them from the hapi suite.
     private HapiSpec freezeDemo() {
         return customHapiSpec("FreezeDemo")
                 .withProperties(Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
