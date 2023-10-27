@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 public class TxnAwareHandleThrottling implements FunctionalityThrottling {
@@ -32,6 +33,11 @@ public class TxnAwareHandleThrottling implements FunctionalityThrottling {
     public TxnAwareHandleThrottling(TransactionContext txnCtx, TimedFunctionalityThrottling delegate) {
         this.txnCtx = txnCtx;
         this.delegate = delegate;
+    }
+
+    @Override
+    public void leakCapacityForNOfUnscaled(final int n, @NonNull final HederaFunctionality function) {
+        delegate.leakCapacityForNOfUnscaled(n, function);
     }
 
     @Override

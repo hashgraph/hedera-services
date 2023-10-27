@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferLis
 import static java.util.function.Function.identity;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -69,6 +70,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                 contractDeleteRecordSanityChecks());
     }
 
+    @HapiTest
     private HapiSpec contractDeleteRecordSanityChecks() {
         return defaultHapiSpec("ContractDeleteRecordSanityChecks")
                 .given(flattened(

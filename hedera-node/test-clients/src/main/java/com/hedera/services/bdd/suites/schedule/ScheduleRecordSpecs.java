@@ -274,9 +274,11 @@ public class ScheduleRecordSpecs extends HapiSuite {
                 .then(cryptoCreate("nope").txnId("withScheduled").hasPrecheck(TRANSACTION_ID_FIELD_NOT_ALLOWED));
     }
 
+    @HapiTest
     public HapiSpec executionTimeIsAvailable() {
         return defaultHapiSpec("ExecutionTimeIsAvailable")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
                         cryptoCreate(PAYER),
                         cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L))
                 .when(
@@ -291,9 +293,11 @@ public class ScheduleRecordSpecs extends HapiSuite {
                 .then(getScheduleInfo("tb").logged().wasExecutedBy(TRIGGER));
     }
 
+    @HapiTest
     public HapiSpec deletionTimeIsAvailable() {
         return defaultHapiSpec("DeletionTimeIsAvailable")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
                         newKeyNamed(ADMIN),
                         cryptoCreate(PAYER),
                         cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L))
@@ -312,6 +316,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     public HapiSpec allRecordsAreQueryable() {
         return defaultHapiSpec("AllRecordsAreQueryable")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
                         cryptoCreate(PAYER),
                         cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L))
                 .when(

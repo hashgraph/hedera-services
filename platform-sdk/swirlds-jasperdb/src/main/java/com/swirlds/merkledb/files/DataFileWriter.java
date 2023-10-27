@@ -109,7 +109,8 @@ public final class DataFileWriter<D> {
             final Path dataFileDir,
             final int index,
             final DataItemSerializer<D> dataItemSerializer,
-            final Instant creationTime)
+            final Instant creationTime,
+            final int compactionLevel)
             throws IOException {
         this.index = index;
         this.dataItemSerializer = dataItemSerializer;
@@ -121,7 +122,8 @@ public final class DataFileWriter<D> {
                 0, // data item count will be updated later in finishWriting()
                 index,
                 creationInstant,
-                dataItemSerializer.getCurrentDataVersion());
+                dataItemSerializer.getCurrentDataVersion(),
+                compactionLevel);
         Files.createFile(path);
         moveMmapBuffer(0);
     }

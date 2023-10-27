@@ -18,9 +18,11 @@ package contract;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static contract.XTestConstants.AN_ED25519_KEY;
 import static contract.XTestConstants.ERC20_TOKEN_ADDRESS;
 import static contract.XTestConstants.ERC20_TOKEN_ID;
+import static contract.XTestConstants.INVALID_TOKEN_ADDRESS;
 import static contract.XTestConstants.OWNER_ID;
 import static contract.XTestConstants.SENDER_ADDRESS;
 import static contract.XTestConstants.SENDER_BESU_ADDRESS;
@@ -97,6 +99,17 @@ public class UpdatesExpiryXTest extends AbstractContractXTest {
                         .array()),
                 output -> assertEquals(
                         Bytes.wrap(ReturnTypes.encodedRc(INVALID_RENEWAL_PERIOD).array()), output));
+
+        // should fail when token has invalid address
+        runHtsCallAndExpectOnSuccess(
+                SENDER_BESU_ADDRESS,
+                Bytes.wrap(UpdateExpiryTranslator.UPDATE_TOKEN_EXPIRY_INFO_V1
+                        .encodeCallWithArgs(
+                                INVALID_TOKEN_ADDRESS,
+                                Tuple.of(EXPIRY_TIMESTAMP, SENDER_HEADLONG_ADDRESS, AUTO_RENEW_PERIOD))
+                        .array()),
+                output -> assertEquals(
+                        Bytes.wrap(ReturnTypes.encodedRc(INVALID_TOKEN_ID).array()), output));
     }
 
     @Override
