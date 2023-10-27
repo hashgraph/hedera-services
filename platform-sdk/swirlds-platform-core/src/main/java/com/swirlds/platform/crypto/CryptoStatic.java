@@ -37,7 +37,6 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.Utilities;
-import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileInputStream;
@@ -406,8 +405,7 @@ public final class CryptoStatic {
      * 		if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
      */
     @NonNull
-    static Map<NodeId, KeysAndCerts> generateKeysAndCerts(
-            @NonNull final AddressBook addressBook)
+    static Map<NodeId, KeysAndCerts> generateKeysAndCerts(@NonNull final AddressBook addressBook)
             throws ExecutionException, InterruptedException, KeyStoreException {
         Objects.requireNonNull(addressBook, "addressBook must not be null");
 
@@ -418,8 +416,8 @@ public final class CryptoStatic {
 
         final int n = addressBook.getSize();
         final Map<NodeId, Future<KeysAndCerts>> futures = new HashMap<>(n);
-        final ExecutorService threadPool = Executors.newCachedThreadPool(
-                new ThreadConfiguration(getStaticThreadManager())
+        final ExecutorService threadPool =
+                Executors.newCachedThreadPool(new ThreadConfiguration(getStaticThreadManager())
                         .setComponent("browser")
                         .setThreadName("crypto-generate")
                         .setDaemon(false)
