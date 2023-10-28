@@ -100,6 +100,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 import java.util.Optional;
@@ -190,6 +191,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 /* -- HTS auto creates -- */
                 canAutoCreateWithFungibleTokenTransfersToAlias(),
                 multipleTokenTransfersSucceed(),
+                canAutoCreateWithNftTransferToEvmAddress(),
                 canAutoCreateWithNftTransfersToAlias(),
                 autoCreateWithNftFallBackFeeFails(),
                 repeatedAliasInSameTransferListFails(),
@@ -362,6 +364,51 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .signedBy(SPONSOR, VALID_ALIAS)
                                 .logged(),
                         getAliasedAccountInfo(VALID_ALIAS).hasOwnedNfts(2));
+    }
+
+    @HapiTest
+    private HapiSpec canAutoCreateWithNftTransferToEvmAddress() {
+        final var civilianBal = 10 * ONE_HBAR;
+        final var nftTransfer = "multiNftTransfer";
+        final AtomicReference<Timestamp> parentConsTime = new AtomicReference<>();
+
+        return defaultHapiSpec("canAutoCreateWithNftTransferToEvmAddress")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(VALID_ALIAS).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
+                        tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .via(NFT_CREATE),
+                        mintToken(NFT_INFINITE_SUPPLY_TOKEN, List.of(ByteString.copyFromUtf8("a"))),
+                        cryptoCreate(CIVILIAN).balance(civilianBal))
+                .when(
+                        tokenAssociate(CIVILIAN, NFT_INFINITE_SUPPLY_TOKEN),
+                        cryptoTransfer(
+                                movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L).between(TOKEN_TREASURY, CIVILIAN)),
+                        getAccountInfo(CIVILIAN)
+                                .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN))
+                                .has(accountWith().balance(civilianBal)),
+                        cryptoTransfer(movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1)
+                                        .between(CIVILIAN, VALID_ALIAS))
+                                .via(nftTransfer)
+                                .payingWith(CIVILIAN)
+                                .signedBy(CIVILIAN, VALID_ALIAS))
+                .then(
+                        getTxnRecord(nftTransfer)
+                                .exposingTo(record -> parentConsTime.set(record.getConsensusTimestamp()))
+                                .andAllChildRecords()
+                                .hasNonStakingChildRecordCount(1)
+                                .logged(),
+                        sourcing(() -> childRecordsCheck(
+                                nftTransfer,
+                                SUCCESS,
+                                recordWith().status(SUCCESS).consensusTimeImpliedByNonce(parentConsTime.get(), -1))));
     }
 
     private HapiSpec canAutoCreateWithNftTransfersToAlias() {
