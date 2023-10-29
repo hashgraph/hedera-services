@@ -80,7 +80,7 @@ public final class StartupStateUtils {
             final long initialStateRound) {
 
         final Scratchpad<RecoveryScratchpad> recoveryScratchpad =
-                new Scratchpad<>(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
+                Scratchpad.create(platformContext, selfId, RecoveryScratchpad.class, RecoveryScratchpad.SCRATCHPAD_ID);
         recoveryScratchpad.logContents();
 
         final Hash previousEpoch = recoveryScratchpad.get(RecoveryScratchpad.EPOCH_HASH);

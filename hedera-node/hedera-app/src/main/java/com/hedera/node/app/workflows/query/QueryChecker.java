@@ -152,19 +152,23 @@ public class QueryChecker {
                 }
 
                 // The balance only needs to be checked for sent amounts (= negative values)
-                if (amount < 0 && (account.tinybarBalance() - transferTxnFee) < -amount) {
+                if (amount < 0 && (account.tinybarBalance()) < -amount) {
                     // FUTURE: Expiry should probably be checked earlier
                     expiryValidation.checkAccountExpiry(account);
                     throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, transferTxnFee);
                 }
 
                 // Make sure the node receives enough
-                if (amount >= 0 && nodeAccountID.equals(transfer.accountIDOrThrow())) {
+                if (amount >= 0 && nodeAccountID.equals(accountID)) {
                     nodeReceivesSome = true;
                     if (amount < nodePayment) {
                         throw new InsufficientBalanceException(INSUFFICIENT_TX_FEE, nodePayment);
                     }
                 }
+            }
+            // this will happen just if it is a payer
+            else if (amount < 0 && (payer.tinybarBalance() - transferTxnFee) < -amount) {
+                throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, transferTxnFee);
             }
         }
 
@@ -207,7 +211,14 @@ public class QueryChecker {
             @NonNull final Key payerKey,
             @NonNull final Configuration configuration) {
         final var feeContext = new FeeContextImpl(
-                consensusTime, transactionInfo, payerKey, feeManager, storeFactory, configuration, authorizer);
+                consensusTime,
+                transactionInfo,
+                payerKey,
+                transactionInfo.payerID(),
+                feeManager,
+                storeFactory,
+                configuration,
+                authorizer);
         return cryptoTransferHandler.calculateFees(feeContext).totalFee();
     }
 }

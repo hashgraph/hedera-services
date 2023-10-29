@@ -22,17 +22,7 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.crypto.SignatureType;
 import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.Security;
-import java.security.Signature;
-import java.security.SignatureException;
+import java.security.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1InputStream;
@@ -99,6 +89,11 @@ public abstract class ECSigningAlgorithm implements SigningAlgorithm {
     private boolean algorithmAvailable;
 
     /**
+     * The internal keccak-256 digest instance used to hash the data to be signed.
+     */
+    private MessageDigest keccakDigest;
+
+    /**
      * Constructs a new instance that supports the supplied {@link SignatureType} algorithm.
      *
      * @param signatureType
@@ -134,8 +129,9 @@ public abstract class ECSigningAlgorithm implements SigningAlgorithm {
     @Override
     public byte[] sign(final byte[] buffer, final int offset, final int len) throws SignatureException {
         try {
+            final byte[] dataHash = keccak256(buffer, offset, len);
             signature.initSign(keyPair.getPrivate(), random);
-            signature.update(buffer, offset, len);
+            signature.update(dataHash, 0, dataHash.length);
             return processSignature(signature.sign());
         } catch (InvalidKeyException | IOException e) {
             throw new SignatureException(e);
@@ -148,14 +144,23 @@ public abstract class ECSigningAlgorithm implements SigningAlgorithm {
     @Override
     public ExtendedSignature signEx(final byte[] buffer, final int offset, final int len) throws SignatureException {
         try {
+            final byte[] dataHash = keccak256(buffer, offset, len);
             signature.initSign(keyPair.getPrivate(), random);
-            signature.update(buffer, offset, len);
+            signature.update(dataHash, 0, dataHash.length);
             final byte[] sig = signature.sign();
 
             return new ExtendedSignature(processSignature(sig), rawSignatureRCoord(sig), rawSignatureSCoord(sig));
         } catch (InvalidKeyException | IOException e) {
             throw new SignatureException(e);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public synchronized byte[] hash(final byte[] buffer, final int offset, final int len) {
+        return keccak256(buffer, offset, len);
     }
 
     /**
@@ -182,6 +187,7 @@ public abstract class ECSigningAlgorithm implements SigningAlgorithm {
                     hex(rawPublicKeyYCoord(keyPair.getPublic())));
 
             signature = Signature.getInstance(signatureType.signingAlgorithm(), signatureType.provider());
+            keccakDigest = MessageDigest.getInstance("KECCAK-256");
             algorithmAvailable = true;
         } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException | NoSuchProviderException e) {
             logger.error(
@@ -341,5 +347,11 @@ public abstract class ECSigningAlgorithm implements SigningAlgorithm {
         System.arraycopy(rawY, srcStartY, rawComposite, dstStartY, lenY);
 
         return rawComposite;
+    }
+
+    protected byte[] keccak256(final byte[] buffer, final int offset, final int len) {
+        keccakDigest.reset();
+        keccakDigest.update(buffer, offset, len);
+        return keccakDigest.digest();
     }
 }

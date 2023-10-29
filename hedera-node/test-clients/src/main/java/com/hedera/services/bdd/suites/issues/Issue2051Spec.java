@@ -24,9 +24,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -83,25 +85,28 @@ public class Issue2051Spec extends HapiSuite {
                                 .transfer(TRANSFER)
                                 .hasKnownStatus(ACCOUNT_DELETED),
                         getTxnRecord(DELETE_TXN).logged(),
-                        getAccountBalance(PAYER).hasTinyBars(approxChangeFromSnapshot(SNAPSHOT, -9295610, 1000)));
+                        getAccountBalance(PAYER).hasTinyBars(approxChangeFromSnapshot(SNAPSHOT, -9384399, 1000)));
     }
 
     private HapiSpec transferAccountCannotBeDeletedForContractTarget() {
         return defaultHapiSpec("TransferAccountCannotBeDeletedForContractTarget")
-                .given(cryptoCreate(TRANSFER), contractCreate("tbd"), contractCreate(TRANSFER_CONTRACT))
-                .when(cryptoDelete(TRANSFER), contractDelete(TRANSFER_CONTRACT))
+                .given(
+                        uploadInitCode("CreateTrivial"),
+                        uploadInitCode("PayReceivable"),
+                        cryptoCreate(TRANSFER),
+                        contractCreate("CreateTrivial"),
+                        contractCreate("PayReceivable"))
+                .when(cryptoDelete(TRANSFER), contractDelete("PayReceivable"))
                 .then(
                         balanceSnapshot(SNAPSHOT, GENESIS),
-                        contractDelete("tbd")
+                        contractDelete("CreateTrivial")
                                 .via(DELETE_TXN)
                                 .transferAccount(TRANSFER)
-                                .hasKnownStatus(ACCOUNT_DELETED),
-                        contractDelete("tbd")
+                                .hasKnownStatus(OBTAINER_DOES_NOT_EXIST),
+                        contractDelete("CreateTrivial")
                                 .via(DELETE_TXN)
-                                .transferContract(TRANSFER_CONTRACT)
-                                .hasKnownStatus(CONTRACT_DELETED),
-                        getTxnRecord(DELETE_TXN).logged(),
-                        getAccountBalance(GENESIS).hasTinyBars(approxChangeFromSnapshot(SNAPSHOT, -18985232, 1000)));
+                                .transferContract("PayReceivable")
+                                .hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
     @Override

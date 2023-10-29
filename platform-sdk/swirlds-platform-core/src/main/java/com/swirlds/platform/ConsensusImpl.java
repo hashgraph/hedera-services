@@ -18,6 +18,7 @@ package com.swirlds.platform;
 
 import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
 import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_NUMBER;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.system.NodeId;
@@ -161,7 +162,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * Number of events that have reached consensus order. This is used for setting consensus order
      * numbers in events, so it must be part of the signed state.
      */
-    private long numConsensus = 0;
+    private long numConsensus = FIRST_CONSENSUS_NUMBER;
 
     /**
      * The last consensus timestamp. This is equal to the consensus time of the last transaction in
@@ -688,6 +689,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             }
         }
         return new ConsensusRound(
+                addressBook,
                 consensusEvents,
                 recentEvents.get(recentEvents.size() - 1),
                 new Generations(this),

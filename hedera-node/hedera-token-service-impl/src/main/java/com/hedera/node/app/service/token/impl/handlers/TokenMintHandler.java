@@ -134,6 +134,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         }
 
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
+
+            validateTrue(op.amount() >= 0 && op.metadata().isEmpty(), INVALID_TOKEN_MINT_AMOUNT);
             // we need to know if treasury mint while creation to ignore supply key exist or not.
             long newTotalSupply =
                     mintFungible(token, treasuryRel, op.amount(), false, accountStore, tokenStore, tokenRelStore);
@@ -282,14 +284,10 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var op = feeContext.body().tokenMintOrThrow();
-        final var readableTokenStore = feeContext.readableStore(ReadableTokenStore.class);
-        final var tokenType = readableTokenStore.get(op.tokenOrThrow()).tokenType();
-        final var subType = tokenType == TokenType.FUNGIBLE_COMMON
-                ? SubType.TOKEN_FUNGIBLE_COMMON
-                : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+        final var subType = op.amount() > 0 ? SubType.TOKEN_FUNGIBLE_COMMON : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
         final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
-        final var payerId = feeContext.body().transactionIDOrThrow().accountIDOrThrow();
+        final var payerId = feeContext.payer();
         final var payerKey = readableAccountStore.getAccountById(payerId).keyOrThrow();
 
         final var calculator = feeContext.feeCalculator(subType);

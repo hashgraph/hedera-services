@@ -525,6 +525,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
         return testIndirectApprovalWith("DelegatePrecompileCallee", DELEGATE_PRECOMPILE_CALLEE, false);
     }
 
+    @HapiTest
     private HapiSpec testIndirectApprovalWithDirectPrecompileCallee() {
         return testIndirectApprovalWith("DirectPrecompileCallee", DIRECT_PRECOMPILE_CALLEE, true);
     }
@@ -534,6 +535,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
         return testIndirectApprovalWith("DelegateErc20Callee", DELEGATE_ERC_CALLEE, false);
     }
 
+    @HapiTest
     private HapiSpec testIndirectApprovalWithDirectErc20Callee() {
         return testIndirectApprovalWith("DirectErc20Callee", DIRECT_ERC_CALLEE, true);
     }

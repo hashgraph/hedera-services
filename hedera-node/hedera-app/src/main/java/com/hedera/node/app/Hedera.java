@@ -187,7 +187,7 @@ public final class Hedera implements SwirldMain {
     public static final String APP_NAME = "com.hedera.services.ServicesMain";
 
     /**
-     * The swirld name. Currently there is only one swirld.
+     * The swirld name. Currently, there is only one swirld.
      */
     public static final String SWIRLD_NAME = "123";
 

@@ -279,4 +279,9 @@ public interface HederaWorldUpdater extends WorldUpdater {
      */
     @NonNull
     ExchangeRate currentExchangeRate();
+
+    /**
+     * Revert child records.
+     */
+    void revertChildRecords();
 }

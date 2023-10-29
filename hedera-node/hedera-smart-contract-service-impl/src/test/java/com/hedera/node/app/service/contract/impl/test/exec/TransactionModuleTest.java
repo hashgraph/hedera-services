@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec;
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_CALL_DATA;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -26,11 +27,15 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
+import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
+import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
@@ -41,6 +46,7 @@ import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -58,6 +64,12 @@ class TransactionModuleTest {
 
     @Mock
     private AttributeValidator attributeValidator;
+
+    @Mock
+    private TinybarValues tinybarValues;
+
+    @Mock
+    private CanonicalDispatchPrices canonicalDispatchPrices;
 
     @Mock
     private ExpiryValidator expiryValidator;
@@ -130,6 +142,26 @@ class TransactionModuleTest {
         given(context.body()).willReturn(body);
         assertNull(
                 TransactionModule.maybeProvideHydratedEthTxData(context, hydration, DEFAULT_HEDERA_CONFIG, fileStore));
+    }
+
+    @Test
+    void providesSystemGasContractCalculator() {
+        // Given a transaction-specific dispatch cost of 6 tinycent...
+        given(context.dispatchComputeFees(TransactionBody.DEFAULT, AccountID.DEFAULT))
+                .willReturn(new Fees(1, 2, 3));
+        // But a canonical price of 66 tinycents for an approve call (which, being
+        // greater than the above 6 tinycents, is the effective price)...
+        given(canonicalDispatchPrices.canonicalPriceInTinycents(DispatchType.APPROVE))
+                .willReturn(66L);
+        // And a converstion rate of 7 tinybar per 66 tinycents...
+        given(tinybarValues.asTinybars(66L)).willReturn(7L);
+        // With each gas costing 2 tinybar...
+        given(tinybarValues.childTransactionTinybarGasPrice()).willReturn(2L);
+        final var calculator =
+                TransactionModule.provideSystemContractGasCalculator(context, canonicalDispatchPrices, tinybarValues);
+        final var result = calculator.gasRequirement(TransactionBody.DEFAULT, DispatchType.APPROVE, AccountID.DEFAULT);
+        // Expect the result to be ceil(7 tinybar / 2 tinybar per gas) = 4 gas.
+        assertEquals(4L, result);
     }
 
     @Test

@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.issues;
 
-import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -24,11 +23,8 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
@@ -43,7 +39,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class Issue1765Suite extends HapiSuite {
@@ -75,36 +70,6 @@ public class Issue1765Suite extends HapiSuite {
                 .given()
                 .when()
                 .then(getAccountBalance("0.0.950").logged());
-    }
-
-    @HapiTest
-    @Disabled("Failing or intermittently failing HAPI Test")
-    private static HapiSpec recordOfInvalidAccountTransferSanityChecks() {
-        final String INVALID_ACCOUNT = IMAGINARY;
-
-        return defaultHapiSpec("RecordOfInvalidAccountTransferSanityChecks")
-                .given(flattened(
-                        withOpContext(
-                                (spec, ctxLog) -> spec.registry().saveAccountId(INVALID_ACCOUNT, asAccount(ACCOUNT))),
-                        takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
-                .when(cryptoTransfer(tinyBarsFromTo(GENESIS, INVALID_ACCOUNT, 1L)))
-                .then();
-    }
-
-    @HapiTest
-    @Disabled("Failing or intermittently failing HAPI Test")
-    private static HapiSpec recordOfInvalidAccountUpdateSanityChecks() {
-        final String INVALID_ACCOUNT = IMAGINARY;
-
-        return defaultHapiSpec("RecordOfInvalidAccountSanityChecks")
-                .given(flattened(
-                        withOpContext(
-                                (spec, ctxLog) -> spec.registry().saveAccountId(INVALID_ACCOUNT, asAccount(ACCOUNT))),
-                        newKeyNamed(INVALID_ACCOUNT),
-                        newKeyNamed("irrelevant"),
-                        takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
-                .when(cryptoUpdate(INVALID_ACCOUNT).key("irrelevant"))
-                .then();
     }
 
     @HapiTest
@@ -140,14 +105,15 @@ public class Issue1765Suite extends HapiSuite {
                 .given(flattened(
                         withOpContext((spec, ctxLog) -> spec.registry().saveFileId(INVALID_FILE, asFile("0.0.0"))),
                         newKeyNamed(INVALID_FILE).type(KeyFactory.KeyType.LIST),
-                        takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
+                        takeBalanceSnapshots(FUNDING, GENESIS, STAKING_REWARD, NODE)))
                 .when(fileUpdate(INVALID_FILE)
                         .memo(THE_MEMO_IS)
                         .fee(ADEQUATE_FEE)
                         .via(INVALID_UPDATE_TXN)
                         .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID))
                 .then(
-                        validateTransferListForBalances(INVALID_UPDATE_TXN, List.of(FUNDING, GENESIS, NODE)),
+                        validateTransferListForBalances(
+                                INVALID_UPDATE_TXN, List.of(FUNDING, GENESIS, STAKING_REWARD, NODE)),
                         getTxnRecord(INVALID_UPDATE_TXN)
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
@@ -162,7 +128,7 @@ public class Issue1765Suite extends HapiSuite {
                 .given(flattened(
                         withOpContext((spec, ctxLog) -> spec.registry().saveFileId(INVALID_FILE, asFile("0.0.0"))),
                         newKeyNamed(INVALID_FILE).type(KeyFactory.KeyType.LIST),
-                        takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
+                        takeBalanceSnapshots(FUNDING, GENESIS, STAKING_REWARD, NODE)))
                 .when(fileAppend(INVALID_FILE)
                         .memo(THE_MEMO_IS)
                         .content("Some more content.")
@@ -170,7 +136,8 @@ public class Issue1765Suite extends HapiSuite {
                         .via(INVALID_APPEND_TXN)
                         .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID))
                 .then(
-                        validateTransferListForBalances(INVALID_APPEND_TXN, List.of(FUNDING, GENESIS, NODE)),
+                        validateTransferListForBalances(
+                                INVALID_APPEND_TXN, List.of(FUNDING, GENESIS, STAKING_REWARD, NODE)),
                         getTxnRecord(INVALID_APPEND_TXN)
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }

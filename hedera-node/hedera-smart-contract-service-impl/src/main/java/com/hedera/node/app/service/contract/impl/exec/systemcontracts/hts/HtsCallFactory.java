@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.systemContractGasCalculatorOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
@@ -71,6 +72,7 @@ public class HtsCallFactory {
                 configOf(frame),
                 syntheticIds.converterFor(enhancement.nativeOperations()),
                 verificationStrategies,
+                systemContractGasCalculatorOf(frame),
                 callTranslators,
                 frame.isStatic());
         return requireNonNull(attempt.asExecutableCall());
