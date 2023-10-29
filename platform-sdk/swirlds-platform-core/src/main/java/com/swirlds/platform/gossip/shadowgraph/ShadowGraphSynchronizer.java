@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.SYNC_INFO;
-
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -48,8 +45,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * The goal of the ShadowGraphSynchronizer is to compare graphs with a remote node, and update them so both sides have
@@ -60,7 +55,9 @@ import org.apache.logging.log4j.Logger;
  * local.
  */
 public class ShadowGraphSynchronizer {
-    private static final Logger logger = LogManager.getLogger(ShadowGraphSynchronizer.class);
+
+    // TODO nullity annotations
+    // TODO finish javadocs
 
     /**
      * The shadow graph manager to use for this sync
@@ -155,8 +152,6 @@ public class ShadowGraphSynchronizer {
                 intakeQueue.put(event);
             } catch (final InterruptedException e) {
                 // should never happen, and we don't have a simple way of recovering from it
-                logger.error(
-                        EXCEPTION.getMarker(), "CRITICAL ERROR, adding intakeTask to the event intake queue failed", e);
                 Thread.currentThread().interrupt();
             }
         };
@@ -222,33 +217,12 @@ public class ShadowGraphSynchronizer {
         return knownTips;
     }
 
-    // TODO remove all the unneeded log messages
-
     /**
-     * Synchronize with a remote node using the supplied connection
+     * Executes a sync using the supplied connection.
      *
-     * @param connection the connection to sync through
-     * @return true iff a sync was (a) accepted, and (b) completed, including exchange of event data
-     * @throws IOException                if any problem occurs with the connection
-     * @throws ParallelExecutionException if issue occurs while executing tasks in parallel
-     * @throws SyncException              if any sync protocol issues occur
-     * @throws InterruptedException       if the calling thread gets interrupted while the sync is ongoing
+     * @param connection the connection to use
      */
     public boolean synchronize(final Connection connection)
-            throws IOException, ParallelExecutionException, SyncException, InterruptedException {
-        logger.info(SYNC_INFO.getMarker(), "{} sync start", connection.getDescription());
-        try {
-            return reserveSynchronize(connection);
-        } finally {
-            logger.info(SYNC_INFO.getMarker(), "{} sync end", connection.getDescription());
-        }
-    }
-
-    /**
-     * Executes a sync using the supplied connection. This method contains all the logic while
-     * {@link #synchronize(Connection)} is just for exception handling.
-     */
-    private boolean reserveSynchronize(final Connection connection)
             throws IOException, ParallelExecutionException, SyncException, InterruptedException {
         // accumulates time points for each step in the execution of a single gossip session, used for stats
         // reporting and performance analysis
@@ -277,7 +251,6 @@ public class ShadowGraphSynchronizer {
             timing.setTimePoint(1);
 
             if (theirTipsAndGenerations.isSyncRejected()) {
-                logger.info(SYNC_INFO.getMarker(), "{} sync rejected by other", connection.getDescription());
                 // null means the sync was rejected
                 return false;
             }
@@ -343,7 +316,6 @@ public class ShadowGraphSynchronizer {
         }
 
         if (status != SyncFallenBehindStatus.NONE_FALLEN_BEHIND) {
-            logger.info(SYNC_INFO.getMarker(), "{} aborting sync due to {}", connection.getDescription(), status);
             return true; // abort the sync
         }
         return false;
@@ -389,9 +361,9 @@ public class ShadowGraphSynchronizer {
     /**
      * Executes phase 3 of a sync
      *
-     * @param connection     the connection to use
-     * @param timing   metrics that track sync timing
-     * @param sendList the events to send
+     * @param connection the connection to use
+     * @param timing     metrics that track sync timing
+     * @param sendList   the events to send
      * @return true if the phase was successful, false if it was aborted
      * @throws ParallelExecutionException if anything goes wrong
      */
@@ -404,24 +376,13 @@ public class ShadowGraphSynchronizer {
         // the writer will set it to true if writing is aborted
         final AtomicBoolean writeAborted = new AtomicBoolean(false);
         final Integer eventsRead = readWriteParallel(
-                SyncComms.phase3Read(connection, eventHandler, syncMetrics, eventReadingDone, intakeEventCounter),
-                SyncComms.phase3Write(connection, sendList, eventReadingDone, writeAborted),
+                SyncComms.readEventsINeed(connection, eventHandler, syncMetrics, eventReadingDone, intakeEventCounter),
+                SyncComms.sendEventsTheyNeed(connection, sendList, eventReadingDone, writeAborted),
                 connection);
         if (eventsRead < 0 || writeAborted.get()) {
             // sync was aborted
-            logger.info(SYNC_INFO.getMarker(), "{} sync aborted", connection::getDescription);
             return false;
         }
-        logger.info(
-                SYNC_INFO.getMarker(),
-                "{} writing events done, wrote {} events",
-                connection::getDescription,
-                sendList::size);
-        logger.info(
-                SYNC_INFO.getMarker(),
-                "{} reading events done, read {} events",
-                connection.getDescription(),
-                eventsRead);
 
         syncMetrics.syncDone(
                 new SyncResult(connection.isOutbound(), connection.getOtherId(), eventsRead, sendList.size()));
@@ -460,11 +421,7 @@ public class ShadowGraphSynchronizer {
      * @throws IOException if there are any connection issues
      */
     public void rejectSync(final Connection connection) throws IOException {
-        try {
-            connection.initForSync();
-            SyncComms.rejectSync(connection, numberOfNodes);
-        } finally {
-            logger.info(SYNC_INFO.getMarker(), "{} sync rejected by self", connection.getDescription());
-        }
+        connection.initForSync();
+        SyncComms.rejectSync(connection, numberOfNodes);
     }
 }

@@ -28,7 +28,7 @@ import java.util.function.Predicate;
 /**
  * Various static utility method used in syncing
  */
-public final class SyncUtils {
+public final class SyncUtils { // TODO merge with SyncComms
     /**
      * Private constructor to never instantiate this class
      */

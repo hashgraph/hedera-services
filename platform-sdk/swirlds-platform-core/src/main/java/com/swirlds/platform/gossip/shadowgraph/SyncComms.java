@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
-import static com.swirlds.logging.LogMarker.SYNC_INFO;
-
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -38,25 +36,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+/**
+ * Helper methods for performing sync gossip.
+ */
 public final class SyncComms {
-    private static final Logger logger = LogManager.getLogger(SyncComms.class);
     /**
      * send a {@link ByteConstants#COMM_SYNC_ONGOING} every this many milliseconds after we are done writing events,
      * until we are done reading events
      */
     private static final int SYNC_ONGOING_SEND_EVERY_MS = 500;
     /**
-     * The maximum time we will allow for phase 3. If phase 3 is not done within this time limit, we will abort the
-     * sync
+     * The maximum time we will allow sending and receiving events. If not done within this time limit, we will abort
+     * the sync.
      */
-    private static final Duration PHASE3_MAX_DURATION = Duration.ofMinutes(1);
-    /**
-     * The value of PHASE3_MAX_DURATION in nanoseconds
-     */
-    private static final long PHASE3_MAX_NANOS = PHASE3_MAX_DURATION.toNanos();
+    private static final Duration SEND_AND_RECEIVE_EVENTS_MAX_TIME = Duration.ofMinutes(1);
+
 
     // Prevent instantiations of this static utility class
     private SyncComms() {}
@@ -98,16 +93,6 @@ public final class SyncComms {
             connection.getDos().writeGenerations(generations);
             connection.getDos().writeTipHashes(tipHashes);
             connection.getDos().flush();
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} sent generations: {}",
-                    connection::getDescription,
-                    generations::toString);
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} sent tips: {}",
-                    connection::getDescription,
-                    () -> SyncLogging.toShortShadows(tips));
             return null;
         };
     }
@@ -144,17 +129,6 @@ public final class SyncComms {
             final Generations generations = connection.getDis().readGenerations();
             final List<Hash> tips = connection.getDis().readTipHashes(numberOfNodes);
 
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} received generations: {}",
-                    connection::getDescription,
-                    generations::toString);
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} received tips: {}",
-                    connection::getDescription,
-                    () -> SyncLogging.toShortHashes(tips));
-
             return TheirTipsAndGenerations.create(generations, tips);
         };
     }
@@ -172,11 +146,6 @@ public final class SyncComms {
         return () -> {
             connection.getDos().writeBooleanList(theirTipsIHave);
             connection.getDos().flush();
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} sent booleans: {}",
-                    connection::getDescription,
-                    () -> SyncLogging.toShortBooleans(theirTipsIHave));
             return null;
         };
     }
@@ -195,77 +164,54 @@ public final class SyncComms {
             if (booleans == null) {
                 throw new SyncException(connection, "peer sent null booleans");
             }
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} received booleans: {}",
-                    connection::getDescription,
-                    () -> SyncLogging.toShortBooleans(booleans));
             return booleans;
         };
     }
 
     /**
-     * Returns a {@link Callable} that executes the writing side of phase 3 of a sync. Writes all the events that are
-     * supplied, unless it encounters a signed state event in which case it will abort writing and set writeAborted to
-     * true.
+     * Send the events the peer needs. The complementary function to
+     * {@link #readEventsINeed(Connection, Consumer, SyncMetrics, CountDownLatch, IntakeEventCounter)}.
      *
-     * @param conn             the connection to write to
+     * @param connection       the connection to write to
      * @param events           the events to write
      * @param eventReadingDone used to know when the writing thread is done
      * @param writeAborted     set to true if writing is aborted
      * @return A {@link Callable} that executes this part of the sync
      */
-    public static Callable<Void> phase3Write(
-            final Connection conn,
+    public static Callable<Void> sendEventsTheyNeed(
+            final Connection connection,
             final List<EventImpl> events,
             final CountDownLatch eventReadingDone,
             final AtomicBoolean writeAborted) {
         return () -> {
-            logger.info(
-                    SYNC_INFO.getMarker(),
-                    "{} writing events start. send list size: {}",
-                    conn.getDescription(),
-                    events.size());
             for (final EventImpl event : events) {
                 if (event.isFromSignedState()) {
                     // if we encounter an event from a signed state, we should not send that event because it will have
                     // had its transactions removed. the receiver would get the wrong hash and the signature check
                     // would fail
-                    conn.getDos().writeByte(ByteConstants.COMM_EVENT_ABORT);
+                    connection.getDos().writeByte(ByteConstants.COMM_EVENT_ABORT);
                     writeAborted.set(true);
                     break;
                 }
-                conn.getDos().writeByte(ByteConstants.COMM_EVENT_NEXT);
-                conn.getDos().writeEventData(event);
+                connection.getDos().writeByte(ByteConstants.COMM_EVENT_NEXT);
+                connection.getDos().writeEventData(event);
             }
             if (!writeAborted.get()) {
-                conn.getDos().writeByte(ByteConstants.COMM_EVENT_DONE);
+                connection.getDos().writeByte(ByteConstants.COMM_EVENT_DONE);
             }
-            conn.getDos().flush();
-
-            if (writeAborted.get()) {
-                logger.info(SYNC_INFO.getMarker(), "{} writing events aborted", conn.getDescription());
-            } else {
-                logger.info(
-                        SYNC_INFO.getMarker(),
-                        "{} writing events done, wrote {} events",
-                        conn.getDescription(),
-                        events.size());
-            }
+            connection.getDos().flush();
 
             // if we are still reading events, send keepalive messages
             while (!eventReadingDone.await(SYNC_ONGOING_SEND_EVERY_MS, TimeUnit.MILLISECONDS)) {
-                conn.getDos().writeByte(ByteConstants.COMM_SYNC_ONGOING);
-                conn.getDos().flush();
+                connection.getDos().writeByte(ByteConstants.COMM_SYNC_ONGOING);
+                connection.getDos().flush();
             }
 
             // we have now finished reading and writing all the events of a sync. the remote node may not have
             // finished reading and processing all the events this node has sent. so we write a byte to tell the remote
             // node we have finished, and the reader will wait for it to send us the same byte.
-            conn.getDos().writeByte(ByteConstants.COMM_SYNC_DONE);
-            conn.getDos().flush();
-
-            logger.debug(SYNC_INFO.getMarker(), "{} sent COMM_SYNC_DONE", conn.getDescription());
+            connection.getDos().writeByte(ByteConstants.COMM_SYNC_DONE);
+            connection.getDos().flush();
 
             // (ignored)
             return null;
@@ -273,73 +219,64 @@ public final class SyncComms {
     }
 
     /**
-     * Returns a {@link Callable} that executes the reading side of phase 3 of a sync. Reads events and passes them to
-     * the supplied eventHandler. The {@link Callable} will return the number of events read, or a negative number if
-     * event reading was aborted.
+     * Read events from the peer that I need. The complementary function to
+     * {@link #sendEventsTheyNeed(Connection, List, CountDownLatch, AtomicBoolean)}.
      *
-     * @param conn               the connection to read from
+     * @param connection         the connection to read from
      * @param eventHandler       the consumer of received events
      * @param syncMetrics        tracks event reading metrics
      * @param eventReadingDone   used to notify the writing thread that reading is done
      * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
      * @return A {@link Callable} that executes this part of the sync
      */
-    public static Callable<Integer> phase3Read(
-            final Connection conn,
+    public static Callable<Integer> readEventsINeed(
+            final Connection connection,
             final Consumer<GossipEvent> eventHandler,
             final SyncMetrics syncMetrics,
             final CountDownLatch eventReadingDone,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
         return () -> {
-            logger.info(SYNC_INFO.getMarker(), "{} reading events start", conn.getDescription());
             int eventsRead = 0;
             try {
                 final long startTime = System.nanoTime();
                 while (true) {
                     // readByte() will throw a timeout exception if the socket timeout is exceeded
-                    final byte next = conn.getDis().readByte();
+                    final byte next = connection.getDis().readByte();
                     // if the peer continuously sends COMM_SYNC_ONGOING, or sends the data really slowly,
                     // this timeout will be triggered
-                    checkPhase3Time(startTime);
+                    checkEventExchangeTime(startTime);
                     switch (next) {
                         case ByteConstants.COMM_EVENT_NEXT -> {
-                            final GossipEvent gossipEvent = conn.getDis().readEventData();
+                            final GossipEvent gossipEvent = connection.getDis().readEventData();
 
-                            gossipEvent.setSenderId(conn.getOtherId());
-                            intakeEventCounter.eventEnteredIntakePipeline(conn.getOtherId());
+                            gossipEvent.setSenderId(connection.getOtherId());
+                            intakeEventCounter.eventEnteredIntakePipeline(connection.getOtherId());
 
                             eventHandler.accept(gossipEvent);
                             eventsRead++;
                         }
                         case ByteConstants.COMM_EVENT_ABORT -> {
-                            logger.info(SYNC_INFO.getMarker(), "{} reading events aborted", conn.getDescription());
                             // event reading was aborted, tell the writer thread to send a COMM_SYNC_DONE
                             eventReadingDone.countDown();
                             eventsRead = Integer.MIN_VALUE;
                         }
                         case ByteConstants.COMM_EVENT_DONE -> {
                             syncMetrics.eventsReceived(startTime, eventsRead);
-                            logger.info(
-                                    SYNC_INFO.getMarker(),
-                                    "{} reading events done, read {} events",
-                                    conn.getDescription(),
-                                    eventsRead);
                             // we are done reading event, tell the writer thread to send a COMM_SYNC_DONE
                             eventReadingDone.countDown();
                         }
-                            // while we are waiting for the peer to tell us they are done, they might send
-                            // COMM_SYNC_ONGOING
-                            // if they are still busy reading events
-                        case ByteConstants.COMM_SYNC_ONGOING ->
-                        // peer is still reading events, waiting for them to finish
-                        logger.debug(SYNC_INFO.getMarker(), "{} received COMM_SYNC_ONGOING", conn.getDescription());
+                        // while we are waiting for the peer to tell us they are done, they might send
+                        // COMM_SYNC_ONGOING
+                        // if they are still busy reading events
+                        case ByteConstants.COMM_SYNC_ONGOING -> {
+                            // peer is still reading events, waiting for them to finish
+                        }
                         case ByteConstants.COMM_SYNC_DONE -> {
-                            logger.debug(SYNC_INFO.getMarker(), "{} received COMM_SYNC_DONE", conn.getDescription());
                             return eventsRead;
                         }
                         default -> throw new SyncException(
-                                conn, String.format("while reading events, received unexpected byte %02x", next));
+                                connection, String.format("while reading events, received unexpected byte %02x", next));
                     }
                 }
             } finally {
@@ -350,15 +287,16 @@ public final class SyncComms {
     }
 
     /**
-     * Checks if the phase 3 maximum time has been exceeded. If it has, it throws an exception.
+     * Checks if the time spent sending and receiving events exceeds maximum allowed. If it has, it throws an
+     * exception.
      *
      * @param startTime the time at which phase 3 started
      * @throws SyncTimeoutException thrown if the time is exceeded
      */
-    private static void checkPhase3Time(final long startTime) throws SyncTimeoutException {
+    private static void checkEventExchangeTime(final long startTime) throws SyncTimeoutException {
         final long phase3Nanos = System.nanoTime() - startTime;
-        if (phase3Nanos > PHASE3_MAX_NANOS) {
-            throw new SyncTimeoutException(Duration.ofNanos(phase3Nanos), PHASE3_MAX_DURATION);
+        if (phase3Nanos > SEND_AND_RECEIVE_EVENTS_MAX_TIME.toNanos()) {
+            throw new SyncTimeoutException(Duration.ofNanos(phase3Nanos), SEND_AND_RECEIVE_EVENTS_MAX_TIME);
         }
     }
 }
