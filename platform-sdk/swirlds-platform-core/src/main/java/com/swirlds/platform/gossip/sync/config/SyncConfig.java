@@ -45,5 +45,5 @@ public record SyncConfig(
         @ConfigProperty(defaultValue = "true") boolean waitForEventsInIntake,
         @ConfigProperty(defaultValue = "false") boolean criticalQuorumEnabled,
         @ConfigProperty(defaultValue = "true") boolean filterLikelyDuplicates,
-        @ConfigProperty(defaultValue = "1s") Duration ancestorFilterThreshold,
-        @ConfigProperty(defaultValue = "3s") Duration nonAncestorFilterThreshold) {}
+        @ConfigProperty(defaultValue = "500ms") Duration ancestorFilterThreshold,
+        @ConfigProperty(defaultValue = "1s") Duration nonAncestorFilterThreshold) {}
