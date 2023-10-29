@@ -92,12 +92,12 @@ public class ThrottleAccumulator implements HandleThrottleParser {
 
     private final ConfigProvider configProvider;
     private final IntSupplier capacitySplitSource;
-    private final String throttleType;
+    private final ThrottleType throttleType;
 
     public ThrottleAccumulator(
             @NonNull final IntSupplier capacitySplitSource,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final String throttleType) {
+            @NonNull final ThrottleType throttleType) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.capacitySplitSource = requireNonNull(capacitySplitSource, "capacitySplitSource must not be null");
         this.throttleType = requireNonNull(throttleType, "throttleType must not be null");
@@ -543,7 +543,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
 
         log.info(
                 "Resolved {} gas throttle -\n {} gas/sec (throttling {})",
-                throttleType,
+                throttleType.name(),
                 gasThrottle.capacity(),
                 (contractsConfig.throttleThrottleByGas() ? "ON" : "OFF"));
     }
@@ -555,7 +555,9 @@ public class ThrottleAccumulator implements HandleThrottleParser {
     }
 
     private void logResolvedDefinitions(final int capacitySplit) {
-        var sb = new StringBuilder("Resolved " + throttleType + " ")
+        var sb = new StringBuilder("Resolved ")
+                .append(throttleType.name())
+                .append(" ")
                 .append("(after splitting capacity ")
                 .append(capacitySplit)
                 .append(" ways) - \n");
@@ -585,17 +587,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
     }
 
     public enum ThrottleType {
-        FRONTEND_THROTTLE("Frontend throttle"),
-        BACKEND_THROTTLE("Backend throttle");
-
-        private String type;
-
-        ThrottleType(String type) {
-            this.type = type;
-        }
-
-        public String type() {
-            return this.type;
-        }
+        FRONTEND_THROTTLE,
+        BACKEND_THROTTLE
     }
 }

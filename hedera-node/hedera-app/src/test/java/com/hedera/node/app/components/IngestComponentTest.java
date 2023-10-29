@@ -98,8 +98,8 @@ class IngestComponentTest {
                         SemanticVersion.newBuilder().major(2).build()));
 
         final var configProvider = new ConfigProviderImpl(false);
-        final var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE.type());
-        final var frontendThrottle = new ThrottleAccumulator(() -> 5, configProvider, FRONTEND_THROTTLE.type());
+        final var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE);
+        final var frontendThrottle = new ThrottleAccumulator(() -> 5, configProvider, FRONTEND_THROTTLE);
         final var monoMultiplierSources = new MonoMultiplierSources(
                 new ThrottleMultiplierSource(null, null, null, null, null, null, null),
                 new ThrottleMultiplierSource(null, null, null, null, null, null, null));

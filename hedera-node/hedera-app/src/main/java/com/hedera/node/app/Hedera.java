@@ -97,6 +97,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.IntSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -189,6 +190,8 @@ public final class Hedera implements SwirldMain {
      * The swirld name. Currently there is only one swirld.
      */
     public static final String SWIRLD_NAME = "123";
+
+    private static final IntSupplier SUPPLY_ONE = () -> 1;
 
     /*==================================================================================================================
     *
@@ -677,9 +680,9 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
-        this.backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE.type());
-        this.frontendThrottle = new ThrottleAccumulator(
-                () -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE.type());
+        this.backendThrottle = new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE);
+        this.frontendThrottle =
+                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE);
         this.monoMultiplierSources = createMultiplierSources();
 
         logger.info("Initializing ExchangeRateManager");
@@ -760,9 +763,9 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
-        this.backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE.type());
-        this.frontendThrottle = new ThrottleAccumulator(
-                () -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE.type());
+        this.backendThrottle = new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE);
+        this.frontendThrottle =
+                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE);
         this.monoMultiplierSources = createMultiplierSources();
 
         logger.info("Initializing ExchangeRateManager");
