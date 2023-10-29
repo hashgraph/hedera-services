@@ -25,9 +25,12 @@ import java.time.Duration;
  *
  * @param syncSleepAfterFailedNegotiation the number of milliseconds to sleep after a failed negotiation when running
  *                                        the sync-as-a-protocol algorithm
- * @param syncProtocolPermitCount         the number of permits to use when running the sync-as-a-protocol algorithm
- * @param syncProtocolHeartbeatPeriod     the period at which the heartbeat protocol runs when the sync-as-a-protocol
- *                                        algorithm is active (milliseconds)
+ * @param syncProtocolPermitCount         the number of permits to use when running the sync algorithm
+ * @param onePermitPerPeer                if true, allocate exactly one sync permit per peer, ignoring
+ *                                        {@link #syncProtocolPermitCount()}. Otherwise, allocate permits according to
+ *                                        {@link #syncProtocolPermitCount()}.
+ * @param syncProtocolHeartbeatPeriod     the period at which the heartbeat protocol runs when the sync algorithm is
+ *                                        active (milliseconds)
  * @param hashOnGossipThreads             if true, hash events on gossip threads. If false, events are hashed on the
  *                                        event intake thread.
  * @param waitForEventsInIntake           if true, then a node will not sync again with the same peer until all
@@ -40,10 +43,11 @@ import java.time.Duration;
 public record SyncConfig(
         @ConfigProperty(defaultValue = "25") int syncSleepAfterFailedNegotiation,
         @ConfigProperty(defaultValue = "17") int syncProtocolPermitCount,
+        @ConfigProperty(defaultValue = "true") boolean onePermitPerPeer,
         @ConfigProperty(defaultValue = "1000") int syncProtocolHeartbeatPeriod,
         @ConfigProperty(defaultValue = "true") boolean hashOnGossipThreads,
         @ConfigProperty(defaultValue = "true") boolean waitForEventsInIntake,
         @ConfigProperty(defaultValue = "false") boolean criticalQuorumEnabled,
         @ConfigProperty(defaultValue = "true") boolean filterLikelyDuplicates,
-        @ConfigProperty(defaultValue = "500ms") Duration ancestorFilterThreshold,
-        @ConfigProperty(defaultValue = "1s") Duration nonAncestorFilterThreshold) {}
+        @ConfigProperty(defaultValue = "1s") Duration ancestorFilterThreshold,
+        @ConfigProperty(defaultValue = "3s") Duration nonAncestorFilterThreshold) {}
