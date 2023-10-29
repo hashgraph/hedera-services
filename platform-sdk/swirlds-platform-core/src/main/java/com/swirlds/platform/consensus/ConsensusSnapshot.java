@@ -63,11 +63,11 @@ public class ConsensusSnapshot implements SelfSerializable {
      * 		the consensus time of this snapshot
      */
     public ConsensusSnapshot(
-            long round,
-            @NonNull List<Hash> judgeHashes,
-            @NonNull List<MinGenInfo> minGens,
-            long nextConsensusNumber,
-            @NonNull Instant consensusTimestamp) {
+            final long round,
+            @NonNull final List<Hash> judgeHashes,
+            @NonNull final List<MinGenInfo> minGens,
+            final long nextConsensusNumber,
+            @NonNull final Instant consensusTimestamp) {
         this.round = round;
         this.judgeHashes = Objects.requireNonNull(judgeHashes);
         this.minGens = Objects.requireNonNull(minGens);
