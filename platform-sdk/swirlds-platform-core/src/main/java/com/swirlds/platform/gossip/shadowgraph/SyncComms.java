@@ -17,6 +17,8 @@
 package com.swirlds.platform.gossip.shadowgraph;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
@@ -25,11 +27,14 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -51,7 +56,6 @@ public final class SyncComms {
      * the sync.
      */
     private static final Duration SEND_AND_RECEIVE_EVENTS_MAX_TIME = Duration.ofMinutes(1);
-
 
     // Prevent instantiations of this static utility class
     private SyncComms() {}
@@ -266,9 +270,9 @@ public final class SyncComms {
                             // we are done reading event, tell the writer thread to send a COMM_SYNC_DONE
                             eventReadingDone.countDown();
                         }
-                        // while we are waiting for the peer to tell us they are done, they might send
-                        // COMM_SYNC_ONGOING
-                        // if they are still busy reading events
+                            // while we are waiting for the peer to tell us they are done, they might send
+                            // COMM_SYNC_ONGOING
+                            // if they are still busy reading events
                         case ByteConstants.COMM_SYNC_ONGOING -> {
                             // peer is still reading events, waiting for them to finish
                         }
@@ -298,5 +302,103 @@ public final class SyncComms {
         if (phase3Nanos > SEND_AND_RECEIVE_EVENTS_MAX_TIME.toNanos()) {
             throw new SyncTimeoutException(Duration.ofNanos(phase3Nanos), SEND_AND_RECEIVE_EVENTS_MAX_TIME);
         }
+    }
+
+    /**
+     * Get the latest self event in the shadowgraph.
+     *
+     * @param shadowGraph the shadow graph
+     * @param selfId      the id of the node
+     * @return the latest self event in the shadowgraph, or null if there is none
+     */
+    @Nullable
+    private static ShadowEvent getLatestSelfEventInShadowgraph(
+            @NonNull final ShadowGraph shadowGraph, @NonNull final NodeId selfId) {
+
+        final List<ShadowEvent> tips = shadowGraph.getTips();
+        for (final ShadowEvent tip : tips) {
+            if (tip.getEvent().getCreatorId().equals(selfId)) {
+                return tip;
+            }
+        }
+        return null;
+    }
+
+    // TODO test
+
+    /**
+     * Given a list of events we think the other node may not have, reduce that list to events that we think they do not
+     * have and that are unlikely to end up being duplicate events.
+     *
+     * <p>
+     * General principals:
+     * <ul>
+     * <li>Always send self events right away.</li>
+     * <li>Don't send non-ancestors of self events unless we've known about that event for a long time.</li>
+     * <li>Don't send ancestors of self events right away, but send them sooner than non-ancestors.</li>
+     * </ul>
+     *
+     * @param shadowGraph          the shadow graph
+     * @param selfId               the id of this node
+     * @param ancestorThreshold    the amount of time an event must be known about before we send its ancestors
+     * @param nonAncestorThreshold the amount of time an event must be known about before we send it
+     * @param now                  the current time
+     * @param eventsTheyNeed       the list of events we think they need
+     */
+    @NonNull
+    public static List<EventImpl> filterLikelyDuplicates(
+            @NonNull final ShadowGraph shadowGraph,
+            @NonNull final NodeId selfId,
+            @NonNull final Duration ancestorThreshold,
+            @NonNull final Duration nonAncestorThreshold,
+            @NonNull final Instant now,
+            @NonNull final List<EventImpl> eventsTheyNeed) {
+
+        final ShadowEvent latestSelfEvent = getLatestSelfEventInShadowgraph(shadowGraph, selfId);
+        final List<ShadowEvent> listOfLatestSelfEvent;
+        if (latestSelfEvent == null) {
+            listOfLatestSelfEvent = List.of();
+        } else {
+            listOfLatestSelfEvent = List.of(latestSelfEvent);
+        }
+
+        final Set<ShadowEvent> selfEventAncestors = shadowGraph.findAncestors(listOfLatestSelfEvent, event -> true);
+
+        // Convert to a set of hashes for easy lookup.
+        final List<Hash> selfEventAncestorHashes =
+                selfEventAncestors.stream().map(ShadowEvent::getEventBaseHash).toList();
+
+        final List<EventImpl> filteredList = new ArrayList<>();
+
+        for (final EventImpl event : eventsTheyNeed) {
+            if (event.getCreatorId().equals(selfId)) {
+                // Always send self events right away.
+                filteredList.add(event);
+                continue;
+            }
+
+            final Instant eventReceivedTime = event.getBaseEvent().getTimeReceived();
+            final Duration timeKnown = Duration.between(eventReceivedTime, now);
+
+            final boolean isAncestor = selfEventAncestorHashes.contains(event.getBaseHash());
+
+            if (isAncestor) {
+                if (CompareTo.isGreaterThan(timeKnown, ancestorThreshold)) {
+                    // This event is a self ancestor and we've known about it for long enough to send.
+                    filteredList.add(event);
+                }
+                // We won't send this event now, but we might do so at a future time if needed.
+                continue;
+            }
+
+            if (CompareTo.isGreaterThan(timeKnown, nonAncestorThreshold)) {
+                // This event is not a self ancestor and we've known about it for long enough to send.
+                filteredList.add(event);
+            }
+
+            // We won't send this event now, but we might do so at a future time if needed.
+        }
+
+        return filteredList;
     }
 }

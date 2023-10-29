@@ -18,6 +18,7 @@ package com.swirlds.platform.gossip.shadowgraph;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
@@ -33,6 +34,8 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -104,6 +107,10 @@ public class ShadowGraphSynchronizer {
      */
     private final InterruptableRunnable executePreFetchTips;
 
+    private final boolean filterLikelyDuplicates;
+    private final Duration ancestorFilterThreshold;
+    private final Duration nonAncestorFilterThreshold;
+
     public ShadowGraphSynchronizer(
             @NonNull final PlatformContext platformContext,
             final ShadowGraph shadowGraph,
@@ -130,6 +137,11 @@ public class ShadowGraphSynchronizer {
         this.sendRecInitBytes = sendRecInitBytes;
         this.executePreFetchTips = executePreFetchTips;
         this.eventHandler = buildEventHandler(platformContext, intakeQueue);
+
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+        this.filterLikelyDuplicates = syncConfig.filterLikelyDuplicates();
+        this.ancestorFilterThreshold = syncConfig.ancestorFilterThreshold();
+        this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
     }
 
     /**
@@ -289,7 +301,8 @@ public class ShadowGraphSynchronizer {
             knownSet.addAll(knownTips);
 
             // create a send list based on the known set
-            sendList = createSendList(knownSet, myGenerations, theirTipsAndGenerations.getGenerations());
+            sendList = createSendList(
+                    connection.getSelfId(), knownSet, myGenerations, theirTipsAndGenerations.getGenerations());
         }
 
         return sendAndReceiveEvents(connection, timing, sendList);
@@ -322,8 +335,12 @@ public class ShadowGraphSynchronizer {
     }
 
     private List<EventImpl> createSendList(
-            final Set<ShadowEvent> knownSet, final Generations myGenerations, final Generations theirGenerations)
+            @NonNull final NodeId selfId,
+            final Set<ShadowEvent> knownSet,
+            final Generations myGenerations,
+            final Generations theirGenerations)
             throws InterruptedException {
+
         // add to knownSet all the ancestors of each known event
         final Set<ShadowEvent> knownAncestors = shadowGraph.findAncestors(
                 knownSet, SyncUtils.unknownNonAncient(knownSet, myGenerations, theirGenerations));
@@ -349,10 +366,22 @@ public class ShadowGraphSynchronizer {
         // add the tips themselves
         sendSet.addAll(unknownTips);
 
-        // convert to list
-        final List<EventImpl> sendList =
+        final List<EventImpl> eventsTheyMayNeed =
                 sendSet.stream().map(ShadowEvent::getEvent).collect(Collectors.toCollection(ArrayList::new));
-        // sort by generation
+
+        final List<EventImpl> sendList;
+        if (filterLikelyDuplicates) {
+            sendList = SyncComms.filterLikelyDuplicates(
+                    shadowGraph,
+                    selfId,
+                    ancestorFilterThreshold,
+                    nonAncestorFilterThreshold,
+                    Instant.now(), // TODO
+                    eventsTheyMayNeed);
+        } else {
+            sendList = eventsTheyMayNeed;
+        }
+
         SyncUtils.sort(sendList);
 
         return sendList;

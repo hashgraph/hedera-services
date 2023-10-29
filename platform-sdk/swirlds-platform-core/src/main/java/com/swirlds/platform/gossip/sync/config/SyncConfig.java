@@ -18,6 +18,7 @@ package com.swirlds.platform.gossip.sync.config;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.time.Duration;
 
 /**
  * Configuration of the sync gossip algorithm
@@ -42,4 +43,7 @@ public record SyncConfig(
         @ConfigProperty(defaultValue = "1000") int syncProtocolHeartbeatPeriod,
         @ConfigProperty(defaultValue = "true") boolean hashOnGossipThreads,
         @ConfigProperty(defaultValue = "true") boolean waitForEventsInIntake,
-        @ConfigProperty(defaultValue = "false") boolean criticalQuorumEnabled) {}
+        @ConfigProperty(defaultValue = "false") boolean criticalQuorumEnabled,
+        @ConfigProperty(defaultValue = "true") boolean filterLikelyDuplicates,
+        @ConfigProperty(defaultValue = "1s") Duration ancestorFilterThreshold,
+        @ConfigProperty(defaultValue = "3s") Duration nonAncestorFilterThreshold) {}
