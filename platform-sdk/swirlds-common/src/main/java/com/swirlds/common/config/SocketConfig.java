@@ -47,4 +47,4 @@ public record SocketConfig(
         @ConfigProperty(defaultValue = "true") boolean useTLS,
         @ConfigProperty(defaultValue = "false") boolean useLoopbackIp,
         @ConfigProperty(defaultValue = "true") boolean tcpNoDelay,
-        @ConfigProperty(defaultValue = "true") boolean gzipCompression) {}
+        @ConfigProperty(defaultValue = "false") boolean gzipCompression) {}
