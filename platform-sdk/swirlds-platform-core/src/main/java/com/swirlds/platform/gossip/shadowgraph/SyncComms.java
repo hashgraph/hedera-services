@@ -49,7 +49,8 @@ public final class SyncComms {
      */
     private static final int SYNC_ONGOING_SEND_EVERY_MS = 500;
     /**
-     * The maximum time we will allow for phase 3. If phase 3 is not done within this time limit, we will abort the sync
+     * The maximum time we will allow for phase 3. If phase 3 is not done within this time limit, we will abort the
+     * sync
      */
     private static final Duration PHASE3_MAX_DURATION = Duration.ofMinutes(1);
     /**
@@ -80,88 +81,124 @@ public final class SyncComms {
         conn.getDis().readTipHashes(numberOfNodes);
     }
 
-    public static Callable<Void> phase1Write(
-            final Connection conn, final Generations generations, final List<ShadowEvent> tips) {
+    /**
+     * Write the tips and generations to the peer. This is the first data exchanged during a sync (after protocol
+     * negotiation). The complementary function to {@link #readTheirTipsAndGenerations(Connection, int, boolean)}.
+     *
+     * @param connection  the connection to write to
+     * @param generations the generations to write
+     * @param tips        the tips to write
+     * @return a {@link Callable} that writes the tips and generations
+     */
+    public static Callable<Void> writeMyTipsAndGenerations(
+            final Connection connection, final Generations generations, final List<ShadowEvent> tips) {
         return () -> {
             final List<Hash> tipHashes =
                     tips.stream().map(ShadowEvent::getEventBaseHash).collect(Collectors.toList());
-            conn.getDos().writeGenerations(generations);
-            conn.getDos().writeTipHashes(tipHashes);
-            conn.getDos().flush();
-            logger.info(SYNC_INFO.getMarker(), "{} sent generations: {}", conn::getDescription, generations::toString);
+            connection.getDos().writeGenerations(generations);
+            connection.getDos().writeTipHashes(tipHashes);
+            connection.getDos().flush();
+            logger.info(
+                    SYNC_INFO.getMarker(),
+                    "{} sent generations: {}",
+                    connection::getDescription,
+                    generations::toString);
             logger.info(
                     SYNC_INFO.getMarker(),
                     "{} sent tips: {}",
-                    conn::getDescription,
+                    connection::getDescription,
                     () -> SyncLogging.toShortShadows(tips));
             return null;
         };
     }
 
-    public static Callable<Phase1Response> phase1Read(
-            final Connection conn, final int numberOfNodes, final boolean readInitByte) {
+    /**
+     * Read the tips and generations from the peer. This is the first data exchanged during a sync (after protocol
+     * negotiation). The complementary function to {@link #writeMyTipsAndGenerations(Connection, Generations, List)}.
+     *
+     * @param connection    the connection to read from
+     * @param numberOfNodes the number of nodes in the network
+     * @param readInitByte  if true, read the first byte of the sync request response
+     * @return a {@link Callable} that reads the tips and generations
+     */
+    public static Callable<TheirTipsAndGenerations> readTheirTipsAndGenerations(
+            final Connection connection, final int numberOfNodes, final boolean readInitByte) {
         return () -> {
             // Caller thread requested a sync, so now caller thread reads if its request was accepted.
-            if (conn.isOutbound() && readInitByte) {
+            if (connection.isOutbound() && readInitByte) {
                 try {
-                    if (!conn.getDis().readSyncRequestResponse()) {
+                    if (!connection.getDis().readSyncRequestResponse()) {
                         // sync rejected
-                        return Phase1Response.syncRejected();
+                        return TheirTipsAndGenerations.syncRejected();
                     }
                 } catch (final SyncException | IOException e) {
-                    final Instant sentTime = conn.getDos().getRequestSentTime();
+                    final Instant sentTime = connection.getDos().getRequestSentTime();
                     final long inMs = sentTime == null ? -1 : sentTime.until(Instant.now(), ChronoUnit.MILLIS);
                     throw new SyncException(
-                            conn,
+                            connection,
                             "Problem while reading sync request response. Request was sent " + inMs + "ms ago",
                             e);
                 }
             }
 
-            final Generations generations = conn.getDis().readGenerations();
-            final List<Hash> tips = conn.getDis().readTipHashes(numberOfNodes);
+            final Generations generations = connection.getDis().readGenerations();
+            final List<Hash> tips = connection.getDis().readTipHashes(numberOfNodes);
 
             logger.info(
-                    SYNC_INFO.getMarker(), "{} received generations: {}", conn::getDescription, generations::toString);
+                    SYNC_INFO.getMarker(),
+                    "{} received generations: {}",
+                    connection::getDescription,
+                    generations::toString);
             logger.info(
                     SYNC_INFO.getMarker(),
                     "{} received tips: {}",
-                    conn::getDescription,
+                    connection::getDescription,
                     () -> SyncLogging.toShortHashes(tips));
 
-            return Phase1Response.create(generations, tips);
+            return TheirTipsAndGenerations.create(generations, tips);
         };
     }
 
     /**
-     * @return the Callable to run
+     * Tell the sync peer which of their tips I have. The complementary function to
+     * {@link #readMyTipsTheyHave(Connection, int)}.
+     *
+     * @param connection     the connection to write to
+     * @param theirTipsIHave for each tip they sent me, write true if I have it, false otherwise. Order corresponds to
+     *                       the order in which they sent me their tips.
+     * @return a {@link Callable} that writes the booleans
      */
-    public static Callable<Void> phase2Write(final Connection conn, final List<Boolean> booleans) {
+    public static Callable<Void> writeTheirTipsIHave(final Connection connection, final List<Boolean> theirTipsIHave) {
         return () -> {
-            conn.getDos().writeBooleanList(booleans);
-            conn.getDos().flush();
+            connection.getDos().writeBooleanList(theirTipsIHave);
+            connection.getDos().flush();
             logger.info(
                     SYNC_INFO.getMarker(),
                     "{} sent booleans: {}",
-                    conn::getDescription,
-                    () -> SyncLogging.toShortBooleans(booleans));
+                    connection::getDescription,
+                    () -> SyncLogging.toShortBooleans(theirTipsIHave));
             return null;
         };
     }
 
     /**
-     * @return the Callable to run
+     * Read from the peer which of my tips they have. The complementary function to
+     * {@link #writeTheirTipsIHave(Connection, List)}.
+     *
+     * @param connection   the connection to read from
+     * @param numberOfTips the number of tips I sent them
+     * @return a {@link Callable} that reads the booleans
      */
-    public static Callable<List<Boolean>> phase2Read(final Connection conn, final int numberOfTips) {
+    public static Callable<List<Boolean>> readMyTipsTheyHave(final Connection connection, final int numberOfTips) {
         return () -> {
-            final List<Boolean> booleans = conn.getDis().readBooleanList(numberOfTips);
+            final List<Boolean> booleans = connection.getDis().readBooleanList(numberOfTips);
             if (booleans == null) {
-                throw new SyncException(conn, "peer sent null booleans");
+                throw new SyncException(connection, "peer sent null booleans");
             }
             logger.info(
                     SYNC_INFO.getMarker(),
                     "{} received booleans: {}",
-                    conn::getDescription,
+                    connection::getDescription,
                     () -> SyncLogging.toShortBooleans(booleans));
             return booleans;
         };

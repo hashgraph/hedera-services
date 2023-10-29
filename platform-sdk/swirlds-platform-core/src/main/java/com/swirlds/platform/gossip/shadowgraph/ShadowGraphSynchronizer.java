@@ -174,7 +174,16 @@ public class ShadowGraphSynchronizer {
         }
     }
 
-    private static List<Boolean> getMyBooleans(final List<ShadowEvent> theirTipShadows) {
+    /**
+     * For each tip they send us, determine if we have that event. For each tip, send true if we have the event and
+     * false if we don't.
+     *
+     * @param theirTipShadows the tips they sent us
+     * @return a list of booleans corresponding to their tips in the order they were sent. True if we have the event,
+     * false if we don't
+     */
+    @NonNull
+    private static List<Boolean> getTheirTipsIHave(@NonNull final List<ShadowEvent> theirTipShadows) {
         final List<Boolean> myBooleans = new ArrayList<>(theirTipShadows.size());
         for (final ShadowEvent s : theirTipShadows) {
             myBooleans.add(s != null); // is this event is known to me
@@ -182,20 +191,30 @@ public class ShadowGraphSynchronizer {
         return myBooleans;
     }
 
-    private static List<ShadowEvent> processTheirBooleans(
-            final Connection conn, final List<ShadowEvent> myTips, final List<Boolean> theirBooleans)
+    /**
+     * For each tip sent to the peer, determine if they have that event. If they have it, add it to the list that is
+     * returned.
+     *
+     * @param connection     the connection to use
+     * @param myTips         the tips we sent them
+     * @param myTipsTheyHave a list of booleans corresponding to our tips in the order they were sent. True if they have
+     *                       the event, false if they don't
+     * @return a list of tips that they have
+     */
+    private static List<ShadowEvent> getMyTipsTheyKnow(
+            final Connection connection, final List<ShadowEvent> myTips, final List<Boolean> myTipsTheyHave)
             throws SyncException {
-        if (theirBooleans.size() != myTips.size()) {
+        if (myTipsTheyHave.size() != myTips.size()) {
             throw new SyncException(
-                    conn,
+                    connection,
                     String.format(
                             "peer booleans list is wrong size. Expected: %d Actual: %d,",
-                            myTips.size(), theirBooleans.size()));
+                            myTips.size(), myTipsTheyHave.size()));
         }
         final List<ShadowEvent> knownTips = new ArrayList<>();
         // process their booleans
-        for (int i = 0; i < theirBooleans.size(); i++) {
-            if (Boolean.TRUE.equals(theirBooleans.get(i))) {
+        for (int i = 0; i < myTipsTheyHave.size(); i++) {
+            if (Boolean.TRUE.equals(myTipsTheyHave.get(i))) {
                 knownTips.add(myTips.get(i));
             }
         }
@@ -203,23 +222,25 @@ public class ShadowGraphSynchronizer {
         return knownTips;
     }
 
+    // TODO remove all the unneeded log messages
+
     /**
      * Synchronize with a remote node using the supplied connection
      *
-     * @param conn the connection to sync through
+     * @param connection the connection to sync through
      * @return true iff a sync was (a) accepted, and (b) completed, including exchange of event data
      * @throws IOException                if any problem occurs with the connection
      * @throws ParallelExecutionException if issue occurs while executing tasks in parallel
      * @throws SyncException              if any sync protocol issues occur
      * @throws InterruptedException       if the calling thread gets interrupted while the sync is ongoing
      */
-    public boolean synchronize(final Connection conn)
+    public boolean synchronize(final Connection connection)
             throws IOException, ParallelExecutionException, SyncException, InterruptedException {
-        logger.info(SYNC_INFO.getMarker(), "{} sync start", conn.getDescription());
+        logger.info(SYNC_INFO.getMarker(), "{} sync start", connection.getDescription());
         try {
-            return reserveSynchronize(conn);
+            return reserveSynchronize(connection);
         } finally {
-            logger.info(SYNC_INFO.getMarker(), "{} sync end", conn.getDescription());
+            logger.info(SYNC_INFO.getMarker(), "{} sync end", connection.getDescription());
         }
     }
 
@@ -227,41 +248,43 @@ public class ShadowGraphSynchronizer {
      * Executes a sync using the supplied connection. This method contains all the logic while
      * {@link #synchronize(Connection)} is just for exception handling.
      */
-    private boolean reserveSynchronize(final Connection conn)
+    private boolean reserveSynchronize(final Connection connection)
             throws IOException, ParallelExecutionException, SyncException, InterruptedException {
         // accumulates time points for each step in the execution of a single gossip session, used for stats
         // reporting and performance analysis
         final SyncTiming timing = new SyncTiming();
         final List<EventImpl> sendList;
         try (final GenerationReservation reservation = shadowGraph.reserve()) {
-            conn.initForSync();
+            connection.initForSync();
 
             timing.start();
 
             if (sendRecInitBytes) {
-                SyncComms.writeFirstByte(conn);
+                SyncComms.writeFirstByte(connection);
             }
+
+            // Step 1: each peer tells the other about its tips and generations
 
             // the generation we reserved is our minimum round generation
             // the ShadowGraph guarantees it won't be expired until we release it
             final Generations myGenerations = getGenerations(reservation.getGeneration());
             final List<ShadowEvent> myTips = getTips();
             // READ and WRITE generation numbers & tip hashes
-            final Phase1Response theirGensTips = readWriteParallel(
-                    SyncComms.phase1Read(conn, numberOfNodes, sendRecInitBytes),
-                    SyncComms.phase1Write(conn, myGenerations, myTips),
-                    conn);
+            final TheirTipsAndGenerations theirTipsAndGenerations = readWriteParallel(
+                    SyncComms.readTheirTipsAndGenerations(connection, numberOfNodes, sendRecInitBytes),
+                    SyncComms.writeMyTipsAndGenerations(connection, myGenerations, myTips),
+                    connection);
             timing.setTimePoint(1);
 
-            if (theirGensTips.isSyncRejected()) {
-                logger.info(SYNC_INFO.getMarker(), "{} sync rejected by other", conn.getDescription());
+            if (theirTipsAndGenerations.isSyncRejected()) {
+                logger.info(SYNC_INFO.getMarker(), "{} sync rejected by other", connection.getDescription());
                 // null means the sync was rejected
                 return false;
             }
 
-            syncMetrics.generations(myGenerations, theirGensTips.getGenerations());
+            syncMetrics.generations(myGenerations, theirTipsAndGenerations.getGenerations());
 
-            if (fallenBehind(myGenerations, theirGensTips.getGenerations(), conn)) {
+            if (fallenBehind(myGenerations, theirTipsAndGenerations.getGenerations(), connection)) {
                 // aborting the sync since someone has fallen behind
                 return false;
             }
@@ -270,26 +293,33 @@ public class ShadowGraphSynchronizer {
             final Set<ShadowEvent> knownSet = new HashSet<>();
 
             // process the hashes received
-            final List<ShadowEvent> theirTipShadows = shadowGraph.shadows(theirGensTips.getTips());
-            final List<Boolean> myBooleans = getMyBooleans(theirTipShadows);
-            // add known shadows to known set
-            theirTipShadows.stream().filter(Objects::nonNull).forEach(knownSet::add);
+            final List<ShadowEvent> theirTips = shadowGraph.shadows(theirTipsAndGenerations.getTips());
 
-            // comms phase 2
+            // For each tip they send us, determine if we have that event.
+            // For each tip, send true if we have the event and false if we don't.
+            final List<Boolean> theirTipsIHave = getTheirTipsIHave(theirTips);
+
+            // add known shadows to known set
+            theirTips.stream().filter(Objects::nonNull).forEach(knownSet::add);
+
+            // Step 2: each peer tells the other which of the other's tips it already has.
+
             timing.setTimePoint(2);
             final List<Boolean> theirBooleans = readWriteParallel(
-                    SyncComms.phase2Read(conn, myTips.size()), SyncComms.phase2Write(conn, myBooleans), conn);
+                    SyncComms.readMyTipsTheyHave(connection, myTips.size()),
+                    SyncComms.writeTheirTipsIHave(connection, theirTipsIHave),
+                    connection);
             timing.setTimePoint(3);
 
-            // process their booleans and add them to the known set
-            final List<ShadowEvent> knownTips = processTheirBooleans(conn, myTips, theirBooleans);
+            // Add each tip they know to the known set
+            final List<ShadowEvent> knownTips = getMyTipsTheyKnow(connection, myTips, theirBooleans);
             knownSet.addAll(knownTips);
 
             // create a send list based on the known set
-            sendList = createSendList(knownSet, myGenerations, theirGensTips.getGenerations());
+            sendList = createSendList(knownSet, myGenerations, theirTipsAndGenerations.getGenerations());
         }
 
-        return phase3(conn, timing, sendList);
+        return sendAndReceiveEvents(connection, timing, sendList);
     }
 
     private Generations getGenerations(final long minRoundGen) {
@@ -306,14 +336,14 @@ public class ShadowGraphSynchronizer {
         return myTips;
     }
 
-    private boolean fallenBehind(final Generations self, final Generations other, final Connection conn) {
+    private boolean fallenBehind(final Generations self, final Generations other, final Connection connection) {
         final SyncFallenBehindStatus status = SyncFallenBehindStatus.getStatus(self, other);
         if (status == SyncFallenBehindStatus.SELF_FALLEN_BEHIND) {
-            fallenBehindManager.reportFallenBehind(conn.getOtherId());
+            fallenBehindManager.reportFallenBehind(connection.getOtherId());
         }
 
         if (status != SyncFallenBehindStatus.NONE_FALLEN_BEHIND) {
-            logger.info(SYNC_INFO.getMarker(), "{} aborting sync due to {}", conn.getDescription(), status);
+            logger.info(SYNC_INFO.getMarker(), "{} aborting sync due to {}", connection.getDescription(), status);
             return true; // abort the sync
         }
         return false;
@@ -359,13 +389,14 @@ public class ShadowGraphSynchronizer {
     /**
      * Executes phase 3 of a sync
      *
-     * @param conn     the connection to use
+     * @param connection     the connection to use
      * @param timing   metrics that track sync timing
      * @param sendList the events to send
      * @return true if the phase was successful, false if it was aborted
      * @throws ParallelExecutionException if anything goes wrong
      */
-    private boolean phase3(final Connection conn, final SyncTiming timing, final List<EventImpl> sendList)
+    private boolean sendAndReceiveEvents(
+            final Connection connection, final SyncTiming timing, final List<EventImpl> sendList)
             throws ParallelExecutionException {
         timing.setTimePoint(4);
         // the reading thread uses this to indicate to the writing thread that it is done
@@ -373,22 +404,30 @@ public class ShadowGraphSynchronizer {
         // the writer will set it to true if writing is aborted
         final AtomicBoolean writeAborted = new AtomicBoolean(false);
         final Integer eventsRead = readWriteParallel(
-                SyncComms.phase3Read(conn, eventHandler, syncMetrics, eventReadingDone, intakeEventCounter),
-                SyncComms.phase3Write(conn, sendList, eventReadingDone, writeAborted),
-                conn);
+                SyncComms.phase3Read(connection, eventHandler, syncMetrics, eventReadingDone, intakeEventCounter),
+                SyncComms.phase3Write(connection, sendList, eventReadingDone, writeAborted),
+                connection);
         if (eventsRead < 0 || writeAborted.get()) {
             // sync was aborted
-            logger.info(SYNC_INFO.getMarker(), "{} sync aborted", conn::getDescription);
+            logger.info(SYNC_INFO.getMarker(), "{} sync aborted", connection::getDescription);
             return false;
         }
         logger.info(
-                SYNC_INFO.getMarker(), "{} writing events done, wrote {} events", conn::getDescription, sendList::size);
-        logger.info(SYNC_INFO.getMarker(), "{} reading events done, read {} events", conn.getDescription(), eventsRead);
+                SYNC_INFO.getMarker(),
+                "{} writing events done, wrote {} events",
+                connection::getDescription,
+                sendList::size);
+        logger.info(
+                SYNC_INFO.getMarker(),
+                "{} reading events done, read {} events",
+                connection.getDescription(),
+                eventsRead);
 
-        syncMetrics.syncDone(new SyncResult(conn.isOutbound(), conn.getOtherId(), eventsRead, sendList.size()));
+        syncMetrics.syncDone(
+                new SyncResult(connection.isOutbound(), connection.getOtherId(), eventsRead, sendList.size()));
 
         timing.setTimePoint(5);
-        syncMetrics.recordSyncTiming(timing, conn);
+        syncMetrics.recordSyncTiming(timing, connection);
         return true;
     }
 
@@ -417,15 +456,15 @@ public class ShadowGraphSynchronizer {
     /**
      * Reject a sync
      *
-     * @param conn the connection over which the sync was initiated
+     * @param connection the connection over which the sync was initiated
      * @throws IOException if there are any connection issues
      */
-    public void rejectSync(final Connection conn) throws IOException {
+    public void rejectSync(final Connection connection) throws IOException {
         try {
-            conn.initForSync();
-            SyncComms.rejectSync(conn, numberOfNodes);
+            connection.initForSync();
+            SyncComms.rejectSync(connection, numberOfNodes);
         } finally {
-            logger.info(SYNC_INFO.getMarker(), "{} sync rejected by self", conn.getDescription());
+            logger.info(SYNC_INFO.getMarker(), "{} sync rejected by self", connection.getDescription());
         }
     }
 }
