@@ -173,19 +173,25 @@ public class RecordFinalizerBase {
 
             // The NFT may not have existed before, in which case we'll use a null sender account ID
             AccountID senderAccountId = null;
+            final var token = readableTokenStore.get(nftId.tokenId());
             if (persistedNft != null) {
-                final var token = readableTokenStore.get(nftId.tokenId());
                 final boolean hasOwnerId =
                         persistedNft.hasOwnerId() && !persistedNft.ownerId().equals(AccountID.DEFAULT);
                 // If the NFT did not have an owner before set it to the treasury account
                 senderAccountId = hasOwnerId ? persistedNft.ownerId() : token.treasuryAccountId();
+            } else {
+                senderAccountId = ZERO_ACCOUNT_ID;
             }
 
             // If the NFT has been burned or wiped, modifiedNft will be null. In that case the receiverId
             // will be explicitly set as 0.0.0
             final var builder = NftTransfer.newBuilder();
             if (modifiedNft != null) {
-                builder.receiverAccountID(modifiedNft.ownerId());
+                if (modifiedNft.hasOwnerId()) {
+                    builder.receiverAccountID(modifiedNft.ownerId());
+                } else {
+                    builder.receiverAccountID(token.treasuryAccountId());
+                }
             } else {
                 builder.receiverAccountID(ZERO_ACCOUNT_ID);
             }

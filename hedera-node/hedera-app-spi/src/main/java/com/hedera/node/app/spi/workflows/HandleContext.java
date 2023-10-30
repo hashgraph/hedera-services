@@ -552,6 +552,11 @@ public interface HandleContext {
     SavepointStack savepointStack();
 
     /**
+     * Revert all child records in {@link RecordListBuilder}.
+     */
+    void revertChildRecords();
+
+    /**
      * A stack of savepoints.
      *
      * <p>A new savepoint can be created manually. In addition, a new entry is added to the savepoint stack every time
