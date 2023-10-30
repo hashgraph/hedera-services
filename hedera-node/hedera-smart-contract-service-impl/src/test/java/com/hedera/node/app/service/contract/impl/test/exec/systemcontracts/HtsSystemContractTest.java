@@ -29,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemC
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
-import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.nio.ByteBuffer;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -60,9 +59,6 @@ class HtsSystemContractTest {
 
     private MockedStatic<FrameUtils> frameUtils;
 
-    @Mock
-    private ProxyWorldUpdater updater;
-
     private HtsSystemContract subject;
 
     @BeforeEach
@@ -82,7 +78,6 @@ class HtsSystemContractTest {
 
         final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L));
         given(call.execute()).willReturn(pricedResult);
-        given(frame.getWorldUpdater()).willReturn(updater);
 
         assertSame(pricedResult.fullResult(), subject.computeFully(Bytes.EMPTY, frame));
     }
@@ -111,7 +106,6 @@ class HtsSystemContractTest {
         givenValidCallAttempt();
         final var pricedResult = new HtsCall.PricedResult(successResult(ByteBuffer.allocate(1), 123L), 456L);
         given(call.execute()).willReturn(pricedResult);
-        given(frame.getWorldUpdater()).willReturn(updater);
 
         assertThrows(AssertionError.class, () -> subject.computeFully(Bytes.EMPTY, frame));
     }
