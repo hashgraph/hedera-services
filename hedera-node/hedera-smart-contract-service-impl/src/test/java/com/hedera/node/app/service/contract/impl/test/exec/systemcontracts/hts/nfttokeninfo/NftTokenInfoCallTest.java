@@ -64,8 +64,8 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
         when(nativeOperations.getNft(FUNGIBLE_EVERYTHING_TOKEN.tokenId().tokenNum(), 2L))
                 .thenReturn(CIVILIAN_OWNED_NFT);
 
-        final var subject =
-                new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, 2L, config);
+        final var subject = new NftTokenInfoCall(
+                frame, gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, 2L, config);
 
         final var result = subject.execute().fullResult().result();
 
@@ -112,7 +112,7 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
         final var expectedLedgerId = com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01");
         when(ledgerConfig.id()).thenReturn(expectedLedgerId);
 
-        final var subject = new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, null, 0L, config);
+        final var subject = new NftTokenInfoCall(frame, gasCalculator, mockEnhancement(), false, null, 0L, config);
 
         final var result = subject.execute().fullResult().result();
 
@@ -157,7 +157,7 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
         when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
         when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01"));
 
-        final var subject = new NftTokenInfoCall(gasCalculator, mockEnhancement(), true, null, 0L, config);
+        final var subject = new NftTokenInfoCall(frame, gasCalculator, mockEnhancement(), true, null, 0L, config);
 
         final var result = subject.execute().fullResult().result();
 

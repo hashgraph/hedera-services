@@ -51,6 +51,10 @@ public class TokenTypeTranslator extends AbstractHtsCallTranslator {
         final var args = TOKEN_TYPE.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new TokenTypeCall(
-                attempt.systemContractGasCalculator(), attempt.enhancement(), attempt.isStaticCall(), token);
+                attempt.getFrame(),
+                attempt.systemContractGasCalculator(),
+                attempt.enhancement(),
+                attempt.isStaticCall(),
+                token);
     }
 }

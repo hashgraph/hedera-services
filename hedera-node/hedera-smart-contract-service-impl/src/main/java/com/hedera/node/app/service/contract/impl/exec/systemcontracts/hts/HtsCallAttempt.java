@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Manages the call attempted by a {@link Bytes} payload received by the {@link HtsSystemContract}.
@@ -67,10 +68,12 @@ public class HtsCallAttempt {
     private final SystemContractGasCalculator gasCalculator;
     private final List<HtsCallTranslator> callTranslators;
     private final boolean isStaticCall;
+    private final MessageFrame frame;
 
     // too many parameters
     @SuppressWarnings("java:S107")
     public HtsCallAttempt(
+            @NonNull final MessageFrame frame,
             @NonNull final Bytes input,
             @NonNull final Address senderAddress,
             boolean onlyDelegatableContractKeysActive,
@@ -81,6 +84,7 @@ public class HtsCallAttempt {
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final List<HtsCallTranslator> callTranslators,
             final boolean isStaticCall) {
+        this.frame = requireNonNull(frame);
         requireNonNull(input);
         this.callTranslators = requireNonNull(callTranslators);
         this.gasCalculator = requireNonNull(gasCalculator);
@@ -335,5 +339,9 @@ public class HtsCallAttempt {
                 REDIRECT_FOR_TOKEN_SELECTOR,
                 0,
                 REDIRECT_FOR_TOKEN_SELECTOR.length);
+    }
+
+    public MessageFrame getFrame() {
+        return frame;
     }
 }

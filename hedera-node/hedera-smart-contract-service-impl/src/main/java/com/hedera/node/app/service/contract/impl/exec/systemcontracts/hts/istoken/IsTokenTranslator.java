@@ -52,6 +52,10 @@ public class IsTokenTranslator extends AbstractHtsCallTranslator {
         final var args = IS_TOKEN.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new IsTokenCall(
-                attempt.systemContractGasCalculator(), attempt.enhancement(), attempt.isStaticCall(), token);
+                attempt.getFrame(),
+                attempt.systemContractGasCalculator(),
+                attempt.enhancement(),
+                attempt.isStaticCall(),
+                token);
     }
 }

@@ -127,6 +127,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var input =
                 TestHelpers.bytesForRedirect(Erc20TransfersTranslator.ERC_20_TRANSFER.selector(), EIP_1014_ADDRESS);
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 false,
@@ -147,6 +148,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 .willReturn(FUNGIBLE_TOKEN);
         final var input = TestHelpers.bytesForRedirect(new byte[4], NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 false,
@@ -165,6 +167,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var input = TestHelpers.bytesForRedirect(
                 DecimalsTranslator.DECIMALS.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 false,
@@ -183,6 +186,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var input = TestHelpers.bytesForRedirect(
                 TokenUriTranslator.TOKEN_URI.encodeCallWithArgs(BigInteger.ONE).array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 false,
@@ -201,6 +205,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var input = TestHelpers.bytesForRedirect(
                 OwnerOfTranslator.OWNER_OF.encodeCallWithArgs(BigInteger.ONE).array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 false,
@@ -222,6 +227,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 false,
@@ -244,6 +250,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 false,
@@ -262,6 +269,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var input = TestHelpers.bytesForRedirect(
                 TotalSupplyTranslator.TOTAL_SUPPLY.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 false,
@@ -280,6 +288,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var input = TestHelpers.bytesForRedirect(
                 NameTranslator.NAME.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 false,
@@ -298,6 +307,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var input = TestHelpers.bytesForRedirect(
                 SymbolTranslator.SYMBOL.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 false,
@@ -327,6 +337,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
                 .willReturn(strategy);
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 true,
@@ -356,6 +367,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
                 .willReturn(strategy);
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 true,
@@ -382,6 +394,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
                 .willReturn(strategy);
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 true,
@@ -434,6 +447,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
 
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 true,
@@ -496,6 +510,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
 
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 true,
@@ -566,6 +581,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         }
 
         final var subject = new HtsCallAttempt(
+                frame,
                 input,
                 EIP_1014_ADDRESS,
                 false,

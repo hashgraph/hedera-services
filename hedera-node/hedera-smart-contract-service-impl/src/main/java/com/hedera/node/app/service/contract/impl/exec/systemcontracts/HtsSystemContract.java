@@ -17,22 +17,17 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.haltResult;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
-import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -74,16 +69,6 @@ public class HtsSystemContract extends AbstractFullContract implements HederaSys
         final HtsCall.PricedResult pricedResult;
         try {
             pricedResult = call.execute();
-
-            if (!frame.isStatic()) {
-                final var gasRequirement = pricedResult.fullResult().gasRequirement();
-                final var result = pricedResult.fullResult().result().getOutput();
-                final var contractID = asEvmContractId(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
-                var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
-                updater.externalizeSystemContractResults(
-                        contractFunctionResultSuccessFor(gasRequirement, result, contractID),
-                        SystemContractUtils.ResultStatus.IS_SUCCESS);
-            }
         } catch (final Exception internal) {
             log.error("Unhandled failure for input {} to HTS system contract", input, internal);
             return haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());

@@ -32,18 +32,20 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Abstra
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
     private final Key key;
     private final boolean isStaticCall;
 
     public TokenKeyCall(
+            @NonNull MessageFrame frame,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             final boolean isStaticCall,
             @Nullable final Token token,
             @Nullable final Key key) {
-        super(gasCalculator, enhancement, token);
+        super(frame, gasCalculator, enhancement, token);
         this.key = key;
         this.isStaticCall = isStaticCall;
     }

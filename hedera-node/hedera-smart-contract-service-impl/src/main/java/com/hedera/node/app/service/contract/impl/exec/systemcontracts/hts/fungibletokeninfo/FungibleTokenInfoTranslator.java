@@ -56,6 +56,7 @@ public class FungibleTokenInfoTranslator extends AbstractHtsCallTranslator {
         final var args = FUNGIBLE_TOKEN_INFO.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new FungibleTokenInfoCall(
+                attempt.getFrame(),
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 attempt.isStaticCall(),

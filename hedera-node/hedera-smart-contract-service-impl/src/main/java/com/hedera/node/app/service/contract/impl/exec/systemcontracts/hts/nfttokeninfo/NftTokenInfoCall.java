@@ -36,6 +36,7 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
     private final Configuration configuration;
@@ -43,13 +44,14 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
     private final long serialNumber;
 
     public NftTokenInfoCall(
+            @NonNull MessageFrame frame,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             final boolean isStaticCall,
             @Nullable final Token token,
             final long serialNumber,
             @NonNull final Configuration configuration) {
-        super(gasCalculator, enhancement, token);
+        super(frame, gasCalculator, enhancement, token);
         this.configuration = requireNonNull(configuration);
         this.serialNumber = serialNumber;
         this.isStaticCall = isStaticCall;

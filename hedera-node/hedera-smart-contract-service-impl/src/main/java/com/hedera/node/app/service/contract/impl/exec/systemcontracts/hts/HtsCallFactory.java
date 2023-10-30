@@ -65,6 +65,7 @@ public class HtsCallFactory {
         requireNonNull(frame);
         final var enhancement = proxyUpdaterFor(frame).enhancement();
         final var attempt = new HtsCallAttempt(
+                frame,
                 input,
                 frame.getSenderAddress(),
                 addressChecks.hasParentDelegateCall(frame),

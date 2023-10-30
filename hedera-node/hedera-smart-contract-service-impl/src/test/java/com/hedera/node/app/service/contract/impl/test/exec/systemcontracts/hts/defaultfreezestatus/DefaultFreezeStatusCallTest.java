@@ -35,7 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class DefaultFreezeStatusCallTest extends HtsCallTestBase {
     @Test
     void returnsDefaultFreezeStatusForPresentToken() {
-        final var subject = new DefaultFreezeStatusCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN);
+        final var subject = new DefaultFreezeStatusCall(frame, gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 
@@ -50,7 +50,7 @@ class DefaultFreezeStatusCallTest extends HtsCallTestBase {
 
     @Test
     void returnsDefaultFreezeStatusForMissingToken() {
-        final var subject = new DefaultFreezeStatusCall(gasCalculator, mockEnhancement(), false, null);
+        final var subject = new DefaultFreezeStatusCall(frame, gasCalculator, mockEnhancement(), false, null);
 
         final var result = subject.execute().fullResult().result();
 
@@ -65,7 +65,7 @@ class DefaultFreezeStatusCallTest extends HtsCallTestBase {
 
     @Test
     void returnsDefaultFreezeStatusForMissingTokenStaticCall() {
-        final var subject = new DefaultFreezeStatusCall(gasCalculator, mockEnhancement(), true, null);
+        final var subject = new DefaultFreezeStatusCall(frame, gasCalculator, mockEnhancement(), true, null);
 
         final var result = subject.execute().fullResult().result();
 
