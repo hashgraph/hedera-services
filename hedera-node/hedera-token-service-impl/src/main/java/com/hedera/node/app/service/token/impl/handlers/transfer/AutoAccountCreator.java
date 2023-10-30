@@ -123,8 +123,7 @@ public class AutoAccountCreator {
         // TODO: Check if this is the correct verifier
         final Predicate<Key> verifier =
                 key -> handleContext.verificationFor(key).passed();
-
-        final var childRecord = handleContext.dispatchRemovableChildTransaction(
+        final var childRecord = handleContext.dispatchRemovablePrecedingChildTransaction(
                 syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier, handleContext.payer());
 
         if (!isAliasEVMAddress && evmAddress != null) {

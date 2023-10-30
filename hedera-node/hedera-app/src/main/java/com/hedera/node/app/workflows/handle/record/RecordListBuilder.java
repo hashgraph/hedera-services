@@ -164,7 +164,7 @@ public final class RecordListBuilder {
      */
     public SingleTransactionRecordBuilderImpl addChild(@NonNull final Configuration configuration) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddChild(configuration, false);
+        return doAddChild(configuration, false, false);
     }
 
     /**
@@ -175,17 +175,19 @@ public final class RecordListBuilder {
      * {@link #addChild(Configuration)} should be used.
      *
      * @param configuration the current configuration
+     * @param preceding indicates whether this child transaction is preceding
      * @return the record builder for the child transaction
      * @throws NullPointerException if {@code consensusConfig} is {@code null}
      * @throws HandleException      if no more child slots are available
      */
-    public SingleTransactionRecordBuilderImpl addRemovableChild(@NonNull final Configuration configuration) {
+    public SingleTransactionRecordBuilderImpl addRemovableChild(
+            @NonNull final Configuration configuration, final boolean preceding) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddChild(configuration, true);
+        return doAddChild(configuration, true, preceding);
     }
 
     private SingleTransactionRecordBuilderImpl doAddChild(
-            @NonNull final Configuration configuration, final boolean removable) {
+            @NonNull final Configuration configuration, final boolean removable, final boolean preceding) {
         // FUTURE: We should reuse the RecordListBuilder between handle calls, and we should reuse these lists, in
         // which case we will no longer have to create them lazily.
         if (childRecordBuilders == null) {
@@ -204,7 +206,7 @@ public final class RecordListBuilder {
         final var prevConsensusNow = childRecordBuilders.isEmpty()
                 ? userTxnRecordBuilder.consensusNow()
                 : childRecordBuilders.get(childRecordBuilders.size() - 1).consensusNow();
-        final var consensusNow = prevConsensusNow.plusNanos(1L);
+        final var consensusNow = preceding ? prevConsensusNow.minusNanos(1L) : prevConsensusNow.plusNanos(1L);
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, removable)
                 .parentConsensus(parentConsensusTimestamp)
                 .exchangeRate(userTxnRecordBuilder.exchangeRate());

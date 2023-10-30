@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
@@ -703,7 +704,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @Test
         void testAddRemovableChildRecordBuilder(@Mock SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
-            when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
+            when(recordListBuilder.addRemovableChild(any(), false)).thenReturn(childRecordBuilder);
             final var context = createContext(defaultTransactionBody());
 
             // when
@@ -765,7 +766,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             when(childRecordBuilder.status()).thenReturn(ResponseCodeEnum.OK);
             when(recordListBuilder.addPreceding(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
-            when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
+            when(recordListBuilder.addRemovableChild(any(), eq(false))).thenReturn(childRecordBuilder);
 
             stack = new SavepointStackImpl(baseState);
         }
@@ -835,6 +836,15 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
+                            txBody, SingleTransactionRecordBuilder.class, (Predicate<Key>) null, AccountID.DEFAULT))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> context.dispatchRemovablePrecedingChildTransaction(
+                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> context.dispatchRemovablePrecedingChildTransaction(
+                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> context.dispatchRemovablePrecedingChildTransaction(
                             txBody, SingleTransactionRecordBuilder.class, (Predicate<Key>) null, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
         }

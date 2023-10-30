@@ -483,6 +483,33 @@ public interface HandleContext {
             @NonNull AccountID syntheticPayerId);
 
     /**
+     * Dispatches a removable preceding child transaction.
+     *
+     * <p>A removable preceding child transaction depends on the current transaction. It behaves in almost all aspects like a
+     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID)}.
+     * But unlike regular child transactions, the records of removable preceding child transactions are removed and not reverted and it's consensus time is one nano behind the parent transaction.
+     *
+     * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
+     * any of the {@code verificationFor} methods.
+     *
+     * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
+     *
+     * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
+     * @param recordBuilderClass the record builder class of the child transaction
+     * @param callback           a {@link Predicate} callback function that will observe each primitive key
+     * @param syntheticPayerId  the payer of the child transaction
+     * @return the record builder of the child transaction
+     * @throws NullPointerException     if any of the arguments is {@code null}
+     * @throws IllegalArgumentException if the current transaction is a
+     *                                  {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     */
+    @NonNull
+    <T> T dispatchRemovablePrecedingChildTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayerId);
+    /**
      * Dispatches a removable child transaction that already has a transaction ID.
      *
      * @param txBody          the {@link TransactionBody} of the child transaction to dispatch

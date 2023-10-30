@@ -496,7 +496,18 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final Class<T> recordBuilderClass,
             @NonNull final Predicate<Key> callback,
             @NonNull final AccountID syntheticPayerId) {
-        final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
+        final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration(), false);
+        return doDispatchChildTransaction(syntheticPayerId, txBody, childRecordBuilder, recordBuilderClass, callback);
+    }
+
+    @NonNull
+    @Override
+    public <T> T dispatchRemovablePrecedingChildTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayerId) {
+        final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration(), true);
         return doDispatchChildTransaction(syntheticPayerId, txBody, childRecordBuilder, recordBuilderClass, callback);
     }
 
@@ -628,7 +639,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     @NonNull
     public <T> T addRemovableChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addRemovableChild(configuration());
+        final var result = recordListBuilder.addRemovableChild(configuration(), false);
         return castRecordBuilder(result, recordBuilderClass);
     }
 
