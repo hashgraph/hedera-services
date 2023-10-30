@@ -232,6 +232,34 @@ public record HederaEvmTransactionResult(
                 null);
     }
 
+    /**
+     * Create a result for a transaction that failed due to validation exceptions.
+     *
+     * @param senderId the sender of the EVM transaction
+     * @param transaction the transaction object
+     * @param reason   the reason for the failure
+     * @return the result
+     */
+    public static HederaEvmTransactionResult fromAborted(
+            @NonNull final AccountID senderId,
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final ResponseCodeEnum reason) {
+        requireNonNull(senderId);
+        requireNonNull(transaction);
+        requireNonNull(reason);
+        return new HederaEvmTransactionResult(
+                0,
+                0,
+                senderId,
+                transaction.contractId(),
+                null,
+                Bytes.EMPTY,
+                null,
+                Bytes.wrap(reason.name().getBytes()),
+                List.of(),
+                null);
+    }
+
     private ContractFunctionResult withMaybeEthFields(
             @NonNull final ContractFunctionResult.Builder builder, @Nullable final EthTxData ethTxData) {
         if (ethTxData != null) {
