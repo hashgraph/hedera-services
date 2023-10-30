@@ -7,7 +7,6 @@ module com.hedera.node.app.service.schedule.impl {
     requires transitive com.hedera.node.hapi;
     requires transitive dagger;
     requires transitive javax.inject;
-
     requires com.hedera.node.app.hapi.utils;
     // Required for ReadableAccountStore to read payer account details on create, sign, or query
     requires com.hedera.node.app.service.token;
