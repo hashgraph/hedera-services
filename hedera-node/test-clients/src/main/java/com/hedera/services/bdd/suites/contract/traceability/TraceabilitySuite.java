@@ -4926,6 +4926,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
+    @HapiTest
     private HapiSpec hollowAccountCreate2MergeExportsExpectedSidecars() {
         final var tcValue = 1_234L;
         final var create2Factory = "Create2Factory";
@@ -5092,6 +5093,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
+    @HapiTest
     private HapiSpec assertSidecars() {
         return defaultHapiSpec("assertSidecars")
                 .given(
