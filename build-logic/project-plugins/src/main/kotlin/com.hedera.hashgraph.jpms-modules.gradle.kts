@@ -220,8 +220,8 @@ extraJavaModuleInfo {
     automaticModule("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.blake2bf")
     automaticModule("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.blake2bf")
     automaticModule("net.java.dev.jna:jna", "com.sun.jna")
-    automaticModule("org.bouncycastle:bcprov-jdk15on", "org.bouncycastle.provider")
-    automaticModule("org.bouncycastle:bcpkix-jdk15on", "org.bouncycastle.pkix")
+    automaticModule("org.bouncycastle:bcprov-jdk18on", "org.bouncycastle.provider")
+    automaticModule("org.bouncycastle:bcpkix-jdk18on", "org.bouncycastle.pkix")
 
     // automatic modules to make it build, might be able to move them full modules
     automaticModule("com.google.android:annotations", "com.google.android.annotations")
