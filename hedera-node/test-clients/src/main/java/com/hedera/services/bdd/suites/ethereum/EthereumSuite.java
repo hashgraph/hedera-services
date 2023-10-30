@@ -928,7 +928,7 @@ public class EthereumSuite extends HapiSuite {
                                 .nonce(0)
                                 .gasPrice(0L)
                                 .gasLimit(1_000_000L)
-                                .hasKnownStatusFrom(INVALID_CONTRACT_ID, CONTRACT_REVERT_EXECUTED))))
+                                .hasKnownStatusFrom(INVALID_CONTRACT_ID))))
                 .then(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         getTxnRecord("invalidContractCallTxn")
