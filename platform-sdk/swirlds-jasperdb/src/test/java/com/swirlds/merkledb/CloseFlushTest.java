@@ -39,6 +39,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -60,6 +63,12 @@ public class CloseFlushTest {
     @BeforeAll
     public static void setup() throws IOException {
         tmpFileDir = TemporaryFileBuilder.buildTemporaryFile();
+        Configurator.setRootLevel(Level.WARN);
+    }
+
+    @AfterAll
+    public static void cleanUp() {
+        Configurator.reconfigure();
     }
 
     @Test
@@ -211,6 +220,16 @@ public class CloseFlushTest {
 
                 public long getLastLeafPath() {
                     return delegate.getLastLeafPath();
+                }
+
+                @Override
+                public void enableBackgroundCompaction() {
+                    delegate.enableBackgroundCompaction();
+                }
+
+                @Override
+                public void stopAndDisableBackgroundCompaction() {
+                    delegate.stopAndDisableBackgroundCompaction();
                 }
             };
         }

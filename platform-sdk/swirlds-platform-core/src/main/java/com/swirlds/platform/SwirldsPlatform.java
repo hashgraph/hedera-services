@@ -42,6 +42,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
@@ -51,6 +52,7 @@ import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.common.notification.listeners.StateLoadedFromDiskCompleteListener;
 import com.swirlds.common.notification.listeners.StateLoadedFromDiskNotification;
+import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
@@ -146,6 +148,7 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.IssHandler;
+import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
@@ -299,6 +302,8 @@ public class SwirldsPlatform implements Platform {
      */
     private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
+    final ConsensusHashManager consensusHashManager;
+
     /** Manages emergency recovery */
     private final EmergencyRecoveryManager emergencyRecoveryManager;
 
@@ -409,14 +414,30 @@ public class SwirldsPlatform implements Platform {
 
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
+        // Only validate preconsensus signature transactions if we are not recovering from an ISS.
+        // ISS round == null means we haven't observed an ISS yet.
+        // ISS round < current round means there was an ISS prior to the saved state
+        //    that has already been recovered from.
+        // ISS round >= current round means that the ISS happens in the future relative the initial state, meaning
+        //    we may observe ISS-inducing signature transactions in the preconsensus event stream.
+        final Scratchpad<IssScratchpad> issScratchpad =
+                Scratchpad.create(platformContext, selfId, IssScratchpad.class, "platform.iss");
+        issScratchpad.logContents();
+        final SerializableLong issRound = issScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
+        final boolean ignorePreconsensusSignatures = issRound != null && issRound.getValue() >= initialState.getRound();
+
+        // A round that we will completely skip ISS detection for. Needed for tests that do janky state modification
+        // without a software upgrade (in production this feature should not be used).
         final long roundToIgnore = stateConfig.validateInitialState() ? DO_NOT_IGNORE_ROUNDS : initialState.getRound();
-        final ConsensusHashManager consensusHashManager = components.add(new ConsensusHashManager(
+
+        consensusHashManager = components.add(new ConsensusHashManager(
                 platformContext,
                 Time.getCurrent(),
                 dispatchBuilder,
                 currentAddressBook,
                 epochHash,
                 appVersion,
+                ignorePreconsensusSignatures,
                 roundToIgnore));
 
         components.add(new IssHandler(
@@ -427,7 +448,8 @@ public class SwirldsPlatform implements Platform {
                 platformStatusManager,
                 this::haltRequested,
                 wiring::handleFatalError,
-                appCommunicationComponent));
+                appCommunicationComponent,
+                issScratchpad));
 
         components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
 
@@ -517,6 +539,7 @@ public class SwirldsPlatform implements Platform {
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
                 metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
+
         consensusRoundHandler = components.add(new ConsensusRoundHandler(
                 platformContext,
                 threadManager,
@@ -600,14 +623,12 @@ public class SwirldsPlatform implements Platform {
         validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
         // some events in the PCES might have been created by nodes that are no longer in the current
         // address book but are in the previous one, so we need both for signature validation
-        if (basicConfig.verifyEventSigs()) {
-            validators.add(new SignatureValidator(
-                    initialState.getState().getPlatformState().getPreviousAddressBook(),
-                    currentAddressBook,
-                    appVersion,
-                    CryptoStatic::verifySignature,
-                    time));
-        }
+        validators.add(new SignatureValidator(
+                initialState.getState().getPlatformState().getPreviousAddressBook(),
+                currentAddressBook,
+                appVersion,
+                CryptoStatic::verifySignature,
+                time));
 
         eventValidators = new GossipEventValidators(validators);
         eventValidator = new EventValidator(
@@ -1105,6 +1126,8 @@ public class SwirldsPlatform implements Platform {
                     stateManagementComponent,
                     initialMinimumGenerationNonAncient);
         }
+
+        consensusHashManager.signalEndOfPreconsensusReplay();
 
         platformStatusManager.submitStatusAction(
                 new DoneReplayingEventsAction(Time.getCurrent().now()));

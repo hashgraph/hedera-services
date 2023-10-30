@@ -16,9 +16,9 @@
 
 package com.swirlds.benchmark;
 
+import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicLong;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -43,13 +43,16 @@ public class HalfDiskMapBench extends BaseBench {
 
     @Benchmark
     public void merge() throws Exception {
-        beforeTest("mergeBench");
+        String storeName = "mergeBench";
+        beforeTest(storeName);
 
         final long[] map = new long[verify ? maxKey : 0];
         Arrays.fill(map, INVALID_PATH);
 
         final var store =
-                new HalfDiskHashMap<>(maxKey, new BenchmarkKeySerializer(), getTestDir(), "mergeBench", null, false);
+                new HalfDiskHashMap<>(maxKey, new BenchmarkKeySerializer(), getTestDir(), storeName, null, false);
+        final var dataFileCompactor = new DataFileCompactor(
+                storeName, store.getFileCollection(), store.getBucketIndexToBucketLocation(), null, null, null);
         System.out.println();
 
         // Write files
@@ -70,16 +73,8 @@ public class HalfDiskMapBench extends BaseBench {
 
         // Merge files
         start = System.currentTimeMillis();
-        final AtomicLong count = new AtomicLong(0);
-        store.merge(
-                list -> {
-                    count.set(list.size());
-                    return list;
-                },
-                2,
-                null,
-                null);
-        System.out.println("Merged " + count.get() + " files in " + (System.currentTimeMillis() - start) + "ms");
+        dataFileCompactor.compact();
+        System.out.println("Compacted files in " + (System.currentTimeMillis() - start) + "ms");
 
         // Verify merged content
         if (verify) {
