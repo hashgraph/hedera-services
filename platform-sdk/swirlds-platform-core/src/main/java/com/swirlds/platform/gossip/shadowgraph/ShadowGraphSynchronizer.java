@@ -19,7 +19,6 @@ package com.swirlds.platform.gossip.shadowgraph;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 
-
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.threading.framework.QueueThread;
