@@ -96,7 +96,7 @@ public class RecordFinalizerBase {
             final var token = tokenStore.get(relTokenId);
             // Add this to fungible token transfer list only if this token is a fungible token
             if (!token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
-                continue;
+                //                continue;
             }
             final var modifiedTokenRel = writableTokenRelStore.get(relAcctId, relTokenId);
             final var persistedTokenRel = writableTokenRelStore.getOriginalValue(relAcctId, relTokenId);

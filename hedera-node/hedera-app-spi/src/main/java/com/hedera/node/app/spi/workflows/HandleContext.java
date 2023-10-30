@@ -544,18 +544,6 @@ public interface HandleContext {
     <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
 
     /**
-     * Returns a record builder for the given record builder subtype.
-     *
-     * @param recordBuilderClass the record type
-     * @param <T> the record type
-     * @return a builder for the given record type
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
-     */
-    @NonNull
-    <T> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass);
-
-    /**
      * Returns the current {@link SavepointStack}.
      *
      * @return the current {@code TransactionStack}

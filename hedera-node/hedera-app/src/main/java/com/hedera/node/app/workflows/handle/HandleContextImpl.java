@@ -634,12 +634,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     @NonNull
-    public <T> T userTransactionRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        return castRecordBuilder(recordBuilder, recordBuilderClass);
-    }
-
-    @Override
-    @NonNull
     public SavepointStack savepointStack() {
         return stack;
     }

@@ -26,18 +26,14 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenDissociateResourceUsage;
@@ -48,7 +44,6 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.util.TokenRelListCalculator;
 import com.hedera.node.app.service.token.impl.validators.TokenListChecks;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -140,23 +135,6 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                     // Confusing, but we're _adding_ the number of NFTs to _subtract_ from the account. The total
                     // subtraction will be done outside the dissociation loop
                     numNftsToSubtract += tokenRelBalance;
-
-                    final var newBuilder = CryptoTransferTransactionBody.newBuilder();
-                    final var transferList = TransferList.newBuilder();
-                    newBuilder.transfers(transferList.build());
-                    final var tokenTransferList = TokenTransferList.newBuilder().token(token.tokenId());
-                    final List<AccountAmount> aaList = new ArrayList<>();
-                    aaList.add(AccountAmount.newBuilder()
-                            .accountID(tokenRel.accountId())
-                            .amount(tokenRelBalance * -1)
-                            .build());
-                    tokenTransferList.transfers(aaList);
-
-                    final ArrayList<TokenTransferList> newTokenTransferLists = new ArrayList<>();
-                    newTokenTransferLists.add(tokenTransferList.build());
-
-                    final var recordBuilder = context.userTransactionRecordBuilder(CryptoTransferRecordBuilder.class);
-                    recordBuilder.tokenTransferLists(newTokenTransferLists);
                 }
             } else {
                 // Handle active tokens
