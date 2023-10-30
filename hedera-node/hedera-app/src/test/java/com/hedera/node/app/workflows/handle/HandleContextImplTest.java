@@ -704,7 +704,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @Test
         void testAddRemovableChildRecordBuilder(@Mock SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
-            when(recordListBuilder.addRemovableChild(any(), false)).thenReturn(childRecordBuilder);
+            when(recordListBuilder.addRemovableChild(any(), eq(false))).thenReturn(childRecordBuilder);
             final var context = createContext(defaultTransactionBody());
 
             // when
