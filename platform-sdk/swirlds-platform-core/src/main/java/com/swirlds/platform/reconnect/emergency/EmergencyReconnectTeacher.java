@@ -18,6 +18,7 @@ package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
@@ -48,11 +49,13 @@ public class EmergencyReconnectTeacher {
     private final ReconnectMetrics reconnectMetrics;
     private final ThreadManager threadManager;
     private final Configuration configuration;
+    private final Time time;
 
     @Nullable
     private final BooleanSupplier requestToStopTeaching;
 
     /**
+     * @param time                   provides wall clock time
      * @param threadManager          responsible for managing thread lifecycles
      * @param stateFinder            finds an acceptable state for emergency reconnect
      * @param reconnectSocketTimeout the socket timeout to use when executing a reconnect
@@ -61,12 +64,14 @@ public class EmergencyReconnectTeacher {
      * @param configuration          the configuration for the platform
      */
     public EmergencyReconnectTeacher(
+            @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
             @NonNull final SignedStateFinder stateFinder,
             @NonNull final Duration reconnectSocketTimeout,
             @Nullable final BooleanSupplier requestToStopTeaching,
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final Configuration configuration) {
+        this.time = Objects.requireNonNull(time);
         this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
         this.stateFinder = Objects.requireNonNull(stateFinder, "stateFinder must not be null");
         this.reconnectSocketTimeout =
@@ -114,6 +119,7 @@ public class EmergencyReconnectTeacher {
                             connection.getOtherId());
 
                     new ReconnectTeacher(
+                                    time,
                                     threadManager,
                                     connection,
                                     reconnectSocketTimeout,

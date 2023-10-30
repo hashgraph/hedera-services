@@ -19,6 +19,7 @@ package com.swirlds.platform.reconnect;
 import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
@@ -67,6 +68,7 @@ public class ReconnectTeacher {
     private int originalSocketTimeout;
 
     private final ThreadManager threadManager;
+    private final Time time;
 
     /**
      * A function to check periodically if teaching should be stopped, e.g. when the teacher has fallen behind.
@@ -85,6 +87,7 @@ public class ReconnectTeacher {
      * @param configuration          the configuration
      */
     public ReconnectTeacher(
+            @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
             @NonNull final Connection connection,
             @NonNull final Duration reconnectSocketTimeout,
@@ -95,6 +98,7 @@ public class ReconnectTeacher {
             @NonNull final ReconnectMetrics statistics,
             @NonNull final Configuration configuration) {
 
+        this.time = Objects.requireNonNull(time);
         this.threadManager = Objects.requireNonNull(threadManager);
         this.connection = Objects.requireNonNull(connection);
         this.reconnectSocketTimeout = reconnectSocketTimeout;
@@ -221,6 +225,7 @@ public class ReconnectTeacher {
 
         final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
         final TeachingSynchronizer synchronizer = new TeachingSynchronizer(
+                time,
                 threadManager,
                 new MerkleDataInputStream(connection.getDis()),
                 new MerkleDataOutputStream(connection.getDos()),

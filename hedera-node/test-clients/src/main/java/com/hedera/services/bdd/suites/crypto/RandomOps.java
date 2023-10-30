@@ -22,27 +22,16 @@ import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.acco
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetailsNoPayment;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getExecTime;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getExecTimeNoPayment;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -51,13 +40,11 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -71,12 +58,7 @@ public class RandomOps extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            //						freezeDemo(),
-            //						retryLimitDemo()
-            //						execTimesDemo(),
-            getAccountDetailsDemo()
-        });
+        return List.of(new HapiSpec[] {freezeDemo(), retryLimitDemo(), getAccountDetailsDemo()});
     }
 
     @HapiTest
@@ -152,53 +134,7 @@ public class RandomOps extends HapiSuite {
                                 .hasCostAnswerPrecheck(NOT_SUPPORTED));
     }
 
-    private HapiSpec execTimesDemo() {
-        final var cryptoTransfer = "cryptoTransfer";
-        final var submitMessage = "submitMessage";
-        final var contractCall = "contractCall";
-
-        final var humbleUser = "aamAdmi";
-        final var topic = "ofGeneralInterest";
-        final var contract = "Multipurpose";
-
-        return defaultHapiSpec("execTimesDemo")
-                .given(
-                        inParallel(IntStream.range(0, 1000)
-                                .mapToObj(i -> cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
-                                        .deferStatusResolution()
-                                        .noLogging())
-                                .toArray(HapiSpecOperation[]::new)),
-                        sleepFor(5_000),
-                        cryptoCreate(humbleUser).balance(ONE_HUNDRED_HBARS),
-                        createTopic(topic),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
-                                .payingWith(GENESIS)
-                                .via(cryptoTransfer),
-                        submitMessageTo(topic).message(randomUppercase(256)).via(submitMessage),
-                        contractCall(contract).sending(ONE_HBAR).via(contractCall))
-                .then(
-                        /* NetworkGetExecutionTime requires superuser payer */
-                        getExecTime(cryptoTransfer, submitMessage, contractCall)
-                                .payingWith(GENESIS)
-                                .hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID),
-                        /* Uncomment to validate failure message */
-                        //								.assertingNoneLongerThan(1, ChronoUnit.MILLIS)
-                        //								.logged(),
-                        getExecTimeNoPayment(cryptoTransfer, submitMessage, contractCall)
-                                .payingWith(GENESIS)
-                                .hasCostAnswerPrecheck(NOT_SUPPORTED),
-                        getExecTime(cryptoTransfer, submitMessage, contractCall)
-                                .payingWith(humbleUser)
-                                .hasCostAnswerPrecheck(NOT_SUPPORTED)
-                                .hasAnswerOnlyPrecheck(NOT_SUPPORTED),
-                        getExecTimeNoPayment(cryptoTransfer, submitMessage, contractCall)
-                                .payingWith(humbleUser)
-                                .hasCostAnswerPrecheck(NOT_SUPPORTED));
-    }
-
+    @HapiTest
     private HapiSpec retryLimitDemo() {
         return defaultHapiSpec("RetryLimitDemo")
                 .given()
@@ -211,6 +147,7 @@ public class RandomOps extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 7L)));
     }
 
+    // @todo('8687') Revisit once isolated tests are enabled
     private HapiSpec freezeDemo() {
         return customHapiSpec("FreezeDemo")
                 .withProperties(Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))

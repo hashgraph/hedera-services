@@ -129,23 +129,17 @@ public class EventIntake {
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
-        final Supplier<Integer> prehandlePoolSize;
-        if (eventConfig.asyncPrehandle()) {
-            final BlockingQueue<Runnable> prehandlePoolQueue = new LinkedBlockingQueue<>();
-            prehandlePoolSize = prehandlePoolQueue::size;
-            prehandlePool = new ThreadPoolExecutor(
-                    eventConfig.prehandlePoolSize(),
-                    eventConfig.prehandlePoolSize(),
-                    0L,
-                    TimeUnit.MILLISECONDS,
-                    prehandlePoolQueue,
-                    threadManager.createThreadFactory("platform", "txn-prehandle"));
-        } else {
-            prehandlePool = null;
-            prehandlePoolSize = () -> 0;
-        }
 
-        metrics = new EventIntakeMetrics(platformContext, prehandlePoolSize);
+        final BlockingQueue<Runnable> prehandlePoolQueue = new LinkedBlockingQueue<>();
+        prehandlePool = new ThreadPoolExecutor(
+                eventConfig.prehandlePoolSize(),
+                eventConfig.prehandlePoolSize(),
+                0L,
+                TimeUnit.MILLISECONDS,
+                prehandlePoolQueue,
+                threadManager.createThreadFactory("platform", "txn-prehandle"));
+
+        metrics = new EventIntakeMetrics(platformContext, prehandlePoolQueue::size);
     }
 
     /**
@@ -155,9 +149,6 @@ public class EventIntake {
      * @param event the event
      */
     public void addUnlinkedEvent(final GossipEvent event) {
-        phaseTimer.activatePhase(EventIntakePhase.EVENT_RECEIVED_DISPATCH);
-        dispatcher.receivedEvent(event);
-
         phaseTimer.activatePhase(EventIntakePhase.LINKING);
         eventLinker.linkEvent(event);
 
@@ -191,14 +182,8 @@ public class EventIntake {
             logger.debug(INTAKE_EVENT.getMarker(), "Adding {} ", event::toShortString);
             final long minGenNonAncientBeforeAdding = consensus().getMinGenerationNonAncient();
 
-            if (prehandlePool == null) {
-                // Prehandle transactions on the intake thread (i.e. this thread).
-                phaseTimer.activatePhase(EventIntakePhase.PREHANDLING);
-                prehandleEvent.accept(event);
-            } else {
-                // Prehandle transactions on the thread pool.
-                prehandlePool.submit(buildPrehandleTask(event));
-            }
+            // Prehandle transactions on the thread pool.
+            prehandlePool.submit(buildPrehandleTask(event));
 
             // record the event in the hashgraph, which results in the events in consEvent reaching consensus
             phaseTimer.activatePhase(EventIntakePhase.ADDING_TO_HASHGRAPH);
@@ -261,16 +246,13 @@ public class EventIntake {
      */
     private void handleConsensus(final ConsensusRound consensusRound) {
         if (consensusRound != null) {
+            // We need to wait for prehandles to finish before proceeding.
+            // It is critically important that prehandle is always called prior to handleConsensusRound().
 
-            // If we are asynchronously prehandling transactions, we need to
-            // wait for prehandles to finish before proceeding. It is critically
-            // important that prehandle is always called prior to handleConsensusRound().
-            if (prehandlePool != null) {
-                final long start = time.nanoTime();
-                consensusRound.forEach(e -> ((EventImpl) e).awaitPrehandleCompletion());
-                final long end = time.nanoTime();
-                metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
-            }
+            final long start = time.nanoTime();
+            consensusRound.forEach(e -> ((EventImpl) e).awaitPrehandleCompletion());
+            final long end = time.nanoTime();
+            metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
 
             eventLinker.updateGenerations(consensusRound.getGenerations());
             dispatcher.consensusRound(consensusRound);

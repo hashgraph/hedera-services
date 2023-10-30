@@ -303,6 +303,7 @@ public interface Scenarios extends TransactionFactory {
     final TestUser ALICE = new TestUser(
             account1002,
             Account.newBuilder()
+                    .tinybarBalance(100_000_000)
                     .accountId(account1002)
                     .key(FAKE_ECDSA_KEY_INFOS[2].publicKey())
                     .build(),

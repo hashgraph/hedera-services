@@ -106,6 +106,7 @@ public class TokenManagementSpecsStateful extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     private HapiSpec nftMintingCapIsEnforced() {
         return defaultHapiSpec("NftMintingCapIsEnforced")
                 .given(

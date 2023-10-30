@@ -18,6 +18,7 @@ package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
@@ -58,6 +59,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     private final ThreadManager threadManager;
     private final NotificationEngine notificationEngine;
     private final Configuration configuration;
+    private final Time time;
 
     @NonNull
     private final FallenBehindManager fallenBehindManager;
@@ -68,6 +70,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     private final StatusActionSubmitter statusActionSubmitter;
 
     /**
+     * @param time                     provides wall clock time
      * @param threadManager            responsible for managing thread lifecycles
      * @param notificationEngine       the notification engine to use
      * @param peerId                   the ID of the peer we are communicating with
@@ -82,6 +85,7 @@ public class EmergencyReconnectProtocol implements Protocol {
      * @param configuration            the platform configuration
      */
     public EmergencyReconnectProtocol(
+            @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
             @NonNull final NotificationEngine notificationEngine,
             @NonNull final NodeId peerId,
@@ -95,6 +99,7 @@ public class EmergencyReconnectProtocol implements Protocol {
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Configuration configuration) {
 
+        this.time = Objects.requireNonNull(time);
         this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
         this.notificationEngine = Objects.requireNonNull(notificationEngine, "notificationEngine must not be null");
         this.peerId = Objects.requireNonNull(peerId, "peerId must not be null");
@@ -167,6 +172,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     private void teacher(final Connection connection) {
         try {
             new EmergencyReconnectTeacher(
+                            time,
                             threadManager,
                             stateFinder,
                             reconnectSocketTimeout,
