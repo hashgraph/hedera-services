@@ -64,8 +64,7 @@ public class MiscCryptoSuite extends HapiSuite {
         return Arrays.asList(
                 //				transferChangesBalance()
                 //				getsGenesisBalance()
-                //				reduceTransferFee(),
-                sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign());
+                reduceTransferFee(), sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign());
     }
 
     private List<HapiSpec> negativeTests() {
@@ -103,6 +102,7 @@ public class MiscCryptoSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE));
     }
 
+    @HapiTest
     private static HapiSpec reduceTransferFee() {
         final long REDUCED_NODE_FEE = 2L;
         final long REDUCED_NETWORK_FEE = 3L;
@@ -116,7 +116,7 @@ public class MiscCryptoSuite extends HapiSuite {
                                 .payingWith("sender")
                                 .fee(REDUCED_TOTAL_FEE)
                                 .hasPrecheck(INSUFFICIENT_TX_FEE))
-                .when(reduceFeeFor(CryptoTransfer, REDUCED_NODE_FEE, REDUCED_NETWORK_FEE, REDUCED_SERVICE_FEE))
+                .when(reduceFeeFor(CryptoTransfer, REDUCED_NODE_FEE, REDUCED_NETWORK_FEE, REDUCED_SERVICE_FEE))dfgsdfdsfdsdsfdsfdfsdsfdsfdfsdsfdsfdsfdsfsdfdsfdsfdsfdsfdsfdsfdfsdsfdfs
                 .then(
                         cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
                                 .payingWith("sender")
