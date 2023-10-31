@@ -53,10 +53,6 @@ public class TokenExpiryTranslator extends AbstractHtsCallTranslator {
         final var args = TOKEN_EXPIRY.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new TokenExpiryCall(
-                attempt.getFrame(),
-                attempt.systemContractGasCalculator(),
-                attempt.enhancement(),
-                attempt.isStaticCall(),
-                token);
+                attempt.systemContractGasCalculator(), attempt.enhancement(), attempt.isStaticCall(), token);
     }
 }

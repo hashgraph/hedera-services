@@ -58,7 +58,6 @@ public class TokenKeyTranslator extends AbstractHtsCallTranslator {
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         final BigInteger keyType = args.get(1);
         return new TokenKeyCall(
-                attempt.getFrame(),
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 attempt.isStaticCall(),

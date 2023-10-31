@@ -52,7 +52,6 @@ public class IsKycTranslator extends AbstractHtsCallTranslator {
         final var args = IS_KYC.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new IsKycCall(
-                attempt.getFrame(),
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 attempt.isStaticCall(),

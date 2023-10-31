@@ -53,10 +53,6 @@ public class TokenCustomFeesTranslator extends AbstractHtsCallTranslator {
         final var args = TOKEN_CUSTOM_FEES.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new TokenCustomFeesCall(
-                attempt.getFrame(),
-                attempt.systemContractGasCalculator(),
-                attempt.enhancement(),
-                attempt.isStaticCall(),
-                token);
+                attempt.systemContractGasCalculator(), attempt.enhancement(), attempt.isStaticCall(), token);
     }
 }

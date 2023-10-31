@@ -52,7 +52,6 @@ public class IsFrozenTranslator extends AbstractHtsCallTranslator {
         final var args = IS_FROZEN.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new IsFrozenCall(
-                attempt.getFrame(),
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 attempt.isStaticCall(),

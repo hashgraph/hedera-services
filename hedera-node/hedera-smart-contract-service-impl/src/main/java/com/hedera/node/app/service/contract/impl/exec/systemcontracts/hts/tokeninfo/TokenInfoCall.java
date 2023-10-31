@@ -34,20 +34,18 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TokenInfoCall extends AbstractNonRevertibleTokenViewCall {
     private final Configuration configuration;
     private final boolean isStaticCall;
 
     public TokenInfoCall(
-            @NonNull MessageFrame frame,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             final boolean isStaticCall,
             @Nullable final Token token,
             @NonNull final Configuration configuration) {
-        super(frame, gasCalculator, enhancement, token);
+        super(gasCalculator, enhancement, token);
         this.configuration = requireNonNull(configuration);
         this.isStaticCall = isStaticCall;
     }

@@ -34,20 +34,18 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Abstra
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class IsKycCall extends AbstractNonRevertibleTokenViewCall {
     private final Address account;
     private final boolean isStaticCall;
 
     public IsKycCall(
-            @NonNull MessageFrame frame,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             final boolean isStaticCall,
             @Nullable final Token token,
             @NonNull final Address account) {
-        super(frame, gasCalculator, enhancement, token);
+        super(gasCalculator, enhancement, token);
         this.account = requireNonNull(account);
         this.isStaticCall = isStaticCall;
     }

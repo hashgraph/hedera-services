@@ -60,8 +60,8 @@ class TokenInfoCallTest extends HtsCallTestBase {
         final var expectedLedgerId = com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID);
         when(ledgerConfig.id()).thenReturn(expectedLedgerId);
 
-        final var subject = new TokenInfoCall(
-                mockMessageFrame(), gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, config);
+        final var subject =
+                new TokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, config);
 
         final var result = subject.execute().fullResult().result();
 
@@ -101,8 +101,7 @@ class TokenInfoCallTest extends HtsCallTestBase {
         final var expectedLedgerId = com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01");
         when(ledgerConfig.id()).thenReturn(expectedLedgerId);
 
-        final var subject =
-                new TokenInfoCall(mockMessageFrame(), gasCalculator, mockEnhancement(), false, null, config);
+        final var subject = new TokenInfoCall(gasCalculator, mockEnhancement(), false, null, config);
 
         final var result = subject.execute().fullResult().result();
 
@@ -141,7 +140,7 @@ class TokenInfoCallTest extends HtsCallTestBase {
         when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
         when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01"));
 
-        final var subject = new TokenInfoCall(mockMessageFrame(), gasCalculator, mockEnhancement(), true, null, config);
+        final var subject = new TokenInfoCall(gasCalculator, mockEnhancement(), true, null, config);
 
         final var result = subject.execute().fullResult().result();
 

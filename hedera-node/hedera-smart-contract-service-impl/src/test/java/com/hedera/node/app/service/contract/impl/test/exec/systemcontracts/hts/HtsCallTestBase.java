@@ -16,21 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts;
 
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.withSettings;
-
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
 public class HtsCallTestBase {
@@ -48,12 +41,5 @@ public class HtsCallTestBase {
 
     protected HederaWorldUpdater.Enhancement mockEnhancement() {
         return new HederaWorldUpdater.Enhancement(operations, nativeOperations, systemContractOperations);
-    }
-
-    protected MessageFrame mockMessageFrame() {
-        final var mockFrame = mock(MessageFrame.class, withSettings().strictness(Strictness.LENIENT));
-        final var updater = mock(ProxyWorldUpdater.class);
-        given(mockFrame.getWorldUpdater()).willReturn(updater);
-        return mockFrame;
     }
 }

@@ -56,7 +56,6 @@ public class TokenInfoTranslator extends AbstractHtsCallTranslator {
         final var args = TOKEN_INFO.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new TokenInfoCall(
-                attempt.getFrame(),
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 attempt.isStaticCall(),

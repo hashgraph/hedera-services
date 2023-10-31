@@ -42,8 +42,7 @@ class TokenKeyCallTest extends HtsCallTestBase {
     @Test
     void returnsEd25519KeyStatusForPresentToken() {
         final var key = Key.newBuilder().ed25519(AN_ED25519_KEY.ed25519()).build();
-        final var subject =
-                new TokenKeyCall(mockMessageFrame(), gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN, key);
+        final var subject = new TokenKeyCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN, key);
 
         final var result = subject.execute().fullResult().result();
 
@@ -67,8 +66,7 @@ class TokenKeyCallTest extends HtsCallTestBase {
     void returnsEcdsaKeyStatusForPresentToken() {
         final var key =
                 Key.newBuilder().ecdsaSecp256k1(AN_ED25519_KEY.ed25519()).build();
-        final var subject =
-                new TokenKeyCall(mockMessageFrame(), gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN, key);
+        final var subject = new TokenKeyCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN, key);
 
         final var result = subject.execute().fullResult().result();
 
@@ -91,8 +89,7 @@ class TokenKeyCallTest extends HtsCallTestBase {
     @Test
     void returnsContractKeyStatusForPresentToken() {
         final var key = Key.newBuilder().contractID(VALID_CONTRACT_ADDRESS).build();
-        final var subject =
-                new TokenKeyCall(mockMessageFrame(), gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN, key);
+        final var subject = new TokenKeyCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN, key);
 
         final var result = subject.execute().fullResult().result();
 
@@ -116,8 +113,7 @@ class TokenKeyCallTest extends HtsCallTestBase {
     void returnsDelegatableContractKeyStatusForPresentToken() {
         final var key =
                 Key.newBuilder().delegatableContractId(VALID_CONTRACT_ADDRESS).build();
-        final var subject =
-                new TokenKeyCall(mockMessageFrame(), gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN, key);
+        final var subject = new TokenKeyCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN, key);
 
         final var result = subject.execute().fullResult().result();
 
@@ -139,7 +135,7 @@ class TokenKeyCallTest extends HtsCallTestBase {
 
     @Test
     void returnsTokenKeyStatusForMissingToken() {
-        final var subject = new TokenKeyCall(mockMessageFrame(), gasCalculator, mockEnhancement(), false, null, null);
+        final var subject = new TokenKeyCall(gasCalculator, mockEnhancement(), false, null, null);
 
         final var result = subject.execute().fullResult().result();
 
@@ -161,7 +157,7 @@ class TokenKeyCallTest extends HtsCallTestBase {
 
     @Test
     void returnsTokenKeyStatusForMissingTokenStaticCall() {
-        final var subject = new TokenKeyCall(mockMessageFrame(), gasCalculator, mockEnhancement(), true, null, null);
+        final var subject = new TokenKeyCall(gasCalculator, mockEnhancement(), true, null, null);
 
         final var result = subject.execute().fullResult().result();
 
