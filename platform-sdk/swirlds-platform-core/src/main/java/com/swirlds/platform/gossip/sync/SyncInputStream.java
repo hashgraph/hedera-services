@@ -65,9 +65,9 @@ public class SyncInputStream extends SerializableDataInputStream {
             //            final int level = Deflater.DEFAULT_COMPRESSION;
             //            wrappedStream = new InflaterInputStream(meteredStream, new Inflater(true), bufferSize);
 
-            wrappedStream = new LZ4BlockInputStream(meteredStream);
+//            wrappedStream = new LZ4BlockInputStream(meteredStream);
 
-//            wrappedStream = new Lz4HadoopStreams(bufferSize).createInputStream(meteredStream);
+            wrappedStream = new Lz4HadoopStreams(bufferSize).createInputStream(meteredStream);
 
 
         } else {

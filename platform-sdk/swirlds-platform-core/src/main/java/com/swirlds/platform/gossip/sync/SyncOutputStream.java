@@ -78,9 +78,11 @@ public class SyncOutputStream extends SerializableDataOutputStream {
                     .newStreamingHash32(0x9747b28c)
                     .asChecksum();
 
-            wrappedStream = new LZ4BlockOutputStream(meteredStream, bufferSize, compressor, checksum, true);
+//            wrappedStream = new LZ4BlockOutputStream(meteredStream, bufferSize, compressor, checksum, true);
 
 //            wrappedStream = new Lz4HadoopStreams(bufferSize).createOutputStream(meteredStream);
+
+            wrappedStream = new CompressedOutputStream(meteredStream, bufferSize);
 
         } else {
             wrappedStream = new BufferedOutputStream(meteredStream, bufferSize);
