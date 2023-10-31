@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOP
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
@@ -256,14 +257,14 @@ class QueryCheckerTest extends AppTestBase {
             final var amount = 8L;
             final var txInfo = createPaymentInfo(
                     ALICE.accountID(), send(ALICE.accountID(), amount), receive(nodeSelfAccountId, amount));
-            doThrow(new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, amount))
+            doThrow(new InsufficientBalanceException(INSUFFICIENT_ACCOUNT_BALANCE, amount))
                     .when(solvencyPreCheck)
-                    .checkSolvency(txInfo, ALICE_ACCOUNT, new Fees(amount, 0, 0));
+                    .checkSolvency(txInfo, ALICE_ACCOUNT, new Fees(amount, 0, 0), false);
 
             // then
             assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, 0, amount))
                     .isInstanceOf(InsufficientBalanceException.class)
-                    .has(responseCode(INSUFFICIENT_PAYER_BALANCE))
+                    .has(responseCode(INSUFFICIENT_ACCOUNT_BALANCE))
                     .has(estimatedFee(amount));
         }
 
