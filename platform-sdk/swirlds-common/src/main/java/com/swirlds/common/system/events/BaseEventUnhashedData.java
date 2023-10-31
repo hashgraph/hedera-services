@@ -88,8 +88,6 @@ public class BaseEventUnhashedData implements SelfSerializable {
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         if (serializedVersion < ClassVersion.ROSTER_ROUND) {
             out.writeLong(SEQUENCE_UNUSED);
-            // FUTURE WORK: The otherId should be a selfSerializable NodeId at some point.
-            // Changing the event format may require a HIP.  The old format is preserved for now.
             out.writeLong(otherId == null ? -1 : otherId.id());
             out.writeLong(SEQUENCE_UNUSED);
             out.writeByteArray(signature);
@@ -125,7 +123,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
         final BaseEventUnhashedData that = (BaseEventUnhashedData) o;
 
-        return Arrays.equals(signature, that.signature);
+        return otherId.equals(that.otherId) && Arrays.equals(signature, that.signature);
     }
 
     @Override
@@ -185,7 +183,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
      */
     public void updateOtherParentEventDescriptor(@NonNull final BaseEventHashedData event) {
         if (otherId != null && event.hasOtherParent()) {
-            EventDescriptor otherParent = event.getOtherParents().get(0);
+            final EventDescriptor otherParent = event.getOtherParents().get(0);
             if (otherId == null) {
                 otherId = otherParent.getCreator();
             } else {
