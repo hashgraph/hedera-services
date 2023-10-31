@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.merkledb;
+package com.swirlds.merkledb.collections;
 
 /**
- * Data file collection compaction type.
+ * This interface is implemented by classes that use off-heap memory.
  */
-public enum CompactionType {
-
-    /** Small compactions */
-    SMALL,
-
-    /** Medium compactions */
-    MEDIUM,
-
-    /** Full (large) compactions */
-    FULL
+public interface OffHeapUser {
+    /**
+     * @return the number of bytes of off-heap memory consumed by the object of this class
+     */
+    long getOffHeapConsumption();
 }

@@ -54,7 +54,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * </pre>
  */
 @SuppressWarnings("unused")
-public final class HashListByteBuffer implements HashList {
+public final class HashListByteBuffer implements HashList, OffHeapUser {
     /**
      * The version number for format of current data files
      */
@@ -322,6 +322,7 @@ public final class HashListByteBuffer implements HashList {
      *
      * @return Off-heap usage in bytes, if this hash list is off-heap, or zero otherwise
      */
+    @Override
     public long getOffHeapConsumption() {
         return offHeap ? (long) data.size() * numHashesPerBuffer * HASH_SIZE_BYTES : 0;
     }

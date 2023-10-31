@@ -189,6 +189,11 @@ public class BasicTransactionContext implements TransactionContext {
     }
 
     @Override
+    public boolean isSelfSubmitted() {
+        return nodeInfo.selfId() == submittingMember;
+    }
+
+    @Override
     public AccountID submittingNodeAccount() {
         try {
             return nodeInfo.accountOf(submittingMember);

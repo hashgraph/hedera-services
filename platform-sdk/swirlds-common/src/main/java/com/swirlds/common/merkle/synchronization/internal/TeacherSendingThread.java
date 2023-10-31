@@ -21,13 +21,18 @@ import static com.swirlds.common.merkle.synchronization.internal.LessonType.INTE
 import static com.swirlds.common.merkle.synchronization.internal.LessonType.LEAF_NODE_DATA;
 import static com.swirlds.common.merkle.synchronization.internal.LessonType.NODE_IS_UP_TO_DATE;
 import static com.swirlds.logging.LogMarker.RECONNECT;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.common.utility.throttle.RateLimiter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,8 +43,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * This class encapsulates all logic for the teacher's sending thread.
  *
- * @param <T>
- * 		the type of data used by the view to represent a node
+ * @param <T> the type of data used by the view to represent a node
  */
 public class TeacherSendingThread<T> {
 
@@ -48,8 +52,8 @@ public class TeacherSendingThread<T> {
     private static final String NAME = "sender";
 
     /**
-     * The lesson used to describe an up to date node is always eactly the same. No need to create a new
-     * object each time.
+     * The lesson used to describe an up to date node is always eactly the same. No need to create a new object each
+     * time.
      */
     private static final Lesson<?> UP_TO_DATE_LESSON = new Lesson<>(NODE_IS_UP_TO_DATE, null);
 
@@ -64,26 +68,27 @@ public class TeacherSendingThread<T> {
 
     private final AtomicBoolean senderIsFinished;
 
+    private final RateLimiter rateLimiter;
+    private final int sleepNanos;
+
     /**
      * Create new thread that will send data lessons and queries for a subtree.
      *
-     * @param workGroup
-     * 		the work group managing the reconnect
-     * @param in
-     * 		the input stream
-     * @param out
-     * 		the output stream, this object is responsible for closing this object when finished
-     * @param subtrees
-     * 		a queue containing roots of subtrees to send, may have more roots added by this class
-     * @param view
-     * 		an object that interfaces with the subtree
-     * @param requestToStopTeaching
-     *      a function to check periodically if teaching should be stopped, e.g. because of the
-     *      teacher has fallen behind network
-     * @param senderIsFinished
-     * 		set to true when this thread has finished
+     * @param time                  the wall clock time
+     * @param reconnectConfig       the configuration for reconnect
+     * @param workGroup             the work group managing the reconnect
+     * @param in                    the input stream
+     * @param out                   the output stream, this object is responsible for closing this object when finished
+     * @param subtrees              a queue containing roots of subtrees to send, may have more roots added by this
+     *                              class
+     * @param view                  an object that interfaces with the subtree
+     * @param requestToStopTeaching a function to check periodically if teaching should be stopped, e.g. because of the
+     *                              teacher has fallen behind network
+     * @param senderIsFinished      set to true when this thread has finished
      */
     public TeacherSendingThread(
+            @NonNull final Time time,
+            @NonNull final ReconnectConfig reconnectConfig,
             final StandardWorkGroup workGroup,
             final AsyncInputStream<QueryResponse> in,
             final AsyncOutputStream<Lesson<T>> out,
@@ -98,6 +103,15 @@ public class TeacherSendingThread<T> {
         this.view = view;
         this.requestToStopTeaching = requestToStopTeaching;
         this.senderIsFinished = senderIsFinished;
+
+        final int maxRate = reconnectConfig.teacherMaxNodesPerSecond();
+        if (maxRate > 0) {
+            rateLimiter = new RateLimiter(time, maxRate);
+            sleepNanos = (int) reconnectConfig.teacherRateLimiterSleep().toNanos();
+        } else {
+            rateLimiter = null;
+            sleepNanos = -1;
+        }
     }
 
     /**
@@ -149,14 +163,14 @@ public class TeacherSendingThread<T> {
 
     /**
      * <p>
-     * Send a lesson about a node. Each query sent to the learner is always followed by a lesson (eventually).
-     * Some lessons are just confirmations that the learner has the data. Others actually contain the data required
-     * by the learner to reconstruct the node.
+     * Send a lesson about a node. Each query sent to the learner is always followed by a lesson (eventually). Some
+     * lessons are just confirmations that the learner has the data. Others actually contain the data required by the
+     * learner to reconstruct the node.
      * </p>
      *
      * <p>
-     * Lessons containing data about an internal node may also contain queries. The queries will be for the children
-     * of the internal node.
+     * Lessons containing data about an internal node may also contain queries. The queries will be for the children of
+     * the internal node.
      * </p>
      */
     @SuppressWarnings("unchecked")
@@ -177,6 +191,19 @@ public class TeacherSendingThread<T> {
     }
 
     /**
+     * Enforce the rate limit.
+     *
+     * @throws InterruptedException if the thread is interrupted while sleeping
+     */
+    private void rateLimit() throws InterruptedException {
+        if (rateLimiter != null) {
+            while (!rateLimiter.requestAndTrigger()) {
+                NANOSECONDS.sleep(sleepNanos);
+            }
+        }
+    }
+
+    /**
      * This thread is responsible for sending lessons (and nested queries) to the learner.
      */
     private void run() {
@@ -184,6 +211,8 @@ public class TeacherSendingThread<T> {
             out.sendAsync(buildDataLesson(view.getRoot()));
 
             while (view.areThereNodesToHandle()) {
+                rateLimit();
+
                 if ((requestToStopTeaching != null) && requestToStopTeaching.getAsBoolean()) {
                     logger.info(
                             RECONNECT.getMarker(),
