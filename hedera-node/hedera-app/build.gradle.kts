@@ -74,6 +74,7 @@ xtestModuleInfo {
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.test.fixtures")
     requires("com.hedera.node.app.hapi.fees")
+    requires("com.hedera.node.app.hapi.utils")
     requires("com.hedera.node.app.service.consensus.impl")
     requires("com.hedera.node.app.service.contract.impl")
     requires("com.hedera.node.app.service.file.impl")
@@ -97,9 +98,13 @@ xtestModuleInfo {
     requires("headlong")
     requires("io.netty.transport.epoll")
     requires("javax.inject")
+    requires("org.assertj.core")
+    requires("org.hyperledger.besu.datatypes")
+    requires("org.hyperledger.besu.evm")
     requires("org.junit.jupiter.api")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
+    requires("tuweni.bytes")
 }
 
 jmhModuleInfo {

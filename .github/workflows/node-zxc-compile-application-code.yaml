@@ -52,7 +52,7 @@ on:
         description: "Dependency Scope Check Enabled"
         type: boolean
         required: false
-        default: false
+        default: true
       enable-snyk-scan:
         description: "Snyk Scan Enabled"
         type: boolean

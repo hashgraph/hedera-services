@@ -20,7 +20,7 @@ plugins {
 
 val besuNativeVersion = "0.8.2"
 val besuVersion = "23.10.0"
-val bouncycastleVersion = "1.70"
+val bouncycastleVersion = "1.76"
 val daggerVersion = "2.42"
 val eclipseCollectionsVersion = "10.4.0"
 val grpcVersion = "1.54.1"

@@ -141,7 +141,6 @@ module com.swirlds.platform.core {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
     requires com.swirlds.fchashmap;
-    requires com.swirlds.fcqueue;
     requires com.swirlds.logging;
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;

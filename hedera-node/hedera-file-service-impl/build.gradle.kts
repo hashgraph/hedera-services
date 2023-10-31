@@ -27,11 +27,12 @@ testModuleInfo {
     requires("com.hedera.node.app.service.token")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
+    requires("com.google.protobuf")
+    requires("com.swirlds.test.framework")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
-    requires("com.google.protobuf")
     requiresStatic("com.github.spotbugs.annotations")
     runtimeOnly("org.mockito.inline")
 }

@@ -20,7 +20,6 @@ plugins {
 }
 
 testModuleInfo {
-    requires("com.swirlds.base")
     requires("com.swirlds.base.test.fixtures")
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.api")

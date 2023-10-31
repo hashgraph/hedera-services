@@ -56,3 +56,5 @@ val cleanRun =
     }
 
 tasks.clean { dependsOn(cleanRun) }
+
+tasks.checkModuleDirectivesScope { this.enabled = false }
