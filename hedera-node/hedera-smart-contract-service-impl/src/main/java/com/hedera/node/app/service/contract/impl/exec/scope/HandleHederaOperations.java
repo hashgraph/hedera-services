@@ -18,23 +18,22 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
-import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -94,6 +93,14 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void revert() {
         context.savepointStack().rollback();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void revertChildRecords() {
+        context.revertChildRecords();
     }
 
     /**
@@ -216,7 +223,8 @@ public class HandleHederaOperations implements HederaOperations {
                 number,
                 synthAccountCreationFromHapi(
                         ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation),
-                parent.autoRenewAccountId());
+                parent.autoRenewAccountId(),
+                evmAddress);
     }
 
     /**
@@ -230,7 +238,8 @@ public class HandleHederaOperations implements HederaOperations {
                 number,
                 synthAccountCreationFromHapi(
                         ContractID.newBuilder().contractNum(number).build(), evmAddress, body),
-                body.autoRenewAccountId());
+                body.autoRenewAccountId(),
+                evmAddress);
     }
 
     /**
@@ -282,12 +291,23 @@ public class HandleHederaOperations implements HederaOperations {
     private void dispatchAndMarkCreation(
             final long number,
             @NonNull final CryptoCreateTransactionBody body,
-            @Nullable final AccountID autoRenewAccountId) {
-        final var recordBuilder = context.dispatchChildTransaction(
+            @Nullable final AccountID autoRenewAccountId,
+            @Nullable final Bytes evmAddress) {
+        // create should have conditional child record
+        final var recordBuilder = context.dispatchRemovableChildTransaction(
                 TransactionBody.newBuilder().cryptoCreateAccount(body).build(),
-                CryptoCreateRecordBuilder.class,
+                ContractCreateRecordBuilder.class,
                 key -> true,
                 context.payer());
+
+        final var contractId = ContractID.newBuilder().contractNum(number).build();
+        // add additional create record fields
+        recordBuilder
+                .contractID(contractId)
+                .contractCreateResult(ContractFunctionResult.newBuilder()
+                        .contractID(contractId)
+                        .evmAddress(evmAddress)
+                        .build());
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
         if (recordBuilder.status() != OK && recordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
@@ -297,5 +317,19 @@ public class HandleHederaOperations implements HederaOperations {
         final var accountId = AccountID.newBuilder().accountNum(number).build();
 
         tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
+    }
+
+    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
+        var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class);
+        recordBuilder
+                .contractID(contractId)
+                // add dummy transaction, because SingleTransactionRecord require NonNull on build
+                .transaction(Transaction.newBuilder()
+                        .signedTransactionBytes(Bytes.EMPTY)
+                        .build())
+                .contractCreateResult(ContractFunctionResult.newBuilder()
+                        .contractID(contractId)
+                        .evmAddress(evmAddress)
+                        .build());
     }
 }
