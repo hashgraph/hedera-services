@@ -30,6 +30,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -95,7 +96,8 @@ class OrphanBufferTests {
      */
     private EventDescriptor createBootstrapEvent(
             @NonNull final NodeId nodeId, @NonNull final List<EventDescriptor> parentCandidates) {
-        final EventDescriptor bootstrapEvent = new EventDescriptor(randomHash(random), nodeId, 0, -1);
+        final EventDescriptor bootstrapEvent =
+                new EventDescriptor(randomHash(random), nodeId, 0, EventConstants.ROSTER_ROUND_UNDEFINED);
 
         parentCandidates.add(bootstrapEvent);
 
@@ -137,7 +139,9 @@ class OrphanBufferTests {
         final GossipEvent event = mock(GossipEvent.class);
         when(event.getHashedData()).thenReturn(hashedData);
         when(event.getUnhashedData()).thenReturn(unhashedData);
-        when(event.getDescriptor()).thenReturn(new EventDescriptor(eventHash, eventCreator, eventGeneration, -1));
+        when(event.getDescriptor())
+                .thenReturn(new EventDescriptor(
+                        eventHash, eventCreator, eventGeneration, EventConstants.ROSTER_ROUND_UNDEFINED));
         when(event.getGeneration()).thenReturn(eventGeneration);
         when(event.getSenderId()).thenReturn(eventCreator);
 
@@ -285,10 +289,14 @@ class OrphanBufferTests {
     void testParentIterator() {
         final GossipEvent event = mock(GossipEvent.class);
 
-        final EventDescriptor selfParent = new EventDescriptor(new Hash(), new NodeId(0), 0, -1);
-        final EventDescriptor otherParent1 = new EventDescriptor(new Hash(), new NodeId(1), 1, -1);
-        final EventDescriptor otherParent2 = new EventDescriptor(new Hash(), new NodeId(2), 2, -1);
-        final EventDescriptor otherParent3 = new EventDescriptor(new Hash(), new NodeId(3), 3, -1);
+        final EventDescriptor selfParent =
+                new EventDescriptor(new Hash(), new NodeId(0), 0, EventConstants.ROSTER_ROUND_UNDEFINED);
+        final EventDescriptor otherParent1 =
+                new EventDescriptor(new Hash(), new NodeId(1), 1, EventConstants.ROSTER_ROUND_UNDEFINED);
+        final EventDescriptor otherParent2 =
+                new EventDescriptor(new Hash(), new NodeId(2), 2, EventConstants.ROSTER_ROUND_UNDEFINED);
+        final EventDescriptor otherParent3 =
+                new EventDescriptor(new Hash(), new NodeId(3), 3, EventConstants.ROSTER_ROUND_UNDEFINED);
         final List<EventDescriptor> otherParents = new ArrayList<>();
         otherParents.add(otherParent1);
         otherParents.add(otherParent2);

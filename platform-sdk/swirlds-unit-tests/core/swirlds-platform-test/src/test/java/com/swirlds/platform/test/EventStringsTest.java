@@ -23,6 +23,7 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.EventStrings;
@@ -54,15 +55,17 @@ class EventStringsTest {
 
         final NodeId selfId = new NodeId(id);
         final NodeId otherId = new NodeId(opId);
-        final EventDescriptor selfParent = new EventDescriptor(new Hash(), selfId, spGen, -1);
-        final EventDescriptor otherParent = new EventDescriptor(new Hash(), otherId, opGen, -1);
+        final EventDescriptor selfParent =
+                new EventDescriptor(new Hash(), selfId, spGen, EventConstants.ROSTER_ROUND_UNDEFINED);
+        final EventDescriptor otherParent =
+                new EventDescriptor(new Hash(), otherId, opGen, EventConstants.ROSTER_ROUND_UNDEFINED);
 
         BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 selfId,
                 selfParent,
                 Collections.singletonList(otherParent),
-                -1,
+                EventConstants.ROSTER_ROUND_UNDEFINED,
                 Instant.now(),
                 new ConsensusTransactionImpl[0]);
         hashedData.setHash(new Hash());

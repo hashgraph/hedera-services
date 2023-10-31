@@ -42,6 +42,7 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -152,9 +153,11 @@ class TipsetEventCreatorTests {
             final boolean slowNode) {
 
         final EventImpl selfParent = events.get(newEvent.getHashedData().getSelfParentHash());
-        final long selfParentGeneration = selfParent == null ? -1 : selfParent.getGeneration();
+        final long selfParentGeneration =
+                selfParent == null ? -EventConstants.GENERATION_UNDEFINED : selfParent.getGeneration();
         final EventImpl otherParent = events.get(newEvent.getHashedData().getOtherParentHash());
-        final long otherParentGeneration = otherParent == null ? -1 : otherParent.getGeneration();
+        final long otherParentGeneration =
+                otherParent == null ? EventConstants.GENERATION_UNDEFINED : otherParent.getGeneration();
 
         if (selfParent == null) {
             // The only legal time to have a null self parent is genesis.
@@ -709,7 +712,8 @@ class TipsetEventCreatorTests {
         when(hashedData.getHash()).thenReturn(hash);
         when(event.getBaseHash()).thenReturn(hash);
 
-        when(hashedData.createEventDescriptor()).thenReturn(new EventDescriptor(hash, creator, generation, -1));
+        when(hashedData.createEventDescriptor())
+                .thenReturn(new EventDescriptor(hash, creator, generation, -EventConstants.ROSTER_ROUND_UNDEFINED));
 
         when(event.getHashedData()).thenReturn(hashedData);
         when(event.getBaseEventHashedData()).thenReturn(hashedData);
@@ -753,9 +757,12 @@ class TipsetEventCreatorTests {
         final GossipEvent eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
-        final EventImpl eventB1 = createMockEvent(random, nodeB, -1, null, -1);
-        final EventImpl eventC1 = createMockEvent(random, nodeC, -1, null, -1);
-        final EventImpl eventD1 = createMockEvent(random, nodeD, -1, null, -1);
+        final EventImpl eventB1 = createMockEvent(
+                random, nodeB, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
+        final EventImpl eventC1 = createMockEvent(
+                random, nodeC, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
+        final EventImpl eventD1 = createMockEvent(
+                random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
         eventCreator.registerEvent(eventB1);
         eventCreator.registerEvent(eventC1);
@@ -823,10 +830,14 @@ class TipsetEventCreatorTests {
         final GossipEvent eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
-        final EventImpl eventB1 = createMockEvent(random, nodeB, -1, null, -1);
-        final EventImpl eventC1 = createMockEvent(random, nodeC, -1, null, -1);
-        final EventImpl eventD1 = createMockEvent(random, nodeD, -1, null, -1);
-        final EventImpl eventE1 = createMockEvent(random, nodeE, -1, null, -1);
+        final EventImpl eventB1 = createMockEvent(
+                random, nodeB, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
+        final EventImpl eventC1 = createMockEvent(
+                random, nodeC, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
+        final EventImpl eventD1 = createMockEvent(
+                random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
+        final EventImpl eventE1 = createMockEvent(
+                random, nodeE, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
         eventCreator.registerEvent(eventB1);
         eventCreator.registerEvent(eventC1);

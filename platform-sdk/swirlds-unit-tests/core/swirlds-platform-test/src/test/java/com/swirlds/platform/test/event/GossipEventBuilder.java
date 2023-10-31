@@ -180,25 +180,36 @@ public class GossipEventBuilder {
                         : EventConstants.GENERATION_UNDEFINED;
         final long otherParentGen = fakeGeneration >= GraphGenerations.FIRST_GENERATION
                 ? fakeGeneration - 1
-                : getOtherParentGossip() != null ? getOtherParentGossip().getGeneration() : -1;
+                : getOtherParentGossip() != null
+                        ? getOtherParentGossip().getGeneration()
+                        : -EventConstants.GENERATION_UNDEFINED;
 
         final EventDescriptor selfParent = getSelfParentGossip() == null
-                ? new EventDescriptor(RandomUtils.randomHash(random), creatorId, selfParentGen, -1)
-                : new EventDescriptor(getSelfParentGossip().getHashedData().getHash(), creatorId, selfParentGen, -1);
+                ? new EventDescriptor(
+                        RandomUtils.randomHash(random), creatorId, selfParentGen, EventConstants.ROSTER_ROUND_UNDEFINED)
+                : new EventDescriptor(
+                        getSelfParentGossip().getHashedData().getHash(),
+                        creatorId,
+                        selfParentGen,
+                        EventConstants.ROSTER_ROUND_UNDEFINED);
         final EventDescriptor otherParent = (getOtherParentGossip() == null
                         || getOtherParentGossip().getUnhashedData().getOtherId() == null)
-                ? new EventDescriptor(RandomUtils.randomHash(random), new NodeId(0), otherParentGen, -1)
+                ? new EventDescriptor(
+                        RandomUtils.randomHash(random),
+                        new NodeId(0),
+                        otherParentGen,
+                        EventConstants.ROSTER_ROUND_UNDEFINED)
                 : new EventDescriptor(
                         getOtherParentGossip().getHashedData().getHash(),
                         getOtherParentGossip().getUnhashedData().getOtherId(),
                         otherParentGen,
-                        -1);
+                        EventConstants.ROSTER_ROUND_UNDEFINED);
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1), // TODO use constant
                 creatorId,
                 selfParent,
                 otherParent == null ? null : Collections.singletonList(otherParent),
-                -1,
+                EventConstants.ROSTER_ROUND_UNDEFINED,
                 timestamp == null ? getParentTime().plusMillis(1 + creatorId.id()) : timestamp,
                 tr);
 

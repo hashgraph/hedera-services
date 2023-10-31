@@ -36,6 +36,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -91,15 +92,17 @@ public final class RecoveryTestUtils {
         final NodeId selfId = new NodeId(random.nextLong(Long.MAX_VALUE));
         final NodeId otherId = new NodeId(random.nextLong(Long.MAX_VALUE));
 
-        final EventDescriptor selfDescriptor = new EventDescriptor(randomHash(random), selfId, random.nextLong(), -1);
-        final EventDescriptor otherDescriptor = new EventDescriptor(randomHash(random), otherId, random.nextLong(), -1);
+        final EventDescriptor selfDescriptor = new EventDescriptor(
+                randomHash(random), selfId, random.nextLong(), EventConstants.ROSTER_ROUND_UNDEFINED);
+        final EventDescriptor otherDescriptor = new EventDescriptor(
+                randomHash(random), otherId, random.nextLong(), EventConstants.ROSTER_ROUND_UNDEFINED);
 
         final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 selfId,
                 selfDescriptor,
                 Collections.singletonList(otherDescriptor),
-                -1,
+                EventConstants.ROSTER_ROUND_UNDEFINED,
                 now,
                 transactions);
 

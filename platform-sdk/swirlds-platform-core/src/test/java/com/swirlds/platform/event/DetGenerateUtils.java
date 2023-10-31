@@ -27,6 +27,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -51,20 +52,23 @@ public abstract class DetGenerateUtils {
     public static BaseEventHashedData generateBaseEventHashedData(final Random random) {
 
         final NodeId selfId = new NodeId(nextLong(random, 0));
-        final EventDescriptor selfDescriptor =
-                new EventDescriptor(generateRandomHash(random, DEFAULT_HASH_TYPE), selfId, nextLong(random, 0), -1);
+        final EventDescriptor selfDescriptor = new EventDescriptor(
+                generateRandomHash(random, DEFAULT_HASH_TYPE),
+                selfId,
+                nextLong(random, 0),
+                EventConstants.ROSTER_ROUND_UNDEFINED);
         final EventDescriptor otherDescriptor = new EventDescriptor(
                 generateRandomHash(random, DEFAULT_HASH_TYPE),
                 new NodeId(nextLong(random, 0)),
                 nextLong(random, 0),
-                -1);
+                EventConstants.ROSTER_ROUND_UNDEFINED);
 
         return new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 new NodeId(nextLong(random, 0)), // creatorId, must be positive
                 selfDescriptor, // selfParent
                 Collections.singletonList(otherDescriptor), // otherParents
-                -1, // rosterRound
+                EventConstants.ROSTER_ROUND_UNDEFINED, // rosterRound
                 generateRandomInstant(random, DEFAULT_MAX_EPOCH), // timeCreated
                 generateTransactions(DEFAULT_TRANSACTION_NUMBER, DEFAULT_TRANSACTION_MAX_SIZE, random)
                         .toArray(new ConsensusTransactionImpl[0])); // transactions

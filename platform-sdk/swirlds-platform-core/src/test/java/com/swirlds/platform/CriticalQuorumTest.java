@@ -30,6 +30,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.WeightGenerators;
@@ -82,14 +83,16 @@ class CriticalQuorumTest {
      */
     private static EventImpl buildSimpleEvent(@NonNull final NodeId creatorId, final long roundCreated) {
 
-        final EventDescriptor selfDescriptor = new EventDescriptor(new Hash(), creatorId, 0, -1);
-        final EventDescriptor otherDescriptor = new EventDescriptor(new Hash(), new NodeId(0), 0, -1);
+        final EventDescriptor selfDescriptor =
+                new EventDescriptor(new Hash(), creatorId, 0, -EventConstants.ROSTER_ROUND_UNDEFINED);
+        final EventDescriptor otherDescriptor =
+                new EventDescriptor(new Hash(), new NodeId(0), 0, EventConstants.ROSTER_ROUND_UNDEFINED);
         final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 creatorId,
                 selfDescriptor,
                 Collections.singletonList(otherDescriptor),
-                -1,
+                EventConstants.ROSTER_ROUND_UNDEFINED,
                 Instant.now(),
                 null);
 

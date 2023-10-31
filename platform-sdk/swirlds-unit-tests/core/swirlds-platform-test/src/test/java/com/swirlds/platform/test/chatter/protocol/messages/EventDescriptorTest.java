@@ -25,6 +25,7 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
@@ -34,7 +35,8 @@ import org.junit.jupiter.api.Test;
 class EventDescriptorTest {
     @Test
     void testSerialization() throws IOException, ConstructableRegistryException {
-        final EventDescriptor descriptor = new EventDescriptor(RandomUtils.randomHash(), new NodeId(1), 123, -1);
+        final EventDescriptor descriptor = new EventDescriptor(
+                RandomUtils.randomHash(), new NodeId(1), 123, EventConstants.ROSTER_ROUND_UNDEFINED);
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(EventDescriptor.class, EventDescriptor::new));
         final EventDescriptor copy = SerializationUtils.serializeDeserialize(descriptor);
@@ -42,14 +44,16 @@ class EventDescriptorTest {
 
         assertThrows(
                 Exception.class,
-                () -> new EventDescriptor(null, new NodeId(0), 0, -1),
+                () -> new EventDescriptor(null, new NodeId(0), 0, EventConstants.ROSTER_ROUND_UNDEFINED),
                 "we should not permit a null hash");
     }
 
     @Test
     void testEquals() {
-        final EventDescriptor d1 = new EventDescriptor(RandomUtils.randomHash(), new NodeId(1), 123, -1);
-        final EventDescriptor d2 = new EventDescriptor(RandomUtils.randomHash(), new NodeId(2), 234, -1);
+        final EventDescriptor d1 = new EventDescriptor(
+                RandomUtils.randomHash(), new NodeId(1), 123, EventConstants.ROSTER_ROUND_UNDEFINED);
+        final EventDescriptor d2 = new EventDescriptor(
+                RandomUtils.randomHash(), new NodeId(2), 234, EventConstants.ROSTER_ROUND_UNDEFINED);
         assertTrue(d1.equals(d1), "should be equal to itself");
         assertFalse(d1.equals(null), "should not be equal to null");
         assertFalse(d1.equals(new Object()), "should not be equal to a different class");

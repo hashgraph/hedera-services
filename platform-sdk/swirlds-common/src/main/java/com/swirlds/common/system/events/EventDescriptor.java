@@ -95,7 +95,7 @@ public class EventDescriptor implements SelfSerializable {
     /**
      * Set the creator node of the event. This is package protected to only allow related classes to use it.
      *
-     * @param creator
+     * @param creator the creator node id
      * @deprecated (since = " 0.45.0 ", forRemoval = true)
      */
     protected void setCreator(@NonNull final NodeId creator) {
@@ -198,7 +198,7 @@ public class EventDescriptor implements SelfSerializable {
         }
         generation = in.readLong();
         if (version < ClassVersion.ROSTER_ROUND) {
-            rosterRound = -1;
+            rosterRound = EventConstants.ROSTER_ROUND_UNDEFINED;
         } else {
             rosterRound = in.readLong();
         }
