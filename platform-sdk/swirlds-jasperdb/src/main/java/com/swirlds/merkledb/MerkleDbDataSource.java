@@ -29,6 +29,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.units.UnitConstants;
@@ -61,6 +62,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -679,11 +681,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Load hash for a leaf node with given path
-     *
-     * @param path the path to get hash for
-     * @return loaded hash or null if hash is not stored
-     * @throws IOException if there was a problem loading hash
+     * {@inheritDoc}
      */
     @Override
     public Hash loadHash(final long path) throws IOException {
@@ -711,6 +709,52 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
 
         return hash;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean loadAndWriteHash(long path, SerializableDataOutputStream out) throws IOException {
+        if (path < 0) {
+            throw new IllegalArgumentException("path is less than 0");
+        }
+        long lastLeaf = validLeafPathRange.getMaxValidKey();
+        if (path > lastLeaf) {
+            return false;
+        }
+        // This method must write hashes in the same binary format as Hash.(de)serialize(). If a
+        // hash comes from hashStoreRam, it's enough to just serialize it to the output stream.
+        // However, if a hash is stored in the files as a VirtualHashRecord, its bytes are
+        // slightly different, so additional processing is required
+        if (path < tableConfig.getHashesRamToDiskThreshold()) {
+            final Hash hash = hashStoreRam.get(path);
+            if (hash == null) {
+                return false;
+            }
+            hash.serialize(out);
+        } else {
+            // hashBytes here is path (8 bytes) + hash (48 bytes)
+            final ByteBuffer hashBytes = hashStoreDisk.getBytes(path);
+            if (hashBytes == null) {
+                return false;
+            }
+            // Hash.serialize() format is: digest ID (4 bytes) + size (4 bytes) + hash (48 bytes)
+            out.writeInt(DigestType.SHA_384.id());
+            final byte[] bytes;
+            if (hashBytes.hasArray()) {
+                bytes = hashBytes.array();
+            } else {
+                bytes = new byte[hashBytes.remaining()];
+                hashBytes.get(bytes);
+            }
+            final int off = Long.BYTES; // skip the path
+            final int len = bytes.length - off;
+            // Simulate SerializableDataOutputStream.writeByteArray(), which writes size, then array
+            out.writeInt(len);
+            out.write(bytes, off, len);
+        }
+        return true;
     }
 
     /**
