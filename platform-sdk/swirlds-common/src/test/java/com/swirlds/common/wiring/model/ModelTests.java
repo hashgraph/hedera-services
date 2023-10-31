@@ -149,7 +149,7 @@ class ModelTests {
                 model.schedulerBuilder("A").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
 
-        taskSchedulerA.injectionSolderTo(inputA);
+        taskSchedulerA.solderTo(inputA, true);
 
         validateModel(model, false);
     }
@@ -203,7 +203,7 @@ class ModelTests {
         final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
 
         taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.injectionSolderTo(inputA);
+        taskSchedulerB.solderTo(inputA, true);
 
         validateModel(model, false);
     }
@@ -294,7 +294,7 @@ class ModelTests {
 
         taskSchedulerA.solderTo(inputB);
         taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.injectionSolderTo(inputA);
+        taskSchedulerC.solderTo(inputA, true);
 
         validateModel(model, false);
     }
@@ -402,7 +402,7 @@ class ModelTests {
         taskSchedulerA.solderTo(inputB);
         taskSchedulerB.solderTo(inputC);
         taskSchedulerC.solderTo(inputD);
-        taskSchedulerD.injectionSolderTo(inputA);
+        taskSchedulerD.solderTo(inputA, true);
 
         validateModel(model, false);
     }
@@ -592,7 +592,7 @@ class ModelTests {
         taskSchedulerD.solderTo(inputE);
         taskSchedulerE.solderTo(inputF);
         taskSchedulerF.solderTo(inputG);
-        taskSchedulerG.injectionSolderTo(inputD);
+        taskSchedulerG.solderTo(inputD, true);
 
         taskSchedulerF.solderTo(inputH);
         taskSchedulerH.solderTo(inputI);
@@ -830,15 +830,15 @@ class ModelTests {
         taskSchedulerD.solderTo(inputE);
         taskSchedulerE.solderTo(inputF);
         taskSchedulerF.solderTo(inputG);
-        taskSchedulerG.injectionSolderTo(inputD);
+        taskSchedulerG.solderTo(inputD, true);
 
         taskSchedulerF.solderTo(inputH);
         taskSchedulerH.solderTo(inputI);
         taskSchedulerI.solderTo(inputJ);
 
-        taskSchedulerJ.injectionSolderTo(inputA);
+        taskSchedulerJ.solderTo(inputA, true);
 
-        taskSchedulerI.injectionSolderTo(inputE);
+        taskSchedulerI.solderTo(inputE, true);
 
         validateModel(model, false);
     }

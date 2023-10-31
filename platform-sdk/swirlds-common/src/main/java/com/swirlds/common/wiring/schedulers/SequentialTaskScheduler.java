@@ -32,9 +32,9 @@ import java.util.function.Consumer;
 /**
  * A {@link TaskScheduler} that guarantees that tasks are executed sequentially in the order they are received.
  *
- * @param <O> the output type of the scheduler (use {@link Void} for a task scheduler with no output type)
+ * @param <OUT> the output type of the scheduler (use {@link Void} for a task scheduler with no output type)
  */
-public class SequentialTaskScheduler<O> extends TaskScheduler<O> {
+public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
 
     /**
      * The next task to be scheduled will be inserted into this placeholder task. When that happens, a new task will be

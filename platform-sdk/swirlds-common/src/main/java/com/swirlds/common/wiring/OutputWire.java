@@ -34,15 +34,15 @@ import org.apache.logging.log4j.Logger;
 /**
  * Describes the output of a task scheduler. Can be soldered to wire inputs or lambdas.
  *
- * @param <O> the output type of the object
+ * @param <OUT> the output type of the object
  */
-public abstract class OutputWire<O> {
+public abstract class OutputWire<OUT> {
 
     private static final Logger logger = LogManager.getLogger(OutputWire.class);
 
     private final WiringModel model;
     private final String name;
-    private final List<Consumer<O>> forwardingDestinations = new ArrayList<>();
+    private final List<Consumer<OUT>> forwardingDestinations = new ArrayList<>();
 
     /**
      * Constructor.
@@ -93,8 +93,8 @@ public abstract class OutputWire<O> {
      *
      * @param data the output data to forward
      */
-    protected void forward(@NonNull final O data) {
-        for (final Consumer<O> destination : forwardingDestinations) {
+    protected void forward(@NonNull final OUT data) {
+        for (final Consumer<OUT> destination : forwardingDestinations) {
             try {
                 destination.accept(data);
             } catch (final Exception e) {
@@ -123,31 +123,33 @@ public abstract class OutputWire<O> {
      * @return this
      */
     @NonNull
-    public final OutputWire<O> solderTo(@NonNull final InputWire<O, ?> inputWire) {
-        model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), false);
-        forwardingDestinations.add(inputWire::put);
-        return this;
+    public final OutputWire<OUT> solderTo(@NonNull final InputWire<OUT, ?> inputWire) {
+        return solderTo(inputWire, false);
     }
 
     /**
-     * Specify an input wire where output data should be forwarded via injection. Injection ignores back pressure at the
-     * destination.
+     * Specify an input wire where output data should be passed. This forwarding operation respects back pressure.
      *
      * <p>
      * Soldering is the act of connecting two wires together, usually by melting a metal alloy between them. See
      * <a href="https://en.wikipedia.org/wiki/Soldering">wikipedia's entry on soldering</a>.
      *
      * <p>
-     * Forwarding should be fully configured prior to data being inserted into the wire. Adding forwarding destinations
-     * after data has been inserted into the wire is not thread safe and has undefined behavior.
+     * Forwarding should be fully configured prior to data being inserted into the system. Adding forwarding
+     * destinations after data has been inserted into the system is not thread safe and has undefined behavior.
      *
-     * @param inputWire the inputWire to forward output data to
+     * @param inputWire the input wire to forward output data to
+     * @param inject    if true, then the output data will be injected into the input wire, ignoring back pressure
      * @return this
      */
     @NonNull
-    public OutputWire<O> injectionSolderTo(@NonNull final InputWire<O, ?> inputWire) {
-        model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), true);
-        forwardingDestinations.add(inputWire::inject);
+    public final OutputWire<OUT> solderTo(@NonNull final InputWire<OUT, ?> inputWire, final boolean inject) {
+        model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), inject);
+        if (inject) {
+            forwardingDestinations.add(inputWire::inject);
+        } else {
+            forwardingDestinations.add(inputWire::put);
+        }
         return this;
     }
 
@@ -167,7 +169,7 @@ public abstract class OutputWire<O> {
      * @return this
      */
     @NonNull
-    public OutputWire<O> solderTo(@NonNull final String handlerName, @NonNull final Consumer<O> handler) {
+    public OutputWire<OUT> solderTo(@NonNull final String handlerName, @NonNull final Consumer<OUT> handler) {
         model.registerEdge(name, handlerName, "", false);
         forwardingDestinations.add(Objects.requireNonNull(handler));
         return this;
@@ -181,8 +183,8 @@ public abstract class OutputWire<O> {
      * @return the filter
      */
     @NonNull
-    public OutputWire<O> buildFilter(@NonNull final String name, @NonNull final Predicate<O> predicate) {
-        final WireFilter<O> filter =
+    public OutputWire<OUT> buildFilter(@NonNull final String name, @NonNull final Predicate<OUT> predicate) {
+        final WireFilter<OUT> filter =
                 new WireFilter<>(model, Objects.requireNonNull(name), Objects.requireNonNull(predicate));
         solderTo(filter.getName(), filter);
         return filter;
@@ -199,7 +201,7 @@ public abstract class OutputWire<O> {
     @NonNull
     public <E> OutputWire<E> buildSplitter() {
         final WireListSplitter<E> splitter = new WireListSplitter<>(model, name + "_splitter");
-        solderTo(splitter.getName(), (Consumer<O>) splitter);
+        solderTo(splitter.getName(), (Consumer<OUT>) splitter);
         return splitter;
     }
 
@@ -225,8 +227,8 @@ public abstract class OutputWire<O> {
      * @return the transformer
      */
     @NonNull
-    public <T> OutputWire<T> buildTransformer(@NonNull final String name, @NonNull Function<O, T> transform) {
-        final WireTransformer<O, T> transformer =
+    public <T> OutputWire<T> buildTransformer(@NonNull final String name, @NonNull Function<OUT, T> transform) {
+        final WireTransformer<OUT, T> transformer =
                 new WireTransformer<>(model, Objects.requireNonNull(name), Objects.requireNonNull(transform));
         solderTo(transformer.getName(), transformer);
         return transformer;

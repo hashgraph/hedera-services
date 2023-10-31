@@ -24,9 +24,9 @@ import java.util.function.Consumer;
 /**
  * Schedules tasks for a component.
  *
- * @param <O> the output type of the primary output wire (use {@link Void} if no output is needed)
+ * @param <OUT> the output type of the primary output wire (use {@link Void} if no output is needed)
  */
-public abstract class TaskScheduler<O> extends OutputWire<O> {
+public abstract class TaskScheduler<OUT> extends OutputWire<OUT> {
 
     private final boolean flushEnabled;
 
@@ -74,7 +74,7 @@ public abstract class TaskScheduler<O> extends OutputWire<O> {
      * @return the input wire
      */
     @NonNull
-    public final <I> InputWire<I, O> buildInputWire(@NonNull final String name) {
+    public final <I> InputWire<I, OUT> buildInputWire(@NonNull final String name) {
         return new InputWire<>(this, name);
     }
 
@@ -168,7 +168,7 @@ public abstract class TaskScheduler<O> extends OutputWire<O> {
      * visible.
      */
     @Override
-    protected final void forward(@NonNull O data) {
+    protected final void forward(@NonNull OUT data) {
         super.forward(data);
     }
 }

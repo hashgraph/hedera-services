@@ -1442,7 +1442,7 @@ class SequentialTaskSchedulerTests {
         final InputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("inC");
 
         taskSchedulerA.solderTo(inC); // respects capacity
-        taskSchedulerB.injectionSolderTo(inC); // ignores capacity
+        taskSchedulerB.solderTo(inC, true); // ignores capacity
 
         final AtomicInteger countA = new AtomicInteger();
         inA.bind(x -> {

@@ -25,12 +25,12 @@ import java.util.function.Function;
 /**
  * An object that can insert work to be handled by a {@link TaskScheduler}.
  *
- * @param <I> the type of data that passes into the wire
- * @param <O> the type of the data that comes out of the parent {@link TaskScheduler}'s primary output wire
+ * @param <IN> the type of data that passes into the wire
+ * @param <OUT> the type of the data that comes out of the parent {@link TaskScheduler}'s primary output wire
  */
-public class InputWire<I, O> {
+public class InputWire<IN, OUT> {
 
-    private final TaskScheduler<O> taskScheduler;
+    private final TaskScheduler<OUT> taskScheduler;
     private Consumer<Object> handler;
     private final String name;
 
@@ -40,7 +40,7 @@ public class InputWire<I, O> {
      * @param taskScheduler the scheduler to insert data into
      * @param name          the name of the input wire
      */
-    InputWire(@NonNull final TaskScheduler<O> taskScheduler, @NonNull final String name) {
+    InputWire(@NonNull final TaskScheduler<OUT> taskScheduler, @NonNull final String name) {
         this.taskScheduler = Objects.requireNonNull(taskScheduler);
         this.name = Objects.requireNonNull(name);
     }
@@ -92,8 +92,8 @@ public class InputWire<I, O> {
      * @return this
      */
     @SuppressWarnings("unchecked")
-    public <X> InputWire<X, O> withInputType(@NonNull final Class<X> inputType) {
-        return (InputWire<X, O>) this;
+    public <X> InputWire<X, OUT> withInputType(@NonNull final Class<X> inputType) {
+        return (InputWire<X, OUT>) this;
     }
 
     /**
@@ -106,7 +106,7 @@ public class InputWire<I, O> {
      */
     @SuppressWarnings("unchecked")
     @NonNull
-    public InputWire<I, O> bind(@NonNull final Consumer<I> handler) {
+    public InputWire<IN, OUT> bind(@NonNull final Consumer<IN> handler) {
         if (this.handler != null) {
             throw new IllegalStateException("Input wire \"" + name + "\" already bound");
         }
@@ -125,12 +125,12 @@ public class InputWire<I, O> {
      */
     @SuppressWarnings("unchecked")
     @NonNull
-    public InputWire<I, O> bind(@NonNull final Function<I, O> handler) {
+    public InputWire<IN, OUT> bind(@NonNull final Function<IN, OUT> handler) {
         if (this.handler != null) {
             throw new IllegalStateException("Handler already bound");
         }
         this.handler = i -> {
-            final O output = handler.apply((I) i);
+            final OUT output = handler.apply((IN) i);
             if (output != null) {
                 taskScheduler.forward(output);
             }
@@ -144,7 +144,7 @@ public class InputWire<I, O> {
      *
      * @param data the data to be processed by the task scheduler
      */
-    public void put(@Nullable final I data) {
+    public void put(@Nullable final IN data) {
         taskScheduler.put(handler, data);
     }
 
@@ -155,7 +155,7 @@ public class InputWire<I, O> {
      * @param data the data to be processed by the task scheduler
      * @return true if the data was accepted, false otherwise
      */
-    public boolean offer(@Nullable final I data) {
+    public boolean offer(@Nullable final IN data) {
         return taskScheduler.offer(handler, data);
     }
 
@@ -166,7 +166,7 @@ public class InputWire<I, O> {
      *
      * @param data the data to be processed by the task scheduler
      */
-    public void inject(@Nullable final I data) {
+    public void inject(@Nullable final IN data) {
         taskScheduler.inject(handler, data);
     }
 }

@@ -29,9 +29,9 @@ import java.util.function.Consumer;
 /**
  * A {@link TaskScheduler} that permits parallel execution of tasks.
  *
- * @param <O> the output type of the scheduler (use {@link Void} for a task scheduler with no output type)
+ * @param <OUT> the output type of the scheduler (use {@link Void} for a task scheduler with no output type)
  */
-public class ConcurrentTaskScheduler<O> extends TaskScheduler<O> {
+public class ConcurrentTaskScheduler<OUT> extends TaskScheduler<OUT> {
 
     private final ObjectCounter onRamp;
     private final ObjectCounter offRamp;
