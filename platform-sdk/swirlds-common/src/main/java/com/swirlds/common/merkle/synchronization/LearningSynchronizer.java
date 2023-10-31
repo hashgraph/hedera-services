@@ -153,7 +153,11 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         logger.warn(
                 RECONNECT.getMarker(),
                 "deleting partially constructed tree\n{}",
-                new MerkleTreeVisualizer(newRoot).setDepth(5).render());
+                new MerkleTreeVisualizer(newRoot)
+                        .setDepth(5)
+                        .setUseHashes(false)
+                        .setUseMnemonics(false)
+                        .render());
         try {
             if (newRoot != null) {
                 newRoot.release();
