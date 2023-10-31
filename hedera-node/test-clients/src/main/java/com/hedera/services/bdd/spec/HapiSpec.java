@@ -41,7 +41,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
-import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.uninterruptiblyTriggerAndCloseAtLeastOneFile;
+import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -532,7 +532,7 @@ public class HapiSpec implements Runnable {
         }
         if (status == PASSED) {
             if (snapshotOp != null && snapshotOp.hasWorkToDo()) {
-                uninterruptiblyTriggerAndCloseAtLeastOneFile(this);
+                triggerAndCloseAtLeastOneFileIfNotInterrupted(this);
                 try {
                     snapshotOp.finishLifecycle();
                 } catch (Throwable t) {

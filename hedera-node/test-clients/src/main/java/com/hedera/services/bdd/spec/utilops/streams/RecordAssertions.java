@@ -81,7 +81,7 @@ public class RecordAssertions extends UtilOp {
         allRunFor(spec, triggerOp);
     }
 
-    public static void uninterruptiblyTriggerAndCloseAtLeastOneFile(final HapiSpec spec) {
+    public static void triggerAndCloseAtLeastOneFileIfNotInterrupted(final HapiSpec spec) {
         try {
             RecordAssertions.triggerAndCloseAtLeastOneFile(spec);
             LOG.info("Sleeping for a second to give the record stream a (very generous) chance to close");

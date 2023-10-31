@@ -19,11 +19,11 @@ package com.hedera.services.bdd.spec.utilops;
 import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.domain.EncodedItem;
 import com.hedera.services.bdd.spec.utilops.domain.ParsedItem;
 import com.hedera.services.bdd.spec.utilops.domain.RecordSnapshot;
 import com.hedera.services.bdd.suites.TargetNetworkType;
@@ -140,7 +140,7 @@ public class SnapshotModeOp extends UtilOp {
      */
     private String recordsLoc;
     /**
-     * The location of the record stream to snapshot or fuzzy-match against.
+     * The location to read and save snapshots from.
      */
     private String snapshotLoc;
     /**
@@ -177,7 +177,7 @@ public class SnapshotModeOp extends UtilOp {
      * @param mode the snapshot mode
      */
     public SnapshotModeOp(@NonNull final SnapshotMode mode) {
-        this.mode = Objects.requireNonNull(mode);
+        this.mode = requireNonNull(mode);
         // Each snapshot should have a unique placeholder memo so that we can take multiple snapshots
         // without clearing the record streams directory in between
         placeholderMemo = PLACEHOLDER_MEMO + Instant.now();
@@ -214,6 +214,8 @@ public class SnapshotModeOp extends UtilOp {
      * @return if this operation can run against the target network
      */
     public boolean hasWorkToDo() {
+        // We leave the spec name null in submitOp() if we are running against a target network that
+        // doesn't match the SnapshotMode of this operation
         return fullSpecName != null;
     }
 
@@ -306,8 +308,9 @@ public class SnapshotModeOp extends UtilOp {
      * hashes, and entity ids; since these quantities will vary based on the number of entities in the system and the
      * time at which the test is run.
      *
-     * <p>Two {@link GeneratedMessageV3} messages are fuzzy-equal iff they have the same number of fields, where each
-     * un-skipped primitive field matches exactly; and each un-skipped list field consists of fuzzy-equal elements.
+     * <p>Two {@link GeneratedMessageV3} messages are fuzzy-equal iff they have the same fields, where each un-skipped
+     * primitive field matches exactly; each un-skipped {@link GeneratedMessageV3} field fuzzy-matches; and each
+     * un-skipped list field consists of fuzzy-equal elements.
      *
      * @param expectedMessage the expected message
      * @param expectedPlaceholderNum the placeholder number for the expected message
@@ -321,6 +324,9 @@ public class SnapshotModeOp extends UtilOp {
             @NonNull GeneratedMessageV3 actualMessage,
             final long actualPlaceholderNum,
             @NonNull final Supplier<String> mismatchContext) {
+        requireNonNull(expectedMessage);
+        requireNonNull(actualMessage);
+        requireNonNull(mismatchContext);
         final var expectedType = expectedMessage.getClass();
         final var actualType = actualMessage.getClass();
         if (!expectedType.equals(actualType)) {
@@ -329,7 +335,7 @@ public class SnapshotModeOp extends UtilOp {
         }
         expectedMessage = normalized(expectedMessage, expectedPlaceholderNum);
         actualMessage = normalized(actualMessage, actualPlaceholderNum);
-        // getAllFields() returns a TreeMap so ordering is deterministic here
+        // getAllFields() returns a SortedMap so ordering is deterministic here
         final var expectedFields =
                 new ArrayList<>(expectedMessage.getAllFields().entrySet());
         final var actualFields = new ArrayList<>(actualMessage.getAllFields().entrySet());
@@ -350,38 +356,68 @@ public class SnapshotModeOp extends UtilOp {
             if (FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName)) {
                 continue;
             }
-            final var expectedValue = expectedField.getValue();
-            final var actualValue = actualField.getValue();
-            if (expectedValue instanceof List<?> expectedList) {
-                if (actualValue instanceof List<?> actualList) {
-                    if (expectedList.size() != actualList.size()) {
-                        Assertions.fail("Mismatched list sizes between expected list " + expectedList + " and "
-                                + actualList + " - " + mismatchContext.get());
-                    }
-                    for (int j = 0, m = expectedList.size(); j < m; j++) {
-                        final var expectedElement = expectedList.get(j);
-                        final var actualElement = actualList.get(j);
-                        // There are no lists of lists in the record stream, so match values directly
-                        matchValues(
-                                expectedElement,
-                                expectedPlaceholderNum,
-                                actualElement,
-                                actualPlaceholderNum,
-                                mismatchContext);
-                    }
-                } else {
-                    Assertions.fail("Mismatched types between expected list '" + expectedList + "' and "
-                            + actualValue.getClass().getSimpleName() + " '" + actualValue + "' - "
-                            + mismatchContext.get());
+            matchValues(
+                    expectedName,
+                    expectedField.getValue(),
+                    expectedPlaceholderNum,
+                    actualField.getValue(),
+                    actualPlaceholderNum,
+                    mismatchContext);
+        }
+    }
+
+    /**
+     * Given an expected value which may be a list, either fuzzy-matches all values in the list against the actual
+     * value (which must of course also be a list in this case); or fuzzy-matches the expected single value with the
+     * actual value.
+     *
+     * @param fieldName the name of the field being fuzzy-matched
+     * @param expectedValue the expected value
+     * @param expectedPlaceholderNum the placeholder number for the expected value
+     * @param actualValue the actual value
+     * @param actualPlaceholderNum the placeholder number for the actual value
+     * @param mismatchContext a supplier of a string that describes the context of the mismatch
+     */
+    private static void matchValues(
+            @NonNull final String fieldName,
+            @NonNull final Object expectedValue,
+            final long expectedPlaceholderNum,
+            @NonNull final Object actualValue,
+            final long actualPlaceholderNum,
+            @NonNull final Supplier<String> mismatchContext) {
+        requireNonNull(fieldName);
+        requireNonNull(expectedValue);
+        requireNonNull(actualValue);
+        requireNonNull(mismatchContext);
+        if (expectedValue instanceof List<?> expectedList) {
+            if (actualValue instanceof List<?> actualList) {
+                if (expectedList.size() != actualList.size()) {
+                    Assertions.fail("Mismatched list sizes between expected list " + expectedList + " and " + actualList
+                            + " - " + mismatchContext.get());
+                }
+                for (int j = 0, m = expectedList.size(); j < m; j++) {
+                    final var expectedElement = expectedList.get(j);
+                    final var actualElement = actualList.get(j);
+                    // There are no lists of lists in the record stream, so match single values
+                    matchSingleValues(
+                            expectedElement,
+                            expectedPlaceholderNum,
+                            actualElement,
+                            actualPlaceholderNum,
+                            mismatchContext);
                 }
             } else {
-                matchValues(
-                        expectedValue,
-                        expectedPlaceholderNum,
-                        actualValue,
-                        actualPlaceholderNum,
-                        () -> "Matching field '" + expectedName + "' " + mismatchContext.get());
+                Assertions.fail("Mismatched types between expected list '" + expectedList + "' and "
+                        + actualValue.getClass().getSimpleName() + " '" + actualValue + "' - "
+                        + mismatchContext.get());
             }
+        } else {
+            matchSingleValues(
+                    expectedValue,
+                    expectedPlaceholderNum,
+                    actualValue,
+                    actualPlaceholderNum,
+                    () -> "Matching field '" + fieldName + "' " + mismatchContext.get());
         }
     }
 
@@ -395,12 +431,15 @@ public class SnapshotModeOp extends UtilOp {
      * @param actualPlaceholderNum the placeholder number for the actual value
      * @param mismatchContext a supplier of a string that describes the context of the mismatch
      */
-    private static void matchValues(
+    private static void matchSingleValues(
             @NonNull final Object expected,
             final long expectedPlaceholderNum,
             @NonNull final Object actual,
             final long actualPlaceholderNum,
             @NonNull final Supplier<String> mismatchContext) {
+        requireNonNull(expected);
+        requireNonNull(actual);
+        requireNonNull(mismatchContext);
         if (expected instanceof GeneratedMessageV3 expectedMessage) {
             if (actual instanceof GeneratedMessageV3 actualMessage) {
                 fuzzyMatch(
@@ -426,6 +465,7 @@ public class SnapshotModeOp extends UtilOp {
      * @return the original message if not an entity id; or a normalized message if it is
      */
     private static GeneratedMessageV3 normalized(@NonNull final GeneratedMessageV3 message, final long placeholderNum) {
+        requireNonNull(message);
         if (message instanceof AccountID accountID) {
             final var normalizedNum = placeholderNum < accountID.getAccountNum()
                     ? accountID.getAccountNum() - placeholderNum
@@ -461,15 +501,10 @@ public class SnapshotModeOp extends UtilOp {
     }
 
     private void writeSnapshotOf(@NonNull final List<ParsedItem> postPlaceholderItems) throws IOException {
-        final var recordSnapshot = new RecordSnapshot();
-        recordSnapshot.setPlaceholderNum(placeholderAccountNum);
-        final var encodedItems = postPlaceholderItems.stream()
-                .map(item -> EncodedItem.fromParsed(item.itemBody(), item.itemRecord()))
-                .toList();
-        recordSnapshot.setEncodedItems(encodedItems);
+        final var recordSnapshot = RecordSnapshot.from(placeholderAccountNum, postPlaceholderItems);
         final var om = new ObjectMapper();
         final var outputLoc = resourceLocOf(snapshotLoc, fullSpecName);
-        log.info("Writing snapshot of {} post-placeholder records to {}", encodedItems.size(), outputLoc);
+        log.info("Writing snapshot of {} post-placeholder items to {}", postPlaceholderItems.size(), outputLoc);
         final var fout = Files.newOutputStream(outputLoc);
         om.writeValue(fout, recordSnapshot);
     }
