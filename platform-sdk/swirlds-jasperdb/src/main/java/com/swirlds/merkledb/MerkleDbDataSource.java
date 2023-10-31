@@ -814,8 +814,11 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     pathToKeyValue.close();
                     // Store metadata
                     saveMetadata(dbPaths.metadataFile);
-                } catch (final Throwable t) {
-                    logger.error(EXCEPTION.getMarker(), "Exception while closing Data Source [{}]", tableName);
+                } catch (final Exception e) {
+                    logger.warn(EXCEPTION.getMarker(), "Exception while closing Data Source [{}]", tableName);
+                } catch (final Error t) {
+                    logger.error(EXCEPTION.getMarker(), "Error while closing Data Source [{}]", tableName);
+                    throw t;
                 } finally {
                     // updated count of open databases
                     COUNT_OF_OPEN_DATABASES.decrement();

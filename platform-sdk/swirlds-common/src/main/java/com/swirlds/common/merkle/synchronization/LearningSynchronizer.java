@@ -158,7 +158,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             if (newRoot != null) {
                 newRoot.release();
             }
-        } catch (final Throwable ex) {
+        } catch (final Exception ex) {
             // The tree may be in a partially constructed state. We don't expect exceptions, but they
             // may be more likely to appear during this operation than at other times.
             logger.error(EXCEPTION.getMarker(), "exception thrown while releasing tree", ex);
