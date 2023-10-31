@@ -40,6 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -85,6 +86,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
         return List.of(noTokenIdReverts(), noAccountKeyReverts());
     }
 
+    @HapiTest
     private HapiSpec noTokenIdReverts() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("noTokenIdReverts")
