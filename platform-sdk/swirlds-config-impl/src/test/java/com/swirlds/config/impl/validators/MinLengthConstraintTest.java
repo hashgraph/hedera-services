@@ -31,7 +31,7 @@ class MinLengthConstraintTest {
         final PropertyMetadata<String> metadata = null;
 
         // then
-        Assertions.assertThrows(IllegalArgumentException.class, () -> constraint.check(metadata));
+        Assertions.assertThrows(NullPointerException.class, () -> constraint.check(metadata));
     }
 
     @Test
