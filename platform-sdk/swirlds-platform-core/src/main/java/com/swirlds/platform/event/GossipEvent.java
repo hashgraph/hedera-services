@@ -46,10 +46,10 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
          *
          * @since 0.45.0
          */
-        public static final int ADDRESS_BOOK_ROUND = 3;
+        public static final int ROSTER_ROUND = 3;
     }
 
-    private int serializedVersion = ClassVersion.ADDRESS_BOOK_ROUND;
+    private int serializedVersion = ClassVersion.ROSTER_ROUND;
     private BaseEventHashedData hashedData;
     private BaseEventUnhashedData unhashedData;
     private EventDescriptor descriptor;
@@ -84,7 +84,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        if (serializedVersion < ClassVersion.ADDRESS_BOOK_ROUND) {
+        if (serializedVersion < ClassVersion.ROSTER_ROUND) {
             out.writeSerializable(hashedData, false);
             out.writeSerializable(unhashedData, false);
         } else {
@@ -99,7 +99,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         serializedVersion = version;
-        if (version < ClassVersion.ADDRESS_BOOK_ROUND) {
+        if (version < ClassVersion.ROSTER_ROUND) {
             hashedData = in.readSerializable(false, BaseEventHashedData::new);
             unhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
         } else {

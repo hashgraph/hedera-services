@@ -37,10 +37,10 @@ import java.util.Objects;
  */
 public class BaseEventUnhashedData implements SelfSerializable {
     private static final long CLASS_ID = 0x33cb9d4ae38c9e91L;
-    private static final int MAX_SIG_LENGTH = 384;
+    public static final int MAX_SIG_LENGTH = 384;
     private static final long SEQUENCE_UNUSED = -1;
 
-    private static class ClassVersion {
+    public static class ClassVersion {
         /**
          * The original version of the BaseEventUnhashedData class.
          */
@@ -51,7 +51,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
          *
          * @since 0.45.0
          */
-        public static final int ADDRESS_BOOK_ROUND = 2;
+        public static final int ROSTER_ROUND = 2;
     }
 
     /**
@@ -59,7 +59,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
      * <p>
      * DEPRECATED: Remove after 0.45 is delivered to mainnet.
      */
-    private int serializedVersion = ClassVersion.ADDRESS_BOOK_ROUND;
+    private int serializedVersion = ClassVersion.ROSTER_ROUND;
 
     ///////////////////////////////////////
     // immutable, sent during normal syncs, does NOT affect the hash that is signed:
@@ -86,7 +86,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        if (serializedVersion < ClassVersion.ADDRESS_BOOK_ROUND) {
+        if (serializedVersion < ClassVersion.ROSTER_ROUND) {
             out.writeLong(SEQUENCE_UNUSED);
             // FUTURE WORK: The otherId should be a selfSerializable NodeId at some point.
             // Changing the event format may require a HIP.  The old format is preserved for now.
@@ -101,7 +101,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         serializedVersion = version;
-        if (version < ClassVersion.ADDRESS_BOOK_ROUND) {
+        if (version < ClassVersion.ROSTER_ROUND) {
             in.readLong(); // unused
             otherId = NodeId.deserializeLong(in, true);
             in.readLong(); // unused

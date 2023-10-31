@@ -64,7 +64,7 @@ public abstract class DetGenerateUtils {
                 new NodeId(nextLong(random, 0)), // creatorId, must be positive
                 selfDescriptor, // selfParent
                 Collections.singletonList(otherDescriptor), // otherParents
-                -1, // addressBookRound
+                -1, // rosterRound
                 generateRandomInstant(random, DEFAULT_MAX_EPOCH), // timeCreated
                 generateTransactions(DEFAULT_TRANSACTION_NUMBER, DEFAULT_TRANSACTION_MAX_SIZE, random)
                         .toArray(new ConsensusTransactionImpl[0])); // transactions

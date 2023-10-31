@@ -43,17 +43,17 @@ public class EventDescriptor implements SelfSerializable {
          */
         public static final int SELF_SERIALIZABLE_NODE_ID = 2;
         /**
-         * The address book round field is added.
+         * The roster round field is added.
          *
          * @since 0.45.0
          */
-        public static final int ADDRESS_BOOK_ROUND = 3;
+        public static final int ROSTER_ROUND = 3;
     }
 
     private Hash hash;
     private NodeId creator;
     private long generation;
-    private long addressBookRound;
+    private long rosterRound;
 
     /**
      * Zero arg constructor, required for deserialization. Do not use manually.
@@ -63,35 +63,32 @@ public class EventDescriptor implements SelfSerializable {
     /**
      * Create a new event descriptor.
      *
-     * @param hash             the hash of the event
-     * @param creator          the creator of the event
-     * @param generation       the age of an event, smaller is older
-     * @param addressBookRound the address book round when the event was created
+     * @param hash        the hash of the event
+     * @param creator     the creator of the event
+     * @param generation  the age of an event, smaller is older
+     * @param rosterRound the round when the event was created
      */
     public EventDescriptor(
-            @NonNull final Hash hash,
-            @NonNull final NodeId creator,
-            final long generation,
-            final long addressBookRound) {
+            @NonNull final Hash hash, @NonNull final NodeId creator, final long generation, final long rosterRound) {
         this.hash = Objects.requireNonNull(hash, "hash must not be null");
         this.creator = Objects.requireNonNull(creator, "creator must not be null");
         this.generation = generation;
-        this.addressBookRound = addressBookRound;
+        this.rosterRound = rosterRound;
     }
 
     /**
      * Create a new event descriptor. This is package protected to only allow related classes to use it.  The creator
      * must be set before retrieval.
      *
-     * @param hash             the hash of the event
-     * @param generation       the age of an event, smaller is older
-     * @param addressBookRound the address book round when the event was created
+     * @param hash        the hash of the event
+     * @param generation  the age of an event, smaller is older
+     * @param rosterRound the roster round when the event was created
      * @deprecated (since = " 0.45.0 ", forRemoval = true)
      */
-    protected EventDescriptor(@NonNull final Hash hash, final long generation, final long addressBookRound) {
+    protected EventDescriptor(@NonNull final Hash hash, final long generation, final long rosterRound) {
         this.hash = Objects.requireNonNull(hash, "hash must not be null");
         this.generation = generation;
-        this.addressBookRound = addressBookRound;
+        this.rosterRound = rosterRound;
         this.creator = null;
     }
 
@@ -146,12 +143,12 @@ public class EventDescriptor implements SelfSerializable {
     }
 
     /**
-     * Get the address book round when the event was created.
+     * Get the roster round when the event was created.
      *
-     * @return the address book round when the event was created
+     * @return the roster round when the event was created
      */
-    public long getAddressBookRound() {
-        return addressBookRound;
+    public long getRosterRound() {
+        return rosterRound;
     }
 
     /**
@@ -167,7 +164,7 @@ public class EventDescriptor implements SelfSerializable {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ADDRESS_BOOK_ROUND;
+        return ClassVersion.ROSTER_ROUND;
     }
 
     @Override
@@ -183,7 +180,7 @@ public class EventDescriptor implements SelfSerializable {
         out.writeSerializable(hash, false);
         out.writeSerializable(creator, false);
         out.writeLong(generation);
-        out.writeLong(addressBookRound);
+        out.writeLong(rosterRound);
     }
 
     /**
@@ -200,10 +197,10 @@ public class EventDescriptor implements SelfSerializable {
             throw new IOException("creator cannot be null");
         }
         generation = in.readLong();
-        if (version < ClassVersion.ADDRESS_BOOK_ROUND) {
-            addressBookRound = -1;
+        if (version < ClassVersion.ROSTER_ROUND) {
+            rosterRound = -1;
         } else {
-            addressBookRound = in.readLong();
+            rosterRound = in.readLong();
         }
     }
 
@@ -223,7 +220,7 @@ public class EventDescriptor implements SelfSerializable {
 
         return Objects.equals(creator, that.creator)
                 && generation == that.generation
-                && addressBookRound == that.addressBookRound
+                && rosterRound == that.rosterRound
                 && hash.equals(that.hash);
     }
 
@@ -241,8 +238,8 @@ public class EventDescriptor implements SelfSerializable {
     @Override
     public String toString() {
         return "(creator: " + creator + ", generation: "
-                + generation + ", addressBookRound: "
-                + addressBookRound + ", hash: "
+                + generation + ", rosterRound: "
+                + rosterRound + ", hash: "
                 + hex(hash.getValue()).substring(0, 12) + ")";
     }
 }

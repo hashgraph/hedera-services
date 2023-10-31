@@ -213,21 +213,21 @@ public class RandomEventUtils {
                         selfParent.getHash(),
                         selfParent.getCreatorId(),
                         selfParent.getGeneration(),
-                        EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED);
+                        EventConstants.ROSTER_ROUND_UNDEFINED);
         final EventDescriptor otherDescriptor = otherParent == null
                 ? null
                 : new EventDescriptor(
                         otherParent.getHash(),
                         otherParent.getCreatorId(),
                         otherParent.getGeneration(),
-                        EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED);
+                        EventConstants.ROSTER_ROUND_UNDEFINED);
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 creatorId,
                 selfDescriptor,
                 otherDescriptor == null ? null : Collections.singletonList(otherDescriptor),
-                EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED,
+                EventConstants.ROSTER_ROUND_UNDEFINED,
                 selfParent != null
                         ? selfParent.getTimeCreated().plusMillis(1 + random.nextInt(DEFAULT_MAX_NEXT_EVENT_MILLIS))
                         : firstTimeCreated,
@@ -260,21 +260,21 @@ public class RandomEventUtils {
                         selfParent.getBaseHash(),
                         selfParent.getCreatorId(),
                         selfParent.getGeneration(),
-                        EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED);
+                        EventConstants.ROSTER_ROUND_UNDEFINED);
         final EventDescriptor otherDescriptor = (otherParent == null || otherParent.getBaseHash() == null)
                 ? null
                 : new EventDescriptor(
                         otherParent.getBaseHash(),
                         otherParent.getCreatorId(),
                         otherParent.getGeneration(),
-                        EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED);
+                        EventConstants.ROSTER_ROUND_UNDEFINED);
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 creatorId,
                 selfDescriptor,
                 otherDescriptor == null ? null : Collections.singletonList(otherDescriptor),
-                EventConstants.ADDRESS_BOOK_ROUND_UNDEFINED,
+                EventConstants.ROSTER_ROUND_UNDEFINED,
                 timestamp,
                 transactions);
 
