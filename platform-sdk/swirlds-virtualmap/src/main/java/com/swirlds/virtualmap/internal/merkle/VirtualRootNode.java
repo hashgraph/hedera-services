@@ -965,7 +965,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         if (dataSource != null) {
             try {
                 dataSource.close();
-            } catch (final IOException e) {
+            } catch (final Exception e) {
                 logger.error(
                         EXCEPTION.getMarker(), "Could not close the dataSource after all copies were destroyed", e);
             }
