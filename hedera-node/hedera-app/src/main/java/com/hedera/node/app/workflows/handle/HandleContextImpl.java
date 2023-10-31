@@ -637,4 +637,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     public SavepointStack savepointStack() {
         return stack;
     }
+
+    @Override
+    public void revertChildRecords() {
+        recordListBuilder.revertChildrenOf(recordBuilder);
+    }
 }

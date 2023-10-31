@@ -31,6 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -85,6 +86,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
         return List.of();
     }
 
+    @HapiTest
     private HapiSpec burnFungibleV1andV2WithZeroAndNegativeValues() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         return defaultHapiSpec("burnFungibleV1andV2WithZeroAndNegativeValues")
@@ -148,6 +150,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50));
     }
 
+    @HapiTest
     private HapiSpec burnNonFungibleV1andV2WithNegativeValues() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         return defaultHapiSpec("burnNonFungibleV1andV2WithNegativeValues")
