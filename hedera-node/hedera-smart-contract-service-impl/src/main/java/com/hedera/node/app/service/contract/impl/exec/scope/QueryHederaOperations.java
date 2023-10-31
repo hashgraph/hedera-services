@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
@@ -68,6 +69,11 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public void revert() {
+        // No-op
+    }
+
+    @Override
+    public void revertChildRecords() {
         // No-op
     }
 
@@ -244,5 +250,9 @@ public class QueryHederaOperations implements HederaOperations {
     @Override
     public long getOriginalSlotsUsed(final long contractNumber) {
         throw new UnsupportedOperationException("Queries cannot get original slot usage");
+    }
+
+    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
+        throw new UnsupportedOperationException("Queries cannot create accounts");
     }
 }

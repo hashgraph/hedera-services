@@ -67,6 +67,16 @@ class MerkleDbStatisticsTest {
 
     @Test
     void testInitialState() {
+        verifyMetricsDoesntThrow(statistics);
+    }
+
+    @Test
+    public void testMetricsDoesntThrowBeforeRegister() {
+        MerkleDbStatistics notRegisteredStatistics = new MerkleDbStatistics(LABEL);
+        verifyMetricsDoesntThrow(notRegisteredStatistics);
+    }
+
+    private void verifyMetricsDoesntThrow(MerkleDbStatistics statistics) {
         assertDoesNotThrow(statistics::countHashReads);
         assertDoesNotThrow(statistics::countLeafReads);
         assertDoesNotThrow(statistics::countLeafKeyReads);
@@ -82,7 +92,7 @@ class MerkleDbStatisticsTest {
         assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionTimeMs(compactionLevel, 314));
         assertDoesNotThrow(() -> statistics.setLeavesStoreCompactionSavedSpaceMb(compactionLevel, Math.PI));
         assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionTimeMs(compactionLevel, 314));
-        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionSavedSpaceMb(1, Math.PI));
+        assertDoesNotThrow(() -> statistics.setLeafKeysStoreCompactionSavedSpaceMb(compactionLevel, Math.PI));
         assertDoesNotThrow(() -> statistics.setOffHeapHashesIndexMb(42));
         assertDoesNotThrow(() -> statistics.setOffHeapLeavesIndexMb(42));
         assertDoesNotThrow(() -> statistics.setOffHeapLongKeysIndexMb(42));
