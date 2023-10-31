@@ -133,7 +133,7 @@ public class SyncTestExecutor {
      *
      * @throws Exception
      */
-    public void execute() throws Exception { // TODO test only code!!!
+    public void execute() throws Exception {
         initialize();
         createGraphs();
         preSyncConfiguration();

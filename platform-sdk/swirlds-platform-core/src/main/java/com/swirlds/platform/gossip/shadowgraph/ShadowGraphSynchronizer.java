@@ -17,6 +17,8 @@
 package com.swirlds.platform.gossip.shadowgraph;
 
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.filterLikelyDuplicates;
+import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.getMyTipsTheyKnow;
+import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.getTheirTipsIHave;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.readEventsINeed;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.readMyTipsTheyHave;
 import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.readTheirTipsAndGenerations;
@@ -195,60 +197,6 @@ public class ShadowGraphSynchronizer {
     }
 
     /**
-     * For each tip they send us, determine if we have that event. For each tip, send true if we have the event and
-     * false if we don't.
-     *
-     * @param theirTipShadows the tips they sent us
-     * @return a list of booleans corresponding to their tips in the order they were sent. True if we have the event,
-     * false if we don't
-     */
-    @NonNull
-    private static List<Boolean> getTheirTipsIHave(@NonNull final List<ShadowEvent> theirTipShadows) {
-        final List<Boolean> myBooleans = new ArrayList<>(theirTipShadows.size());
-        for (final ShadowEvent s : theirTipShadows) {
-            myBooleans.add(s != null); // is this event is known to me
-        }
-        return myBooleans;
-    }
-
-    /**
-     * For each tip sent to the peer, determine if they have that event. If they have it, add it to the list that is
-     * returned.
-     *
-     * @param connection     the connection to use
-     * @param myTips         the tips we sent them
-     * @param myTipsTheyHave a list of booleans corresponding to our tips in the order they were sent. True if they have
-     *                       the event, false if they don't
-     * @return a list of tips that they have
-     */
-    @NonNull
-    private static List<ShadowEvent> getMyTipsTheyKnow(
-            @NonNull final Connection connection,
-            @NonNull final List<ShadowEvent> myTips,
-            @NonNull final List<Boolean> myTipsTheyHave)
-            throws SyncException {
-
-        Objects.requireNonNull(connection);
-
-        if (myTipsTheyHave.size() != myTips.size()) {
-            throw new SyncException(
-                    connection,
-                    String.format(
-                            "peer booleans list is wrong size. Expected: %d Actual: %d,",
-                            myTips.size(), myTipsTheyHave.size()));
-        }
-        final List<ShadowEvent> knownTips = new ArrayList<>();
-        // process their booleans
-        for (int i = 0; i < myTipsTheyHave.size(); i++) {
-            if (Boolean.TRUE.equals(myTipsTheyHave.get(i))) {
-                knownTips.add(myTips.get(i));
-            }
-        }
-
-        return knownTips;
-    }
-
-    /**
      * Executes a sync using the supplied connection.
      *
      * @param connection the connection to use
@@ -327,6 +275,7 @@ public class ShadowGraphSynchronizer {
         return sendAndReceiveEvents(connection, timing, sendList);
     }
 
+    @NonNull
     private Generations getGenerations(final long minRoundGen) {
         return new Generations(
                 minRoundGen,
@@ -334,6 +283,7 @@ public class ShadowGraphSynchronizer {
                 generationsSupplier.get().getMaxRoundGeneration());
     }
 
+    @NonNull
     private List<ShadowEvent> getTips() {
         final List<ShadowEvent> myTips = shadowGraph.getTips();
         syncMetrics.updateTipsPerSync(myTips.size());

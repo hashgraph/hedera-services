@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -332,8 +333,6 @@ public final class SyncUtils {
         return null;
     }
 
-    // TODO test
-
     /**
      * Given a list of events we think the other node may not have, reduce that list to events that we think they do not
      * have and that are unlikely to end up being duplicate events.
@@ -363,14 +362,14 @@ public final class SyncUtils {
             @NonNull final List<EventImpl> eventsTheyNeed) {
 
         final ShadowEvent latestSelfEvent = getLatestSelfEventInShadowgraph(shadowGraph, selfId);
-        final List<ShadowEvent> listOfLatestSelfEvent;
-        if (latestSelfEvent == null) {
-            listOfLatestSelfEvent = List.of();
-        } else {
-            listOfLatestSelfEvent = List.of(latestSelfEvent);
-        }
 
-        final Set<ShadowEvent> selfEventAncestors = shadowGraph.findAncestors(listOfLatestSelfEvent, event -> true);
+        final Set<ShadowEvent> selfEventAncestors;
+        if (latestSelfEvent == null) {
+            selfEventAncestors = Set.of();
+        } else {
+            final List<ShadowEvent> listOfLatestSelfEvent = List.of(latestSelfEvent);
+            selfEventAncestors = shadowGraph.findAncestors(listOfLatestSelfEvent, event -> true);
+        }
 
         // Convert to a set of hashes for easy lookup.
         final List<Hash> selfEventAncestorHashes =
@@ -414,12 +413,10 @@ public final class SyncUtils {
      * Returns a predicate that determines if a {@link ShadowEvent}'s generation is non-ancient for the peer and greater
      * than this node's minimum non-expired generation, and is not already known.
      *
-     * @param knownShadows
-     * 		the {@link ShadowEvent}s that are already known and should therefore be rejected by the predicate
-     * @param myGenerations
-     * 		the generations of this node
-     * @param theirGenerations
-     * 		the generations of the peer node
+     * @param knownShadows     the {@link ShadowEvent}s that are already known and should therefore be rejected by the
+     *                         predicate
+     * @param myGenerations    the generations of this node
+     * @param theirGenerations the generations of the peer node
      * @return the predicate
      */
     public static Predicate<ShadowEvent> unknownNonAncient(
@@ -433,8 +430,8 @@ public final class SyncUtils {
 
     /**
      * Computes the number of creators that have more than one tip. If a single creator has more than two tips, this
-     * method will only report once for each such creator. The execution time cost for this method is O(T + N) where
-     * T is the number of tips including all forks and N is the number of network nodes. There is some memory overhead,
+     * method will only report once for each such creator. The execution time cost for this method is O(T + N) where T
+     * is the number of tips including all forks and N is the number of network nodes. There is some memory overhead,
      * but it is fairly nominal in favor of the time complexity savings.
      *
      * @return the number of event creators that have more than one tip.
@@ -465,10 +462,63 @@ public final class SyncUtils {
     }
 
     /**
-     * @param sendList
-     * 		The list of events to sort.
+     * @param sendList The list of events to sort.
      */
     static void sort(final List<EventImpl> sendList) {
         sendList.sort((EventImpl e1, EventImpl e2) -> (int) (e1.getGeneration() - e2.getGeneration()));
+    }
+
+    /**
+     * For each tip they send us, determine if we have that event. For each tip, send true if we have the event and
+     * false if we don't.
+     *
+     * @param theirTipShadows the tips they sent us
+     * @return a list of booleans corresponding to their tips in the order they were sent. True if we have the event,
+     * false if we don't
+     */
+    @NonNull
+    static List<Boolean> getTheirTipsIHave(@NonNull final List<ShadowEvent> theirTipShadows) {
+        final List<Boolean> myBooleans = new ArrayList<>(theirTipShadows.size());
+        for (final ShadowEvent s : theirTipShadows) {
+            myBooleans.add(s != null); // is this event is known to me
+        }
+        return myBooleans;
+    }
+
+    /**
+     * For each tip sent to the peer, determine if they have that event. If they have it, add it to the list that is
+     * returned.
+     *
+     * @param connection     the connection to use
+     * @param myTips         the tips we sent them
+     * @param myTipsTheyHave a list of booleans corresponding to our tips in the order they were sent. True if they have
+     *                       the event, false if they don't
+     * @return a list of tips that they have
+     */
+    @NonNull
+    static List<ShadowEvent> getMyTipsTheyKnow(
+            @NonNull final Connection connection,
+            @NonNull final List<ShadowEvent> myTips,
+            @NonNull final List<Boolean> myTipsTheyHave)
+            throws SyncException {
+
+        Objects.requireNonNull(connection);
+
+        if (myTipsTheyHave.size() != myTips.size()) {
+            throw new SyncException(
+                    connection,
+                    String.format(
+                            "peer booleans list is wrong size. Expected: %d Actual: %d,",
+                            myTips.size(), myTipsTheyHave.size()));
+        }
+        final List<ShadowEvent> knownTips = new ArrayList<>();
+        // process their booleans
+        for (int i = 0; i < myTipsTheyHave.size(); i++) {
+            if (Boolean.TRUE.equals(myTipsTheyHave.get(i))) {
+                knownTips.add(myTips.get(i));
+            }
+        }
+
+        return knownTips;
     }
 }
