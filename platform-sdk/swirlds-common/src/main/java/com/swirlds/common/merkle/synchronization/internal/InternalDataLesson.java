@@ -105,7 +105,7 @@ public class InternalDataLesson<T> implements SelfSerializable {
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         teacherTreeView.serializeInternal(out, internal);
-        out.writeSerializableList(teacherTreeView.getChildHashes(internal), false, true);
+        teacherTreeView.writeChildHashes(internal, out);
     }
 
     /**

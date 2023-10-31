@@ -171,22 +171,15 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
     }
 
     /**
-     * Read data item bytes from file at dataLocation and deserialize them into the Java object, if
-     * requested.
+     * Read data item bytes from file at dataLocation.
      *
      * @param dataLocation The file index combined with the offset for the starting block of the
      *     data in the file
-     * @return Deserialized data item, or {@code null} if deserialization is not requested
+     * @return Data item bytes
      * @throws IOException If there was a problem reading from data file
      * @throws ClosedChannelException if the data file was closed
      */
-    public D readDataItem(final long dataLocation) throws IOException {
-        long serializationVersion = metadata.getSerializationVersion();
-        final ByteBuffer data = readDataItemBytes(dataLocation);
-        return dataItemSerializer.deserialize(data, serializationVersion);
-    }
-
-    public ByteBuffer readDataItemBytes(final long dataLocation) throws IOException {
+    ByteBuffer readDataItemBytes(final long dataLocation) throws IOException {
         final long serializationVersion = metadata.getSerializationVersion();
         final long byteOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
         final int bytesToRead;
@@ -199,6 +192,19 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
             bytesToRead = dataItemSerializer.getSerializedSizeForVersion(serializationVersion);
         }
         return read(byteOffset, bytesToRead);
+    }
+
+    /**
+     * Read data item from file at dataLocation and deserialize it to a Java object.
+     *
+     * @param dataLocation Data item location, which combines data file index and offset in the file
+     * @return Deserialized data item
+     * @throws IOException If there was a problem reading from data file
+     * @throws ClosedChannelException if the data file was closed
+     */
+    D readDataItem(final long dataLocation) throws IOException {
+        final ByteBuffer dataItemBytes = readDataItemBytes(dataLocation);
+        return dataItemSerializer.deserialize(dataItemBytes, metadata.getSerializationVersion());
     }
 
     /**

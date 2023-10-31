@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -34,7 +35,7 @@ import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
-import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
@@ -84,8 +85,13 @@ public class VirtualMapReconnectTestBase {
     protected static final TestValue FOX = new TestValue("FOX");
     protected static final TestValue GOOSE = new TestValue("GOOSE");
 
-    protected final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-    protected final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
+    // Custom reconnect config to make tests with timeouts faster
+    protected static ReconnectConfig reconnectConfig = ConfigurationBuilder.create()
+            .withSources(new SimpleConfigSource("reconnect.asyncStreamTimeout", "5s"))
+            .withConfigDataType(ReconnectConfig.class)
+            .build()
+            .getConfigData(ReconnectConfig.class);
+
     protected VirtualMap<TestKey, TestValue> teacherMap;
     protected VirtualMap<TestKey, TestValue> learnerMap;
     protected BrokenBuilder teacherBuilder;
@@ -101,6 +107,7 @@ public class VirtualMapReconnectTestBase {
                 (short) 1, DigestType.SHA_384,
                 (short) 1, new TestKeySerializer(),
                 (short) 1, new TestValueSerializer());
+        tableConfig.hashesRamToDiskThreshold(0);
         return new MerkleDbDataSourceBuilder<>(tableConfig);
     }
 
@@ -177,6 +184,21 @@ public class VirtualMapReconnectTestBase {
      */
     protected void reconnectMultipleTimes(
             final int attempts, final Function<VirtualMap<TestKey, TestValue>, MerkleNode> brokenTeacherMapBuilder) {
+
+        // Make sure virtual map data is flushed to disk (data source), otherwise all
+        // data for reconnects would be loaded from virtual node cache
+        final VirtualRootNode<TestKey, TestValue> virtualRootNode =
+                teacherMap.asInternal().getChild(1);
+        virtualRootNode.enableFlush();
+
+        final VirtualMap<TestKey, TestValue> teacherCopy = teacherMap.copy();
+        teacherMap.release();
+        try {
+            virtualRootNode.waitUntilFlushed();
+        } catch (final InterruptedException z) {
+            throw new RuntimeException("Interrupted exception while waiting for virtual map to flush");
+        }
+        teacherMap = teacherCopy;
 
         final MerkleInternal teacherTree = createTreeForMap(teacherMap);
         final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();

@@ -37,9 +37,6 @@ import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -226,32 +223,45 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public List<Hash> getChildHashes(final Long parent) {
+    public void writeChildHashes(final Long parent, final SerializableDataOutputStream out) throws IOException {
         checkValidInternal(parent, reconnectState);
+        if (parent == ROOT_PATH && reconnectState.getLastLeafPath() == INVALID_PATH) {
+            // out.writeSerializableList() writes just a single int if the list is empty
+            out.writeInt(0);
+            return;
+        }
+        final int size;
         if (parent > ROOT_PATH || (parent == ROOT_PATH && reconnectState.getLastLeafPath() > 1)) {
-            final long leftPath = getLeftChildPath(parent);
-            final long rightPath = getRightChildPath(parent);
-            final Hash leftHash = records.findHash(leftPath);
-            final Hash rightHash = records.findHash(rightPath);
-            if (leftHash == null && rightHash == null) {
-                throw new MerkleSynchronizationException("Both children had null hashes at paths " + leftPath + " and "
-                        + rightPath + " for parent " + parent);
-            }
-            return Arrays.asList(leftHash, rightHash);
+            size = 2;
         } else if (parent == ROOT_PATH && reconnectState.getLastLeafPath() == 1) {
-            final Hash leafHash = records.findHash(1);
-            if (leafHash == null) {
-                throw new MerkleSynchronizationException("Null hash for path = 1");
-            }
-            return List.of(leafHash);
-        } else if (parent == ROOT_PATH && reconnectState.getLastLeafPath() == INVALID_PATH) {
-            return Collections.emptyList();
+            size = 1;
         } else {
             throw new MerkleSynchronizationException("Unexpected parent " + parent);
+        }
+        out.writeInt(size);
+        // All same class? true
+        out.writeBoolean(true);
+
+        final long leftPath = getLeftChildPath(parent);
+        // Is null? false
+        out.writeBoolean(false);
+        // Class version is written for the first entry only
+        out.writeInt(Hash.CLASS_VERSION);
+        // Write hash in SelfSerializable format
+        if (!records.findAndWriteHash(leftPath, out)) {
+            throw new MerkleSynchronizationException("Null hash for path = " + leftPath);
+        }
+
+        if (size == 2) {
+            final long rightPath = getRightChildPath(parent);
+            // Is null? false
+            out.writeBoolean(false);
+            // Class version is not written
+            // Write hash in SelfSerializable format
+            if (!records.findAndWriteHash(rightPath, out)) {
+                throw new MerkleSynchronizationException("Null hash for path = " + rightPath);
+            }
         }
     }
 

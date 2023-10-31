@@ -189,11 +189,7 @@ public class StandardTeacherTreeView implements TeacherTreeView<NodeToSend> {
         return merkleNode != null && merkleNode.hasCustomReconnectView();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<Hash> getChildHashes(final NodeToSend parent) {
+    private List<Hash> getChildHashes(final NodeToSend parent) {
 
         final MerkleNode node = parent.getNode();
 
@@ -226,6 +222,11 @@ public class StandardTeacherTreeView implements TeacherTreeView<NodeToSend> {
         }
 
         return hashes;
+    }
+
+    @Override
+    public void writeChildHashes(final NodeToSend parent, final SerializableDataOutputStream out) throws IOException {
+        out.writeSerializableList(getChildHashes(parent), false, true);
     }
 
     /**

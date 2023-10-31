@@ -26,6 +26,7 @@ import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LongSummaryStatistics;
@@ -170,14 +171,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         return dataFileReader;
     }
 
-    /**
-     * Get a value by reading it from disk.
-     *
-     * @param key The key to find and read value for
-     * @return Array of serialization version for data if the value was read or null if not found
-     * @throws IOException If there was a problem reading the value from file
-     */
-    public D get(final long key) throws IOException {
+    private boolean checkKeyInRange(final long key) {
         // Check if out of range
         final KeyRange keyRange = fileCollection.getValidKeyRange();
         if (!keyRange.withinRange(key)) {
@@ -187,10 +181,43 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             if (key != 0) {
                 logger.trace(MERKLE_DB.getMarker(), "Key [{}] is outside valid key range of {}", key, keyRange);
             }
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Get a value by reading it from disk.
+     *
+     * @param key The key to find and read value for
+     * @return Array of serialization version for data if the value was read or null if not found
+     * @throws IOException If there was a problem reading the value from file
+     */
+    public D get(final long key) throws IOException {
+        if (!checkKeyInRange(key)) {
             return null;
         }
         // read from files via index lookup
         return fileCollection.readDataItemUsingIndex(index, key);
+    }
+
+    /**
+     * Get raw value bytes by reading it from disk.
+     *
+     * <p>NOTE: this method may not be used for data types, which can be of multiple different
+     * versions. This is because there is no way for a caller to know the version of the returned
+     * bytes.
+     *
+     * @param key The key to find and read value for
+     * @return Array of serialization version for data if the value was read or null if not found
+     * @throws IOException If there was a problem reading the value from file
+     */
+    public ByteBuffer getBytes(final long key) throws IOException {
+        if (!checkKeyInRange(key)) {
+            return null;
+        }
+        // read from files via index lookup
+        return fileCollection.readDataItemBytesUsingIndex(index, key);
     }
 
     /**
