@@ -186,6 +186,7 @@ public class SyncGossip extends AbstractGossip {
         thingsToStart.add(shadowgraphExecutor);
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
                 platformContext,
+                time,
                 shadowGraph,
                 addressBook.getSize(),
                 syncMetrics,

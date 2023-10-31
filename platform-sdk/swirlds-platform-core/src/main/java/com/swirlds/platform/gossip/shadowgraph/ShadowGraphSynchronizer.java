@@ -16,6 +16,16 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
+import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.filterLikelyDuplicates;
+import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.readEventsINeed;
+import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.readMyTipsTheyHave;
+import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.readTheirTipsAndGenerations;
+import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.sendEventsTheyNeed;
+import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeFirstByte;
+import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeMyTipsAndGenerations;
+import static com.swirlds.platform.gossip.shadowgraph.SyncUtils.writeTheirTipsIHave;
+
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.NodeId;
@@ -33,9 +43,9 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -58,9 +68,6 @@ import java.util.stream.Collectors;
  * local.
  */
 public class ShadowGraphSynchronizer {
-
-    // TODO nullity annotations
-    // TODO finish javadocs
 
     /**
      * The shadow graph manager to use for this sync
@@ -107,35 +114,38 @@ public class ShadowGraphSynchronizer {
      */
     private final InterruptableRunnable executePreFetchTips;
 
+    private final Time time;
     private final boolean filterLikelyDuplicates;
     private final Duration ancestorFilterThreshold;
     private final Duration nonAncestorFilterThreshold;
 
     public ShadowGraphSynchronizer(
             @NonNull final PlatformContext platformContext,
-            final ShadowGraph shadowGraph,
+            @NonNull final Time time,
+            @NonNull final ShadowGraph shadowGraph,
             final int numberOfNodes,
-            final SyncMetrics syncMetrics,
-            final Supplier<GraphGenerations> generationsSupplier,
+            @NonNull final SyncMetrics syncMetrics,
+            @NonNull final Supplier<GraphGenerations> generationsSupplier,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
-            final FallenBehindManager fallenBehindManager,
+            @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final IntakeEventCounter intakeEventCounter,
-            final ParallelExecutor executor,
+            @NonNull final ParallelExecutor executor,
             final boolean sendRecInitBytes,
-            final InterruptableRunnable executePreFetchTips) {
+            @NonNull final InterruptableRunnable executePreFetchTips) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(intakeQueue);
 
-        this.shadowGraph = shadowGraph;
+        this.time = Objects.requireNonNull(time);
+        this.shadowGraph = Objects.requireNonNull(shadowGraph);
         this.numberOfNodes = numberOfNodes;
-        this.syncMetrics = syncMetrics;
-        this.generationsSupplier = generationsSupplier;
-        this.fallenBehindManager = fallenBehindManager;
+        this.syncMetrics = Objects.requireNonNull(syncMetrics);
+        this.generationsSupplier = Objects.requireNonNull(generationsSupplier);
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
-        this.executor = executor;
+        this.executor = Objects.requireNonNull(executor);
         this.sendRecInitBytes = sendRecInitBytes;
-        this.executePreFetchTips = executePreFetchTips;
+        this.executePreFetchTips = Objects.requireNonNull(executePreFetchTips);
         this.eventHandler = buildEventHandler(platformContext, intakeQueue);
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
@@ -151,8 +161,11 @@ public class ShadowGraphSynchronizer {
      * @param platformContext the platform context
      * @param intakeQueue     the event intake queue
      */
+    @NonNull
     private Consumer<GossipEvent> buildEventHandler(
             @NonNull final PlatformContext platformContext, @NonNull final QueueThread<GossipEvent> intakeQueue) {
+
+        Objects.requireNonNull(intakeQueue);
 
         final boolean hashOnGossipThreads = platformContext
                 .getConfiguration()
@@ -208,9 +221,15 @@ public class ShadowGraphSynchronizer {
      *                       the event, false if they don't
      * @return a list of tips that they have
      */
+    @NonNull
     private static List<ShadowEvent> getMyTipsTheyKnow(
-            final Connection connection, final List<ShadowEvent> myTips, final List<Boolean> myTipsTheyHave)
+            @NonNull final Connection connection,
+            @NonNull final List<ShadowEvent> myTips,
+            @NonNull final List<Boolean> myTipsTheyHave)
             throws SyncException {
+
+        Objects.requireNonNull(connection);
+
         if (myTipsTheyHave.size() != myTips.size()) {
             throw new SyncException(
                     connection,
@@ -234,7 +253,7 @@ public class ShadowGraphSynchronizer {
      *
      * @param connection the connection to use
      */
-    public boolean synchronize(final Connection connection)
+    public boolean synchronize(@NonNull final Connection connection)
             throws IOException, ParallelExecutionException, SyncException, InterruptedException {
         // accumulates time points for each step in the execution of a single gossip session, used for stats
         // reporting and performance analysis
@@ -246,7 +265,7 @@ public class ShadowGraphSynchronizer {
             timing.start();
 
             if (sendRecInitBytes) {
-                SyncComms.writeFirstByte(connection);
+                writeFirstByte(connection);
             }
 
             // Step 1: each peer tells the other about its tips and generations
@@ -257,8 +276,8 @@ public class ShadowGraphSynchronizer {
             final List<ShadowEvent> myTips = getTips();
             // READ and WRITE generation numbers & tip hashes
             final TheirTipsAndGenerations theirTipsAndGenerations = readWriteParallel(
-                    SyncComms.readTheirTipsAndGenerations(connection, numberOfNodes, sendRecInitBytes),
-                    SyncComms.writeMyTipsAndGenerations(connection, myGenerations, myTips),
+                    readTheirTipsAndGenerations(connection, numberOfNodes, sendRecInitBytes),
+                    writeMyTipsAndGenerations(connection, myGenerations, myTips),
                     connection);
             timing.setTimePoint(1);
 
@@ -291,8 +310,8 @@ public class ShadowGraphSynchronizer {
 
             timing.setTimePoint(2);
             final List<Boolean> theirBooleans = readWriteParallel(
-                    SyncComms.readMyTipsTheyHave(connection, myTips.size()),
-                    SyncComms.writeTheirTipsIHave(connection, theirTipsIHave),
+                    readMyTipsTheyHave(connection, myTips.size()),
+                    writeTheirTipsIHave(connection, theirTipsIHave),
                     connection);
             timing.setTimePoint(3);
 
@@ -322,7 +341,20 @@ public class ShadowGraphSynchronizer {
         return myTips;
     }
 
-    private boolean fallenBehind(final Generations self, final Generations other, final Connection connection) {
+    /**
+     * Decide if we have fallen behind with respect to this peer.
+     *
+     * @param self       our generations
+     * @param other      their generations
+     * @param connection the connection to use
+     * @return true if we have fallen behind, false otherwise
+     */
+    private boolean fallenBehind(
+            @NonNull final Generations self, @NonNull final Generations other, @NonNull final Connection connection) {
+        Objects.requireNonNull(self);
+        Objects.requireNonNull(other);
+        Objects.requireNonNull(connection);
+
         final SyncFallenBehindStatus status = SyncFallenBehindStatus.getStatus(self, other);
         if (status == SyncFallenBehindStatus.SELF_FALLEN_BEHIND) {
             fallenBehindManager.reportFallenBehind(connection.getOtherId());
@@ -334,12 +366,28 @@ public class ShadowGraphSynchronizer {
         return false;
     }
 
+    /**
+     * Create a list of events to send to the peer.
+     *
+     * @param selfId           the id of this node
+     * @param knownSet         the set of events that the peer already has (this is incomplete at this stage and is
+     *                         added to during this method)
+     * @param myGenerations    the generations of this node
+     * @param theirGenerations the generations of the peer
+     * @return a list of events to send to the peer
+     */
+    @NonNull
     private List<EventImpl> createSendList(
             @NonNull final NodeId selfId,
-            final Set<ShadowEvent> knownSet,
-            final Generations myGenerations,
-            final Generations theirGenerations)
+            @NonNull final Set<ShadowEvent> knownSet,
+            @NonNull final Generations myGenerations,
+            @NonNull final Generations theirGenerations)
             throws InterruptedException {
+
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(knownSet);
+        Objects.requireNonNull(myGenerations);
+        Objects.requireNonNull(theirGenerations);
 
         // add to knownSet all the ancestors of each known event
         final Set<ShadowEvent> knownAncestors = shadowGraph.findAncestors(
@@ -371,12 +419,12 @@ public class ShadowGraphSynchronizer {
 
         final List<EventImpl> sendList;
         if (filterLikelyDuplicates) {
-            sendList = SyncComms.filterLikelyDuplicates(
+            sendList = filterLikelyDuplicates(
                     shadowGraph,
                     selfId,
                     ancestorFilterThreshold,
                     nonAncestorFilterThreshold,
-                    Instant.now(), // TODO
+                    time.now(),
                     eventsTheyMayNeed);
         } else {
             sendList = eventsTheyMayNeed;
@@ -397,16 +445,22 @@ public class ShadowGraphSynchronizer {
      * @throws ParallelExecutionException if anything goes wrong
      */
     private boolean sendAndReceiveEvents(
-            final Connection connection, final SyncTiming timing, final List<EventImpl> sendList)
+            @NonNull final Connection connection,
+            @NonNull final SyncTiming timing,
+            @NonNull final List<EventImpl> sendList)
             throws ParallelExecutionException {
+
+        Objects.requireNonNull(connection);
+        Objects.requireNonNull(sendList);
+
         timing.setTimePoint(4);
         // the reading thread uses this to indicate to the writing thread that it is done
         final CountDownLatch eventReadingDone = new CountDownLatch(1);
         // the writer will set it to true if writing is aborted
         final AtomicBoolean writeAborted = new AtomicBoolean(false);
         final Integer eventsRead = readWriteParallel(
-                SyncComms.readEventsINeed(connection, eventHandler, syncMetrics, eventReadingDone, intakeEventCounter),
-                SyncComms.sendEventsTheyNeed(connection, sendList, eventReadingDone, writeAborted),
+                readEventsINeed(connection, eventHandler, syncMetrics, eventReadingDone, intakeEventCounter),
+                sendEventsTheyNeed(connection, sendList, eventReadingDone, writeAborted),
                 connection);
         if (eventsRead < 0 || writeAborted.get()) {
             // sync was aborted
@@ -437,9 +491,17 @@ public class ShadowGraphSynchronizer {
      * @throws ParallelExecutionException thrown if anything goes wrong during these read write operations. the
      *                                    connection will be closed before this exception is thrown
      */
+    @Nullable
     private <T> T readWriteParallel(
-            final Callable<T> readTask, final Callable<Void> writeTask, final Connection connection)
+            @NonNull final Callable<T> readTask,
+            @NonNull final Callable<Void> writeTask,
+            @NonNull final Connection connection)
             throws ParallelExecutionException {
+
+        Objects.requireNonNull(readTask);
+        Objects.requireNonNull(writeTask);
+        Objects.requireNonNull(connection);
+
         return executor.doParallel(readTask, writeTask, connection::disconnect);
     }
 
@@ -449,8 +511,9 @@ public class ShadowGraphSynchronizer {
      * @param connection the connection over which the sync was initiated
      * @throws IOException if there are any connection issues
      */
-    public void rejectSync(final Connection connection) throws IOException {
+    public void rejectSync(@NonNull final Connection connection) throws IOException {
+        Objects.requireNonNull(connection);
         connection.initForSync();
-        SyncComms.rejectSync(connection, numberOfNodes);
+        SyncUtils.rejectSync(connection, numberOfNodes);
     }
 }

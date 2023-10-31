@@ -201,6 +201,7 @@ public class ChatterGossip extends AbstractGossip {
             shadowgraphExecutor.start();
             final ShadowGraphSynchronizer chatterSynchronizer = new ShadowGraphSynchronizer(
                     platformContext,
+                    time,
                     shadowGraph,
                     addressBook.getSize(),
                     syncMetrics,
