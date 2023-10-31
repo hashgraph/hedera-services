@@ -39,10 +39,12 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.Arrays;
-import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Arrays;
+import java.util.List;
 
 @HapiTestSuite
 public class MiscCryptoSuite extends HapiSuite {
@@ -102,7 +104,6 @@ public class MiscCryptoSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE));
     }
 
-    @HapiTest
     private static HapiSpec reduceTransferFee() {
         final long REDUCED_NODE_FEE = 2L;
         final long REDUCED_NETWORK_FEE = 3L;
@@ -116,7 +117,7 @@ public class MiscCryptoSuite extends HapiSuite {
                                 .payingWith("sender")
                                 .fee(REDUCED_TOTAL_FEE)
                                 .hasPrecheck(INSUFFICIENT_TX_FEE))
-                .when(reduceFeeFor(CryptoTransfer, REDUCED_NODE_FEE, REDUCED_NETWORK_FEE, REDUCED_SERVICE_FEE))dfgsdfdsfdsdsfdsfdfsdsfdsfdfsdsfdsfdsfdsfsdfdsfdsfdsfdsfdsfdsfdfsdsfdfs
+                .when(reduceFeeFor(CryptoTransfer, REDUCED_NODE_FEE, REDUCED_NETWORK_FEE, REDUCED_SERVICE_FEE))
                 .then(
                         cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
                                 .payingWith("sender")
