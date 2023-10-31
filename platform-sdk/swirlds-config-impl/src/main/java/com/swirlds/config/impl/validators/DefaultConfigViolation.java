@@ -16,9 +16,10 @@
 
 package com.swirlds.config.impl.validators;
 
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.validation.ConfigViolation;
 import com.swirlds.config.api.validation.PropertyMetadata;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * An immutable default implementation of {@link ConfigViolation}.
@@ -44,8 +45,8 @@ public record DefaultConfigViolation(String propertyName, String value, boolean 
      * 		the violation message
      * @return
      */
-    public static ConfigViolation of(final PropertyMetadata<?> metadata, String message) {
-        CommonUtils.throwArgNull(metadata, "metadata");
+    public static ConfigViolation of(@NonNull final PropertyMetadata<?> metadata, final String message) {
+        Objects.requireNonNull(metadata, "metadata must not be null");
         return new DefaultConfigViolation(metadata.getName(), metadata.getRawValue(), metadata.exists(), message);
     }
 

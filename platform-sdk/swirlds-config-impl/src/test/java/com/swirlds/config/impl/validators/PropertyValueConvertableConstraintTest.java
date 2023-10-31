@@ -32,7 +32,7 @@ class PropertyValueConvertableConstraintTest {
         final PropertyMetadata<Integer> metadata = null;
 
         // then
-        Assertions.assertThrows(IllegalArgumentException.class, () -> constraint.check(metadata));
+        Assertions.assertThrows(NullPointerException.class, () -> constraint.check(metadata));
     }
 
     @Test
