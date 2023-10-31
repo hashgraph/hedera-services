@@ -411,7 +411,7 @@ class IngestCheckerTest extends AppTestBase {
             givenValidPayerSignature();
             doThrow(new InsufficientBalanceException(failureReason, 123L))
                     .when(solvencyPreCheck)
-                    .checkSolvency(any(), any(), any());
+                    .checkSolvency(any(), any(), any(), eq(Boolean.TRUE));
 
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(InsufficientBalanceException.class)
@@ -426,7 +426,7 @@ class IngestCheckerTest extends AppTestBase {
             givenValidPayerSignature();
             doThrow(new RuntimeException("checkSolvency exception"))
                     .when(solvencyPreCheck)
-                    .checkSolvency(any(), any(), any());
+                    .checkSolvency(any(), any(), any(), eq(Boolean.TRUE));
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))

@@ -191,7 +191,7 @@ public final class IngestChecker {
         final FeeContext feeContext = new FeeContextImpl(
                 consensusTime, txInfo, payerKey, txInfo.payerID(), feeManager, storeFactory, configuration, authorizer);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
-        solvencyPreCheck.checkSolvency(txInfo, payer, fees);
+        solvencyPreCheck.checkSolvency(txInfo, payer, fees, true);
 
         return txInfo;
     }
