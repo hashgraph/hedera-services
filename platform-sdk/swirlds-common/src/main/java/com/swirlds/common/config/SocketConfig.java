@@ -35,7 +35,7 @@ import com.swirlds.config.api.ConfigProperty;
  * @param useLoopbackIp              should be set to true when using the internet simulator
  * @param tcpNoDelay                 if true, then Nagel's algorithm is disabled, which helps latency, hurts bandwidth
  *                                   usage
- * @param gzipCompression            whether to use gzip compression over the network
+ * @param compression                whether to use compression over the network
  */
 @ConfigData("socket")
 public record SocketConfig(
@@ -47,4 +47,5 @@ public record SocketConfig(
         @ConfigProperty(defaultValue = "true") boolean useTLS,
         @ConfigProperty(defaultValue = "false") boolean useLoopbackIp,
         @ConfigProperty(defaultValue = "true") boolean tcpNoDelay,
-        @ConfigProperty(defaultValue = "true") boolean gzipCompression) {}
+        @ConfigProperty(defaultValue = "true") boolean compression) {
+}

@@ -28,11 +28,13 @@ import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.network.ByteConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import io.airlift.compress.zstd.ZstdInputStream;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import net.jpountz.lz4.LZ4BlockInputStream;
+import io.airlift.compress.lz4.Lz4HadoopStreams;
 
 public class SyncInputStream extends SerializableDataInputStream {
 
@@ -54,7 +56,7 @@ public class SyncInputStream extends SerializableDataInputStream {
         final boolean compress = platformContext
                 .getConfiguration()
                 .getConfigData(SocketConfig.class)
-                .gzipCompression();
+                .compression();
 
         final InputStream meteredStream = extendInputStream(in, syncCounter);
 
@@ -64,6 +66,9 @@ public class SyncInputStream extends SerializableDataInputStream {
             //            wrappedStream = new InflaterInputStream(meteredStream, new Inflater(true), bufferSize);
 
             wrappedStream = new LZ4BlockInputStream(meteredStream);
+
+//            wrappedStream = new Lz4HadoopStreams(bufferSize).createInputStream(meteredStream);
+
 
         } else {
             wrappedStream = new BufferedInputStream(meteredStream, bufferSize);

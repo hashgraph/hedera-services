@@ -155,4 +155,5 @@ module com.swirlds.platform.core {
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
     requires org.lz4;
+    requires io.airlift;
 }

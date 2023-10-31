@@ -27,6 +27,7 @@ import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.ByteConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import io.airlift.compress.lz4.Lz4HadoopStreams;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -60,7 +61,7 @@ public class SyncOutputStream extends SerializableDataOutputStream {
         final boolean compress = platformContext
                 .getConfiguration()
                 .getConfigData(SocketConfig.class)
-                .gzipCompression();
+                .compression();
 
         final OutputStream meteredStream = extendOutputStream(out, connectionByteCounter);
 
@@ -68,8 +69,8 @@ public class SyncOutputStream extends SerializableDataOutputStream {
         if (compress) {
             //            final int level = Deflater.DEFAULT_COMPRESSION;
             //            final int level = 0;
-            //            wrappedStream = new DeflaterOutputStream(
-            //                    meteredStream, new Deflater(level, true), bufferSize, true);
+//                        wrappedStream = new DeflaterOutputStream(
+//                                meteredStream, new Deflater(level, true), bufferSize, true);
 
             final LZ4Compressor compressor = LZ4Factory.fastestInstance().fastCompressor();
             // TODO can we get away with not using a checksum?
@@ -78,6 +79,8 @@ public class SyncOutputStream extends SerializableDataOutputStream {
                     .asChecksum();
 
             wrappedStream = new LZ4BlockOutputStream(meteredStream, bufferSize, compressor, checksum, true);
+
+//            wrappedStream = new Lz4HadoopStreams(bufferSize).createOutputStream(meteredStream);
 
         } else {
             wrappedStream = new BufferedOutputStream(meteredStream, bufferSize);
