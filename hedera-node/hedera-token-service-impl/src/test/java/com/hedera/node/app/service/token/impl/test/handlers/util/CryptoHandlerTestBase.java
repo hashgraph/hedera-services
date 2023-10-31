@@ -65,6 +65,8 @@ public class CryptoHandlerTestBase {
     protected final Key key = A_COMPLEX_KEY;
     protected final Key otherKey = C_COMPLEX_KEY;
     protected final AccountID id = AccountID.newBuilder().accountNum(3).build();
+    protected final AccountID invalidId =
+            AccountID.newBuilder().accountNum(Long.MAX_VALUE).build();
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final Instant consensusInstant = Instant.ofEpochSecond(consensusTimestamp.seconds());
