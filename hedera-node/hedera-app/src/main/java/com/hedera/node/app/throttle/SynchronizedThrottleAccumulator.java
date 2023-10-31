@@ -18,6 +18,7 @@ package com.hedera.node.app.throttle;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.state.HederaState;
@@ -58,9 +59,10 @@ public class SynchronizedThrottleAccumulator {
      *
      * @param queryFunction the functionality of the query
      * @param query the query to update the throttle requirements for
+     * @param queryPayerId the payer id of the query
      * @return whether the query should be throttled
      */
-    public synchronized boolean shouldThrottle(HederaFunctionality queryFunction, Query query) {
-        return frontendThrottle.shouldThrottle(queryFunction, Instant.now(), query);
+    public synchronized boolean shouldThrottle(HederaFunctionality queryFunction, Query query, AccountID queryPayerId) {
+        return frontendThrottle.shouldThrottle(queryFunction, Instant.now(), query, queryPayerId);
     }
 }
