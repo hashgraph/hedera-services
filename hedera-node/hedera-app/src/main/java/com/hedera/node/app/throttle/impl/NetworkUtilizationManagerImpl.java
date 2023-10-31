@@ -30,7 +30,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
+import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
@@ -57,14 +57,14 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
 
     private final ThrottleAccumulator backendThrottle;
 
-    private final MonoMultiplierSources multiplierSources;
+    private final CongestionMultipliers congestionMultipliers;
 
     @Inject
     public NetworkUtilizationManagerImpl(
             @NonNull final ThrottleAccumulator backendThrottle,
-            @NonNull final MonoMultiplierSources multiplierSources) {
+            @NonNull final CongestionMultipliers congestionMultipliers) {
         this.backendThrottle = requireNonNull(backendThrottle, "backendThrottle must not be null");
-        this.multiplierSources = requireNonNull(multiplierSources, "multiplierSources must not be null");
+        this.congestionMultipliers = requireNonNull(congestionMultipliers, "congestionMultipliers must not be null");
     }
 
     @Override
@@ -73,7 +73,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
             @NonNull final Instant consensusTime,
             @NonNull final HederaState state) {
         backendThrottle.shouldThrottle(txnInfo, consensusTime, state);
-        multiplierSources.updateMultiplier(consensusTime);
+        congestionMultipliers.updateMultiplier(consensusTime);
     }
 
     @Override
@@ -136,14 +136,14 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
             final var genericLevelStarts = congestionLevelStarts.genericLevelStarts().stream()
                     .map(ts -> Instant.ofEpochSecond(ts.seconds(), ts.nanos()))
                     .toArray(Instant[]::new);
-            multiplierSources.resetGenericCongestionLevelStarts(genericLevelStarts);
+            congestionMultipliers.resetEntityUtilizationMultiplierStarts(genericLevelStarts);
         }
 
         if (!congestionLevelStarts.gasLevelStarts().isEmpty()) {
             final var gasLevelStarts = congestionLevelStarts.gasLevelStarts().stream()
                     .map(ts -> Instant.ofEpochSecond(ts.seconds(), ts.nanos()))
                     .toArray(Instant[]::new);
-            multiplierSources.resetGasCongestionLevelStarts(gasLevelStarts);
+            congestionMultipliers.resetThrottleMultiplierStarts(gasLevelStarts);
         }
     }
 
@@ -166,11 +166,11 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
 
         final var congestionLevelStartsState =
                 states.<CongestionLevelStarts>getSingleton(CongestionThrottleService.CONGESTION_LEVEL_STARTS_STATE_KEY);
-        final var genericCongestionStarts = Arrays.stream(multiplierSources.genericCongestionStarts())
+        final var genericCongestionStarts = Arrays.stream(congestionMultipliers.genericCongestionStarts())
                 .filter(Objects::nonNull)
                 .map(inst -> new Timestamp(inst.getEpochSecond(), inst.getNano()))
                 .toList();
-        final var gasCongestionStarts = Arrays.stream(multiplierSources.gasCongestionStarts())
+        final var gasCongestionStarts = Arrays.stream(congestionMultipliers.throttleMultiplierCongestionStarts())
                 .filter(Objects::nonNull)
                 .map(inst -> new Timestamp(inst.getEpochSecond(), inst.getNano()))
                 .toList();
