@@ -97,7 +97,7 @@ public class InputWire<I, O> {
     }
 
     /**
-     * Bind this input wire to a handler. A handler must be bound to this inserter prior to inserting data via any
+     * Bind this input wire to a handler. A handler must be bound to this input wire prior to inserting data via any
      * method.
      *
      * @param handler the handler to bind to this input wire
@@ -108,7 +108,7 @@ public class InputWire<I, O> {
     @NonNull
     public InputWire<I, O> bind(@NonNull final Consumer<I> handler) {
         if (this.handler != null) {
-            throw new IllegalStateException("Handler already bound");
+            throw new IllegalStateException("Input wire \"" + name + "\" already bound");
         }
         this.handler = (Consumer<Object>) Objects.requireNonNull(handler);
 
