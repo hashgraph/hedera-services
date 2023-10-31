@@ -54,7 +54,7 @@ import org.openjdk.jmh.annotations.Warmup;
 @Measurement(iterations = 3, time = 30)
 public class SizeLimitedStorageBench {
     // Application-level config overrides
-    @Param("163840")
+    @Param("16384000")
     int maxContractKvPairs;
 
     // Config for the starting database to load/create
