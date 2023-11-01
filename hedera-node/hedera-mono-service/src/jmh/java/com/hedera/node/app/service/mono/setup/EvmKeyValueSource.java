@@ -27,7 +27,7 @@ public class EvmKeyValueSource {
         throw new UnsupportedOperationException();
     }
 
-    private static final int NUM_KEYS = 163_840;
+    private static final int NUM_KEYS = 16_384_000;
     private static final long ENTROPY_SEED = 42_424_242L;
     private static final UInt256[] keys = new UInt256[NUM_KEYS];
     private static final SplittableRandom r = new SplittableRandom(ENTROPY_SEED);
