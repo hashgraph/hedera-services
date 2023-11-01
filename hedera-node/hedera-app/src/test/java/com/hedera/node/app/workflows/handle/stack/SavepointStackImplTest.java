@@ -45,21 +45,21 @@ class SavepointStackImplTest extends StateTestBase {
 
     private static final String FOOD_SERVICE = "FOOD_SERVICE";
 
-    private final Map<String, String> BASE_DATA = new HashMap<>(Map.of(
+    private final Map<String, String> BASE_DATA = Map.of(
             A_KEY, APPLE,
             B_KEY, BANANA,
             C_KEY, CHERRY,
             D_KEY, DATE,
             E_KEY, EGGPLANT,
             F_KEY, FIG,
-            G_KEY, GRAPE));
+            G_KEY, GRAPE);
 
     @Mock(strictness = LENIENT)
     private HederaState baseState;
 
     @BeforeEach
     void setup() {
-        final var baseKVState = new MapWritableKVState<>(FRUIT_STATE_KEY, BASE_DATA);
+        final var baseKVState = new MapWritableKVState<>(FRUIT_STATE_KEY, new HashMap<>(BASE_DATA));
         final var writableStates =
                 MapWritableStates.builder().state(baseKVState).build();
         when(baseState.createReadableStates(FOOD_SERVICE)).thenReturn(writableStates);
@@ -598,7 +598,6 @@ class SavepointStackImplTest extends StateTestBase {
             stack.commitFullStack();
 
             // then
-            assertThatThrownBy(stack::createSavepoint).isInstanceOf(IllegalStateException.class);
             assertThatThrownBy(stack::commit).isInstanceOf(IllegalStateException.class);
             assertThatThrownBy(stack::rollback).isInstanceOf(IllegalStateException.class);
             assertThat(stack.depth()).isZero();
@@ -608,6 +607,7 @@ class SavepointStackImplTest extends StateTestBase {
                     .isInstanceOf(IllegalStateException.class);
             assertThatThrownBy(() -> stack.createWritableStates(FOOD_SERVICE))
                     .isInstanceOf(IllegalStateException.class);
+            assertThatCode(stack::createSavepoint).doesNotThrowAnyException();
         }
     }
 
