@@ -670,7 +670,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
             final var fee = dispatchComputeFees(txBody, payer);
             final var payerAccount = solvencyPreCheck.getPayerAccount(readableStoreFactory(), payer);
-            solvencyPreCheck.checkSolvency(txBody, payer, functionality, payerAccount, fee);
+            solvencyPreCheck.checkSolvency(txBody, payer, functionality, payerAccount, fee, true);
         } catch (final InsufficientServiceFeeException | InsufficientNonFeeDebitsException e) {
             throw new PreCheckException(e.responseCode());
         }
