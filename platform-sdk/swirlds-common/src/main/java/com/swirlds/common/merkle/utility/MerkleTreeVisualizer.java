@@ -196,17 +196,7 @@ public class MerkleTreeVisualizer {
                 indexString = Integer.toString(route.getStep(-1));
             }
 
-            final Hash hash = node == null ? CryptographyHolder.get().getNullHash() : node.getHash();
             final String className = node == null ? "null" : node.getClass().getSimpleName();
-
-            final String hashString;
-            if (hash == null) {
-                hashString = "null";
-            } else if (hashLength == -1) {
-                hashString = hash.toString();
-            } else {
-                hashString = hash.toString().substring(0, hashLength);
-            }
 
             final String formattedIndexString = useColors ? BRIGHT_CYAN.apply(indexString) : indexString;
             final String formattedClassName = useColors ? BRIGHT_YELLOW.apply(className) : className;
@@ -229,15 +219,27 @@ public class MerkleTreeVisualizer {
                 table.addToRow(formattedRouteString);
             }
 
-            if (useMnemonics) {
-                final String mnemonic = hash == null ? "" : hash.toMnemonic();
-                final String formattedMnemonic = useColors ? WHITE.apply(mnemonic) : mnemonic;
-                table.addToRow(formattedMnemonic);
-            }
+            if (useHashes || useMnemonics) {
+                final Hash hash = node == null ? CryptographyHolder.get().getNullHash() : node.getHash();
+                final String hashString;
+                if (hash == null) {
+                    hashString = "null";
+                } else if (hashLength == -1) {
+                    hashString = hash.toString();
+                } else {
+                    hashString = hash.toString().substring(0, hashLength);
+                }
 
-            if (useHashes) {
-                final String formattedHashString = useColors ? GRAY.apply(hashString) : hashString;
-                table.addToRow(formattedHashString);
+                if (useMnemonics) {
+                    final String mnemonic = hash == null ? "" : hash.toMnemonic();
+                    final String formattedMnemonic = useColors ? WHITE.apply(mnemonic) : mnemonic;
+                    table.addToRow(formattedMnemonic);
+                }
+
+                if (useHashes) {
+                    final String formattedHashString = useColors ? GRAY.apply(hashString) : hashString;
+                    table.addToRow(formattedHashString);
+                }
             }
         });
 

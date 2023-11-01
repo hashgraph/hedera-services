@@ -780,29 +780,37 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 // shut down all executors
                 shutdownThreadsAndWait(storeInternalExecutor, storeKeyToPathExecutor, snapshotExecutor);
             } finally {
-                // close all closable data stores
-                logger.info(MERKLE_DB.getMarker(), "Closing Data Source [{}]", tableName);
-                if (hashStoreRam != null) {
-                    hashStoreRam.close();
+                try {
+                    // close all closable data stores
+                    logger.info(MERKLE_DB.getMarker(), "Closing Data Source [{}]", tableName);
+                    if (hashStoreRam != null) {
+                        hashStoreRam.close();
+                    }
+                    if (hashStoreDisk != null) {
+                        hashStoreDisk.close();
+                    }
+                    pathToDiskLocationInternalNodes.close();
+                    pathToDiskLocationLeafNodes.close();
+                    if (longKeyToPath != null) {
+                        longKeyToPath.close();
+                    }
+                    if (objectKeyToPath != null) {
+                        objectKeyToPath.close();
+                    }
+                    pathToKeyValue.close();
+                    // Store metadata
+                    saveMetadata(dbPaths.metadataFile);
+                } catch (final Exception e) {
+                    logger.warn(EXCEPTION.getMarker(), "Exception while closing Data Source [{}]", tableName);
+                } catch (final Error t) {
+                    logger.error(EXCEPTION.getMarker(), "Error while closing Data Source [{}]", tableName);
+                    throw t;
+                } finally {
+                    // updated count of open databases
+                    COUNT_OF_OPEN_DATABASES.decrement();
+                    // Notify the database
+                    database.closeDataSource(this);
                 }
-                if (hashStoreDisk != null) {
-                    hashStoreDisk.close();
-                }
-                pathToDiskLocationInternalNodes.close();
-                pathToDiskLocationLeafNodes.close();
-                if (longKeyToPath != null) {
-                    longKeyToPath.close();
-                }
-                if (objectKeyToPath != null) {
-                    objectKeyToPath.close();
-                }
-                pathToKeyValue.close();
-                // updated count of open databases
-                COUNT_OF_OPEN_DATABASES.decrement();
-                // Store metadata
-                saveMetadata(dbPaths.metadataFile);
-                // Notify the database
-                database.closeDataSource(this);
             }
         }
     }
