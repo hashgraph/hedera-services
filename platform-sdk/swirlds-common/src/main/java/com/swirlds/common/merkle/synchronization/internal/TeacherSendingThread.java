@@ -20,7 +20,7 @@ import static com.swirlds.common.merkle.synchronization.internal.LessonType.CUST
 import static com.swirlds.common.merkle.synchronization.internal.LessonType.INTERNAL_NODE_DATA;
 import static com.swirlds.common.merkle.synchronization.internal.LessonType.LEAF_NODE_DATA;
 import static com.swirlds.common.merkle.synchronization.internal.LessonType.NODE_IS_UP_TO_DATE;
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import com.swirlds.base.time.Time;
