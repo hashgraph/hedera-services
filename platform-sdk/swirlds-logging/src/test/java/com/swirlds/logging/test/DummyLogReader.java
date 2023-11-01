@@ -16,8 +16,8 @@
 
 package com.swirlds.logging.test;
 
-import com.swirlds.logging.SwirldsLogReader;
-import com.swirlds.logging.json.JsonLogEntry;
+import com.swirlds.logging.legacy.SwirldsLogReader;
+import com.swirlds.logging.legacy.json.JsonLogEntry;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.LinkedList;

@@ -18,7 +18,7 @@ package com.swirlds.platform.consensus;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -72,8 +72,7 @@ public class ConsensusRounds {
     }
 
     /**
-     * A new witness has been received, add it to the appropriate round and create an election if
-     * needed
+     * A new witness has been received, add it to the appropriate round and create an election if needed
      *
      * @param witness the new witness
      */
@@ -100,8 +99,7 @@ public class ConsensusRounds {
     }
 
     /**
-     * Notifies this instance that recalculating is starting again, so that any metadata can be
-     * reset.
+     * Notifies this instance that recalculating is starting again, so that any metadata can be reset.
      */
     public void recalculating() {
         // when starting recalculation, the highest round created will be the last round that is
@@ -110,8 +108,8 @@ public class ConsensusRounds {
     }
 
     /**
-     * Checks if the event is older than the round generation of the latest decided round. If no
-     * round has been decided yet, returns false.
+     * Checks if the event is older than the round generation of the latest decided round. If no round has been decided
+     * yet, returns false.
      *
      * @param event the event to check
      * @return true if its older
@@ -129,8 +127,7 @@ public class ConsensusRounds {
     }
 
     /**
-     * Notifies the instance that the current elections have been decided. This will start the next
-     * election.
+     * Notifies the instance that the current elections have been decided. This will start the next election.
      */
     public void currentElectionDecided() {
         minGenStorage.add(roundElections.getRound(), roundElections.creatMinGenInfo());
@@ -178,10 +175,9 @@ public class ConsensusRounds {
     }
 
     /**
-     * Used when loading rounds from a starting point (a signed state). It will create rounds with
-     * their minimum generation numbers, but we won't know about the witnesses in these rounds. We
-     * also don't care about any other information except for minimum generation since these rounds
-     * have already been decided beforehand.
+     * Used when loading rounds from a starting point (a signed state). It will create rounds with their minimum
+     * generation numbers, but we won't know about the witnesses in these rounds. We also don't care about any other
+     * information except for minimum generation since these rounds have already been decided beforehand.
      *
      * @param minGen a list of round numbers and round generation pairs, in ascending round numbers
      */

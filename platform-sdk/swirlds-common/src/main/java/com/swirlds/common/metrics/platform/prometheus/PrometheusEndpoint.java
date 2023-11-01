@@ -21,8 +21,8 @@ import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetric
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.sun.net.httpserver.HttpServer;
 import com.swirlds.common.AutoCloseableNonThrowing;

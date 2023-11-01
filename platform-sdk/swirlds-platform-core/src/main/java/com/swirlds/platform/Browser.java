@@ -18,7 +18,7 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
