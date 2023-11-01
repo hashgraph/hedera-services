@@ -17,7 +17,7 @@
 package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static contract.AssortedOpsXTestConstants.ONE_HBAR;
+import static contract.XTestConstants.ONE_HBAR;
 import static contract.MiscViewsXTestConstants.COINBASE_ID;
 import static contract.MiscViewsXTestConstants.EQUIV_TINYCENTS;
 import static contract.MiscViewsXTestConstants.ERC20_DECIMALS;

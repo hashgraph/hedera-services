@@ -17,7 +17,7 @@
 package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static contract.AssortedOpsXTestConstants.ONE_HBAR;
+import static contract.XTestConstants.ONE_HBAR;
 import static contract.ClassicViewsXTestConstants.ADMIN_KEY;
 import static contract.ClassicViewsXTestConstants.AUTORENEW_SECONDS;
 import static contract.ClassicViewsXTestConstants.CLASSIC_QUERIES_X_TEST_ID;

@@ -32,13 +32,13 @@ import static contract.AssortedOpsXTestConstants.EXPECTED_POINTLESS_INTERMEDIARY
 import static contract.AssortedOpsXTestConstants.FINALIZED_AND_DESTRUCTED_CONTRACT_ID;
 import static contract.AssortedOpsXTestConstants.FINALIZED_AND_DESTRUCTED_ID;
 import static contract.AssortedOpsXTestConstants.NEXT_ENTITY_NUM;
-import static contract.AssortedOpsXTestConstants.ONE_HBAR;
+import static contract.XTestConstants.ONE_HBAR;
 import static contract.AssortedOpsXTestConstants.POINTLESS_INTERMEDIARY_ADDRESS;
 import static contract.AssortedOpsXTestConstants.POINTLESS_INTERMEDIARY_ID;
 import static contract.AssortedOpsXTestConstants.RELAYER_ID;
 import static contract.AssortedOpsXTestConstants.RUBE_GOLDBERG_CHILD_ID;
 import static contract.AssortedOpsXTestConstants.SALT;
-import static contract.AssortedOpsXTestConstants.SENDER_ALIAS;
+import static contract.XTestConstants.SENDER_ALIAS;
 import static contract.AssortedOpsXTestConstants.TAKE_FIVE;
 import static contract.AssortedOpsXTestConstants.VACATE_ADDRESS;
 import static contract.XTestConstants.MISC_PAYER_ID;

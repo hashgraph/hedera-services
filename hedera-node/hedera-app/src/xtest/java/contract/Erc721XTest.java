@@ -17,7 +17,7 @@
 package contract;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static contract.Erc721XTestConstants.COINBASE_ID;
+import static contract.XTestConstants.COINBASE_ID;
 import static contract.Erc721XTestConstants.COUNTERPARTY_ADDRESS;
 import static contract.Erc721XTestConstants.COUNTERPARTY_ID;
 import static contract.Erc721XTestConstants.ERC721_FULL_ID;

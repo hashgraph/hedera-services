@@ -281,6 +281,19 @@ public abstract class AbstractXTest {
         }
     }
 
+    protected void addUsableRelation(
+            @NonNull final Map<EntityIDPair, TokenRelation> tokenRels,
+            @NonNull final AccountID accountID,
+            @NonNull final TokenID tokenID,
+            @NonNull final Consumer<TokenRelation.Builder> spec) {
+        final var rel = TokenRelation.newBuilder()
+                .accountId(accountID)
+                .tokenId(tokenID)
+                .kycGranted(true);
+        spec.accept(rel);
+        tokenRels.put(EntityIDPair.newBuilder() .tokenId(tokenID) .accountId(accountID) .build(), rel.build());
+    }
+
     protected void assertExpectedStorage(
             @NonNull ReadableKVState<SlotKey, SlotValue> storage,
             @NonNull ReadableKVState<AccountID, Account> accounts) {}

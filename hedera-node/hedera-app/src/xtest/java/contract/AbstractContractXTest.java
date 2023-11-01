@@ -82,8 +82,8 @@ import org.mockito.Mock;
 public abstract class AbstractContractXTest extends AbstractXTest {
     private static final SyntheticIds LIVE_SYNTHETIC_IDS = new SyntheticIds();
     private static final VerificationStrategies LIVE_VERIFICATION_STRATEGIES = new VerificationStrategies();
-    static final long GAS_TO_OFFER = 2_000_000L;
-    static final Duration STANDARD_AUTO_RENEW_PERIOD = new Duration(7776000L);
+    protected static final long GAS_TO_OFFER = 2_000_000L;
+    protected static final Duration STANDARD_AUTO_RENEW_PERIOD = new Duration(7776000L);
 
     @Mock
     private MessageFrame frame;
@@ -99,7 +99,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
 
     private HtsCallFactory callAttemptFactory;
 
-    private ContractScaffoldingComponent component;
+    protected ContractScaffoldingComponent component;
 
     @BeforeEach
     void setUp() {
