@@ -96,7 +96,6 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     private static final String BURN_FAILURE = "burn-failure";
     private static final String BURN_TXN = "burnTxn";
     private static final String WIPE_TXN = "wipeTxn";
-    private static final String MINT_TRANSFER_TXN = "mintTransferTxn";
     private static final String ACCOUNT = "account";
     private static final String CUSTOM_PAYER = "customPayer";
     private static final String WIPE_KEY = "wipeKey";
@@ -754,6 +753,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 1));
     }
 
+    @HapiTest
     private HapiSpec uniqueWipeFailsWhenInvokedOnFungibleToken() { // invokes unique wipe on fungible tokens
         return defaultHapiSpec("UniqueWipeFailsWhenInvokedOnFungibleToken")
                 .given(
@@ -772,7 +772,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .hasKnownStatus(INVALID_WIPING_AMOUNT)
                                 .via("wipeTx"),
                         wipeTokenAccount(A_TOKEN, ACCOUNT, List.of())
-                                .hasKnownStatus(OK)
+                                .hasKnownStatus(SUCCESS)
                                 .via("wipeEmptySerialTx"))
                 .then(
                         getTokenInfo(A_TOKEN).hasTotalSupply(10),
@@ -802,7 +802,9 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                 .then(wipeTokenAccount(NFT, ACCOUNT, List.of(-5L, -6L)).hasPrecheck(INVALID_NFT_ID));
     }
 
+    @HapiTest
     private HapiSpec mintUniqueTokenReceiptCheck() {
+        final var mintTransferTxn = "mintTransferTxn";
         return defaultHapiSpec("mintUniqueTokenReceiptCheck")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -813,28 +815,31 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .initialSupply(0)
                                 .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
-                .when(mintToken(A_TOKEN, List.of(metadata("memo"))).via(MINT_TRANSFER_TXN))
+                .when(mintToken(A_TOKEN, List.of(metadata("memo"))).via(mintTransferTxn))
                 .then(
                         UtilVerbs.withOpContext((spec, opLog) -> {
-                            var mintNft = getTxnRecord(MINT_TRANSFER_TXN);
+                            var mintNft = getTxnRecord(mintTransferTxn);
                             allRunFor(spec, mintNft);
                             var tokenTransferLists = mintNft.getResponseRecord().getTokenTransferListsList();
                             Assertions.assertEquals(1, tokenTransferLists.size());
-                            tokenTransferLists.stream().forEach(tokenTransferList -> {
+                            tokenTransferLists.forEach(tokenTransferList -> {
                                 Assertions.assertEquals(
                                         1,
                                         tokenTransferList.getNftTransfersList().size());
-                                tokenTransferList.getNftTransfersList().stream().forEach(nftTransfers -> {
+                                tokenTransferList.getNftTransfersList().forEach(nftTransfers -> {
                                     Assertions.assertEquals(
-                                            AccountID.getDefaultInstance(), nftTransfers.getSenderAccountID());
+                                            AccountID.newBuilder()
+                                                    .setAccountNum(0)
+                                                    .build(),
+                                            nftTransfers.getSenderAccountID());
                                     Assertions.assertEquals(
                                             TxnUtils.asId(TOKEN_TREASURY, spec), nftTransfers.getReceiverAccountID());
                                     Assertions.assertEquals(1L, nftTransfers.getSerialNumber());
                                 });
                             });
                         }),
-                        getTxnRecord(MINT_TRANSFER_TXN).logged(),
-                        getReceipt(MINT_TRANSFER_TXN).logged());
+                        getTxnRecord(mintTransferTxn).logged(),
+                        getReceipt(mintTransferTxn).logged());
     }
 
     @HapiTest

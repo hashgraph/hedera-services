@@ -25,7 +25,7 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.gui.model.GuiModel;
-import com.swirlds.logging.payloads.ApplicationFinishedPayload;
+import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
 import com.swirlds.platform.ParameterProvider;
 import java.security.SignatureException;

@@ -69,7 +69,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.IntSupplier;
-import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -79,24 +78,29 @@ import org.apache.logging.log4j.Logger;
  * transaction or query should be throttled based on that.
  * Meant to be used in single-threaded context only as part of the {@link com.hedera.node.app.workflows.handle.HandleWorkflow}.
  */
-@Singleton
 public class ThrottleAccumulator implements HandleThrottleParser {
 
     private static final Logger log = LogManager.getLogger(ThrottleAccumulator.class);
     private static final Set<HederaFunctionality> GAS_THROTTLED_FUNCTIONS =
             EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION);
-    private final IntSupplier capacitySplitSource;
-    private final ConfigProvider configProvider;
-    private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
     private static final int UNKNOWN_NUM_IMPLICIT_CREATIONS = -1;
+
+    private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
     private boolean lastTxnWasGasThrottled;
     private GasLimitDeterministicThrottle gasThrottle;
     private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 
+    private final ConfigProvider configProvider;
+    private final IntSupplier capacitySplitSource;
+    private final ThrottleType throttleType;
+
     public ThrottleAccumulator(
-            @NonNull final IntSupplier capacitySplitSource, @NonNull final ConfigProvider configProvider) {
+            @NonNull final IntSupplier capacitySplitSource,
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final ThrottleType throttleType) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
-        this.capacitySplitSource = capacitySplitSource;
+        this.capacitySplitSource = requireNonNull(capacitySplitSource, "capacitySplitSource must not be null");
+        this.throttleType = requireNonNull(throttleType, "throttleType must not be null");
     }
 
     /*
@@ -127,11 +131,20 @@ public class ThrottleAccumulator implements HandleThrottleParser {
      * @param queryFunction the functionality of the query
      * @param now the time at which the query is being processed
      * @param query the query to update the throttle requirements for
+     * @param queryPayerId the payer id of the query
      * @return whether the query should be throttled
      */
     public boolean shouldThrottle(
-            @NonNull final HederaFunctionality queryFunction, @NonNull final Instant now, @NonNull final Query query) {
+            @NonNull final HederaFunctionality queryFunction,
+            @NonNull final Instant now,
+            @NonNull final Query query,
+            @Nullable final AccountID queryPayerId) {
         final var configuration = configProvider.getConfiguration();
+
+        if (queryPayerId != null && throttleExempt(queryPayerId, configuration)) {
+            return false;
+        }
+
         final var shouldThrottleByGas =
                 configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas();
 
@@ -234,8 +247,6 @@ public class ThrottleAccumulator implements HandleThrottleParser {
             return false;
         }
 
-        // TODO: in mono we pass: () -> getSpanMapAccessor().getEthTxDataMeta(this) as 3rd param to
-        // getGasLimitForContractTx as third param, should we do something similar here?
         final var txGasLimit = getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality());
         if (isGasExhausted(function, now, txGasLimit, configuration)) {
             lastTxnWasGasThrottled = true;
@@ -531,7 +542,8 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         gasThrottle = new GasLimitDeterministicThrottle(capacity);
 
         log.info(
-                "Resolved consensus gas throttle -\n {} gas/sec (throttling {})",
+                "Resolved {} gas throttle -\n {} gas/sec (throttling {})",
+                throttleType.name(),
                 gasThrottle.capacity(),
                 (contractsConfig.throttleThrottleByGas() ? "ON" : "OFF"));
     }
@@ -543,7 +555,10 @@ public class ThrottleAccumulator implements HandleThrottleParser {
     }
 
     private void logResolvedDefinitions(final int capacitySplit) {
-        var sb = new StringBuilder("Resolved handle throttles (after splitting capacity ")
+        var sb = new StringBuilder("Resolved ")
+                .append(throttleType.name())
+                .append(" ")
+                .append("(after splitting capacity ")
                 .append(capacitySplit)
                 .append(" ways) - \n");
         functionReqs.entrySet().stream()
@@ -569,5 +584,10 @@ public class ThrottleAccumulator implements HandleThrottleParser {
     @Override
     public GasLimitDeterministicThrottle gasLimitThrottle() {
         return gasThrottle;
+    }
+
+    public enum ThrottleType {
+        FRONTEND_THROTTLE,
+        BACKEND_THROTTLE
     }
 }

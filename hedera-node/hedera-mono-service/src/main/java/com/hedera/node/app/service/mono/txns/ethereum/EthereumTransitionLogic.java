@@ -32,8 +32,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.SynthCreationCustomizer;
@@ -53,7 +55,10 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -120,13 +125,20 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 
         // Revoke the relayer's key for Ethereum operations
         txnCtx.swirldsTxnAccessor().getSigMeta().revokeCryptoSigsFrom(txnCtx.activePayerKey());
-        if (synthTxn.hasContractCall()) {
-            delegateToCallTransition(callerNum.toId(), synthTxn, relayerId, maxGasAllowance, userOfferedGasPrice);
-        } else {
-            delegateToCreateTransition(callerNum.toId(), synthTxn, relayerId, maxGasAllowance, userOfferedGasPrice);
+        try {
+            if (synthTxn.hasContractCall()) {
+                delegateToCallTransition(callerNum.toId(), synthTxn, relayerId, maxGasAllowance, userOfferedGasPrice);
+            } else {
+                delegateToCreateTransition(callerNum.toId(), synthTxn, relayerId, maxGasAllowance, userOfferedGasPrice);
+            }
+        } catch (InvalidTransactionException e) {
+            var result = TransactionProcessingResult.failed(
+                    0, 0, 0, Optional.of(e.messageBytes()), Optional.empty(), Collections.emptyMap(), List.of());
+            recordService.externaliseEvmCallTransaction(result);
+            throw e;
+        } finally {
+            recordService.updateForEvmCall(spanMapAccessor.getEthTxDataMeta(accessor), callerNum.toEntityId());
         }
-
-        recordService.updateForEvmCall(spanMapAccessor.getEthTxDataMeta(accessor), callerNum.toEntityId());
     }
 
     @Override
