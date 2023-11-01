@@ -33,6 +33,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.he
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo.NftTokenInfoCall;
@@ -65,6 +66,7 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
 
         final var subject =
                 new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, 2L, config);
+        String ledgerIdBytes =  com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID).toString();
 
         final var result = subject.execute().fullResult().result();
 
@@ -93,13 +95,13 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
                                                 EXPECTED_FIXED_CUSTOM_FEES.toArray(new Tuple[0]),
                                                 EXPECTED_FRACTIONAL_CUSTOM_FEES.toArray(new Tuple[0]),
                                                 EXPECTED_ROYALTY_CUSTOM_FEES.toArray(new Tuple[0]),
-                                                LEDGER_ID),
+                                                ledgerIdBytes),
                                         2L,
-                                        headlongAddressOf(CIVILIAN_OWNED_NFT.ownerId()),
+                                        Address.wrap("0x0000000000000000000000000000000000000000"),
                                         1000000L,
                                         com.hedera.pbj.runtime.io.buffer.Bytes.wrap("SOLD")
                                                 .toByteArray(),
-                                        headlongAddressOf(CIVILIAN_OWNED_NFT.spenderId())))
+                                        Address.wrap("0x00000000000000000000000000000000000E0697")))
                         .array()),
                 result.getOutput());
     }
