@@ -17,8 +17,8 @@
 package com.swirlds.common.merkle.synchronization;
 
 import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
@@ -36,9 +36,10 @@ import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationEx
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.merkle.synchronization.views.StandardLearnerTreeView;
+import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
-import com.swirlds.logging.payloads.SynchronizationCompletePayload;
+import com.swirlds.logging.legacy.payload.SynchronizationCompletePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -149,7 +150,14 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      * Attempt to free any and all resources that were acquired during the reconnect attempt.
      */
     private void abort() {
-        logger.warn(RECONNECT.getMarker(), "deleting partially constructed tree");
+        logger.warn(
+                RECONNECT.getMarker(),
+                "Deleting partially constructed tree:\n{}",
+                new MerkleTreeVisualizer(newRoot)
+                        .setDepth(5)
+                        .setUseHashes(false)
+                        .setUseMnemonics(false)
+                        .render());
         try {
             if (newRoot != null) {
                 newRoot.release();

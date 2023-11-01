@@ -16,7 +16,7 @@
 
 package com.swirlds.common.io.streams;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import java.io.IOException;
 import java.io.InputStream;
