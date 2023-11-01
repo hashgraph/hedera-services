@@ -166,6 +166,6 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
 
     private static void checkSignatures(final SignedState signedState, final AddressBook addressBook) {
         signedState.pruneInvalidSignatures(addressBook);
-        signedState.throwIfIncomplete();
+        signedState.throwIfNotVerifiable();
     }
 }
