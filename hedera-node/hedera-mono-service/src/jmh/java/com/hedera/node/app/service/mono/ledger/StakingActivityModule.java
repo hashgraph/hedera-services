@@ -92,7 +92,7 @@ public interface StakingActivityModule {
     @Provides
     @Singleton
     static GlobalDynamicProperties provideGlobalDynamicProperties() {
-        return mockPropertiesWith(500_000_000, 163_840);
+        return mockPropertiesWith(500_000_000, 16_384_000);
     }
 
     @Provides

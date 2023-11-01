@@ -394,6 +394,7 @@ public class HandleWorkflow {
                     networkUtilizationManager.trackFeePayments(payer, consensusNow, stack);
                 }
                 recordBuilder.status(validationResult.responseCodeEnum());
+
                 try {
                     if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
                         feeAccumulator.chargeNetworkFee(creator.accountId(), fees.networkFee());
@@ -417,22 +418,23 @@ public class HandleWorkflow {
                 }
 
             } else {
-                networkUtilizationManager.trackTxn(transactionInfo, consensusNow, stack);
-                if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)) {
-                    // privileged transactions are not charged fees
-                    feeAccumulator.chargeFees(payer, creator.accountId(), fees);
-                }
                 try {
+                    // Any hollow accounts that must sign to have all needed signatures, need to be finalized
+                    // as a result of transaction being handled.
+                    finalizeHollowAccounts(context, configuration, preHandleResult.hollowAccounts(), verifier);
+
+                    networkUtilizationManager.trackTxn(transactionInfo, consensusNow, stack);
+                    if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)) {
+                        // privileged transactions are not charged fees
+                        feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                    }
+
                     if (networkUtilizationManager.wasLastTxnGasThrottled()) {
                         // Don't charge the payer the service fee component, because the user-submitted transaction
                         // was fully valid but network capacity was unavailable to satisfy it
                         fees = fees.withoutServiceComponent();
                         throw new HandleException(CONSENSUS_GAS_EXHAUSTED);
                     }
-
-                    // Any hollow accounts that must sign to have all needed signatures, need to be finalized
-                    // as a result of transaction being handled.
-                    finalizeHollowAccounts(context, configuration, preHandleResult.hollowAccounts(), verifier);
 
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);

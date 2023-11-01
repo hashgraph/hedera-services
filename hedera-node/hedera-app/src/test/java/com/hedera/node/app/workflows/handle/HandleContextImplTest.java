@@ -93,6 +93,7 @@ import com.swirlds.config.api.Configuration;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -743,7 +744,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @BeforeEach
         void setup() {
-            final var baseKVState = new MapWritableKVState<>(FRUIT_STATE_KEY, BASE_DATA);
+            final var baseKVState = new MapWritableKVState<>(FRUIT_STATE_KEY, new HashMap<>(BASE_DATA));
             final var writableStates =
                     MapWritableStates.builder().state(baseKVState).build();
             when(baseState.createReadableStates(FOOD_SERVICE)).thenReturn(writableStates);

@@ -124,7 +124,7 @@ public class AutoAccountCreator {
         final Predicate<Key> verifier =
                 key -> handleContext.verificationFor(key).passed();
         // dispatch the auto-creation record as a preceding record
-        final var childRecord = handleContext.dispatchPrecedingTransaction(
+        final var childRecord = handleContext.dispatchReversiblePrecedingTransaction(
                 syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier, handleContext.payer());
 
         if (!isAliasEVMAddress && evmAddress != null) {

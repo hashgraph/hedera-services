@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -178,6 +179,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             final QueryContext context;
             Transaction allegedPayment = null;
             TransactionBody txBody = null;
+            AccountID payerID = null;
             if (paymentRequired) {
                 allegedPayment = queryHeader.paymentOrThrow();
                 final var configuration = configProvider.getConfiguration();
@@ -187,7 +189,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 txBody = transactionInfo.txBody();
 
                 // get payer
-                final var payerID = transactionInfo.payerID();
+                payerID = transactionInfo.payerID();
                 context = new QueryContextImpl(
                         state,
                         storeFactory,
@@ -246,7 +248,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             handler.validate(context);
 
             // 5. Check query throttles
-            if (synchronizedThrottleAccumulator.shouldThrottle(function, query)
+            if (synchronizedThrottleAccumulator.shouldThrottle(function, query, payerID)
                     && !RESTRICTED_FUNCTIONALITIES.contains(function)) {
                 throw new PreCheckException(BUSY);
             }

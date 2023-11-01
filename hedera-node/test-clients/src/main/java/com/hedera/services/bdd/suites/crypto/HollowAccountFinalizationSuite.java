@@ -689,9 +689,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    //    @HapiTest We need a way to differentiate between hollow created records and other preceding records.
-    // In mono-service we commint hollow accounts even if transaction fails, but in mod service we don't.
-    // So we can't enable this test
+    @HapiTest
     private HapiSpec txnWith2CompletionsAndAnother2PrecedingChildRecords() {
         final var ecdsaKey2 = "ecdsaKey2";
         final var recipientKey = "recipient";
@@ -815,7 +813,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    //    @HapiTest
+    @HapiTest
     //    This is possible in mono-service because we mutate state before handle,
     //    but can't be possible in modular-services
     private HapiSpec hollowAccountCompletionIsPersistedEvenIfTxnFails() {
