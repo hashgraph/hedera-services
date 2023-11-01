@@ -128,7 +128,7 @@ public class QueryChecker {
 
         // FUTURE: Currently we check the solvency twice: once with and once without service fees (in IngestChecker)
         // https://github.com/hashgraph/hedera-services/issues/8356
-        solvencyPreCheck.checkSolvency(txInfo, payer, new Fees(transferTxnFee, 0, 0));
+        solvencyPreCheck.checkSolvency(txInfo, payer, new Fees(transferTxnFee, 0, 0), false);
 
         if (transfers.isEmpty()) {
             throw new PreCheckException(INVALID_ACCOUNT_AMOUNTS);
@@ -152,19 +152,23 @@ public class QueryChecker {
                 }
 
                 // The balance only needs to be checked for sent amounts (= negative values)
-                if (amount < 0 && (account.tinybarBalance() - transferTxnFee) < -amount) {
+                if (amount < 0 && (account.tinybarBalance()) < -amount) {
                     // FUTURE: Expiry should probably be checked earlier
                     expiryValidation.checkAccountExpiry(account);
                     throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, transferTxnFee);
                 }
 
                 // Make sure the node receives enough
-                if (amount >= 0 && nodeAccountID.equals(transfer.accountIDOrThrow())) {
+                if (amount >= 0 && nodeAccountID.equals(accountID)) {
                     nodeReceivesSome = true;
                     if (amount < nodePayment) {
                         throw new InsufficientBalanceException(INSUFFICIENT_TX_FEE, nodePayment);
                     }
                 }
+            }
+            // this will happen just if it is a payer
+            else if (amount < 0 && (payer.tinybarBalance() - transferTxnFee) < -amount) {
+                throw new InsufficientBalanceException(INSUFFICIENT_PAYER_BALANCE, transferTxnFee);
             }
         }
 

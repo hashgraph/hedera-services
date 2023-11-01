@@ -22,7 +22,7 @@ plugins {
 
 dependencies {
     implementation("com.adarshr:gradle-test-logger-plugin:3.2.0")
-    implementation("com.autonomousapps:dependency-analysis-gradle-plugin:1.22.0")
+    implementation("com.autonomousapps:dependency-analysis-gradle-plugin:1.25.0")
     implementation("com.diffplug.spotless:spotless-plugin-gradle:6.22.0")
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
@@ -36,6 +36,6 @@ dependencies {
     implementation("org.gradlex:extra-java-module-info:1.4.2")
     implementation("org.gradlex:java-ecosystem-capabilities:1.3.1")
     implementation("org.gradlex:java-module-dependencies:1.4.1")
-    implementation("org.owasp:dependency-check-gradle:8.4.0")
+    implementation("org.owasp:dependency-check-gradle:8.4.2")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.4.1.3373")
 }

@@ -18,9 +18,11 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
@@ -58,7 +60,6 @@ import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -509,6 +510,7 @@ public class HandleWorkflow {
         final var payerID = txInfo.payerID();
         final var functionality = txInfo.functionality();
         final var txBody = txInfo.txBody();
+        boolean isPayerHollow = false;
 
         // Check if pre-handle was successful
         if (preHandleResult.status() != SO_FAR_SO_GOOD) {
@@ -528,9 +530,11 @@ public class HandleWorkflow {
         }
 
         // Check the status and solvency of the payer
+
         try {
             final var payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
-            solvencyPreCheck.checkSolvency(txInfo, payer, fees);
+            solvencyPreCheck.checkSolvency(txInfo, payer, fees, false);
+            isPayerHollow = isHollow(payer);
         } catch (final InsufficientServiceFeeException e) {
             return new ValidationResult(PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE, e.responseCode());
         } catch (final InsufficientNonFeeDebitsException e) {
@@ -566,8 +570,8 @@ public class HandleWorkflow {
 
         // Check all signature verifications. This will also wait, if validation is still ongoing.
         final var payerKeyVerification = verifier.verificationFor(preHandleResult.payerKey());
-        if (payerKeyVerification.failed()) {
-            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_SIGNATURE);
+        if (!isPayerHollow && payerKeyVerification.failed()) {
+            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE);
         }
 
         // verify all the keys
@@ -685,7 +689,7 @@ public class HandleWorkflow {
         // expand all keys
         final var expanded = new HashSet<ExpandedSignaturePair>();
         signatureExpander.expand(sigPairs, expanded);
-        if (payerKey != null && !HapiUtils.isHollow(payer)) {
+        if (payerKey != null && !isHollow(payer)) {
             signatureExpander.expand(payerKey, sigPairs, expanded);
         }
         signatureExpander.expand(currentRequiredPayerKeys, sigPairs, expanded);

@@ -55,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -492,6 +493,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec hollowAccountCompletionViaNonReqSigIsNotAllowed() {
         final var DEPOSIT_AMOUNT = 1000;
         return defaultHapiSpec("hollowAccountCompletionViaNonReqSigIsNotAllowed")
@@ -589,6 +591,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec completedHollowAccountsTransfer() {
         return defaultHapiSpec("CompletedHollowAccountsTransfer")
                 .given(
@@ -828,6 +831,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec precompileTransferFromHollowAccountWithNeededSigFailsAndDoesNotFinalizeAccount() {
         final var receiver = "receiver";
         final var ft = "ft";

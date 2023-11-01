@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
@@ -56,6 +58,11 @@ public interface HederaOperations {
      * described above.
      */
     void revert();
+
+    /**
+     * Revert child records.
+     */
+    void revertChildRecords();
 
     /**
      * Returns the {@link WritableStates} the {@code ContractService} can use to update
@@ -152,10 +159,10 @@ public interface HederaOperations {
      * Updates the storage metadata for the given contract.
      *
      * @param contractNumber the number of the contract
-     * @param firstKey       the first key in the storage linked list, or {@code null} if the list is empty
+     * @param firstKey       the first key in the storage linked list, or null if the list is empty
      * @param netChangeInSlotsUsed      the net change in the number of storage slots used by the contract
      */
-    void updateStorageMetadata(long contractNumber, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
+    void updateStorageMetadata(long contractNumber, @Nullable Bytes firstKey, int netChangeInSlotsUsed);
 
     /**
      * Creates a new contract with the given entity number and EVM address; and also "links" the alias
@@ -228,4 +235,11 @@ public interface HederaOperations {
      * @return the number of storage slots used by the contract, ignoring any uncommitted modifications
      */
     long getOriginalSlotsUsed(long contractNumber);
+
+    /**
+     * Creates a {@link ContractCreateRecordBuilder}, containing information about the hollow account.
+     * @param contractId    ContractId of hollow account
+     * @param evmAddress    Evm address of hollow account
+     */
+    void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress);
 }

@@ -107,6 +107,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
                         getTxnRecord(xferRecord).logged());
     }
 
+    @HapiTest
     private HapiSpec cryptoCreateRecordSanityChecks() {
         return defaultHapiSpec("CryptoCreateRecordSanityChecks")
                 .given(takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER))
@@ -117,6 +118,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
+    @HapiTest
     private HapiSpec cryptoDeleteRecordSanityChecks() {
         return defaultHapiSpec("CryptoDeleteRecordSanityChecks")
                 .given(flattened(
@@ -131,6 +133,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
+    @HapiTest
     private HapiSpec cryptoTransferRecordSanityChecks() {
         return defaultHapiSpec("CryptoTransferRecordSanityChecks")
                 .given(flattened(
@@ -143,6 +146,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
+    @HapiTest
     private HapiSpec cryptoUpdateRecordSanityChecks() {
         return defaultHapiSpec("CryptoUpdateRecordSanityChecks")
                 .given(flattened(
@@ -156,6 +160,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
+    @HapiTest
     private HapiSpec insufficientAccountBalanceRecordSanityChecks() {
         final long BALANCE = 500_000_000L;
         return defaultHapiSpec("InsufficientAccountBalanceRecordSanityChecks")
@@ -179,6 +184,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
                         List.of("txn1", "txn2"), List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, PAYER, RECEIVER)));
     }
 
+    @HapiTest
     private HapiSpec invalidPayerSigCryptoTransferRecordSanityChecks() {
         final long BALANCE = 10_000_000L;
 

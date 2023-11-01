@@ -41,12 +41,7 @@ final class ScheduleStoreUtility {
         if (scheduleToHash.adminKey() != null) {
             addToHash(hasher, scheduleToHash.adminKey());
         }
-        if (scheduleToHash.payerAccountId() != null) {
-            addToHash(hasher, scheduleToHash.payerAccountId());
-        }
-        if (scheduleToHash.schedulerAccountId() != null) {
-            addToHash(hasher, scheduleToHash.schedulerAccountId());
-        }
+        // @note We should check scheduler here, but mono doesn't, so we cannot either, yet.
         if (scheduleToHash.scheduledTransaction() != null) {
             addToHash(hasher, scheduleToHash.scheduledTransaction());
         }

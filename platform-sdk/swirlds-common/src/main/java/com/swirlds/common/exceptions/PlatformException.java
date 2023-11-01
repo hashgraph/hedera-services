@@ -16,7 +16,7 @@
 
 package com.swirlds.common.exceptions;
 
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 
 public class PlatformException extends RuntimeException {
 

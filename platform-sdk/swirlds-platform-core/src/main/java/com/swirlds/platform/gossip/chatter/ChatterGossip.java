@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip.chatter;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
@@ -236,6 +236,7 @@ public class ChatterGossip extends AbstractGossip {
                                     new HashCompareHandshake(epochHash, !protocolConfig.tolerateMismatchedEpochHash())),
                             new NegotiationProtocols(List.of(
                                     new EmergencyReconnectProtocol(
+                                            time,
                                             threadManager,
                                             notificationEngine,
                                             otherId,

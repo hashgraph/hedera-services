@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.observers;
 
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -27,14 +26,8 @@ import java.util.List;
  * A type which accretes observers of several different types. This type facilitates the implied observer DAG.
  */
 public class EventObserverDispatcher
-        implements EventReceivedObserver,
-                PreConsensusEventObserver,
-                EventAddedObserver,
-                ConsensusRoundObserver,
-                StaleEventObserver {
+        implements PreConsensusEventObserver, EventAddedObserver, ConsensusRoundObserver, StaleEventObserver {
 
-    /** A list of implementors of the {@link EventReceivedObserver} interface */
-    private final List<EventReceivedObserver> eventReceivedObservers;
     /** A list of implementors of the {@link PreConsensusEventObserver} interface */
     private final List<PreConsensusEventObserver> preConsensusEventObservers;
     /** A list of implementors of the {@link EventAddedObserver} interface */
@@ -50,7 +43,6 @@ public class EventObserverDispatcher
      * @param observers a list of {@link EventObserver} implementors
      */
     public EventObserverDispatcher(@NonNull final List<EventObserver> observers) {
-        eventReceivedObservers = new ArrayList<>();
         preConsensusEventObservers = new ArrayList<>();
         eventAddedObservers = new ArrayList<>();
         consensusRoundObservers = new ArrayList<>();
@@ -76,9 +68,6 @@ public class EventObserverDispatcher
      * @param observer the observer to add
      */
     public void addObserver(@NonNull final EventObserver observer) {
-        if (observer instanceof EventReceivedObserver o) {
-            eventReceivedObservers.add(o);
-        }
         if (observer instanceof PreConsensusEventObserver o) {
             preConsensusEventObservers.add(o);
         }
@@ -90,16 +79,6 @@ public class EventObserverDispatcher
         }
         if (observer instanceof StaleEventObserver o) {
             staleEventObservers.add(o);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void receivedEvent(final GossipEvent event) {
-        for (final EventReceivedObserver observer : eventReceivedObservers) {
-            observer.receivedEvent(event);
         }
     }
 

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
@@ -37,7 +37,6 @@ import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.state.StateManagementComponent;
@@ -171,21 +170,20 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         topology = new StaticTopology(
                 addressBook, selfId, basicConfig.numConnections(), unidirectionalConnectionsEnabled());
 
-        final Configuration configuration = platformContext.getConfiguration();
         final SocketFactory socketFactory = socketFactory(crypto.getKeysAndCerts(), cryptoConfig, socketConfig);
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
-                selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion, configuration);
+                platformContext, selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
+                platformContext,
                 this,
                 selfId,
                 addressBook,
                 connectionManagers::newConnection,
                 shouldDoVersionCheck(),
                 appVersion,
-                time,
-                configuration);
+                time);
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(

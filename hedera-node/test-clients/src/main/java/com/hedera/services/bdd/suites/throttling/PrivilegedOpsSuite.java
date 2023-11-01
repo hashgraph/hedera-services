@@ -142,6 +142,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
                         fileAppend(UPDATE_ZIP_FILE).fee(0L).payingWith(GENESIS).content(new byte[0]));
     }
 
+    @HapiTest
     private HapiSpec systemAccountUpdatePrivilegesAsExpected() {
         final var tmpTreasury = "tmpTreasury";
         return defaultHapiSpec("systemAccountUpdatePrivilegesAsExpected")

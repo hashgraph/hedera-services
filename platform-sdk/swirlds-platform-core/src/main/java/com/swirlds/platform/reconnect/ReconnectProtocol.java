@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.reconnect;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -73,6 +73,8 @@ public class ReconnectProtocol implements Protocol {
     /** A rate limited logger for when rejecting teacher role due to not having a status of ACTIVE */
     private final RateLimitedLogger notActiveLogger;
 
+    private final Time time;
+
     /**
      * @param threadManager           responsible for creating and managing threads
      * @param peerId                  the ID of the peer we are communicating with
@@ -122,6 +124,7 @@ public class ReconnectProtocol implements Protocol {
         stateIncompleteLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
         fallenBehindLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
         notActiveLogger = new RateLimitedLogger(logger, time, minimumTimeBetweenReconnects);
+        this.time = Objects.requireNonNull(time);
     }
 
     /** {@inheritDoc} */
@@ -259,6 +262,7 @@ public class ReconnectProtocol implements Protocol {
     private void teacher(final Connection connection) {
         try (final ReservedSignedState state = teacherState) {
             new ReconnectTeacher(
+                            time,
                             threadManager,
                             connection,
                             reconnectSocketTimeout,

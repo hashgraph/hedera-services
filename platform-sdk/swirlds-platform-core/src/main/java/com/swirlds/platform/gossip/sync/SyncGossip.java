@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip.sync;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
@@ -252,6 +252,7 @@ public class SyncGossip extends AbstractGossip {
                                             networkMetrics,
                                             time),
                                     new EmergencyReconnectProtocol(
+                                            time,
                                             threadManager,
                                             notificationEngine,
                                             otherId,

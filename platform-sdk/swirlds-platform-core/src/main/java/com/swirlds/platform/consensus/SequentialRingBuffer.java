@@ -17,15 +17,15 @@
 package com.swirlds.platform.consensus;
 
 import com.swirlds.common.utility.RandomAccessDeque;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Stores a sequence of elements ordered by their index. The index for an element never changes,
- * even when elements are removed. Maintains an ordered sequence even if creation happens out of
- * order. Intentionally tries to handle bad calls without throwing.
+ * Stores a sequence of elements ordered by their index. The index for an element never changes, even when elements are
+ * removed. Maintains an ordered sequence even if creation happens out of order. Intentionally tries to handle bad calls
+ * without throwing.
  */
 public class SequentialRingBuffer<T> {
     private static final Logger logger = LogManager.getLogger(SequentialRingBuffer.class);
@@ -37,9 +37,8 @@ public class SequentialRingBuffer<T> {
     private long minIndex;
 
     /**
-     * @param startingIndex the lowest index to store
-     * @param initialCapacity the initial capacity for elements, will be automatically adjusted if
-     *     exceeded
+     * @param startingIndex   the lowest index to store
+     * @param initialCapacity the initial capacity for elements, will be automatically adjusted if exceeded
      */
     public SequentialRingBuffer(final long startingIndex, final int initialCapacity) {
         this.elements = new RandomAccessDeque<>(initialCapacity);
@@ -51,8 +50,7 @@ public class SequentialRingBuffer<T> {
     }
 
     /**
-     * Reset this instance. Remove all elements currently stored and sets the minimum index as
-     * supplied.
+     * Reset this instance. Remove all elements currently stored and sets the minimum index as supplied.
      *
      * @param minIndex the lowest index to store
      */
@@ -72,11 +70,11 @@ public class SequentialRingBuffer<T> {
     }
 
     /**
-     * Create the element with the supplied index. The expectation is that this should always be
-     * called with the index value of {@link #nextIndex()}. If it is called with another value, the
-     * instance will try its best to comply, logging the issue.
+     * Create the element with the supplied index. The expectation is that this should always be called with the index
+     * value of {@link #nextIndex()}. If it is called with another value, the instance will try its best to comply,
+     * logging the issue.
      *
-     * @param index the index number to store the value at
+     * @param index   the index number to store the value at
      * @param element the element to add
      */
     public void add(final long index, @Nullable final T element) {

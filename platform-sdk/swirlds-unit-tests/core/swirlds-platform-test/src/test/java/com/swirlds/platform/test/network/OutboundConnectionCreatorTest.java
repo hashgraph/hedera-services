@@ -27,6 +27,7 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
@@ -42,6 +43,7 @@ import com.swirlds.platform.network.connection.NotConnectedConnection;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -98,14 +100,18 @@ class OutboundConnectionCreatorTest {
         final SocketFactory socketFactory = mock(SocketFactory.class);
         doAnswer(i -> socket).when(socketFactory).createClientSocket(any(), anyInt());
 
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(getConfig())
+                .build();
+
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
+                platformContext,
                 thisNode,
                 mock(ConnectionTracker.class),
                 socketFactory,
                 addressBook,
                 true,
-                new BasicSoftwareVersion(1),
-                getConfig());
+                new BasicSoftwareVersion(1));
 
         Connection connection = occ.createConnection(otherNode);
         assertTrue(connection instanceof SocketConnection, "the returned connection should be a socket connection");
@@ -192,14 +198,18 @@ class OutboundConnectionCreatorTest {
         final SocketFactory socketFactory = mock(SocketFactory.class);
         doAnswer(i -> socket).when(socketFactory).createClientSocket(any(), anyInt());
 
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(getConfig())
+                .build();
+
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
+                platformContext,
                 thisNode,
                 mock(ConnectionTracker.class),
                 socketFactory,
                 addressBook,
                 true,
-                new BasicSoftwareVersion(2),
-                getConfig());
+                new BasicSoftwareVersion(2));
 
         Connection connection = occ.createConnection(otherNode);
 
@@ -248,14 +258,18 @@ class OutboundConnectionCreatorTest {
         final SocketFactory socketFactory = mock(SocketFactory.class);
         doAnswer(i -> socket).when(socketFactory).createClientSocket(any(), anyInt());
 
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(getConfig())
+                .build();
+
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
+                platformContext,
                 thisNode,
                 mock(ConnectionTracker.class),
                 socketFactory,
                 addressBook,
                 false,
-                new BasicSoftwareVersion(2),
-                getConfig());
+                new BasicSoftwareVersion(2));
 
         Connection connection = occ.createConnection(otherNode);
         assertTrue(connection instanceof SocketConnection, "the returned connection should be a socket connection");
@@ -268,6 +282,9 @@ class OutboundConnectionCreatorTest {
 
     @NonNull
     private static Configuration getConfig() {
-        return new TestConfigBuilder().withValue("socket.bufferSize", "100").getOrCreateConfig();
+        return new TestConfigBuilder()
+                .withValue("socket.bufferSize", "100")
+                .withValue("socket.gzipCompression", false)
+                .getOrCreateConfig();
     }
 }

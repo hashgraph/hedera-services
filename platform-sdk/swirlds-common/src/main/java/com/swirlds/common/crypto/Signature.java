@@ -18,7 +18,7 @@ package com.swirlds.common.crypto;
 
 import static com.swirlds.common.crypto.SignatureType.RSA;
 import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.SelfSerializable;

@@ -23,7 +23,7 @@ import static com.swirlds.demo.platform.PAYLOAD_TYPE.TYPE_FCM_TRANSFER_FCQ;
 import static com.swirlds.demo.platform.PAYLOAD_TYPE.TYPE_FCM_UPDATE;
 import static com.swirlds.demo.platform.PAYLOAD_TYPE.TYPE_FCM_UPDATE_FCQ;
 import static com.swirlds.demo.platform.TransactionSubmitter.USE_DEFAULT_TPS;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
 import static com.swirlds.merkle.map.test.lifecycle.EntityType.FCQ;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;

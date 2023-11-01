@@ -17,7 +17,7 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.io.utility.FileUtils.hardLinkTree;
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -140,7 +140,6 @@ public final class MerkleDb {
      *
      * Secondary tables are not included to snapshots and aren't written to DB metadata.
      */
-    @SuppressWarnings("rawtypes")
     private final Set<Integer> primaryTables = ConcurrentHashMap.newKeySet();
 
     /**
@@ -386,13 +385,13 @@ public final class MerkleDb {
         }
         tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
         try {
-            dataSource.pauseMerging();
+            dataSource.pauseCompaction();
             dataSource.snapshot(getTableDir(label, tableId));
         } finally {
-            dataSource.resumeMerging();
+            dataSource.resumeCompaction();
         }
         if (!leaveSourcePrimary) {
-            dataSource.stopBackgroundCompaction();
+            dataSource.stopAndDisableBackgroundCompaction();
             primaryTables.remove(dataSource.getTableId());
         }
         if (makeCopyPrimary) {
