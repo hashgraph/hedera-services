@@ -26,7 +26,9 @@ import java.util.function.Consumer;
  * Transforms a list of items to a sequence of individual items. Expects that there will not be any null values in the
  * collection.
  */
-public class WireListSplitter<T> extends OutputWire<T> implements Consumer<List<T>> {
+public class WireListSplitter<T> implements Consumer<List<T>> {
+
+    private final OutputWire<T> outputWire;
 
     /**
      * Constructor.
@@ -35,8 +37,8 @@ public class WireListSplitter<T> extends OutputWire<T> implements Consumer<List<
      * @param name  the name of the output channel
      */
     public WireListSplitter(@NonNull final WiringModel model, @NonNull final String name) {
-        super(model, name);
         model.registerVertex(name, true);
+        outputWire = new OutputWire<>(model, name);
     }
 
     /**
@@ -45,7 +47,17 @@ public class WireListSplitter<T> extends OutputWire<T> implements Consumer<List<
     @Override
     public void accept(@NonNull final List<T> list) {
         for (final T t : list) {
-            forward(t);
+            outputWire.forward(t);
         }
+    }
+
+    /**
+     * Get the output wire for this transformer.
+     *
+     * @return the output wire
+     */
+    @NonNull
+    public OutputWire<T> getOutputWire() {
+        return outputWire;
     }
 }

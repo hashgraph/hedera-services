@@ -29,9 +29,10 @@ import java.util.function.Function;
  * @param <A> the input type
  * @param <B> the output type
  */
-public class WireTransformer<A, B> extends OutputWire<B> implements Consumer<A> {
+public class WireTransformer<A, B> implements Consumer<A> {
 
     private final Function<A, B> transformer;
+    private final OutputWire<B> outputWire;
 
     /**
      * Constructor.
@@ -45,9 +46,9 @@ public class WireTransformer<A, B> extends OutputWire<B> implements Consumer<A> 
      */
     public WireTransformer(
             @NonNull final WiringModel model, @NonNull final String name, @NonNull final Function<A, B> transformer) {
-        super(model, name);
         model.registerVertex(name, true);
         this.transformer = Objects.requireNonNull(transformer);
+        outputWire = new OutputWire<>(model, name);
     }
 
     /**
@@ -57,7 +58,17 @@ public class WireTransformer<A, B> extends OutputWire<B> implements Consumer<A> 
     public void accept(@NonNull final A a) {
         final B b = transformer.apply(a);
         if (b != null) {
-            forward(b);
+            outputWire.forward(b);
         }
+    }
+
+    /**
+     * Get the output wire for this transformer.
+     *
+     * @return the output wire
+     */
+    @NonNull
+    public OutputWire<B> getOutputWire() {
+        return outputWire;
     }
 }

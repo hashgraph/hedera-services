@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @param <OUT> the output type of the object
  */
-public class OutputWire<OUT> {
+public final class OutputWire<OUT> {
 
     private static final Logger logger = LogManager.getLogger(OutputWire.class);
 
@@ -50,7 +50,7 @@ public class OutputWire<OUT> {
      * @param model               the wiring model containing this output wire
      * @param name                the name of the output wire
      */
-    protected OutputWire(@NonNull final WiringModel model, @NonNull final String name) {
+    public OutputWire(@NonNull final WiringModel model, @NonNull final String name) {
 
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
@@ -162,8 +162,8 @@ public class OutputWire<OUT> {
     public OutputWire<OUT> buildFilter(@NonNull final String name, @NonNull final Predicate<OUT> predicate) {
         final WireFilter<OUT> filter =
                 new WireFilter<>(model, Objects.requireNonNull(name), Objects.requireNonNull(predicate));
-        solderTo(filter.getName(), filter);
-        return filter;
+        solderTo(name, filter);
+        return filter.getOutputWire();
     }
 
     /**
@@ -178,9 +178,10 @@ public class OutputWire<OUT> {
     @SuppressWarnings("unchecked")
     @NonNull
     public <E> OutputWire<E> buildSplitter() {
-        final WireListSplitter<E> splitter = new WireListSplitter<>(model, name + "_splitter");
-        solderTo(splitter.getName(), (Consumer<OUT>) splitter);
-        return splitter;
+        final String splitterName = name + "_splitter";
+        final WireListSplitter<E> splitter = new WireListSplitter<>(model, splitterName);
+        solderTo(splitterName, (Consumer<OUT>) splitter);
+        return splitter.getOutputWire();
     }
 
     /**
@@ -211,7 +212,7 @@ public class OutputWire<OUT> {
     public <T> OutputWire<T> buildTransformer(@NonNull final String name, @NonNull final Function<OUT, T> transform) {
         final WireTransformer<OUT, T> transformer =
                 new WireTransformer<>(model, Objects.requireNonNull(name), Objects.requireNonNull(transform));
-        solderTo(transformer.getName(), transformer);
-        return transformer;
+        solderTo(name, transformer);
+        return transformer.getOutputWire();
     }
 }

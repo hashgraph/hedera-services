@@ -26,9 +26,10 @@ import java.util.function.Predicate;
 /**
  * Filters out data, allowing some objects to pass and blocking others.
  */
-public class WireFilter<T> extends OutputWire<T> implements Consumer<T> {
+public class WireFilter<T> implements Consumer<T> {
 
     private final Predicate<T> predicate;
+    private final OutputWire<T> outputWire;
 
     /**
      * Constructor.
@@ -41,8 +42,8 @@ public class WireFilter<T> extends OutputWire<T> implements Consumer<T> {
      */
     public WireFilter(
             @NonNull final WiringModel model, @NonNull final String name, @NonNull final Predicate<T> predicate) {
-        super(model, name);
         this.predicate = Objects.requireNonNull(predicate);
+        this.outputWire = new OutputWire<>(model, name);
         model.registerVertex(name, true);
     }
 
@@ -52,7 +53,17 @@ public class WireFilter<T> extends OutputWire<T> implements Consumer<T> {
     @Override
     public void accept(@NonNull final T t) {
         if (predicate.test(t)) {
-            forward(t);
+            outputWire.forward(t);
         }
+    }
+
+    /**
+     * Get the output wire for this transformer.
+     *
+     * @return the output wire
+     */
+    @NonNull
+    public OutputWire<T> getOutputWire() {
+        return outputWire;
     }
 }
