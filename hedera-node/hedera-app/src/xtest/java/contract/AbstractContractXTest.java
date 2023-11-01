@@ -16,6 +16,7 @@
 
 package contract;
 
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.SYSTEM_CONTRACT_GAS_GAS_CALCULATOR_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
@@ -50,6 +51,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.SyntheticIds;
+import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -182,6 +185,14 @@ public abstract class AbstractContractXTest extends AbstractXTest {
         internalRunHtsCallAndExpectRevert(sender, input, status, null);
     }
 
+    protected ContractCreateHandler createHandler() {
+        return CONTRACT_SERVICE.handlers().contractCreateHandler();
+    }
+
+    protected ContractCallHandler callHandler() {
+        return CONTRACT_SERVICE.handlers().contractCallHandler();
+    }
+
     protected void runHtsCallAndExpectRevert(
             @NonNull final org.hyperledger.besu.datatypes.Address sender,
             @NonNull final org.apache.tuweni.bytes.Bytes input,
@@ -311,6 +322,14 @@ public abstract class AbstractContractXTest extends AbstractXTest {
             final var result = fullResult.result();
             resultAssertion.accept(result);
         };
+    }
+
+    public static com.esaulpaugh.headlong.abi.Address asLongZeroHeadlongAddress(final AccountID accountID) {
+        return Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(accountID.accountNumOrThrow())));
+    }
+
+    public static com.esaulpaugh.headlong.abi.Address asLongZeroHeadlongAddress(final TokenID tokenID) {
+        return Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(tokenID.tokenNum())));
     }
 
     public static com.esaulpaugh.headlong.abi.Address asHeadlongAddress(final byte[] address) {
