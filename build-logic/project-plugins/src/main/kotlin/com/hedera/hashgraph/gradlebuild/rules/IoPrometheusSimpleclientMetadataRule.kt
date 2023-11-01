@@ -16,9 +16,14 @@
 
 package com.hedera.hashgraph.gradlebuild.rules
 
+import org.gradle.api.artifacts.CacheableRule
 import org.gradle.api.artifacts.ComponentMetadataContext
 import org.gradle.api.artifacts.ComponentMetadataRule
 
+/**
+ * Removes unused transitive dependencies of 'io.prometheus:simpleclient'.
+ */
+@CacheableRule
 abstract class IoPrometheusSimpleclientMetadataRule : ComponentMetadataRule {
 
     override fun execute(context: ComponentMetadataContext) {

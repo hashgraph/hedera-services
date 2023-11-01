@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -180,32 +181,33 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                     throw new PreCheckException(NOT_SUPPORTED);
                 }
 
-                final var state = wrappedState.get();
-                final var storeFactory = new ReadableStoreFactory(state);
-                final var paymentRequired = handler.requiresNodePayment(responseType);
-                final var feeCalculator = feeManager.createFeeCalculator(function, consensusTime);
-                final QueryContext context;
-                Transaction allegedPayment = null;
-                TransactionBody txBody = null;
-                if (paymentRequired) {
-                    allegedPayment = queryHeader.paymentOrThrow();
-                    final var configuration = configProvider.getConfiguration();
+            final var state = wrappedState.get();
+            final var storeFactory = new ReadableStoreFactory(state);
+            final var paymentRequired = handler.requiresNodePayment(responseType);
+            final var feeCalculator = feeManager.createFeeCalculator(function, consensusTime);
+            final QueryContext context;
+            Transaction allegedPayment = null;
+            TransactionBody txBody = null;
+            AccountID payerID = null;
+            if (paymentRequired) {
+                allegedPayment = queryHeader.paymentOrThrow();
+                final var configuration = configProvider.getConfiguration();
 
                     // 3.i Ingest checks
                     final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment, configuration);
                     txBody = transactionInfo.txBody();
 
-                    // get payer
-                    final var payerID = transactionInfo.payerID();
-                    context = new QueryContextImpl(
-                            state,
-                            storeFactory,
-                            query,
-                            configuration,
-                            recordCache,
-                            exchangeRateManager,
-                            feeCalculator,
-                            payerID);
+                // get payer
+                payerID = transactionInfo.payerID();
+                context = new QueryContextImpl(
+                        state,
+                        storeFactory,
+                        query,
+                        configuration,
+                        recordCache,
+                        exchangeRateManager,
+                        feeCalculator,
+                        payerID);
 
                     // A super-user does not have to pay for a query and has all permissions
                     if (!authorizer.isSuperUser(payerID)) {
@@ -254,11 +256,11 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 // 4. Check validity of query
                 handler.validate(context);
 
-                // 5. Check query throttles
-                if (synchronizedThrottleAccumulator.shouldThrottle(function, query)
-                        && !RESTRICTED_FUNCTIONALITIES.contains(function)) {
-                    throw new PreCheckException(BUSY);
-                }
+            // 5. Check query throttles
+            if (synchronizedThrottleAccumulator.shouldThrottle(function, query, payerID)
+                    && !RESTRICTED_FUNCTIONALITIES.contains(function)) {
+                throw new PreCheckException(BUSY);
+            }
 
                 if (handler.needsAnswerOnlyCost(responseType)) {
                     // 6.i Estimate costs

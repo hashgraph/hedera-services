@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.state.HederaState;
@@ -64,11 +65,13 @@ class SynchronizedThrottleAccumulatorTest {
     void verifyShouldThrottleQueryIsCalled() {
         // given
         final var query = mock(Query.class);
+        final var accountID = mock(AccountID.class);
 
         // when
-        subject.shouldThrottle(HederaFunctionality.CONTRACT_CREATE, query);
+        subject.shouldThrottle(HederaFunctionality.CONTRACT_CREATE, query, accountID);
 
         // then
-        verify(throttleAccumulator, times(1)).shouldThrottle(eq(HederaFunctionality.CONTRACT_CREATE), any(), eq(query));
+        verify(throttleAccumulator, times(1))
+                .shouldThrottle(eq(HederaFunctionality.CONTRACT_CREATE), any(), eq(query), eq(accountID));
     }
 }
