@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
@@ -84,31 +85,34 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
                 .nativeOperations()
                 .getNft(token.tokenIdOrElse(ZERO_TOKEN_ID).tokenNum(), serialNumber);
         // @Future remove to revert #9074 after modularization is completed
-        if (isStaticCall && (status != SUCCESS || nft == null)) {
+        if ((isStaticCall && (status != SUCCESS)) || nft==null) {
             return revertResult(status, gasCalculator.viewGasRequirement());
         }
 
-        final var nonNullNft = nft != null ? nft : Nft.DEFAULT;
         Account ownerAccount = getOwnerAccount(nft, token);
+        if (ownerAccount == null) {
+            return revertResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement());
+        }
+
         return successResult(
                 NON_FUNGIBLE_TOKEN_INFO
                         .getOutputs()
                         .encodeElements(
-                                status.protoOrdinal(), nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId, ownerAccount)),
+                                status.protoOrdinal(), nftTokenInfoTupleFor(token, nft, serialNumber, ledgerId, ownerAccount)),
                 gasRequirement);
     }
 
-    private Account getOwnerAccount (Nft nft, Token token) {
+    private Account getOwnerAccount(Nft nft, Token token) {
         final var explicitId = nft.ownerIdOrElse(AccountID.DEFAULT);
+        if (explicitId.account().kind() == AccountID.AccountOneOfType.UNSET) {
+            return null;
+        }
         final long ownerNum;
         if (explicitId.accountNumOrElse(TREASURY_OWNER_NUM) == TREASURY_OWNER_NUM) {
             ownerNum = token.treasuryAccountIdOrThrow().accountNumOrThrow();
         } else {
             ownerNum = explicitId.accountNumOrThrow();
         }
-        Account ownerAccount = nativeOperations().getAccount(ownerNum);
-        return ownerAccount == null ?
-                Account.newBuilder().accountId(AccountID.newBuilder().accountNum(TREASURY_OWNER_NUM).build()).build() :
-                ownerAccount;
+        return nativeOperations().getAccount(ownerNum);
     }
 }
