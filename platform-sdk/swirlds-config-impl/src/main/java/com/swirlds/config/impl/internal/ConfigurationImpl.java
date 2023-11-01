@@ -17,7 +17,6 @@
 package com.swirlds.config.impl.internal;
 
 import com.swirlds.base.ArgumentUtils;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -58,7 +57,7 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
 
     @Override
     public boolean exists(@NonNull final String propertyName) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         return propertiesService.containsKey(propertyName);
     }
 

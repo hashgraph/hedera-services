@@ -25,7 +25,7 @@ import com.swirlds.common.config.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
