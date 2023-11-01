@@ -102,8 +102,8 @@ public abstract class WiringModel {
     /**
      * Reserved for internal framework use. Do not call this method directly.
      * <p>
-     * Register a vertex in the wiring model. These are either output task schedulers or wire transformers. Vertexes
-     * always have a single Java object output type, although there may be many consumers of that output. Vertexes may
+     * Register a vertex in the wiring model. These are either task schedulers or wire transformers. Vertices
+     * always have a single Java object output type, although there may be many consumers of that output. Vertices may
      * have many input types.
      *
      * @param vertexName          the name of the vertex

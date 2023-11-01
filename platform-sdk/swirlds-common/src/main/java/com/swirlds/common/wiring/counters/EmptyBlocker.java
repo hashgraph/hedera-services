@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 class EmptyBlocker implements ManagedBlocker {
 
     private final AtomicLong count;
-    private final int sleepNanos;
+    private final long sleepNanos;
 
     /**
      * Constructor.
@@ -38,7 +38,7 @@ class EmptyBlocker implements ManagedBlocker {
      * @param count      the counter to use
      * @param sleepNanos the number of nanoseconds to sleep while blocking, or 0 to not sleep
      */
-    public EmptyBlocker(@NonNull final AtomicLong count, final int sleepNanos) {
+    public EmptyBlocker(@NonNull final AtomicLong count, final long sleepNanos) {
         this.count = Objects.requireNonNull(count);
         this.sleepNanos = sleepNanos;
     }

@@ -43,7 +43,7 @@ class BackpressureBlocker implements ManagedBlocker {
     /**
      * The amount of time to sleep while waiting for capacity to become available, or 0 to not sleep.
      */
-    private final int sleepNanos;
+    private final long sleepNanos;
 
     /**
      * Constructor.
@@ -53,7 +53,7 @@ class BackpressureBlocker implements ManagedBlocker {
      *                   used to monitor before backpressure is applied
      * @param sleepNanos the number of nanoseconds to sleep while blocking, or 0 to not sleep
      */
-    public BackpressureBlocker(@NonNull final AtomicLong count, final long capacity, final int sleepNanos) {
+    public BackpressureBlocker(@NonNull final AtomicLong count, final long capacity, final long sleepNanos) {
         this.count = Objects.requireNonNull(count);
         this.capacity = capacity;
         this.sleepNanos = sleepNanos;

@@ -36,7 +36,7 @@ public class StandardObjectCounter extends ObjectCounter {
      * @param sleepDuration when a method needs to block, the duration to sleep while blocking
      */
     public StandardObjectCounter(@NonNull final Duration sleepDuration) {
-        final int sleepNanos = (int) sleepDuration.toNanos();
+        final long sleepNanos = sleepDuration.toNanos();
         waitUntilEmptyBlocker = new EmptyBlocker(count, sleepNanos);
     }
 
