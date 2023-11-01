@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall;
 
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllCall.IS_APPROVED_FOR_ALL;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
@@ -49,11 +50,8 @@ public class IsApprovedForAllTranslator extends AbstractHtsCallTranslator {
     @Override
     public IsApprovedForAllCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final var args = IS_APPROVED_FOR_ALL.decodeCall(attempt.input().toArrayUnsafe());
+        final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
         return new IsApprovedForAllCall(
-                attempt.systemContractGasCalculator(),
-                attempt.enhancement(),
-                attempt.redirectToken(),
-                args.get(0),
-                args.get(1));
+                attempt.systemContractGasCalculator(), attempt.enhancement(), token, args.get(1), args.get(2));
     }
 }

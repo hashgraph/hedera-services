@@ -308,6 +308,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec hapiNftIsApprovedForAll() {
         final var notApprovedTxn = "notApprovedTxn";
         final var approvedForAllTxn = "approvedForAllTxn";

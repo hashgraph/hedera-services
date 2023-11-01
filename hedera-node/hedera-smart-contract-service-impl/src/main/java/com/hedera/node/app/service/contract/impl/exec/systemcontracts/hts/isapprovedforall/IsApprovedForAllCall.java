@@ -45,7 +45,7 @@ import java.util.Optional;
  */
 public class IsApprovedForAllCall extends AbstractRevertibleTokenViewCall {
     public static final Function IS_APPROVED_FOR_ALL =
-            new Function("isApprovedForAll(address,address)", ReturnTypes.BOOL);
+            new Function("isApprovedForAll(address,address,address)", ReturnTypes.BOOL);
 
     private final Address owner;
     private final Address operator;

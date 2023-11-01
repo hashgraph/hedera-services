@@ -45,11 +45,24 @@ public abstract class AbstractRevertibleTokenViewCall extends AbstractHtsCall {
 
     @Override
     public @NonNull PricedResult execute() {
+        PricedResult result;
         if (token == null) {
-            return gasOnly(revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement()));
+            result = gasOnly(revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement()));
         } else {
-            return gasOnly(resultOfViewingToken(token));
+            result = gasOnly(resultOfViewingToken(token));
         }
+
+        // TODO: externalizeResult
+        //        final var gasRequirement = result.fullResult().gasRequirement();
+        //        final var output = result.fullResult().result().getOutput();
+        //        final var contractID = asEvmContractId(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
+        //        enhancement
+        //                .systemOperations()
+        //                .externalizeResult(
+        //                        contractFunctionResultSuccessFor(gasRequirement, output, contractID),
+        //                        SystemContractUtils.ResultStatus.IS_SUCCESS);
+
+        return result;
     }
 
     /**
