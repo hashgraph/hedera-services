@@ -23,6 +23,7 @@ import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
@@ -97,12 +98,20 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         final var processor = processors.get(EVM_VERSIONS.get(contractsConfig.evmVersion()));
 
         // Process the transaction
-        final var result = processor.processTransaction(
-                hevmTransaction, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
-
-        // Return the outcome, maybe enriched with details of the base commit and Ethereum transaction
-        return new CallOutcome(
-                result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result.finalStatus());
+        try {
+            final var result = processor.processTransaction(
+                    hevmTransaction, rootProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
+            // Return the outcome, maybe enriched with details of the base commit and Ethereum transaction
+            return new CallOutcome(
+                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result.finalStatus());
+        } catch (HandleException abort) {
+            // try to resolve the sender if it is an alias
+            var sender = feesOnlyUpdater.get().getHederaAccount(hevmTransaction.senderId());
+            var senderId = sender != null ? sender.hederaId() : hevmTransaction.senderId();
+            final var result = HederaEvmTransactionResult.fromAborted(senderId, hevmTransaction, abort.getStatus());
+            return new CallOutcome(
+                    result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result.finalStatus());
+        }
     }
 
     private void assertEthTxDataValidIfApplicable() {
