@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.validation;
 
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
+import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
 
 import com.swirlds.base.time.Time;
