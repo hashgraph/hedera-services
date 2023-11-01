@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.util;
 
-import static com.swirlds.logging.LogMarker.STATE_HASH;
+import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.threading.framework.QueueThread;

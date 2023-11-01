@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.exceptions.ReferenceCountException;

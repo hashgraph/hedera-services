@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.creation.tipset;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.Tipset.merge;
 
 import com.swirlds.base.time.Time;
