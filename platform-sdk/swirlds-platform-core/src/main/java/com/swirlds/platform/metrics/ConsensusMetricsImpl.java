@@ -207,6 +207,9 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
      */
     @Override
     public void consensusReached(final EventImpl event) {
+        // Keep a running average of how many seconds from when I first know of an event
+        // until it achieves consensus. Actually, keep two such averages: one for events I
+        // create, and one for events I receive.
         if (Objects.equals(selfId, event.getCreatorId())) {
             avgCreatedConsensusTime.update(
                     event.getBaseEvent().getTimeReceived().until(Instant.now(), ChronoUnit.NANOS)
