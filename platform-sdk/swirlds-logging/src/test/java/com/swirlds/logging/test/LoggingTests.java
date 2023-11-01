@@ -16,21 +16,21 @@
 
 package com.swirlds.logging.test;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.json.HasAnyExceptionFilter.hasAnyException;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.json.HasAnyExceptionFilter.hasAnyException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.logging.LogMarker;
-import com.swirlds.logging.SwirldsLogFileReader;
-import com.swirlds.logging.SwirldsLogReader;
-import com.swirlds.logging.json.JsonLogEntry;
-import com.swirlds.logging.json.JsonParser;
-import com.swirlds.logging.payloads.ReconnectLoadFailurePayload;
-import com.swirlds.logging.payloads.SynchronizationCompletePayload;
+import com.swirlds.logging.legacy.LogMarker;
+import com.swirlds.logging.legacy.SwirldsLogFileReader;
+import com.swirlds.logging.legacy.SwirldsLogReader;
+import com.swirlds.logging.legacy.json.JsonLogEntry;
+import com.swirlds.logging.legacy.json.JsonParser;
+import com.swirlds.logging.legacy.payload.ReconnectLoadFailurePayload;
+import com.swirlds.logging.legacy.payload.SynchronizationCompletePayload;
 import com.swirlds.test.framework.ResourceLoader;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;

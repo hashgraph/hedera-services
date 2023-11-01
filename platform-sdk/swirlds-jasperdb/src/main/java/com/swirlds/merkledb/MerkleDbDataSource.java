@@ -18,9 +18,9 @@ package com.swirlds.merkledb;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
-import static com.swirlds.logging.LogMarker.ERROR;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.ERROR;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 import static java.util.Objects.requireNonNull;
@@ -29,6 +29,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.units.UnitConstants;
@@ -61,6 +62,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -679,11 +681,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Load hash for a leaf node with given path
-     *
-     * @param path the path to get hash for
-     * @return loaded hash or null if hash is not stored
-     * @throws IOException if there was a problem loading hash
+     * {@inheritDoc}
      */
     @Override
     public Hash loadHash(final long path) throws IOException {
@@ -714,6 +712,52 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean loadAndWriteHash(long path, SerializableDataOutputStream out) throws IOException {
+        if (path < 0) {
+            throw new IllegalArgumentException("path is less than 0");
+        }
+        long lastLeaf = validLeafPathRange.getMaxValidKey();
+        if (path > lastLeaf) {
+            return false;
+        }
+        // This method must write hashes in the same binary format as Hash.(de)serialize(). If a
+        // hash comes from hashStoreRam, it's enough to just serialize it to the output stream.
+        // However, if a hash is stored in the files as a VirtualHashRecord, its bytes are
+        // slightly different, so additional processing is required
+        if (path < tableConfig.getHashesRamToDiskThreshold()) {
+            final Hash hash = hashStoreRam.get(path);
+            if (hash == null) {
+                return false;
+            }
+            hash.serialize(out);
+        } else {
+            // hashBytes here is path (8 bytes) + hash (48 bytes)
+            final ByteBuffer hashBytes = hashStoreDisk.getBytes(path);
+            if (hashBytes == null) {
+                return false;
+            }
+            // Hash.serialize() format is: digest ID (4 bytes) + size (4 bytes) + hash (48 bytes)
+            out.writeInt(DigestType.SHA_384.id());
+            final byte[] bytes;
+            if (hashBytes.hasArray()) {
+                bytes = hashBytes.array();
+            } else {
+                bytes = new byte[hashBytes.remaining()];
+                hashBytes.get(bytes);
+            }
+            final int off = Long.BYTES; // skip the path
+            final int len = bytes.length - off;
+            // Simulate SerializableDataOutputStream.writeByteArray(), which writes size, then array
+            out.writeInt(len);
+            out.write(bytes, off, len);
+        }
+        return true;
+    }
+
+    /**
      * Wait for any merges to finish and then close all data stores.
      * <p>
      * <b>After closing delete the database directory and all data!</b> For testing purpose only.
@@ -736,29 +780,37 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 // shut down all executors
                 shutdownThreadsAndWait(storeInternalExecutor, storeKeyToPathExecutor, snapshotExecutor);
             } finally {
-                // close all closable data stores
-                logger.info(MERKLE_DB.getMarker(), "Closing Data Source [{}]", tableName);
-                if (hashStoreRam != null) {
-                    hashStoreRam.close();
+                try {
+                    // close all closable data stores
+                    logger.info(MERKLE_DB.getMarker(), "Closing Data Source [{}]", tableName);
+                    if (hashStoreRam != null) {
+                        hashStoreRam.close();
+                    }
+                    if (hashStoreDisk != null) {
+                        hashStoreDisk.close();
+                    }
+                    pathToDiskLocationInternalNodes.close();
+                    pathToDiskLocationLeafNodes.close();
+                    if (longKeyToPath != null) {
+                        longKeyToPath.close();
+                    }
+                    if (objectKeyToPath != null) {
+                        objectKeyToPath.close();
+                    }
+                    pathToKeyValue.close();
+                    // Store metadata
+                    saveMetadata(dbPaths.metadataFile);
+                } catch (final Exception e) {
+                    logger.warn(EXCEPTION.getMarker(), "Exception while closing Data Source [{}]", tableName);
+                } catch (final Error t) {
+                    logger.error(EXCEPTION.getMarker(), "Error while closing Data Source [{}]", tableName);
+                    throw t;
+                } finally {
+                    // updated count of open databases
+                    COUNT_OF_OPEN_DATABASES.decrement();
+                    // Notify the database
+                    database.closeDataSource(this);
                 }
-                if (hashStoreDisk != null) {
-                    hashStoreDisk.close();
-                }
-                pathToDiskLocationInternalNodes.close();
-                pathToDiskLocationLeafNodes.close();
-                if (longKeyToPath != null) {
-                    longKeyToPath.close();
-                }
-                if (objectKeyToPath != null) {
-                    objectKeyToPath.close();
-                }
-                pathToKeyValue.close();
-                // updated count of open databases
-                COUNT_OF_OPEN_DATABASES.decrement();
-                // Store metadata
-                saveMetadata(dbPaths.metadataFile);
-                // Notify the database
-                database.closeDataSource(this);
             }
         }
     }

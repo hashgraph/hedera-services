@@ -20,9 +20,9 @@ import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPos
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
-import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.OBJECT_STREAM;
+import static com.swirlds.logging.legacy.LogMarker.OBJECT_STREAM_FILE;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedOutputStream;
@@ -50,7 +50,7 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.File;

@@ -22,7 +22,7 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeMetaH
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.readFirstIntFromFile;
 import static com.swirlds.common.stream.internal.TimestampStreamFileWriter.writeSignatureFile;
 import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.logging.LogMarker.FILE_SIGN;
+import static com.swirlds.logging.legacy.LogMarker.FILE_SIGN;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swirlds.common.constructable.ConstructableRegistry;
