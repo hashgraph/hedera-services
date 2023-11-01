@@ -320,15 +320,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 return SkipResult.skip(msg == null || msg.isBlank() ? "Disabled" : msg);
             }
 
-            final var tagFilter = System.getenv("TAG_FILTER");
-            TestTag tag = tagFilter != null ? TestTag.create(tagFilter) : null;
-            if (tag == null && testTags.isEmpty()) {
-                return SkipResult.doNotSkip();
-            } else if (testTags.contains(tag)) {
-                return SkipResult.doNotSkip();
-            } else {
-                return SkipResult.skip("Tag is not matching");
-            }
+            return SkipResult.doNotSkip();
         }
 
         @Override
@@ -348,6 +340,11 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 throw new AssertionError();
             }
             return context;
+        }
+
+        @Override
+        public Set<TestTag> getTags() {
+            return this.testTags;
         }
     }
 }
