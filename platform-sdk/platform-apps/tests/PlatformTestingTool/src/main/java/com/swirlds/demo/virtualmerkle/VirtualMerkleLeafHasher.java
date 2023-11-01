@@ -166,6 +166,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
             // reset the default instance path to force creation of a new MerkleDB instance
             // https://github.com/hashgraph/hedera-services/pull/8534
             MerkleDb.resetDefaultInstancePath();
+
             Hash accountsHash;
             Hash scHash;
             Hash byteCodeHash;
