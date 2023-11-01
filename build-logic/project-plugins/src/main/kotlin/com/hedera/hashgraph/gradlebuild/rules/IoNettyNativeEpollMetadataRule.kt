@@ -21,7 +21,7 @@ import org.gradle.api.artifacts.ComponentMetadataContext
 import org.gradle.api.artifacts.ComponentMetadataRule
 
 /**
- * Configures native Jars of 'io.netty.native.epoll' to so that they can be selected by 'capability'.
+ * Configures native Jars of 'io.netty.native.epoll' so that they can be selected by 'capability'.
  * https://docs.gradle.org/current/userguide/component_metadata_rules.html#making_different_flavors_of_a_library_available_through_capabilities
  */
 @CacheableRule
