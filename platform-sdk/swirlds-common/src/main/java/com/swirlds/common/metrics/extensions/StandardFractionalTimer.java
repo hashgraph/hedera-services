@@ -24,7 +24,7 @@ import com.swirlds.common.time.IntegerEpochTime;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;

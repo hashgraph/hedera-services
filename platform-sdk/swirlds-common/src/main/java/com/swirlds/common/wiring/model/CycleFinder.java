@@ -16,8 +16,8 @@
 
 package com.swirlds.common.wiring.model;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
