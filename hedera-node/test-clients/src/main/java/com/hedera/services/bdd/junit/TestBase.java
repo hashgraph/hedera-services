@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACC
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
 import static com.hedera.services.bdd.suites.SuiteRunner.SUITE_NAME_WIDTH;
 import static com.hedera.services.bdd.suites.SuiteRunner.rightPadded;
+import static com.hedera.services.bdd.suites.TargetNetworkType.CI_DOCKER_NETWORK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
@@ -41,7 +42,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicTest;
 
-/** Base class with some utility methods that can be used by JUnit-based test classes. */
+/**
+ * Base class with some utility methods that can be used by JUnit-based test classes.
+ */
 public abstract class TestBase {
     /**
      * This factory takes a list of suite suppliers and returns a dynamic test that runs all specs
@@ -186,7 +189,8 @@ public abstract class TestBase {
         suite.skipClientTearDown();
         // Don't log unnecessary detail
         suite.setOnlyLogHeader();
-        return suite.getSpecsInSuiteWithOverrides().stream().map(spec -> spec.setSuitePrefix(suite.name() + suffix));
+        return suite.getSpecsInSuiteWithOverrides().stream()
+                .map(spec -> spec.setSuitePrefix(suite.name() + suffix).setTargetNetworkType(CI_DOCKER_NETWORK));
     }
 
     /**
@@ -209,6 +213,7 @@ public abstract class TestBase {
             final Supplier<HapiSuite> suiteSupplier, final String filter) {
         final var suite = suiteSupplier.get();
         final var tests = suite.getSpecsInSuiteWithOverrides().stream()
+                .map(s -> s.setTargetNetworkType(CI_DOCKER_NETWORK))
                 .map(s -> dynamicTest(s.getName(), () -> {
                     s.run();
                     assertEquals(
@@ -230,6 +235,7 @@ public abstract class TestBase {
     protected final DynamicContainer extractSpecsFromSuiteForEth(final Supplier<HapiSuite> suiteSupplier) {
         final var suite = suiteSupplier.get();
         final var tests = suite.getSpecsInSuiteWithOverrides().stream()
+                .map(s -> s.setTargetNetworkType(CI_DOCKER_NETWORK))
                 .map(s -> dynamicTest(s.getName() + ETH_SUFFIX, () -> {
                     s.setSuitePrefix(suite.getClass().getSimpleName() + ETH_SUFFIX);
                     s.run();

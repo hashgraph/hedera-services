@@ -22,6 +22,7 @@ import com.hedera.node.app.Hedera;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.TargetNetworkType;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Path;
@@ -282,6 +283,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             // Second, call the method to get the HapiSpec
             testMethod.setAccessible(true);
             final var spec = (HapiSpec) testMethod.invoke(suite);
+            spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
             // Third, call `runSuite` with just the one HapiSpec.
             final var result = suite.runSpecSync(spec);
             // Fourth, report the result. YAY!!
