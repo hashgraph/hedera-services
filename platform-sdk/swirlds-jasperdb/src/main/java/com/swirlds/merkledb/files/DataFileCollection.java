@@ -17,8 +17,8 @@
 package com.swirlds.merkledb.files;
 
 import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.merkledb.files.DataFileCommon.byteOffsetFromDataLocation;
 import static com.swirlds.merkledb.files.DataFileCommon.fileIndexFromDataLocation;

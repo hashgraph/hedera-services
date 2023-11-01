@@ -16,7 +16,7 @@
 
 package com.swirlds.common.merkle.synchronization;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
