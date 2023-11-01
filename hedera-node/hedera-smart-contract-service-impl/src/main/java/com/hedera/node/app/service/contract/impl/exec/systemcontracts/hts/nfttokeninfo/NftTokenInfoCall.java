@@ -19,13 +19,15 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nftto
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.nftTokenInfoTupleFor;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo.NftTokenInfoTranslator.NON_FUNGIBLE_TOKEN_INFO;
-import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -39,6 +41,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
+    private static final long TREASURY_OWNER_NUM = 0L;
     private final Configuration configuration;
     private final boolean isStaticCall;
     private final long serialNumber;
@@ -87,11 +90,23 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         }
 
         final var nonNullNft = nft != null ? nft : Nft.DEFAULT;
+        Account ownerAccount = getAccount(nft, token);
         return successResult(
                 NON_FUNGIBLE_TOKEN_INFO
                         .getOutputs()
                         .encodeElements(
-                                status.protoOrdinal(), nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId)),
+                                status.protoOrdinal(), nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId, ownerAccount)),
                 gasRequirement);
+    }
+
+    private Account getAccount (Nft nft, Token token) {
+        final var explicitId = nft.ownerIdOrElse(AccountID.DEFAULT);
+        final long ownerNum;
+        if (explicitId.accountNumOrElse(TREASURY_OWNER_NUM) == TREASURY_OWNER_NUM) {
+            ownerNum = token.treasuryAccountIdOrThrow().accountNumOrThrow();
+        } else {
+            ownerNum = explicitId.accountNumOrThrow();
+        }
+        return nativeOperations().getAccount(ownerNum);
     }
 }
