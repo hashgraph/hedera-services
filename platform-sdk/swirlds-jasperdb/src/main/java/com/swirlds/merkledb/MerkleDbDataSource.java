@@ -18,9 +18,9 @@ package com.swirlds.merkledb;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
-import static com.swirlds.logging.LogMarker.ERROR;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.ERROR;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 import static java.util.Objects.requireNonNull;

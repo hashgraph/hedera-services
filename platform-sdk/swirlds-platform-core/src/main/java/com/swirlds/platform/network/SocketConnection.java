@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.network;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.NETWORK;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.NETWORK;
 
 import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.io.exceptions.BadIOException;

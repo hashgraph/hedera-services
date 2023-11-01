@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.validation;
 
-import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
+import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.events.BaseEventHashedData;

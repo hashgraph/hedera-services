@@ -16,7 +16,7 @@
 
 package com.swirlds.common.crypto.engine;
 
-import static com.swirlds.logging.LogMarker.TESTING_EXCEPTIONS;
+import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS;
 
 import com.swirlds.common.threading.futures.StandardFuture;
 import java.security.NoSuchAlgorithmException;

@@ -16,7 +16,7 @@
 
 package com.swirlds.logging.test;
 
-import static com.swirlds.logging.LoggingUtils.plural;
+import static com.swirlds.logging.legacy.LoggingUtils.plural;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.test.framework.TestComponentTags;

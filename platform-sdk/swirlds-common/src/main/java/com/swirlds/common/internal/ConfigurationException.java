@@ -17,7 +17,7 @@
 package com.swirlds.common.internal;
 
 import com.swirlds.common.exceptions.PlatformException;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 
 public class ConfigurationException extends PlatformException {
 

@@ -17,8 +17,8 @@
 package com.swirlds.demo.consistency;
 
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

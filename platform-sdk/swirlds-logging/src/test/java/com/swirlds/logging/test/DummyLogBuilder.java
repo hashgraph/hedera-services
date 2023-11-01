@@ -16,7 +16,7 @@
 
 package com.swirlds.logging.test;
 
-import com.swirlds.logging.json.JsonLogEntry;
+import com.swirlds.logging.legacy.json.JsonLogEntry;
 import java.io.FileNotFoundException;
 import java.time.Instant;
 import java.util.LinkedList;

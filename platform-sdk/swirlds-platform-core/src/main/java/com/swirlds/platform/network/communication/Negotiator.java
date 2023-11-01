@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.network.communication;
 
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.communication.states.InitialState;

@@ -29,7 +29,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;

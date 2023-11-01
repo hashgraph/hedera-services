@@ -27,8 +27,8 @@ package com.swirlds.demo.stats.signing;
  */
 
 import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
 
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.TransactionSignature;

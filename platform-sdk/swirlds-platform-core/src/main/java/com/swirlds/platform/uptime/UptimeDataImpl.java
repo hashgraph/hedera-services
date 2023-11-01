@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.uptime;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SelfSerializable;

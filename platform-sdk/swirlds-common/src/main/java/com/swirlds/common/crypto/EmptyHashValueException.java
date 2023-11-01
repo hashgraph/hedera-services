@@ -16,7 +16,7 @@
 
 package com.swirlds.common.crypto;
 
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 
 /**
  * Exception caused when provided hash value contains all zeros

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.network;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.gossip.shadowgraph.SyncTimeoutException;

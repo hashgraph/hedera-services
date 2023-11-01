@@ -17,8 +17,8 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;

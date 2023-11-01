@@ -17,7 +17,7 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.MAX_MERKLE_NODES_IN_STATE;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;

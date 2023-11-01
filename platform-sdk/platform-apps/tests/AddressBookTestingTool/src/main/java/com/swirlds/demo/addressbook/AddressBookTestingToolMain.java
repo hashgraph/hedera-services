@@ -17,7 +17,7 @@
 package com.swirlds.demo.addressbook;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;

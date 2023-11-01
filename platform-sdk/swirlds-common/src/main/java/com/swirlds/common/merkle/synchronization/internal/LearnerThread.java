@@ -17,7 +17,7 @@
 package com.swirlds.common.merkle.synchronization.internal;
 
 import static com.swirlds.common.constructable.ClassIdFormatter.classIdString;
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;

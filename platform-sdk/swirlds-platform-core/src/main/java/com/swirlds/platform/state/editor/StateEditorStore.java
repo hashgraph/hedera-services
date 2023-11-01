@@ -23,7 +23,7 @@ import static com.swirlds.platform.state.editor.StateEditorUtils.formatNode;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;

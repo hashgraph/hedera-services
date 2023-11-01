@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.creation.tipset;
 
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 
 import com.swirlds.base.time.Time;

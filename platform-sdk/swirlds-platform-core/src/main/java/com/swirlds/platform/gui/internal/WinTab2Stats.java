@@ -18,7 +18,7 @@ package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.gui.GuiUtils.wrap;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.metrics.LegacyMetric;

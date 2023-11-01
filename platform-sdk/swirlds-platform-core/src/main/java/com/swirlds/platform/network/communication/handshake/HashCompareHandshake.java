@@ -18,7 +18,7 @@ package com.swirlds.platform.network.communication.handshake;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.ProtocolRunnable;

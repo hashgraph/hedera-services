@@ -20,8 +20,8 @@ import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
 import static com.swirlds.common.units.UnitConstants.GIBIBYTES_TO_BYTES;
 import static com.swirlds.common.units.UnitConstants.KIBIBYTES_TO_BYTES;
 import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static java.util.stream.Collectors.joining;
 
 import com.swirlds.merkledb.KeyRange;

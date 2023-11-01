@@ -1,7 +1,7 @@
 module com.swirlds.logging {
-    exports com.swirlds.logging;
-    exports com.swirlds.logging.json;
-    exports com.swirlds.logging.payloads;
+    exports com.swirlds.logging.legacy;
+    exports com.swirlds.logging.legacy.json;
+    exports com.swirlds.logging.legacy.payload;
 
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;

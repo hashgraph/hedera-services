@@ -22,7 +22,7 @@ import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction.BodyCase.FCMTRANSACTION;
-import static com.swirlds.logging.LogMarker.*;
+import static com.swirlds.logging.legacy.LogMarker.*;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -67,8 +67,8 @@ import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractB
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapKey;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapValue;
 import com.swirlds.demo.virtualmerkle.transaction.handler.VirtualMerkleTransactionHandler;
-import com.swirlds.logging.payloads.ApplicationDualStatePayload;
-import com.swirlds.logging.payloads.SoftwareVersionPayload;
+import com.swirlds.logging.legacy.payload.ApplicationDualStatePayload;
+import com.swirlds.logging.legacy.payload.SoftwareVersionPayload;
 import com.swirlds.merkle.map.test.lifecycle.EntityType;
 import com.swirlds.merkle.map.test.lifecycle.TransactionState;
 import com.swirlds.merkle.map.test.lifecycle.TransactionType;

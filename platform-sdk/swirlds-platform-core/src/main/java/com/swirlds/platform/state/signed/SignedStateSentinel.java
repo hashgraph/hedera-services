@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.internal.ConsensusRound;

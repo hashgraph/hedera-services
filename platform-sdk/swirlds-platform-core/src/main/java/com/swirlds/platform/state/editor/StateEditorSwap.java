@@ -23,7 +23,7 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

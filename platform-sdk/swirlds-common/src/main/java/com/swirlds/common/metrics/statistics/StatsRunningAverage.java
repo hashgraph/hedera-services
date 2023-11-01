@@ -18,7 +18,7 @@ package com.swirlds.common.metrics.statistics;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

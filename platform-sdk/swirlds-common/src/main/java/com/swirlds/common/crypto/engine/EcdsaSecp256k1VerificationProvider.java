@@ -17,12 +17,12 @@
 package com.swirlds.common.crypto.engine;
 
 import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.logging.LogMarker.TESTING_EXCEPTIONS;
+import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS;
 
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import org.apache.logging.log4j.LogManager;

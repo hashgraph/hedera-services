@@ -16,7 +16,7 @@
 
 package com.swirlds.common.config.sources;
 
-import static com.swirlds.logging.LogMarker.CONFIG;
+import static com.swirlds.logging.legacy.LogMarker.CONFIG;
 
 import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;

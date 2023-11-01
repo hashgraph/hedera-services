@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 import static com.swirlds.virtualmap.internal.Path.getLeftChildPath;

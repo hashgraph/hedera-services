@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.consensus;
 
-import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
+import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.IntReference;
@@ -37,8 +37,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A round whose witnesses are currently having their fame voted on in elections. This class tracks
- * the witnesses and their decided status.
+ * A round whose witnesses are currently having their fame voted on in elections. This class tracks the witnesses and
+ * their decided status.
  */
 public class RoundElections {
     private static final Logger logger = LogManager.getLogger(RoundElections.class);
@@ -47,8 +47,8 @@ public class RoundElections {
     /** number of known witnesses in this round with unknown fame */
     private final IntReference numUnknownFame = new IntReference(0);
     /**
-     * these witnesses are the first event in this round by each member (if a member forks, it could
-     * have multiple witnesses in a single round)
+     * these witnesses are the first event in this round by each member (if a member forks, it could have multiple
+     * witnesses in a single round)
      */
     private final List<CandidateWitness> elections = new ArrayList<>();
     /** the minimum generation of all the judges, this is only set once the judges are found */
@@ -125,8 +125,7 @@ public class RoundElections {
     }
 
     /**
-     * Finds all judges in this round. This must be called only once all elections have been
-     * decided.
+     * Finds all judges in this round. This must be called only once all elections have been decided.
      *
      * @return all the judges for this round
      */
@@ -156,8 +155,8 @@ public class RoundElections {
     }
 
     /**
-     * If a creator has more than one famous witnesses in a round (because he forked), pick which
-     * one will be the judge.
+     * If a creator has more than one famous witnesses in a round (because he forked), pick which one will be the
+     * judge.
      *
      * @param e1 famous witness 1
      * @param e2 famous witness 2

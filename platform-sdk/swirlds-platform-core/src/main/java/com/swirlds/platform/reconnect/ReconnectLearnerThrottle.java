@@ -16,17 +16,17 @@
 
 package com.swirlds.platform.reconnect;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.SystemExitUtils;
-import com.swirlds.logging.payloads.ReconnectFailurePayload;
-import com.swirlds.logging.payloads.UnableToReconnectPayload;
+import com.swirlds.logging.legacy.payload.ReconnectFailurePayload;
+import com.swirlds.logging.legacy.payload.UnableToReconnectPayload;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkUtils;

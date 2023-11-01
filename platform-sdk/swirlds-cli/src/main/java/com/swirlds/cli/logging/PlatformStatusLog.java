@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  * Example:
  * Platform spent 66.0 ms in REPLAYING_EVENTS.
  * Now in OBSERVING {"oldStatus":"REPLAYING_EVENTS","newStatus":"OBSERVING"}
- * [com.swirlds.logging.payloads.PlatformStatusPayload]
+ * [com.swirlds.logging.legacy.payload.PlatformStatusPayload]
  */
 public class PlatformStatusLog implements FormattableString {
     /**

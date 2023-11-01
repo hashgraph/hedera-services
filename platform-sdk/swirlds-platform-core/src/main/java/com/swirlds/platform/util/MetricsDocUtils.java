@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.util;
 
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Metric;

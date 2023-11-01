@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.consensus;
 
-import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
+import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 
 import com.swirlds.common.utility.IntReference;
 import com.swirlds.platform.internal.EventImpl;
@@ -35,10 +35,10 @@ public final class CandidateWitness {
     private boolean famous;
 
     /**
-     * @param witness the witness being voted on
-     * @param numUnknownFame a counter that tracks how many witness in same round created as this
-     *     witness still don't have their fame decided
-     * @param electionIndex the index of the witness in the current election
+     * @param witness        the witness being voted on
+     * @param numUnknownFame a counter that tracks how many witness in same round created as this witness still don't
+     *                       have their fame decided
+     * @param electionIndex  the index of the witness in the current election
      */
     public CandidateWitness(
             @NonNull final EventImpl witness, @NonNull final IntReference numUnknownFame, final int electionIndex) {

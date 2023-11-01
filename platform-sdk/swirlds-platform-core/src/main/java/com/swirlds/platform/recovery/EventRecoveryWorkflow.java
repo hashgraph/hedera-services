@@ -17,8 +17,8 @@
 package com.swirlds.platform.recovery;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;

@@ -17,7 +17,7 @@
 package com.swirlds.platform.components.wiring;
 
 import static com.swirlds.common.system.SystemExitCode.FATAL_ERROR;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -30,7 +30,7 @@ import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.logging.payloads.FatalErrorPayload;
+import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;

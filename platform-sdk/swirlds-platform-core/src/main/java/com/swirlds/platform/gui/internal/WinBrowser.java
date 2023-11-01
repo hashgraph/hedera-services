@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gui.internal;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 

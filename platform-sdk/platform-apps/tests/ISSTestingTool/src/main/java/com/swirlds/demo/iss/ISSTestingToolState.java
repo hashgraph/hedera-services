@@ -29,7 +29,7 @@ package com.swirlds.demo.iss;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash64;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;

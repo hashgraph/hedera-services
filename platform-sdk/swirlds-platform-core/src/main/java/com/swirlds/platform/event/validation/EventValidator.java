@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.validation;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;

@@ -16,8 +16,8 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.KEY_HASHCODE_SIZE;
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.VALUE_SIZE;

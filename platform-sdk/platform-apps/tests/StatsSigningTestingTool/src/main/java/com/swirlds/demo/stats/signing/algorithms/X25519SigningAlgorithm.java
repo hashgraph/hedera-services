@@ -17,8 +17,8 @@
 package com.swirlds.demo.stats.signing.algorithms;
 
 import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.goterl.lazysodium.LazySodiumJava;
 import com.goterl.lazysodium.SodiumJava;

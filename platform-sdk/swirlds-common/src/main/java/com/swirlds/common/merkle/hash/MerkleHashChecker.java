@@ -16,8 +16,8 @@
 
 package com.swirlds.common.merkle.hash;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LoggingUtils.plural;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LoggingUtils.plural;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;

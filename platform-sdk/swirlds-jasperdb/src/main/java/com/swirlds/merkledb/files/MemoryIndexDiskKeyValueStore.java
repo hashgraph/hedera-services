@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 
 import com.swirlds.merkledb.FileStatisticAware;
 import com.swirlds.merkledb.KeyRange;

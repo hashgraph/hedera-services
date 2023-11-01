@@ -17,8 +17,8 @@
 package com.swirlds.virtualmap.internal.pipeline;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.VIRTUAL_MERKLE_STATS;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.VIRTUAL_MERKLE_STATS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.metrics.Metrics;

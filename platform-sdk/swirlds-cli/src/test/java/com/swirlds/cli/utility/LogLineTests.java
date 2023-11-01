@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 class LogLineTests {
     public static final String testString =
             """
-            2023-08-04 13:50:09.751 102      INFO  PLATFORM_STATUS  <<platform: status-state-machine>> PlatformStatusStateMachine: Platform spent 441.0 ms in STARTING_UP. Now in REPLAYING_EVENTS {"oldStatus":"STARTING_UP","newStatus":"REPLAYING_EVENTS"} [com.swirlds.logging.payloads.PlatformStatusPayload]""";
+            2023-08-04 13:50:09.751 102      INFO  PLATFORM_STATUS  <<platform: status-state-machine>> PlatformStatusStateMachine: Platform spent 441.0 ms in STARTING_UP. Now in REPLAYING_EVENTS {"oldStatus":"STARTING_UP","newStatus":"REPLAYING_EVENTS"} [com.swirlds.logging.legacy.payload.PlatformStatusPayload]""";
 
     @Test
     @DisplayName("Test splitting a log line")
@@ -45,7 +45,7 @@ class LogLineTests {
         assertEquals("<<platform: status-state-machine>>", logLine.getThreadName());
         assertEquals("PlatformStatusStateMachine", logLine.getClassName());
         assertEquals(
-                "Platform spent 441.0 ms in STARTING_UP. Now in REPLAYING_EVENTS {\"oldStatus\":\"STARTING_UP\",\"newStatus\":\"REPLAYING_EVENTS\"} [com.swirlds.logging.payloads.PlatformStatusPayload]",
+                "Platform spent 441.0 ms in STARTING_UP. Now in REPLAYING_EVENTS {\"oldStatus\":\"STARTING_UP\",\"newStatus\":\"REPLAYING_EVENTS\"} [com.swirlds.logging.legacy.payload.PlatformStatusPayload]",
                 logLine.getRemainderOfLine().getOriginalPlaintext());
     }
 }

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_NUMBER;
 
 import com.swirlds.common.config.ConsensusConfig;

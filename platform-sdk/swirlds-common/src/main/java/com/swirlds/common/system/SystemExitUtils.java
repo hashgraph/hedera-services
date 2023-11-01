@@ -16,11 +16,11 @@
 
 package com.swirlds.common.system;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.utility.StackTrace;
-import com.swirlds.logging.payloads.SystemExitPayload;
+import com.swirlds.logging.legacy.payload.SystemExitPayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;

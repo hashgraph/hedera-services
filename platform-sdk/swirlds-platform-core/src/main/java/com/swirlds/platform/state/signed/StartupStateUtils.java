@@ -17,8 +17,8 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.merkle.utility.MerkleUtils.rehashTree;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
@@ -33,7 +33,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.logging.payloads.SavedStateLoadedPayload;
+import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.RecoveryScratchpad;

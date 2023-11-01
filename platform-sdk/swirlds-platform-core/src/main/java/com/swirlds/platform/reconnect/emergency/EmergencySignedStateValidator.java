@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.reconnect.emergency;
 
-import static com.swirlds.logging.LogMarker.SIGNED_STATE;
+import static com.swirlds.logging.legacy.LogMarker.SIGNED_STATE;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
