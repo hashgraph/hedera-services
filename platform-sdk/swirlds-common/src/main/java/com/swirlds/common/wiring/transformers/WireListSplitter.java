@@ -35,7 +35,8 @@ public class WireListSplitter<T> extends OutputWire<T> implements Consumer<List<
      * @param name  the name of the output channel
      */
     public WireListSplitter(@NonNull final WiringModel model, @NonNull final String name) {
-        super(model, name, true, true);
+        super(model, name);
+        model.registerVertex(name, true);
     }
 
     /**

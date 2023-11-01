@@ -45,7 +45,8 @@ public class WireTransformer<A, B> extends OutputWire<B> implements Consumer<A> 
      */
     public WireTransformer(
             @NonNull final WiringModel model, @NonNull final String name, @NonNull final Function<A, B> transformer) {
-        super(model, name, true, true);
+        super(model, name);
+        model.registerVertex(name, true);
         this.transformer = Objects.requireNonNull(transformer);
     }
 

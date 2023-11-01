@@ -61,7 +61,8 @@ public abstract class TaskScheduler<OUT> {
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
         this.flushEnabled = flushEnabled;
-        primaryOutputWire = new OutputWire<>(model, name, true, insertionIsBlocking);
+        primaryOutputWire = new OutputWire<>(model, name);
+        model.registerVertex(name, insertionIsBlocking);
     }
 
     /**
@@ -161,7 +162,9 @@ public abstract class TaskScheduler<OUT> {
      */
     @NonNull
     public <T> OutputWire<T> buildSecondaryOutputWire() {
-        return new OutputWire<>(model, name, false, true);
+        // Intentionally do not register this with the model. Connections using this output wire will be represented
+        // in the model in the same way as connections to the primary output wire.
+        return new OutputWire<>(model, name);
     }
 
     /**

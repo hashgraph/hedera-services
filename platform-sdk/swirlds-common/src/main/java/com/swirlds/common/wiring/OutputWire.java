@@ -49,24 +49,11 @@ public class OutputWire<OUT> {
      *
      * @param model               the wiring model containing this output wire
      * @param name                the name of the output wire
-     * @param registerWithModel   if true, then this output wire will be registered with the wiring model. Every time a
-     *                            new wire is created it should be registered with the wiring model. Secondary output
-     *                            wires should not be registered with the wiring model.
-     * @param insertionIsBlocking when data is inserted into this wire, will it block until capacity is available?
      */
-    protected OutputWire(
-            @NonNull final WiringModel model,
-            @NonNull final String name,
-            final boolean registerWithModel,
-            final boolean insertionIsBlocking) {
+    protected OutputWire(@NonNull final WiringModel model, @NonNull final String name) {
 
-        // TODO does this still belong here?
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
-
-        if (registerWithModel) {
-            model.registerVertex(name, insertionIsBlocking);
-        }
     }
 
     /**
