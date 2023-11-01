@@ -29,6 +29,7 @@ tasks.withType<ShadowJar>().configureEach {
     // Defer the resolution  of 'runtimeClasspath'. This is an issue in the shadow
     // plugin that it automatically accesses the files in 'runtimeClasspath' while
     // Gradle is building the task graph. The three lines below work around that.
+    // See: https://github.com/johnrengelman/shadow/issues/882
     inputs.files(project.configurations.runtimeClasspath)
     configurations = emptyList()
     doFirst { configurations = listOf(project.configurations.runtimeClasspath.get()) }
