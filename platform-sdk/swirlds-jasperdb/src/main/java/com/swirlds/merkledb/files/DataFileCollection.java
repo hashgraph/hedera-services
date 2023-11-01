@@ -24,6 +24,7 @@ import static com.swirlds.merkledb.files.DataFileCommon.FILE_EXTENSION;
 import static com.swirlds.merkledb.files.DataFileCommon.byteOffsetFromDataLocation;
 import static com.swirlds.merkledb.files.DataFileCommon.fileIndexFromDataLocation;
 import static com.swirlds.merkledb.files.DataFileCommon.isFullyWrittenDataFile;
+import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
 import static java.util.Collections.singletonList;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -39,21 +40,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -128,18 +126,18 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * The list of current files in this data file collection. The files are added to this list
      * during flushes in {@link #endWriting(long, long)}, after the file is completely written. They
-     * are also added during compaction in {@link #compactFiles(CASableLongIndex, List)}, even
+     * are also added during compaction in {@link DataFileCompactor#compactFiles(CASableLongIndex, List, int)}, even
      * before compaction is complete. In the end of compaction, all the compacted files are removed
      * from this list.
      *
-     * The list is used to read data items and to make snapshots. Reading from the file, which is
+     * <p>The list is used to read data items and to make snapshots. Reading from the file, which is
      * being written to during compaction, is possible because both readers and writers use Java
      * file channel APIs. Snapshots are an issue, though. Snapshots must be as fast as possible, so
      * they are implemented as to make hard links in the target folder to all data files in
      * collection. If compaction is in progress, the last file in the list isn't fully written yet,
      * so it can't be hard linked easily. To solve it, before a snapshot is taken, the current
      * compaction file is flushed to disk, and compaction is put on hold using {@link
-     * #snapshotCompactionLock} and then resumed after snapshot is complete.
+     * DataFileCompactor#pauseCompaction()} and then resumed after snapshot is complete.
      */
     private final AtomicReference<ImmutableIndexedObjectList<DataFileReader<D>>> dataFiles = new AtomicReference<>();
 
@@ -162,44 +160,6 @@ public class DataFileCollection<D> implements Snapshotable {
      */
     private final ConcurrentSkipListSet<Integer> setOfNewFileIndexes =
             logger.isTraceEnabled() ? new ConcurrentSkipListSet<>() : null;
-
-    // Compactions
-
-    /** Start time of the current compaction, or null if compaction isn't running */
-    private final AtomicReference<Instant> currentCompactionStartTime = new AtomicReference<>();
-    /** Indicates whether to use PBJ for current compaction */
-    private final AtomicBoolean currentCompactionUsePbj = new AtomicBoolean();
-    /**
-     * Current data file writer during compaction, or null if compaction isn't running. The writer
-     * is created at compaction start. If compaction is interrupted by a snapshot, the writer is
-     * closed before the snapshot, and then a new writer / new file is created after the snapshot is
-     * taken.
-     */
-    private final AtomicReference<DataFileWriter<D>> currentCompactionWriter = new AtomicReference<>();
-    /** Currrent data file reader for the compaction writer above. */
-    private final AtomicReference<DataFileReader<D>> currentCompactionReader = new AtomicReference<>();
-    /**
-     * The list of new files created during compaction. Usually, all files to process are compacted
-     * to a single new file, but if compaction is interrupted by a snapshot, there may be more than
-     * one file created.
-     */
-    private final List<Path> newCompactedFiles = new ArrayList<>();
-    /**
-     * A lock used for synchronization between snapshots and compactions. While a compaction is in
-     * progress, it runs on its own without any synchronization. However, a few critical sections
-     * are protected with this lock: to create a new compaction writer/reader when compaction is
-     * started, to copy data items to the current writer and update the corresponding index item,
-     * and to close the compaction writer. This mechanism allows snapshots to effectively put
-     * compaction on hold, which is critical as snapshots should be as fast as possible, while
-     * compactions are just background processes.
-     */
-    private final Semaphore snapshotCompactionLock = new Semaphore(1);
-    /**
-     * Indicates whether compaction is in progress at the time when {@link #pauseCompaction()}
-     * is called. This flag is then checked in {@link #resumeCompaction()} to start a new
-     * compacted file or not.
-     */
-    private final AtomicBoolean compactionWasInProgress = new AtomicBoolean(false);
 
     /**
      * Construct a new DataFileCollection.
@@ -376,238 +336,6 @@ public class DataFileCollection<D> implements Snapshotable {
                         .summaryStatistics();
     }
 
-    /**
-     * Merges all files in filesToMerge.
-     *
-     * @param index takes a map of moves from old location to new location. Once it is finished and
-     *     returns it is assumed all readers will no longer be looking in old location, so old files
-     *     can be safely deleted.
-     * @param filesToMerge list of files to merge
-     * @return list of files created during the merge
-     * @throws IOException If there was a problem merging
-     * @throws InterruptedException If the merge thread was interrupted
-     */
-    public synchronized List<Path> compactFiles(
-            final CASableLongIndex index, final List<DataFileReader<D>> filesToMerge)
-            throws IOException, InterruptedException {
-        return compactFiles(index, filesToMerge, config.usePbj());
-    }
-
-    // For testing purposes
-    synchronized List<Path> compactFiles(
-            final CASableLongIndex index, final List<DataFileReader<D>> filesToMerge, final boolean usePbj)
-            throws IOException, InterruptedException {
-        if (filesToMerge.size() < 2) {
-            // nothing to do we have merged since the last data update
-            logger.debug(MERKLE_DB.getMarker(), "No files were available for merging [{}]", storeName);
-            return Collections.emptyList();
-        }
-
-        // create a merge time stamp, this timestamp is the newest time of the set of files we are
-        // merging
-        final Instant startTime = filesToMerge.stream()
-                .map(file -> file.getMetadata().getCreationDate())
-                .max(Instant::compareTo)
-                .get();
-        snapshotCompactionLock.acquire();
-        try {
-            currentCompactionUsePbj.set(usePbj);
-            currentCompactionStartTime.set(startTime);
-            newCompactedFiles.clear();
-            startNewCompactionFile();
-        } finally {
-            snapshotCompactionLock.release();
-        }
-
-        // We need a map to find readers by file index below. It doesn't have to be synchronized
-        // as it will be accessed in this thread only, so it can be a simple HashMap or alike.
-        // However, standard Java maps can only work with Integer, not int (yet), so auto-boxing
-        // will put significant load on GC. Let's do something different
-        int minFileIndex = Integer.MAX_VALUE;
-        int maxFileIndex = 0;
-        for (final DataFileReader<D> r : filesToMerge) {
-            minFileIndex = Math.min(minFileIndex, r.getIndex());
-            maxFileIndex = Math.max(maxFileIndex, r.getIndex());
-        }
-        final int firstIndexInc = minFileIndex;
-        final int lastIndexExc = maxFileIndex + 1;
-        final DataFileReader<D>[] readers = new DataFileReader[lastIndexExc - firstIndexInc];
-        for (DataFileReader<D> r : filesToMerge) {
-            readers[r.getIndex() - firstIndexInc] = r;
-        }
-
-        boolean allDataItemsProcessed = false;
-        try {
-            final KeyRange keyRange = validKeyRange;
-            index.forEach((path, dataLocation) -> {
-                if (!keyRange.withinRange(path)) {
-                    return;
-                }
-                final int fileIndex = DataFileCommon.fileIndexFromDataLocation(dataLocation);
-                if ((fileIndex < firstIndexInc) || (fileIndex >= lastIndexExc)) {
-                    return;
-                }
-                final DataFileReader<D> reader = readers[fileIndex - firstIndexInc];
-                if (reader == null) {
-                    return;
-                }
-                final long fileOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
-                // Take the lock. If a snapshot is started in a different thread, this call
-                // will block until the snapshot is done. The current file will be flushed,
-                // and current data file writer and reader will point to a new file
-                snapshotCompactionLock.acquire();
-                try {
-                    final DataFileWriter<D> newFileWriter = currentCompactionWriter.get();
-                    long newLocation = -1;
-                    // Check if reader and writer are compatible
-                    if (newFileWriter.getFileType() == reader.getFileType()) {
-                        // Check if reader supports reading raw data item bytes
-                        final Object itemBytes = reader.readDataItemBytes(fileOffset);
-                        if (itemBytes != null) {
-                            newLocation = newFileWriter.writeCopiedDataItem(itemBytes);
-                        }
-                    }
-                    if (newLocation == -1) {
-                        final D item = reader.readDataItem(fileOffset);
-                        assert item != null;
-                        newLocation = newFileWriter.storeDataItem(item);
-                    }
-                    // update the index
-                    index.putIfEqual(path, dataLocation, newLocation);
-                } catch (final ClosedByInterruptException e) {
-                    logger.info(
-                            MERKLE_DB.getMarker(),
-                            "Failed to copy data item {} / {} due to thread interruption",
-                            fileIndex,
-                            fileOffset,
-                            e);
-                    throw e;
-                } catch (final IOException z) {
-                    logger.error(EXCEPTION.getMarker(), "Failed to copy data item {} / {}", fileIndex, fileOffset, z);
-                    throw z;
-                } finally {
-                    snapshotCompactionLock.release();
-                }
-            });
-            allDataItemsProcessed = true;
-        } finally {
-            // Even if the thread is interrupted, make sure the new compacted file is properly closed
-            // and is included to future compactions
-            snapshotCompactionLock.acquire();
-            try {
-                // Finish writing the last file. In rare cases, it may be an empty file
-                finishCurrentCompactionFile();
-                // Clear compaction start time
-                currentCompactionStartTime.set(null);
-                if (allDataItemsProcessed) {
-                    // Close the readers and delete compacted files
-                    deleteFiles(filesToMerge);
-                }
-            } finally {
-                snapshotCompactionLock.release();
-            }
-        }
-
-        return newCompactedFiles;
-    }
-
-    /**
-     * Opens a new file for writing during compaction. This method is called, when compaction is
-     * started. If compaction is interrupted and resumed by data source snapshot using {@link
-     * #pauseCompaction()} and {@link #resumeCompaction()}, a new file is created for writing using
-     * this method before compaction is resumed.
-     *
-     * This method must be called under snapshot/compaction lock.
-     *
-     * @throws IOException If an I/O error occurs
-     */
-    private void startNewCompactionFile() throws IOException {
-        final Instant startTime = currentCompactionStartTime.get();
-        assert startTime != null;
-        // no way to force JDB or PBJ format for compacted files, always get the value from config
-        final DataFileWriter<D> newFileWriter = newDataFile(startTime, currentCompactionUsePbj.get());
-        currentCompactionWriter.set(newFileWriter);
-        final Path newFileCreated = newFileWriter.getPath();
-        newCompactedFiles.add(newFileCreated);
-        final DataFileMetadata newFileMetadata = newFileWriter.getMetadata();
-        final DataFileReader<D> newFileReader =
-                addNewDataFileReader(newFileCreated, newFileMetadata, currentCompactionUsePbj.get());
-        currentCompactionReader.set(newFileReader);
-    }
-
-    /**
-     * Closes the current compaction file. This method is called in the end of compaction process,
-     * and also before a snapshot is taken to make sure the current file is fully written and safe
-     * to include to snapshots.
-     *
-     * This method must be called under snapshot/compaction lock.
-     *
-     * @throws IOException If an I/O error occurs
-     */
-    private void finishCurrentCompactionFile() throws IOException {
-        currentCompactionWriter.get().finishWriting();
-        currentCompactionWriter.set(null);
-        // Now include the file in future compactions
-        currentCompactionReader.get().setFileCompleted();
-        currentCompactionReader.set(null);
-    }
-
-    /**
-     * Puts file compaction on hold, if it's currently in progress. If not in progress, it will
-     * prevent compaction from starting until {@link #resumeCompaction()} is called. The most
-     * important thing this method does is it makes data files consistent and read only, so they can
-     * be included to snapshots as easily as to create hard links. In particular, if compaction is
-     * in progress, and a new data file is being written to, this file is flushed to disk, no files
-     * are created and no index entries are updated until compaction is resumed.
-     *
-     * This method should not be called on the compaction thread.
-     *
-     * <b>This method must be always balanced with and called before {@link #resumeCompaction()}. If
-     * there are more / less calls to resume compactions than to pause, or if they are called in a
-     * wrong order, it will result in deadlocks.</b>
-     *
-     * @throws IOException If an I/O error occurs
-     */
-    public void pauseCompaction() throws IOException {
-        snapshotCompactionLock.acquireUninterruptibly();
-        // Check if compaction is currently in progress. If so, flush and close the current file, so
-        // it's included to the snapshot
-        final DataFileWriter<D> compactionWriter = currentCompactionWriter.get();
-        if (compactionWriter != null) {
-            compactionWasInProgress.set(true);
-            finishCurrentCompactionFile();
-            // Don't start a new compaction file here, as it would be included to snapshots, but
-            // it shouldn't, as it isn't fully written yet. Instead, a new file will be started
-            // right after snapshot is taken, in resumeCompaction()
-        }
-        // Don't release the lock here, it will be done later in resumeCompaction(). If there is no
-        // compaction currently running, the lock will prevent starting a new one until snapshot is
-        // done
-    }
-
-    /**
-     * Resumes compaction previously put on hold with {@link #pauseCompaction()}. If there was no
-     * compaction running at that moment, but new compaction was started (and blocked) since {@link
-     * #pauseCompaction()}, this new compaction is resumed.
-     *
-     * <b>This method must be always balanced with and called after {@link #pauseCompaction()}. If
-     * there are more / less calls to resume compactions than to pause, or if they are called in a
-     * wrong order, it will result in deadlocks.</b>
-     *
-     * @throws IOException If an I/O error occurs
-     */
-    public void resumeCompaction() throws IOException {
-        try {
-            if (compactionWasInProgress.getAndSet(false)) {
-                assert currentCompactionWriter.get() == null;
-                assert currentCompactionReader.get() == null;
-                startNewCompactionFile();
-            }
-        } finally {
-            snapshotCompactionLock.release();
-        }
-    }
-
     /** Close all the data files */
     public void close() throws IOException {
         // finish writing if we still are
@@ -637,13 +365,13 @@ public class DataFileCollection<D> implements Snapshotable {
 
     // Future work: remove this method, once JDB is no longer supported
     // See https://github.com/hashgraph/hedera-services/issues/8344 for details
-    @Deprecated(forRemoval = true)
+    @Deprecated
     void startWriting(boolean usePbj) throws IOException {
         final DataFileWriter<D> activeDataFileWriter = currentDataFileWriter.get();
         if (activeDataFileWriter != null) {
             throw new IOException("Tried to start writing when we were already writing.");
         }
-        final DataFileWriter<D> writer = newDataFile(Instant.now(), usePbj);
+        final DataFileWriter<D> writer = newDataFile(Instant.now(), INITIAL_COMPACTION_LEVEL, usePbj);
         currentDataFileWriter.set(writer);
         final DataFileMetadata metadata = writer.getMetadata();
         final DataFileReader<D> reader = addNewDataFileReader(writer.getPath(), metadata, usePbj);
@@ -888,8 +616,8 @@ public class DataFileCollection<D> implements Snapshotable {
      * @param metadata The metadata for the file at filePath, to save reading from file
      * @return The newly added DataFileReader.
      */
-    private DataFileReader<D> addNewDataFileReader(
-            final Path filePath, final DataFileMetadata metadata, final boolean usePbj) throws IOException {
+    DataFileReader<D> addNewDataFileReader(final Path filePath, final DataFileMetadata metadata, final boolean usePbj)
+            throws IOException {
         final DataFileReader<D> newDataFileReader = usePbj
                 ? new DataFileReaderPbj<>(filePath, dataItemSerializer, metadata)
                 : new DataFileReaderJdb<>(filePath, dataItemSerializer, (DataFileMetadataJdb) metadata);
@@ -912,12 +640,14 @@ public class DataFileCollection<D> implements Snapshotable {
      * @param filesToDelete the list of files to delete
      * @throws IOException If there was a problem deleting the files
      */
-    private void deleteFiles(@NonNull final Collection<DataFileReader<D>> filesToDelete) throws IOException {
+    void deleteFiles(@NonNull final Collection<?> filesToDelete) throws IOException {
+        // necessary workaround to remove compiler requirement for certain generic type which not required for deletion
+        Collection<DataFileReader<D>> files = (Collection<DataFileReader<D>>) new HashSet<>(filesToDelete);
         // remove files from index
-        dataFiles.getAndUpdate(currentFileList ->
-                (currentFileList == null) ? null : currentFileList.withDeletedObjects(filesToDelete));
+        dataFiles.getAndUpdate(
+                currentFileList -> (currentFileList == null) ? null : currentFileList.withDeletedObjects(files));
         // now close and delete all the files
-        for (final DataFileReader<D> fileReader : filesToDelete) {
+        for (final DataFileReader<D> fileReader : files) {
             fileReader.close();
             Files.delete(fileReader.getPath());
         }
@@ -930,14 +660,17 @@ public class DataFileCollection<D> implements Snapshotable {
      *     case of merge.
      * @return the newly created data file
      */
-    private DataFileWriter<D> newDataFile(final Instant creationTime, final boolean usePbj) throws IOException {
+    DataFileWriter<D> newDataFile(final Instant creationTime, int compactionLevel, final boolean usePbj)
+            throws IOException {
         final int newFileIndex = nextFileIndex.getAndIncrement();
         if (logger.isTraceEnabled()) {
             setOfNewFileIndexes.add(newFileIndex);
         }
         return usePbj
-                ? new DataFileWriterPbj<>(storeName, storeDir, newFileIndex, dataItemSerializer, creationTime)
-                : new DataFileWriterJdb<>(storeName, storeDir, newFileIndex, dataItemSerializer, creationTime);
+                ? new DataFileWriterPbj<>(
+                        storeName, storeDir, newFileIndex, dataItemSerializer, creationTime, compactionLevel)
+                : new DataFileWriterJdb<>(
+                        storeName, storeDir, newFileIndex, dataItemSerializer, creationTime, compactionLevel);
     }
 
     /**

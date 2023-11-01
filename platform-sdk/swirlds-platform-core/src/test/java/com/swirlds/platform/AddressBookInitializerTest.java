@@ -182,9 +182,9 @@ class AddressBookInitializerTest {
                 inititializedAddressBook,
                 "The initial address book must equal the state address book.");
         assertEquals(
-                signedState.getAddressBook(),
+                null,
                 initializer.getPreviousAddressBook(),
-                "The previous address book must equal the state address book.");
+                "When there is no upgrade, the address book should not change");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }

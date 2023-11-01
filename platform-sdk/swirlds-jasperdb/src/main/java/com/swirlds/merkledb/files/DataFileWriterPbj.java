@@ -108,9 +108,17 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
             final Path dataFileDir,
             final int index,
             final DataItemSerializer<D> dataItemSerializer,
-            final Instant creationTime)
+            final Instant creationTime,
+            final int compactionLevel)
             throws IOException {
-        this(filePrefix, dataFileDir, index, dataItemSerializer, creationTime, DataFileCommon.FILE_EXTENSION);
+        this(
+                filePrefix,
+                dataFileDir,
+                index,
+                dataItemSerializer,
+                creationTime,
+                compactionLevel,
+                DataFileCommon.FILE_EXTENSION);
     }
 
     // Future work: remove this extra constructor, once DataFileWriterJdb is dropped
@@ -121,6 +129,7 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
             final int index,
             final DataItemSerializer<D> dataItemSerializer,
             final Instant creationTime,
+            final int compactionLevel,
             final String extension)
             throws IOException {
         this.dataItemSerializer = dataItemSerializer;
@@ -129,7 +138,8 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
                 0, // data item count will be updated later in finishWriting()
                 index,
                 creationTime,
-                dataItemSerializer.getCurrentDataVersion());
+                dataItemSerializer.getCurrentDataVersion(),
+                compactionLevel);
         Files.createFile(path);
         writeHeader();
     }

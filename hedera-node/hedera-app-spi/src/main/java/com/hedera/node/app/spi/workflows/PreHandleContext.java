@@ -92,9 +92,10 @@ public interface PreHandleContext extends TransactionKeys {
      * @param key key to be added
      * @return {@code this} object
      * @throws NullPointerException if the key is null
+     * @throws PreCheckException if the key is not accepted
      */
     @NonNull
-    PreHandleContext requireKey(@NonNull final Key key);
+    PreHandleContext requireKey(@NonNull final Key key) throws PreCheckException;
 
     /**
      * Adds the given key to optional non-payer keys.
@@ -104,9 +105,10 @@ public interface PreHandleContext extends TransactionKeys {
      * @param key key to be added
      * @return {@code this} object
      * @throws NullPointerException if the key is null
+     * @throws PreCheckException if the key is not accepted
      */
     @NonNull
-    PreHandleContext optionalKey(@NonNull final Key key);
+    PreHandleContext optionalKey(@NonNull final Key key) throws PreCheckException;
 
     /**
      * Adds the given set of keys to optional non-payer keys.
@@ -116,9 +118,10 @@ public interface PreHandleContext extends TransactionKeys {
      * @param keys the set of keys to be added
      * @return {@code this} object
      * @throws NullPointerException if the set of keys is null
+     * @throws PreCheckException if the key is not accepted
      */
     @NonNull
-    PreHandleContext optionalKeys(@NonNull final Set<Key> keys);
+    PreHandleContext optionalKeys(@NonNull final Set<Key> keys) throws PreCheckException;
 
     /**
      * Adds the given hollow account to the optional signing set.

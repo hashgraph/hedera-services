@@ -42,6 +42,7 @@ import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
 import java.util.AbstractMap;
@@ -223,7 +224,7 @@ public class KeyFactory implements Serializable {
     }
 
     public Transaction signWithFullPrefixEd25519Keys(final Transaction.Builder txn, final List<Key> keys)
-            throws Throwable {
+            throws IOException, GeneralSecurityException {
         final List<Entry<Key, SigControl>> authors = keys.stream()
                 .<Entry<Key, SigControl>>map(k -> Pair.of(k, SigControl.ED25519_ON))
                 .toList();
@@ -252,16 +253,18 @@ public class KeyFactory implements Serializable {
             this.authors = authors;
         }
 
-        public List<Entry<byte[], byte[]>> completed() throws Throwable {
+        public List<Entry<byte[], byte[]>> completed() throws GeneralSecurityException {
             for (final var author : authors) {
                 signRecursively(author.getKey(), author.getValue());
             }
             return keySigs;
         }
 
-        private void signRecursively(final Key key, final SigControl controller) throws Throwable {
+        private void signRecursively(final Key key, final SigControl controller) throws GeneralSecurityException {
             switch (controller.getNature()) {
                 case SIG_OFF:
+                    keySigs.add(new AbstractMap.SimpleEntry<>(extractPubKey(key), new byte[0]));
+                    break;
                 case CONTRACT_ID:
                 case DELEGATABLE_CONTRACT_ID:
                     break;
@@ -277,7 +280,7 @@ public class KeyFactory implements Serializable {
             }
         }
 
-        private void signIfNecessary(final Key key) throws Throwable {
+        private void signIfNecessary(final Key key) throws GeneralSecurityException {
             final var pk = extractPubKey(key);
             final var hexedPk = com.swirlds.common.utility.CommonUtils.hex(pk);
             if (!used.contains(hexedPk)) {

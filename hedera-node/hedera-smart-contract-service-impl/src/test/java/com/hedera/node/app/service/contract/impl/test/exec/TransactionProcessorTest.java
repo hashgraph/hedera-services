@@ -60,8 +60,9 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
-import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
@@ -71,6 +72,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -99,10 +101,16 @@ class TransactionProcessorTest {
     private CustomMessageCallProcessor messageCallProcessor;
 
     @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
+
+    @Mock
     private ContractCreationProcessor contractCreationProcessor;
 
     @Mock
     private HederaEvmBlocks blocks;
+
+    @Mock
+    private TinybarValues tinybarValues;
 
     @Mock
     private HederaWorldUpdater worldUpdater;
@@ -186,7 +194,7 @@ class TransactionProcessorTest {
                 MAX_GAS_ALLOWANCE,
                 null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
-        final var context = wellKnownContextWith(blocks);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
                 .willReturn(CHARGING_RESULT);
         given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
@@ -238,7 +246,7 @@ class TransactionProcessorTest {
         givenSenderAccount();
         givenRelayerAccount();
 
-        final var context = wellKnownContextWith(blocks);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
         final var transaction = wellKnownRelayedHapiCreate();
 
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
@@ -310,7 +318,7 @@ class TransactionProcessorTest {
 
         givenSenderAccount();
 
-        final var context = wellKnownContextWith(blocks);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
         final var transaction = wellKnownHapiCreate();
 
         given(gasCharging.chargeForGas(senderAccount, null, context, worldUpdater, transaction))
@@ -378,7 +386,7 @@ class TransactionProcessorTest {
         givenRelayerAccount();
         givenReceiverAccount();
 
-        final var context = wellKnownContextWith(blocks);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
         final var transaction = wellKnownRelayedHapiCall(0);
 
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
@@ -448,7 +456,7 @@ class TransactionProcessorTest {
         givenReceiverAccount();
         givenFeeOnlyParties();
 
-        final var context = wellKnownContextWith(blocks);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
         final var transaction = wellKnownRelayedHapiCall(0);
 
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
@@ -483,6 +491,7 @@ class TransactionProcessorTest {
 
         assertResourceExhaustion(INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES, result);
         verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, feesOnlyUpdater, transaction);
+        verify(worldUpdater).revert();
         verify(feesOnlyUpdater).commit();
     }
 
@@ -494,7 +503,7 @@ class TransactionProcessorTest {
         givenReceiverAccount();
         givenFeeOnlyParties();
 
-        final var context = wellKnownContextWith(blocks);
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
         final var transaction = wellKnownRelayedHapiCall(0);
 
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
@@ -548,7 +557,7 @@ class TransactionProcessorTest {
                         transaction,
                         worldUpdater,
                         () -> feesOnlyUpdater,
-                        wellKnownContextWith(blocks),
+                        wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                         tracer,
                         config));
     }

@@ -17,8 +17,8 @@
 package com.swirlds.platform.test;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.utility.CompareTo.isGreaterThan;
-import static com.swirlds.platform.test.event.source.EventSourceFactory.newStandardEventSources;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -31,15 +31,9 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.state.LegacyPlatformState;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
-import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
-import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -70,24 +64,18 @@ class PlatformDataTests {
             minGenInfo.add(new MinGenInfo(random.nextLong(randomBound), random.nextLong(randomBound)));
         }
 
-        final List<EventSource<?>> eventSources = newStandardEventSources(List.of(1L, 2L, 3L, 4L, 5L));
-        final GraphGenerator<?> generator = new StandardGraphGenerator(0, eventSources);
-
-        final int eventsSize = random.nextInt(100) + 1;
-        final EventImpl[] events = new EventImpl[eventsSize];
-        for (int i = 0; i < eventsSize; i++) {
-            events[i] = generator.generateEvent();
-        }
-
         return new PlatformData()
                 .setRound(random.nextLong(randomBound))
-                .setNumEventsCons(random.nextLong(randomBound))
-                .setHashEventsCons(RandomUtils.randomHash(random))
-                .setEvents(events)
+                .setHashEventsCons(randomHash(random))
                 .setConsensusTimestamp(Instant.ofEpochSecond(random.nextInt(randomBound)))
-                .setMinGenInfo(minGenInfo)
                 .setCreationSoftwareVersion(new BasicSoftwareVersion(random.nextInt(randomBound)))
-                .setEpochHash(RandomUtils.randomHash(random));
+                .setEpochHash(randomHash(random))
+                .setSnapshot(new ConsensusSnapshot(
+                        random.nextLong(),
+                        List.of(randomHash(random), randomHash(random), randomHash(random)),
+                        minGenInfo,
+                        random.nextLong(),
+                        randomInstant(random)));
     }
 
     @Test
@@ -129,27 +117,11 @@ class PlatformDataTests {
     }
 
     @Test
-    @DisplayName("Last Timestamp Test")
-    void lastTimestampTest() {
-        final Random random = getRandomPrintSeed();
-        final PlatformData platformData = generateRandomPlatformData(random);
-
-        Instant lastTimestamp = null;
-        for (final EventImpl event : platformData.getEvents()) {
-            if (lastTimestamp == null || isGreaterThan(event.getLastTransTime(), lastTimestamp)) {
-                lastTimestamp = event.getLastTransTime();
-            }
-        }
-
-        assertEquals(lastTimestamp, platformData.getLastTransactionTimestamp(), "last timestamp incorrectly computed");
-    }
-
-    @Test
     @DisplayName("Update Epoch Hash Test")
     void updateEpochHashTest() {
         final Random random = getRandomPrintSeed();
         final PlatformData platformData = generateRandomPlatformData(random);
-        final Hash hash = RandomUtils.randomHash(random);
+        final Hash hash = randomHash(random);
 
         platformData.setEpochHash(null);
         platformData.setNextEpochHash(null);
@@ -169,34 +141,10 @@ class PlatformDataTests {
         assertEquals(hash, platformData.getEpochHash(), "epoch hash should be updated");
         assertNull(platformData.getNextEpochHash(), "next epoch hash should be set to null");
 
-        platformData.setEpochHash(RandomUtils.randomHash(random));
+        platformData.setEpochHash(randomHash(random));
         platformData.setNextEpochHash(hash);
         assertDoesNotThrow(platformData::updateEpochHash);
         assertEquals(hash, platformData.getEpochHash(), "epoch hash should be updated");
         assertNull(platformData.getNextEpochHash(), "next epoch hash should be set to null");
-    }
-
-    // FUTURE WORK: this can be removed after LegacyPlatformState is deleted
-    @Test
-    @DisplayName("Migration Test")
-    void migrationTest() {
-        final Random random = getRandomPrintSeed();
-        final PlatformData platformData = generateRandomPlatformData(random);
-        platformData.setEpochHash(null);
-
-        final LegacyPlatformState legacyState = new LegacyPlatformState();
-        legacyState.setRound(platformData.getRound());
-        legacyState.setNumEventsCons(platformData.getNumEventsCons());
-        legacyState.setHashEventsCons(platformData.getHashEventsCons());
-        legacyState.setEvents(platformData.getEvents());
-        legacyState.setConsensusTimestamp(platformData.getConsensusTimestamp());
-        legacyState.setLastTransactionTimestamp(platformData.getLastTransactionTimestamp());
-        legacyState.setMinGenInfo(platformData.getMinGenInfo());
-        legacyState.setCreationSoftwareVersion(platformData.getCreationSoftwareVersion());
-
-        final PlatformData migratedData =
-                ((PlatformState) legacyState.migrate(legacyState.getVersion())).getPlatformData();
-
-        assertEquals(platformData, migratedData, "should be equal after migration");
     }
 }

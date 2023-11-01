@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -32,6 +31,7 @@ import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.LONG_ACC
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.isAlias;
+import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
@@ -63,6 +63,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWi
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferStep;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -144,6 +145,14 @@ public class CryptoTransferHandler implements TransactionHandler {
         for (final var step : steps) {
             // Apply all changes to the handleContext's States
             step.doIn(transferContext);
+        }
+
+        final var recordBuilder = context.recordBuilder(CryptoTransferRecordBuilder.class);
+        if (!transferContext.getAutomaticAssociations().isEmpty()) {
+            transferContext.getAutomaticAssociations().forEach(recordBuilder::addAutomaticTokenAssociation);
+        }
+        if (!transferContext.getAssessedCustomFees().isEmpty()) {
+            recordBuilder.assessedCustomFees(transferContext.getAssessedCustomFees());
         }
     }
 
@@ -276,8 +285,9 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // then we also fail with the same error. It should be that being credited value DOES NOT require
                 // a key, unless `receiverSigRequired` is true.
                 final var accountKey = account.key();
-                if ((isEmpty(accountKey)) && (isDebit || isCredit && !hbarTransfer)) {
-                    throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
+                if ((isEmpty(accountKey)) && (isDebit || isCredit && !hbarTransfer) && !isHollow(account)) {
+                    // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
+                    throw new PreCheckException(INVALID_ACCOUNT_ID);
                 }
 
                 // We only need signing keys for accounts that are being debited OR those being credited
@@ -285,8 +295,9 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // is set on the transaction, then we defer to the token transfer logic to determine if all
                 // signing requirements were met ("isApproval" is a way for the client to say "I don't need a key
                 // because I'm approved which you will see when you handle this transaction").
-                if (isDebit && !accountAmount.isApproval()) {
-                    ctx.requireKeyOrThrow(account.key(), ACCOUNT_IS_IMMUTABLE);
+                if (isDebit && !accountAmount.isApproval() && !isHollow(account)) {
+                    // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
+                    ctx.requireKeyOrThrow(account.key(), INVALID_ACCOUNT_ID);
                 } else if (isCredit && account.receiverSigRequired()) {
                     ctx.requireKeyOrThrow(account.key(), INVALID_TRANSFER_ACCOUNT_ID);
                 }
@@ -349,8 +360,9 @@ public class CryptoTransferHandler implements TransactionHandler {
 
         final var receiverKey = receiverAccount.key();
         if (isEmpty(receiverKey)) {
-            // If the receiver account has no key, then fail with ACCOUNT_IS_IMMUTABLE.
-            throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
+            // If the receiver account has no key, then fail with INVALID_ACCOUNT_ID.
+            // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
+            throw new PreCheckException(INVALID_ACCOUNT_ID);
         } else if (receiverAccount.receiverSigRequired()) {
             // If receiverSigRequired is set, and if there is no key on the receiver's account, then fail with
             // INVALID_TRANSFER_ACCOUNT_ID. Otherwise, add the key.
@@ -384,8 +396,9 @@ public class CryptoTransferHandler implements TransactionHandler {
         // If the sender account is immutable, then we throw an exception.
         final var key = senderAccount.key();
         if (key == null || !isValid(key)) {
-            // If the sender account has no key, then fail with ACCOUNT_IS_IMMUTABLE.
-            throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
+            // If the sender account has no key, then fail with INVALID_ACCOUNT_ID.
+            // NOTE: should change to ACCOUNT_IS_IMMUTABLE
+            throw new PreCheckException(INVALID_ACCOUNT_ID);
         } else if (!nftTransfer.isApproval()) {
             meta.requireKey(key);
         }

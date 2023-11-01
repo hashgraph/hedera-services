@@ -16,6 +16,8 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
+
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
@@ -69,7 +71,8 @@ public class DataFileReaderHammerTest {
 
         final ExecutorService exec = Executors.newFixedThreadPool(readerThreads);
         final Random rand = new Random();
-        final DataFileMetadata metadata = new DataFileMetadata(itemCount, 0, Instant.now(), 0);
+        final DataFileMetadata metadata =
+                new DataFileMetadata(itemCount, 0, Instant.now(), 0, INITIAL_COMPACTION_LEVEL);
         final DataFileReader<byte[]> dataReader =
                 new DataFileReaderPbj<>(tempFile, new TestDataItemSerializer(itemSize), metadata);
         final AtomicInteger activeReaders = new AtomicInteger(readerThreads);

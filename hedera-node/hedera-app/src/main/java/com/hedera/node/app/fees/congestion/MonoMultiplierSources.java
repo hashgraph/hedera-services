@@ -19,15 +19,41 @@ package com.hedera.node.app.fees.congestion;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.fees.congestion.FeeMultiplierSource;
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 public class MonoMultiplierSources {
+    private static final TxnAccessor accessor;
+
+    static {
+        try {
+            // only accessor.congestionExempt() is used in the mono multiplier implementation and that seems like could
+            // be only set for triggered transactions
+            // so using just a dummy accessor
+            accessor = SignedTxnAccessor.from(Transaction.PROTOBUF
+                    .toBytes(Transaction.newBuilder()
+                            .signedTransactionBytes(SignedTransaction.PROTOBUF.toBytes(SignedTransaction.newBuilder()
+                                    .bodyBytes(TransactionBody.PROTOBUF.toBytes(TransactionBody.newBuilder()
+                                            .cryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+                                                    .build())
+                                            .build()))
+                                    .build()))
+                            .build())
+                    .toByteArray());
+        } catch (InvalidProtocolBufferException e) {
+            //             this should never happen because we use a dummy transaction which should be always valid
+            throw new RuntimeException(e);
+        }
+    }
+
     private final MultiplierSources delegate;
 
     public MonoMultiplierSources(
@@ -40,16 +66,6 @@ public class MonoMultiplierSources {
     }
 
     public void updateMultiplier(@NonNull final Instant consensusTime) {
-        TxnAccessor accessor = null;
-        try {
-            // only accessor.congestionExempt() is used in the mono multiplier implementation and that seems like could
-            // be only set for triggered transactions
-            // so using just a dummy accessor
-            accessor = SignedTxnAccessor.from(Bytes.EMPTY.toByteArray());
-        } catch (InvalidProtocolBufferException e) {
-            // this should never happen because we use an empty byte array constant above which should be always valid
-            throw new RuntimeException(e);
-        }
         this.delegate.updateMultiplier(accessor, consensusTime);
     }
 

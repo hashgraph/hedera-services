@@ -56,7 +56,8 @@ import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
-import com.hedera.node.app.throttle.HandleThrottleAccumulator;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
 import com.hedera.node.app.throttle.impl.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.version.HederaSoftwareVersion;
@@ -172,7 +173,8 @@ public final class Hedera implements SwirldMain {
      */
     private PlatformStatus platformStatus = PlatformStatus.STARTING_UP;
 
-    private HandleThrottleAccumulator handleThrottling;
+    private ThrottleAccumulator backendThrottle;
+    private ThrottleAccumulator frontendThrottle;
     private MonoMultiplierSources monoMultiplierSources;
 
     /**
@@ -182,7 +184,7 @@ public final class Hedera implements SwirldMain {
     public static final String APP_NAME = "com.hedera.services.ServicesMain";
 
     /**
-     * The swirld name. Currently there is only one swirld.
+     * The swirld name. Currently, there is only one swirld.
      */
     public static final String SWIRLD_NAME = "123";
 
@@ -416,7 +418,13 @@ public final class Hedera implements SwirldMain {
             final var serviceName = service.getServiceName();
             logger.info("Migrating Service {}", serviceName);
             final var registry = (MerkleSchemaRegistry) registration.registry();
-            registry.migrate(state, previousVersion, currentVersion, configProvider.getConfiguration(), networkInfo);
+            registry.migrate(
+                    state,
+                    previousVersion,
+                    currentVersion,
+                    configProvider.getConfiguration(),
+                    networkInfo,
+                    backendThrottle);
         }
         logger.info("Migration complete");
     }
@@ -667,7 +675,9 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
-        this.handleThrottling = new HandleThrottleAccumulator(configProvider);
+        this.backendThrottle = new ThrottleAccumulator(() -> 1, configProvider);
+        this.frontendThrottle =
+                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider);
         this.monoMultiplierSources = createMultiplierSources();
 
         logger.info("Initializing ExchangeRateManager");
@@ -701,7 +711,7 @@ public final class Hedera implements SwirldMain {
                         .getConfiguration()
                         .getConfigData(FeesConfig.class)
                         .percentCongestionMultipliers(),
-                () -> handleThrottling.activeThrottlesFor(CRYPTO_TRANSFER));
+                () -> backendThrottle.activeThrottlesFor(CRYPTO_TRANSFER));
         final var gasFeeMultiplier = new ThrottleMultiplierSource(
                 "EVM gas/sec",
                 "gas/sec",
@@ -715,7 +725,7 @@ public final class Hedera implements SwirldMain {
                         .getConfiguration()
                         .getConfigData(FeesConfig.class)
                         .percentCongestionMultipliers(),
-                () -> List.of(handleThrottling.gasLimitThrottle()));
+                () -> List.of(backendThrottle.gasLimitThrottle()));
 
         return new MonoMultiplierSources(genericFeeMultiplier, gasFeeMultiplier);
     }
@@ -748,7 +758,9 @@ public final class Hedera implements SwirldMain {
         logger.info("Initializing ThrottleManager");
         this.throttleManager = new ThrottleManager();
 
-        this.handleThrottling = new HandleThrottleAccumulator(configProvider);
+        this.backendThrottle = new ThrottleAccumulator(() -> 1, configProvider);
+        this.frontendThrottle =
+                new ThrottleAccumulator(() -> platform.getAddressBook().getSize(), configProvider);
         this.monoMultiplierSources = createMultiplierSources();
 
         logger.info("Initializing ExchangeRateManager");
@@ -803,9 +815,11 @@ public final class Hedera implements SwirldMain {
                             throttleManager,
                             exchangeRateManager,
                             monoMultiplierSources,
-                            handleThrottling))
+                            backendThrottle,
+                            frontendThrottle))
                     .networkUtilizationManager(
-                            new NetworkUtilizationManagerImpl(handleThrottling, monoMultiplierSources))
+                            new NetworkUtilizationManagerImpl(backendThrottle, monoMultiplierSources))
+                    .synchronizedThrottleAccumulator(new SynchronizedThrottleAccumulator(frontendThrottle))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .platform(platform)
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
@@ -870,8 +884,10 @@ public final class Hedera implements SwirldMain {
             daggerApp.throttleManager().update(fileData);
 
             // Initializing handle throttling
-            this.handleThrottling.rebuildFor(daggerApp.throttleManager().throttleDefinitions());
-            this.handleThrottling.applyGasConfig();
+            this.backendThrottle.rebuildFor(daggerApp.throttleManager().throttleDefinitions());
+            this.backendThrottle.applyGasConfig();
+            this.frontendThrottle.rebuildFor(daggerApp.throttleManager().throttleDefinitions());
+            this.frontendThrottle.applyGasConfig();
 
             // Updating the multiplier source to use the new throttle definitions
             this.monoMultiplierSources.resetExpectations();

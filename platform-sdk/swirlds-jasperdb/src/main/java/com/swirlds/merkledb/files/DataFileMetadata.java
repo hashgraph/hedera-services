@@ -17,6 +17,7 @@
 package com.swirlds.merkledb.files;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_COMPACTION_LEVEL;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_NANOS;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_SECONDS;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_INDEX;
@@ -50,6 +51,11 @@ import java.util.Set;
 // See https://github.com/hashgraph/hedera-services/issues/8344 for details
 public class DataFileMetadata {
 
+    /**
+     * Maximum level of compaction for storage files.
+     */
+    public static final int MAX_COMPACTION_LEVEL = 127;
+
     /** The file index, in a data file collection */
     // Future work: make it private final, once this class is final again
     // https://github.com/hashgraph/hedera-services/issues/8344
@@ -76,6 +82,9 @@ public class DataFileMetadata {
     // https://github.com/hashgraph/hedera-services/issues/8344
     protected long serializationVersion;
 
+    /** The level of compaction this file has. See {@link DataFileCompactor}*/
+    protected byte compactionLevel;
+
     // Set in writeTo()
     private long dataItemCountHeaderOffset = 0;
 
@@ -89,11 +98,17 @@ public class DataFileMetadata {
      * @param serializationVersion Serialization version for data stored in the file
      */
     public DataFileMetadata(
-            final long itemsCount, final int index, final Instant creationDate, final long serializationVersion) {
+            final long itemsCount,
+            final int index,
+            final Instant creationDate,
+            final long serializationVersion,
+            final int compactionLevel) {
         this.itemsCount = itemsCount;
         this.index = index;
         this.creationDate = creationDate;
         this.serializationVersion = serializationVersion;
+        assert compactionLevel >= 0 && compactionLevel < MAX_COMPACTION_LEVEL;
+        this.compactionLevel = (byte) compactionLevel;
     }
 
     /**
@@ -111,8 +126,8 @@ public class DataFileMetadata {
         long serializationVersion = 0;
 
         // Track which fields are read, so we don't have to scan through the whole file
-        final Set<String> fieldsToRead = new HashSet<>(
-                Set.of("index", "creationSeconds", "creationNanos", "itemsCount", "serializationVersion"));
+        final Set<String> fieldsToRead = new HashSet<>(Set.of(
+                "index", "creationSeconds", "creationNanos", "itemsCount", "serializationVersion", "compactionLevel"));
 
         // Read values from the file, skipping all data items
         try (final InputStream fin = Files.newInputStream(file, StandardOpenOption.READ)) {
@@ -135,6 +150,11 @@ public class DataFileMetadata {
                 } else if (fieldNum == FIELD_DATAFILE_ITEM_VERSION.number()) {
                     serializationVersion = in.readVarLong(false);
                     fieldsToRead.remove("serializationVersion");
+                } else if (fieldNum == FIELD_DATAFILE_COMPACTION_LEVEL.number()) {
+                    final int compactionLevelInt = in.readVarInt(false);
+                    assert compactionLevelInt < MAX_COMPACTION_LEVEL;
+                    compactionLevel = (byte) compactionLevelInt;
+                    fieldsToRead.remove("compactionLevel");
                 } else if (fieldNum == FIELD_DATAFILE_ITEMS.number()) {
                     // Just skip it
                     final int size = in.readVarInt(false);
@@ -165,6 +185,8 @@ public class DataFileMetadata {
         out.writeLong(0, ByteOrder.LITTLE_ENDIAN); // will be updated later
         ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEM_VERSION);
         out.writeVarLong(getSerializationVersion(), false);
+        ProtoUtils.writeTag(out, FIELD_DATAFILE_COMPACTION_LEVEL);
+        out.writeVarInt(compactionLevel, false);
     }
 
     /**
@@ -179,7 +201,7 @@ public class DataFileMetadata {
      * Updates number of data items in the file. This method must be called after metadata is
      * written to a file using {@link #writeTo(BufferedData)}.
      *
-     * This method is called by {@link DataFileWriter} right before the file is finished writing.
+     * <p>This method is called by {@link DataFileWriter} right before the file is finished writing.
      */
     void updateDataItemCount(final BufferedData out, final long count) {
         this.itemsCount = count;
@@ -218,7 +240,13 @@ public class DataFileMetadata {
                 + ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEMS_COUNT, WIRE_TYPE_FIXED_64_BIT)
                 + Long.BYTES
                 + ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEM_VERSION, WIRE_TYPE_VARINT)
-                + ProtoUtils.sizeOfVarInt64(serializationVersion);
+                + ProtoUtils.sizeOfVarInt64(serializationVersion)
+                + ProtoUtils.sizeOfTag(FIELD_DATAFILE_COMPACTION_LEVEL, WIRE_TYPE_VARINT)
+                + ProtoUtils.sizeOfVarInt32(compactionLevel);
+    }
+
+    public int getCompactionLevel() {
+        return compactionLevel;
     }
 
     /** toString for debugging */
@@ -247,6 +275,7 @@ public class DataFileMetadata {
         return itemsCount == that.itemsCount
                 && index == that.index
                 && serializationVersion == that.serializationVersion
+                && compactionLevel == that.compactionLevel
                 && Objects.equals(this.creationDate, that.creationDate);
     }
 
@@ -255,6 +284,6 @@ public class DataFileMetadata {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(itemsCount, index, creationDate, serializationVersion);
+        return Objects.hash(itemsCount, index, creationDate, serializationVersion, compactionLevel);
     }
 }

@@ -16,6 +16,12 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -25,18 +31,30 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
+import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.common.metrics.platform.DefaultMetrics;
+import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.test.fixtures.AssertionUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +78,16 @@ class MerkleDbSnapshotTest {
     @BeforeEach
     void setupTest() throws Exception {
         MerkleDb.setDefaultPath(TemporaryFileBuilder.buildTemporaryDirectory("MerkleDbSnapshotTest"));
+    }
+
+    @AfterEach
+    public void afterTest() {
+        // check db count
+        AssertionUtils.assertEventuallyEquals(
+                0L,
+                MerkleDbDataSource::getCountOfOpenDatabases,
+                Duration.ofSeconds(1),
+                "Expected no open dbs. Actual number of open dbs: " + MerkleDbDataSource.getCountOfOpenDatabases());
     }
 
     private static MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> fixedConfig() {
@@ -95,6 +123,7 @@ class MerkleDbSnapshotTest {
         for (int i = 0; i < MAPS_COUNT; i++) {
             final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> vm =
                     new VirtualMap<>("vm" + i, dsBuilder);
+            registerMetrics(vm);
             initialRoot.setChild(i, vm);
         }
 
@@ -136,6 +165,9 @@ class MerkleDbSnapshotTest {
 
         lastRoot.get().release();
         restoredStateRoot.release();
+        closeDataSources(initialRoot);
+        closeDataSources(lastRoot.get());
+        closeDataSources(restoredStateRoot);
     }
 
     @Test
@@ -184,6 +216,7 @@ class MerkleDbSnapshotTest {
                 .start();
 
         startSnapshotLatch.await();
+        assertEventuallyTrue(() -> lastRoot.get() != null, Duration.ofSeconds(10), "lastRoot is null");
 
         MerkleCryptoFactory.getInstance().digestTreeSync(rootToSnapshot.get());
         final Path snapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("snapshotAsync");
@@ -202,6 +235,14 @@ class MerkleDbSnapshotTest {
 
         lastRoot.get().release();
         restoredStateRoot.release();
+        closeDataSources(initialRoot);
+        closeDataSources(restoredStateRoot);
+    }
+
+    private static void closeDataSources(MerkleInternal initialRoot) throws IOException {
+        for (int i = 0; i < MAPS_COUNT; i++) {
+            ((VirtualMap<?, ?>) initialRoot.getChild(i)).getDataSource().close();
+        }
     }
 
     /*
@@ -222,14 +263,32 @@ class MerkleDbSnapshotTest {
         final VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> copy =
                 dsBuilder.copy(original, true);
 
-        final Path snapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("snapshot");
-        dsBuilder.snapshot(snapshotDir, copy);
+        try {
+            final Path snapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("snapshot");
+            dsBuilder.snapshot(snapshotDir, copy);
 
-        final Path oldSnapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("oldSnapshot");
-        Assertions.assertDoesNotThrow(() -> dsBuilder.snapshot(oldSnapshotDir, original));
+            final Path oldSnapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("oldSnapshot");
+            assertDoesNotThrow(() -> dsBuilder.snapshot(oldSnapshotDir, original));
+        } finally {
+            original.close();
+            copy.close();
+        }
+    }
 
-        original.close();
-        copy.close();
+    private static void registerMetrics(VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> vm) {
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
+        when(registry.register(any(), any(), any())).thenReturn(true);
+        Metrics metrics = new DefaultMetrics(
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
+        MerkleDbStatistics statistics = new MerkleDbStatistics("test");
+        statistics.registerMetrics(metrics);
+        vm.getDataSource().registerMetrics(metrics);
     }
 
     public static class TestInternalNode extends PartialNaryMerkleInternal implements MerkleInternal {

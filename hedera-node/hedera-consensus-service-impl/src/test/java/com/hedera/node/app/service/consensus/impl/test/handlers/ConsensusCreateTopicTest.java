@@ -258,7 +258,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), anyBoolean()))
                 .willReturn(new ExpiryMeta(
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
@@ -294,7 +294,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), anyBoolean()))
                 .willReturn(new ExpiryMeta(
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
@@ -329,7 +329,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), anyBoolean()))
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -345,7 +345,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), anyBoolean()))
                 .willThrow(new HandleException(INVALID_AUTORENEW_ACCOUNT));
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -430,7 +430,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        doThrow(HandleException.class).when(expiryValidator).resolveCreationAttempt(anyBoolean(), any());
+        doThrow(HandleException.class).when(expiryValidator).resolveCreationAttempt(anyBoolean(), any(), anyBoolean());
 
         final var failure = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(0, topicStore.modifiedTopics().size());

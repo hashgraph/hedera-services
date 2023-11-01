@@ -29,7 +29,7 @@ import com.hedera.hapi.streams.SidecarMetadata;
 import com.hedera.hapi.streams.SidecarType;
 import com.hedera.hapi.streams.SignatureFile;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

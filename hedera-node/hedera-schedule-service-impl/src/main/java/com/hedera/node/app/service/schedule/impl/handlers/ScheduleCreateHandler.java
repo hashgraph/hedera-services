@@ -136,6 +136,9 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 if (isPresentIn(possibleDuplicates, provisionalSchedule)) {
                     throw new HandleException(ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED);
                 }
+                if (scheduleStore.numSchedulesInState() + 1 > schedulingConfig.maxNumber()) {
+                    throw new HandleException(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+                }
                 // Need to process the child transaction again, to get the *primitive* keys possibly required
                 final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(provisionalSchedule, context);
                 final Set<Key> allRequiredKeys = requiredKeysResult.remainingRequiredKeys();

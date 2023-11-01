@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.event.validation;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.description;
 import static org.mockito.Mockito.mock;
@@ -86,6 +87,25 @@ class EventValidatorTests {
         assertTrue(new GossipEventValidators(List.of(VALID)).isEventValid(event));
         assertTrue(new GossipEventValidators(List.of(VALID, VALID, VALID)).isEventValid(event));
         assertFalse(new GossipEventValidators(List.of(VALID, INVALID, VALID)).isEventValid(event));
+    }
+
+    @Test
+    void replaceByName() {
+        final GossipEventValidator valid1 = new TestGossipEventValidator(true, "1");
+        final GossipEventValidator invalid1 = new TestGossipEventValidator(false, "1");
+        final GossipEventValidator valid2 = new TestGossipEventValidator(true, "2");
+        final GossipEventValidator invalid2 = new TestGossipEventValidator(false, "2");
+
+        final GossipEvent event = GossipEventBuilder.builder().buildEvent();
+        final GossipEventValidators validators = new GossipEventValidators(List.of(invalid1, invalid2));
+
+        assertFalse(validators.isEventValid(event));
+        validators.replaceValidator("1", valid1);
+        assertFalse(validators.isEventValid(event));
+        validators.replaceValidator("2", valid2);
+        assertTrue(validators.isEventValid(event));
+
+        assertThrows(IllegalArgumentException.class, () -> validators.replaceValidator("3", valid1));
     }
 
     @Test

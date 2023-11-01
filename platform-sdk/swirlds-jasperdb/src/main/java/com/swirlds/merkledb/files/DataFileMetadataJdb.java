@@ -17,6 +17,7 @@
 package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.files.DataFileCommon.FOOTER_SIZE;
+import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
@@ -47,8 +48,12 @@ public final class DataFileMetadataJdb extends DataFileMetadata {
      * @param serializationVersion Serialization version for data stored in the file
      */
     public DataFileMetadataJdb(
-            final long itemsCount, final int index, final Instant creationDate, final long serializationVersion) {
-        super(itemsCount, index, creationDate, serializationVersion);
+            final long itemsCount,
+            final int index,
+            final Instant creationDate,
+            final long serializationVersion,
+            final int compactionLevel) {
+        super(itemsCount, index, creationDate, serializationVersion, compactionLevel);
     }
 
     /**
@@ -58,7 +63,7 @@ public final class DataFileMetadataJdb extends DataFileMetadata {
      * @throws IOException If there was a problem reading metadata footer from the file
      */
     public DataFileMetadataJdb(Path file) throws IOException {
-        super(0, 0, null, 0);
+        super(0, 0, null, 0, INITIAL_COMPACTION_LEVEL);
         try (final SeekableByteChannel channel = Files.newByteChannel(file, StandardOpenOption.READ)) {
             // read footer from end of file
             final ByteBuffer buf = ByteBuffer.allocate(FOOTER_SIZE);
@@ -71,7 +76,7 @@ public final class DataFileMetadataJdb extends DataFileMetadata {
             this.itemsCount = buf.getLong();
             this.index = buf.getInt();
             this.creationDate = Instant.ofEpochSecond(buf.getLong(), buf.getInt());
-            buf.get(); // backwards compatibility: used to be a byte for isMergeFile
+            this.compactionLevel = buf.get(); // backwards compatibility: used to be a byte for isMergeFile
             this.serializationVersion = buf.getLong();
         }
     }
@@ -89,7 +94,7 @@ public final class DataFileMetadataJdb extends DataFileMetadata {
         buf.putInt(this.index);
         buf.putLong(this.creationDate.getEpochSecond());
         buf.putInt(this.creationDate.getNano());
-        buf.put((byte) 0); // backwards compatibility: used to be a byte for isMergeFile
+        buf.put(this.compactionLevel);
         buf.putLong(this.serializationVersion);
         buf.rewind();
         return buf;

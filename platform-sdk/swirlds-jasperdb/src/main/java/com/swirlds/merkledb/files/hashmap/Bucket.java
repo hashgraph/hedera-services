@@ -438,7 +438,11 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
                 ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_VALUE);
                 out.writeLong(value);
             }
-            ProtoUtils.writeBytes(out, FIELD_BUCKETENTRY_KEYBYTES, sizeInBytes(), o -> keySerializer.serialize(key, o));
+            ProtoUtils.writeBytes(
+                    out,
+                    FIELD_BUCKETENTRY_KEYBYTES,
+                    keySerializer.getSerializedSize(key),
+                    o -> keySerializer.serialize(key, o));
         }
     }
 }

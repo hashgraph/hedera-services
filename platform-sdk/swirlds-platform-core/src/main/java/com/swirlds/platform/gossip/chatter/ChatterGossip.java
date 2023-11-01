@@ -44,7 +44,6 @@ import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
-import com.swirlds.platform.PlatformConstructor;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.state.StateManagementComponent;
@@ -198,7 +197,7 @@ public class ChatterGossip extends AbstractGossip {
         parallelExecutor.start();
         for (final NodeId otherId : topology.getNeighbors()) {
             final PeerInstance chatterPeer = chatterCore.getPeerInstance(otherId);
-            final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
+            final ParallelExecutor shadowgraphExecutor = new CachedPoolParallelExecutor(threadManager, "node-sync");
             shadowgraphExecutor.start();
             final ShadowGraphSynchronizer chatterSynchronizer = new ShadowGraphSynchronizer(
                     platformContext,

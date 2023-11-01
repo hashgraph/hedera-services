@@ -38,11 +38,16 @@ import java.time.Instant;
  * access to these goodies.
  */
 public interface TransactionFactory {
+
     default Transaction simpleCryptoTransfer() {
+        return simpleCryptoTransfer(TransactionID.newBuilder().build());
+    }
+
+    default Transaction simpleCryptoTransfer(@NonNull final TransactionID transactionID) {
         final var cryptoTransferTx = CryptoTransferTransactionBody.newBuilder().build();
 
         final var txBody = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().build())
+                .transactionID(transactionID)
                 .cryptoTransfer(cryptoTransferTx)
                 .build();
 

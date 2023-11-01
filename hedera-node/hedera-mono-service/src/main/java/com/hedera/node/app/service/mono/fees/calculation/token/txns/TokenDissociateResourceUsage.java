@@ -24,7 +24,6 @@ import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenDissociateUsage;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;
@@ -50,8 +49,7 @@ public class TokenDissociateResourceUsage extends AbstractTokenResourceUsage imp
     }
 
     @Override
-    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final StateView view)
-            throws InvalidTxBodyException {
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final StateView view) {
         final var op = txn.getTokenDissociate();
         final var account = view.accounts().get(fromAccountId(op.getAccount()));
         if (account == null) {
@@ -71,10 +69,8 @@ public class TokenDissociateResourceUsage extends AbstractTokenResourceUsage imp
      * @param svo signature value object
      * @param account account object
      * @return fee data
-     * @throws InvalidTxBodyException if transaction body is invalid
      */
-    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final Account account)
-            throws InvalidTxBodyException {
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final Account account) {
         if (account == null) {
             return FeeData.getDefaultInstance();
         } else {

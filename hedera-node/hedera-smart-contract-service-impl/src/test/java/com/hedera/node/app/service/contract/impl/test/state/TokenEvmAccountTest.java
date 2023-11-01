@@ -120,11 +120,6 @@ class TokenEvmAccountTest {
     }
 
     @Test
-    void usesSelfAsPutativeMutable() {
-        assertSame(subject, subject.getMutable());
-    }
-
-    @Test
     void doesNotSupportMutators() {
         final var code = pbjToTuweniBytes(SOME_PRETEND_CODE);
         assertThrows(UnsupportedOperationException.class, () -> subject.setNonce(1234));

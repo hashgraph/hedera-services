@@ -17,6 +17,7 @@
 package com.swirlds.merkledb.files;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_COMPACTION_LEVEL;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_NANOS;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_SECONDS;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_INDEX;
@@ -166,6 +167,8 @@ public final class DataFileIteratorPbj<D> implements DataFileIterator<D> {
                 in.readLong(ByteOrder.LITTLE_ENDIAN); // skip items count
             } else if (fieldNum == FIELD_DATAFILE_ITEM_VERSION.number()) {
                 in.readVarLong(false); // skip item serialization version
+            } else if (fieldNum == FIELD_DATAFILE_COMPACTION_LEVEL.number()) {
+                in.readVarInt(false); // skip compaction level
             } else {
                 throw new IllegalArgumentException("Unknown data file field: " + fieldNum);
             }

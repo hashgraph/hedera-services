@@ -45,11 +45,14 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
@@ -66,7 +69,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -106,9 +109,6 @@ class IngestCheckerTest extends AppTestBase {
     TransactionChecker transactionChecker;
 
     @Mock(strictness = LENIENT)
-    ThrottleAccumulator throttleAccumulator;
-
-    @Mock(strictness = LENIENT)
     private SignatureExpander signatureExpander;
 
     @Mock(strictness = LENIENT)
@@ -126,8 +126,12 @@ class IngestCheckerTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private Authorizer authorizer;
 
+    @Mock(strictness = LENIENT)
+    private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+
     private DeduplicationCache deduplicationCache;
 
+    private TransactionInfo transactionInfo;
     private TransactionBody txBody;
     private Transaction tx;
 
@@ -157,7 +161,7 @@ class IngestCheckerTest extends AppTestBase {
                 .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
                 .build();
 
-        final var transactionInfo = new TransactionInfo(
+        transactionInfo = new TransactionInfo(
                 tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
         when(transactionChecker.check(tx)).thenReturn(transactionInfo);
 
@@ -171,14 +175,14 @@ class IngestCheckerTest extends AppTestBase {
                 nodeSelfAccountId,
                 currentPlatformStatus,
                 transactionChecker,
-                throttleAccumulator,
                 solvencyPreCheck,
                 signatureExpander,
                 signatureVerifier,
                 deduplicationCache,
                 dispatcher,
                 feeManager,
-                authorizer);
+                authorizer,
+                synchronizedThrottleAccumulator);
     }
 
     @Nested
@@ -220,14 +224,14 @@ class IngestCheckerTest extends AppTestBase {
                 otherNodeSelfAccountId,
                 currentPlatformStatus,
                 transactionChecker,
-                throttleAccumulator,
                 solvencyPreCheck,
                 signatureExpander,
                 signatureVerifier,
                 deduplicationCache,
                 dispatcher,
                 feeManager,
-                authorizer);
+                authorizer,
+                synchronizedThrottleAccumulator);
 
         // Then the checker should throw a PreCheckException
         assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
@@ -243,7 +247,7 @@ class IngestCheckerTest extends AppTestBase {
                 tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
         final var verificationResultFuture = mock(SignatureVerificationFuture.class);
         final var verificationResult = mock(SignatureVerification.class);
-        when(verificationResult.passed()).thenReturn(true);
+        when(verificationResult.failed()).thenReturn(false);
         when(verificationResultFuture.get(anyLong(), any())).thenReturn(verificationResult);
         when(signatureVerifier.verify(any(), any()))
                 .thenReturn(Map.of(ALICE.account().keyOrThrow(), verificationResultFuture));
@@ -312,11 +316,13 @@ class IngestCheckerTest extends AppTestBase {
     @Nested
     @DisplayName("4. Check throttles")
     class ThrottleTests {
+
         @Test
         @DisplayName("When the transaction is throttled, the transaction should be rejected")
         void testThrottleFails() {
             // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
-            when(throttleAccumulator.shouldThrottle(eq(txBody))).thenReturn(true);
+            when(synchronizedThrottleAccumulator.shouldThrottle(transactionInfo, state))
+                    .thenReturn(true);
 
             // When the transaction is submitted
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
@@ -325,10 +331,10 @@ class IngestCheckerTest extends AppTestBase {
         }
 
         @Test
-        @DisplayName("If some random exception is thrown from ThrottleAccumulator, the exception is bubbled up")
+        @DisplayName("If some random exception is thrown from HapiThrottling, the exception is bubbled up")
         void randomException() {
-            // Given a ThrottleAccumulator that will throw a RuntimeException
-            when(throttleAccumulator.shouldThrottle(eq(txBody)))
+            // Given a HapiThrottling that will throw a RuntimeException
+            when(synchronizedThrottleAccumulator.shouldThrottle(transactionInfo, state))
                     .thenThrow(new RuntimeException("shouldThrottle exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
@@ -431,7 +437,7 @@ class IngestCheckerTest extends AppTestBase {
         private void givenValidPayerSignature() throws ExecutionException, InterruptedException, TimeoutException {
             final var verificationResultFuture = mock(SignatureVerificationFuture.class);
             final var verificationResult = mock(SignatureVerification.class);
-            when(verificationResult.passed()).thenReturn(true);
+            when(verificationResult.failed()).thenReturn(false);
             when(verificationResultFuture.get(anyLong(), any())).thenReturn(verificationResult);
             when(signatureVerifier.verify(any(), any()))
                     .thenReturn(Map.of(ALICE.account().keyOrThrow(), verificationResultFuture));
@@ -460,12 +466,222 @@ class IngestCheckerTest extends AppTestBase {
         void payerVerificationFails() throws Exception {
             final var verificationResultFuture = mock(SignatureVerificationFuture.class);
             final var verificationResult = mock(SignatureVerification.class);
-            when(verificationResult.passed()).thenReturn(false);
+            when(verificationResult.failed()).thenReturn(true);
             when(verificationResultFuture.get(anyLong(), any())).thenReturn(verificationResult);
             when(signatureVerifier.verify(any(), any()))
                     .thenReturn(Map.of(ALICE.account().keyOrThrow(), verificationResultFuture));
 
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(INVALID_SIGNATURE));
+        }
+
+        @Test
+        @DisplayName("Check payer with key-list successfully")
+        void testKeyListVerificationSucceeds() throws Exception {
+            // given
+            final var accountID = AccountID.newBuilder().accountNum(42).build();
+            final var key = Key.newBuilder()
+                    .keyList(KeyList.newBuilder()
+                            .keys(ALICE.account().key(), BOB.account().key()))
+                    .build();
+            final var account =
+                    Account.newBuilder().accountId(accountID).key(key).build();
+            final var myTxBody = txBody.copyBuilder()
+                    .transactionID(txBody.transactionID()
+                            .copyBuilder()
+                            .accountID(accountID)
+                            .build())
+                    .build();
+            final var myTx = tx.copyBuilder()
+                    .signedTransactionBytes(asBytes(
+                            SignedTransaction.PROTOBUF,
+                            SignedTransaction.newBuilder()
+                                    .bodyBytes(asBytes(TransactionBody.PROTOBUF, myTxBody))
+                                    .build()))
+                    .build();
+            final var myTransactionInfo = new TransactionInfo(
+                    myTx,
+                    myTxBody,
+                    MOCK_SIGNATURE_MAP,
+                    myTx.signedTransactionBytes(),
+                    HederaFunctionality.UNCHECKED_SUBMIT);
+            when(transactionChecker.check(myTx)).thenReturn(myTransactionInfo);
+            when(solvencyPreCheck.getPayerAccount(any(), eq(accountID))).thenReturn(account);
+            final var verificationResultFutureAlice = mock(SignatureVerificationFuture.class);
+            final var verificationResultAlice = mock(SignatureVerification.class);
+            when(verificationResultAlice.failed()).thenReturn(false);
+            when(verificationResultFutureAlice.get(anyLong(), any())).thenReturn(verificationResultAlice);
+            final var verificationResultFutureBob = mock(SignatureVerificationFuture.class);
+            final var verificationResultBob = mock(SignatureVerification.class);
+            when(verificationResultBob.failed()).thenReturn(false);
+            when(verificationResultFutureBob.get(anyLong(), any())).thenReturn(verificationResultBob);
+            when(signatureVerifier.verify(any(), any()))
+                    .thenReturn(Map.of(
+                            ALICE.account().keyOrThrow(), verificationResultFutureAlice,
+                            BOB.account().keyOrThrow(), verificationResultFutureBob));
+
+            // when
+            final var actual = subject.runAllChecks(state, myTx, configuration);
+
+            // then
+            assertThat(actual).isEqualTo(myTransactionInfo);
+        }
+
+        @Test
+        @DisplayName("Check payer with key-list fails")
+        void testKeyListVerificationFails() throws Exception {
+            // given
+            final var accountID = AccountID.newBuilder().accountNum(42).build();
+            final var key = Key.newBuilder()
+                    .keyList(KeyList.newBuilder()
+                            .keys(ALICE.account().key(), BOB.account().key()))
+                    .build();
+            final var account =
+                    Account.newBuilder().accountId(accountID).key(key).build();
+            final var myTxBody = txBody.copyBuilder()
+                    .transactionID(txBody.transactionID()
+                            .copyBuilder()
+                            .accountID(accountID)
+                            .build())
+                    .build();
+            final var myTx = tx.copyBuilder()
+                    .signedTransactionBytes(asBytes(
+                            SignedTransaction.PROTOBUF,
+                            SignedTransaction.newBuilder()
+                                    .bodyBytes(asBytes(TransactionBody.PROTOBUF, myTxBody))
+                                    .build()))
+                    .build();
+            final var myTransactionInfo = new TransactionInfo(
+                    myTx,
+                    myTxBody,
+                    MOCK_SIGNATURE_MAP,
+                    myTx.signedTransactionBytes(),
+                    HederaFunctionality.UNCHECKED_SUBMIT);
+            when(transactionChecker.check(myTx)).thenReturn(myTransactionInfo);
+            when(solvencyPreCheck.getPayerAccount(any(), eq(accountID))).thenReturn(account);
+            final var verificationResultFutureAlice = mock(SignatureVerificationFuture.class);
+            final var verificationResultAlice = mock(SignatureVerification.class);
+            when(verificationResultAlice.failed()).thenReturn(false);
+            when(verificationResultFutureAlice.get(anyLong(), any())).thenReturn(verificationResultAlice);
+            final var verificationResultFutureBob = mock(SignatureVerificationFuture.class);
+            final var verificationResultBob = mock(SignatureVerification.class);
+            when(verificationResultBob.failed()).thenReturn(true);
+            when(verificationResultFutureBob.get(anyLong(), any())).thenReturn(verificationResultBob);
+            when(signatureVerifier.verify(any(), any()))
+                    .thenReturn(Map.of(
+                            ALICE.account().keyOrThrow(), verificationResultFutureAlice,
+                            BOB.account().keyOrThrow(), verificationResultFutureBob));
+
+            // when
+            assertThatThrownBy(() -> subject.runAllChecks(state, myTx, configuration))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(INVALID_SIGNATURE));
+        }
+
+        @Test
+        @DisplayName("Check payer with threshold key successfully")
+        void testThresholdKeyVerificationSucceeds() throws Exception {
+            // given
+            final var accountID = AccountID.newBuilder().accountNum(42).build();
+            final var key = Key.newBuilder()
+                    .thresholdKey(ThresholdKey.newBuilder()
+                            .keys(KeyList.newBuilder()
+                                    .keys(ALICE.account().key(), BOB.account().key()))
+                            .threshold(1))
+                    .build();
+            final var account =
+                    Account.newBuilder().accountId(accountID).key(key).build();
+            final var myTxBody = txBody.copyBuilder()
+                    .transactionID(txBody.transactionID()
+                            .copyBuilder()
+                            .accountID(accountID)
+                            .build())
+                    .build();
+            final var myTx = tx.copyBuilder()
+                    .signedTransactionBytes(asBytes(
+                            SignedTransaction.PROTOBUF,
+                            SignedTransaction.newBuilder()
+                                    .bodyBytes(asBytes(TransactionBody.PROTOBUF, myTxBody))
+                                    .build()))
+                    .build();
+            final var myTransactionInfo = new TransactionInfo(
+                    myTx,
+                    myTxBody,
+                    MOCK_SIGNATURE_MAP,
+                    myTx.signedTransactionBytes(),
+                    HederaFunctionality.UNCHECKED_SUBMIT);
+            when(transactionChecker.check(myTx)).thenReturn(myTransactionInfo);
+            when(solvencyPreCheck.getPayerAccount(any(), eq(accountID))).thenReturn(account);
+            final var verificationResultFutureAlice = mock(SignatureVerificationFuture.class);
+            final var verificationResultAlice = mock(SignatureVerification.class);
+            when(verificationResultAlice.failed()).thenReturn(false);
+            when(verificationResultFutureAlice.get(anyLong(), any())).thenReturn(verificationResultAlice);
+            final var verificationResultFutureBob = mock(SignatureVerificationFuture.class);
+            final var verificationResultBob = mock(SignatureVerification.class);
+            when(verificationResultBob.failed()).thenReturn(true);
+            when(verificationResultFutureBob.get(anyLong(), any())).thenReturn(verificationResultBob);
+            when(signatureVerifier.verify(any(), any()))
+                    .thenReturn(Map.of(
+                            ALICE.account().keyOrThrow(), verificationResultFutureAlice,
+                            BOB.account().keyOrThrow(), verificationResultFutureBob));
+
+            // when
+            final var actual = subject.runAllChecks(state, myTx, configuration);
+
+            // then
+            assertThat(actual).isEqualTo(myTransactionInfo);
+        }
+
+        @Test
+        @DisplayName("Check payer with threshold key fails")
+        void testThresholdKeyVerificationFails() throws Exception {
+            // given
+            final var accountID = AccountID.newBuilder().accountNum(42).build();
+            final var key = Key.newBuilder()
+                    .thresholdKey(ThresholdKey.newBuilder()
+                            .keys(KeyList.newBuilder()
+                                    .keys(ALICE.account().key(), BOB.account().key()))
+                            .threshold(1))
+                    .build();
+            final var account =
+                    Account.newBuilder().accountId(accountID).key(key).build();
+            final var myTxBody = txBody.copyBuilder()
+                    .transactionID(txBody.transactionID()
+                            .copyBuilder()
+                            .accountID(accountID)
+                            .build())
+                    .build();
+            final var myTx = tx.copyBuilder()
+                    .signedTransactionBytes(asBytes(
+                            SignedTransaction.PROTOBUF,
+                            SignedTransaction.newBuilder()
+                                    .bodyBytes(asBytes(TransactionBody.PROTOBUF, myTxBody))
+                                    .build()))
+                    .build();
+            final var myTransactionInfo = new TransactionInfo(
+                    myTx,
+                    myTxBody,
+                    MOCK_SIGNATURE_MAP,
+                    myTx.signedTransactionBytes(),
+                    HederaFunctionality.UNCHECKED_SUBMIT);
+            when(transactionChecker.check(myTx)).thenReturn(myTransactionInfo);
+            when(solvencyPreCheck.getPayerAccount(any(), eq(accountID))).thenReturn(account);
+            final var verificationResultFutureAlice = mock(SignatureVerificationFuture.class);
+            final var verificationResultAlice = mock(SignatureVerification.class);
+            when(verificationResultAlice.failed()).thenReturn(true);
+            when(verificationResultFutureAlice.get(anyLong(), any())).thenReturn(verificationResultAlice);
+            final var verificationResultFutureBob = mock(SignatureVerificationFuture.class);
+            final var verificationResultBob = mock(SignatureVerification.class);
+            when(verificationResultBob.failed()).thenReturn(true);
+            when(verificationResultFutureBob.get(anyLong(), any())).thenReturn(verificationResultBob);
+            when(signatureVerifier.verify(any(), any()))
+                    .thenReturn(Map.of(
+                            ALICE.account().keyOrThrow(), verificationResultFutureAlice,
+                            BOB.account().keyOrThrow(), verificationResultFutureBob));
+
+            // when
+            assertThatThrownBy(() -> subject.runAllChecks(state, myTx, configuration))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_SIGNATURE));
         }

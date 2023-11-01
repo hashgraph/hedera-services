@@ -160,6 +160,15 @@ public class NodeInfo {
         return accountOf(selfId);
     }
 
+    /**
+     * Returns this node's id.
+     *
+     * @return this node's id
+     */
+    public long selfId() {
+        return selfId;
+    }
+
     private boolean isIndexOutOfBounds(int index) {
         return index < 0 || index >= numberOfNodes;
     }

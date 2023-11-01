@@ -44,7 +44,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
-import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
@@ -84,7 +83,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -387,21 +386,6 @@ class AbstractLedgerWorldUpdaterTest {
     }
 
     @Test
-    void getReusesMutableIfPresent() {
-        final var trackingAccounts = ledgers.accounts();
-        trackingAccounts.create(aAccount);
-        trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
-
-        given(worldState.get(aAddress))
-                .willReturn(new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess));
-        given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
-
-        final var mutableResponse = subject.getAccount(aAddress);
-        final var getResponse = subject.get(aAddress);
-        assertSame(mutableResponse.getMutable(), getResponse);
-    }
-
-    @Test
     void commitsToWrappedTrackingAccountsAllowsBalanceChangesToMissingAccount() {
         /* Get the wrapped accounts for the updater */
         final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
@@ -473,8 +457,8 @@ class AbstractLedgerWorldUpdaterTest {
         setupWellKnownAccounts();
 
         /* Make some pending changes to one of the well-known accounts */
-        subject.getAccount(aAddress).getMutable().setBalance(Wei.of(aHbarBalance + 1));
-        subject.getAccount(bAddress).getMutable().setBalance(Wei.of(bHbarBalance - 1));
+        subject.getAccount(aAddress).setBalance(Wei.of(aHbarBalance + 1));
+        subject.getAccount(bAddress).setBalance(Wei.of(bHbarBalance - 1));
 
         /* Get the wrapped accounts for the updater */
         final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
@@ -592,10 +576,7 @@ class AbstractLedgerWorldUpdaterTest {
     void updatesTrackingLedgerAccountOnCreateIfUsable() {
         given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
         final var newAccount = subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance));
-        assertInstanceOf(WrappedEvmAccount.class, newAccount);
-        final var newWrappedAccount = (WrappedEvmAccount) newAccount;
-        assertFalse(newWrappedAccount.isImmutable());
-        assertInstanceOf(UpdateTrackingAccount.class, newWrappedAccount.getMutable());
+        assertInstanceOf(MutableAccount.class, newAccount);
 
         final var trackingAccounts = subject.trackingLedgers().accounts();
         assertTrue(trackingAccounts.contains(aAccount));

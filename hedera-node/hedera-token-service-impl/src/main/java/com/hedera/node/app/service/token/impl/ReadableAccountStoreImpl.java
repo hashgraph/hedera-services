@@ -207,6 +207,11 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                         AccountID.newBuilder().accountNum(contractNum).build());
     }
 
+    @Override
+    public long getNumberOfAccounts() {
+        return accountState.size();
+    }
+
     private static long numFromEvmAddress(final Bytes bytes) {
         return bytes.getLong(12);
     }

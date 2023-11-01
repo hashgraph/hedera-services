@@ -35,6 +35,6 @@ public final class ConsensusConstants {
     public static final long ROUND_FIRST = 1;
     /** value of the event mark when it is unmarked */
     public static final int EVENT_UNMARKED = 0;
-    /** the first mark used by consensus */
-    public static final int FIRST_MARK = 1;
+    /** the consensus number of the first event ever to reach consensus */
+    public static final long FIRST_CONSENSUS_NUMBER = 0;
 }

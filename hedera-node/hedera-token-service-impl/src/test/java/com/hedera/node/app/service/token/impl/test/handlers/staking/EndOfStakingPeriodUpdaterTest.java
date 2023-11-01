@@ -316,6 +316,7 @@ class EndOfStakingPeriodUpdaterTest {
                 .withValue("staking.rewardRate", 100L)
                 .withValue("staking.sumOfConsensusWeights", SUM_OF_CONSENSUS_WEIGHTS)
                 .withValue("staking.maxStakeRewarded", Long.MAX_VALUE)
-                .withValue("staking.perHbarRewardRate", 100L);
+                .withValue("staking.perHbarRewardRate", 100L)
+                .withValue("staking.rewardBalanceThreshold", 0);
     }
 }

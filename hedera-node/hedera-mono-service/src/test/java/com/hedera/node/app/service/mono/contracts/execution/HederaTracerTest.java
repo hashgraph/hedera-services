@@ -70,7 +70,7 @@ import org.assertj.core.api.SoftAssertions;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -155,7 +155,6 @@ class HederaTracerTest {
                     .hasSize(1);
         }
     }
-    ;
 
     @Test
     void oneofCheckerInternalTest() {
@@ -235,7 +234,7 @@ class HederaTracerTest {
         given(worldUpdater.aliases()).willReturn(contractAliases);
         given(contractAliases.resolveForEvm(originator)).willReturn(originator);
         given(contractAliases.resolveForEvm(contract)).willReturn(contract);
-        given(worldUpdater.getAccount(contract)).willReturn(mock(EvmAccount.class));
+        given(worldUpdater.getAccount(contract)).willReturn(mock(MutableAccount.class));
 
         // trace top level frame
         subject.init(topLevelMessageFrame);
@@ -275,7 +274,7 @@ class HederaTracerTest {
         given(topLevelMessageFrame.getState()).willReturn(State.CODE_SUSPENDED);
         given(topLevelMessageFrame.getCurrentOperation()).willReturn(mockOperation);
         given(topLevelMessageFrame.getCurrentOperation().getOpcode()).willReturn(0xF0);
-        given(worldUpdater.getAccount(accountReceiver)).willReturn(mock(EvmAccount.class));
+        given(worldUpdater.getAccount(accountReceiver)).willReturn(mock(MutableAccount.class));
         // trace child frame
         subject.tracePostExecution(topLevelMessageFrame, operationResult);
         // assert child frame action is initialized as expected
@@ -458,7 +457,7 @@ class HederaTracerTest {
         given(worldUpdater.aliases()).willReturn(contractAliases);
         given(contractAliases.resolveForEvm(originator)).willReturn(originator);
         given(contractAliases.resolveForEvm(accountReceiver)).willReturn(accountReceiver);
-        given(worldUpdater.getAccount(accountReceiver)).willReturn(mock(EvmAccount.class));
+        given(worldUpdater.getAccount(accountReceiver)).willReturn(mock(MutableAccount.class));
 
         subject.init(messageFrame);
         // when
@@ -746,7 +745,7 @@ class HederaTracerTest {
         given(worldUpdater.aliases()).willReturn(contractAliases);
         given(contractAliases.resolveForEvm(originator)).willReturn(originator);
         given(contractAliases.resolveForEvm(contract)).willReturn(contract);
-        given(worldUpdater.getAccount(contract)).willReturn(mock(EvmAccount.class));
+        given(worldUpdater.getAccount(contract)).willReturn(mock(MutableAccount.class));
 
         subject.init(messageFrame);
 
@@ -872,7 +871,7 @@ class HederaTracerTest {
         given(worldUpdater.aliases()).willReturn(contractAliases);
         given(contractAliases.resolveForEvm(originator)).willReturn(originator);
         given(contractAliases.resolveForEvm(contract)).willReturn(contract);
-        given(worldUpdater.getAccount(contract)).willReturn(mock(EvmAccount.class));
+        given(worldUpdater.getAccount(contract)).willReturn(mock(MutableAccount.class));
         subject.init(messageFrame);
         // after some operations, the top level message frame spawns a child
         final Deque<MessageFrame> dequeMock = new ArrayDeque<>();
@@ -905,7 +904,7 @@ class HederaTracerTest {
         given(contractAliases.resolveForEvm(originator)).willReturn(originator);
         given(contractAliases.resolveForEvm(contract)).willReturn(contract);
         if (frameType == Type.MESSAGE_CALL) {
-            given(worldUpdater.getAccount(contract)).willReturn(mock(EvmAccount.class));
+            given(worldUpdater.getAccount(contract)).willReturn(mock(MutableAccount.class));
         }
 
         subject.tracePostExecution(messageFrame, operationResult);

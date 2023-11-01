@@ -58,8 +58,6 @@ public final class EqualsVerifier {
         final long DELTA = 1L << 32;
         final long roundCreated = r.nextLong(Long.MAX_VALUE - DELTA);
         final long roundReceived = roundCreated + r.nextLong(DELTA);
-        data.setRoundCreated(roundCreated);
-        data.setStale(r.nextBoolean());
         data.setRoundReceived(roundReceived);
         data.setConsensusOrder(r.nextLong(Long.MAX_VALUE));
         data.setConsensusTimestamp(randomInstant(r));

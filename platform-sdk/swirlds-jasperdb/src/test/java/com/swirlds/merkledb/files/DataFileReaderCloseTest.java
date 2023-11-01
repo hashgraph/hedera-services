@@ -16,6 +16,8 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
+
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
@@ -109,7 +111,7 @@ class DataFileReaderCloseTest {
             Path filePath = null;
             try {
                 final DataFileWriterPbj<long[]> writer =
-                        new DataFileWriterPbj<>("test", tmpDir, i, serializer, Instant.now());
+                        new DataFileWriterPbj<>("test", tmpDir, i, serializer, Instant.now(), INITIAL_COMPACTION_LEVEL);
                 filePath = writer.getPath();
                 final DataFileMetadata metadata = writer.getMetadata();
                 final LongList index = new LongListOffHeap();

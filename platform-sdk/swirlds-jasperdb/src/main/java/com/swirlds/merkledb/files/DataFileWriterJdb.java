@@ -35,9 +35,9 @@ import java.util.Arrays;
  * be variable or fixed size and is considered as a black box. All access to contents of the data
  * item is done via the DataItemSerializer.
  *
- * <b>This is designed to be used from a single thread.</b>
+ * <p><b>This is designed to be used from a single thread.</b>
  *
- * At the end of the file it is padded till a 4096 byte page boundary then a footer page is
+ * <p>At the end of the file it is padded till a 4096 byte page boundary then a footer page is
  * written by DataFileMetadata.
  *
  * @param <D> Data item type
@@ -68,14 +68,23 @@ public final class DataFileWriterJdb<D> extends DataFileWriterPbj<D> {
             final Path dataFileDir,
             final int index,
             final DataItemSerializer<D> dataItemSerializer,
-            final Instant creationTime)
+            final Instant creationTime,
+            final int compactionLevel)
             throws IOException {
-        super(filePrefix, dataFileDir, index, dataItemSerializer, creationTime, DataFileCommon.FILE_EXTENSION_JDB);
+        super(
+                filePrefix,
+                dataFileDir,
+                index,
+                dataItemSerializer,
+                creationTime,
+                compactionLevel,
+                DataFileCommon.FILE_EXTENSION_JDB);
         metadata = new DataFileMetadataJdb(
                 0, // data item count will be updated later in finishWriting()
                 index,
                 creationTime,
-                dataItemSerializer.getCurrentDataVersion());
+                dataItemSerializer.getCurrentDataVersion(),
+                compactionLevel);
         moveMmapBuffer(0);
     }
 

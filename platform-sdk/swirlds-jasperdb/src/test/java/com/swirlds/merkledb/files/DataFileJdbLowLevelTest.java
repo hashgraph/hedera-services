@@ -18,6 +18,7 @@ package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.files.DataFileCommon.FILE_EXTENSION_JDB;
 import static com.swirlds.merkledb.files.DataFileCommon.createDataFilePath;
+import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -110,7 +111,12 @@ class DataFileJdbLowLevelTest {
     void createFile(FilesTestType testType) throws IOException {
         // open file and write data
         DataFileWriterJdb<long[]> writer = new DataFileWriterJdb<>(
-                "test_" + testType.name(), tempFileDir, DATA_FILE_INDEX, testType.dataItemSerializer, TEST_START);
+                "test_" + testType.name(),
+                tempFileDir,
+                DATA_FILE_INDEX,
+                testType.dataItemSerializer,
+                TEST_START,
+                INITIAL_COMPACTION_LEVEL);
         LongArrayList listOfDataItemLocations = new LongArrayList(1000);
         for (int i = 0; i < 1000; i++) {
             long[] dataValue;
@@ -320,7 +326,8 @@ class DataFileJdbLowLevelTest {
                 tempFileDir,
                 DATA_FILE_INDEX + 1,
                 testType.dataItemSerializer,
-                TEST_START.plus(1, ChronoUnit.SECONDS));
+                TEST_START.plus(1, ChronoUnit.SECONDS),
+                INITIAL_COMPACTION_LEVEL);
 
         final var dataFile = dataFileMap.get(testType);
         final var dataFileMetadata = dataFileMetadataMap.get(testType);

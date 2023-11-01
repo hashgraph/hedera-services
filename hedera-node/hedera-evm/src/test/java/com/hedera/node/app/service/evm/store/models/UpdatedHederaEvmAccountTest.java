@@ -41,14 +41,14 @@ class UpdatedHederaEvmAccountTest {
     private static final long newBalance = 200_000L;
     private static final int newNonce = 2;
     private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
-    private UpdateTrackingAccount subject;
+    private UpdateTrackingAccount<?> subject;
 
     @Mock
     private HederaEvmEntityAccess hederaEvmEntityAccess;
 
     @BeforeEach
     void setUp() {
-        subject = new UpdateTrackingAccount(address, null);
+        subject = new UpdateTrackingAccount<>(address, null);
         subject.setBalance(Wei.ONE);
         subject.setNonce(1L);
         subject.setEvmEntityAccess(hederaEvmEntityAccess);
@@ -56,7 +56,7 @@ class UpdatedHederaEvmAccountTest {
 
     @Test
     void testConstructor() {
-        UpdateTrackingAccount newSubject = new UpdateTrackingAccount(newAddress, null);
+        UpdateTrackingAccount<?> newSubject = new UpdateTrackingAccount<>(newAddress, null);
         assertEquals(newSubject.getAddress(), newAddress);
     }
 
@@ -106,7 +106,7 @@ class UpdatedHederaEvmAccountTest {
 
     @Test
     void getOriginalStorageValue() {
-        subject = new UpdateTrackingAccount(address, null);
+        subject = new UpdateTrackingAccount<>(address, null);
         assertEquals(ZERO, subject.getOriginalStorageValue(MIN_VALUE));
     }
 
@@ -126,11 +126,6 @@ class UpdatedHederaEvmAccountTest {
         subject.setStorageValue(MIN_VALUE, MIN_VALUE);
         subject.clearStorage();
         assertEquals(0, subject.getUpdatedStorage().size());
-    }
-
-    @Test
-    void getMutable() {
-        assertEquals(subject, subject.getMutable());
     }
 
     @Test

@@ -22,6 +22,7 @@ import static com.swirlds.common.units.UnitConstants.KIBIBYTES_TO_BYTES;
 import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static java.util.stream.Collectors.joining;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
@@ -45,7 +46,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -114,7 +114,7 @@ public final class DataFileCommon {
     public static final int PAGE_SIZE = 4096;
     /** Size of metadata footer written at end of file */
     public static final int FOOTER_SIZE = PAGE_SIZE;
-    /** Comparator for comparing DataFileReaders by file creation time */
+
     private static final Comparator<DataFileReader> DATA_FILE_READER_CREATION_TIME_COMPARATOR =
             Comparator.comparing(o -> o.getMetadata().getCreationDate());
 
@@ -128,6 +128,8 @@ public final class DataFileCommon {
             new FieldDefinition("itemsCount", FieldType.FIXED64, false, true, false, 4);
     static final FieldDefinition FIELD_DATAFILE_ITEM_VERSION =
             new FieldDefinition("itemsVersion", FieldType.UINT64, false, true, false, 5);
+    static final FieldDefinition FIELD_DATAFILE_COMPACTION_LEVEL =
+            new FieldDefinition("compactionLevel", FieldType.UINT32, false, true, false, 6);
     static final FieldDefinition FIELD_DATAFILE_ITEMS =
             new FieldDefinition("items", FieldType.MESSAGE, true, true, false, 11);
 
@@ -141,23 +143,6 @@ public final class DataFileCommon {
     public static void closeMmapBuffer(final MappedByteBuffer buffer) {
         assert buffer != null;
         UNSAFE.invokeCleaner(buffer);
-    }
-
-    /**
-     * Create a filter to only return all old files that are smaller than given size.
-     *
-     * @param sizeMB max file size to accept in MB
-     * @param maxNumberOfFilesInMerge The maximum number of files to process in a single merge
-     * @return filter to filter list of files
-     */
-    public static UnaryOperator<List<DataFileReader>> oldestFilesSmallerThan(
-            final int sizeMB, final int maxNumberOfFilesInMerge) {
-        final long sizeBytes = sizeMB * (long) MEBIBYTES_TO_BYTES;
-        return dataFileReaders -> dataFileReaders.stream()
-                .filter(reader -> reader.getSize() < sizeBytes)
-                .sorted(DATA_FILE_READER_CREATION_TIME_COMPARATOR)
-                .limit(maxNumberOfFilesInMerge)
-                .toList();
     }
 
     /**
@@ -328,9 +313,9 @@ public final class DataFileCommon {
      * @param filePaths collection of paths to files
      * @return total number of bytes take for all the files in filePaths
      */
-    public static <D> long getSizeOfFiles(final Iterable<DataFileReader<D>> filePaths) {
+    public static long getSizeOfFiles(final Iterable<? extends DataFileReader<?>> filePaths) {
         long totalSize = 0;
-        for (final DataFileReader<D> dataFileReader : filePaths) {
+        for (final DataFileReader<?> dataFileReader : filePaths) {
             totalSize += dataFileReader.getSize();
         }
         return totalSize;
@@ -373,37 +358,58 @@ public final class DataFileCommon {
         return (double) Math.round(d * ROUNDING_SCALE_FACTOR) / ROUNDING_SCALE_FACTOR;
     }
 
-    public static <D> void logMergeStats(
+    public static void logCompactStats(
             final String storeName,
-            final double tookSeconds,
-            final Collection<DataFileReader<D>> filesToMerge,
+            final double tookMillis,
+            final Collection<? extends DataFileReader<?>> filesToMerge,
             final long filesToMergeSize,
             final List<Path> mergedFiles,
-            final DataFileCollection<D> fileCollection)
+            int targetCompactionLevel,
+            final DataFileCollection<?> fileCollection)
             throws IOException {
         final long mergedFilesCount = mergedFiles.size();
         final long mergedFilesSize = getSizeOfFilesByPath(mergedFiles);
+        final double tookSeconds = tookMillis / 1000;
+        String levelsCompacted = filesToMerge.stream()
+                .map(v -> v.getMetadata().getCompactionLevel())
+                .distinct()
+                .map(v -> Integer.toString(v))
+                .sorted()
+                .collect(joining(","));
+
+        Object[] fileToMergeIndexes = filesToMerge.stream()
+                .map(reader -> reader.getMetadata().getIndex())
+                .toArray();
+        Object[] allFileIndexes = fileCollection.getAllCompletedFiles().stream()
+                .map(reader -> reader.getMetadata().getIndex())
+                .toArray();
         logger.info(
                 MERKLE_DB.getMarker(),
+                // Note that speed of read and write doesn't exactly map to the real read/write speed
+                // because we consult in-memory index and skip some entries. Effective read/write speed
+                // in this context means how much data files were covered by the compaction.
                 """
-                        [{}] Merged {} file(s) / {} into {} file(s) / {} in {} second(s)
-                                read at {} written at {}
-                                filesToMerge = {}
-                                allFilesAfter = {}""",
+                        [{}] Compacted {} file(s) / {} at level {} into {} file(s) of level {} / {} in {} second(s)
+                                effectively read at {} effectively written at {},
+                                compactedFiles[{}] = {},
+                                filesToMerge[{}] = {}
+                                allFilesAfter[{}] = {}""",
                 storeName,
                 filesToMerge.size(),
                 formatSizeBytes(filesToMergeSize),
+                levelsCompacted,
                 mergedFilesCount,
+                targetCompactionLevel,
                 formatSizeBytes(mergedFilesSize),
                 tookSeconds,
                 formatSizeBytes((long) (filesToMergeSize / tookSeconds)) + "/sec",
                 formatSizeBytes((long) (mergedFilesSize / tookSeconds)) + "/sec",
-                Arrays.toString(filesToMerge.stream()
-                        .map(reader -> reader.getMetadata().getIndex())
-                        .toArray()),
-                Arrays.toString(fileCollection.getAllCompletedFiles().stream()
-                        .map(reader -> reader.getMetadata().getIndex())
-                        .toArray()));
+                mergedFilesCount,
+                Arrays.toString(mergedFiles.stream().map(Path::getFileName).toArray()),
+                fileToMergeIndexes.length,
+                Arrays.toString(fileToMergeIndexes),
+                allFileIndexes.length,
+                Arrays.toString(allFileIndexes));
     }
 
     /**
