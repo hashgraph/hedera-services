@@ -548,7 +548,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * @return true if the state has enough signatures so that it can be trusted to be valid
      */
-    public boolean isVerifiable(){
+    public boolean isVerifiable() {
         return recoveryState | signedBy(MAJORITY);
     }
 
@@ -559,7 +559,8 @@ public class SignedState implements SignedStateInfo {
      * @return true if this state is signed by the threshold, false otherwise
      */
     private boolean signedBy(@NonNull final Threshold threshold) {
-        return Objects.requireNonNull(threshold).isSatisfiedBy(signingWeight, getAddressBook().getTotalWeight());
+        return Objects.requireNonNull(threshold)
+                .isSatisfiedBy(signingWeight, getAddressBook().getTotalWeight());
     }
 
     /**

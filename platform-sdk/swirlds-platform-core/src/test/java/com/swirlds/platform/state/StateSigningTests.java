@@ -130,7 +130,8 @@ class StateSigningTests {
             }
 
             assertEquals(
-                    SUPER_MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()), signedState.isComplete());
+                    SUPER_MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()),
+                    signedState.isComplete());
             assertEquals(
                     MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()), signedState.isVerifiable());
             assertEquals(expectedWeight, signedState.getSigningWeight());
@@ -232,7 +233,8 @@ class StateSigningTests {
             }
 
             assertEquals(
-                    SUPER_MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()), signedState.isComplete());
+                    SUPER_MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()),
+                    signedState.isComplete());
             assertEquals(
                     MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()), signedState.isVerifiable());
             assertEquals(expectedWeight, signedState.getSigningWeight());
