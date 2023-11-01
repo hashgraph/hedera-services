@@ -17,15 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.nfttokeninfo;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CIVILIAN_OWNED_NFT;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTED_FIXED_CUSTOM_FEES;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTED_FRACTIONAL_CUSTOM_FEES;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTED_ROYALTY_CUSTOM_FEES;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTE_KEYLIST;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_EVERYTHING_TOKEN;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.LEDGER_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
@@ -58,11 +50,11 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
         when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID));
         when(nativeOperations.getNft(FUNGIBLE_EVERYTHING_TOKEN.tokenId().tokenNum(), 2L))
                 .thenReturn(CIVILIAN_OWNED_NFT);
+        when(nativeOperations.getAccount(191919)).thenReturn(SOMEBODY);
 
         final var subject =
                 new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, 2L, config);
         String ledgerIdBytes =  com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID).toString();
-
         final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
@@ -92,7 +84,7 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
                                                 EXPECTED_ROYALTY_CUSTOM_FEES.toArray(new Tuple[0]),
                                                 ledgerIdBytes),
                                         2L,
-                                        Address.wrap("0x0000000000000000000000000000000000000000"),
+                                        Address.wrap("0x000000000000000000000000000000000002EdaF"),
                                         1000000L,
                                         com.hedera.pbj.runtime.io.buffer.Bytes.wrap("SOLD")
                                                 .toByteArray(),

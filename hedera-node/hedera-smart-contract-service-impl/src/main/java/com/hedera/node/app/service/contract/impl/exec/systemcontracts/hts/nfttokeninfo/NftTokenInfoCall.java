@@ -93,7 +93,6 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         if (ownerAccount == null) {
             return revertResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement());
         }
-
         return successResult(
                 NON_FUNGIBLE_TOKEN_INFO
                         .getOutputs()
