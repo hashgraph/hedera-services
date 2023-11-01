@@ -89,7 +89,7 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         }
 
         final var nonNullNft = nft != null ? nft : Nft.DEFAULT;
-        Account ownerAccount = getAccount(nft, token);
+        Account ownerAccount = getOwnerAccount(nft, token);
         return successResult(
                 NON_FUNGIBLE_TOKEN_INFO
                         .getOutputs()
@@ -98,7 +98,7 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
                 gasRequirement);
     }
 
-    private Account getAccount (Nft nft, Token token) {
+    private Account getOwnerAccount (Nft nft, Token token) {
         final var explicitId = nft.ownerIdOrElse(AccountID.DEFAULT);
         final long ownerNum;
         if (explicitId.accountNumOrElse(TREASURY_OWNER_NUM) == TREASURY_OWNER_NUM) {
@@ -106,6 +106,9 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
         } else {
             ownerNum = explicitId.accountNumOrThrow();
         }
-        return nativeOperations().getAccount(ownerNum);
+        Account ownerAccount = nativeOperations().getAccount(ownerNum);
+        return ownerAccount == null ?
+                Account.newBuilder().accountId(AccountID.newBuilder().accountNum(TREASURY_OWNER_NUM).build()).build() :
+                ownerAccount;
     }
 }
