@@ -35,7 +35,7 @@ import java.util.Arrays;
 public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Serializable {
     private static final int SHORT_STRING_BYTES = 4;
     public static final long CLASS_ID = 0xf422da83a251741eL;
-    private static final int CLASS_VERSION = 1;
+    public static final int CLASS_VERSION = 1;
 
     private byte[] value;
     private DigestType digestType;
