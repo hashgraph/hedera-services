@@ -293,6 +293,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
+    @HapiTest
     private HapiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
         return defaultHapiSpec("invalidSingleAbiCallConsumesAllProvidedGas")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))

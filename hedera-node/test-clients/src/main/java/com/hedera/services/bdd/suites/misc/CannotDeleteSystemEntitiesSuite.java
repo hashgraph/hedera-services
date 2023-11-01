@@ -58,21 +58,21 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
             ensureSystemAccountsHaveSomeFunds(),
-            systemUserCannotDeleteSystemAccounts(1, 100, GENESIS),
-            systemUserCannotDeleteSystemAccounts(700, 750, GENESIS),
-            systemUserCannotDeleteSystemAccounts(1, 100, SYSTEM_ADMIN),
-            systemUserCannotDeleteSystemAccounts(700, 750, SYSTEM_ADMIN),
-            systemUserCannotDeleteSystemAccounts(1, 100, SYSTEM_DELETE_ADMIN),
-            systemUserCannotDeleteSystemAccounts(700, 750, SYSTEM_DELETE_ADMIN),
-            normalUserCannotDeleteSystemAccounts(1, 100),
-            normalUserCannotDeleteSystemAccounts(700, 750),
-            systemUserCannotDeleteSystemFiles(sysFileIds, GENESIS),
-            systemUserCannotDeleteSystemFiles(sysFileIds, SYSTEM_ADMIN),
-            systemUserCannotDeleteSystemFiles(sysFileIds, SYSTEM_DELETE_ADMIN),
-            normalUserCannotDeleteSystemFiles(sysFileIds),
-            systemDeleteCannotDeleteSystemFiles(sysFileIds, GENESIS),
-            systemDeleteCannotDeleteSystemFiles(sysFileIds, SYSTEM_ADMIN),
-            systemDeleteCannotDeleteSystemFiles(sysFileIds, SYSTEM_DELETE_ADMIN)
+            genesisCannotDeleteSystemAccountsFrom1To100(),
+            genesisCannotDeleteSystemAccountsFrom700To750(),
+            systemAdminCannotDeleteSystemAccountsFrom1To100(),
+            systemAdminCannotDeleteSystemAccountsFrom700To750(),
+            systemDeleteAdminCannotDeleteSystemAccountsFrom1To100(),
+            systemDeleteAdminCannotDeleteSystemAccountsFrom700To750(),
+            normalUserCannotDeleteSystemAccountsFrom1To100(),
+            normalUserCannotDeleteSystemAccountsFrom700To750(),
+            genesisCannotDeleteSystemFileIds(),
+            systemAdminCannotDeleteSystemFileIds(),
+            systemDeleteAdminCannotDeleteSystemFileIds(),
+            normalUserCannotDeleteSystemFileIds(),
+            genesisCannotSystemFileDeleteFileIds(),
+            systemAdminCannotSystemFileDeleteFileIds(),
+            systemDeleteAdminCannotSystemFileDeleteFileIds()
         });
     }
 
@@ -86,6 +86,81 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                                 .payingWith(GENESIS),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_DELETE_ADMIN, 10 * ONE_HUNDRED_HBARS))
                                 .payingWith(GENESIS));
+    }
+
+    @HapiTest
+    private HapiSpec genesisCannotDeleteSystemAccountsFrom1To100() {
+        return systemUserCannotDeleteSystemAccounts(1, 100, GENESIS);
+    }
+
+    @HapiTest
+    private HapiSpec genesisCannotDeleteSystemAccountsFrom700To750() {
+        return systemUserCannotDeleteSystemAccounts(700, 750, GENESIS);
+    }
+
+    @HapiTest
+    private HapiSpec systemAdminCannotDeleteSystemAccountsFrom1To100() {
+        return systemUserCannotDeleteSystemAccounts(1, 100, SYSTEM_ADMIN);
+    }
+
+    @HapiTest
+    private HapiSpec systemAdminCannotDeleteSystemAccountsFrom700To750() {
+        return systemUserCannotDeleteSystemAccounts(700, 750, SYSTEM_ADMIN);
+    }
+
+    @HapiTest
+    private HapiSpec systemDeleteAdminCannotDeleteSystemAccountsFrom1To100() {
+        return systemUserCannotDeleteSystemAccounts(1, 100, SYSTEM_DELETE_ADMIN);
+    }
+
+    @HapiTest
+    private HapiSpec systemDeleteAdminCannotDeleteSystemAccountsFrom700To750() {
+        return systemUserCannotDeleteSystemAccounts(700, 750, SYSTEM_DELETE_ADMIN);
+    }
+
+    @HapiTest
+    private HapiSpec normalUserCannotDeleteSystemAccountsFrom1To100() {
+        return normalUserCannotDeleteSystemAccounts(1, 100);
+    }
+
+    @HapiTest
+    private HapiSpec normalUserCannotDeleteSystemAccountsFrom700To750() {
+        return normalUserCannotDeleteSystemAccounts(700, 750);
+    }
+
+    @HapiTest
+    private HapiSpec genesisCannotDeleteSystemFileIds() {
+        return systemUserCannotDeleteSystemFiles(sysFileIds, GENESIS);
+    }
+
+    @HapiTest
+    private HapiSpec systemAdminCannotDeleteSystemFileIds() {
+        return systemUserCannotDeleteSystemFiles(sysFileIds, SYSTEM_ADMIN);
+    }
+
+    @HapiTest
+    private HapiSpec systemDeleteAdminCannotDeleteSystemFileIds() {
+        return systemUserCannotDeleteSystemFiles(sysFileIds, SYSTEM_DELETE_ADMIN);
+    }
+
+    @HapiTest
+    private HapiSpec normalUserCannotDeleteSystemFileIds() {
+        return normalUserCannotDeleteSystemFiles(sysFileIds);
+    }
+
+    @HapiTest
+    private HapiSpec genesisCannotSystemFileDeleteFileIds() {
+        return systemDeleteCannotDeleteSystemFiles(sysFileIds, GENESIS);
+    }
+
+    @HapiTest
+    private HapiSpec systemAdminCannotSystemFileDeleteFileIds() {
+        return systemDeleteCannotDeleteSystemFiles(sysFileIds, SYSTEM_ADMIN);
+    }
+
+    @HapiTest
+    private HapiSpec systemDeleteAdminCannotSystemFileDeleteFileIds() {
+        return systemDeleteCannotDeleteSystemFiles(sysFileIds, SYSTEM_DELETE_ADMIN);
     }
 
     private HapiSpec systemUserCannotDeleteSystemAccounts(int firstAccount, int lastAccount, String sysUser) {

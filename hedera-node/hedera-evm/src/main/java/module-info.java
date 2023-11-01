@@ -3,6 +3,7 @@ module com.hedera.node.app.service.evm {
     requires transitive com.hedera.node.hapi;
     requires transitive com.github.benmanes.caffeine;
     requires transitive com.google.protobuf;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
     requires transitive dagger;
     requires transitive headlong;

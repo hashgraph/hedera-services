@@ -41,7 +41,6 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.HashMap;
@@ -97,17 +96,17 @@ public class WritableStoreFactory {
     /**
      * Constructor of {@code WritableStoreFactory}
      *
-     * @param stack       the {@link HederaState} to use
+     * @param state       the {@link HederaState} to use
      * @param serviceName the name of the service to create stores for
      * @throws NullPointerException     if one of the arguments is {@code null}
      * @throws IllegalArgumentException if the service name is unknown
      */
-    public WritableStoreFactory(@NonNull final SavepointStackImpl stack, @NonNull final String serviceName) {
-        requireNonNull(stack, "The argument 'stack' cannot be null!");
+    public WritableStoreFactory(@NonNull final HederaState state, @NonNull final String serviceName) {
+        requireNonNull(state, "The argument 'stack' cannot be null!");
         requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
 
         this.serviceName = serviceName;
-        this.states = stack.createWritableStates(serviceName);
+        this.states = state.createWritableStates(serviceName);
     }
 
     /**
