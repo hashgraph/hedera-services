@@ -22,7 +22,11 @@ plugins {
 }
 
 dependencies.components {
-    withModule<IoGrpcMetadataRule>("io.helidon.grpc:io.grpc")
+    // TODO remove, once a new version of 'com.hedera.pbj.runtime' has been
+    //  published with fix from https://github.com/hashgraph/pbj/pull/92
+    withModule("com.hedera.pbj:pbj-runtime") {
+        allVariants { withDependencies { removeAll { it.name != "antlr4-runtime" } } }
+    }
 
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-netty")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-protobuf")
@@ -31,17 +35,21 @@ dependencies.components {
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-stub")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-testing")
 
+    withModule<RemoveAnnotationLibrariesMetadataRule>("com.github.ben-manes.caffeine:caffeine")
+    withModule<RemoveAnnotationLibrariesMetadataRule>("com.github.spotbugs:spotbugs-annotations")
+    withModule<RemoveAnnotationLibrariesMetadataRule>("com.google.dagger:dagger-compiler")
+    withModule<RemoveAnnotationLibrariesMetadataRule>("com.google.dagger:dagger-spi")
+    withModule<RemoveAnnotationLibrariesMetadataRule>("com.google.guava:guava")
+    withModule<RemoveAnnotationLibrariesMetadataRule>("com.google.protobuf:protobuf-java-util")
+    withModule<RemoveAnnotationLibrariesMetadataRule>("io.helidon.grpc:io.grpc")
+    withModule<RemoveAnnotationLibrariesMetadataRule>("org.apache.tuweni:tuweni-bytes")
+    withModule<RemoveAnnotationLibrariesMetadataRule>("org.apache.tuweni:tuweni-units")
+
     withModule<IoNettyNativeEpollMetadataRule>("io.netty:netty-transport-native-epoll")
 
     withModule<IoPrometheusSimpleclientMetadataRule>("io.prometheus:simpleclient")
 
-    withModule<RemoveFindbugsAnnotationsMetadataRule>("com.github.spotbugs:spotbugs-annotations")
-    withModule<RemoveFindbugsAnnotationsMetadataRule>("com.google.dagger:dagger-compiler")
-    withModule<RemoveFindbugsAnnotationsMetadataRule>("com.google.dagger:dagger-spi")
-    withModule<RemoveFindbugsAnnotationsMetadataRule>("com.google.guava:guava")
-    withModule<RemoveFindbugsAnnotationsMetadataRule>("com.google.protobuf:protobuf-java-util")
-    withModule<RemoveFindbugsAnnotationsMetadataRule>("org.apache.tuweni:tuweni-bytes")
-    withModule<RemoveFindbugsAnnotationsMetadataRule>("org.apache.tuweni:tuweni-units")
+    withModule<RemoveKotlinStdlibCommonMetadataRule>("org.jetbrains.kotlin:kotlin-stdlib")
 }
 
 extraJavaModuleInfo {
@@ -85,24 +93,12 @@ extraJavaModuleInfo {
         requireAllDefinedDependencies()
         requires("java.logging")
     }
-    module("com.google.protobuf:protobuf-java-util", "com.google.protobuf.util") {
-        exportAllPackages()
-        requireAllDefinedDependencies()
-    }
-    module("com.google.errorprone:error_prone_annotations", "com.google.errorprone.annotations") {
-        exportAllPackages()
-        // no dependencies
-    }
     module("com.google.guava:guava", "com.google.common") {
         exportAllPackages()
         requireAllDefinedDependencies()
         requires("java.logging")
     }
     module("com.google.guava:failureaccess", "com.google.guava.failureaccess") {
-        exportAllPackages()
-        // no dependencies
-    }
-    module("com.google.j2objc:j2objc-annotations", "com.google.j2objc.annotations") {
         exportAllPackages()
         // no dependencies
     }
@@ -154,19 +150,15 @@ extraJavaModuleInfo {
         exportAllPackages()
         requires("org.connid.framework") // this is missing in POM
     }
-    module("com.offbynull.portmapper:portmapper", "portmapper") {
-        exportAllPackages()
-        requireAllDefinedDependencies()
-    }
     module("org.jetbrains:annotations", "org.jetbrains.annotations") {
         exportAllPackages()
         // no dependencies
     }
-    module("org.apache.tuweni:tuweni-units", "tuweni.units") {
+    module("io.tmio:tuweni-units", "tuweni.units") {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
-    module("org.apache.tuweni:tuweni-bytes", "tuweni.bytes") {
+    module("io.tmio:tuweni-bytes", "tuweni.bytes") {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
@@ -174,101 +166,200 @@ extraJavaModuleInfo {
         exportAllPackages()
         // no dependencies
     }
-    module("io.netty:netty-transport-native-epoll", "io.netty.transport.epoll") {
+    module("io.netty:netty-codec-http", "io.netty.codec.http") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("io.netty:netty-codec-http2", "io.netty.codec.http2") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("io.netty:netty-codec-socks", "io.netty.codec.socks") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("io.netty:netty-handler-proxy", "io.netty.handler.proxy") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("io.netty:netty-transport-native-unix-common", "io.netty.transport.unix.common") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("io.netty:netty-buffer", "io.netty.buffer") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("io.netty:netty-codec", "io.netty.codec") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("io.netty:netty-common", "io.netty.common") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("io.netty:netty-handler", "io.netty.handler") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("io.netty:netty-resolver", "io.netty.resolver") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("io.netty:netty-transport", "io.netty.transport") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("io.netty:netty-transport-classes-epoll", "io.netty.transport.classes.epoll") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.antlr:antlr4-runtime", "org.antlr.antlr4.runtime") {
         exportAllPackages()
         // no dependencies
     }
+    module("org.yaml:snakeyaml", "org.yaml.snakeyaml") {
+        exportAllPackages()
+        // no dependencies
+    }
+    module("org.hyperledger.besu.internal:algorithms", "org.hyperledger.besu.internal.algorithms") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.hyperledger.besu.internal:rlp", "org.hyperledger.besu.internal.rlp") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.hyperledger.besu:arithmetic", "org.hyperledger.besu.arithmetic") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.blake2bf") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.hyperledger.besu:bls12-381", "org.hyperledger.besu.bls12.for381") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.hyperledger.besu:besu-datatypes", "org.hyperledger.besu.datatypes") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.hyperledger.besu:evm", "org.hyperledger.besu.evm") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.hyperledger.besu:plugin-api", "org.hyperledger.besu.plugin.api") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.hyperledger.besu:secp256k1", "org.hyperledger.besu.secp256k1") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("org.hyperledger.besu:secp256r1", "org.hyperledger.besu.secp256r1") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("com.goterl:resource-loader", "resource.loader") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+
+    module("com.goterl:lazysodium-java", "lazysodium.java") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("tech.pegasys:jc-kzg-4844", "tech.pegasys.jckzg4844") {
+        exportAllPackages()
+        // no dependencies
+    }
+    module("net.java.dev.jna:jna", "com.sun.jna") {
+        exportAllPackages()
+        // no dependencies
+    }
+    module("org.eclipse.collections:eclipse-collections-api", "org.eclipse.collections.api") {
+        exportAllPackages()
+        // no dependencies
+    }
+    module("org.eclipse.collections:eclipse-collections", "org.eclipse.collections.impl") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("io.prometheus:simpleclient", "io.prometheus.simpleclient") {
+        exportAllPackages()
+        // no dependencies
+    }
+    module("io.prometheus:simpleclient_common", "io.prometheus.simpleclient_common") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
+    module("io.prometheus:simpleclient_httpserver", "io.prometheus.simpleclient.httpserver") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+        requires("jdk.httpserver")
+    }
+
+    // Need to use Jar file names here as there is currently no other way to address Jar with
+    // classifier directly for patching
+    module(
+        "netty-transport-native-epoll-4.1.87.Final-linux-x86_64.jar",
+        "io.netty.transport.epoll.linux.x86_64"
+    )
+    module(
+        "netty-transport-native-epoll-4.1.87.Final-linux-aarch_64.jar",
+        "io.netty.transport.epoll.linux.aarch_64"
+    )
 
     knownModule("com.github.ben-manes.caffeine:caffeine", "com.github.benmanes.caffeine")
     knownModule("com.google.code.gson:gson", "com.google.gson")
-    knownModule("com.swirlds:swirlds-common", "com.swirlds.common")
-    knownModule("com.swirlds:swirlds-fchashmap", "com.swirlds.fchashmap")
-    knownModule("com.swirlds:swirlds-fcqueue", "com.swirlds.fcqueue")
-    knownModule("com.swirlds:swirlds-merkle", "com.swirlds.merkle")
-    knownModule("com.swirlds:swirlds-merkledb", "com.swirlds.merkledb")
-    knownModule("com.swirlds:swirlds-platform-core", "com.swirlds.platform.core")
-    knownModule("com.swirlds:swirlds-virtualmap", "com.swirlds.virtualmap")
-    knownModule("io.github.classgraph:classgraph", "io.github.classgraph")
     knownModule("io.helidon.grpc:io.grpc", "io.grpc")
-    knownModule("io.netty:netty-codec-http2", "io.netty.codec.http2")
-    knownModule("io.netty:netty-handler-proxy", "io.netty.handler.proxy")
-    knownModule("io.netty:netty-transport-native-unix-common", "io.netty.transport.unix.common")
-    knownModule("junit:junit", "junit")
     knownModule("org.apache.logging.log4j:log4j-api", "org.apache.logging.log4j")
-    knownModule("org.apache.logging.log4j:log4j-core", "org.apache.logging.log4j.core")
+    knownModule("org.apache.logging.log4j:log4j-slf4j2-impl", "org.apache.logging.log4j.slf4j")
+    knownModule("org.bouncycastle:bcpkix-jdk18on", "org.bouncycastle.pkix")
+    knownModule("org.bouncycastle:bcprov-jdk18on", "org.bouncycastle.provider")
+    knownModule("org.bouncycastle:bcutil-jdk18on", "org.bouncycastle.util")
     knownModule("org.jetbrains.kotlin:kotlin-stdlib-jdk8", "kotlin.stdlib.jdk8")
     knownModule("org.slf4j:slf4j-api", "org.slf4j")
     knownModule("jakarta.inject:jakarta.inject-api", "jakarta.inject")
 
-    // Kotlin has to be automatic modules because of split package mess
-    automaticModule("org.jetbrains.kotlin:kotlin-stdlib-common", "kotlin.stdlib.common")
-    automaticModule("org.jetbrains.kotlinx:kotlinx-metadata-jvm", "kotlinx.metadata.jvm")
-
-    // automatic modules that can not be re-jared because they contain native libraries
-    automaticModule("com.goterl:lazysodium-java", "lazysodium.java")
-    automaticModule("com.goterl:resource-loader", "resource.loader")
-    automaticModule("org.hyperledger.besu:secp256k1", "org.hyperledger.besu.secp256k1")
-    automaticModule(
-        "org.hyperledger.besu.internal:algorithms",
-        "org.hyperledger.besu.internal.crypto"
-    )
-    automaticModule("tech.pegasys:jc-kzg-4844", "tech.pegasys.jckzg4844")
-
-    automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.util")
-    automaticModule("org.hyperledger.besu:bls12-381", "org.hyperledger.besu.bls12.for381")
-    automaticModule("org.hyperledger.besu:secp256r1", "org.hyperledger.besu.secp256r1")
-    automaticModule("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.blake2bf")
-    automaticModule("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.blake2bf")
-    automaticModule("net.java.dev.jna:jna", "com.sun.jna")
-    automaticModule("org.bouncycastle:bcprov-jdk18on", "org.bouncycastle.provider")
-    automaticModule("org.bouncycastle:bcpkix-jdk18on", "org.bouncycastle.pkix")
-
-    // automatic modules to make it build, might be able to move them full modules
-    automaticModule("com.google.android:annotations", "com.google.android.annotations")
-    automaticModule(
-        "org.codehaus.mojo:animal-sniffer-annotations",
-        "org.codehaus.mojo.animalsniffer.annotations"
-    )
-    automaticModule(
-        "org.eclipse.microprofile.health:microprofile-health-api",
-        "microprofile.health.api"
-    )
-    automaticModule("org.openjfx:javafx-base", "javafx.base")
-
-    // Compile Time Modules
-    automaticModule("net.ltgt.gradle.incap:incap", "net.ltgt.gradle.incap")
+    // Annotation processing only
     automaticModule("com.google.dagger:dagger-compiler", "dagger.compiler")
-    automaticModule("com.google.dagger:dagger-spi", "dagger.spi")
     automaticModule("com.google.dagger:dagger-producers", "dagger.producers")
-    automaticModule("com.google.errorprone:javac-shaded", "com.google.errorprone.javac.shaded")
-    automaticModule("com.google.googlejavaformat:google-java-format", "com.google.googlejavaformat")
+    automaticModule("com.google.dagger:dagger-spi", "dagger.spi")
     automaticModule(
         "com.google.devtools.ksp:symbol-processing-api",
         "com.google.devtools.ksp.symbolprocessingapi"
     )
-    automaticModule("org.hyperledger.besu:arithmetic", "org.hyperledger.besu.arithmetic")
+    automaticModule("com.google.errorprone:javac-shaded", "com.google.errorprone.javac.shaded")
+    automaticModule("com.google.googlejavaformat:google-java-format", "com.google.googlejavaformat")
     automaticModule("com.squareup:javapoet", "com.squareup.javapoet")
-    automaticModule("org.checkerframework:checker-qual", "org.checkerframework.checker.qual")
-    automaticModule("org.rnorth.duct-tape:duct-tape", "org.rnorth.ducttape")
-    automaticModule("io.opencensus:opencensus-api", "io.opencensus.api")
-    automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.internal.util")
-    automaticModule("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
-    automaticModule("io.perfmark:perfmark-api", "io.perfmark")
-    automaticModule(
-        "com.google.auto.value:auto-value-annotations",
-        "com.google.auto.value.annotations"
-    )
-    automaticModule("com.google.truth:truth", "com.google.truth")
+    automaticModule("net.ltgt.gradle.incap:incap", "net.ltgt.gradle.incap")
+    automaticModule("org.jetbrains.kotlinx:kotlinx-metadata-jvm", "kotlinx.metadata.jvm")
 
-    // Automatic modules for PBJ dependencies
-    automaticModule("org.antlr:antlr4", "org.antlr.antlr4")
-    automaticModule("org.antlr:antlr-runtime", "org.antlr.antlr.runtime")
-    automaticModule("org.antlr:ST4", "org.antlr.ST4")
-    automaticModule("org.abego.treelayout:org.abego.treelayout.core", "org.abego.treelayout.core")
-
-    // Test Related Modules
-    automaticModule("org.mockito:mockito-inline", "org.mockito.inline")
+    // Testing only
     automaticModule("com.google.jimfs:jimfs", "com.google.jimfs")
+    automaticModule("org.awaitility:awaitility", "awaitility")
+    automaticModule("org.hamcrest:hamcrest", "org.hamcrest")
+    automaticModule("org.hamcrest:hamcrest-core", "org.hamcrest.core")
+    automaticModule("org.mockito:mockito-inline", "org.mockito.inline")
+    automaticModule("uk.org.webcompere:system-stubs-core", "uk.org.webcompere.systemstubs.core")
+    automaticModule(
+        "uk.org.webcompere:system-stubs-jupiter",
+        "uk.org.webcompere.systemstubs.jupiter"
+    )
+    automaticModule("com.google.protobuf:protobuf-java-util", "com.google.protobuf.util")
+
+    // JMH only
+    automaticModule("net.sf.jopt-simple:jopt-simple", "jopt.simple")
+    automaticModule("org.openjdk.jmh:jmh-core", "jmh.core")
+    automaticModule("org.openjdk.jmh:jmh-generator-asm", "jmh.generator.asm")
+    automaticModule("org.openjdk.jmh:jmh-generator-bytecode", "jmh.generator.bytecode")
+    automaticModule("org.openjdk.jmh:jmh-generator-reflection", "jmh.generator.reflection")
+
+    // Test clients only
+    automaticModule("com.github.docker-java:docker-java-api", "com.github.docker.java.api")
     automaticModule(
         "com.github.docker-java:docker-java-transport",
         "com.github.docker.java.transport"
@@ -277,26 +368,7 @@ extraJavaModuleInfo {
         "com.github.docker-java:docker-java-transport-zerodep",
         "com.github.docker.transport.zerodep"
     )
-    automaticModule("com.github.docker-java:docker-java-api", "com.github.docker.java.api")
-    automaticModule("hamcrest-core-1.3.jar", "hamcrest.core")
-    automaticModule("org.awaitility:awaitility", "awaitility")
-    automaticModule("org.testcontainers:testcontainers", "org.testcontainers")
+    automaticModule("org.rnorth.duct-tape:duct-tape", "org.rnorth.ducttape")
     automaticModule("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
-    automaticModule("io.prometheus:simpleclient", "io.prometheus.simpleclient")
-    automaticModule("io.prometheus:simpleclient_common", "io.prometheus.simpleclient_common")
-    automaticModule(
-        "io.prometheus:simpleclient_httpserver",
-        "io.prometheus.simpleclient.httpserver"
-    )
-    automaticModule("org.openjdk.jmh:jmh-core", "jmh.core")
-    automaticModule("org.openjdk.jmh:jmh-generator-asm", "jmh.generator.asm")
-    automaticModule("org.openjdk.jmh:jmh-generator-bytecode", "jmh.generator.bytecode")
-    automaticModule("org.openjdk.jmh:jmh-generator-reflection", "jmh.generator.reflection")
-    automaticModule("net.sf.jopt-simple:jopt-simple", "jopt.simple")
-
-    automaticModule(
-        "uk.org.webcompere:system-stubs-jupiter",
-        "uk.org.webcompere.systemstubs.jupiter"
-    )
-    automaticModule("uk.org.webcompere:system-stubs-core", "uk.org.webcompere.systemstubs.core")
+    automaticModule("org.testcontainers:testcontainers", "org.testcontainers")
 }
