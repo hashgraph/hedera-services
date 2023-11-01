@@ -12,7 +12,7 @@ open module com.swirlds.virtualmap {
     requires transitive com.swirlds.config.api;
     requires com.swirlds.base;
     requires com.swirlds.logging;
-    requires org.apache.logging.log4j;
     requires java.management; // Test dependency
+    requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
 }
