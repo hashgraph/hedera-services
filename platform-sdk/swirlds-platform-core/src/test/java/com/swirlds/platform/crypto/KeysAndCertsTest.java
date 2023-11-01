@@ -57,7 +57,7 @@ class KeysAndCertsTest {
      * 		keys and certificates to use for testing
      */
     @ParameterizedTest
-    @MethodSource({"com.swirlds.platform.CryptoArgsProvider#basicTestArgs"})
+    @MethodSource({"com.swirlds.platform.crypto.CryptoArgsProvider#basicTestArgs"})
     void basicTest(@NonNull final AddressBook addressBook, @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts) {
         Objects.requireNonNull(addressBook, "addressBook must not be null");
         Objects.requireNonNull(keysAndCerts, "keysAndCerts must not be null");
