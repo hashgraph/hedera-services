@@ -163,11 +163,13 @@ public class OutputWire<OUT> {
     }
 
     /**
-     * Build a {@link WireFilter} that is soldered to the output of this wire.
+     * Build a {@link WireFilter}. The input wire to the filter is automatically soldered to this output wire (i.e. all
+     * data that comes out of the wire will be inserted into the filter). The output wire of the filter is returned by
+     * this method.
      *
      * @param name      the name of the filter
      * @param predicate the predicate that filters the output of this wire
-     * @return the filter
+     * @return the output wire of the filter
      */
     @NonNull
     public OutputWire<OUT> buildFilter(@NonNull final String name, @NonNull final Predicate<OUT> predicate) {
@@ -178,11 +180,13 @@ public class OutputWire<OUT> {
     }
 
     /**
-     * Build a {@link WireListSplitter} that is soldered to the output of this wire. Creating a splitter for wires
-     * without a list output type will cause runtime exceptions.
+     * Build a {@link WireListSplitter}. Creating a splitter for wires without a list output type will cause runtime
+     * exceptions. The input wire to the splitter is automatically soldered to this output wire (i.e. all data that
+     * comes out of the wire will be inserted into the splitter). The output wire of the splitter is returned by this
+     * method.
      *
      * @param <E> the type of the list elements
-     * @return the splitter
+     * @return output wire of the splitter
      */
     @SuppressWarnings("unchecked")
     @NonNull
@@ -194,27 +198,30 @@ public class OutputWire<OUT> {
 
     /**
      * Build a {@link WireListSplitter} that is soldered to the output of this wire. Creating a splitter for wires
-     * without a list output type will cause runtime exceptions.
+     * without a list output type will cause runtime exceptions. The input wire to the splitter is automatically
+     * soldered to this output wire (i.e. all data that comes out of the wire will be inserted into the splitter). The
+     * output wire of the splitter is returned by this method.
      *
      * @param clazz the class of the list elements, convince parameter for hinting generic type to the compiler
      * @param <T>   the type of the list elements
-     * @return the splitter
      */
     @NonNull
-    public <T> OutputWire<T> buildSplitter(@NonNull Class<T> clazz) {
+    public <T> OutputWire<T> buildSplitter(@NonNull final Class<T> clazz) {
         return buildSplitter();
     }
 
     /**
-     * Build a {@link WireTransformer} that is soldered to the output of this wire.
+     * Build a {@link WireTransformer}. The input wire to the transformer is automatically soldered to this output wire
+     * (i.e. all data that comes out of the wire will be inserted into the transformer). The output wire of the
+     * transformer is returned by this method.
      *
      * @param name      the name of the transformer
      * @param transform the function that transforms the output of this wire into the output of the transformer
      * @param <T>       the output type of the transformer
-     * @return the transformer
+     * @return the output wire of the transformer
      */
     @NonNull
-    public <T> OutputWire<T> buildTransformer(@NonNull final String name, @NonNull Function<OUT, T> transform) {
+    public <T> OutputWire<T> buildTransformer(@NonNull final String name, @NonNull final Function<OUT, T> transform) {
         final WireTransformer<OUT, T> transformer =
                 new WireTransformer<>(model, Objects.requireNonNull(name), Objects.requireNonNull(transform));
         solderTo(transformer.getName(), transformer);

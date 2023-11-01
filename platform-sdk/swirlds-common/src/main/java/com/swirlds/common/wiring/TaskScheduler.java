@@ -24,6 +24,15 @@ import java.util.function.Consumer;
 
 /**
  * Schedules tasks for a component.
+ * <p>
+ * The lifecycle of a task is as follows:
+ * <ol>
+ * <li>Unscheduled: the task has not been passed to the scheduler yet (e.g. via {@link InputWire#put(Object)})</li>
+ * <li>Scheduled but not processed: the task has been passed to the scheduler but the corresponding handler has not
+ * yet returned (either because the handler has not yet been called or because the handler has been called but hasn't finished
+ * yet)</li>
+ * <li>Processed: the corresponding handle method for the task has been called and has returned.</li>
+ * </ol>
  *
  * @param <OUT> the output type of the primary output wire (use {@link Void} if no output is needed)
  */

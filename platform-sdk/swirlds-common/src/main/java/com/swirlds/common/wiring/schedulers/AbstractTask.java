@@ -22,7 +22,7 @@ import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A unit of work that is handled by a task scheduler.
+ * A unit of work that is processed by a task scheduler.
  */
 public abstract class AbstractTask extends ForkJoinTask<Void> {
 

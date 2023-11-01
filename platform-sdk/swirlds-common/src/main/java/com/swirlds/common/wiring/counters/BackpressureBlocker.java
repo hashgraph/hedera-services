@@ -60,7 +60,9 @@ class BackpressureBlocker implements ManagedBlocker {
     }
 
     /**
-     * {@inheritDoc}
+     * This method just needs to block for a while. It sleeps to avoid burning CPU cycles. Since this method always
+     * returns false, the fork join pool will use {@link #isReleasable()} exclusively for determining if it's time to
+     * stop blocking.
      */
     @Override
     public boolean block() throws InterruptedException {
@@ -72,11 +74,19 @@ class BackpressureBlocker implements ManagedBlocker {
                 Thread.currentThread().interrupt();
             }
         }
+
+        // Although we could technically check the count here and stop the back pressure if the count is below the
+        // threshold, it's simpler not to. Immediately after this method is called, isReleasable() will be called,
+        // which will do the checking for us. Easier to just let that method do the work, and have this method
+        // only be responsible for sleeping.
         return false;
     }
 
     /**
-     * {@inheritDoc}
+     * Checks if it's ok to stop blocking.
+     *
+     * @return true if capacity has been reserved and it's ok to stop blocking, false if capacity could not be reserved
+     * and we need to continue blocking.
      */
     @Override
     public boolean isReleasable() {

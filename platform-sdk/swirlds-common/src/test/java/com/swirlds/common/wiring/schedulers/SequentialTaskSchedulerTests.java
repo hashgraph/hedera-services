@@ -859,7 +859,7 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger wireValueB = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        final ObjectCounter backpressure = new BackpressureObjectCounter(11, Duration.ofMillis(1));
+        final ObjectCounter backpressure = new BackpressureObjectCounter("test", 11, Duration.ofMillis(1));
 
         final TaskScheduler<Void> taskSchedulerA = model.schedulerBuilder("testA")
                 .withConcurrency(false)
@@ -1749,7 +1749,7 @@ class SequentialTaskSchedulerTests {
         // There are three components, A, B, and C.
         // We want to control the number of elements in all three, not individually.
 
-        final ObjectCounter counter = new BackpressureObjectCounter(10, Duration.ofMillis(1));
+        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1));
 
         final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
                 .withOnRamp(counter)
@@ -1860,7 +1860,7 @@ class SequentialTaskSchedulerTests {
         // There are three components, A, B, and C.
         // The pipeline as a whole has a capacity of 10. Each step individually has a capacity of 5;
 
-        final ObjectCounter counter = new BackpressureObjectCounter(10, Duration.ofMillis(1));
+        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1));
 
         final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
                 .withOnRamp(counter)

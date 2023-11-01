@@ -44,7 +44,7 @@ class BackpressureObjectCounterTests {
     void countWithHighCapacityTest() {
         final Random random = getRandomPrintSeed();
 
-        final ObjectCounter counter = new BackpressureObjectCounter(1_000_000_000, Duration.ofMillis(1));
+        final ObjectCounter counter = new BackpressureObjectCounter("test", 1_000_000_000, Duration.ofMillis(1));
 
         int count = 0;
         for (int i = 0; i < 1000; i++) {
@@ -77,7 +77,7 @@ class BackpressureObjectCounterTests {
     void onRampTest(final int sleepMillis) throws InterruptedException {
         final Duration sleepDuration = Duration.ofMillis(sleepMillis);
 
-        final ObjectCounter counter = new BackpressureObjectCounter(10, sleepDuration);
+        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, sleepDuration);
 
         // Fill up the counter to capacity
         for (int i = 0; i < 10; i++) {
@@ -122,7 +122,7 @@ class BackpressureObjectCounterTests {
 
     @Test
     void attemptOnRampTest() {
-        final ObjectCounter counter = new BackpressureObjectCounter(10, Duration.ofMillis(1));
+        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1));
 
         // Fill up the counter to capacity
         for (int i = 0; i < 10; i++) {
@@ -139,7 +139,7 @@ class BackpressureObjectCounterTests {
 
     @Test
     void forceOnRampTest() {
-        final ObjectCounter counter = new BackpressureObjectCounter(10, Duration.ofMillis(1));
+        final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1));
 
         // Fill up the counter to capacity
         for (int i = 0; i < 10; i++) {
@@ -156,7 +156,7 @@ class BackpressureObjectCounterTests {
 
     @Test
     void waitUntilEmptyTest() throws InterruptedException {
-        final ObjectCounter counter = new BackpressureObjectCounter(1000, Duration.ofMillis(1));
+        final ObjectCounter counter = new BackpressureObjectCounter("test", 1000, Duration.ofMillis(1));
 
         for (int i = 0; i < 100; i++) {
             counter.onRamp();

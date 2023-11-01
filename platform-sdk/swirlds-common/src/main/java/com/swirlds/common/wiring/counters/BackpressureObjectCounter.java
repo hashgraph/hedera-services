@@ -18,6 +18,7 @@ package com.swirlds.common.wiring.counters;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ManagedBlocker;
 import java.util.concurrent.atomic.AtomicLong;
@@ -29,23 +30,36 @@ import java.util.function.LongUnaryOperator;
  */
 public class BackpressureObjectCounter extends ObjectCounter {
 
+    private final String name;
     private final AtomicLong count = new AtomicLong(0);
     private final LongUnaryOperator increment;
 
+    /**
+     * When back pressure needs to be applied due to lack of capacity, this object is used to efficiently sleep on the
+     * fork join pool.
+     */
     private final ManagedBlocker onRampBlocker;
+
+    /**
+     * When waiting for the count to reach zero, this object is used to efficiently sleep on the fork join pool.
+     */
     private final ManagedBlocker waitUntilEmptyBlocker;
 
     /**
      * Constructor.
      *
+     * @param name          the name of the object counter, used creating more informative exceptions
      * @param capacity      the maximum number of objects that can be in the part of the system that this object is
      *                      being used to monitor before backpressure is applied
      * @param sleepDuration when a method needs to block, the duration to sleep while blocking
      */
-    public BackpressureObjectCounter(final long capacity, @NonNull final Duration sleepDuration) {
+    public BackpressureObjectCounter(
+            @NonNull final String name, final long capacity, @NonNull final Duration sleepDuration) {
         if (capacity <= 0) {
             throw new IllegalArgumentException("Capacity must be greater than zero");
         }
+
+        this.name = Objects.requireNonNull(name);
 
         increment = count -> {
             if (count >= capacity) {
@@ -72,11 +86,26 @@ public class BackpressureObjectCounter extends ObjectCounter {
             // Slow case. Capacity wasn't available, so we need to block.
             try {
                 // This will block until capacity is available and the count has been incremented.
+                //
+                // This is logically equivalent to the following pseudocode.
+                // Note that the managed block is thread safe when onRamp() is being called from multiple threads,
+                // even though this pseudocode is not.
+                //
+                //                while (count >= capacity) {
+                //                    Thread.sleep(sleepNanos);
+                //                }
+                //                count++;
+                //
+                // The reason why we use the managedBlock() strategy instead of something simpler has to do with
+                // the fork join pool paradigm. Unlike traditional thread pools where we have more threads than
+                // CPUs, blocking (e.g. Thread.sleep()) on a fork join pool may monopolize an entire CPU core.
+                // The managedBlock() pattern allows us to block while yielding the physical CPU core to other
+                // tasks.
                 ForkJoinPool.managedBlock(onRampBlocker);
             } catch (final InterruptedException ex) {
                 // This should be impossible.
                 Thread.currentThread().interrupt();
-                throw new IllegalStateException("Interrupted while blocking on an onRamp()");
+                throw new IllegalStateException("Interrupted while blocking on an onRamp() for " + name);
             }
         }
     }
@@ -132,7 +161,7 @@ public class BackpressureObjectCounter extends ObjectCounter {
         } catch (final InterruptedException e) {
             // This should be impossible.
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while blocking on an waitUntilEmpty()");
+            throw new IllegalStateException("Interrupted while blocking on an waitUntilEmpty() for " + name);
         }
     }
 }
