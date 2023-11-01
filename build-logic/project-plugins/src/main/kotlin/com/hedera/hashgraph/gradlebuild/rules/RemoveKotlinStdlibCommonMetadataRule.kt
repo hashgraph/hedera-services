@@ -16,17 +16,21 @@
 
 package com.hedera.hashgraph.gradlebuild.rules
 
+import org.gradle.api.artifacts.CacheableRule
 import org.gradle.api.artifacts.ComponentMetadataContext
 import org.gradle.api.artifacts.ComponentMetadataRule
 
-abstract class IoGrpcMetadataRule : ComponentMetadataRule {
+/**
+ * Kotlin 'kotlin-stdlib-common' (which is not a JPMS module) is not required at runtime, if the
+ * runtime is a JVM. It exists for Kotlins multi-platform aspect (which we do not care for).
+ */
+@CacheableRule
+abstract class RemoveKotlinStdlibCommonMetadataRule : ComponentMetadataRule {
 
     override fun execute(context: ComponentMetadataContext) {
         context.details.allVariants {
             withDependencies {
-                removeAll { it.name == "checker-qual" }
-                removeAll { it.name == "failureaccess" }
-                removeAll { it.name == "listenablefuture" }
+                removeAll { it.name == "kotlin-stdlib-common" }
             }
         }
     }
