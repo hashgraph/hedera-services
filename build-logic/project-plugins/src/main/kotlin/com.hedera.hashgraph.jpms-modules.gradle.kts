@@ -267,10 +267,6 @@ extraJavaModuleInfo {
         requireAllDefinedDependencies()
     }
 
-    module("org.apache.logging.log4j:log4j-core", "org.apache.logging.log4j.core") {
-        exportAllPackages()
-        requireAllDefinedDependencies()
-    }
     module("com.goterl:lazysodium-java", "lazysodium.java") {
         exportAllPackages()
         requireAllDefinedDependencies()
