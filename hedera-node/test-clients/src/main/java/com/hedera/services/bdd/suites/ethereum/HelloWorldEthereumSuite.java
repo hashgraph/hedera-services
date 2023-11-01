@@ -56,6 +56,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -116,7 +117,11 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     List<HapiSpec> ethereumCreates() {
-        return List.of(smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate());
+        return List.of(
+                smallContractCreate(),
+                contractCreateWithConstructorArgs(),
+                bigContractCreate(),
+                doesNotCreateChildRecordIfEthereumContractCreateFails());
     }
 
     HapiSpec badRelayClient() {
@@ -163,10 +168,10 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> exploitTokenEvmAddress.set(
                                         asHexedSolidityAddress(0, 0, asToken(id).getTokenNum())))))
                 .when(sourcing(() -> ethereumCall(
-                                exploitContract,
-                                "stealFrom",
-                                asHeadlongAddress(relayerEvmAddress.get()),
-                                asHeadlongAddress(exploitTokenEvmAddress.get()))
+                        exploitContract,
+                        "stealFrom",
+                        asHeadlongAddress(relayerEvmAddress.get()),
+                        asHeadlongAddress(exploitTokenEvmAddress.get()))
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(maliciousEOA)
                         .payingWith(RELAYER)
@@ -389,6 +394,32 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                         spec.registry().getBytes(ETH_HASH_KEY)))))),
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                 .has(accountWith().nonce(1L)));
+    }
+
+    @HapiTest
+    HapiSpec doesNotCreateChildRecordIfEthereumContractCreateFails() {
+        final Long insufficientGasAllowance = 1L;
+        return defaultHapiSpec("smallContractCreate")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords(),
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT))
+                .when(ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .maxGasAllowance(insufficientGasAllowance)
+                        .gasLimit(1_000_000L)
+                        .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                        .via("insufficientTxFeeTxn"))
+                .then(getTxnRecord("insufficientTxFeeTxn")
+                        .andAllChildRecords()
+                        .logged()
+                        .hasChildRecordCount(0));
     }
 
     @HapiTest
