@@ -119,7 +119,7 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
     }
 
     @Test
-    void returnsWhenFetchingTokenWithNoOwnerAccount() {
+    void revertsWhenFetchingTokenWithNoOwnerAccount() {
         when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
         when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID));
         when(nativeOperations.getNft(FUNGIBLE_EVERYTHING_TOKEN.tokenId().tokenNum(), 2L))
