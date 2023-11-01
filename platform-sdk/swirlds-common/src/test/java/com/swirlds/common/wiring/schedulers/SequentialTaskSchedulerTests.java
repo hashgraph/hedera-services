@@ -1345,7 +1345,9 @@ class SequentialTaskSchedulerTests {
                 model.schedulerBuilder("B").build().cast();
         final InputWire<Integer, Void> inputB = taskSchedulerB.buildInputWire("inputB");
 
-        taskSchedulerA.solderTo(inputX).solderTo(inputY).solderTo(inputZ);
+        taskSchedulerA.solderTo(inputX);
+        taskSchedulerA.solderTo(inputY);
+        taskSchedulerA.solderTo(inputZ);
         taskSchedulerX.solderTo(inputB);
         taskSchedulerY.solderTo(inputB);
         taskSchedulerZ.solderTo(inputB);

@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEq
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 
 import com.swirlds.common.wiring.InputWire;
+import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.test.framework.TestWiringModel;
@@ -54,7 +55,9 @@ class TaskSchedulerTransformersTests {
                 model.schedulerBuilder("D").build().cast();
         final InputWire<List<Integer>, Void> wireDIn = taskSchedulerD.buildInputWire("D in");
 
-        taskSchedulerA.buildSplitter(Integer.class).solderTo(wireBIn).solderTo(wireCIn);
+        final OutputWire<Integer> splitter = taskSchedulerA.buildSplitter();
+        splitter.solderTo(wireBIn);
+        splitter.solderTo(wireCIn);
         taskSchedulerA.solderTo(wireDIn);
 
         wireAIn.bind(x -> {
@@ -124,10 +127,9 @@ class TaskSchedulerTransformersTests {
         final AtomicInteger countLambda = new AtomicInteger(0);
 
         taskSchedulerA.solderTo(inB);
-        taskSchedulerA
-                .buildFilter("onlyEven", x -> x % 2 == 0)
-                .solderTo(inC)
-                .solderTo("lambda", x -> countLambda.set(hash32(countLambda.get(), x)));
+        final OutputWire<Integer> filter = taskSchedulerA.buildFilter("onlyEven", x -> x % 2 == 0);
+        filter.solderTo(inC);
+        filter.solderTo("lambda", x -> countLambda.set(hash32(countLambda.get(), x)));
 
         inA.bind(x -> {
             countA.set(hash32(countA.get(), x));

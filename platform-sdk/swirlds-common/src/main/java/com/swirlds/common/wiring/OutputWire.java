@@ -120,11 +120,9 @@ public abstract class OutputWire<OUT> {
      * destinations after data has been inserted into the system is not thread safe and has undefined behavior.
      *
      * @param inputWire the input wire to forward output data to
-     * @return this
      */
-    @NonNull
-    public final OutputWire<OUT> solderTo(@NonNull final InputWire<OUT, ?> inputWire) {
-        return solderTo(inputWire, false);
+    public final void solderTo(@NonNull final InputWire<OUT, ?> inputWire) {
+        solderTo(inputWire, false);
     }
 
     /**
@@ -140,17 +138,14 @@ public abstract class OutputWire<OUT> {
      *
      * @param inputWire the input wire to forward output data to
      * @param inject    if true, then the output data will be injected into the input wire, ignoring back pressure
-     * @return this
      */
-    @NonNull
-    public final OutputWire<OUT> solderTo(@NonNull final InputWire<OUT, ?> inputWire, final boolean inject) {
+    public final void solderTo(@NonNull final InputWire<OUT, ?> inputWire, final boolean inject) {
         model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), inject);
         if (inject) {
             forwardingDestinations.add(inputWire::inject);
         } else {
             forwardingDestinations.add(inputWire::put);
         }
-        return this;
     }
 
     /**
@@ -166,13 +161,10 @@ public abstract class OutputWire<OUT> {
      *
      * @param handlerName the name of the consumer
      * @param handler     the consumer to forward output data to
-     * @return this
      */
-    @NonNull
-    public OutputWire<OUT> solderTo(@NonNull final String handlerName, @NonNull final Consumer<OUT> handler) {
+    public void solderTo(@NonNull final String handlerName, @NonNull final Consumer<OUT> handler) {
         model.registerEdge(name, handlerName, "", false);
         forwardingDestinations.add(Objects.requireNonNull(handler));
-        return this;
     }
 
     /**
