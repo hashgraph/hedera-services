@@ -91,7 +91,7 @@ public class TaskSchedulerBuilder<O> {
      * @return this
      */
     @NonNull
-    public TaskSchedulerBuilder<O> withConcurrency(boolean concurrent) {
+    public TaskSchedulerBuilder<O> withConcurrency(final boolean concurrent) {
         this.concurrent = concurrent;
         return this;
     }
@@ -226,7 +226,7 @@ public class TaskSchedulerBuilder<O> {
             return uncaughtExceptionHandler;
         } else {
             return (thread, throwable) ->
-                    logger.error(EXCEPTION.getMarker(), "Uncaught exception in wire {}", name, throwable);
+                    logger.error(EXCEPTION.getMarker(), "Uncaught exception in scheduler {}", name, throwable);
         }
     }
 

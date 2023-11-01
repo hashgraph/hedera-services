@@ -66,8 +66,8 @@ public abstract class TaskScheduler<OUT> extends OutputWire<OUT> {
     }
 
     /**
-     * Get an input wire for passing data to this task scheduler. In order to use this wire, a handler must be bound via
-     * {@link InputWire#bind(Consumer)}.
+     * Build an input wire for passing data to this task scheduler. In order to use this wire, a handler must be bound
+     * via {@link InputWire#bind(Consumer)}.
      *
      * @param name the name of the input wire
      * @param <I>  the type of data that is inserted via this input wire
@@ -79,9 +79,11 @@ public abstract class TaskScheduler<OUT> extends OutputWire<OUT> {
     }
 
     /**
-     * Get the number of unprocessed tasks. Returns -1 if this task scheduler is not monitoring the number of
-     * unprocessed tasks. Schedulers do not track the number of unprocessed tasks by default. This method will always
-     * return -1 unless one of the following is true:
+     * Get the number of unprocessed tasks. A task is considered to be unprocessed until the data has been passed to the
+     * handler method (i.e. the one given to {@link InputWire#bind(Consumer)}) and that handler method has returned.
+     * <p>
+     * Returns -1 if this task scheduler is not monitoring the number of unprocessed tasks. Schedulers do not track the
+     * number of unprocessed tasks by default. This method will always return -1 unless one of the following is true:
      * <ul>
      * <li>{@link TaskSchedulerMetricsBuilder#withUnhandledTaskMetricEnabled(boolean)} is called with the value true</li>
      * <li>{@link TaskSchedulerBuilder#withUnhandledTaskCapacity(long)} is passed a positive value</li>
