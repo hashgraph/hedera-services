@@ -26,7 +26,8 @@ mainModuleInfo {
     annotationProcessor("dagger.compiler")
 
     // This is needed to pick up and include the native libraries for the netty epoll transport
-    runtimeOnly("io.netty.transport.epoll")
+    runtimeOnly("io.netty.transport.epoll.linux.x86_64")
+    runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
 }
 
 testModuleInfo {
@@ -61,12 +62,13 @@ itestModuleInfo {
     requires("grpc.netty")
     requires("grpc.stub")
     requires("io.grpc")
-    requires("io.netty.transport.epoll")
     requires("org.apache.logging.log4j")
     requires("org.assertj.core")
     requires("org.bouncycastle.provider")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
+    runtimeOnly("io.netty.transport.epoll.linux.x86_64")
+    runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
 }
 
 xtestModuleInfo {
@@ -96,7 +98,6 @@ xtestModuleInfo {
     requires("com.swirlds.test.framework")
     requires("dagger")
     requires("headlong")
-    requires("io.netty.transport.epoll")
     requires("javax.inject")
     requires("org.assertj.core")
     requires("org.hyperledger.besu.datatypes")
@@ -105,6 +106,8 @@ xtestModuleInfo {
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
     requires("tuweni.bytes")
+    runtimeOnly("io.netty.transport.epoll.linux.x86_64")
+    runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
 }
 
 jmhModuleInfo {
@@ -140,14 +143,33 @@ tasks.jar {
 
 // Copy dependencies into `data/lib`
 val copyLib =
-    tasks.register<Copy>("copyLib") {
+    tasks.register<Sync>("copyLib") {
         from(project.configurations.getByName("runtimeClasspath"))
         into(layout.projectDirectory.dir("../data/lib"))
+
+        doLast {
+            val nonModulalJars =
+                destinationDir
+                    .listFiles()!!
+                    .mapNotNull { jar ->
+                        if (zipTree(jar).none { it.name == "module-info.class" }) {
+                            jar.name
+                        } else {
+                            null
+                        }
+                    }
+                    .sorted()
+            if (nonModulalJars.isNotEmpty()) {
+                throw RuntimeException(
+                    "Jars without 'module-info.class' in 'data/lib'\n${nonModulalJars.joinToString("\n")}"
+                )
+            }
+        }
     }
 
 // Copy built jar into `data/apps` and rename HederaNode.jar
 val copyApp =
-    tasks.register<Copy>("copyApp") {
+    tasks.register<Sync>("copyApp") {
         from(tasks.jar)
         into(layout.projectDirectory.dir("../data/apps"))
         rename { "HederaNode.jar" }
