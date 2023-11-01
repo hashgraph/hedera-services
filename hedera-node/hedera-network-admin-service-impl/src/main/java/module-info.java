@@ -19,6 +19,7 @@ module com.hedera.node.app.service.network.admin.impl {
     requires com.swirlds.config.api;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
+    requires static java.compiler; // javax.annotation.processing.Generated
 
     provides com.hedera.node.app.service.networkadmin.FreezeService with
             FreezeServiceImpl;

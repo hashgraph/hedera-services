@@ -16,8 +16,8 @@
 
 package com.swirlds.common.test.threading;
 
-import static com.google.common.truth.Truth.assertThat;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -92,24 +92,24 @@ class CachedPoolParallelExecutorTest {
         ParallelExecutionException ex;
 
         ex = assertThrows(ParallelExecutionException.class, () -> executor.doParallel(task1, task2));
-        assertThat(ex).hasCauseThat().isSameInstanceAs(exception1);
-        assertThat(ex.getSuppressed()).hasLength(1);
-        assertThat(ex.getSuppressed()[0]).hasCauseThat().isSameInstanceAs(exception2);
+        assertThat(ex).hasCause(exception1);
+        assertThat(ex.getSuppressed()).hasSize(1);
+        assertThat(ex.getSuppressed()[0]).hasCause(exception2);
 
         ex = assertThrows(ParallelExecutionException.class, () -> executor.doParallel(task1, noEx));
-        assertThat(ex).hasCauseThat().isSameInstanceAs(exception1);
+        assertThat(ex).hasCause(exception1);
         assertThat(ex.getSuppressed()).isEmpty();
 
         ex = assertThrows(ParallelExecutionException.class, () -> executor.doParallel(noEx, task2));
-        assertThat(ex).hasCauseThat().hasCauseThat().isSameInstanceAs(exception2);
+        assertThat(ex.getCause()).hasCause(exception2);
         assertThat(ex.getSuppressed()).isEmpty();
 
         ex = assertThrows(ParallelExecutionException.class, () -> executor.doParallel(task3, noEx));
-        assertThat(ex).hasCauseThat().isSameInstanceAs(error1);
+        assertThat(ex).hasCause(error1);
         assertThat(ex.getSuppressed()).isEmpty();
 
         ex = assertThrows(ParallelExecutionException.class, () -> executor.doParallel(noEx, task3));
-        assertThat(ex).hasCauseThat().hasCauseThat().isSameInstanceAs(error1);
+        assertThat(ex.getCause()).hasCause(error1);
         assertThat(ex.getSuppressed()).isEmpty();
     }
 }

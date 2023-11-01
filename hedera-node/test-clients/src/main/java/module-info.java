@@ -33,7 +33,7 @@ module com.hedera.node.test.clients {
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.datatypes;
     requires org.hyperledger.besu.evm;
-    requires org.hyperledger.besu.internal.crypto;
+    requires org.hyperledger.besu.internal.algorithms;
     requires org.json;
     requires org.opentest4j;
     requires tuweni.units;

@@ -16,20 +16,30 @@
 
 package com.hedera.hashgraph.gradlebuild.rules
 
+import org.gradle.api.artifacts.CacheableRule
 import org.gradle.api.artifacts.ComponentMetadataContext
 import org.gradle.api.artifacts.ComponentMetadataRule
 
+/**
+ * Configures native Jars of 'io.netty.native.epoll' so that they can be selected by 'capability'.
+ * https://docs.gradle.org/current/userguide/component_metadata_rules.html#making_different_flavors_of_a_library_available_through_capabilities
+ */
+@CacheableRule
 abstract class IoNettyNativeEpollMetadataRule : ComponentMetadataRule {
 
     override fun execute(context: ComponentMetadataContext) {
         val name = context.details.id.name
         val version = context.details.id.version
-        context.details.allVariants {
-            withFiles {
-                // Always pick 'linux-x86_64' and 'linux-aarch_64' by default
-                removeAllFiles()
-                addFile("$name-$version-linux-x86_64.jar")
-                addFile("$name-$version-linux-aarch_64.jar")
+        listOf("linux-x86_64", "linux-aarch_64").forEach { nativeVariant ->
+            context.details.addVariant(nativeVariant, "runtime") {
+                withCapabilities {
+                    removeCapability("io.netty", "netty-transport-native-epoll")
+                    addCapability("io.netty", "netty-transport-native-epoll-$nativeVariant", version)
+                }
+                withFiles {
+                    removeAllFiles()
+                    addFile("$name-$version-$nativeVariant.jar")
+                }
             }
         }
     }

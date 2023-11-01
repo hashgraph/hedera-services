@@ -16,9 +16,16 @@
 
 package com.hedera.hashgraph.gradlebuild.rules
 
+import org.gradle.api.artifacts.CacheableRule
 import org.gradle.api.artifacts.ComponentMetadataContext
 import org.gradle.api.artifacts.ComponentMetadataRule
 
+/**
+ * Replace all 'grpc' dependencies with a singe dependency to
+ * 'io.helidon.grpc:io.grpc' which is a re-packaged Modular Jar
+ * of all the 'grpc' libraries.
+ */
+@CacheableRule
 abstract class IoGrpcDependencyMetadataRule : ComponentMetadataRule {
 
     override fun execute(context: ComponentMetadataContext) {
@@ -27,6 +34,7 @@ abstract class IoGrpcDependencyMetadataRule : ComponentMetadataRule {
                 removeAll { it.name == "grpc-api" }
                 removeAll { it.name == "grpc-context" }
                 removeAll { it.name == "grpc-core" }
+                removeAll { it.name == "error_prone_annotations" }
                 removeAll { it.group == "com.google.code.findbugs" }
                 add("io.helidon.grpc:io.grpc")
             }

@@ -17,6 +17,7 @@ module com.hedera.node.app.service.file.impl {
     requires transitive dagger;
     requires transitive javax.inject;
     requires static com.github.spotbugs.annotations;
+    requires static java.compiler; // javax.annotation.processing.Generated
 
     provides com.hedera.node.app.service.file.FileService with
             FileServiceImpl;

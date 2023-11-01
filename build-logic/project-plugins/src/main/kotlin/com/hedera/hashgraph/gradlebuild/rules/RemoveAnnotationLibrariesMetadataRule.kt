@@ -16,14 +16,27 @@
 
 package com.hedera.hashgraph.gradlebuild.rules
 
+import org.gradle.api.artifacts.CacheableRule
 import org.gradle.api.artifacts.ComponentMetadataContext
 import org.gradle.api.artifacts.ComponentMetadataRule
 
-abstract class RemoveFindbugsAnnotationsMetadataRule : ComponentMetadataRule {
+/**
+ * Removes annotation libraries for annotations that this project does not require
+ * at runtime or compile time. These are typically annotations used by additional
+ * code analysis tools that are not used by this project.
+ */
+@CacheableRule
+abstract class RemoveAnnotationLibrariesMetadataRule : ComponentMetadataRule {
 
     override fun execute(context: ComponentMetadataContext) {
         context.details.allVariants {
             withDependencies {
+                removeAll { it.name == "animal-sniffer-annotations" }
+                removeAll { it.name == "checker-qual" }
+                removeAll { it.name == "error_prone_annotations" }
+                removeAll { it.name == "j2objc-annotations" }
+                removeAll { it.name == "listenablefuture" }
+                removeAll { it.group == "com.google.android" && it.name == "annotations"}
                 // 'findbugs' annotations are not used and cause split package with 'javax.annotation-api'
                 removeAll { it.group == "com.google.code.findbugs" }
             }

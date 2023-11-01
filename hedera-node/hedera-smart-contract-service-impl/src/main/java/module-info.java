@@ -24,6 +24,7 @@ module com.hedera.node.app.service.contract.impl {
     requires com.swirlds.common;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
+    requires static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app.service.contract.impl;
     exports com.hedera.node.app.service.contract.impl.exec.scope;
