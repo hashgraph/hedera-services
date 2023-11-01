@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.contract.impl.hevm;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
@@ -69,6 +71,8 @@ public record HederaEvmTransactionResult(
     private static final Bytes MAX_STORAGE_EXCEEDED_REASON = Bytes.wrap(MAX_CONTRACT_STORAGE_EXCEEDED.name());
     private static final Bytes MAX_TOTAL_STORAGE_EXCEEDED_REASON =
             Bytes.wrap(MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED.name());
+    private static final Bytes INSUFFICIENT_GAS_REASON = Bytes.wrap(INSUFFICIENT_GAS.name());
+    private static final Bytes INVALID_CONTRACT_REASON = Bytes.wrap(INVALID_CONTRACT_ID.name());
 
     /**
      * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
@@ -129,6 +133,10 @@ public record HederaEvmTransactionResult(
                 return MAX_CONTRACT_STORAGE_EXCEEDED;
             } else if (revertReason.equals(MAX_TOTAL_STORAGE_EXCEEDED_REASON)) {
                 return MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
+            } else if (revertReason.equals(INSUFFICIENT_GAS_REASON)) {
+                return INSUFFICIENT_GAS;
+            } else if (revertReason.equals(INVALID_CONTRACT_REASON)) {
+                return INVALID_CONTRACT_ID;
             } else {
                 return CONTRACT_REVERT_EXECUTED;
             }
@@ -229,6 +237,34 @@ public record HederaEvmTransactionResult(
                 null,
                 Bytes.wrap(reason.name()),
                 Collections.emptyList(),
+                null);
+    }
+
+    /**
+     * Create a result for a transaction that failed due to validation exceptions.
+     *
+     * @param senderId the sender of the EVM transaction
+     * @param transaction the transaction object
+     * @param reason   the reason for the failure
+     * @return the result
+     */
+    public static HederaEvmTransactionResult fromAborted(
+            @NonNull final AccountID senderId,
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final ResponseCodeEnum reason) {
+        requireNonNull(senderId);
+        requireNonNull(transaction);
+        requireNonNull(reason);
+        return new HederaEvmTransactionResult(
+                0,
+                0,
+                senderId,
+                transaction.contractId(),
+                null,
+                Bytes.EMPTY,
+                null,
+                Bytes.wrap(reason.name().getBytes()),
+                List.of(),
                 null);
     }
 

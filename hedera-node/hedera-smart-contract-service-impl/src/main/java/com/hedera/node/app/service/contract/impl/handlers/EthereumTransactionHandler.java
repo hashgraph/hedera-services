@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -92,5 +93,6 @@ public class EthereumTransactionHandler implements TransactionHandler {
             // The Ethereum transaction was a top-level CONTRACT_CREATION
             recordBuilder.contractID(outcome.recipientIdIfCreated()).contractCreateResult(outcome.result());
         }
+        throwIfUnsuccessful(outcome.status());
     }
 }
