@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.network.topology;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.NETWORK;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.NETWORK;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.network.Connection;

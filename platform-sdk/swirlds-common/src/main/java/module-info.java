@@ -167,6 +167,7 @@ module com.swirlds.common {
     requires transitive io.prometheus.simpleclient;
     requires transitive lazysodium.java;
     requires transitive org.apache.logging.log4j;
+    requires com.sun.jna;
     requires io.github.classgraph;
     requires io.prometheus.simpleclient.httpserver;
     requires java.desktop;
@@ -175,6 +176,5 @@ module com.swirlds.common {
     requires org.apache.logging.log4j.core;
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.secp256k1;
-    requires com.sun.jna;
     requires static com.github.spotbugs.annotations;
 }
