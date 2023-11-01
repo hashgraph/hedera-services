@@ -32,7 +32,7 @@ import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
-import static com.hedera.node.app.spi.key.KeyUtils.isEmptyAndNotImmutable;
+import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -285,9 +285,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // then we also fail with the same error. It should be that being credited value DOES NOT require
                 // a key, unless `receiverSigRequired` is true.
                 final var accountKey = account.key();
-                if ((isEmptyAndNotImmutable(accountKey))
-                        && (isDebit || isCredit && !hbarTransfer)
-                        && !isHollow(account)) {
+                if ((isEmpty(accountKey)) && (isDebit || isCredit && !hbarTransfer) && !isHollow(account)) {
                     // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
                     throw new PreCheckException(INVALID_ACCOUNT_ID);
                 }
@@ -361,7 +359,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         }
 
         final var receiverKey = receiverAccount.key();
-        if (isEmptyAndNotImmutable(receiverKey)) {
+        if (isEmpty(receiverKey)) {
             // If the receiver account has no key, then fail with INVALID_ACCOUNT_ID.
             // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
             throw new PreCheckException(INVALID_ACCOUNT_ID);
