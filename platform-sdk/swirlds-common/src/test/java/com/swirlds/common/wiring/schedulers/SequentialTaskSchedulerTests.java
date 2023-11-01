@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.InputWire;
-import com.swirlds.common.wiring.SecondaryOutputWire;
+import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
@@ -656,10 +656,10 @@ class SequentialTaskSchedulerTests {
             }
         };
 
-        taskSchedulerToA.solderTo(channelToB);
-        taskSchedulerToB.solderTo(channelToC);
-        taskSchedulerToC.solderTo(channelToD);
-        taskSchedulerToD.solderTo(channelToA);
+        taskSchedulerToA.getOutputWire().solderTo(channelToB);
+        taskSchedulerToB.getOutputWire().solderTo(channelToC);
+        taskSchedulerToC.getOutputWire().solderTo(channelToD);
+        taskSchedulerToD.getOutputWire().solderTo(channelToA);
 
         channelToA.bind(handlerA);
         channelToB.bind(handlerB);
@@ -1207,9 +1207,9 @@ class SequentialTaskSchedulerTests {
         final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
         final InputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
 
         final AtomicInteger countA = new AtomicInteger();
         final AtomicInteger countB = new AtomicInteger();
@@ -1268,9 +1268,9 @@ class SequentialTaskSchedulerTests {
         final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
         final InputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
 
         final AtomicInteger countA = new AtomicInteger();
         final AtomicInteger countB = new AtomicInteger();
@@ -1278,7 +1278,7 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger countD = new AtomicInteger();
 
         final AtomicInteger lambdaSum = new AtomicInteger();
-        taskSchedulerB.solderTo("lambda", lambdaSum::getAndAdd);
+        taskSchedulerB.getOutputWire().solderTo("lambda", lambdaSum::getAndAdd);
 
         inputA.bind(x -> {
             countA.set(hash32(countA.get(), x));
@@ -1345,12 +1345,12 @@ class SequentialTaskSchedulerTests {
                 model.schedulerBuilder("B").build().cast();
         final InputWire<Integer, Void> inputB = taskSchedulerB.buildInputWire("inputB");
 
-        taskSchedulerA.solderTo(inputX);
-        taskSchedulerA.solderTo(inputY);
-        taskSchedulerA.solderTo(inputZ);
-        taskSchedulerX.solderTo(inputB);
-        taskSchedulerY.solderTo(inputB);
-        taskSchedulerZ.solderTo(inputB);
+        taskSchedulerA.getOutputWire().solderTo(inputX);
+        taskSchedulerA.getOutputWire().solderTo(inputY);
+        taskSchedulerA.getOutputWire().solderTo(inputZ);
+        taskSchedulerX.getOutputWire().solderTo(inputB);
+        taskSchedulerY.getOutputWire().solderTo(inputB);
+        taskSchedulerZ.getOutputWire().solderTo(inputB);
 
         final AtomicInteger countA = new AtomicInteger();
         final AtomicBoolean invertA = new AtomicBoolean();
@@ -1443,8 +1443,8 @@ class SequentialTaskSchedulerTests {
                 .cast();
         final InputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("inC");
 
-        taskSchedulerA.solderTo(inC); // respects capacity
-        taskSchedulerB.solderTo(inC, true); // ignores capacity
+        taskSchedulerA.getOutputWire().solderTo(inC); // respects capacity
+        taskSchedulerB.getOutputWire().solderTo(inC, true); // ignores capacity
 
         final AtomicInteger countA = new AtomicInteger();
         inA.bind(x -> {
@@ -1543,9 +1543,9 @@ class SequentialTaskSchedulerTests {
         final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
         final InputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
 
         final AtomicInteger countA = new AtomicInteger();
         final AtomicInteger countB = new AtomicInteger();
@@ -1645,9 +1645,9 @@ class SequentialTaskSchedulerTests {
         final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
         final InputWire<Integer, Void> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
 
         final AtomicInteger countA = new AtomicInteger();
         final AtomicInteger countB = new AtomicInteger();
@@ -1692,8 +1692,8 @@ class SequentialTaskSchedulerTests {
         final TaskScheduler<Integer> taskSchedulerA =
                 model.schedulerBuilder("A").build().cast();
         final InputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
-        final SecondaryOutputWire<Boolean> aOutBoolean = taskSchedulerA.buildSecondaryOutputWire();
-        final SecondaryOutputWire<String> aOutString = taskSchedulerA.buildSecondaryOutputWire();
+        final OutputWire<Boolean> aOutBoolean = taskSchedulerA.buildSecondaryOutputWire();
+        final OutputWire<String> aOutString = taskSchedulerA.buildSecondaryOutputWire();
 
         final TaskScheduler<Void> taskSchedulerB =
                 model.schedulerBuilder("A").build().cast();
@@ -1701,7 +1701,7 @@ class SequentialTaskSchedulerTests {
         final InputWire<Boolean, Void> bInBoolean = taskSchedulerB.buildInputWire("bIn2");
         final InputWire<String, Void> bInString = taskSchedulerB.buildInputWire("bIn3");
 
-        taskSchedulerA.solderTo(bInInteger);
+        taskSchedulerA.getOutputWire().solderTo(bInInteger);
         aOutBoolean.solderTo(bInBoolean);
         aOutString.solderTo(bInString);
 
@@ -1771,8 +1771,8 @@ class SequentialTaskSchedulerTests {
                 .cast();
         final InputWire<Integer, Void> cIn = taskSchedulerC.buildInputWire("cIn");
 
-        taskSchedulerA.solderTo(bIn);
-        taskSchedulerB.solderTo(cIn);
+        taskSchedulerA.getOutputWire().solderTo(bIn);
+        taskSchedulerB.getOutputWire().solderTo(cIn);
 
         final AtomicInteger countA = new AtomicInteger();
         final CountDownLatch latchA = new CountDownLatch(1);
@@ -1885,8 +1885,8 @@ class SequentialTaskSchedulerTests {
                 .cast();
         final InputWire<Integer, Void> cIn = taskSchedulerC.buildInputWire("cIn");
 
-        taskSchedulerA.solderTo(bIn);
-        taskSchedulerB.solderTo(cIn);
+        taskSchedulerA.getOutputWire().solderTo(bIn);
+        taskSchedulerB.getOutputWire().solderTo(cIn);
 
         final AtomicInteger countA = new AtomicInteger();
         final CountDownLatch latchA = new CountDownLatch(1);

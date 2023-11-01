@@ -19,6 +19,7 @@ package com.swirlds.common.wiring;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -26,9 +27,12 @@ import java.util.function.Consumer;
  *
  * @param <OUT> the output type of the primary output wire (use {@link Void} if no output is needed)
  */
-public abstract class TaskScheduler<OUT> extends OutputWire<OUT> {
+public abstract class TaskScheduler<OUT> {
 
     private final boolean flushEnabled;
+    private final WiringModel model;
+    private final String name;
+    private final OutputWire<OUT> primaryOutputWire;
 
     /**
      * Constructor.
@@ -44,8 +48,21 @@ public abstract class TaskScheduler<OUT> extends OutputWire<OUT> {
             @NonNull final String name,
             final boolean flushEnabled,
             final boolean insertionIsBlocking) {
-        super(model, name, true, insertionIsBlocking);
+
+        this.model = Objects.requireNonNull(model);
+        this.name = Objects.requireNonNull(name);
         this.flushEnabled = flushEnabled;
+        primaryOutputWire = new OutputWire<>(model, name, true, insertionIsBlocking);
+    }
+
+    /**
+     * Get the name of this task scheduler.
+     *
+     * @return the name of this task scheduler
+     */
+    @NonNull
+    public String getName() {
+        return name;
     }
 
     /**
@@ -110,6 +127,18 @@ public abstract class TaskScheduler<OUT> extends OutputWire<OUT> {
     public abstract void flush();
 
     /**
+     * Get the default output wire for this task scheduler. Sometimes referred to as the "primary" output wire.All data
+     * returned by handlers is passed ot this output wire. Calling this method more than once will always return the
+     * same object.
+     *
+     * @return the primary output wire
+     */
+    @NonNull
+    public OutputWire<OUT> getOutputWire() {
+        return primaryOutputWire;
+    }
+
+    /**
      * By default a component has a single output wire (i.e. the primary output wire). This method allows additional
      * output wires to be created.
      *
@@ -122,8 +151,8 @@ public abstract class TaskScheduler<OUT> extends OutputWire<OUT> {
      * @return the secondary output wire
      */
     @NonNull
-    public <T> SecondaryOutputWire<T> buildSecondaryOutputWire() {
-        return new SecondaryOutputWire<>(getModel(), getName(), true);
+    public <T> OutputWire<T> buildSecondaryOutputWire() {
+        return new OutputWire<>(model, name, false, true);
     }
 
     /**
@@ -159,18 +188,17 @@ public abstract class TaskScheduler<OUT> extends OutputWire<OUT> {
      */
     protected final void throwIfFlushDisabled() {
         if (!flushEnabled) {
-            throw new UnsupportedOperationException("Flushing is not enabled for the task scheduler " + getName());
+            throw new UnsupportedOperationException("Flushing is not enabled for the task scheduler " + name);
         }
     }
 
     /**
-     * {@inheritDoc}
+     * Pass data to this scheduler's primary output wire.
      * <p>
      * This method is implemented here to allow classes in this package to call forward(), which otherwise would not be
      * visible.
      */
-    @Override
-    protected final void forward(@NonNull OUT data) {
-        super.forward(data);
+    protected final void forward(@NonNull final OUT data) {
+        primaryOutputWire.forward(data);
     }
 }

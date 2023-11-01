@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @param <OUT> the output type of the object
  */
-public abstract class OutputWire<OUT> {
+public class OutputWire<OUT> {
 
     private static final Logger logger = LogManager.getLogger(OutputWire.class);
 
@@ -60,6 +60,7 @@ public abstract class OutputWire<OUT> {
             final boolean registerWithModel,
             final boolean insertionIsBlocking) {
 
+        // TODO does this still belong here?
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
 
@@ -80,20 +81,14 @@ public abstract class OutputWire<OUT> {
     }
 
     /**
-     * Get the wiring model that contains this output wire.
-     *
-     * @return the wiring model
-     */
-    protected WiringModel getModel() {
-        return model;
-    }
-
-    /**
      * Forward output data to any wires/consumers that are listening for it.
+     * <p>
+     * Although it will technically work, it is a violation of convention to directly put data into this output wire
+     * except from within code being executed by the task scheduler that owns this output wire. Don't do it.
      *
      * @param data the output data to forward
      */
-    protected void forward(@NonNull final OUT data) {
+    public void forward(@NonNull final OUT data) {
         for (final Consumer<OUT> destination : forwardingDestinations) {
             try {
                 destination.accept(data);

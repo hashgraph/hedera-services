@@ -93,8 +93,8 @@ class WiringBenchmark {
         final InputWire<WiringBenchmarkEvent, Void> eventsToInsertBackIntoEventPool =
                 eventPoolTaskScheduler.buildInputWire("verified events");
 
-        verificationTaskScheduler.solderTo(eventsToOrphanBuffer);
-        orphanBufferTaskScheduler.solderTo(eventsToInsertBackIntoEventPool);
+        verificationTaskScheduler.getOutputWire().solderTo(eventsToOrphanBuffer);
+        orphanBufferTaskScheduler.getOutputWire().solderTo(eventsToInsertBackIntoEventPool);
 
         final WiringBenchmarkEventPool eventPool = new WiringBenchmarkEventPool();
         final WiringBenchmarkTopologicalEventSorter orphanBuffer = new WiringBenchmarkTopologicalEventSorter();

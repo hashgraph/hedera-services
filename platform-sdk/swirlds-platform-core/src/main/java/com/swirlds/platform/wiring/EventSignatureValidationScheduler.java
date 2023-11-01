@@ -79,7 +79,7 @@ public class EventSignatureValidationScheduler {
      */
     @NonNull
     public OutputWire<GossipEvent> getEventOutput() {
-        return taskScheduler;
+        return taskScheduler.getOutputWire();
     }
 
     /**

@@ -55,10 +55,10 @@ class TaskSchedulerTransformersTests {
                 model.schedulerBuilder("D").build().cast();
         final InputWire<List<Integer>, Void> wireDIn = taskSchedulerD.buildInputWire("D in");
 
-        final OutputWire<Integer> splitter = taskSchedulerA.buildSplitter();
+        final OutputWire<Integer> splitter = taskSchedulerA.getOutputWire().buildSplitter();
         splitter.solderTo(wireBIn);
         splitter.solderTo(wireCIn);
-        taskSchedulerA.solderTo(wireDIn);
+        taskSchedulerA.getOutputWire().solderTo(wireDIn);
 
         wireAIn.bind(x -> {
             return List.of(x, x, x);
@@ -126,8 +126,8 @@ class TaskSchedulerTransformersTests {
         final AtomicInteger countC = new AtomicInteger(0);
         final AtomicInteger countLambda = new AtomicInteger(0);
 
-        taskSchedulerA.solderTo(inB);
-        final OutputWire<Integer> filter = taskSchedulerA.buildFilter("onlyEven", x -> x % 2 == 0);
+        taskSchedulerA.getOutputWire().solderTo(inB);
+        final OutputWire<Integer> filter = taskSchedulerA.getOutputWire().buildFilter("onlyEven", x -> x % 2 == 0);
         filter.solderTo(inC);
         filter.solderTo("lambda", x -> countLambda.set(hash32(countLambda.get(), x)));
 
@@ -186,9 +186,15 @@ class TaskSchedulerTransformersTests {
                 model.schedulerBuilder("D").build().cast();
         final InputWire<Boolean, Void> inD = taskSchedulerD.buildInputWire("D in");
 
-        taskSchedulerA.solderTo(inB);
-        taskSchedulerA.buildTransformer("getValue", TestData::value).solderTo(inC);
-        taskSchedulerA.buildTransformer("getInvert", TestData::invert).solderTo(inD);
+        taskSchedulerA.getOutputWire().solderTo(inB);
+        taskSchedulerA
+                .getOutputWire()
+                .buildTransformer("getValue", TestData::value)
+                .solderTo(inC);
+        taskSchedulerA
+                .getOutputWire()
+                .buildTransformer("getInvert", TestData::invert)
+                .solderTo(inD);
 
         final AtomicInteger countA = new AtomicInteger(0);
         inA.bind(x -> {

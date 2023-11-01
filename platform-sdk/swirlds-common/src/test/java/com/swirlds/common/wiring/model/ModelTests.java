@@ -22,7 +22,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.ModelGroup;
 import com.swirlds.common.wiring.OutputWire;
-import com.swirlds.common.wiring.SecondaryOutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -104,8 +103,8 @@ class ModelTests {
                 model.schedulerBuilder("C").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Void> inputC = taskSchedulerC.buildInputWire("inputC");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
 
         validateModel(model, false);
     }
@@ -127,7 +126,7 @@ class ModelTests {
                 model.schedulerBuilder("A").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
 
-        taskSchedulerA.solderTo(inputA);
+        taskSchedulerA.getOutputWire().solderTo(inputA);
 
         validateModel(model, true);
     }
@@ -149,7 +148,7 @@ class ModelTests {
                 model.schedulerBuilder("A").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
 
-        taskSchedulerA.solderTo(inputA, true);
+        taskSchedulerA.getOutputWire().solderTo(inputA, true);
 
         validateModel(model, false);
     }
@@ -175,8 +174,8 @@ class ModelTests {
                 model.schedulerBuilder("B").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputA);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputA);
 
         validateModel(model, true);
     }
@@ -202,8 +201,8 @@ class ModelTests {
                 model.schedulerBuilder("B").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputA, true);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputA, true);
 
         validateModel(model, false);
     }
@@ -229,8 +228,8 @@ class ModelTests {
                 model.schedulerBuilder("B").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputA);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputA);
 
         validateModel(model, false);
     }
@@ -260,9 +259,9 @@ class ModelTests {
                 model.schedulerBuilder("C").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputA);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputA);
 
         validateModel(model, true);
     }
@@ -292,9 +291,9 @@ class ModelTests {
                 model.schedulerBuilder("C").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputA, true);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputA, true);
 
         validateModel(model, false);
     }
@@ -324,9 +323,9 @@ class ModelTests {
                 model.schedulerBuilder("C").build().cast();
         final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputA);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputA);
 
         validateModel(model, false);
     }
@@ -361,10 +360,10 @@ class ModelTests {
                 model.schedulerBuilder("D").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
-        taskSchedulerD.solderTo(inputA);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
+        taskSchedulerD.getOutputWire().solderTo(inputA);
 
         validateModel(model, true);
     }
@@ -399,10 +398,10 @@ class ModelTests {
                 model.schedulerBuilder("D").build().cast();
         final InputWire<Integer, Integer> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
-        taskSchedulerD.solderTo(inputA, true);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
+        taskSchedulerD.getOutputWire().solderTo(inputA, true);
 
         validateModel(model, false);
     }
@@ -437,10 +436,10 @@ class ModelTests {
                 model.schedulerBuilder("D").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputD = taskSchedulerD.buildInputWire("inputD");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
-        taskSchedulerD.solderTo(inputA);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
+        taskSchedulerD.getOutputWire().solderTo(inputA);
 
         validateModel(model, true);
     }
@@ -508,17 +507,17 @@ class ModelTests {
                 model.schedulerBuilder("J").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputJ = taskSchedulerJ.buildInputWire("inputJ");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
-        taskSchedulerD.solderTo(inputE);
-        taskSchedulerE.solderTo(inputF);
-        taskSchedulerF.solderTo(inputG);
-        taskSchedulerG.solderTo(inputD);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
+        taskSchedulerD.getOutputWire().solderTo(inputE);
+        taskSchedulerE.getOutputWire().solderTo(inputF);
+        taskSchedulerF.getOutputWire().solderTo(inputG);
+        taskSchedulerG.getOutputWire().solderTo(inputD);
 
-        taskSchedulerF.solderTo(inputH);
-        taskSchedulerH.solderTo(inputI);
-        taskSchedulerI.solderTo(inputJ);
+        taskSchedulerF.getOutputWire().solderTo(inputH);
+        taskSchedulerH.getOutputWire().solderTo(inputI);
+        taskSchedulerI.getOutputWire().solderTo(inputJ);
 
         validateModel(model, true);
     }
@@ -586,17 +585,17 @@ class ModelTests {
                 model.schedulerBuilder("J").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputJ = taskSchedulerJ.buildInputWire("");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
-        taskSchedulerD.solderTo(inputE);
-        taskSchedulerE.solderTo(inputF);
-        taskSchedulerF.solderTo(inputG);
-        taskSchedulerG.solderTo(inputD, true);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
+        taskSchedulerD.getOutputWire().solderTo(inputE);
+        taskSchedulerE.getOutputWire().solderTo(inputF);
+        taskSchedulerF.getOutputWire().solderTo(inputG);
+        taskSchedulerG.getOutputWire().solderTo(inputD, true);
 
-        taskSchedulerF.solderTo(inputH);
-        taskSchedulerH.solderTo(inputI);
-        taskSchedulerI.solderTo(inputJ);
+        taskSchedulerF.getOutputWire().solderTo(inputH);
+        taskSchedulerH.getOutputWire().solderTo(inputI);
+        taskSchedulerI.getOutputWire().solderTo(inputJ);
 
         validateModel(model, false);
     }
@@ -664,17 +663,17 @@ class ModelTests {
                 model.schedulerBuilder("J").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputJ = taskSchedulerJ.buildInputWire("inputJ");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
-        taskSchedulerD.solderTo(inputE);
-        taskSchedulerE.solderTo(inputF);
-        taskSchedulerF.solderTo(inputG);
-        taskSchedulerG.solderTo(inputD);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
+        taskSchedulerD.getOutputWire().solderTo(inputE);
+        taskSchedulerE.getOutputWire().solderTo(inputF);
+        taskSchedulerF.getOutputWire().solderTo(inputG);
+        taskSchedulerG.getOutputWire().solderTo(inputD);
 
-        taskSchedulerF.solderTo(inputH);
-        taskSchedulerH.solderTo(inputI);
-        taskSchedulerI.solderTo(inputJ);
+        taskSchedulerF.getOutputWire().solderTo(inputH);
+        taskSchedulerH.getOutputWire().solderTo(inputI);
+        taskSchedulerI.getOutputWire().solderTo(inputJ);
 
         validateModel(model, false);
     }
@@ -742,21 +741,21 @@ class ModelTests {
                 model.schedulerBuilder("J").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputJ = taskSchedulerJ.buildInputWire("inputJ");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
-        taskSchedulerD.solderTo(inputE);
-        taskSchedulerE.solderTo(inputF);
-        taskSchedulerF.solderTo(inputG);
-        taskSchedulerG.solderTo(inputD);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
+        taskSchedulerD.getOutputWire().solderTo(inputE);
+        taskSchedulerE.getOutputWire().solderTo(inputF);
+        taskSchedulerF.getOutputWire().solderTo(inputG);
+        taskSchedulerG.getOutputWire().solderTo(inputD);
 
-        taskSchedulerF.solderTo(inputH);
-        taskSchedulerH.solderTo(inputI);
-        taskSchedulerI.solderTo(inputJ);
+        taskSchedulerF.getOutputWire().solderTo(inputH);
+        taskSchedulerH.getOutputWire().solderTo(inputI);
+        taskSchedulerI.getOutputWire().solderTo(inputJ);
 
-        taskSchedulerJ.solderTo(inputA);
+        taskSchedulerJ.getOutputWire().solderTo(inputA);
 
-        taskSchedulerI.solderTo(inputE);
+        taskSchedulerI.getOutputWire().solderTo(inputE);
 
         validateModel(model, true);
     }
@@ -824,21 +823,21 @@ class ModelTests {
                 model.schedulerBuilder("J").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputJ = taskSchedulerJ.buildInputWire("inputJ");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
-        taskSchedulerD.solderTo(inputE);
-        taskSchedulerE.solderTo(inputF);
-        taskSchedulerF.solderTo(inputG);
-        taskSchedulerG.solderTo(inputD, true);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
+        taskSchedulerD.getOutputWire().solderTo(inputE);
+        taskSchedulerE.getOutputWire().solderTo(inputF);
+        taskSchedulerF.getOutputWire().solderTo(inputG);
+        taskSchedulerG.getOutputWire().solderTo(inputD, true);
 
-        taskSchedulerF.solderTo(inputH);
-        taskSchedulerH.solderTo(inputI);
-        taskSchedulerI.solderTo(inputJ);
+        taskSchedulerF.getOutputWire().solderTo(inputH);
+        taskSchedulerH.getOutputWire().solderTo(inputI);
+        taskSchedulerI.getOutputWire().solderTo(inputJ);
 
-        taskSchedulerJ.solderTo(inputA, true);
+        taskSchedulerJ.getOutputWire().solderTo(inputA, true);
 
-        taskSchedulerI.solderTo(inputE, true);
+        taskSchedulerI.getOutputWire().solderTo(inputE, true);
 
         validateModel(model, false);
     }
@@ -906,21 +905,21 @@ class ModelTests {
                 model.schedulerBuilder("J").build().cast();
         final InputWire<Integer, Integer> inputJ = taskSchedulerJ.buildInputWire("inputJ");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
-        taskSchedulerD.solderTo(inputE);
-        taskSchedulerE.solderTo(inputF);
-        taskSchedulerF.solderTo(inputG);
-        taskSchedulerG.solderTo(inputD);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
+        taskSchedulerD.getOutputWire().solderTo(inputE);
+        taskSchedulerE.getOutputWire().solderTo(inputF);
+        taskSchedulerF.getOutputWire().solderTo(inputG);
+        taskSchedulerG.getOutputWire().solderTo(inputD);
 
-        taskSchedulerF.solderTo(inputH);
-        taskSchedulerH.solderTo(inputI);
-        taskSchedulerI.solderTo(inputJ);
+        taskSchedulerF.getOutputWire().solderTo(inputH);
+        taskSchedulerH.getOutputWire().solderTo(inputI);
+        taskSchedulerI.getOutputWire().solderTo(inputJ);
 
-        taskSchedulerJ.solderTo(inputA);
+        taskSchedulerJ.getOutputWire().solderTo(inputA);
 
-        taskSchedulerI.solderTo(inputE);
+        taskSchedulerI.getOutputWire().solderTo(inputE);
 
         validateModel(model, false);
     }
@@ -990,17 +989,17 @@ class ModelTests {
                 model.schedulerBuilder("J").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputJ = taskSchedulerJ.buildInputWire("");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
-        taskSchedulerD.buildFilter("onlyEven", x -> x % 2 == 0).solderTo(inputE);
-        taskSchedulerE.solderTo(inputF);
-        taskSchedulerF.solderTo(inputG);
-        taskSchedulerG.solderTo(inputD);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
+        taskSchedulerD.getOutputWire().buildFilter("onlyEven", x -> x % 2 == 0).solderTo(inputE);
+        taskSchedulerE.getOutputWire().solderTo(inputF);
+        taskSchedulerF.getOutputWire().solderTo(inputG);
+        taskSchedulerG.getOutputWire().solderTo(inputD);
 
-        taskSchedulerF.solderTo(inputH);
-        taskSchedulerH.solderTo(inputI);
-        taskSchedulerI.solderTo(inputJ);
+        taskSchedulerF.getOutputWire().solderTo(inputH);
+        taskSchedulerH.getOutputWire().solderTo(inputI);
+        taskSchedulerI.getOutputWire().solderTo(inputJ);
 
         validateModel(model, true);
     }
@@ -1070,17 +1069,17 @@ class ModelTests {
                 model.schedulerBuilder("J").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputJ = taskSchedulerJ.buildInputWire("");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
-        taskSchedulerD.buildTransformer("inverter", x -> -x).solderTo(inputE);
-        taskSchedulerE.solderTo(inputF);
-        taskSchedulerF.solderTo(inputG);
-        taskSchedulerG.solderTo(inputD);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
+        taskSchedulerD.getOutputWire().buildTransformer("inverter", x -> -x).solderTo(inputE);
+        taskSchedulerE.getOutputWire().solderTo(inputF);
+        taskSchedulerF.getOutputWire().solderTo(inputG);
+        taskSchedulerG.getOutputWire().solderTo(inputD);
 
-        taskSchedulerF.solderTo(inputH);
-        taskSchedulerH.solderTo(inputI);
-        taskSchedulerI.solderTo(inputJ);
+        taskSchedulerF.getOutputWire().solderTo(inputH);
+        taskSchedulerH.getOutputWire().solderTo(inputI);
+        taskSchedulerI.getOutputWire().solderTo(inputJ);
 
         validateModel(model, true);
     }
@@ -1150,18 +1149,18 @@ class ModelTests {
                 model.schedulerBuilder("J").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputJ = taskSchedulerJ.buildInputWire("");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
-        final OutputWire<Integer> splitter = taskSchedulerD.buildSplitter();
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
+        final OutputWire<Integer> splitter = taskSchedulerD.getOutputWire().buildSplitter();
         splitter.solderTo(inputE);
-        taskSchedulerE.solderTo(inputF);
-        taskSchedulerF.solderTo(inputG);
-        taskSchedulerG.solderTo(inputD);
+        taskSchedulerE.getOutputWire().solderTo(inputF);
+        taskSchedulerF.getOutputWire().solderTo(inputG);
+        taskSchedulerG.getOutputWire().solderTo(inputD);
 
-        taskSchedulerF.solderTo(inputH);
-        taskSchedulerH.solderTo(inputI);
-        taskSchedulerI.solderTo(inputJ);
+        taskSchedulerF.getOutputWire().solderTo(inputH);
+        taskSchedulerH.getOutputWire().solderTo(inputI);
+        taskSchedulerI.getOutputWire().solderTo(inputJ);
 
         validateModel(model, true);
     }
@@ -1228,8 +1227,8 @@ class ModelTests {
 
         final TaskScheduler<Integer> taskSchedulerI =
                 model.schedulerBuilder("I").withUnhandledTaskCapacity(1).build().cast();
-        final SecondaryOutputWire<Integer> secondaryOutputI = taskSchedulerI.buildSecondaryOutputWire();
-        final SecondaryOutputWire<Integer> tertiaryOutputI = taskSchedulerI.buildSecondaryOutputWire();
+        final OutputWire<Integer> secondaryOutputI = taskSchedulerI.buildSecondaryOutputWire();
+        final OutputWire<Integer> tertiaryOutputI = taskSchedulerI.buildSecondaryOutputWire();
         final InputWire<Integer, Integer> inputI = taskSchedulerI.buildInputWire("inputI");
 
         final TaskScheduler<Integer> taskSchedulerJ =
@@ -1237,19 +1236,19 @@ class ModelTests {
         final InputWire<Integer, Integer> inputJ = taskSchedulerJ.buildInputWire("inputJ");
         final InputWire<Integer, Integer> inputJ2 = taskSchedulerJ.buildInputWire("inputJ2");
 
-        taskSchedulerA.solderTo(inputB);
-        taskSchedulerB.solderTo(inputC);
-        taskSchedulerC.solderTo(inputD);
-        taskSchedulerD.solderTo(inputE);
-        taskSchedulerE.solderTo(inputF);
-        taskSchedulerF.solderTo(inputG);
-        taskSchedulerG.solderTo(inputD);
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
+        taskSchedulerD.getOutputWire().solderTo(inputE);
+        taskSchedulerE.getOutputWire().solderTo(inputF);
+        taskSchedulerF.getOutputWire().solderTo(inputG);
+        taskSchedulerG.getOutputWire().solderTo(inputD);
 
-        taskSchedulerF.solderTo(inputH);
-        taskSchedulerH.solderTo(inputI);
-        taskSchedulerI.solderTo(inputJ);
+        taskSchedulerF.getOutputWire().solderTo(inputH);
+        taskSchedulerH.getOutputWire().solderTo(inputI);
+        taskSchedulerI.getOutputWire().solderTo(inputJ);
 
-        taskSchedulerJ.solderTo(inputA);
+        taskSchedulerJ.getOutputWire().solderTo(inputA);
 
         secondaryOutputI.solderTo(inputE);
         tertiaryOutputI.solderTo(inputJ2);

@@ -55,7 +55,7 @@ public class OrphanBufferScheduler {
         eventInput = taskScheduler.buildInputWire("unordered events");
         minimumGenerationNonAncientInput = taskScheduler.buildInputWire("minimum generation non ancient");
 
-        eventOutput = taskScheduler.buildSplitter();
+        eventOutput = taskScheduler.getOutputWire().buildSplitter();
     }
 
     /**
