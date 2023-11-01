@@ -56,9 +56,7 @@ import com.swirlds.config.api.ConfigProperty;
  * @param eventsLogPeriod                   period of generating eventStream file
  * @param eventsLogDir                      eventStream files will be generated in this directory.
  * @param enableEventStreaming              enable stream event to server.
- * @param asyncPrehandle                    if true then prehandle transactions asynchronously in a thread pool, if
- *                                          false then prehandle happens on the intake thread
- * @param prehandlePoolSize                 the size of the thread pool used for prehandling transactions, if enabled
+ * @param prehandlePoolSize                 the size of the thread pool used for prehandling transactions
  */
 @ConfigData("event")
 public record EventConfig(
@@ -72,5 +70,4 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "5") long eventsLogPeriod,
         @ConfigProperty(defaultValue = "./eventstreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
-        @ConfigProperty(defaultValue = "true") boolean asyncPrehandle,
         @ConfigProperty(defaultValue = "8") int prehandlePoolSize) {}

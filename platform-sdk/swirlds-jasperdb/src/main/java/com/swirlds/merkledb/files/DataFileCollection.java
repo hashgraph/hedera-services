@@ -26,6 +26,7 @@ import static com.swirlds.merkledb.files.DataFileCommon.isFullyWrittenDataFile;
 import static com.swirlds.merkledb.files.DataFileCompactor.INITIAL_COMPACTION_LEVEL;
 import static java.util.Collections.singletonList;
 
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.CASableLongIndex;
@@ -125,14 +126,14 @@ public class DataFileCollection<D> implements Snapshotable {
      * before compaction is complete. In the end of compaction, all the compacted files are removed
      * from this list.
      *
-     * The list is used to read data items and to make snapshots. Reading from the file, which is
+     * <p>The list is used to read data items and to make snapshots. Reading from the file, which is
      * being written to during compaction, is possible because both readers and writers use Java
      * file channel APIs. Snapshots are an issue, though. Snapshots must be as fast as possible, so
      * they are implemented as to make hard links in the target folder to all data files in
      * collection. If compaction is in progress, the last file in the list isn't fully written yet,
      * so it can't be hard linked easily. To solve it, before a snapshot is taken, the current
      * compaction file is flushed to disk, and compaction is put on hold using {@link
-     * DataFileCompactor#snapshotCompactionLock} and then resumed after snapshot is complete.
+     * DataFileCompactor#pauseCompaction()} and then resumed after snapshot is complete.
      */
     private final AtomicReference<ImmutableIndexedObjectList<DataFileReader<D>>> dataFiles = new AtomicReference<>();
 
@@ -411,25 +412,13 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Read a data item from any file that has finished being written. This is not 100% thread safe
-     * with concurrent merging, it is possible it will throw a ClosedChannelException or return
-     * null. So it should be retried if those happen.
-     *
-     * @param dataLocation the location of the data item to read. This contains both the file and
-     *     the location within the file.
-     * @return Data item if the data location was found in files. <br>
-     *     <br>
-     *     A null is returned :
-     *     <ol>
-     *       <li>if not found
-     *       <li>if deserialize flag is false
-     *     </ol>
-     *
-     * @throws IOException If there was a problem reading the data item.
-     * @throws ClosedChannelException In the very rare case merging closed the file between us
-     *     checking if file is open and reading
+     * Gets the data file reader for a given data location. This method checks that a file with
+     * the specified index exists in this file collection, and that the file is open. Note,
+     * however, there is unavoidable race here, when the file reader is open while this method
+     * is running, but closed immediately after the method is complete. This is why calls to
+     * this method are wrapped into a retry loop in {@link #retryReadUsingIndex}.
      */
-    protected D readDataItem(final long dataLocation) throws IOException {
+    private DataFileReader<D> readerForDataLocation(final long dataLocation) throws IOException {
         // check if found
         if (dataLocation == 0) {
             return null;
@@ -450,9 +439,9 @@ public class DataFileCollection<D> implements Snapshotable {
                     + "\ncurrentIndexedFileList="
                     + currentIndexedFileList);
         }
-        // read data, check at last second that file is not closed
+        // Check that file is not closed
         if (file.isOpen()) {
-            return file.readDataItem(dataLocation);
+            return file;
         } else {
             // Let's log this as it should happen very rarely but if we see it a lot then we should
             // have a rethink.
@@ -463,22 +452,49 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Read a data item from any file that has finished being written. Uses a LongList that maps
-     * key-&gt;dataLocation, this allows for multiple retries going back to the index each time. The
-     * allows us to cover the cracks where threads can slip though.
+     * Read data item bytes at a given location (file index + offset). If the file is not found or
+     * already closed, this method returns {@code null}. This may happen, if the index, where the data
+     * location originated from, has just been updated in a parallel compaction thread.
      *
-     * This depends on the fact that LongList has a nominal value of
-     * LongList.IMPERMISSIBLE_VALUE=0 for non-existent values.
+     * <p>NOTE: this method may not be used for data types, which can be of multiple different
+     * versions. This is because there is no way for a caller to know the version of the returned
+     * bytes.
      *
-     * @param index key-&gt;dataLocation index
-     * @param keyIntoIndex The key to lookup in index
-     * @return Data item if the data location was found in files. If contained in the index but not
-     *     in files after a number of retries then an exception is thrown. <br>
-     *     A null is returned if not found in index
+     * @param dataLocation Data item location, which combines file index and offset
+     * @return Data item bytes if the data location was found in files
      *
      * @throws IOException If there was a problem reading the data item.
+     * @throws ClosedChannelException In the very rare case merging closed the file between us
+     *     checking if file is open and reading
      */
-    public D readDataItemUsingIndex(final LongList index, final long keyIntoIndex) throws IOException {
+    protected ByteBuffer readDataItemBytes(final long dataLocation) throws IOException {
+        final DataFileReader<D> file = readerForDataLocation(dataLocation);
+        return (file != null) ? file.readDataItemBytes(dataLocation) : null;
+    }
+
+    /**
+     * Read data item at a given location (file index + offset). If the file is not found or already
+     * closed, this method returns {@code null}. This may happen, if the index, where the data
+     * location originated from, has just been updated in a parallel compaction thread.
+     *
+     * <p>The data item is deserialized according to its version from the data file.
+     *
+     * @param dataLocation Data item location, which combines file index and offset
+     * @return Deserialized data item if the data location was found in files
+     * @throws IOException If an I/O error occurred
+     */
+    protected D readDataItem(final long dataLocation) throws IOException {
+        final DataFileReader<D> file = readerForDataLocation(dataLocation);
+        if (file == null) {
+            return null;
+        }
+        final ByteBuffer dataItemBytes = file.readDataItemBytes(dataLocation);
+        return dataItemSerializer.deserialize(dataItemBytes, file.getMetadata().getSerializationVersion());
+    }
+
+    private <T> T retryReadUsingIndex(
+            final LongList index, final long keyIntoIndex, final CheckedFunction<Long, T, IOException> reader)
+            throws IOException {
         // Try reading up to 5 times, 99.999% should work first try but there is a small chance the
         // file was closed by
         // merging when we are half way though reading, and we will see  file.isOpen() = false or a
@@ -494,10 +510,10 @@ public class DataFileCollection<D> implements Snapshotable {
             }
             // read data
             try {
-                final D readData = readDataItem(dataLocation);
+                final T readData = reader.apply(dataLocation);
                 // check we actually read data, this could be null if the file was closed half way
                 // though us reading
-                if ((readData != null)) {
+                if (readData != null) {
                     return readData;
                 }
             } catch (final IOException e) {
@@ -542,6 +558,44 @@ public class DataFileCollection<D> implements Snapshotable {
             }
         }
         throw new IOException("Read failed after 5 retries");
+    }
+
+    /**
+     * Read a data item bytes from any file that has finished being written. Uses a LongList that maps
+     * key-&gt;dataLocation, this allows for multiple retries going back to the index each time. The
+     * allows us to cover the cracks where threads can slip though.
+     *
+     * <p>This depends on the fact that LongList has a nominal value of
+     * LongList.IMPERMISSIBLE_VALUE=0 for non-existent values.
+     *
+     * @param index key-&gt;dataLocation index
+     * @param keyIntoIndex The key to lookup in index
+     * @return Data item bytes if the data location was found in files. If contained in the index but not in
+     *     files after a number of retries then an exception is thrown. A null is returned if not found in index
+     *
+     * @throws IOException If there was a problem reading the data item.
+     */
+    public ByteBuffer readDataItemBytesUsingIndex(final LongList index, final long keyIntoIndex) throws IOException {
+        return retryReadUsingIndex(index, keyIntoIndex, this::readDataItemBytes);
+    }
+
+    /**
+     * Read a data item from any file that has finished being written. Uses a LongList that maps
+     * key-&gt;dataLocation, this allows for multiple retries going back to the index each time. The
+     * allows us to cover the cracks where threads can slip though.
+     *
+     * <p>This depends on the fact that LongList has a nominal value of
+     * LongList.IMPERMISSIBLE_VALUE=0 for non-existent values.
+     *
+     * @param index key-&gt;dataLocation index
+     * @param keyIntoIndex The key to lookup in index
+     * @return Data item if the data location was found in files. If contained in the index but not in files
+     *     after a number of retries then an exception is thrown. A null is returned if not found in index
+     *
+     * @throws IOException If there was a problem reading the data item.
+     */
+    public D readDataItemUsingIndex(final LongList index, final long keyIntoIndex) throws IOException {
+        return retryReadUsingIndex(index, keyIntoIndex, this::readDataItem);
     }
 
     /** {@inheritDoc} */
