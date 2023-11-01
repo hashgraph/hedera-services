@@ -50,7 +50,7 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
         when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID));
         when(nativeOperations.getNft(FUNGIBLE_EVERYTHING_TOKEN.tokenId().tokenNum(), 2L))
                 .thenReturn(CIVILIAN_OWNED_NFT);
-        when(nativeOperations.getAccount(191919)).thenReturn(SOMEBODY);
+        when(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNum())).thenReturn(A_NEW_ACCOUNT);
 
         final var subject =
                 new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, 2L, config);
@@ -84,11 +84,11 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
                                                 EXPECTED_ROYALTY_CUSTOM_FEES.toArray(new Tuple[0]),
                                                 ledgerIdBytes),
                                         2L,
-                                        Address.wrap("0x000000000000000000000000000000000002EdaF"),
+                                        headlongAddressOf(A_NEW_ACCOUNT),
                                         1000000L,
                                         com.hedera.pbj.runtime.io.buffer.Bytes.wrap("SOLD")
                                                 .toByteArray(),
-                                        Address.wrap("0x00000000000000000000000000000000000E0697")))
+                                        headlongAddressOf(B_NEW_ACCOUNT)))
                         .array()),
                 result.getOutput());
     }
