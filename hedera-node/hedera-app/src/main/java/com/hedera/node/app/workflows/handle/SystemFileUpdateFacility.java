@@ -25,7 +25,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.fees.congestion.MonoMultiplierSources;
+import com.hedera.node.app.fees.congestion.CongestionMultipliers;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleManager;
@@ -52,7 +53,7 @@ public class SystemFileUpdateFacility {
     private final ThrottleManager throttleManager;
     private final ExchangeRateManager exchangeRateManager;
     private final FeeManager feeManager;
-    private final MonoMultiplierSources monoMultiplierSources;
+    private final CongestionMultipliers congestionMultipliers;
     private final ThrottleAccumulator backendThrottle;
     private final ThrottleAccumulator frontendThrottle;
 
@@ -66,14 +67,14 @@ public class SystemFileUpdateFacility {
             @NonNull final ThrottleManager throttleManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
-            @NonNull final MonoMultiplierSources monoMultiplierSources,
+            @NonNull final CongestionMultipliers congestionMultipliers,
             @NonNull final ThrottleAccumulator backendThrottle,
             @NonNull final ThrottleAccumulator frontendThrottle) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.throttleManager = requireNonNull(throttleManager, " throttleManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
-        this.monoMultiplierSources = requireNonNull(monoMultiplierSources, "multiplierSources must not be null");
+        this.congestionMultipliers = requireNonNull(congestionMultipliers, "congestionMultipliers must not be null");
         this.backendThrottle = requireNonNull(backendThrottle, "backendThrottle must not be null");
         this.frontendThrottle = requireNonNull(frontendThrottle, "frontendThrottle must not be null");
     }
@@ -126,7 +127,7 @@ public class SystemFileUpdateFacility {
 
             // Updating the multiplier source to use the new gas throttle
             // values that are coming from the network properties
-            monoMultiplierSources.resetExpectations();
+            congestionMultipliers.resetExpectations();
         } else if (fileNum == config.hapiPermissions()) {
             final var networkProperties =
                     FileUtilities.getFileContent(state, createFileID(config.networkProperties(), configuration));
@@ -138,7 +139,7 @@ public class SystemFileUpdateFacility {
             frontendThrottle.rebuildFor(throttleManager.throttleDefinitions());
 
             // Updating the multiplier source to use the new throttle definitions
-            monoMultiplierSources.resetExpectations();
+            congestionMultipliers.resetExpectations();
             return result;
         }
         return SUCCESS;
