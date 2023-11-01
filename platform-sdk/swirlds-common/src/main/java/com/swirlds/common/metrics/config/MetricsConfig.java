@@ -49,8 +49,8 @@ import java.time.Duration;
 public record MetricsConfig(
         @Min(0) @ConfigProperty(defaultValue = "1000") long metricsUpdatePeriodMillis,
         @ConfigProperty(defaultValue = "false") boolean disableMetricsOutput,
-        @ConfigProperty(defaultValue = "") String csvOutputFolder,
-        @ConfigProperty(defaultValue = "") String csvFileName,
+        @ConfigProperty(defaultValue = "data/stats") String csvOutputFolder,
+        @ConfigProperty(defaultValue = "MainNetStats") String csvFileName,
         @ConfigProperty(defaultValue = "false") boolean csvAppend,
         @Min(0) @ConfigProperty(defaultValue = "3000") int csvWriteFrequency,
         @ConfigProperty(defaultValue = "metricsDoc.tsv") String metricsDocFileName,

@@ -10,9 +10,12 @@
                                           #############################
                                           #    Gossip / Networking    #
                                           #############################
-
-chatter.useChatter,                       false
 sync.syncProtocolPermitCount,             2
+
+                                          #############################
+                                          #           State           #
+                                          #############################
+state.saveStatePeriod,                    60
 
                                           #############################
                                           #      Event Creation       #
@@ -27,6 +30,7 @@ platformStatus.observingStatusDelay,      1ms
                                           #############################
 
 event.enableEventStreaming,               false
+event.eventsLogDir,                       ./eventsStreams
 event.preconsensus.enableReplay,          true
 event.preconsensus.enableStorage,         true
 
@@ -35,12 +39,7 @@ event.preconsensus.enableStorage,         true
                                           #############################
 
 metrics.csvFileName,                      PlatformTesting
-
-                                          #############################
-                                          #           State           #
-                                          #############################
-
-state.saveStatePeriod,                    60
+prometheus.endpointEnabled,               false
 
                                           #############################
                                           #           Misc.           #

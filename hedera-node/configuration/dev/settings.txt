@@ -2,44 +2,25 @@
                                           #    Gossip / Networking    #
                                           #############################
 
-numConnections,                                1000
-socket.useLoopbackIp,                          false
 sync.syncProtocolPermitCount,                  2                            # differs from mainnet
 
                                           #############################
                                           #           State           #
                                           #############################
 
-merkleDb.iteratorInputBufferBytes,             16777216
-merkleDb.hashesRamToDiskThreshold,             8388608
 state.saveStatePeriod,                         300                          # differs from mainnet
-state.signedStateDisk,                         5
 state.mainClassNameOverride,                   com.hedera.services.ServicesMain
-virtualMap.preferredFlushQueueSize,            10000
 
                                           #############################
                                           #          Events           #
                                           #############################
 
 event.enableEventStreaming,                    false                        # differs from mainnet
-event.eventsLogDir,                            /opt/hgcapp/eventsStreams
-event.eventsLogPeriod,                         5
-event.maxEventQueueForCons,                    1000
-event.creation.maxCreationRate,                20
-
-                                          #############################
-                                          #         Reconnect         #
-                                          #############################
-
-reconnect.active,                              true
 
                                           #############################
                                           #          Metrics          #
                                           #############################
 
-metrics.csvFileName,                           MainNetStats
-metrics.csvOutputFolder,                       data/stats
-showInternalStats,                             true
 prometheus.endpointEnabled,                    false                        # differs from mainnet
 
                                           #############################

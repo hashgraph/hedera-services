@@ -2,41 +2,10 @@
                                           #    Gossip / Networking    #
                                           #############################
 
-numConnections,                                1000
-socket.useLoopbackIp,                          false
 sync.syncProtocolPermitCount,                  4                            # differs from mainnet
 
                                           #############################
                                           #           State           #
                                           #############################
 
-merkleDb.iteratorInputBufferBytes,             16777216
-merkleDb.hashesRamToDiskThreshold,             8388608
-state.saveStatePeriod,                         900
-state.signedStateDisk,                         5
 state.mainClassNameOverride,                   com.hedera.services.ServicesMain
-virtualMap.preferredFlushQueueSize,            10000
-
-                                          #############################
-                                          #          Events           #
-                                          #############################
-
-event.enableEventStreaming,                    true
-event.eventsLogDir,                            /opt/hgcapp/eventsStreams
-event.eventsLogPeriod,                         5
-event.maxEventQueueForCons,                    1000
-
-                                          #############################
-                                          #         Reconnect         #
-                                          #############################
-
-reconnect.active,                              true
-
-                                          #############################
-                                          #          Metrics          #
-                                          #############################
-
-metrics.csvFileName,                           MainNetStats
-metrics.csvOutputFolder,                       data/stats
-showInternalStats,                             true
-prometheus.endpointEnabled,                    true
