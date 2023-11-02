@@ -72,26 +72,15 @@ public class BackpressureObjectCounter extends ObjectCounter {
      */
     @Override
     public void onRamp() {
-        while (true) {
-            final long currentCount = count.get();
-
-            if (currentCount >= capacity) {
-                // We've reached capacity, so we need to block.
-                break;
-            }
-
+        final long currentCount = count.get();
+        if (currentCount < capacity) {
             final boolean success = count.compareAndSet(currentCount, currentCount + 1);
             if (success) {
-                // We've successfully incremented the count, so we're done.
                 return;
             }
-
-            // We were unable to increment the count because another thread concurrently modified it.
-            // Try again. We will keep trying until we are either successful or we observe there is
-            // insufficient capacity.
         }
 
-        // Slow case. Capacity wasn't available, so we need to block.
+        // Slow case. Capacity wasn't reserved, so we may need to block.
 
         try {
             // This will block until capacity is available and the count has been incremented.
