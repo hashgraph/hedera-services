@@ -33,7 +33,7 @@ dependencies {
     implementation("gradle.plugin.lazy.zoo.gradle:git-data-plugin:1.2.2")
     implementation("me.champeau.jmh:jmh-gradle-plugin:0.7.1")
     implementation("net.swiftzer.semver:semver:1.3.0")
-    implementation("org.gradlex:extra-java-module-info:1.4.2")
+    implementation("org.gradlex:extra-java-module-info:1.5")
     implementation("org.gradlex:java-ecosystem-capabilities:1.3.1")
     implementation("org.gradlex:java-module-dependencies:1.4.1")
     implementation("org.owasp:dependency-check-gradle:8.4.2")
