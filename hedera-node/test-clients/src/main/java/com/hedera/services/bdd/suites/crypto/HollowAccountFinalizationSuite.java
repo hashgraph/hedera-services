@@ -814,8 +814,6 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
     }
 
     @HapiTest
-    //    This is possible in mono-service because we mutate state before handle,
-    //    but can't be possible in modular-services
     private HapiSpec hollowAccountCompletionIsPersistedEvenIfTxnFails() {
         return defaultHapiSpec("hollowAccountCompletionIsPersistedEvenIfTxnFails")
                 .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
