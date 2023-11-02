@@ -26,14 +26,14 @@ val eclipseCollectionsVersion = "10.4.0"
 val grpcVersion = "1.54.1"
 val helidonVersion = "3.2.1"
 val jacksonVersion = "2.13.5"
-val log4jVersion = "2.20.0"
+val log4jVersion = "2.21.1"
 val mockitoVersion = "4.11.0"
 val nettyVersion = "4.1.87.Final"
 val prometheusVersion = "0.16.0"
 val protobufVersion = "3.21.7"
 val systemStubsVersion = "2.0.2"
 val testContainersVersion = "1.17.2"
-val tuweniVersion = "2.3.1"
+val tuweniVersion = "2.4.2"
 
 dependencies {
     api(enforcedPlatform("io.netty:netty-bom:$nettyVersion"))
@@ -53,7 +53,6 @@ moduleInfo {
     version("com.google.jimfs", "1.2")
     version("com.google.protobuf", protobufVersion)
     version("com.google.protobuf.util", protobufVersion)
-    version("com.google.truth", "1.1.3")
     version("com.hedera.pbj.runtime", "0.7.4")
     version("com.sun.jna", "5.12.1")
     version("dagger", daggerVersion)
@@ -68,12 +67,10 @@ moduleInfo {
     version("io.netty.handler", nettyVersion)
     version("io.netty.transport", nettyVersion)
     version("io.netty.transport.classes.epoll", nettyVersion)
-    version("io.netty.transport.epoll", nettyVersion)
     version("io.perfmark", "0.25.0")
     version("io.prometheus.simpleclient", prometheusVersion)
     version("io.prometheus.simpleclient.httpserver", prometheusVersion)
     version("java.annotation", "1.3.2")
-    version("javafx.base", "17")
     version("javax.inject", "1")
     version("lazysodium.java", "5.1.1")
     version("net.i2p.crypto.eddsa", "0.3.0")
@@ -92,7 +89,6 @@ moduleInfo {
     version("org.eclipse.collections.api", eclipseCollectionsVersion)
     version("org.eclipse.collections.impl", eclipseCollectionsVersion)
     version("org.hamcrest", "2.2")
-    version("org.hyperledger.besu.internal.crypto", besuVersion)
     version("org.hyperledger.besu.datatypes", besuVersion)
     version("org.hyperledger.besu.evm", besuVersion)
     version("org.hyperledger.besu.secp256k1", besuNativeVersion)
@@ -107,7 +103,6 @@ moduleInfo {
     version("org.testcontainers", testContainersVersion)
     version("org.testcontainers.junit.jupiter", testContainersVersion)
     version("org.yaml.snakeyaml", "1.33")
-    version("portmapper", "2.0.4")
     version("tuweni.bytes", tuweniVersion)
     version("tuweni.units", tuweniVersion)
     version("uk.org.webcompere.systemstubs.core", systemStubsVersion)

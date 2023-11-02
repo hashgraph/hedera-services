@@ -609,6 +609,28 @@ class SavepointStackImplTest extends StateTestBase {
                     .isInstanceOf(IllegalStateException.class);
             assertThatCode(stack::createSavepoint).doesNotThrowAnyException();
         }
+
+        @Test
+        void testReuseAfterCommitFullStack() {
+            // given
+            final var stack = new SavepointStackImpl(baseState);
+            final var writableState = stack.createWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY);
+            writableState.put(A_KEY, ACAI);
+            final var newData = new HashMap<>(BASE_DATA);
+            newData.put(A_KEY, ACAI);
+
+            // when
+            stack.commitFullStack();
+            stack.createSavepoint();
+
+            // then
+            assertThat(stack.depth()).isEqualTo(1);
+            assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(newData));
+            assertThat(stack.createWritableStates(FOOD_SERVICE)).has(content(newData));
+            assertThat(stack.rootStates(FOOD_SERVICE)).has(content(newData));
+            assertThat(stack.peek().createReadableStates(FOOD_SERVICE)).has(content(newData));
+            assertThat(stack.peek().createWritableStates(FOOD_SERVICE)).has(content(newData));
+        }
     }
 
     private static Condition<ReadableStates> content(Map<String, String> expected) {

@@ -770,6 +770,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             when(childRecordBuilder.status()).thenReturn(ResponseCodeEnum.OK);
             when(recordListBuilder.addPreceding(any(), eq(LIMITED_CHILD_RECORDS)))
                     .thenReturn(childRecordBuilder);
+            when(recordListBuilder.addReversiblePreceding(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
 
@@ -848,6 +849,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         private static Stream<Arguments> createContextDispatchers() {
             return Stream.of(
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchPrecedingTransaction(
+                            defaultTransactionBody(),
+                            SingleTransactionRecordBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT)),
+                    Arguments.of((Consumer<HandleContext>) context -> context.dispatchReversiblePrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
@@ -952,6 +958,12 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                                 VERIFIER_CALLBACK,
                                 AccountID.DEFAULT))
                         .isInstanceOf(IllegalArgumentException.class);
+                assertThatThrownBy(() -> context.dispatchReversiblePrecedingTransaction(
+                                defaultTransactionBody(),
+                                SingleTransactionRecordBuilder.class,
+                                VERIFIER_CALLBACK,
+                                AccountID.DEFAULT))
+                        .isInstanceOf(IllegalArgumentException.class);
                 verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
                 verify(dispatcher, never()).dispatchHandle(any());
                 assertThat(stack.createReadableStates(FOOD_SERVICE)
@@ -974,6 +986,12 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT));
+            assertThatThrownBy(() -> context.dispatchReversiblePrecedingTransaction(
+                            defaultTransactionBody(),
+                            SingleTransactionRecordBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT))
+                    .isInstanceOf(IllegalStateException.class);
             verify(recordListBuilder, times(1)).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, times(1)).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
@@ -989,12 +1007,17 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             stack.peek().createWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).put(B_KEY, BLUEBERRY);
 
             // then
-            assertThatNoException()
-                    .isThrownBy(() -> context.dispatchPrecedingTransaction(
+            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT));
+                            AccountID.DEFAULT))
+                    .isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
+                    defaultTransactionBody(),
+                    SingleTransactionRecordBuilder.class,
+                    VERIFIER_CALLBACK,
+                    AccountID.DEFAULT));
             verify(recordListBuilder, times(1)).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, times(1)).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
@@ -1041,6 +1064,35 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
                     .isEqualTo(APPLE);
+        }
+
+        @Test
+        void testDispatchPrecedingIsCommitted() {
+            // given
+            final var context = createContext(defaultTransactionBody(), TransactionCategory.USER);
+            doAnswer(answer -> {
+                        stack.createWritableStates(FOOD_SERVICE)
+                                .get(FRUIT_STATE_KEY)
+                                .put(A_KEY, ACAI);
+                        return null;
+                    })
+                    .when(dispatcher)
+                    .dispatchHandle(any());
+
+            // when
+            context.dispatchReversiblePrecedingTransaction(
+                    defaultTransactionBody(),
+                    SingleTransactionRecordBuilder.class,
+                    VERIFIER_CALLBACK,
+                    AccountID.DEFAULT);
+
+            // then
+            assertThat(stack.depth()).isEqualTo(1);
+            assertThat(stack.createReadableStates(FOOD_SERVICE)
+                            .get(FRUIT_STATE_KEY)
+                            .get(A_KEY))
+                    .isEqualTo(ACAI);
+            verify(childRecordBuilder).status(SUCCESS);
         }
     }
 
