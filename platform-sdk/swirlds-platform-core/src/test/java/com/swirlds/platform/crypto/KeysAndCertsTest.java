@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.crypto;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,9 +24,6 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.crypto.PreGeneratedPublicKeys;
-import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.crypto.PlatformSigner;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.PublicKey;
 import java.util.Map;
@@ -60,7 +57,7 @@ class KeysAndCertsTest {
      * 		keys and certificates to use for testing
      */
     @ParameterizedTest
-    @MethodSource({"com.swirlds.platform.CryptoArgsProvider#basicTestArgs"})
+    @MethodSource({"com.swirlds.platform.crypto.CryptoArgsProvider#basicTestArgs"})
     void basicTest(@NonNull final AddressBook addressBook, @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts) {
         Objects.requireNonNull(addressBook, "addressBook must not be null");
         Objects.requireNonNull(keysAndCerts, "keysAndCerts must not be null");
