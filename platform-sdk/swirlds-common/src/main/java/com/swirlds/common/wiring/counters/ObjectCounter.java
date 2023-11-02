@@ -51,7 +51,9 @@ public abstract class ObjectCounter {
     public abstract long getCount();
 
     /**
-     * Blocks until the number of objects off-ramped is equal to the number of objects on-ramped.
+     * Blocks until the number of objects off-ramped is equal to the number of objects on-ramped. Does not prevent
+     * new objects from being on-ramped. If new objects are continuously on-ramped, it is possible that this method
+     * may block indefinitely.
      */
     public abstract void waitUntilEmpty();
 }
