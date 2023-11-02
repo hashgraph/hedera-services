@@ -282,4 +282,5 @@ module com.hedera.node.app.service.mono {
     requires org.eclipse.collections.impl;
     requires org.hyperledger.besu.secp256k1;
     requires static com.github.spotbugs.annotations;
+    requires static java.compiler; // javax.annotation.processing.Generated
 }

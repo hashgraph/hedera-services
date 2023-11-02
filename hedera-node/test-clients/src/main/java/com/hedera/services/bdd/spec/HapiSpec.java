@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
+import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -67,9 +68,11 @@ import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
+import com.hedera.services.bdd.spec.utilops.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
+import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -177,6 +180,9 @@ public class HapiSpec implements Runnable {
 
     private final boolean onlySpecToRunInSuite;
     private final List<String> propertiesToPreserve;
+    // Make the STANDALONE_MONO_NETWORK the default target type since we have much fewer touch-points
+    // needed to re-target specs against a @HapiTest or CI Docker network than vice-versa
+    TargetNetworkType targetNetworkType = TargetNetworkType.STANDALONE_MONO_NETWORK;
     List<Payment> costs = new ArrayList<>();
     List<Payment> costSnapshot = Collections.emptyList();
     String name;
@@ -240,6 +246,15 @@ public class HapiSpec implements Runnable {
     public void incrementNumLedgerOps() {
         int newNumLedgerOps = numLedgerOpsExecuted.incrementAndGet();
         ledgerOpCountCallbacks.forEach(c -> c.accept(newNumLedgerOps));
+    }
+
+    public TargetNetworkType targetNetworkType() {
+        return targetNetworkType;
+    }
+
+    public HapiSpec setTargetNetworkType(TargetNetworkType targetNetworkType) {
+        this.targetNetworkType = targetNetworkType;
+        return this;
     }
 
     public synchronized void saveSingleAccountBalances(SingleAccountBalances sab) {
@@ -468,6 +483,7 @@ public class HapiSpec implements Runnable {
                 .deferStatusResolution()
                 .hasAnyStatusAtAll()
                 .execFor(this);
+        SnapshotModeOp snapshotOp = null;
         for (HapiSpecOperation op : ops) {
             if (!autoScheduled.isEmpty() && op.shouldSkipWhenAutoScheduling(autoScheduled)) {
                 continue;
@@ -479,6 +495,11 @@ public class HapiSpec implements Runnable {
                 assertions.add(recordStreamAssertion);
             } else if (op instanceof HapiTxnOp txn && autoScheduled.contains(txn.type())) {
                 op = autoScheduledSequenceFor(txn);
+            } else if (op instanceof SnapshotModeOp snapshotModeOp) {
+                if (snapshotOp != null) {
+                    log.warn("Repeated record snapshot op, all but last are no-ops");
+                }
+                snapshotOp = snapshotModeOp;
             }
             Optional<Throwable> error = op.execFor(this);
             Failure asyncFailure = null;
@@ -510,6 +531,16 @@ public class HapiSpec implements Runnable {
             });
         }
         if (status == PASSED) {
+            if (snapshotOp != null && snapshotOp.hasWorkToDo()) {
+                triggerAndCloseAtLeastOneFileIfNotInterrupted(this);
+                try {
+                    snapshotOp.finishLifecycle();
+                } catch (Throwable t) {
+                    log.error("Record snapshot fuzzy-match failed", t);
+                    status = FAILED;
+                    failure = new Failure(t, "Record snapshot fuzzy-match");
+                }
+            }
             final var maybeRecordStreamError = checkRecordStream(assertions);
             if (maybeRecordStreamError.isPresent()) {
                 status = FAILED;
