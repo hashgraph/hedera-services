@@ -151,7 +151,6 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2877
-    @HapiTest
     private HapiSpec eip1014AddressAlwaysHasPriority() {
         final var contract = "VariousCreate2Calls";
         final var creationTxn = "creationTxn";
@@ -165,7 +164,6 @@ public class ContractUpdateSuite extends HapiSuite {
 
         return defaultHapiSpec("Eip1014AddressAlwaysHasPriority")
                 .given(uploadInitCode(contract), contractCreate(contract).via(creationTxn))
-                // TODO: child records are incorrect here
                 .when(captureChildCreate2MetaFor(2, 0, "setup", creationTxn, childMirror, childEip1014))
                 .then(
                         contractCall(contract, "makeNormalCall").via(callTxn),
@@ -312,8 +310,6 @@ public class ContractUpdateSuite extends HapiSuite {
                 .then(getContractInfo(CONTRACT).has(contractWith().immutableContractKey(CONTRACT)));
     }
 
-    // This is throwing an error inside the pre-handler and it seems hard to implement.
-    @HapiTest
     private HapiSpec canMakeContractImmutableWithEmptyKeyList() {
         return defaultHapiSpec("CanMakeContractImmutableWithEmptyKeyList")
                 .given(
@@ -324,12 +320,9 @@ public class ContractUpdateSuite extends HapiSuite {
                 .when(
                         contractUpdate(CONTRACT).improperlyEmptyingAdminKey().hasKnownStatus(INVALID_ADMIN_KEY),
                         contractUpdate(CONTRACT).properlyEmptyingAdminKey())
-                .then(
-                        // In mono this is implemented in SigRequirements.contractFailure
-                        contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
+                .then(contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
     }
 
-    @HapiTest
     private HapiSpec givenAdminKeyMustBeValid() {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("GivenAdminKeyMustBeValid")
@@ -341,7 +334,6 @@ public class ContractUpdateSuite extends HapiSuite {
                         .hasKnownStatus(INVALID_ADMIN_KEY));
     }
 
-    @HapiTest
     HapiSpec fridayThe13thSpec() {
         final var contract = "SimpleStorage";
         final var suffix = "Clone";
@@ -417,8 +409,6 @@ public class ContractUpdateSuite extends HapiSuite {
                                 .payingWith(payer)
                                 .signedBy(payer, INITIAL_ADMIN_KEY)
                                 .hasKnownStatus(INVALID_SIGNATURE),
-
-                        // In mono this is implemented in SigRequirements.contractFailure
                         contractUpdate(contract)
                                 .payingWith(payer)
                                 .newMemo(BETTER_MEMO)
