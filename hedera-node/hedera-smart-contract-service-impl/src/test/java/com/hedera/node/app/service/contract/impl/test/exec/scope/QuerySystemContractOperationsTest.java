@@ -101,7 +101,8 @@ class QuerySystemContractOperationsTest {
         assertThrows(
                 UnsupportedOperationException.class, () -> subject.activeSignatureTestWith(MOCK_VERIFICATION_STRATEGY));
 
-        assertDoesNotThrow(() -> subject.externalizeResult(ContractFunctionResult.DEFAULT, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS));
+        assertDoesNotThrow(() -> subject.externalizeResult(
+                ContractFunctionResult.DEFAULT, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS));
     }
 
     @Test

@@ -502,8 +502,10 @@ class ProxyWorldUpdaterTest {
         var contractFunctionResult = SystemContractUtils.contractFunctionResultSuccessFor(
                 0, org.apache.tuweni.bytes.Bytes.EMPTY, ContractID.DEFAULT);
 
-        subject.externalizeSystemContractResults(contractFunctionResult, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS);
-        verify(systemContractOperations).externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS);
+        subject.externalizeSystemContractResults(
+                contractFunctionResult, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS);
+        verify(systemContractOperations)
+                .externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS);
     }
 
     @Test

@@ -111,7 +111,10 @@ public interface SystemContractOperations {
      * @param result    contract function result
      * @param status    whether the result is success or an error
      */
-    void externalizeResult(@NonNull final ContractFunctionResult result, @NonNull final ResultStatus status, @NonNull final ResponseCodeEnum responseStatus);
+    void externalizeResult(
+            @NonNull final ContractFunctionResult result,
+            @NonNull final ResultStatus status,
+            @NonNull final ResponseCodeEnum responseStatus);
 
     /**
      * Returns the {@Link ExchangeRate} for the current consensus time.  This will enable the translation from hbars
