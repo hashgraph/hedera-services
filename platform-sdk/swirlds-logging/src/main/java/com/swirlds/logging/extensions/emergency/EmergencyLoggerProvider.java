@@ -14,23 +14,28 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.v2.extensions.event;
+package com.swirlds.logging.extensions.emergency;
 
-import com.swirlds.logging.v2.Level;
+import com.swirlds.logging.internal.emergency.EmergencyLoggerImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Consumer;
 
 /**
- * A consumer that consumes log events.
+ * This class is used to get an instance of the emergency logger.
  */
-public interface LogEventConsumer extends Consumer<LogEvent> {
+public final class EmergencyLoggerProvider {
 
     /**
-     * Checks if the consumer is enabled for the given name and level.
-     *
-     * @param name  the name
-     * @param level the level
-     * @return true if the consumer is enabled, false otherwise
+     * Private constructor to prevent instantiation.
      */
-    boolean isEnabled(@NonNull String name, @NonNull Level level);
+    private EmergencyLoggerProvider() {}
+
+    /**
+     * Gets an instance of the emergency logger.
+     *
+     * @return an instance of the emergency logger
+     */
+    @NonNull
+    public static EmergencyLogger getEmergencyLogger() {
+        return EmergencyLoggerImpl.getInstance();
+    }
 }

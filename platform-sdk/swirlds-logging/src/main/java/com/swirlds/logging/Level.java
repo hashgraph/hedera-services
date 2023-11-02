@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.v2;
+package com.swirlds.logging;
 
-import com.swirlds.logging.v2.extensions.emergency.EmergencyLogger;
-import com.swirlds.logging.v2.extensions.emergency.EmergencyLoggerProvider;
+import com.swirlds.logging.extensions.emergency.EmergencyLogger;
+import com.swirlds.logging.extensions.emergency.EmergencyLoggerProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
