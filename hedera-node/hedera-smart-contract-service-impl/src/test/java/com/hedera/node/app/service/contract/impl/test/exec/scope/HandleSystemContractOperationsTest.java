@@ -30,6 +30,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -132,6 +133,7 @@ class HandleSystemContractOperationsTest {
 
         // given
         given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
         given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
 
@@ -140,6 +142,7 @@ class HandleSystemContractOperationsTest {
 
         // then
         verify(recordBuilder).contractID(ContractID.DEFAULT);
+        verify(recordBuilder).transaction(Transaction.DEFAULT);
         verify(recordBuilder).status(ResponseCodeEnum.SUCCESS);
         verify(recordBuilder).contractCallResult(contractFunctionResult);
     }
@@ -151,6 +154,7 @@ class HandleSystemContractOperationsTest {
 
         // given
         given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.FAIL_INVALID)).willReturn(recordBuilder);
         given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
 
@@ -159,6 +163,7 @@ class HandleSystemContractOperationsTest {
 
         // then
         verify(recordBuilder).contractID(ContractID.DEFAULT);
+        verify(recordBuilder).transaction(Transaction.DEFAULT);
         verify(recordBuilder).status(ResponseCodeEnum.FAIL_INVALID);
         verify(recordBuilder).contractCallResult(contractFunctionResult);
     }

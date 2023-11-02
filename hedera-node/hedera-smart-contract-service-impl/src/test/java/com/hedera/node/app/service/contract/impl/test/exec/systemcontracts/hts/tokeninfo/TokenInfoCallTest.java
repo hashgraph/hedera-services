@@ -57,7 +57,8 @@ class TokenInfoCallTest extends HtsCallTestBase {
     @Test
     void returnsTokenInfoStatusForPresentToken() {
         when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
-        when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID));
+        final var expectedLedgerId = com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID);
+        when(ledgerConfig.id()).thenReturn(expectedLedgerId);
 
         final var subject =
                 new TokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, config);
@@ -88,7 +89,8 @@ class TokenInfoCallTest extends HtsCallTestBase {
                                         EXPECTED_FIXED_CUSTOM_FEES.toArray(new Tuple[0]),
                                         EXPECTED_FRACTIONAL_CUSTOM_FEES.toArray(new Tuple[0]),
                                         EXPECTED_ROYALTY_CUSTOM_FEES.toArray(new Tuple[0]),
-                                        LEDGER_ID))
+                                        Bytes.wrap(expectedLedgerId.toByteArray())
+                                                .toString()))
                         .array()),
                 result.getOutput());
     }
@@ -96,7 +98,8 @@ class TokenInfoCallTest extends HtsCallTestBase {
     @Test
     void returnsTokenInfoStatusForMissingToken() {
         when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
-        when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01"));
+        final var expectedLedgerId = com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01");
+        when(ledgerConfig.id()).thenReturn(expectedLedgerId);
 
         final var subject = new TokenInfoCall(gasCalculator, mockEnhancement(), false, null, config);
 
@@ -126,7 +129,8 @@ class TokenInfoCallTest extends HtsCallTestBase {
                                         Collections.emptyList().toArray(new Tuple[0]),
                                         Collections.emptyList().toArray(new Tuple[0]),
                                         Collections.emptyList().toArray(new Tuple[0]),
-                                        LEDGER_ID))
+                                        Bytes.wrap(expectedLedgerId.toByteArray())
+                                                .toString()))
                         .array()),
                 result.getOutput());
     }

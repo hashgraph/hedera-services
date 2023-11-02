@@ -49,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
@@ -155,6 +156,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 happyPathGetNonFungibleTokenCustomFees());
     }
 
+    @HapiTest
     private HapiSpec happyPathGetTokenInfo() {
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec("HappyPathGetTokenInfo")
@@ -248,6 +250,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec happyPathGetFungibleTokenInfo() {
         final int decimals = 1;
         final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
@@ -342,6 +345,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec happyPathGetNonFungibleTokenInfo() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
@@ -453,6 +457,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     private HapiSpec getInfoOnDeletedFungibleTokenWorks() {
         return defaultHapiSpec("getInfoOnDeletedFungibleTokenWorks")
                 .given(
@@ -498,6 +503,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                         getTxnRecord(TOKEN_INFO_TXN + 2).andAllChildRecords().logged());
     }
 
+    @HapiTest
     private HapiSpec getInfoOnInvalidFungibleTokenFails() {
         return defaultHapiSpec("getInfoOnInvalidFungibleTokenFails")
                 .given(
@@ -540,6 +546,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                         getTxnRecord(TOKEN_INFO_TXN + 2).andAllChildRecords().logged());
     }
 
+    @HapiTest
     private HapiSpec getInfoOnDeletedNonFungibleTokenFails() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("getInfoOnDeletedNonFungibleTokenFails")
@@ -582,6 +589,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     private HapiSpec getInfoOnInvalidNonFungibleTokenFails() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("getInfoOnInvalidNonFungibleTokenFails")
@@ -635,6 +643,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec happyPathGetTokenCustomFees() {
         return defaultHapiSpec("HappyPathGetTokenCustomFees")
                 .given(
@@ -690,6 +699,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                         .withCustomFees(getExpectedCustomFees(spec))))))));
     }
 
+    @HapiTest
     private HapiSpec happyPathGetNonFungibleTokenCustomFees() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
