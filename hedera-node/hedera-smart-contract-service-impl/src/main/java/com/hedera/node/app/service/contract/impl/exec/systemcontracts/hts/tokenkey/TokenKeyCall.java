@@ -105,7 +105,7 @@ public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
                             contractFunctionResultSuccessFor(gasRequirement, output, contractID),
                             SystemContractUtils.ResultStatus.IS_ERROR,
                             INVALID_TOKEN_ID);
-        } else if (key == null){
+        } else if (key == null) {
             result = gasOnly(resultOfViewingToken(token));
 
             gasRequirement = result.fullResult().gasRequirement();

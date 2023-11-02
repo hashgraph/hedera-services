@@ -138,7 +138,7 @@ class HandleSystemContractOperationsTest {
         given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
 
         // when
-        subject.externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS, ResponseCodeEnum.FAIL_INVALID);
+        subject.externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS);
 
         // then
         verify(recordBuilder).contractID(ContractID.DEFAULT);

@@ -114,7 +114,10 @@ public class HandleSystemContractOperations implements SystemContractOperations 
      * {@inheritDoc}
      */
     @Override
-    public void externalizeResult(@NonNull final ContractFunctionResult result, @NonNull final ResultStatus status,  @NonNull final ResponseCodeEnum responseStatus) {
+    public void externalizeResult(
+            @NonNull final ContractFunctionResult result,
+            @NonNull final ResultStatus status,
+            @NonNull final ResponseCodeEnum responseStatus) {
         final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
         childRecordBuilder
                 .transaction(Transaction.DEFAULT)

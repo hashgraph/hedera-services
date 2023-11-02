@@ -105,7 +105,10 @@ public class QuerySystemContractOperations implements SystemContractOperations {
      * {@inheritDoc}
      */
     @Override
-    public void externalizeResult(@NonNull final ContractFunctionResult result, @NonNull final ResultStatus status,  @NonNull final ResponseCodeEnum responseStatus) {
+    public void externalizeResult(
+            @NonNull final ContractFunctionResult result,
+            @NonNull final ResultStatus status,
+            @NonNull final ResponseCodeEnum responseStatus) {
         // no-op
     }
 
