@@ -58,6 +58,7 @@ class HtsSystemContractTest {
     private GasCalculator gasCalculator;
 
     private MockedStatic<FrameUtils> frameUtils;
+
     private HtsSystemContract subject;
 
     @BeforeEach

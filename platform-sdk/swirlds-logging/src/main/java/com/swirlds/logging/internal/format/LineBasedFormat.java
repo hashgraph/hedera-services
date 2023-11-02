@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.v2.internal.format;
+package com.swirlds.logging.internal.format;
 
-import com.swirlds.logging.v2.Level;
-import com.swirlds.logging.v2.Marker;
-import com.swirlds.logging.v2.extensions.emergency.EmergencyLogger;
-import com.swirlds.logging.v2.extensions.emergency.EmergencyLoggerProvider;
-import com.swirlds.logging.v2.extensions.event.LogEvent;
-import com.swirlds.logging.v2.extensions.event.LogMessage;
+import com.swirlds.logging.Level;
+import com.swirlds.logging.Marker;
+import com.swirlds.logging.extensions.emergency.EmergencyLogger;
+import com.swirlds.logging.extensions.emergency.EmergencyLoggerProvider;
+import com.swirlds.logging.extensions.event.LogEvent;
+import com.swirlds.logging.extensions.event.LogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.PrintWriter;
