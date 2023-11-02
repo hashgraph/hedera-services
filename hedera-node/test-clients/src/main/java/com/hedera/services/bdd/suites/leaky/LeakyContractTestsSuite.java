@@ -198,7 +198,6 @@ import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -260,6 +259,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
     private static final String TRANSFER_TOKEN_PUBLIC = "transferTokenPublic";
     private static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
+    public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
     private static final String CREATION = "creation";
     private static final String ENTITY_MEMO = "JUST DO IT";
     private static final String CREATE_2_TXN = "create2Txn";
@@ -332,9 +332,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor")
-                .preserving(PropertyNames.LAZY_CREATION_ENABLED)
+                .preserving(LAZY_CREATION_ENABLED)
                 .given(
-                        overriding(PropertyNames.LAZY_CREATION_ENABLED, TRUE),
+                        overriding(LAZY_CREATION_ENABLED, TRUE),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
