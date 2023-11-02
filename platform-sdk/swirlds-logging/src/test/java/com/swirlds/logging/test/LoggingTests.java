@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.test;
+package com.swirlds.logging;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.json.HasAnyExceptionFilter.hasAnyException;

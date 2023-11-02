@@ -1,0 +1,79 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.swirlds.logging;
+
+import com.swirlds.base.test.fixtures.concurrent.TestExecutor;
+import com.swirlds.base.test.fixtures.concurrent.WithTestExecutor;
+import com.swirlds.logging.api.Logger;
+import com.swirlds.logging.api.internal.LoggingSystem;
+import com.swirlds.logging.util.InMemoryHandler;
+import com.swirlds.logging.util.LoggingUtils;
+import com.swirlds.logging.util.SimpleConfiguration;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+@WithTestExecutor
+public class LoggingSystemStressTest {
+
+    @Test
+    void testMultipleLoggersInParallel(TestExecutor testExecutor) {
+        // given
+        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
+        final InMemoryHandler handler = new InMemoryHandler();
+        loggingSystem.addHandler(handler);
+        final List<Runnable> runnables = IntStream.range(0, 100)
+                .mapToObj(i -> loggingSystem.getLogger("logger-" + i))
+                .map(l -> (Runnable) () -> LoggingUtils.logLikeHell(l))
+                .collect(Collectors.toList());
+
+        // when
+        testExecutor.executeAndWait(runnables);
+
+        // then
+        Assertions.assertEquals(140000, handler.getEvents().size());
+        IntStream.range(0, 100)
+                .forEach(i -> Assertions.assertEquals(
+                        1400,
+                        handler.getEvents().stream()
+                                .filter(e -> Objects.equals(e.loggerName(), "logger-" + i))
+                                .count()));
+    }
+
+    @Test
+    void testOneLoggerInParallel(TestExecutor testExecutor) {
+        // given
+        final SimpleConfiguration configuration = new SimpleConfiguration();
+        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
+        final Logger logger = loggingSystem.getLogger("logger");
+        final InMemoryHandler handler = new InMemoryHandler();
+        loggingSystem.addHandler(handler);
+        final List<Runnable> runnables = IntStream.range(0, 100)
+                .mapToObj(l -> (Runnable) () -> LoggingUtils.logLikeHell(logger))
+                .collect(Collectors.toList());
+
+        // when
+        testExecutor.executeAndWait(runnables);
+
+        // then
+        Assertions.assertEquals(140000, handler.getEvents().size());
+    }
+}

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.test;
+package com.swirlds.logging;
 
 import com.swirlds.logging.legacy.json.JsonLogEntry;
 import java.io.FileNotFoundException;
