@@ -154,7 +154,7 @@ class TipsetEventCreatorTests {
 
         final EventImpl selfParent = events.get(newEvent.getHashedData().getSelfParentHash());
         final long selfParentGeneration =
-                selfParent == null ? -EventConstants.GENERATION_UNDEFINED : selfParent.getGeneration();
+                selfParent == null ? EventConstants.GENERATION_UNDEFINED : selfParent.getGeneration();
         final EventImpl otherParent = events.get(newEvent.getHashedData().getOtherParentHash());
         final long otherParentGeneration =
                 otherParent == null ? EventConstants.GENERATION_UNDEFINED : otherParent.getGeneration();

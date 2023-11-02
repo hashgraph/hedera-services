@@ -226,7 +226,7 @@ public class RandomEventUtils {
                 new BasicSoftwareVersion(1),
                 creatorId,
                 selfDescriptor,
-                otherDescriptor == null ? null : Collections.singletonList(otherDescriptor),
+                otherDescriptor == null ? Collections.emptyList() : Collections.singletonList(otherDescriptor),
                 EventConstants.ROSTER_ROUND_UNDEFINED,
                 selfParent != null
                         ? selfParent.getTimeCreated().plusMillis(1 + random.nextInt(DEFAULT_MAX_NEXT_EVENT_MILLIS))

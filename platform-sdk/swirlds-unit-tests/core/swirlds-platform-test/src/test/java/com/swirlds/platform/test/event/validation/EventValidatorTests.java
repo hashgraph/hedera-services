@@ -80,8 +80,8 @@ class EventValidatorTests {
                         new BasicSoftwareVersion(1),
                         selfId,
                         selfParent,
-                        otherParent == null ? null : Collections.singletonList(otherParent),
-                        -1,
+                        otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
+                        EventConstants.ROSTER_ROUND_UNDEFINED,
                         timeCreated,
                         transactions));
         return event;

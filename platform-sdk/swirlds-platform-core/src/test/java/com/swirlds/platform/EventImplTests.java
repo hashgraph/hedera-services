@@ -27,6 +27,7 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
@@ -250,7 +251,7 @@ public class EventImplTests {
                         new NodeId(0L),
                         selfDescriptor,
                         Collections.singletonList(otherDescriptor),
-                        -1,
+                        EventConstants.ROSTER_ROUND_UNDEFINED,
                         Instant.now(),
                         transactions),
                 new BaseEventUnhashedData(new NodeId(0L), new byte[0]));

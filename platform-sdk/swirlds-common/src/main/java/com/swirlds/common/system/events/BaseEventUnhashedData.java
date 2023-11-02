@@ -16,6 +16,7 @@
 
 package com.swirlds.common.system.events;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -134,9 +135,10 @@ public class BaseEventUnhashedData implements SelfSerializable {
     @Override
     public String toString() {
         final int signatureLength = signature == null ? 0 : signature.length;
-        return "BaseEventUnhashedData{" + ", otherId="
-                + otherId + ", signature="
-                + CommonUtils.hex(signature, signatureLength) + '}';
+        return new ToStringBuilder(this)
+                .append("otherId", otherId)
+                .append("signature", CommonUtils.hex(signature, signatureLength))
+                .toString();
     }
 
     @Override
@@ -175,19 +177,18 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
     /**
      * Synchronize the creator data between the hashed event's other parent data and the creatorId.  This method is to
-     * support backwards compatibility with the previous event serializaiton format.
+     * support backwards compatibility with the previous event serialization format.
      *
      * @param event the event to update
      * @deprecated This method should be deleted when we are no longer supporting the previous event serialization
      * format.
      */
     public void updateOtherParentEventDescriptor(@NonNull final BaseEventHashedData event) {
-        if (otherId != null && event.hasOtherParent()) {
-            final EventDescriptor otherParent = event.getOtherParents().get(0);
+        if (event.hasOtherParent()) {
             if (otherId == null) {
-                otherId = otherParent.getCreator();
+                otherId = event.getOtherParents().get(0).getCreator();
             } else {
-                otherParent.setCreator(otherId);
+                event.getOtherParents().get(0).setCreator(otherId);
             }
         }
     }

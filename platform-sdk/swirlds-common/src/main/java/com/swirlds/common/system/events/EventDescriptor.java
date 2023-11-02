@@ -18,6 +18,7 @@ package com.swirlds.common.system.events;
 
 import static com.swirlds.common.utility.CommonUtils.hex;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -237,9 +238,11 @@ public class EventDescriptor implements SelfSerializable {
 
     @Override
     public String toString() {
-        return "(creator: " + creator + ", generation: "
-                + generation + ", rosterRound: "
-                + rosterRound + ", hash: "
-                + hex(hash.getValue()).substring(0, 12) + ")";
+        return new ToStringBuilder(this)
+                .append("creator", creator)
+                .append("generation", generation)
+                .append("rosterRound", rosterRound)
+                .append("hash", hex(hash.getValue()).substring(0, 12))
+                .toString();
     }
 }

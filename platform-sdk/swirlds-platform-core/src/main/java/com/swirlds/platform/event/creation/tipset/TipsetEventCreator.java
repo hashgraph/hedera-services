@@ -426,7 +426,7 @@ public class TipsetEventCreator implements EventCreator {
                 softwareVersion,
                 selfId,
                 lastSelfEvent,
-                otherParent == null ? null : Collections.singletonList(otherParent),
+                otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),
                 addressBook.getRound(),
                 timeCreated,
                 transactionSupplier.getTransactions());

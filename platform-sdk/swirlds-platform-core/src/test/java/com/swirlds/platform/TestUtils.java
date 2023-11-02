@@ -22,6 +22,7 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.internal.EventImpl;
@@ -66,7 +67,7 @@ public class TestUtils {
                         creatorId,
                         selfDescriptor,
                         Collections.singletonList(otherDescriptor),
-                        -1,
+                        EventConstants.ROSTER_ROUND_UNDEFINED,
                         startTime,
                         new SwirldTransaction[0]),
                 new BaseEventUnhashedData(otherId, new byte[] {0, 0, 0, 0}),

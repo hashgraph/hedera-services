@@ -76,7 +76,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
          * Multiple otherParents are supported.
          * rosterRound is added for lookup of the effective roster at the time of event creation.
          *
-         * @since 0.44.0
+         * @since 0.45.0
          */
         public static final int ROSTER_ROUND = 4;
     }
@@ -134,16 +134,15 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             @NonNull SoftwareVersion softwareVersion,
             @NonNull final NodeId creatorId,
             @Nullable final EventDescriptor selfParent,
-            @Nullable final List<EventDescriptor> otherParents,
+            @NonNull final List<EventDescriptor> otherParents,
             final long rosterRound,
             @NonNull final Instant timeCreated,
             @Nullable final ConsensusTransactionImpl[] transactions) {
         this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
         this.creatorId = Objects.requireNonNull(creatorId, "The creatorId must not be null");
         this.selfParent = selfParent;
-        if (otherParents != null && otherParents.size() == 1 && otherParents.get(0) == null) {
-            throw new IllegalArgumentException("otherParents must not contain null");
-        }
+        Objects.requireNonNull(otherParents, "The otherParents must not be null");
+        otherParents.forEach(Objects::requireNonNull);
         this.otherParents = otherParents;
         this.rosterRound = rosterRound;
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
@@ -163,11 +162,13 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         out.writeSerializable(softwareVersion, true);
         if (serializedVersion < ClassVersion.ROSTER_ROUND) {
             out.writeLong(creatorId.id());
-            out.writeLong(selfParent != null ? selfParent.getGeneration() : EventConstants.ROSTER_ROUND_UNDEFINED);
+            out.writeLong(selfParent != null ? selfParent.getGeneration() : EventConstants.GENERATION_UNDEFINED);
             out.writeLong(
-                    otherParents != null ? otherParents.get(0).getGeneration() : EventConstants.ROSTER_ROUND_UNDEFINED);
+                    !otherParents.isEmpty()
+                            ? otherParents.get(0).getGeneration()
+                            : EventConstants.GENERATION_UNDEFINED);
             out.writeSerializable(selfParent != null ? selfParent.getHash() : null, false);
-            out.writeSerializable(otherParents != null ? otherParents.get(0).getHash() : null, false);
+            out.writeSerializable(!otherParents.isEmpty() ? otherParents.get(0).getHash() : null, false);
         } else {
             out.writeSerializable(creatorId, false);
             out.writeSerializable(selfParent, false);
@@ -224,7 +225,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
                             selfParentHash, creatorId, selfParentGen, EventConstants.ROSTER_ROUND_UNDEFINED);
             // The creator for the other parent descriptor is not here and should be retrieved from the unhashed data.
             otherParents = otherParentHash == null
-                    ? null
+                    ? Collections.emptyList()
                     : Collections.singletonList(new EventDescriptor(
                             otherParentHash, otherParentGen, EventConstants.ROSTER_ROUND_UNDEFINED));
             rosterRound = EventConstants.ROSTER_ROUND_UNDEFINED;
@@ -362,7 +363,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      *
      * @return the event descriptors for the other parents
      */
-    @Nullable
+    @NonNull
     public List<EventDescriptor> getOtherParents() {
         return otherParents;
     }
@@ -462,7 +463,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      */
     @Nullable
     public byte[] getOtherParentHashValue() {
-        return otherParents == null ? null : getOtherParentHash().getValue();
+        return otherParents.isEmpty() ? null : getOtherParentHash().getValue();
     }
 
     @NonNull

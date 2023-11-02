@@ -22,6 +22,7 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.system.events.EventConstants;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
@@ -64,8 +65,8 @@ public class EventFactory {
                 new BasicSoftwareVersion(1),
                 selfId,
                 selfDescriptor,
-                otherDescriptor == null ? null : Collections.singletonList(otherDescriptor),
-                -1,
+                otherDescriptor == null ? Collections.emptyList() : Collections.singletonList(otherDescriptor),
+                EventConstants.ROSTER_ROUND_UNDEFINED,
                 Instant.EPOCH,
                 null);
 
