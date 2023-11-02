@@ -22,7 +22,6 @@ import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ManagedBlocker;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongUnaryOperator;
 
 /**
  * A utility for counting the number of objects in various parts of the pipeline. Will apply backpressure if the number
@@ -32,7 +31,7 @@ public class BackpressureObjectCounter extends ObjectCounter {
 
     private final String name;
     private final AtomicLong count = new AtomicLong(0);
-    private final LongUnaryOperator increment;
+    private final long capacity;
 
     /**
      * When back pressure needs to be applied due to lack of capacity, this object is used to efficiently sleep on the
@@ -60,13 +59,7 @@ public class BackpressureObjectCounter extends ObjectCounter {
         }
 
         this.name = Objects.requireNonNull(name);
-
-        increment = count -> {
-            if (count >= capacity) {
-                throw new NoCapacityException();
-            }
-            return count + 1;
-        };
+        this.capacity = capacity;
 
         final long sleepNanos = sleepDuration.toNanos();
 
@@ -79,34 +72,49 @@ public class BackpressureObjectCounter extends ObjectCounter {
      */
     @Override
     public void onRamp() {
-        try {
-            count.updateAndGet(increment);
-            // Best case scenario: capacity was immediately available.
-        } catch (final NoCapacityException e) {
-            // Slow case. Capacity wasn't available, so we need to block.
-            try {
-                // This will block until capacity is available and the count has been incremented.
-                //
-                // This is logically equivalent to the following pseudocode.
-                // Note that the managed block is thread safe when onRamp() is being called from multiple threads,
-                // even though this pseudocode is not.
-                //
-                //                while (count >= capacity) {
-                //                    Thread.sleep(sleepNanos);
-                //                }
-                //                count++;
-                //
-                // The reason why we use the managedBlock() strategy instead of something simpler has to do with
-                // the fork join pool paradigm. Unlike traditional thread pools where we have more threads than
-                // CPUs, blocking (e.g. Thread.sleep()) on a fork join pool may monopolize an entire CPU core.
-                // The managedBlock() pattern allows us to block while yielding the physical CPU core to other
-                // tasks.
-                ForkJoinPool.managedBlock(onRampBlocker);
-            } catch (final InterruptedException ex) {
-                // This should be impossible.
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException("Interrupted while blocking on an onRamp() for " + name);
+        while (true) {
+            final long currentCount = count.get();
+
+            if (currentCount >= capacity) {
+                // We've reached capacity, so we need to block.
+                break;
             }
+
+            final boolean success = count.compareAndSet(currentCount, currentCount + 1);
+            if (success) {
+                // We've successfully incremented the count, so we're done.
+                return;
+            }
+
+            // We were unable to increment the count because another thread concurrently modified it.
+            // Try again. We will keep trying until we are either successful or we observe there is
+            // insufficient capacity.
+        }
+
+        // Slow case. Capacity wasn't available, so we need to block.
+
+        try {
+            // This will block until capacity is available and the count has been incremented.
+            //
+            // This is logically equivalent to the following pseudocode.
+            // Note that the managed block is thread safe when onRamp() is being called from multiple threads,
+            // even though this pseudocode is not.
+            //
+            //                while (count >= capacity) {
+            //                    Thread.sleep(sleepNanos);
+            //                }
+            //                count++;
+            //
+            // The reason why we use the managedBlock() strategy instead of something simpler has to do with
+            // the fork join pool paradigm. Unlike traditional thread pools where we have more threads than
+            // CPUs, blocking (e.g. Thread.sleep()) on a fork join pool may monopolize an entire CPU core.
+            // The managedBlock() pattern allows us to block while yielding the physical CPU core to other
+            // tasks.
+            ForkJoinPool.managedBlock(onRampBlocker);
+        } catch (final InterruptedException ex) {
+            // This should be impossible.
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while blocking on an onRamp() for " + name);
         }
     }
 
@@ -115,12 +123,11 @@ public class BackpressureObjectCounter extends ObjectCounter {
      */
     @Override
     public boolean attemptOnRamp() {
-        try {
-            count.updateAndGet(increment);
-            return true;
-        } catch (final NoCapacityException e) {
+        final long currentCount = count.get();
+        if (currentCount >= capacity) {
             return false;
         }
+        return count.compareAndSet(currentCount, currentCount + 1);
     }
 
     /**
