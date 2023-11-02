@@ -22,7 +22,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.StaticPlatformBuilder.doStaticSetup;
 import static com.swirlds.platform.StaticPlatformBuilder.getGlobalMetrics;
 import static com.swirlds.platform.StaticPlatformBuilder.getMetricsProvider;
-import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
+import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
@@ -45,6 +45,7 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
@@ -201,7 +202,7 @@ public final class PlatformBuilder {
 
         checkNodesToRun(List.of(selfId));
 
-        final Map<NodeId, Crypto> crypto = initNodeSecurity(configAddressBook, configuration);
+        final Map<NodeId, KeysAndCerts> keysAndCerts = initNodeSecurity(configAddressBook, configuration);
         final PlatformContext platformContext = new DefaultPlatformContext(selfId, getMetricsProvider(), configuration);
 
         // the AddressBook is not changed after this point, so we calculate the hash now
@@ -259,7 +260,7 @@ public final class PlatformBuilder {
 
             final SwirldsPlatform platform = new SwirldsPlatform(
                     platformContext,
-                    crypto.get(selfId),
+                    keysAndCerts.get(selfId),
                     recycleBin,
                     selfId,
                     appName,

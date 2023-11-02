@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.crypto;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
-import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.test.framework.ResourceLoader;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
 
@@ -42,8 +38,6 @@ public class CryptoArgsProvider {
      * @return 2 sets of arguments, 1 generated and 1 loaded from files
      */
     static Stream<Arguments> basicTestArgs() throws Exception {
-        final ExecutorService threadPool = Executors.newFixedThreadPool(NUMBER_OF_ADDRESSES);
-
         Instant start = Instant.now();
         final AddressBook loadedAB = createAddressBook();
         final Map<NodeId, KeysAndCerts> loadedC =
@@ -53,7 +47,7 @@ public class CryptoArgsProvider {
 
         start = Instant.now();
         final AddressBook genAB = createAddressBook();
-        final Map<NodeId, KeysAndCerts> genC = CryptoStatic.generateKeysAndCerts(genAB, threadPool);
+        final Map<NodeId, KeysAndCerts> genC = CryptoStatic.generateKeysAndCerts(genAB);
         System.out.println(
                 "Key generating took " + Duration.between(start, Instant.now()).toMillis());
         return Stream.of(Arguments.of(loadedAB, loadedC), Arguments.of(genAB, genC));

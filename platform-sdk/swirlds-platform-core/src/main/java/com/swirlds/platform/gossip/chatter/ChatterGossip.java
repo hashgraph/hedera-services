@@ -43,10 +43,10 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.Crypto;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -102,7 +102,7 @@ public class ChatterGossip extends AbstractGossip {
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
      * @param time                          the wall clock time
-     * @param crypto                        can be used to sign things
+     * @param keysAndCerts                  private keys and public certificates
      * @param notificationEngine            used to send notifications to the app
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
@@ -126,7 +126,7 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull Crypto crypto,
+            @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final NotificationEngine notificationEngine,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
@@ -149,7 +149,7 @@ public class ChatterGossip extends AbstractGossip {
                 platformContext,
                 threadManager,
                 time,
-                crypto,
+                keysAndCerts,
                 addressBook,
                 selfId,
                 appVersion,

@@ -30,10 +30,10 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
-import com.swirlds.platform.Crypto;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
@@ -66,7 +66,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
      * @param time                          the time object used to get the current time
-     * @param crypto                        can be used to sign things
+     * @param keysAndCerts                  private keys and public certificates
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
@@ -81,13 +81,13 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
     public SingleNodeSyncGossip(
-            @NonNull PlatformContext platformContext,
-            @NonNull ThreadManager threadManager,
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull Crypto crypto,
-            @NonNull AddressBook addressBook,
-            @NonNull NodeId selfId,
-            @NonNull SoftwareVersion appVersion,
+            @NonNull final KeysAndCerts keysAndCerts,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId,
+            @NonNull final SoftwareVersion appVersion,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -102,7 +102,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 platformContext,
                 threadManager,
                 time,
-                crypto,
+                keysAndCerts,
                 addressBook,
                 selfId,
                 appVersion,

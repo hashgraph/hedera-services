@@ -27,8 +27,6 @@ import java.time.Duration;
  * @param logStackTracePauseDuration
  * 		If a thread takes longer than this duration to {@link StoppableThread#pause()}, log a stack trace for debugging
  * 		purposes. A value of {@link Duration#ZERO} means never log.
- * @param numCryptoThreads
- * 		number of threads used to verify signatures and generate keys, in parallel
  * @param threadPrioritySync
  * 		priority for threads that sync (in SyncCaller, SyncListener, SyncServer)
  * @param threadPriorityNonSync
@@ -41,7 +39,6 @@ import java.time.Duration;
 @ConfigData("thread")
 public record ThreadConfig(
         @ConfigProperty(defaultValue = "5s") Duration logStackTracePauseDuration,
-        @ConfigProperty(defaultValue = "32") int numCryptoThreads,
         @ConfigProperty(defaultValue = "5") int threadPrioritySync,
         @ConfigProperty(defaultValue = "5") int threadPriorityNonSync,
         @ConfigProperty(defaultValue = "0") long threadDumpPeriodMs,

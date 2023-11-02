@@ -17,7 +17,7 @@
 package com.swirlds.platform.recovery.internal;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
+import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.context.DefaultPlatformContext;
@@ -33,7 +33,8 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.Crypto;
+import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
@@ -48,7 +49,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     private final NodeId selfId;
 
     private final AddressBook addressBook;
-    private final Crypto crypto;
+    private final KeysAndCerts keysAndCerts;
 
     private final SignedStateReference immutableState = new SignedStateReference();
 
@@ -77,9 +78,9 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
         this.addressBook = initialState.getAddressBook();
 
         if (loadSigningKeys) {
-            crypto = initNodeSecurity(addressBook, configuration).get(selfId);
+            keysAndCerts = initNodeSecurity(addressBook, configuration).get(selfId);
         } else {
-            crypto = null;
+            keysAndCerts = null;
         }
 
         final Metrics metrics = new NoOpMetrics();
@@ -105,11 +106,11 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      */
     @Override
     public Signature sign(final byte[] data) {
-        if (crypto == null) {
+        if (keysAndCerts == null) {
             throw new UnsupportedOperationException(
                     "RecoveryPlatform was not loaded with signing keys, this operation is not supported");
         }
-        return crypto.sign(data);
+        return new PlatformSigner(keysAndCerts).sign(data);
     }
 
     /**
