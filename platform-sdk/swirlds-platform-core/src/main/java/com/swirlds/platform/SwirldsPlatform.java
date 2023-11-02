@@ -87,6 +87,7 @@ import com.swirlds.platform.components.transaction.system.PreconsensusSystemTran
 import com.swirlds.platform.components.wiring.ManualWiring;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
@@ -203,7 +204,7 @@ public class SwirldsPlatform implements Platform {
     private final ConsensusMetrics consensusMetrics;
 
     /** the object that contains all key pairs and CSPRNG state for this member */
-    private final Crypto crypto;
+    private final KeysAndCerts keysAndCerts;
     /**
      * If a state was loaded from disk, this is the minimum generation non-ancient for that round. If starting from a
      * genesis state, this is 0.
@@ -311,7 +312,7 @@ public class SwirldsPlatform implements Platform {
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
      * @param platformContext          the context for this platform
-     * @param crypto                   an object holding all the public/private key pairs and the CSPRNG state for this
+     * @param keysAndCerts             an object holding all the public/private key pairs and the CSPRNG state for this
      *                                 member
      * @param recycleBin               used to delete files that may be useful for later debugging
      * @param id                       the ID for this node
@@ -323,7 +324,7 @@ public class SwirldsPlatform implements Platform {
      */
     SwirldsPlatform(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Crypto crypto,
+            @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId id,
             @NonNull final String mainClassName,
@@ -383,7 +384,7 @@ public class SwirldsPlatform implements Platform {
 
         this.shadowGraph = new ShadowGraph(syncMetrics, currentAddressBook.getSize());
 
-        this.crypto = crypto;
+        this.keysAndCerts = keysAndCerts;
 
         EventCounter.registerEventCounterMetrics(metrics);
 
@@ -454,7 +455,7 @@ public class SwirldsPlatform implements Platform {
         components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
 
         stateManagementComponent = wiring.wireStateManagementComponent(
-                new PlatformSigner(crypto.getKeysAndCerts()),
+                new PlatformSigner(keysAndCerts),
                 actualMainClassName,
                 selfId,
                 swirldName,
@@ -671,7 +672,7 @@ public class SwirldsPlatform implements Platform {
                 platformContext,
                 threadManager,
                 time,
-                crypto,
+                keysAndCerts,
                 notificationEngine,
                 currentAddressBook,
                 selfId,
@@ -1162,7 +1163,7 @@ public class SwirldsPlatform implements Platform {
      */
     @Override
     public Signature sign(final byte[] data) {
-        return crypto.sign(data);
+        return new PlatformSigner(keysAndCerts).sign(data);
     }
 
     /**
