@@ -286,8 +286,8 @@ public class TokenManagementSpecs extends HapiSuite {
 
         return defaultHapiSpec("WipeAccountFailureCasesWork")
                 .given(
-                        newKeyNamed(multiKey).type(KeyFactory.KeyType.SIMPLE),
-                        newKeyNamed("alias"),
+                        newKeyNamed(multiKey),
+                        newKeyNamed("alias").type(KeyFactory.KeyType.SIMPLE),
                         cryptoCreate("misc").balance(0L),
                         cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(
