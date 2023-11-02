@@ -3,4 +3,4 @@
  * extensions of the logging api) for logging. The emergency logger does not depend on the logging API and is defined in
  * a bulletproof way.
  */
-package com.swirlds.logging.v2.extensions.emergency;
+package com.swirlds.logging.extensions.emergency;

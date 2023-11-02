@@ -14,26 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.v2;
+package com.swirlds.logging.extensions.event;
 
+import com.swirlds.logging.Level;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
- * A marker is a named reference to a location / package / context in the code. It can be used to filter log messages at
- * runtime
- *
- * @param name   the name of the marker
- * @param parent the parent marker (if present)
+ * A consumer that consumes log events.
  */
-public record Marker(@NonNull String name, @Nullable Marker parent) {
+public interface LogEventConsumer extends Consumer<LogEvent> {
 
-    public Marker {
-        Objects.requireNonNull(name, "name must not be null");
-    }
-
-    public Marker(@NonNull final String name) {
-        this(name, null);
-    }
+    /**
+     * Checks if the consumer is enabled for the given name and level.
+     *
+     * @param name  the name
+     * @param level the level
+     * @return true if the consumer is enabled, false otherwise
+     */
+    boolean isEnabled(@NonNull String name, @NonNull Level level);
 }

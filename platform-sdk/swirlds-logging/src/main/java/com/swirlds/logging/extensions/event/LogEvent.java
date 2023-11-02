@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.v2.extensions.event;
+package com.swirlds.logging.extensions.event;
 
-import com.swirlds.logging.v2.Level;
-import com.swirlds.logging.v2.Marker;
+import com.swirlds.logging.Level;
+import com.swirlds.logging.Marker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

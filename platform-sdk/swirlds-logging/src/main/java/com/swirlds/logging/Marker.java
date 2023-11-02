@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.v2.extensions.event;
+package com.swirlds.logging;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 /**
- * A log message that is part of a {@link LogEvent}. A message can be a simple String (see {@link SimpleLogMessage}) or
- * a parameterized String (see {@link ParameterizedLogMessage}).
+ * A marker is a named reference to a location / package / context in the code. It can be used to filter log messages at
+ * runtime
  *
- * @see SimpleLogMessage
- * @see ParameterizedLogMessage
+ * @param name   the name of the marker
+ * @param parent the parent marker (if present)
  */
-public sealed interface LogMessage permits SimpleLogMessage, ParameterizedLogMessage {
+public record Marker(@NonNull String name, @Nullable Marker parent) {
 
-    /**
-     * Returns the message as a String. If the message is parameterized, the parameters are resolved.
-     *
-     * @return the message as a String
-     */
-    @NonNull
-    String getMessage();
+    public Marker {
+        Objects.requireNonNull(name, "name must not be null");
+    }
+
+    public Marker(@NonNull final String name) {
+        this(name, null);
+    }
 }
