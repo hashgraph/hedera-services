@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.util.BootstrapUtils.startJVMPauseDetectorThread;
 import static com.swirlds.platform.util.BootstrapUtils.startThreadDumpGenerator;
 import static com.swirlds.platform.util.BootstrapUtils.writeSettingsUsed;
@@ -27,7 +27,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.startup.Log4jSetup;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.logging.payloads.NodeStartPayload;
+import com.swirlds.logging.legacy.payload.NodeStartPayload;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
