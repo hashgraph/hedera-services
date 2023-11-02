@@ -21,11 +21,13 @@ import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody.Builder;
+import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.FixedFeeWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.TokenCreateWrapper.RoyaltyFeeWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.inject.Singleton;
@@ -120,9 +122,13 @@ public class CreateSyntheticTxnFactory {
         final var royaltyFees = tokenCreateWrapper.getRoyaltyFees().stream()
                 .map(RoyaltyFeeWrapper::asGrpc);
 
-        txnBodyBuilder.customFees(Stream.of(fractionalFees, fixedFees, royaltyFees)
+        var allFees = Stream.of(fractionalFees, fixedFees, royaltyFees)
                 .flatMap(Function.identity())
-                .toList());
+                .toList();
+
+        if(!allFees.isEmpty()) {
+            txnBodyBuilder.customFees(allFees);
+        }
     }
 
 }
