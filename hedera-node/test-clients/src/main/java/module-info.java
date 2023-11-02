@@ -38,5 +38,7 @@ module com.hedera.node.test.clients {
     requires org.json;
     requires org.opentest4j;
     requires tuweni.units;
+    requires com.hedera.pbj.runtime;
+    requires com.swirlds.merkledb;
     requires static com.github.spotbugs.annotations;
 }
