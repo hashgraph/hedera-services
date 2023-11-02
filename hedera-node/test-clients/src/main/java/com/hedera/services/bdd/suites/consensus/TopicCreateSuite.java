@@ -144,6 +144,7 @@ public class TopicCreateSuite extends HapiSuite {
                         .hasKnownStatusFrom(INVALID_RENEWAL_PERIOD, AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
+    @HapiTest
     private HapiSpec signingRequirementsEnforced() {
         long PAYER_BALANCE = 1_999_999_999L;
         final var contractWithAdminKey = "nonCryptoAccount";

@@ -16,21 +16,18 @@
 
 plugins {
     id("com.hedera.hashgraph.conventions")
-    `java-test-fixtures`
+    id("java-test-fixtures")
 }
 
 description = "Hedera Application - SPI"
 
-dependencies {
-    implementation(project(":app-hapi-utils"))
-    javaModuleDependencies {
-        testImplementation(project(":app-spi"))
-        testImplementation(gav("org.apache.commons.lang3"))
-        testImplementation(gav("org.assertj.core"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.junit.jupiter.params"))
-        testImplementation(gav("org.mockito"))
-        testImplementation(gav("org.mockito.junit.jupiter"))
-        testCompileOnly(gav("com.github.spotbugs.annotations"))
-    }
+testModuleInfo {
+    requires("com.hedera.node.app.spi")
+    requires("org.apache.commons.lang3")
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
+    requiresStatic("com.github.spotbugs.annotations")
 }

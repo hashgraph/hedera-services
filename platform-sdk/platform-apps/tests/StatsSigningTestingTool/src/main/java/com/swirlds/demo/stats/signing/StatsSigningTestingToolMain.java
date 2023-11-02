@@ -30,7 +30,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -47,6 +47,7 @@ import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.gui.model.GuiModel;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -275,6 +276,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     }
 
     @Override
+    @NonNull
     public SwirldState newState() {
         return new StatsSigningTestingToolState(() -> sttTransactionPool);
     }

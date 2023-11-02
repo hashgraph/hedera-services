@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
-import com.hedera.node.app.service.token.records.StakingContext;
+import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -60,7 +60,7 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
      * to catch up on updates and distributions when first coming online.
      */
     @Override
-    public void process(@NonNull final StakingContext context) {
+    public void process(@NonNull final TokenContext context) {
         requireNonNull(context, "context must not be null");
         final var consensusTime = context.consensusTime();
         if (consensusTimeOfLastHandledTxn == null
@@ -87,11 +87,9 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
     static boolean isNextStakingPeriod(
             @NonNull final Instant currentConsensusTime,
             @NonNull final Instant previousConsensusTime,
-            @NonNull final StakingContext stakingContext) {
-        final var stakingPeriod = stakingContext
-                .configuration()
-                .getConfigData(StakingConfig.class)
-                .periodMins();
+            @NonNull final TokenContext tokenContext) {
+        final var stakingPeriod =
+                tokenContext.configuration().getConfigData(StakingConfig.class).periodMins();
         if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
             return isLaterUtcDay(currentConsensusTime, previousConsensusTime);
         } else {

@@ -17,8 +17,8 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.utility.Threshold.MAJORITY;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.SIGNED_STATE;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.SIGNED_STATE;
 import static com.swirlds.platform.state.PlatformData.GENESIS_ROUND;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.CREATION;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
@@ -127,6 +127,13 @@ public class SignedState implements SignedStateInfo {
     private boolean hasBeenSavedToDisk;
 
     /**
+     * Indicates if this state is a special state used to jumpstart emergency recovery. This will only be true for a
+     * state that has a root hash that exactly matches the current epoch hash. A recovery state is considered to be
+     * "completely signed" regardless of its actual signatures.
+     */
+    private boolean recoveryState;
+
+    /**
      * Used to track the lifespan of this signed state.
      */
     private final RuntimeObjectRecord registryRecord;
@@ -157,22 +164,7 @@ public class SignedState implements SignedStateInfo {
             @NonNull final State state,
             @NonNull String reason,
             final boolean freezeState) {
-        this(platformContext, state, reason);
-        this.freezeState = freezeState;
-        this.hasBeenSavedToDisk = false;
-    }
 
-    /**
-     * Instantiate a signed state.
-     *
-     * @param platformContext the platform context
-     * @param state           a fast copy of the state resulting from all transactions in consensus order from all
-     *                        events with received rounds up through the round this SignedState represents
-     * @param reason          a short description of why this SignedState is being created. Each location where a
-     *                        SignedState is created should attempt to use a unique reason, as this makes debugging
-     *                        reservation bugs easier.
-     */
-    public SignedState(@NonNull PlatformContext platformContext, @NonNull final State state, @NonNull String reason) {
         state.reserve();
 
         this.state = state;
@@ -188,6 +180,8 @@ public class SignedState implements SignedStateInfo {
 
         registryRecord = RuntimeObjectRegistry.createRecord(getClass(), history);
         sigSet = new SigSet();
+
+        this.freezeState = freezeState;
     }
 
     /**
@@ -264,6 +258,15 @@ public class SignedState implements SignedStateInfo {
      */
     public boolean isFreezeState() {
         return freezeState;
+    }
+
+    /**
+     * Mark this state as a recovery state. A recovery state is a state with a root hash that exactly matches the
+     * current hash epoch. Recovery states are always considered to be "completely signed" regardless of their actual
+     * signatures.
+     */
+    public void markAsRecoveryState() {
+        recoveryState = true;
     }
 
     /**
@@ -427,7 +430,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return events in the platformState
      */
-    public @NonNull EventImpl[] getEvents() {
+    public @Nullable EventImpl[] getEvents() {
         return state.getPlatformState().getPlatformData().getEvents();
     }
 
@@ -438,15 +441,6 @@ public class SignedState implements SignedStateInfo {
      */
     public @NonNull Hash getHashEventsCons() {
         return state.getPlatformState().getPlatformData().getHashEventsCons();
-    }
-
-    /**
-     * Get the number of consensus events in this state.
-     *
-     * @return the number of consensus events in this state
-     */
-    public long getNumEventsCons() {
-        return state.getPlatformState().getPlatformData().getNumEventsCons();
     }
 
     /**
@@ -480,15 +474,6 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
-     * Get the timestamp of the last transaction added to this state.
-     *
-     * @return the timestamp of the last transaction added to this state
-     */
-    public @NonNull Instant getLastTransactionTimestamp() {
-        return state.getPlatformState().getPlatformData().getLastTransactionTimestamp();
-    }
-
-    /**
      * Check if this is a state that needs to be eventually written to disk.
      *
      * @return true if this state eventually needs to be written to disk
@@ -519,8 +504,8 @@ public class SignedState implements SignedStateInfo {
     /**
      * Checks whether this state has been saved to disk.
      * <p>
-     * The return value of this method applies only to states saved in the normal course of operation, NOT
-     * states that have been dumped to disk out of band.
+     * The return value of this method applies only to states saved in the normal course of operation, NOT states that
+     * have been dumped to disk out of band.
      * <p>
      * This method isn't threadsafe, and should only be called from the thread that is writing the state to disk.
      *
@@ -555,7 +540,8 @@ public class SignedState implements SignedStateInfo {
      */
     @Override
     public boolean isComplete() {
-        return MAJORITY.isSatisfiedBy(signingWeight, getAddressBook().getTotalWeight());
+        return recoveryState
+                | MAJORITY.isSatisfiedBy(signingWeight, getAddressBook().getTotalWeight());
     }
 
     /**
@@ -624,6 +610,11 @@ public class SignedState implements SignedStateInfo {
 
         if (isComplete()) {
             // No need to add more signatures
+            return false;
+        }
+
+        if (!addressBook.contains(nodeId)) {
+            // we can ignore signatures from nodes no longer in the address book
             return false;
         }
 

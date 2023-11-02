@@ -20,16 +20,46 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractUndelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -165,6 +195,7 @@ public class ContractDeleteSuite extends HapiSuite {
                         getTxnRecord(externalViolation).hasPriority(recordWith().feeGreaterThan(0L)));
     }
 
+    @HapiTest
     HapiSpec cannotDeleteOrSelfDestructTokenTreasury() {
         final var someToken = "someToken";
         final var selfDestructCallable = "SelfDestructCallable";
@@ -197,6 +228,7 @@ public class ContractDeleteSuite extends HapiSuite {
                 .then(contractCall(selfDestructCallable + "2", CONTRACT_DESTROY).payingWith(beneficiary));
     }
 
+    @HapiTest
     HapiSpec cannotDeleteOrSelfDestructContractWithNonZeroBalance() {
         final var someToken = "someToken";
         final var multiKey = "multi";
@@ -233,6 +265,7 @@ public class ContractDeleteSuite extends HapiSuite {
                                 .payingWith(beneficiary));
     }
 
+    @HapiTest
     HapiSpec rejectsWithoutProperSig() {
         return defaultHapiSpec("rejectsWithoutProperSig")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -240,6 +273,7 @@ public class ContractDeleteSuite extends HapiSuite {
                 .then(contractDelete(CONTRACT).signedBy(GENESIS).hasKnownStatus(INVALID_SIGNATURE));
     }
 
+    @HapiTest
     private HapiSpec systemCannotDeleteOrUndeleteContracts() {
         return defaultHapiSpec("SystemCannotDeleteOrUndeleteContracts")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
@@ -254,6 +288,7 @@ public class ContractDeleteSuite extends HapiSuite {
                         getContractInfo(CONTRACT).hasAnswerOnlyPrecheck(OK));
     }
 
+    @HapiTest
     private HapiSpec deleteWorksWithMutableContract() {
         final var tbdFile = "FTBD";
         final var tbdContract = "CTBD";
@@ -271,6 +306,7 @@ public class ContractDeleteSuite extends HapiSuite {
                         getContractInfo(CONTRACT).has(contractWith().isDeleted()));
     }
 
+    @HapiTest
     private HapiSpec deleteFailsWithImmutableContract() {
         return defaultHapiSpec("DeleteFailsWithImmutableContract")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).omitAdminKey())
@@ -278,6 +314,7 @@ public class ContractDeleteSuite extends HapiSuite {
                 .then(contractDelete(CONTRACT).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
     }
 
+    @HapiTest
     private HapiSpec deleteTransfersToAccount() {
         return defaultHapiSpec("DeleteTransfersToAccount")
                 .given(
@@ -288,6 +325,7 @@ public class ContractDeleteSuite extends HapiSuite {
                 .then(getAccountBalance(RECEIVER_CONTRACT_NAME).hasTinyBars(1L));
     }
 
+    @HapiTest
     private HapiSpec deleteTransfersToContract() {
         final var suffix = "Receiver";
 

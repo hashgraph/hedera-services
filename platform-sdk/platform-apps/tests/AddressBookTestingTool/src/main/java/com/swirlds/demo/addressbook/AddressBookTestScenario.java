@@ -39,5 +39,11 @@ public enum AddressBookTestScenario {
     UPGRADE_WEIGHT_BEHAVIOR_2,
 
     /** On restart, upgrade, force use of the config address book. */
-    UPGRADE_FORCE_CONFIG_AB;
+    UPGRADE_FORCE_CONFIG_AB,
+
+    /** On restart, upgrade, add a new Node **/
+    UPGRADE_ADD_NODE,
+
+    /** On restart, upgrade, remove a node **/
+    UPGRADE_REMOVE_NODE;
 }

@@ -16,9 +16,7 @@
 
 package com.swirlds.demo.stats.signing;
 
-import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.logging.LogMarker.ADV_CRYPTO_SYSTEM;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.Transaction;
@@ -164,18 +162,6 @@ final class SttTransactionPool {
                 try {
                     final ExtendedSignature exSig = alg.signEx(data, 0, data.length);
                     final byte[] sig = exSig.getSignature();
-
-                    logger.trace(
-                            ADV_CRYPTO_SYSTEM.getMarker(),
-                            "Signing Transaction [ id = {}, signatureType = {}, publicKey = {}, signature = {}, "
-                                    + "r = {}, s = {}, data = {} ]",
-                            transactionId,
-                            alg.getSignatureType(),
-                            hex(alg.getPublicKey()),
-                            hex(sig),
-                            hex(exSig.getR()),
-                            hex(exSig.getS()),
-                            hex(data));
 
                     transactions[i] = TransactionCodec.encode(alg, transactionId, sig, data);
                 } catch (SignatureException e) {

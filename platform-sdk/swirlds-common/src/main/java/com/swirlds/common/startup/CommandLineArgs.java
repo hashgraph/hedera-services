@@ -27,9 +27,7 @@ import java.util.Set;
  * @param localNodesToStart the set of nodes to start on this machine
  */
 public record CommandLineArgs(@NonNull Set<NodeId> localNodesToStart) {
-    /**
-     * The command line option to start a set of nodes on this machine
-     */
+    /** The command line option to start a set of nodes on this machine */
     public static final String OPTION_LOCAL = "-local";
 
     /**

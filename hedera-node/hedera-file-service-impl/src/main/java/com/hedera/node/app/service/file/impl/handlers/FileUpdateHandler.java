@@ -28,6 +28,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
@@ -39,15 +40,17 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileUpdateResourceUsage;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.FilesConfig;
-import com.hederahashgraph.api.proto.java.Duration;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -84,7 +87,9 @@ public class FileUpdateHandler implements TransactionHandler {
         preValidate(transactionFileId, fileStore, context, false);
 
         var file = fileStore.getFileLeaf(transactionFileId);
-        validateAndAddRequiredKeys(file, transactionBody.keys(), context);
+        if (wantsToMutateNonExpiryField(transactionBody)) {
+            validateAndAddRequiredKeys(file, transactionBody.keys(), context);
+        }
     }
 
     @Override
@@ -115,19 +120,14 @@ public class FileUpdateHandler implements TransactionHandler {
         final var file = maybeFile.get();
         validateFalse(file.deleted(), FILE_DELETED);
 
-        final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            return new FileUpdateResourceUsage(fileOpsUsage)
-                    .usageGiven(fromPbj(handleContext.body()), sigValueObj, fromPbj(file));
-        });
-
-        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
-
         // First validate this file is mutable; and the pending mutations are allowed
         // TODO: add or condition for privilege accounts from context
-        validateFalse(file.keys() == null, UNAUTHORIZED);
+        if (wantsToMutateNonExpiryField(fileUpdate)) {
+            validateFalse(file.keys() == null, UNAUTHORIZED);
+            validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
+        }
 
-        validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
-        //        validateExpirationTime(fileUpdate, file, handleContext);
+        validateAutoRenew(fileUpdate, handleContext);
 
         // Now we apply the mutations to a builder
         final var builder = new File.Builder();
@@ -138,6 +138,30 @@ public class FileUpdateHandler implements TransactionHandler {
         // And then resolve mutable attributes, and put the new topic back
         resolveMutableBuilderAttributes(fileUpdate, builder, fileServiceConfig, file);
         fileStore.put(builder.build());
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull FeeContext feeContext) {
+        final var op = feeContext.body();
+        final var file = feeContext
+                .readableStore(ReadableFileStore.class)
+                .getFileLeaf(op.fileUpdateOrThrow().fileIDOrThrow());
+
+        final AccountID payerId = op.transactionID().accountID();
+
+        final SystemPrivilege privilege =
+                feeContext.authorizer().hasPrivilegedAuthorization(payerId, HederaFunctionality.FILE_UPDATE, op);
+
+        // Even if the privilege is UNAUTHORIZED or IMPERMISSIBLE continue with a free fee
+        // The appropriate error is thrown at a later stage of the workflow
+        if (privilege != SystemPrivilege.UNNECESSARY) {
+            return Fees.FREE;
+        }
+
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            return new FileUpdateResourceUsage(fileOpsUsage).usageGiven(fromPbj(op), sigValueObj, fromPbj(file));
+        });
     }
 
     private void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {
@@ -189,25 +213,24 @@ public class FileUpdateHandler implements TransactionHandler {
         }
     }
 
-    private void validateExpirationTime(FileUpdateTransactionBody op, File file, HandleContext handleContext) {
+    private void validateAutoRenew(FileUpdateTransactionBody op, HandleContext handleContext) {
         if (op.hasExpirationTime()) {
-            final var effectiveDuration = Duration.newBuilder()
-                    .setSeconds(op.expirationTime().seconds() - file.expirationSecond())
-                    .build();
-            final var maxEntityLifetime = handleContext
-                    .configuration()
-                    .getConfigData(EntitiesConfig.class)
-                    .maxLifetime();
-            final var now = handleContext.consensusNow().getEpochSecond();
-            final var expiryGivenMaxLifetime = now + maxEntityLifetime;
+            final long startSeconds =
+                    handleContext.body().transactionID().transactionValidStart().seconds();
+            final long effectiveDuration = op.expirationTime().seconds() - startSeconds;
+
+            final var entityConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
+            final long maxEntityLifetime = entityConfig.autoRenewPeriodMaxDuration();
+            final long minEntityLifetime = entityConfig.autoRenewPeriodMinDuration();
+
             validateTrue(
-                    effectiveDuration.getSeconds() > now && effectiveDuration.getSeconds() <= expiryGivenMaxLifetime,
+                    effectiveDuration >= minEntityLifetime && effectiveDuration <= maxEntityLifetime,
                     AUTORENEW_DURATION_NOT_IN_RANGE);
         }
     }
 
     public static boolean wantsToMutateNonExpiryField(@NonNull final FileUpdateTransactionBody op) {
-        return op.hasMemo() || op.hasKeys();
+        return op.hasMemo() || op.hasKeys() || op.contents().length() > 0;
     }
 
     private void validateMaybeNewMemo(

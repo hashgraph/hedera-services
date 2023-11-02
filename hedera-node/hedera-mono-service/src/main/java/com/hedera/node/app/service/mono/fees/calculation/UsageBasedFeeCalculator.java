@@ -25,7 +25,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -155,7 +154,6 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     @Override
     public FeeObject estimateFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at) {
         Map<SubType, FeeData> prices = uncheckedPricesGiven(accessor, at);
-
         return feeGiven(accessor, payerKey, view, prices, exchange.rate(at), false);
     }
 
@@ -229,17 +227,9 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
         } else {
             var sigUsage = getSigUsage(accessor, payerKey);
             var usageEstimator = getTxnUsageEstimator(accessor);
-            try {
-                final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
-                final var applicablePrices = prices.get(usage.getSubType());
-                return feesIncludingCongestion(usage, applicablePrices, accessor, rate);
-            } catch (InvalidTxBodyException e) {
-                log.warn(
-                        "Argument accessor={} malformed for implied estimator {}!",
-                        accessor.getSignedTxnWrapper(),
-                        usageEstimator);
-                throw new IllegalArgumentException(e);
-            }
+            final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
+            final var applicablePrices = prices.get(usage.getSubType());
+            return feesIncludingCongestion(usage, applicablePrices, accessor, rate);
         }
     }
 

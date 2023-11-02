@@ -95,7 +95,7 @@ public class Erc721XTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void handleAndCommitScenarioTransactions() {
+    protected void doScenarioOperations() {
         handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
         handleAndCommit(
                 CONTRACT_SERVICE.handlers().contractCallHandler(),
@@ -123,7 +123,6 @@ public class Erc721XTest extends AbstractContractXTest {
             @NonNull final AccountID payer, @NonNull final Bytes spender, long serialNum) {
         final var encoded =
                 Erc721XTestConstants.APPROVE.encodeCallWithArgs(addressOf(spender), BigInteger.valueOf(serialNum));
-        System.out.println(Erc721XTestConstants.APPROVE.decodeCall(encoded));
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payer))
                 .contractCall(callWithParams(encoded))
@@ -134,7 +133,6 @@ public class Erc721XTest extends AbstractContractXTest {
             @NonNull final AccountID payer, @NonNull final Bytes from, @NonNull final Bytes to, final long serialNo) {
         final var encoded = Erc721XTestConstants.SAFE_TRANSFER_FROM.encodeCallWithArgs(
                 addressOf(from), addressOf(to), BigInteger.valueOf(serialNo));
-        System.out.println(Erc721XTestConstants.SAFE_TRANSFER_FROM.decodeCall(encoded));
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payer))
                 .contractCall(callWithParams(encoded))
@@ -144,7 +142,6 @@ public class Erc721XTest extends AbstractContractXTest {
     private TransactionBody synthSetApprovalForAll(
             @NonNull final AccountID payer, @NonNull final Bytes operator, final boolean approved) {
         final var encoded = Erc721XTestConstants.SET_APPROVAL_FOR_ALL.encodeCallWithArgs(addressOf(operator), approved);
-        System.out.println(Erc721XTestConstants.SET_APPROVAL_FOR_ALL.decodeCall(encoded));
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payer))
                 .contractCall(callWithParams(encoded))

@@ -17,11 +17,13 @@
 package com.swirlds.virtualmap.internal;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import java.io.IOException;
 import java.io.UncheckedIOException;
 
 /**
@@ -46,6 +48,20 @@ public interface RecordAccessor<K extends VirtualKey, V extends VirtualValue> {
      * 		an UncheckedIOException is thrown.
      */
     Hash findHash(long path);
+
+    /**
+     * Looks up a virtual node hash for a given path. If the hash is found, writes it to a
+     * specified output stream.
+     *
+     * <p>Written bytes must be 100% identical to how hashes are serialized using {@link
+     * Hash#serialize(SerializableDataOutputStream)} method.
+     *
+     * @param path Virtual node path
+     * @param out Output stream to write the hash to
+     * @return If the hash is found and written to the stream
+     * @throws IOException If an I/O error occurred
+     */
+    boolean findAndWriteHash(long path, SerializableDataOutputStream out) throws IOException;
 
     /**
      * Locates and returns a leaf node based on the given key. If the leaf

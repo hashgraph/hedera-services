@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITHOUT_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
@@ -91,7 +93,7 @@ class EthereumTransactionHandlerTest {
 
     @Test
     void delegatesToCreatedComponentAndExposesEthTxDataCallWithToAddress() {
-        given(factory.create(handleContext)).willReturn(component);
+        given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
         given(component.contextTransactionProcessor()).willReturn(processor);
         given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
@@ -111,7 +113,7 @@ class EthereumTransactionHandlerTest {
 
     @Test
     void delegatesToCreatedComponentAndExposesEthTxDataCreateWithoutToAddress() {
-        given(factory.create(handleContext)).willReturn(component);
+        given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITHOUT_TO_ADDRESS));
         given(component.contextTransactionProcessor()).willReturn(processor);
         given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
@@ -139,7 +141,8 @@ class EthereumTransactionHandlerTest {
                 TransactionBody.newBuilder().ethereumTransaction(ethTxn).build();
         given(preHandleContext.body()).willReturn(body);
         given(preHandleContext.createStore(ReadableFileStore.class)).willReturn(fileStore);
-        given(callDataHydration.tryToHydrate(ethTxn, fileStore))
+        given(preHandleContext.configuration()).willReturn(DEFAULT_CONFIG);
+        given(callDataHydration.tryToHydrate(ethTxn, fileStore, 1001L))
                 .willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
         subject.preHandle(preHandleContext);
         verify(ethereumSignatures).computeIfAbsent(ETH_DATA_WITH_TO_ADDRESS);
@@ -153,7 +156,8 @@ class EthereumTransactionHandlerTest {
                 TransactionBody.newBuilder().ethereumTransaction(ethTxn).build();
         given(preHandleContext.body()).willReturn(body);
         given(preHandleContext.createStore(ReadableFileStore.class)).willReturn(fileStore);
-        given(callDataHydration.tryToHydrate(ethTxn, fileStore))
+        given(preHandleContext.configuration()).willReturn(DEFAULT_CONFIG);
+        given(callDataHydration.tryToHydrate(ethTxn, fileStore, 1001L))
                 .willReturn(HydratedEthTxData.failureFrom(INVALID_ETHEREUM_TRANSACTION));
         subject.preHandle(preHandleContext);
         verifyNoInteractions(ethereumSignatures);

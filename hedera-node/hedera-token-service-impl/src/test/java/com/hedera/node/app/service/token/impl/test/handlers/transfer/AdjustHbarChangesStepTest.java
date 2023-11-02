@@ -54,11 +54,13 @@ class AdjustHbarChangesStepTest extends StepsBase {
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
+        writableTokenStore.put(givenValidFungibleToken(ownerId, false, false, false, false, false));
     }
 
     @Test
     void doesHbarBalanceChangesWithoutAllowances() {
         final var receiver = asAccount(hbarReceiver);
+        given(handleContext.payer()).willReturn(spenderId);
         final var replacedOp = getReplacedOp();
         adjustHbarChangesStep = new AdjustHbarChangesStep(replacedOp, payerId);
 

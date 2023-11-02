@@ -16,9 +16,19 @@
 
 package com.swirlds.platform.metrics;
 
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_0;
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.common.metrics.extensions.CountPerSecond;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Collection of metrics related to reconnects
@@ -46,6 +56,10 @@ public class ReconnectMetrics {
                     RECONNECT_CATEGORY, "endsReconnectAsReceiver")
             .withDescription("number of times a node ends reconnect as a receiver");
     private final Counter receiverEndTimes;
+    /**
+     * Number of reconnect rejections per second per peer in the address book.
+     */
+    private final Map<NodeId, CountPerSecond> rejectionFrequency = new HashMap<>();
 
     /**
      * Constructor of {@code ReconnectMetrics}
@@ -54,12 +68,28 @@ public class ReconnectMetrics {
      * 		reference to the metrics-system
      * @throws IllegalArgumentException if {@code metrics} is {@code null}
      */
-    public ReconnectMetrics(final Metrics metrics) {
-        CommonUtils.throwArgNull(metrics, "metrics");
+    public ReconnectMetrics(@NonNull final Metrics metrics, @NonNull final AddressBook addressBook) {
+        Objects.requireNonNull(metrics, "metrics");
+        Objects.requireNonNull(addressBook, "addressBook");
         senderStartTimes = metrics.getOrCreate(SENDER_START_TIMES_CONFIG);
         receiverStartTimes = metrics.getOrCreate(RECEIVER_START_TIMES_CONFIG);
         senderEndTimes = metrics.getOrCreate(SENDER_END_TIMES_CONFIG);
         receiverEndTimes = metrics.getOrCreate(RECEIVER_END_TIMES_CONFIG);
+
+        for (final Address address : addressBook) {
+            final NodeId nodeId = address.getNodeId();
+            rejectionFrequency.put(
+                    nodeId,
+                    new CountPerSecond(
+                            metrics,
+                            new CountPerSecond.Config(
+                                            PLATFORM_CATEGORY,
+                                            String.format("reconnectRejections/sec_%02d", nodeId.id()))
+                                    .withDescription(String.format(
+                                            "number of reconnections rejected per second from node %02d", nodeId.id()))
+                                    .withUnit("rejectionsPerSec")
+                                    .withFormat(FORMAT_10_0)));
+        }
     }
 
     public void incrementSenderStartTimes() {
@@ -76,5 +106,17 @@ public class ReconnectMetrics {
 
     public void incrementReceiverEndTimes() {
         receiverEndTimes.increment();
+    }
+
+    /**
+     * Records the occurrence of rejecting a reconnect attempt from a peer.
+     *
+     * @param nodeId the peer being rejected.
+     */
+    public void recordReconnectRejection(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId);
+        if (rejectionFrequency.containsKey(nodeId)) {
+            rejectionFrequency.get(nodeId).count();
+        }
     }
 }

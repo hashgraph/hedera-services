@@ -45,6 +45,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CONSTRUCTOR_PARAMS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_STAKING_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEV_CHAIN_ID_CONTRACTS_CONFIG;
@@ -74,6 +75,7 @@ import static org.mockito.Mockito.doThrow;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -141,6 +143,7 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 DEFAULT_LEDGER_CONFIG,
+                DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
@@ -209,6 +212,15 @@ class HevmTransactionFactoryTest {
         assertFalse(transaction.hasOfferedGasPrice());
         assertFalse(transaction.hasMaxGasAllowance());
         assertNull(transaction.hapiCreation());
+    }
+
+    @Test
+    void fromHapiCreationFailsOnSystemInitcode() {
+        assertCreateFailsWith(
+                INVALID_FILE_ID,
+                b -> b.fileID(FileID.newBuilder()
+                        .fileNum(DEFAULT_HEDERA_CONFIG.firstUserEntity() - 1)
+                        .build()));
     }
 
     @Test
@@ -307,7 +319,7 @@ class HevmTransactionFactoryTest {
         final var createMeta = new ExpiryMeta(NA, SOME_DURATION.seconds(), NON_SYSTEM_ACCOUNT_ID);
         doThrow(new HandleException(INVALID_AUTORENEW_ACCOUNT))
                 .when(expiryValidator)
-                .resolveCreationAttempt(true, createMeta);
+                .resolveCreationAttempt(true, createMeta, false);
         assertCreateFailsWith(INVALID_AUTORENEW_ACCOUNT, b -> b.memo(SOME_MEMO)
                 .adminKey(AN_ED25519_KEY)
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
@@ -589,6 +601,7 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
+                DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 AUTO_ASSOCIATING_CONTRACTS_CONFIG,
@@ -605,6 +618,7 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
+                DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 AUTO_ASSOCIATING_CONTRACTS_CONFIG,
@@ -621,6 +635,7 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
+                DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
@@ -637,6 +652,7 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
+                DEFAULT_HEDERA_CONFIG,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEV_CHAIN_ID_CONTRACTS_CONFIG,

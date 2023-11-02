@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOO_MANY_CHILD_RECORDS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_MAX_REFUND_QUOTIENT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_EVM_ADDRESS;
@@ -165,7 +165,7 @@ class FrameRunnerTest {
         final var inOrder = Mockito.inOrder(frame, childFrame, tracer, messageCallProcessor, contractCreationProcessor);
 
         givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
-        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(TOO_MANY_CHILD_RECORDS));
+        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATION));
 
         final var result = subject.runToCompletion(
                 GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
@@ -176,7 +176,7 @@ class FrameRunnerTest {
         inOrder.verify(tracer).sanitizeTracedActions(frame);
 
         assertFailureExpectationsWith(frame, result);
-        assertEquals(TOO_MANY_CHILD_RECORDS.toString(), result.haltReason());
+        assertEquals(FAILURE_DURING_LAZY_ACCOUNT_CREATION, result.haltReason());
         assertNull(result.revertReason());
     }
 
@@ -208,8 +208,9 @@ class FrameRunnerTest {
         givenBaseScenarioWithDetails(receiver, false);
     }
 
-    private void givenBaseScenarioWithDetails(@NonNull final Address receiver, final boolean sucess) {
+    private void givenBaseScenarioWithDetails(@NonNull final Address receiver, final boolean success) {
         final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
+        messageFrameStack.addFirst(frame);
         given(frame.getType()).willReturn(MessageFrame.Type.CONTRACT_CREATION);
         given(childFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
         doAnswer(invocation -> {
@@ -235,7 +236,7 @@ class FrameRunnerTest {
                 .getOrCreateConfig();
         given(frame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE)).willReturn(config);
         given(frame.getGasPrice()).willReturn(Wei.of(NETWORK_GAS_PRICE));
-        if (sucess) {
+        if (success) {
             given(frame.getState()).willReturn(MessageFrame.State.COMPLETED_SUCCESS);
             given(frame.getLogs()).willReturn(List.of(BESU_LOG));
             given(frame.getOutputData()).willReturn(pbjToTuweniBytes(OUTPUT_DATA));

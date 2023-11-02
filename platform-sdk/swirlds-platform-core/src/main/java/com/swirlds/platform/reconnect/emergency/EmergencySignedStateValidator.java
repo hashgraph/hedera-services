@@ -16,11 +16,10 @@
 
 package com.swirlds.platform.reconnect.emergency;
 
-import static com.swirlds.logging.LogMarker.SIGNED_STATE;
+import static com.swirlds.logging.legacy.LogMarker.SIGNED_STATE;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.signed.SignedState;
@@ -94,13 +93,8 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
                     """
                             Emergency recovery signed state round matches the request but hash does not.
                             Failed emergency reconnect state:
-                            {}
-                            {}
-                            """,
-                    () -> signedState.getState().getPlatformState().getInfoString(),
-                    () -> new MerkleTreeVisualizer(signedState.getState())
-                            .setDepth(debugHashDepth)
-                            .render());
+                            {}""",
+                    () -> signedState.getState().getInfoString(debugHashDepth));
 
             throw new SignedStateInvalidException("Emergency recovery signed state is for the requested round but "
                     + "the hash does not match. Requested %s, received %s"
@@ -112,6 +106,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
         // FUTURE WORK: move this to the calling code (saved state loading and emergency reconnect) when
         // reconnect is refactored such that it no longer needs to be called by sync
         signedState.getState().getPlatformState().getPlatformData().setNextEpochHash(emergencyRecoveryFile.hash());
+        signedState.markAsRecoveryState();
 
         logger.info(
                 SIGNED_STATE.getMarker(),
@@ -124,12 +119,8 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
                 SIGNED_STATE.getMarker(),
                 """
                         State is too old. Failed emergency reconnect state:
-                        {}
                         {}""",
-                () -> signedState.getState().getPlatformState().getInfoString(),
-                () -> new MerkleTreeVisualizer(signedState.getState())
-                        .setDepth(debugHashDepth)
-                        .render());
+                () -> signedState.getState().getInfoString(debugHashDepth));
 
         throw new SignedStateInvalidException(String.format(
                 "Emergency recovery signed state is for a round smaller than requested. Requested %d, received %d",
@@ -161,12 +152,8 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
                     SIGNED_STATE.getMarker(),
                     """
                             State is fully signed but has an incorrect epoch hash. Failed emergency recovery state:
-                            {}
                             {}""",
-                    () -> signedState.getState().getPlatformState().getInfoString(),
-                    () -> new MerkleTreeVisualizer(signedState.getState())
-                            .setDepth(debugHashDepth)
-                            .render());
+                    () -> signedState.getState().getInfoString(debugHashDepth));
 
             throw new SignedStateInvalidException(
                     """

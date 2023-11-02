@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.hapi.utils.fee;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -44,14 +43,8 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @param txBody transaction body
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
-    public static FeeData getCryptoCreateTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasCryptoCreateAccount()) {
-            throw new InvalidTxBodyException("CryptoCreate Tx Body not available for Fee Calculation");
-        }
-
+    public static FeeData getCryptoCreateTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj) {
         final var txBodySize = getCommonTransactionBodyBytes(txBody);
         final var cryptoCreate = txBody.getCryptoCreateAccount();
         final var cryptoCreateSize = getCryptoCreateAccountBodyTxSize(cryptoCreate);
@@ -81,14 +74,8 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @param txBody transaction body
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
-    public FeeData getCryptoDeleteTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasCryptoDelete()) {
-            throw new InvalidTxBodyException("CryptoDelete Tx Body not available for Fee Calculation");
-        }
-
+    public FeeData getCryptoDeleteTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj) {
         final long bpr = INT_SIZE;
         final var txBodySize = getCommonTransactionBodyBytes(txBody);
         final var bpt = txBodySize + 2 * BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();

@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -79,6 +80,7 @@ public class FileCreateSuite extends HapiSuite {
                 exchangeRateControlAccountIsntCharged());
     }
 
+    @HapiTest
     private HapiSpec exchangeRateControlAccountIsntCharged() {
         return defaultHapiSpec("ExchangeRateControlAccountIsntCharged")
                 .given(
@@ -110,7 +112,8 @@ public class FileCreateSuite extends HapiSuite {
                         fileCreate("ntb").entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
                         fileCreate("memorable").entityMemo(memo))
                 .when()
-                .then(getFileInfo("memorable").hasExpectedLedgerId("0x03").hasMemo(memo));
+                .then(withTargetLedgerId(ledgerId ->
+                        getFileInfo("memorable").hasEncodedLedgerId(ledgerId).hasMemo(memo)));
     }
 
     @HapiTest

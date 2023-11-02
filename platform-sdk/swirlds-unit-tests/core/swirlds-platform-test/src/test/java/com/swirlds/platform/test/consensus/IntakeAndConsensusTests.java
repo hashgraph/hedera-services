@@ -23,6 +23,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.EventConstants;
+import com.swirlds.platform.test.consensus.framework.validation.ConsensusRoundValidation;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
@@ -33,11 +34,11 @@ import com.swirlds.platform.test.graph.OtherParentMatrixFactory;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -66,13 +67,10 @@ class IntakeAndConsensusTests {
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("consensus.roundsNonAncient", 25)
-                .withValue("consensus.roundsExpired", 24)
+                .withValue("consensus.roundsExpired", 25)
                 .getOrCreateConfig();
 
         final ConsensusConfig consensusConfig = configuration.getConfigData(ConsensusConfig.class);
-
-        // roundsExpired seems to have an off-by-one error, so it's lower than roundsNonAncient, but the effect is as
-        // though they are the same
 
         // the generated events are first fed into consensus so that round created is calculated before we start
         // using them
@@ -161,8 +159,9 @@ class IntakeAndConsensusTests {
     }
 
     private static void assertConsensusEvents(final TestIntake node1, final TestIntake node2) {
-        Assertions.assertEquals(
-                node1.getConsensusRounds(), node2.getConsensusRounds(), "consensus rounds must always be equal");
+        ConsensusRoundValidation.validateIterableRounds(
+                node1.getConsensusRounds().iterator(),
+                node2.getConsensusRounds().iterator());
         node1.getConsensusRounds().clear();
         node2.getConsensusRounds().clear();
     }
@@ -254,6 +253,11 @@ class IntakeAndConsensusTests {
         @Override
         public void setOtherParentAffinity(final DynamicValue<List<List<Double>>> affinityMatrix) {
             generator.setOtherParentAffinity(affinityMatrix);
+        }
+
+        @Override
+        public void setPreviousTimestamp(final Instant previousTimestamp) {
+            generator.setPreviousTimestamp(previousTimestamp);
         }
     }
 }

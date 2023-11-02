@@ -17,30 +17,30 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
-import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -50,20 +50,24 @@ import javax.inject.Inject;
  */
 @TransactionScope
 public class HandleHederaOperations implements HederaOperations {
-    private static final Comparator<ContractID> CONTRACT_ID_NUM_COMPARATOR =
-            Comparator.comparingLong(ContractID::contractNumOrThrow);
-    private static final Comparator<ContractNonceInfo> NONCE_INFO_CONTRACT_ID_COMPARATOR =
-            Comparator.comparing(ContractNonceInfo::contractIdOrThrow, CONTRACT_ID_NUM_COMPARATOR);
     public static final Bytes ZERO_ENTROPY = Bytes.fromHex(
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
+    private final TinybarValues tinybarValues;
     private final LedgerConfig ledgerConfig;
+    private final ContractsConfig contractsConfig;
     private final HandleContext context;
 
     @Inject
-    public HandleHederaOperations(@NonNull final LedgerConfig ledgerConfig, @NonNull final HandleContext context) {
+    public HandleHederaOperations(
+            @NonNull final LedgerConfig ledgerConfig,
+            @NonNull final ContractsConfig contractsConfig,
+            @NonNull final HandleContext context,
+            @NonNull final TinybarValues tinybarValues) {
         this.ledgerConfig = requireNonNull(ledgerConfig);
+        this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
+        this.tinybarValues = requireNonNull(tinybarValues);
     }
 
     /**
@@ -80,7 +84,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void commit() {
-        // Currently the savepoint stack only supports reverting savepoints; then commits all remaining at the end
+        context.savepointStack().commit();
     }
 
     /**
@@ -89,6 +93,14 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void revert() {
         context.savepointStack().rollback();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void revertChildRecords() {
+        context.revertChildRecords();
     }
 
     /**
@@ -115,6 +127,11 @@ public class HandleHederaOperations implements HederaOperations {
         return context.newEntityNum();
     }
 
+    @Override
+    public long contractCreationLimit() {
+        return contractsConfig.maxNumber();
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -138,8 +155,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long gasPriceInTinybars() {
-        // TODO - implement correctly
-        return 1L;
+        return tinybarValues.topLevelTinybarGasPrice();
     }
 
     /**
@@ -147,8 +163,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long valueInTinybars(final long tinycents) {
-        // TODO - implement correctly
-        return tinycents;
+        return tinybarValues.asTinybars(tinycents);
     }
 
     /**
@@ -188,7 +203,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void updateStorageMetadata(
-            final long contractNumber, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
+            final long contractNumber, @Nullable final Bytes firstKey, final int netChangeInSlotsUsed) {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         final var accountId = AccountID.newBuilder().accountNum(contractNumber).build();
         tokenServiceApi.updateStorageMetadata(accountId, firstKey, netChangeInSlotsUsed);
@@ -207,7 +222,9 @@ public class HandleHederaOperations implements HederaOperations {
         dispatchAndMarkCreation(
                 number,
                 synthAccountCreationFromHapi(
-                        ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation));
+                        ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation),
+                parent.autoRenewAccountId(),
+                evmAddress);
     }
 
     /**
@@ -220,7 +237,9 @@ public class HandleHederaOperations implements HederaOperations {
         dispatchAndMarkCreation(
                 number,
                 synthAccountCreationFromHapi(
-                        ContractID.newBuilder().contractNum(number).build(), evmAddress, body));
+                        ContractID.newBuilder().contractNum(number).build(), evmAddress, body),
+                body.autoRenewAccountId(),
+                evmAddress);
     }
 
     /**
@@ -253,52 +272,64 @@ public class HandleHederaOperations implements HederaOperations {
         return Collections.emptyList();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public List<ContractID> createdContractIds() {
+    public ContractChangeSummary summarizeContractChanges() {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        // TODO - add a newContractIds() method to TokenServiceApi instead
-        return tokenServiceApi.modifiedAccountIds().stream()
-                .map(accountId -> ContractID.newBuilder()
-                        .contractNum(accountId.accountNumOrThrow())
-                        .build())
-                .sorted(CONTRACT_ID_NUM_COMPARATOR)
-                .toList();
+        return tokenServiceApi.summarizeContractChanges();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public List<ContractNonceInfo> updatedContractNonces() {
+    public long getOriginalSlotsUsed(final long contractNumber) {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        final var updatedNonces = new ArrayList<>(tokenServiceApi.updatedContractNonces());
-        updatedNonces.sort(NONCE_INFO_CONTRACT_ID_COMPARATOR);
-        return updatedNonces;
+        return tokenServiceApi.originalKvUsageFor(
+                AccountID.newBuilder().accountNum(contractNumber).build());
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getOriginalSlotsUsed(final long contractNumber) {
-        // TODO - extend API and use getOriginalValue() from writable store
-        return 0;
-    }
+    private void dispatchAndMarkCreation(
+            final long number,
+            @NonNull final CryptoCreateTransactionBody body,
+            @Nullable final AccountID autoRenewAccountId,
+            @Nullable final Bytes evmAddress) {
+        // create should have conditional child record
+        final var recordBuilder = context.dispatchRemovableChildTransaction(
+                TransactionBody.newBuilder().cryptoCreateAccount(body).build(),
+                ContractCreateRecordBuilder.class,
+                key -> true,
+                context.payer());
 
-    private void dispatchAndMarkCreation(final long number, @NonNull final CryptoCreateTransactionBody body) {
-        // Create the contract account by dispatching a synthetic HAPI transaction
-        final var recordBuilder = context.dispatchChildTransaction(
-                TransactionBody.newBuilder().cryptoCreateAccount(body).build(), CryptoCreateRecordBuilder.class);
+        final var contractId = ContractID.newBuilder().contractNum(number).build();
+        // add additional create record fields
+        recordBuilder
+                .contractID(contractId)
+                .contractCreateResult(ContractFunctionResult.newBuilder()
+                        .contractID(contractId)
+                        .evmAddress(evmAddress)
+                        .build());
         // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
-        if (recordBuilder.status() != OK) {
+        if (recordBuilder.status() != OK && recordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
         }
         // Then use the TokenService API to mark the created account as a contract
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         final var accountId = AccountID.newBuilder().accountNum(number).build();
-        tokenServiceApi.markAsContract(accountId);
+
+        tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
+    }
+
+    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
+        var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class);
+        recordBuilder
+                .contractID(contractId)
+                // add dummy transaction, because SingleTransactionRecord require NonNull on build
+                .transaction(Transaction.newBuilder()
+                        .signedTransactionBytes(Bytes.EMPTY)
+                        .build())
+                .contractCreateResult(ContractFunctionResult.newBuilder()
+                        .contractID(contractId)
+                        .evmAddress(evmAddress)
+                        .build());
     }
 }

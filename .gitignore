@@ -1041,7 +1041,7 @@ platform-sdk/sdk/settingsUsed.txt
 platform-sdk/sdk/metricsDoc.tsv
 
 # Mermaid Files
-*/platform-components.mermaid
+**/platform-components.mermaid
 
 # Temporary Test Folders (Poorly Behaved Tests)
 **/swirlds-tmp

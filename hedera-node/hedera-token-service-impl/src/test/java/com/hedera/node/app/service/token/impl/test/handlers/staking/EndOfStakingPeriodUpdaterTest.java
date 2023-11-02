@@ -38,7 +38,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHel
 import com.hedera.node.app.service.token.impl.test.fixtures.FakeNodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
-import com.hedera.node.app.service.token.records.StakingContext;
+import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -80,7 +80,7 @@ class EndOfStakingPeriodUpdaterTest {
         final var consensusTime = Instant.now();
 
         // Set up the staking config
-        final var context = mock(StakingContext.class);
+        final var context = mock(TokenContext.class);
         given(context.configuration())
                 .willReturn(
                         newStakingConfig().withValue("staking.isEnabled", false).getOrCreateConfig());
@@ -171,7 +171,7 @@ class EndOfStakingPeriodUpdaterTest {
 
     @Test
     void calculatesNewTotalStakesAsExpected() {
-        final var context = mock(StakingContext.class);
+        final var context = mock(TokenContext.class);
         given(context.consensusTime()).willReturn(Instant.now());
 
         // Create staking config
@@ -222,9 +222,9 @@ class EndOfStakingPeriodUpdaterTest {
         Assertions.assertThat(resultStakingInfo1.unclaimedStakeRewardStart()).isZero();
         Assertions.assertThat(resultStakingInfo2.unclaimedStakeRewardStart()).isZero();
         Assertions.assertThat(resultStakingInfo3.unclaimedStakeRewardStart()).isZero();
-        Assertions.assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(14L, 6L, 5L));
-        Assertions.assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(11L, 1L, 1L));
-        Assertions.assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(3L, 3L, 1L));
+        Assertions.assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(86L, 6L, 5L));
+        Assertions.assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(101L, 1L, 1L));
+        Assertions.assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(11L, 3L, 1L));
         Assertions.assertThat(resultStakingInfo1.weight()).isEqualTo(307);
         Assertions.assertThat(resultStakingInfo2.weight()).isEqualTo(192);
         Assertions.assertThat(resultStakingInfo3.weight()).isZero();
@@ -313,9 +313,10 @@ class EndOfStakingPeriodUpdaterTest {
         return HederaTestConfigBuilder.create()
                 .withConfigDataType(StakingConfig.class)
                 .withValue("staking.isEnabled", true)
+                .withValue("staking.rewardRate", 100L)
                 .withValue("staking.sumOfConsensusWeights", SUM_OF_CONSENSUS_WEIGHTS)
-                .withValue("staking.maxDailyStakeRewardThPerH", Long.MAX_VALUE)
                 .withValue("staking.maxStakeRewarded", Long.MAX_VALUE)
-                .withValue("staking.rewardRate", 100L);
+                .withValue("staking.perHbarRewardRate", 100L)
+                .withValue("staking.rewardBalanceThreshold", 0);
     }
 }

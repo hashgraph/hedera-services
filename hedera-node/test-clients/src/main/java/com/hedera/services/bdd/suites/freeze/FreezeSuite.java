@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
 
 import com.hedera.node.app.hapi.utils.CommonUtils;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.io.File;
@@ -32,7 +31,6 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class FreezeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FreezeSuite.class);
 

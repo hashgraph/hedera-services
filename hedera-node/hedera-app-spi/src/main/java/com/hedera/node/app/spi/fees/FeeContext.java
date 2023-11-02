@@ -16,11 +16,24 @@
 
 package com.hedera.node.app.spi.fees;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.authorization.Authorizer;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 
 public interface FeeContext {
+    /**
+     * Gets the payer {@link AccountID} whose expiration time will be "inherited"
+     * by account-scoped properties like allowances.
+     *
+     * @return the {@link AccountID} of the payer in this context
+     */
+    @NonNull
+    AccountID payer();
 
     /**
      * Returns the {@link TransactionBody}
@@ -51,4 +64,25 @@ public interface FeeContext {
      */
     @NonNull
     <T> T readableStore(@NonNull Class<T> storeInterface);
+
+    /**
+     * Returns the current {@link Configuration} for the node.
+     *
+     * @return the {@code Configuration}
+     */
+    @Nullable
+    Configuration configuration();
+
+    /**
+     * @return the {@code Authorizer}
+     */
+    @Nullable
+    Authorizer authorizer();
+
+    /**
+     * Returns the consensus time relative to which client code should calculate entity lifetimes.
+     *
+     * @return the consensus time
+     */
+    Instant currentTime();
 }

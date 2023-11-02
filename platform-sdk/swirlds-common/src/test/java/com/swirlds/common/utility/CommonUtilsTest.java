@@ -16,7 +16,6 @@
 
 package com.swirlds.common.utility;
 
-import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
 import static com.swirlds.common.utility.CommonUtils.byteCountToDisplaySize;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.CommonUtils.intToBytes;
@@ -162,15 +161,6 @@ class CommonUtilsTest {
                 Arguments.of(1024L * 1024L * 1024L * 1024L, "1.0 TB"),
                 Arguments.of(1024L * 1024L * 1024L * 1024L * 1024L, "1.0 PB"),
                 Arguments.of(1024L * 1024L * 1024L * 1024L * 1024L * 1024L, "1,024.0 PB"));
-    }
-
-    @Test
-    void leftPad() {
-        final String start = "123";
-
-        final String padded = ALIGNED_RIGHT.pad(start, '_', 5);
-
-        assertEquals("__123", padded);
     }
 
     @ParameterizedTest

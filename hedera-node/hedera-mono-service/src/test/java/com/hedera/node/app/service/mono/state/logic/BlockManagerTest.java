@@ -31,16 +31,19 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.state.DualStateAccessor;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.TxnUtils;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.system.SwirldDualState;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,13 +60,20 @@ class BlockManagerTest {
     @Mock
     private RecordsRunningHashLeaf runningHashLeaf;
 
+    private DualStateAccessor dualStateAccessor;
+
+    @Mock
+    private SwirldDualState dualState;
+
     private BlockManager subject;
 
     @BeforeEach
     void setUp() {
         given(bootstrapProperties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD))
                 .willReturn(blockPeriodSecs);
-        subject = new BlockManager(bootstrapProperties, () -> networkContext, () -> runningHashLeaf);
+        dualStateAccessor = new DualStateAccessor();
+        dualStateAccessor.setDualState(dualState);
+        subject = new BlockManager(bootstrapProperties, () -> networkContext, () -> runningHashLeaf, dualStateAccessor);
     }
 
     @Test
@@ -158,6 +168,46 @@ class BlockManagerTest {
         assertEquals(gasLimit, values.getGasLimit());
         assertEquals(someBlockNo + 1, values.getNumber());
         assertEquals(anotherTime.getEpochSecond(), values.getTimestamp());
+    }
+
+    @Test
+    void computesNewBlockIfIsFirstTransactionAfterFreezeRestart() throws InterruptedException {
+        given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
+        given(runningHashLeaf.currentRunningHash()).willReturn(aFullBlockHash);
+        given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
+        given(dualState.getLastFrozenTime()).willReturn(aTime);
+        given(dualState.getFreezeTime()).willReturn(aTime);
+
+        final var values = subject.computeBlockValues(someTime, gasLimit);
+
+        assertEquals(someBlockNo + 1, values.getNumber());
+        verify(dualState).setFreezeTime(null);
+    }
+
+    @Test
+    void computesSameBlockIfPastAndCurrentFreezeTimeAreNull() {
+        given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
+        given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
+        given(dualState.getFreezeTime()).willReturn(null);
+        Mockito.lenient().when(dualState.getLastFrozenTime()).thenReturn(null);
+
+        final var values = subject.computeBlockValues(someTime, gasLimit);
+
+        assertEquals(someBlockNo, values.getNumber());
+        verify(dualState, never()).setFreezeTime(null);
+    }
+
+    @Test
+    void computesSameBlockIfPastAndCurrentFreezeTimeDontMatch() {
+        given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
+        given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
+        given(dualState.getLastFrozenTime()).willReturn(aTime);
+        given(dualState.getFreezeTime()).willReturn(anotherTime);
+
+        final var values = subject.computeBlockValues(someTime, gasLimit);
+
+        assertEquals(someBlockNo, values.getNumber());
+        verify(dualState, never()).setFreezeTime(null);
     }
 
     @Test

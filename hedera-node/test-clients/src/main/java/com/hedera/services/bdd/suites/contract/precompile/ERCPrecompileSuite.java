@@ -81,6 +81,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -568,6 +569,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .hasAnswerOnlyPrecheck(CONTRACT_REVERT_EXECUTED)));
     }
 
+    @HapiTest
     private HapiSpec transferErc20TokenFailWithAccount() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
         final AtomicReference<String> accountAddr = new AtomicReference<>();
@@ -806,6 +808,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withAllowance(2)))));
     }
 
+    @HapiTest
     private HapiSpec erc20Approve() {
         final var approveTxn = "approveTxn";
 
@@ -846,6 +849,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getTxnRecord(approveTxn).andAllChildRecords().logged());
     }
 
+    @HapiTest
     private HapiSpec getErc20TokenDecimalsFromErc721TokenFails() {
         final var invalidDecimalsTxn = "decimalsFromErc721Txn";
 
@@ -1232,6 +1236,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)));
     }
 
+    @HapiTest
     private HapiSpec getErc721TokenURIFromErc20TokenFails() {
         final var invalidTokenURITxn = "tokenURITxnFromErc20";
 
@@ -1263,6 +1268,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .then(getTxnRecord(invalidTokenURITxn).andAllChildRecords().logged());
     }
 
+    @HapiTest
     private HapiSpec getErc721OwnerOfFromErc20TokenFails() {
         final var invalidOwnerOfTxn = "ownerOfTxnFromErc20Token";
 
@@ -2841,6 +2847,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withIsApprovedForAll(false)))));
     }
 
+    @HapiTest
     private HapiSpec erc721TokenApprove() {
         return defaultHapiSpec("erc721TokenApprove")
                 .given(
@@ -3154,6 +3161,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec erc721TransferFromWithApproveForAll() {
         return defaultHapiSpec("erc721TransferFromWithApproveForAll")
                 .given(

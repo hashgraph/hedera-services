@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.cli;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
@@ -25,7 +27,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateComparison;
@@ -158,7 +160,8 @@ public final class CompareStatesCommand extends AbstractCommand {
     public Integer call() throws IOException {
         BootstrapUtils.setupConstructableRegistry();
 
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(configurationPaths);
+        final Configuration configuration =
+                DefaultConfiguration.buildBasicConfiguration(getAbsolutePath("settings.txt"), configurationPaths);
         final PlatformContext platformContext =
                 new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
 

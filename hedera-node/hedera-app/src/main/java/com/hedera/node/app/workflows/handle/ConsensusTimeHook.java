@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import com.hedera.node.app.service.token.records.StakingContext;
+import com.hedera.node.app.service.token.records.TokenContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -32,5 +32,5 @@ public interface ConsensusTimeHook {
      *
      * @param context the {@code StakingContext} context of the transaction being processed
      */
-    void process(@NonNull final StakingContext context);
+    void process(@NonNull final TokenContext context);
 }

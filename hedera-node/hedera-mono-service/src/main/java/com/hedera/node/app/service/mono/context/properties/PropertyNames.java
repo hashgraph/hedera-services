@@ -172,9 +172,10 @@ public class PropertyNames {
     public static final String STAKING_FEES_STAKING_REWARD_PERCENT = "staking.fees.stakingRewardPercentage";
     public static final String STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS = "staking.nodeMaxToMinStakeRatios";
     public static final String STAKING_IS_ENABLED = "staking.isEnabled";
-    public static final String STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR = "staking.maxDailyStakeRewardThPerH";
     public static final String STAKING_REQUIRE_MIN_STAKE_TO_REWARD = "staking.requireMinStakeToReward";
-    public static final String STAKING_REWARD_RATE = "staking.rewardRate";
+    // Could be renamed to "staking.rewardRate" when the "staking.rewardRate" property is
+    // removed from all production 0.0.121 system files
+    public static final String STAKING_PER_HBAR_REWARD_RATE = "staking.perHbarRewardRate";
     public static final String STAKING_START_THRESH = "staking.startThreshold";
     public static final String STAKING_SUM_OF_CONSENSUS_WEIGHTS = "staking.sumOfConsensusWeights";
 
@@ -261,5 +262,5 @@ public class PropertyNames {
     public static final String STATS_SPEEDOMETER_HALF_LIFE_SECS = "stats.speedometerHalfLifeSecs";
     public static final String WORKFLOWS_ENABLED = "hedera.workflows.enabled";
     public static final String ACCOUNTS_BLOCKLIST_ENABLED = "accounts.blocklist.enabled";
-    public static final String ACCOUNTS_BLOCKLIST_RESOURCE = "accounts.blocklist.resource";
+    public static final String ACCOUNTS_BLOCKLIST_PATH = "accounts.blocklist.path";
 }

@@ -30,7 +30,7 @@ import org.apache.tuweni.units.bigints.UInt256;
  *
  * @param key the key of the access
  * @param value the value read or overwritten
- * @param writtenValue if not null, the overwriting value
+ * @param writtenValue if not Bytes.EMPTY, the overwriting value
  */
 public record StorageAccess(@NonNull UInt256 key, @NonNull UInt256 value, @Nullable UInt256 writtenValue) {
     public StorageAccess {
@@ -95,5 +95,26 @@ public record StorageAccess(@NonNull UInt256 key, @NonNull UInt256 value, @Nulla
      */
     public boolean isUpdate() {
         return writtenValue != null;
+    }
+
+    public enum StorageAccessType {
+        UNKNOWN,
+        READ_ONLY,
+        REMOVAL,
+        INSERTION,
+        UPDATE;
+
+        public static StorageAccessType getAccessType(StorageAccess storageAccess) {
+            if (storageAccess.isReadOnly()) {
+                return READ_ONLY;
+            } else if (storageAccess.isRemoval()) {
+                return REMOVAL;
+            } else if (storageAccess.isInsertion()) {
+                return INSERTION;
+            } else if (storageAccess.isUpdate()) {
+                return UPDATE;
+            }
+            return UNKNOWN;
+        }
     }
 }

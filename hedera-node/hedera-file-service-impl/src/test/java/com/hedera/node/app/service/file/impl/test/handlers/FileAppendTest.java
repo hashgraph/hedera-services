@@ -323,7 +323,7 @@ class FileAppendTest extends FileTestBase {
                         .build())
                 .build();
 
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
 
         given(handleContext.body()).willReturn(txBody);
         writableFileState = writableFileStateWithOneKey();

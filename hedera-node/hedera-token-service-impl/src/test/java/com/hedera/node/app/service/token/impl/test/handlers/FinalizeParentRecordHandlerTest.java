@@ -39,10 +39,12 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -85,6 +87,8 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
             .tinybarBalance(10000)
             .build();
     private static final TokenID TOKEN_321 = asToken(321);
+    private Token TOKEN_321_FUNGIBLE =
+            givenValidFungibleToken().copyBuilder().tokenId(TOKEN_321).build();
     private static final List<TransactionRecord> EMPTY_TRANSACTION_RECORD_LIST = Collections.emptyList();
 
     @Mock(strictness = LENIENT)
@@ -307,6 +311,8 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .accountId(ACCOUNT_3434_ID)
                 .balance(fungibleAmountToTransfer)
                 .build());
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
+        readableTokenStore = TestStoreFactory.newReadableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
@@ -373,6 +379,8 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         // Simulate the receiver's token relation being dissociated, when token is deleted.
         // This shows as a single debit in transfer list, instead of a debit and a credit.
         writableTokenRelStore.remove(senderTokenRel);
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
+        readableTokenStore = TestStoreFactory.newReadableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
@@ -534,6 +542,8 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .accountId(ACCOUNT_3434_ID)
                 .balance(fungibleAmountToTransfer)
                 .build());
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
+        readableTokenStore = TestStoreFactory.newReadableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
@@ -613,6 +623,18 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenId(token2Id)
                 .balance(token2AmountTransferred)
                 .build());
+
+        final var fungibleToken1 =
+                givenValidFungibleToken().copyBuilder().tokenId(token1Id).build();
+        final var fungibleToken2 =
+                givenValidFungibleToken().copyBuilder().tokenId(token2Id).build();
+        final var fungibleToken3 =
+                givenValidFungibleToken().copyBuilder().tokenId(token3Id).build();
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(
+                TOKEN_321_FUNGIBLE, fungibleToken1, fungibleToken2, fungibleToken3);
+        readableTokenStore = TestStoreFactory.newReadableStoreWithTokens(
+                TOKEN_321_FUNGIBLE, fungibleToken1, fungibleToken2, fungibleToken3);
+
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
@@ -722,7 +744,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                         .token(TOKEN_321)
                         .nftTransfers(NftTransfer.newBuilder()
                                 .serialNumber(1)
-                                .senderAccountID((AccountID) null)
+                                .senderAccountID(AccountID.newBuilder().accountNum(0))
                                 .receiverAccountID(ACCOUNT_3434_ID)
                                 .build())
                         .build()));
@@ -870,6 +892,8 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         // Make NFT changes
         writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
+        readableTokenStore = TestStoreFactory.newReadableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
@@ -921,6 +945,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
         given(context.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
         given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+        given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
 
         return context;
     }

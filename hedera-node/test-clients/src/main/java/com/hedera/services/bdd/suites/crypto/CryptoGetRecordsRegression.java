@@ -34,6 +34,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AssertUtils;
@@ -72,6 +73,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
         });
     }
 
+    @HapiTest
     private HapiSpec succeedsNormally() {
         String memo = "Dim galleries, dusky corridors got past...";
 
@@ -90,6 +92,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
                                 .payer(LOW_THRESH_PAYER))));
     }
 
+    @HapiTest
     private HapiSpec failsForMissingAccount() {
         return defaultHapiSpec("FailsForMissingAccount")
                 .given()
@@ -99,6 +102,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
                         getAccountRecords("1.2.3").nodePayment(123L).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
+    @HapiTest
     private HapiSpec failsForMalformedPayment() {
         return defaultHapiSpec("FailsForMalformedPayment")
                 .given(newKeyNamed("wrong").shape(SIMPLE))
@@ -106,6 +110,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
                 .then(getAccountRecords(GENESIS).signedBy("wrong").hasAnswerOnlyPrecheck(INVALID_SIGNATURE));
     }
 
+    @HapiTest
     private HapiSpec failsForUnfundablePayment() {
         long everything = 1_234L;
         return defaultHapiSpec("FailsForUnfundablePayment")
@@ -131,6 +136,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
                 .then(getAccountRecords(GENESIS).useEmptyTxnAsAnswerPayment().hasAnswerOnlyPrecheck(NOT_SUPPORTED));
     }
 
+    @HapiTest
     private HapiSpec failsForDeletedAccount() {
         return defaultHapiSpec("FailsForDeletedAccount")
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED))
@@ -142,6 +148,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
                                 .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
     }
 
+    @HapiTest
     private HapiSpec getAccountRecords_testForDuplicates() {
         return defaultHapiSpec("testForDuplicateAccountRecords")
                 .given(

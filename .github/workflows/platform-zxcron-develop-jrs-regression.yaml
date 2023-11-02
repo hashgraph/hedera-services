@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Z-Platform XCron: Develop JRS Regression"
+name: "ZXCron: [Platform] Develop JRS Regression"
 on:
   schedule:
     - cron: '30 5 * * *'

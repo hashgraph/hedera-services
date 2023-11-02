@@ -45,8 +45,6 @@ public final class ConfigSourceOrdinalConstants {
     @Deprecated(forRemoval = true)
     static final int LEGACY_PROPERTY_FILE_ORDINAL_FOR_SETTINGS = LEGACY_PROPERTY_FILE_ORDINAL + 10;
 
-    @Deprecated(forRemoval = true)
-    public static final int LEGACY_PROPERTY_FILE_ORDINAL_FOR_CONFIG = LEGACY_PROPERTY_FILE_ORDINAL + 20;
     /**
      * Ordinal for default values.
      */

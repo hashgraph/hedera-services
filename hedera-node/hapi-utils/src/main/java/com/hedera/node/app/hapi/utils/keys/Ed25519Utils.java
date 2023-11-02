@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hapi.utils.keys;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.*;
 import java.nio.file.Path;
 import java.security.*;
@@ -116,15 +117,28 @@ public final class Ed25519Utils {
     public static File relocatedIfNotPresentWithCurrentPathPrefix(
             final File f, final String firstSegmentToRelocate, final String newPathPrefix) {
         if (!f.exists()) {
-            final var absPath = f.getAbsolutePath();
+            final var absPath = withDedupedHederaNodePathSegments(f.getAbsolutePath());
             final var idx = absPath.indexOf(firstSegmentToRelocate);
             if (idx == -1) {
-                return f;
+                return new File(absPath);
             }
             final var relocatedPath = newPathPrefix + absPath.substring(idx);
             return new File(relocatedPath);
         } else {
             return f;
+        }
+    }
+
+    private static String withDedupedHederaNodePathSegments(@NonNull final String loc) {
+        final var firstSegmentI = loc.indexOf("hedera-node");
+        if (firstSegmentI == -1) {
+            return loc;
+        }
+        final var lastSegmentI = loc.lastIndexOf("hedera-node");
+        if (lastSegmentI != firstSegmentI) {
+            return loc.substring(0, firstSegmentI) + loc.substring(lastSegmentI);
+        } else {
+            return loc;
         }
     }
 

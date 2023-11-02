@@ -1,7 +1,7 @@
 # System accounts and files
 
 The Hedera network reserves the first 
-[`ledger.numReservedSystemEntities=1000`](../hedera-node/src/main/resources/bootstrap.properties) 
+[`ledger.numReservedSystemEntities=1000`](../hedera-mono-service/src/main/resources/bootstrap.properties) 
 entity numbers for its own uses. 
 An account with a number in the reserved range is called a **system account**. 
 A file with a number in the reserved range is called a **system file**. 

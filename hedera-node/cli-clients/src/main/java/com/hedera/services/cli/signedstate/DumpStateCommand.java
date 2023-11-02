@@ -21,6 +21,7 @@ import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
 import picocli.CommandLine;
@@ -60,14 +61,25 @@ public class DumpStateCommand extends AbstractCommand {
         YES
     }
 
+    enum WithFeeSummary {
+        NO,
+        YES
+    }
+
+    enum OmitContents {
+        NO,
+        YES
+    }
+
     enum Format {
         CSV,
         ELIDED_DEFAULT_FIELDS
     }
 
     enum KeyDetails {
-        DEEP,
-        SHALLOW
+        STRUCTURE,
+        STRUCTURE_WITH_IDS,
+        NONE
     }
 
     // We want to open the signed state file only once but run a bunch of dumps against it
@@ -77,7 +89,7 @@ public class DumpStateCommand extends AbstractCommand {
     // that we have to track ourselves, via `init` and `finish` methods that _each_
     // subcommand is responsible for calling.
 
-    @Command(name = "contract-bytecodes")
+    @Command(name = "contract-bytecodes", description = "Dump all contract (runtime) bytecodes")
     void contractBytecodes(
             @Option(
                             names = {"-o", "--bytecode", "--contract-bytecode"},
@@ -99,7 +111,7 @@ public class DumpStateCommand extends AbstractCommand {
                     final boolean withIds) {
         Objects.requireNonNull(bytecodePath);
         init();
-        System.out.println("=== bytecodes ===");
+        System.out.println("=== contract bytecodes ===");
         DumpContractBytecodesSubcommand.doit(
                 parent.signedState,
                 bytecodePath,
@@ -110,10 +122,10 @@ public class DumpStateCommand extends AbstractCommand {
         finish();
     }
 
-    @Command(name = "contract-stores")
+    @Command(name = "contract-stores", description = "Dump all contract stores (all of their slots)")
     void contractStores(
             @Option(
-                            names = {"-o", "--contract-store"},
+                            names = {"-o", "--store"},
                             arity = "1",
                             description = "Output file for contracts store dump")
                     @NonNull
@@ -128,7 +140,7 @@ public class DumpStateCommand extends AbstractCommand {
                     final boolean withSlots) {
         Objects.requireNonNull(storePath);
         init();
-        System.out.println("=== stores ===");
+        System.out.println("=== contract stores ===");
         DumpContractStoresSubcommand.doit(
                 parent.signedState,
                 storePath,
@@ -138,7 +150,7 @@ public class DumpStateCommand extends AbstractCommand {
         finish();
     }
 
-    @Command(name = "accounts")
+    @Command(name = "accounts", description = "Dump all accounts (EOA + smart contract)")
     void accounts(
             @Option(
                             names = {"--account"},
@@ -162,7 +174,12 @@ public class DumpStateCommand extends AbstractCommand {
                             arity = "0..1",
                             defaultValue = "2147483647",
                             description = "highest account number (inclusive) to dump")
-                    int highLimit) {
+                    int highLimit,
+            @Option(
+                            names = {"--keys"},
+                            arity = "0..*",
+                            description = "How to dump key summaries")
+                    final EnumSet<KeyDetails> keyDetails) {
         Objects.requireNonNull(accountPath);
         if (lowLimit > highLimit)
             throw new CommandLine.ParameterException(
@@ -175,24 +192,29 @@ public class DumpStateCommand extends AbstractCommand {
                 accountPath,
                 lowLimit,
                 highLimit,
+                null != keyDetails ? keyDetails : EnumSet.noneOf(KeyDetails.class),
                 doCsv ? Format.CSV : Format.ELIDED_DEFAULT_FIELDS,
                 parent.verbosity);
         finish();
     }
 
-    @Command(name = "files")
+    @Command(name = "files", description = "Dump data files (no special files, no contracts)")
     void files(
             @Option(
-                            names = {"--files"},
+                            names = {"--file"},
                             arity = "1",
                             description = "Output file for files dump")
                     @NonNull
                     final Path filesPath,
             @Option(
-                            names = {"--deep-keys"},
-                            arity = "0..1",
-                            description = "Whether to fully dump keys or not")
-                    final boolean doDeepKeys,
+                            names = {"--keys"},
+                            arity = "0..*",
+                            description = "How to dump key summaries")
+                    final EnumSet<KeyDetails> keyDetails,
+            @Option(
+                            names = {"--omit-contents"},
+                            description = "Omit the contents (bytes) of the file")
+                    final boolean omitContents,
             @Option(
                             names = {"-s", "--summary"},
                             description = "Emit a summary line")
@@ -203,9 +225,64 @@ public class DumpStateCommand extends AbstractCommand {
         DumpFilesSubcommand.doit(
                 parent.signedState,
                 filesPath,
-                doDeepKeys ? KeyDetails.DEEP : KeyDetails.SHALLOW,
+                null != keyDetails ? keyDetails : EnumSet.noneOf(KeyDetails.class),
+                emitSummary ? EmitSummary.YES : EmitSummary.NO,
+                omitContents ? OmitContents.YES : OmitContents.NO,
+                parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "tokens", description = "Dump fungible token types")
+    void tokens(
+            @Option(
+                            names = {"--token"},
+                            arity = "1",
+                            description = "Output file for fungibles dump")
+                    @NonNull
+                    final Path tokensPath,
+            @Option(
+                            names = {"--keys"},
+                            arity = "0..*",
+                            description = "How to dump key summaries")
+                    final EnumSet<KeyDetails> keyDetails,
+            @Option(
+                            names = {"--fees"},
+                            description = "Emit a summary of the types of fees")
+                    final boolean doFeeSummary,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit a summary line")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(tokensPath);
+        init();
+        System.out.println("=== tokens ===");
+        DumpTokensSubcommand.doit(
+                parent.signedState,
+                tokensPath,
+                null != keyDetails ? keyDetails : EnumSet.noneOf(KeyDetails.class),
+                doFeeSummary ? WithFeeSummary.YES : WithFeeSummary.NO,
                 emitSummary ? EmitSummary.YES : EmitSummary.NO,
                 parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "uniques", description = "Dump unique (serial-numbered) tokens")
+    void uniques(
+            @Option(
+                            names = {"--unique"},
+                            arity = "1",
+                            description = "Output file for unique tokens dump")
+                    @NonNull
+                    final Path uniquesPath,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit a summary line")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(uniquesPath);
+        init();
+        System.out.println("=== unique NFTs ===");
+        DumpUniqueTokensSubcommand.doit(
+                parent.signedState, uniquesPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
         finish();
     }
 

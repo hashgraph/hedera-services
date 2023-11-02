@@ -15,41 +15,17 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    `java-library`
-    id("com.swirlds.platform.maven-publish")
-    id("org.gradle.java-test-fixtures")
+    id("com.hedera.hashgraph.sdk.conventions")
+    id("com.hedera.hashgraph.platform-maven-publish")
 }
 
-extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
-
-dependencies {
-    // Individual Dependencies
-    implementation(project(":swirlds-base"))
-    implementation(project(":swirlds-common"))
-    implementation(project(":swirlds-base"))
-    api(testLibs.junit.jupiter.api)
-    compileOnly(libs.spotbugs.annotations)
-
-    // Test Dependencies
-    testCompileOnly(libs.spotbugs.annotations)
-
-    // These should not be implementation() based deps, but this requires refactoring to eliminate.
-    implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
-    implementation(testFixtures(project(":swirlds-common")))
-    implementation(libs.log4j.core)
-
-    testImplementation(libs.bundles.logging.impl)
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testLibs.bundles.mocking)
-    testImplementation(testLibs.bundles.utils)
-    testImplementation(project(":swirlds-config-impl"))
-    testImplementation(testFixtures(project(":swirlds-base")))
-    testImplementation(testFixtures(project(":swirlds-common")))
-
-    testImplementation(libs.prometheus.httpserver) {
-        exclude("io.prometheus", "simpleclient_tracer_otel")
-        exclude("io.prometheus", "simpleclient_tracer_otel_agent")
-    }
-    testImplementation(testFixtures(project(":swirlds-config-api")))
+testModuleInfo {
+    requires("com.swirlds.base.test.fixtures")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.test.framework")
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
+    requiresStatic("com.github.spotbugs.annotations")
 }

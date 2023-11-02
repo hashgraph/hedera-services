@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSameResult;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -72,7 +72,7 @@ class CustomExtCodeHashOperationTest {
     @Test
     void rejectsMissingNonSystemAddress() {
         givenWellKnownFrameWith(Address.fromHexString("0x123"));
-        final var expected = new Operation.OperationResult(123L, MISSING_ADDRESS);
+        final var expected = new Operation.OperationResult(123L, INVALID_SOLIDITY_ADDRESS);
         assertSameResult(expected, subject.execute(frame, evm));
     }
 

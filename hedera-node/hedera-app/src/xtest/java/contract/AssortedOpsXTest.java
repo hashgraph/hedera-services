@@ -31,7 +31,6 @@ import static contract.AssortedOpsXTestConstants.EXPECTED_CHILD_STORAGE;
 import static contract.AssortedOpsXTestConstants.EXPECTED_POINTLESS_INTERMEDIARY_STORAGE;
 import static contract.AssortedOpsXTestConstants.FINALIZED_AND_DESTRUCTED_CONTRACT_ID;
 import static contract.AssortedOpsXTestConstants.FINALIZED_AND_DESTRUCTED_ID;
-import static contract.AssortedOpsXTestConstants.MISC_PAYER_ID;
 import static contract.AssortedOpsXTestConstants.NEXT_ENTITY_NUM;
 import static contract.AssortedOpsXTestConstants.ONE_HBAR;
 import static contract.AssortedOpsXTestConstants.POINTLESS_INTERMEDIARY_ADDRESS;
@@ -39,11 +38,12 @@ import static contract.AssortedOpsXTestConstants.POINTLESS_INTERMEDIARY_ID;
 import static contract.AssortedOpsXTestConstants.RELAYER_ID;
 import static contract.AssortedOpsXTestConstants.RUBE_GOLDBERG_CHILD_ID;
 import static contract.AssortedOpsXTestConstants.SALT;
-import static contract.AssortedOpsXTestConstants.SENDER_ADDRESS;
 import static contract.AssortedOpsXTestConstants.SENDER_ALIAS;
-import static contract.AssortedOpsXTestConstants.SENDER_ID;
 import static contract.AssortedOpsXTestConstants.TAKE_FIVE;
 import static contract.AssortedOpsXTestConstants.VACATE_ADDRESS;
+import static contract.XTestConstants.MISC_PAYER_ID;
+import static contract.XTestConstants.SENDER_ADDRESS;
+import static contract.XTestConstants.SENDER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -76,7 +76,7 @@ import java.util.Objects;
  */
 public class AssortedOpsXTest extends AbstractContractXTest {
     @Override
-    protected void handleAndCommitScenarioTransactions() {
+    protected void doScenarioOperations() {
         handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
         handleAndCommit(CONTRACT_SERVICE.handlers().ethereumTransactionHandler(), synthLazyCreateTxn());
         handleAndCommit(
@@ -204,10 +204,8 @@ public class AssortedOpsXTest extends AbstractContractXTest {
         final var finalizedAndDestructed = Objects.requireNonNull(accounts.get(FINALIZED_AND_DESTRUCTED_ID));
         assertEquals(1, finalizedAndDestructed.contractKvPairsNumber());
 
-        // TODO - uncomment once we have, hopefully, a SavepointStack.commit() method that
-        //  will allow the root updater to see the storage diff for the entire transaction
         final var pointlessIntermediary = Objects.requireNonNull(accounts.get(POINTLESS_INTERMEDIARY_ID));
-        //        assertEquals(2, pointlessIntermediary.contractKvPairsNumber());
+        assertEquals(2, pointlessIntermediary.contractKvPairsNumber());
 
         final var survivingChild = Objects.requireNonNull(accounts.get(RUBE_GOLDBERG_CHILD_ID));
         assertEquals(1, survivingChild.contractKvPairsNumber());

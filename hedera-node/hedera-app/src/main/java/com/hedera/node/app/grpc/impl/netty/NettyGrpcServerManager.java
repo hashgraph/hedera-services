@@ -99,7 +99,8 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         requireNonNull(metrics);
 
         // Convert the various RPC service definitions into transaction or query endpoints using the GrpcServiceBuilder.
-        services = servicesRegistry.services().stream()
+        services = servicesRegistry.registrations().stream()
+                .map(ServicesRegistry.Registration::service)
                 .flatMap(s -> s.rpcDefinitions().stream())
                 .map(d -> {
                     final var builder = new GrpcServiceBuilder(d.basePath(), ingestWorkflow, queryWorkflow);
@@ -145,10 +146,10 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         final var port = grpcConfig.port();
 
         // Start the plain-port server
-        logger.debug("Starting gRPC server on port {}", port);
+        logger.info("Starting gRPC server on port {}", port);
         var nettyBuilder = builderFor(port, nettyConfig);
         plainServer = startServerWithRetry(nettyBuilder, startRetries, startRetryIntervalMs);
-        logger.debug("gRPC server listening on port {}", plainServer.getPort());
+        logger.info("gRPC server listening on port {}", plainServer.getPort());
 
         // Try to start the server listening on the tls port. If this doesn't start, then we just keep going. We should
         // rethink whether we want to have two ports per consensus node like this. We do expose both via the proxies,
@@ -156,11 +157,11 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         // connection or terminating it, as appropriate. But for now, we support both, with the TLS port being optional.
         try {
             final var tlsPort = grpcConfig.tlsPort();
-            logger.debug("Starting TLS gRPC server on port {}", tlsPort);
+            logger.info("Starting TLS gRPC server on port {}", tlsPort);
             nettyBuilder = builderFor(tlsPort, nettyConfig);
             configureTls(nettyBuilder, nettyConfig);
             tlsServer = startServerWithRetry(nettyBuilder, startRetries, startRetryIntervalMs);
-            logger.debug("TLS gRPC server listening on port {}", tlsServer.getPort());
+            logger.info("TLS gRPC server listening on port {}", tlsServer.getPort());
         } catch (SSLException | FileNotFoundException e) {
             tlsServer = null;
             logger.warn("Could not start TLS server, will continue without it: {}", e.getMessage());
@@ -210,7 +211,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                 if (remaining == 0) {
                     throw new RuntimeException("Failed to start gRPC server");
                 }
-                logger.info("Still trying to start server... {} tries remaining", remaining);
+                logger.info("Still trying to start server... {} tries remaining", remaining, e);
 
                 // Wait a bit before retrying. In the FUTURE we should consider removing this functionality, it isn't
                 // clear that it is actually helpful, and it complicates the code. But for now we will keep it so as

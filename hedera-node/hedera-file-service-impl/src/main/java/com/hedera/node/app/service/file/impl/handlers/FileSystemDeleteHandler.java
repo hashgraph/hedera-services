@@ -18,15 +18,20 @@ package com.hedera.node.app.service.file.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
-import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifyNotSystemFile;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
+import com.hedera.node.app.service.mono.fees.calculation.file.txns.SystemDeleteFileResourceUsage;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -43,9 +48,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FileSystemDeleteHandler implements TransactionHandler {
+    private final FileFeeBuilder usageEstimator;
+
     @Inject
-    public FileSystemDeleteHandler() {
-        // Exists for injection
+    public FileSystemDeleteHandler(final FileFeeBuilder usageEstimator) {
+        this.usageEstimator = usageEstimator;
     }
 
     /**
@@ -65,9 +72,6 @@ public class FileSystemDeleteHandler implements TransactionHandler {
         final var fileStore = context.createStore(ReadableFileStore.class);
         final var transactionFileId = requireNonNull(transactionBody.fileID());
         preValidate(transactionFileId, fileStore, context, true);
-
-        var file = fileStore.getFileLeaf(transactionFileId);
-        validateAndAddRequiredKeys(file, null, context);
     }
 
     @Override
@@ -87,8 +91,9 @@ public class FileSystemDeleteHandler implements TransactionHandler {
         final var fileStore = handleContext.writableStore(WritableFileStore.class);
         final File file = verifyNotSystemFile(ledgerConfig, fileStore, fileId);
 
+        final var oldExpiration = file.expirationSecond();
         final var newExpiry = systemDeleteTransactionBody
-                .expirationTimeOrElse(new TimestampSeconds(file.expirationSecond()))
+                .expirationTimeOrElse(new TimestampSeconds(oldExpiration))
                 .seconds();
         // If the file is already expired, remove it from state completely otherwise change the deleted flag to be true.
         if (newExpiry <= handleContext.consensusNow().getEpochSecond()) {
@@ -97,6 +102,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
             /* Get all the fields from existing file and change deleted flag */
             final var fileBuilder = new File.Builder()
                     .fileId(file.fileId())
+                    .preSystemDeleteExpirationSecond(oldExpiration)
                     .expirationSecond(newExpiry)
                     .keys(file.keys())
                     .contents(file.contents())
@@ -107,5 +113,15 @@ public class FileSystemDeleteHandler implements TransactionHandler {
             It will not be committed to state until commit is called on the state.--- */
             fileStore.put(fileBuilder.build());
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull FeeContext feeContext) {
+        final var op = feeContext.body();
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj ->
+                        new SystemDeleteFileResourceUsage(usageEstimator).usageGiven(fromPbj(op), sigValueObj));
     }
 }

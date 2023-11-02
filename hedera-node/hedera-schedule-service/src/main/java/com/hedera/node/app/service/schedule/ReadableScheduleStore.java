@@ -71,4 +71,11 @@ public interface ReadableScheduleStore {
      */
     @Nullable
     public List<Schedule> getByExpirationSecond(final long expirationTime);
+
+    /**
+     * Returns the number of schedules in state, for use in enforcing creation limits.
+     *
+     * @return the number of schedules in state
+     */
+    long numSchedulesInState();
 }

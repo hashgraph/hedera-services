@@ -27,6 +27,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.Browser;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +45,11 @@ public class BrowseCommand extends AbstractCommand {
 
     private List<NodeId> localNodes = new ArrayList<>();
 
+    /**
+     * If true, perform a clean operation before starting.
+     */
+    private boolean clean = false;
+
     @CommandLine.Option(
             names = {"-l", "--local-node"},
             description = "Specify a node that should be run in this JVM. If no nodes are provided, "
@@ -55,6 +61,13 @@ public class BrowseCommand extends AbstractCommand {
         }
     }
 
+    @CommandLine.Option(
+            names = {"-c", "--clean"},
+            description = "Perform a clean operation before starting.")
+    private void clean(final boolean clean) {
+        this.clean = clean;
+    }
+
     /**
      * This method is called after command line input is parsed.
      *
@@ -63,8 +76,12 @@ public class BrowseCommand extends AbstractCommand {
     @SuppressWarnings("InfiniteLoopStatement")
     @Override
     public Integer call() throws IOException, InterruptedException {
+        if (clean) {
+            CleanCommand.clean(Path.of(System.getProperty("user.dir")));
+        }
+
         try {
-            Browser.launch(new CommandLineArgs(new HashSet<>(localNodes)));
+            Browser.launch(new CommandLineArgs(new HashSet<>(localNodes)), false);
         } catch (final Exception e) {
             e.printStackTrace();
             return FATAL_ERROR.getExitCode();

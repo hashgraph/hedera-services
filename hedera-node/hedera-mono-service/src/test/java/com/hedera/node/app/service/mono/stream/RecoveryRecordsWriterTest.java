@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.service.mono.stream;
 
-import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.ALL_EXPECTED_RSOS_ASSET;
-import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.ON_DISK_FILES_LOC;
-import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.RECOVERY_STREAM_ONLY_RSOS_ASSET;
-import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.loadRsosFrom;
-import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryTest.rsoFrom;
+import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryAndReplayTest.ALL_EXPECTED_RSOS_ASSET;
+import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryAndReplayTest.ON_DISK_FILES_LOC;
+import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryAndReplayTest.RECOVERY_STREAM_ONLY_RSOS_ASSET;
+import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryAndReplayTest.loadRsosFrom;
+import static com.hedera.node.app.service.mono.stream.RecordStreamRecoveryAndReplayTest.rsoFrom;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
@@ -44,7 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class RecoveryRecordsWriterTest {
     static final String CORRUPT_ON_DISK_FILES_LOC =
-            RecordStreamRecoveryTest.RECOVERY_ASSETS_LOC + File.separator + "corruptOnDiskFiles";
+            RecordStreamRecoveryAndReplayTest.RECOVERY_ASSETS_LOC + File.separator + "corruptOnDiskFiles";
     private static final Hash START_HASH = new Hash(CommonUtils.unhex(
             "459f257ef8a57cbd2cd9023f9da6b1eb90aac1a1a52c76076e3fa8d9ec2bd377a363e9be021e66a21ebd11ac7141d47b"));
 

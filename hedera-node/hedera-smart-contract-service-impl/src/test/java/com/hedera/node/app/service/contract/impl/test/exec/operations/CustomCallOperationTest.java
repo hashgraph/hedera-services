@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REQUIRED_GAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SYSTEM_ADDRESS;
@@ -28,7 +29,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
-import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import org.apache.tuweni.bytes.Bytes;
@@ -122,7 +122,7 @@ class CustomCallOperationTest {
     void withLongZeroRejectsMissingAddress() {
         givenWellKnownFrameWith(1L, TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
 
-        final var expected = new Operation.OperationResult(REQUIRED_GAS, CustomExceptionalHaltReason.MISSING_ADDRESS);
+        final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
         final var actual = subject.execute(frame, evm);
 
         assertSameResult(expected, actual);
@@ -132,7 +132,7 @@ class CustomCallOperationTest {
     void withNoValueRejectsMissingAddress() {
         givenWellKnownFrameWith(0L, TestHelpers.EIP_1014_ADDRESS, 2L);
 
-        final var expected = new Operation.OperationResult(REQUIRED_GAS, CustomExceptionalHaltReason.MISSING_ADDRESS);
+        final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
         final var actual = subject.execute(frame, evm);
 
         assertSameResult(expected, actual);
@@ -142,7 +142,7 @@ class CustomCallOperationTest {
     void withoutImplicitCreationEnabledRejectsMissingAddress() {
         givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
 
-        final var expected = new Operation.OperationResult(REQUIRED_GAS, CustomExceptionalHaltReason.MISSING_ADDRESS);
+        final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_SOLIDITY_ADDRESS);
         final var actual = subject.execute(frame, evm);
 
         assertSameResult(expected, actual);

@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -57,6 +58,7 @@ public class PerpetualTransfers extends HapiSuite {
         });
     }
 
+    @HapiTest
     private HapiSpec canTransferBackAndForthForever() {
         return HapiSpec.defaultHapiSpec("CanTransferBackAndForthForever")
                 .given()

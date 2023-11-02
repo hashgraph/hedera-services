@@ -14,14 +14,4 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.hashgraph.aggregate-reports")
-    id("com.hedera.hashgraph.spotless-conventions")
-    id("com.hedera.hashgraph.spotless-kotlin-conventions")
-    id("com.hedera.hashgraph.dependency-analysis")
-}
-
-repositories {
-    mavenCentral()
-    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
-}
+plugins { id("com.hedera.hashgraph.root") }

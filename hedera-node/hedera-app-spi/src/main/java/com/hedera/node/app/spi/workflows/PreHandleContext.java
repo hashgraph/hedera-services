@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -91,9 +92,10 @@ public interface PreHandleContext extends TransactionKeys {
      * @param key key to be added
      * @return {@code this} object
      * @throws NullPointerException if the key is null
+     * @throws PreCheckException if the key is not accepted
      */
     @NonNull
-    PreHandleContext requireKey(@NonNull final Key key);
+    PreHandleContext requireKey(@NonNull final Key key) throws PreCheckException;
 
     /**
      * Adds the given key to optional non-payer keys.
@@ -103,9 +105,10 @@ public interface PreHandleContext extends TransactionKeys {
      * @param key key to be added
      * @return {@code this} object
      * @throws NullPointerException if the key is null
+     * @throws PreCheckException if the key is not accepted
      */
     @NonNull
-    PreHandleContext optionalKey(@NonNull final Key key);
+    PreHandleContext optionalKey(@NonNull final Key key) throws PreCheckException;
 
     /**
      * Adds the given set of keys to optional non-payer keys.
@@ -115,9 +118,10 @@ public interface PreHandleContext extends TransactionKeys {
      * @param keys the set of keys to be added
      * @return {@code this} object
      * @throws NullPointerException if the set of keys is null
+     * @throws PreCheckException if the key is not accepted
      */
     @NonNull
-    PreHandleContext optionalKeys(@NonNull final Set<Key> keys);
+    PreHandleContext optionalKeys(@NonNull final Set<Key> keys) throws PreCheckException;
 
     /**
      * Adds the given hollow account to the optional signing set.
@@ -219,6 +223,19 @@ public interface PreHandleContext extends TransactionKeys {
      */
     @NonNull
     PreHandleContext requireSignatureForHollowAccount(@NonNull final Account hollowAccount);
+
+    /**
+     * Adds the given hollow account to the required signing set. If the account has already been added, then
+     * the call is a no-op. The account must not be null. During signature verification, the app will verify that the
+     * transaction was signed by an ECDSA(secp256k1) key corresponding to the given account's alias. Since the account
+     * is being created, we just
+     *
+     * @param hollowAccountAlias the EVM address alias
+     * @return {@code this} object
+     * @throws IllegalArgumentException if the account is not a hollow account
+     */
+    @NonNull
+    PreHandleContext requireSignatureForHollowAccountCreation(@NonNull final Bytes hollowAccountAlias);
 
     /**
      * Returns all (required and optional) keys of a nested transaction.

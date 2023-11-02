@@ -26,10 +26,11 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
-import com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.DeleteTopicResourceUsage;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -74,22 +75,8 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
         requireNonNull(context, "The argument 'context' must not be null");
 
         final var op = context.body().consensusDeleteTopicOrThrow();
-
-        final var fees = context.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            try {
-                final var protoBody = fromPbj(context.body());
-                return ConsensusServiceFeeBuilder.getConsensusDeleteTopicFee(protoBody, sigValueObj);
-            } catch (InvalidTxBodyException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-        context.feeAccumulator().charge(context.payer(), fees);
-
         final var topicStore = context.writableStore(WritableTopicStore.class);
-
         var topicId = op.topicIDOrElse(TopicID.DEFAULT);
-
         var optionalTopic = topicStore.get(topicId);
 
         /* If the topic doesn't exist, return INVALID_TOPIC_ID */
@@ -119,5 +106,15 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
         /* --- Put the modified topic. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
         topicStore.put(topicBuilder.build());
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new DeleteTopicResourceUsage()
+                .usageGiven(fromPbj(op), sigValueObj, null));
     }
 }

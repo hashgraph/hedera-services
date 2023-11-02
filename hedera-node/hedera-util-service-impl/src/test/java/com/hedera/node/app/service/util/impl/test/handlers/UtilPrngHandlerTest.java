@@ -27,7 +27,6 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
-import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -59,9 +58,6 @@ class UtilPrngHandlerTest {
 
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
-
-    @Mock
-    private ReadableRunningHashLeafStore readableRunningHashLeafStore;
 
     private FakePrngRecordBuilder recordBuilder;
     private FeeCalculator feeCalculator;
@@ -276,7 +272,6 @@ class UtilPrngHandlerTest {
     @Test
     void nullBlockRecordInfoThrows() {
         givenTxnWithRange(0);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
         given(handleContext.blockRecordInfo()).willReturn(null);
 
         assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(NullPointerException.class);
@@ -288,7 +283,6 @@ class UtilPrngHandlerTest {
     @Test
     void nullHashFromRunningHashReturnsAllZeros() {
         givenTxnWithRange(0);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
         given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
         given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
@@ -303,7 +297,6 @@ class UtilPrngHandlerTest {
     @Test
     void emptyHashFromRunningHashReturnsAllZeros() {
         givenTxnWithRange(0);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
         given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
         given(handleContext.feeAccumulator()).willReturn(feeAccumulator);

@@ -16,24 +16,50 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_MINT_METADATA;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
+import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
+import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.*;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.*;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableNftStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -44,7 +70,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -94,16 +122,26 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var tokenStore = context.writableStore(WritableTokenStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var accountStore = context.writableStore(WritableAccountStore.class);
-        // validate token exists
-        final var token = tokenStore.get(tokenId);
-        validateTrue(token != null, INVALID_TOKEN_ID);
+        // validate token exists and is usable
+        final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
+
         // validate treasury relation exists
-        final var treasuryRel = tokenRelStore.get(token.treasuryAccountId(), tokenId);
+        final var treasuryRel = TokenHandlerHelper.getIfUsable(token.treasuryAccountId(), tokenId, tokenRelStore);
+
         validateTrue(treasuryRel != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        if (token.hasKycKey()) {
+            validateTrue(treasuryRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+        }
 
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
+
+            validateTrue(op.amount() >= 0 && op.metadata().isEmpty(), INVALID_TOKEN_MINT_AMOUNT);
             // we need to know if treasury mint while creation to ignore supply key exist or not.
-            mintFungible(token, treasuryRel, op.amount(), false, accountStore, tokenStore, tokenRelStore);
+            long newTotalSupply =
+                    mintFungible(token, treasuryRel, op.amount(), false, accountStore, tokenStore, tokenRelStore);
+            final var recordBuilder = context.recordBuilder(TokenMintRecordBuilder.class);
+
+            recordBuilder.newTotalSupply(newTotalSupply);
         } else {
             // get the config needed for validation
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
@@ -112,7 +150,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             // validate resources exist for minting nft
             final var meta = op.metadata();
             validateTrue(
-                    nftStore.sizeOfState() + meta.size() < maxAllowedMints, MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
+                    nftStore.sizeOfState() + meta.size() <= maxAllowedMints, MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
             // mint nft
             final var mintedSerials = mintNonFungible(
                     token,
@@ -125,6 +163,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                     nftStore);
             final var recordBuilder = context.recordBuilder(TokenMintRecordBuilder.class);
 
+            recordBuilder.newTotalSupply(tokenStore.get(tokenId).totalSupply());
             recordBuilder.serialNumbers(mintedSerials);
             // TODO: Need to build transfer ownership from list to transfer NFT to treasury
             // This should probably be done in finalize method on token service which constructs the
@@ -182,7 +221,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         // Change the supply on token
         changeSupply(token, treasuryRel, metadataCount, FAIL_INVALID, accountStore, tokenStore, tokenRelStore);
-
+        // The token is modified in previous step, so we need to get the modified token
+        final var modifiedToken = tokenStore.get(token.tokenId());
         final var mintedSerials = new ArrayList<Long>(metadata.size());
 
         // for each serial number minted increment serial numbers and create new unique token
@@ -197,9 +237,10 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         }
         // Update last used serial number and number of owned nfts and put the updated token and treasury
         // into the store
-        final var copyToken = token.copyBuilder();
+        final var copyToken = modifiedToken.copyBuilder();
         final var copyTreasury = treasuryAccount.copyBuilder();
         // Update Token and treasury
+        copyToken.totalSupply(token.totalSupply() + metadataCount);
         copyToken.lastUsedSerialNumber(currentSerialNumber);
         copyTreasury.numberOwnedNfts(treasuryAccount.numberOwnedNfts() + metadataCount);
 
@@ -237,5 +278,54 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                         .build())
                 .metadata(meta)
                 .build();
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var op = feeContext.body().tokenMintOrThrow();
+        final var subType = op.amount() > 0 ? SubType.TOKEN_FUNGIBLE_COMMON : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+
+        final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
+        final var payerId = feeContext.payer();
+        final var payerKey = readableAccountStore.getAccountById(payerId).keyOrThrow();
+
+        final var calculator = feeContext.feeCalculator(subType);
+        if (SubType.TOKEN_NON_FUNGIBLE_UNIQUE.equals(subType)) {
+            calculator.resetUsage();
+            // The price of nft mint should be increased based on number of signatures.
+            // The first signature is free and is accounted in the base price, so we only need to add
+            // the price of the rest of the signatures.
+            calculator.addVerificationsPerTransaction(Math.max(0, numSimpleKeys(payerKey) - 1L));
+        }
+        // FUTURE: lifetime parameter is not being used by the function below, in order to avoid making changes
+        // to mono-service passed a default lifetime of 3 months here
+        final var meta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(
+                fromPbj(feeContext.body()), fromPbj(subType), THREE_MONTHS_IN_SECONDS);
+
+        calculator.addBytesPerTransaction(meta.getBpt());
+        calculator.addRamByteSeconds(meta.getRbs());
+        calculator.addNetworkRamByteSeconds(meta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        return calculator.calculate();
+    }
+
+    private int numSimpleKeys(final Key key) {
+        final var count = new AtomicInteger(0);
+        if (key.hasThresholdKey()) {
+            final var keys =
+                    key.thresholdKeyOrThrow().keysOrElse(KeyList.DEFAULT).keysOrElse(Collections.emptyList());
+            for (final var k : keys) {
+                numSimpleKeys(k);
+            }
+        } else if (key.hasKeyList()) {
+            final var keys = key.keyListOrElse(KeyList.DEFAULT).keysOrElse(Collections.emptyList());
+            for (final var k : keys) {
+                numSimpleKeys(k);
+            }
+        } else {
+            // FUTURE: We don't need to count contractId keys here, but we need this to pass differential testing
+            count.incrementAndGet();
+        }
+        return count.get();
     }
 }

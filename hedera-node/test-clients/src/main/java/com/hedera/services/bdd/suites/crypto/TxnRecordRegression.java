@@ -33,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -45,7 +46,7 @@ import org.apache.logging.log4j.Logger;
 public class TxnRecordRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(TxnRecordRegression.class);
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
         new TxnRecordRegression().runSuiteSync();
     }
 
@@ -92,6 +93,7 @@ public class TxnRecordRegression extends HapiSuite {
                 .then(getTxnRecord("recordTxn").hasCostAnswerPrecheck(ACCOUNT_DELETED));
     }
 
+    @HapiTest
     private HapiSpec returnsInvalidForUnspecifiedTxnId() {
         return defaultHapiSpec("ReturnsInvalidForUnspecifiedTxnId")
                 .given()
@@ -99,22 +101,24 @@ public class TxnRecordRegression extends HapiSuite {
                 .then(getTxnRecord("").useDefaultTxnId().hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
+    @HapiTest
     private HapiSpec recordNotFoundIfNotInPayerState() {
         return defaultHapiSpec("RecordNotFoundIfNotInPayerState")
                 .given(
                         cryptoCreate("misc").via("success"),
                         usableTxnIdNamed("rightAccountWrongId").payerId("misc"))
                 .when()
-                .then(getTxnRecord("rightAccountWrongId").hasCostAnswerPrecheck(RECORD_NOT_FOUND));
+                .then(getTxnRecord("rightAccountWrongId").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
+    @HapiTest
     private HapiSpec recordUnavailableBeforeConsensus() {
         return defaultHapiSpec("RecordUnavailableBeforeConsensus")
                 .given()
                 .when()
                 .then(
                         cryptoCreate("misc").via("success").balance(1_000L).deferStatusResolution(),
-                        getTxnRecord("success").hasCostAnswerPrecheck(RECORD_NOT_FOUND));
+                        getTxnRecord("success").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
     private HapiSpec recordUnavailableIfRejectedInPrecheck() {

@@ -38,11 +38,12 @@ public class MerkleDbTest {
 
     @BeforeAll
     public static void setup() throws Exception {
+        MerkleDb.resetDefaultInstancePath();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }
 
     @AfterEach
-    public void shutdownTest() throws Exception {
+    public void shutdownTest() {
         // check db count
         assertEquals(0, MerkleDbDataSource.getCountOfOpenDatabases(), "Expected no open dbs");
     }
@@ -137,7 +138,6 @@ public class MerkleDbTest {
         // create datasource reusing existing metadata
         MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
                 new MerkleDbDataSource<>(instance, tableName, instance.getNextTableId() - 1, tableConfig, false);
-        Assertions.assertNotNull(dataSource);
         // This datasource cannot be properly closed because MerkleDb instance is not aware of this.
         // Assertion error is expected
         assertThrows(AssertionError.class, dataSource::close);
@@ -334,18 +334,33 @@ public class MerkleDbTest {
                 instance.copyDataSource(dataSource2, true);
 
         final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile("testSnapshotCopiedTables");
-        // Check primary tables can be snapshotted
+        // Make a snapshot of original table 1
         instance.snapshot(snapshotDir, dataSource1);
+        // Table with this name already exists in the target dir, so exception
+        Assertions.assertThrows(IllegalStateException.class, () -> instance.snapshot(snapshotDir, inactiveCopy1));
+        // Make a snapshot of a copy of table 1
         instance.snapshot(snapshotDir, activeCopy2);
-        // Should not be able to snapshot non-primary tables
-        Assertions.assertThrows(IllegalArgumentException.class, () -> instance.snapshot(snapshotDir, dataSource2));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> instance.snapshot(snapshotDir, inactiveCopy1));
+        // This one will result in a name conflict, too
+        Assertions.assertThrows(IllegalStateException.class, () -> instance.snapshot(snapshotDir, dataSource2));
+
+        // Now try in a different order
+        final Path snapshotDir2 = TemporaryFileBuilder.buildTemporaryFile("testSnapshotCopiedTables2");
+        instance.snapshot(snapshotDir2, inactiveCopy1);
+        Assertions.assertThrows(IllegalStateException.class, () -> instance.snapshot(snapshotDir2, dataSource1));
+        instance.snapshot(snapshotDir2, dataSource2);
+        Assertions.assertThrows(IllegalStateException.class, () -> instance.snapshot(snapshotDir2, activeCopy2));
 
         final MerkleDb snapshotInstance = MerkleDb.getInstance(snapshotDir);
         Assertions.assertTrue(Files.exists(snapshotInstance.getTableDir(tableName1, dataSource1.getTableId())));
         Assertions.assertTrue(Files.exists(snapshotInstance.getTableDir(tableName2, activeCopy2.getTableId())));
         Assertions.assertFalse(Files.exists(snapshotInstance.getTableDir(tableName1, inactiveCopy1.getTableId())));
         Assertions.assertFalse(Files.exists(snapshotInstance.getTableDir(tableName2, dataSource2.getTableId())));
+
+        final MerkleDb snapshotInstance2 = MerkleDb.getInstance(snapshotDir2);
+        Assertions.assertTrue(Files.exists(snapshotInstance2.getTableDir(tableName1, inactiveCopy1.getTableId())));
+        Assertions.assertTrue(Files.exists(snapshotInstance2.getTableDir(tableName2, dataSource2.getTableId())));
+        Assertions.assertFalse(Files.exists(snapshotInstance2.getTableDir(tableName1, dataSource1.getTableId())));
+        Assertions.assertFalse(Files.exists(snapshotInstance2.getTableDir(tableName2, activeCopy2.getTableId())));
 
         dataSource1.close();
         dataSource2.close();

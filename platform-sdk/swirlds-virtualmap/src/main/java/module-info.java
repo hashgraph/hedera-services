@@ -8,12 +8,12 @@ open module com.swirlds.virtualmap {
     exports com.swirlds.virtualmap.internal.merkle;
     exports com.swirlds.virtualmap.config;
 
+    requires transitive com.swirlds.common;
+    requires transitive com.swirlds.config.api;
     requires com.swirlds.base;
-    requires com.swirlds.common;
     requires com.swirlds.logging;
-    requires org.apache.logging.log4j;
-    requires java.sql;
     requires java.management; // Test dependency
-    requires com.swirlds.config;
+    requires java.sql;
+    requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
 }

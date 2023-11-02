@@ -24,6 +24,7 @@ import com.hedera.hapi.node.scheduled.ScheduleDeleteTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -87,6 +88,9 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
             final Key adminKey = scheduleData.adminKey();
             if (adminKey != null) context.requireKey(adminKey);
             else throw new PreCheckException(ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE);
+            // Once deleted or executed, no later transaction will change that status.
+            if (scheduleData.deleted()) throw new PreCheckException(ResponseCodeEnum.SCHEDULE_ALREADY_DELETED);
+            if (scheduleData.executed()) throw new PreCheckException(ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED);
         } else {
             throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
@@ -109,6 +113,9 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
                             context.verificationFor(scheduleData.adminKeyOrThrow());
                     if (verificationResult.passed()) {
                         scheduleStore.delete(idToDelete, context.consensusNow());
+                        final ScheduleRecordBuilder scheduleRecords =
+                                context.recordBuilder(ScheduleRecordBuilder.class);
+                        scheduleRecords.scheduleID(idToDelete);
                     } else {
                         throw new HandleException(ResponseCodeEnum.UNAUTHORIZED);
                     }
@@ -118,7 +125,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
             } else {
                 throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
             }
-        } catch (final IllegalStateException translate) {
+        } catch (final IllegalStateException ignored) {
             throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
         } catch (final PreCheckException translate) {
             throw new HandleException(translate.responseCode());
@@ -141,7 +148,11 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
             @Nullable final ScheduleID idToDelete)
             throws HandleException {
         try {
-            return preValidate(scheduleStore, isLongTermEnabled, idToDelete);
+            final Schedule validSchedule = preValidate(scheduleStore, isLongTermEnabled, idToDelete);
+            // Once deleted or executed, no later transaction will change that status.
+            if (validSchedule.deleted()) throw new HandleException(ResponseCodeEnum.SCHEDULE_ALREADY_DELETED);
+            if (validSchedule.executed()) throw new HandleException(ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED);
+            return validSchedule;
         } catch (final PreCheckException translated) {
             throw new HandleException(translated.responseCode());
         }

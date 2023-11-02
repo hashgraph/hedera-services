@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.records.impl;
 
+import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Timestamp;
@@ -25,7 +26,7 @@ import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -50,8 +51,6 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public final class BlockRecordManagerImpl implements BlockRecordManager {
     private static final Logger logger = LogManager.getLogger(BlockRecordManagerImpl.class);
-    /** The hash size in bytes, normally 48 for SHA384 */
-    private static final int HASH_SIZE = DigestType.SHA_384.digestLength();
 
     /**
      * The number of blocks to keep multiplied by hash size. This is computed based on the
@@ -238,24 +237,14 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     // ========================================================================================================
     // Running Hash Getter Methods
 
-    /**
-     * Get the runningHash of all RecordStreamObject. This will block if the running hash has not yet
-     * been computed for the most recent user transaction.
-     *
-     * @return the runningHash of all RecordStreamObject, or null if there are no running hashes yet
-     */
+    /** {@inheritDoc} */
     @NonNull
     @Override
     public Bytes getRunningHash() {
         return streamFileProducer.getRunningHash();
     }
 
-    /**
-     * Get the previous, previous, previous runningHash of all RecordStreamObject. This will block if
-     * the running hash has not yet been computed for the most recent user transaction.
-     *
-     * @return the previous, previous, previous runningHash of all RecordStreamObject, or null if there is not one yet
-     */
+    /** {@inheritDoc} */
     @Nullable
     @Override
     public Bytes getNMinus3RunningHash() {
@@ -265,70 +254,31 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     // ========================================================================================================
     // BlockRecordInfo Implementation
 
-    /**
-     * Get the last block number, this is the last completed immutable block.
-     *
-     * @return the current block number, 0 of there is no blocks yet
-     */
+    /** {@inheritDoc} */
     @Override
     public long lastBlockNo() {
         return lastBlockInfo.lastBlockNumber();
     }
 
-    /**
-     * Get the consensus time of the first transaction of the last block, this is the last completed immutable block.
-     *
-     * @return the consensus time of the first transaction of the last block, null if there was no previous block
-     */
+    /** {@inheritDoc} */
     @Nullable
     @Override
     public Instant firstConsTimeOfLastBlock() {
-        final var firstConsTimeOfLastBlock = lastBlockInfo.firstConsTimeOfLastBlock();
-        return firstConsTimeOfLastBlock != null
-                ? Instant.ofEpochSecond(firstConsTimeOfLastBlock.seconds(), firstConsTimeOfLastBlock.nanos())
-                : null;
+        return BlockRecordInfoUtils.firstConsTimeOfLastBlock(lastBlockInfo);
     }
 
-    /**
-     * Gets the hash of the last block
-     *
-     * @return the last block hash, null if no blocks have been created
-     */
+    /** {@inheritDoc} */
     @Nullable
     @Override
     public Bytes lastBlockHash() {
-        return getLastBlockHash(lastBlockInfo);
+        return BlockRecordInfoUtils.lastBlockHash(lastBlockInfo);
     }
 
-    /**
-     * Returns the hash of the given block number, or {@code null} if unavailable.
-     *
-     * @param blockNo the block number of interest, must be within range of (current_block - 1) -> (current_block - 254)
-     * @return its hash, if available otherwise null
-     */
+    /** {@inheritDoc} */
     @Nullable
     @Override
     public Bytes blockHashByBlockNumber(final long blockNo) {
-        final Bytes blockHashes = lastBlockInfo.blockHashes();
-        final long blocksAvailable = blockHashes.length() / HASH_SIZE;
-
-        // Smart contracts (and other services) call this API. Should a smart contract call this, we don't really
-        // want to throw an exception. So we will just return null, which is also valid. Basically, if the block
-        // doesn't exist, you get null.
-        if (blockNo < 0) {
-            return null;
-        }
-
-        final long lastBlockNo = lastBlockInfo.lastBlockNumber();
-        final long firstAvailableBlockNo = lastBlockNo - blocksAvailable + 1;
-        // If blocksAvailable == 0, then firstAvailable == blockNo; and all numbers are
-        // either less than or greater than or equal to blockNo, so we return unavailable
-        if (blockNo < firstAvailableBlockNo || blockNo > lastBlockNo) {
-            return null;
-        } else {
-            long offset = (blockNo - firstAvailableBlockNo) * HASH_SIZE;
-            return blockHashes.slice(offset, HASH_SIZE);
-        }
+        return BlockRecordInfoUtils.blockHashByBlockNumber(lastBlockInfo, blockNo);
     }
 
     // ========================================================================================================
@@ -344,22 +294,6 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     private long getBlockPeriod(@Nullable final Instant consensusTimestamp) {
         if (consensusTimestamp == null) return 0;
         return consensusTimestamp.getEpochSecond() / blockPeriodInSeconds;
-    }
-
-    /**
-     * Get the last block hash from the block info. This is the last block hash in the block hashes byte array.
-     *
-     * @param blockInfo The block info
-     * @return The last block hash, or null if there are no blocks yet
-     */
-    private Bytes getLastBlockHash(@Nullable final BlockInfo blockInfo) {
-        if (blockInfo != null) {
-            Bytes runningBlockHashes = blockInfo.blockHashes();
-            if (runningBlockHashes != null && runningBlockHashes.length() >= HASH_SIZE) {
-                return runningBlockHashes.slice(runningBlockHashes.length() - HASH_SIZE, HASH_SIZE);
-            }
-        }
-        return null;
     }
 
     /**

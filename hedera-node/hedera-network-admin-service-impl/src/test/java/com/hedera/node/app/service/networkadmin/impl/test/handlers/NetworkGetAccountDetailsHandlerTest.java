@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -49,6 +50,7 @@ import com.hedera.hapi.node.token.GrantedNftAllowance;
 import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetAccountDetailsHandler;
 import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUtil;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -71,10 +73,12 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     private QueryContext context;
 
     private NetworkGetAccountDetailsHandler networkGetAccountDetailsHandler;
+    private CryptoOpsUsage cryptoOpsUsage;
 
     @BeforeEach
     void setUp() {
-        networkGetAccountDetailsHandler = new NetworkGetAccountDetailsHandler();
+        this.cryptoOpsUsage = new CryptoOpsUsage();
+        networkGetAccountDetailsHandler = new NetworkGetAccountDetailsHandler(cryptoOpsUsage);
         final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(context.configuration()).thenReturn(configuration);
     }
@@ -132,6 +136,21 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
         given(context.query()).willReturn(query);
 
         assertThrowsPreCheck(() -> networkGetAccountDetailsHandler.validate(context), INVALID_ACCOUNT_ID);
+    }
+
+    @Test
+    void validatesQueryWhenDeletedAccount() {
+        givenValidAccount(true, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+        refreshStoresWithEntitiesOnlyInReadable();
+        final var data = GetAccountDetailsQuery.newBuilder()
+                .header(QueryHeader.newBuilder().build())
+                .accountId(accountId)
+                .build();
+        final var query = Query.newBuilder().accountDetails(data).build();
+        given(context.query()).willReturn(query);
+        given(context.createStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+
+        assertThrowsPreCheck(() -> networkGetAccountDetailsHandler.validate(context), ACCOUNT_DELETED);
     }
 
     @Test

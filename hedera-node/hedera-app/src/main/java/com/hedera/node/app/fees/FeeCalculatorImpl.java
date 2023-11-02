@@ -16,13 +16,15 @@
 
 package com.hedera.node.app.fees;
 
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_HEADER;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.HapiUtils.countOfCryptographicKeys;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FeeData;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.ExchangeRate;
@@ -35,8 +37,8 @@ import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.function.Function;
@@ -61,7 +63,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
     /**
      * Create a new instance. One is created per transaction.
      *
-     * @param txInfo           The parsed information about the transaction. Pricing includes the number of bytes
+     * @param txBody           The transaction body. Pricing includes the number of bytes
      *                         included in the transaction body memo, as well as the protobuf-encoded number of
      *                         bytes that form the signature map. We also do a little skullduggery by inspecting
      *                         the transaction type to see if it is a crypto transfer, and extracting the number of
@@ -71,17 +73,19 @@ public class FeeCalculatorImpl implements FeeCalculator {
      *                         has on this key, so we can charge for each of those.
      * @param numVerifications The number of cryptographic signatures that were verified for this transaction. We only
      *                         know this answer after pre-handle has run.
+     * @param signatureMapSize The number of bytes in the signature map.
      * @param feeData          The fee data associated with this transaction and its subtype.
      * @param currentRate      The current HBAR-to-USD exchange rate.
      */
     public FeeCalculatorImpl(
-            @NonNull TransactionInfo txInfo,
+            @NonNull TransactionBody txBody,
             @NonNull Key payerKey,
             final int numVerifications,
+            final int signatureMapSize,
             @NonNull final FeeData feeData,
             @NonNull final ExchangeRate currentRate) {
         //  Perform basic validations, and convert the PBJ objects to Google protobuf objects for `hapi-fees`.
-        requireNonNull(txInfo);
+        requireNonNull(txBody);
         requireNonNull(payerKey);
         this.feeData = fromPbj(feeData);
         this.currentRate = fromPbj(currentRate);
@@ -90,11 +94,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
         }
 
         // Create the "SigUsage" object, used by the "hapi-fees" module.
-        final var txBody = txInfo.txBody();
-        sigUsage = new SigUsage(
-                numVerifications,
-                SignatureMap.PROTOBUF.measureRecord(txInfo.signatureMap()),
-                countOfCryptographicKeys(payerKey));
+        sigUsage = new SigUsage(numVerifications, signatureMapSize, countOfCryptographicKeys(payerKey));
 
         // Create the "BaseTransactionMeta" object, used by the "hapi-fees" module. This object is not entirely
         // modularity friendly, because it wants to know the number of transfers in a crypto transfer, which is
@@ -115,6 +115,21 @@ public class FeeCalculatorImpl implements FeeCalculator {
         usage.resetForTransaction(baseMeta, sigUsage);
     }
 
+    public FeeCalculatorImpl(@Nullable final FeeData feeData, @NonNull final ExchangeRate currentRate) {
+        if (feeData == null) {
+            this.feeData = null;
+            this.usage = null;
+        } else {
+            this.feeData = fromPbj(feeData);
+            this.usage = UsageAccumulator.fromGrpc(this.feeData);
+            usage.reset();
+            usage.addBpt(BASIC_QUERY_HEADER + BASIC_TX_ID_SIZE);
+            usage.addBpr(BASIC_QUERY_RES_HEADER);
+        }
+        this.currentRate = fromPbj(currentRate);
+        this.sigUsage = new SigUsage(0, 0, 0);
+    }
+
     @Override
     @NonNull
     public FeeCalculator withResourceUsagePercent(double percent) {
@@ -124,6 +139,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
     @Override
     @NonNull
     public FeeCalculator addBytesPerTransaction(long bytes) {
+        failIfLegacyOnly();
         usage.addBpt(bytes);
         return this;
     }
@@ -131,6 +147,14 @@ public class FeeCalculatorImpl implements FeeCalculator {
     @NonNull
     @Override
     public FeeCalculator addNetworkRamByteSeconds(long amount) {
+        failIfLegacyOnly();
+        usage.addNetworkRbs(amount);
+        return this;
+    }
+
+    @NonNull
+    public FeeCalculator addRamByteSeconds(long amount) {
+        failIfLegacyOnly();
         usage.addRbs(amount);
         return this;
     }
@@ -138,7 +162,23 @@ public class FeeCalculatorImpl implements FeeCalculator {
     @NonNull
     @Override
     public FeeCalculator addStorageBytesSeconds(long seconds) {
+        failIfLegacyOnly();
         usage.addSbs(seconds);
+        return this;
+    }
+
+    @NonNull
+    public FeeCalculator addVerificationsPerTransaction(long amount) {
+        failIfLegacyOnly();
+        usage.addVpt(amount);
+        return this;
+    }
+
+    @NonNull
+    public FeeCalculator resetUsage() {
+        if (usage != null) {
+            usage.reset();
+        }
         return this;
     }
 
@@ -154,9 +194,16 @@ public class FeeCalculatorImpl implements FeeCalculator {
     @Override
     @NonNull
     public Fees calculate() {
+        failIfLegacyOnly();
         // Use the "hapi-fees" module to calculate the fees, and convert to one of our "Fees" objects.
         final var overflowCalc = new OverflowCheckingCalc();
         final var feeObject = overflowCalc.fees(usage, feeData, currentRate, 1);
         return new Fees(feeObject.nodeFee(), feeObject.networkFee(), feeObject.serviceFee());
+    }
+
+    private void failIfLegacyOnly() {
+        if (usage == null) {
+            throw new UnsupportedOperationException("Only legacy calculation supported");
+        }
     }
 }

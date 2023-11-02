@@ -18,14 +18,16 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
@@ -33,7 +35,7 @@ import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.Resul
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
+import java.util.function.Predicate;
 import javax.inject.Inject;
 
 /**
@@ -49,7 +51,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
 
     @Inject
     public HandleSystemContractOperations(@NonNull final HandleContext context) {
-        this.context = Objects.requireNonNull(context);
+        this.context = requireNonNull(context);
     }
 
     /**
@@ -85,21 +87,26 @@ public class HandleSystemContractOperations implements SystemContractOperations 
      * {@inheritDoc}
      */
     @Override
-    public @Nullable TokenRelationship getRelationshipAndExternalizeResult(
-            final long accountNumber,
-            final long tokenNumber,
-            final long callingContractNumber,
-            @NonNull final ResultTranslator<TokenRelationship> translator) {
-        throw new AssertionError("Not implemented");
+    public @NonNull Predicate<Key> activeSignatureTestWith(@NonNull final VerificationStrategy strategy) {
+        return strategy.asSignatureTestIn(context);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public @NonNull ResponseCodeEnum dispatch(
-            @NonNull final TransactionBody syntheticTransaction, @NonNull final VerificationStrategy strategy) {
-        throw new AssertionError("Not implemented");
+    public @NonNull <T> T dispatch(
+            @NonNull final TransactionBody syntheticBody,
+            @NonNull final VerificationStrategy strategy,
+            @NonNull final AccountID syntheticPayerId,
+            @NonNull final Class<T> recordBuilderClass) {
+        requireNonNull(syntheticBody);
+        requireNonNull(strategy);
+        requireNonNull(syntheticPayerId);
+        requireNonNull(recordBuilderClass);
+
+        return context.dispatchChildTransaction(
+                syntheticBody, recordBuilderClass, activeSignatureTestWith(strategy), syntheticPayerId);
     }
 
     /**
@@ -112,5 +119,14 @@ public class HandleSystemContractOperations implements SystemContractOperations 
                 .contractID(result.contractID())
                 .status(status == ResultStatus.IS_ERROR ? FAIL_INVALID : SUCCESS)
                 .contractCallResult(result);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public ExchangeRate currentExchangeRate() {
+        return context.exchangeRateInfo().activeRate(context.consensusNow());
     }
 }

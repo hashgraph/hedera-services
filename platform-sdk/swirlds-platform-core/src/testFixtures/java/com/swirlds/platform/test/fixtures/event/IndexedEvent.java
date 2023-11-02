@@ -20,14 +20,13 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
-import com.swirlds.platform.event.InternalEventData;
 import com.swirlds.platform.internal.EventImpl;
-import java.util.Objects;
 
 /**
- * An event with the same behavior as a standard event but with the addition of some debugging metadata.
+ * An event with the same behavior as a standard event but with the addition of some debugging
+ * metadata.
  *
- * All testing and debugging utilities should use IndexedEvent instead of EventImpl directly.
+ * <p>All testing and debugging utilities should use IndexedEvent instead of EventImpl directly.
  */
 public class IndexedEvent extends EventImpl {
 
@@ -89,16 +88,12 @@ public class IndexedEvent extends EventImpl {
         return CLASS_ID;
     }
 
-    /**
-     * Get the index of this event with respect to the generator that created it.
-     */
+    /** Get the index of this event with respect to the generator that created it. */
     public long getGeneratorIndex() {
         return generatorIndex;
     }
 
-    /**
-     * Set the generator index of this event.
-     */
+    /** Set the generator index of this event. */
     public void setGeneratorIndex(final long generatorIndex) {
         this.generatorIndex = generatorIndex;
     }
@@ -124,17 +119,7 @@ public class IndexedEvent extends EventImpl {
         if (other == null || getClass() != other.getClass()) {
             return false;
         }
-        if (!super.equals(other)) {
-            return false;
-        }
-        final InternalEventData data = getInternalEventData();
-        final InternalEventData otherData = ((IndexedEvent) other).getInternalEventData();
-
-        return Objects.equals(data.isCleared(), otherData.isCleared())
-                && Objects.equals(data.isFameDecided(), otherData.isFameDecided())
-                && Objects.equals(data.isConsensus(), otherData.isConsensus())
-                && Objects.equals(data.hasUserTransactions(), otherData.hasUserTransactions())
-                && Objects.equals(data.getRecTimes(), otherData.getRecTimes());
+        return super.equals(other);
     }
 
     @Override

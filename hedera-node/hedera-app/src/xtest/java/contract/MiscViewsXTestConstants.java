@@ -16,11 +16,14 @@
 
 package contract;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static contract.AbstractContractXTest.asHeadlongAddress;
+
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.math.BigInteger;
 
@@ -30,15 +33,18 @@ public class MiscViewsXTestConstants {
     static final BigInteger TINYBARS = BigInteger.valueOf(666_666_666L);
 
     static final FileID VIEWS_INITCODE_FILE_ID = new FileID(0, 0, 1029L);
-    static final Bytes ERC_USER_ADDRESS = Bytes.fromHex("24Afdd97fc25332cf82FC29868293bD8eA24161c");
+    static final Bytes RAW_ERC_USER_ADDRESS = Bytes.fromHex("24Afdd97fc25332cf82FC29868293bD8eA24161c");
+    static final Address ERC_USER_ADDRESS = asHeadlongAddress(RAW_ERC_USER_ADDRESS.toByteArray());
     static final AccountID ERC_USER_ID =
             AccountID.newBuilder().accountNum(1024L).build();
     static final AccountID OPERATOR_ID =
             AccountID.newBuilder().accountNum(1025L).build();
+    static final Address ERC721_OPERATOR_ADDRESS =
+            asHeadlongAddress(asLongZeroAddress(OPERATOR_ID.accountNumOrThrow()).toArray());
     static final AccountID COINBASE_ID = AccountID.newBuilder().accountNum(98L).build();
-    static final TokenID ERC20_TOKEN_ID = TokenID.newBuilder().tokenNum(1027L).build();
-    static final TokenID ERC721_TOKEN_ID = TokenID.newBuilder().tokenNum(1028L).build();
-    static final ContractID SPECIAL_QUERIES_X_TEST =
+    static final Address ERC20_TOKEN_ADDRESS = asHeadlongAddress(
+            asLongZeroAddress(XTestConstants.ERC20_TOKEN_ID.tokenNum()).toArray());
+    static final ContractID SPECIAL_QUERIES_X_TEST_ID =
             ContractID.newBuilder().contractNum(1030L).build();
 
     static final Bytes UNCOVERED_SECRET =
@@ -68,6 +74,7 @@ public class MiscViewsXTestConstants {
     static final Bytes ERC721_IS_OPERATOR =
             Bytes.fromHex("0000000000000000000000000000000000000000000000000000000000000001");
     static final Function GET_TINYCENTS_EQUIV = new Function("getTinycentsEquiv(uint)");
+    static final Function GET_SECRET = new Function("secret()");
     static final Function GET_PRNG_SEED = new Function("getPrngSeed()");
     static final Function GET_ERC_20_BALANCE = new Function("getErc20Balance(address,address)");
     static final Function GET_ERC_20_SUPPLY = new Function("getErc20Supply(address)");
@@ -76,7 +83,7 @@ public class MiscViewsXTestConstants {
     static final Function GET_ERC_20_DECIMALS = new Function("getErc20Decimals(address)");
     static final Function GET_ERC_721_NAME = new Function("getErc721Name(address)");
     static final Function GET_ERC_721_SYMBOL = new Function("getErc721Symbol(address)");
-    static final Function GET_ERC_721_TOKENURI = new Function("getErc721TokenUri(address,uint256)");
+    static final Function GET_ERC_721_TOKEN_URI = new Function("getErc721TokenUri(address,uint256)");
     static final Function GET_ERC_721_BALANCE = new Function("getErc721Balance(address,address)");
     static final Function GET_ERC_721_OWNER = new Function("getErc721Owner(address,uint256)");
     static final Function GET_ERC721_IS_OPERATOR = new Function("getErc721IsOperator(address,address,address)");

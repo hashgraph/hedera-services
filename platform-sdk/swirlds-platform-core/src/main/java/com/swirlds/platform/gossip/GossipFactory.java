@@ -16,38 +16,36 @@
 
 package com.swirlds.platform.gossip;
 
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
-import com.swirlds.platform.FreezeManager;
-import com.swirlds.platform.StartUpEventFrozenManager;
-import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
+import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.gossip.chatter.ChatterGossip;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.sync.SingleNodeSyncGossip;
 import com.swirlds.platform.gossip.sync.SyncGossip;
-import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -74,25 +72,21 @@ public final class GossipFactory {
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
+     * @param epochHash                     the epoch hash of the initial state
      * @param shadowGraph                   contains non-ancient events
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
-     * @param freezeManager                 handles freezes
-     * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
-     * @param startedFromGenesis            true if this node started from a genesis state
      * @param stateManagementComponent      manages the lifecycle of the state
-     * @param eventIntakeLambda             a method that is called when something needs to be added to the event intake
-     *                                      queue
+     * @param eventValidator                validates events and passes valid events further along the intake pipeline
      * @param eventObserverDispatcher       the object used to wire event intake
-     * @param eventMapper                   a data structure used to track the most recent event from each node
-     * @param eventIntakeMetrics            metrics for event intake
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
-     * @param statusActionSubmitter         enables submitting platform status actions
+     * @param platformStatusManager         the platform status manager
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
+     * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
      * @return the gossip engine
      */
     public static Gossip buildGossip(
@@ -104,24 +98,21 @@ public final class GossipFactory {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
+            @Nullable final Hash epochHash,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
-            @NonNull final QueueThread<EventIntakeTask> intakeQueue,
-            @NonNull final FreezeManager freezeManager,
-            @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
+            @NonNull final QueueThread<GossipEvent> intakeQueue,
             @NonNull final SwirldStateManager swirldStateManager,
-            final boolean startedFromGenesis,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
+            @NonNull final EventValidator eventValidator,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
-            @NonNull final EventMapper eventMapper,
-            @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
-            @NonNull final StatusActionSubmitter statusActionSubmitter,
+            @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
-            @NonNull final Runnable clearAllPipelinesForReconnect) {
+            @NonNull final Runnable clearAllPipelinesForReconnect,
+            @NonNull final IntakeEventCounter intakeEventCounter) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -135,19 +126,16 @@ public final class GossipFactory {
         Objects.requireNonNull(emergencyRecoveryManager);
         Objects.requireNonNull(consensusRef);
         Objects.requireNonNull(intakeQueue);
-        Objects.requireNonNull(freezeManager);
-        Objects.requireNonNull(startUpEventFrozenManager);
         Objects.requireNonNull(swirldStateManager);
         Objects.requireNonNull(stateManagementComponent);
-        Objects.requireNonNull(eventIntakeLambda);
+        Objects.requireNonNull(eventValidator);
         Objects.requireNonNull(eventObserverDispatcher);
-        Objects.requireNonNull(eventMapper);
-        Objects.requireNonNull(eventIntakeMetrics);
         Objects.requireNonNull(syncMetrics);
         Objects.requireNonNull(eventLinker);
-        Objects.requireNonNull(statusActionSubmitter);
+        Objects.requireNonNull(platformStatusManager);
         Objects.requireNonNull(loadReconnectState);
         Objects.requireNonNull(clearAllPipelinesForReconnect);
+        Objects.requireNonNull(intakeEventCounter);
 
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
 
@@ -162,22 +150,18 @@ public final class GossipFactory {
                     addressBook,
                     selfId,
                     appVersion,
+                    epochHash,
                     shadowGraph,
                     emergencyRecoveryManager,
                     consensusRef,
                     intakeQueue,
-                    freezeManager,
-                    startUpEventFrozenManager,
                     swirldStateManager,
-                    startedFromGenesis,
                     stateManagementComponent,
-                    eventIntakeLambda,
+                    eventValidator,
                     eventObserverDispatcher,
-                    eventMapper,
-                    eventIntakeMetrics,
                     syncMetrics,
                     eventLinker,
-                    statusActionSubmitter,
+                    platformStatusManager,
                     loadReconnectState,
                     clearAllPipelinesForReconnect);
         } else {
@@ -193,16 +177,11 @@ public final class GossipFactory {
                         appVersion,
                         shadowGraph,
                         intakeQueue,
-                        freezeManager,
-                        startUpEventFrozenManager,
                         swirldStateManager,
                         stateManagementComponent,
-                        eventIntakeLambda,
                         eventObserverDispatcher,
-                        eventMapper,
-                        eventIntakeMetrics,
                         syncMetrics,
-                        statusActionSubmitter,
+                        platformStatusManager,
                         loadReconnectState,
                         clearAllPipelinesForReconnect);
             } else {
@@ -216,23 +195,20 @@ public final class GossipFactory {
                         addressBook,
                         selfId,
                         appVersion,
+                        epochHash,
                         shadowGraph,
                         emergencyRecoveryManager,
                         consensusRef,
                         intakeQueue,
-                        freezeManager,
-                        startUpEventFrozenManager,
                         swirldStateManager,
                         stateManagementComponent,
-                        eventIntakeLambda,
                         eventObserverDispatcher,
-                        eventMapper,
-                        eventIntakeMetrics,
                         syncMetrics,
                         eventLinker,
-                        statusActionSubmitter,
+                        platformStatusManager,
                         loadReconnectState,
-                        clearAllPipelinesForReconnect);
+                        clearAllPipelinesForReconnect,
+                        intakeEventCounter);
             }
         }
     }

@@ -46,6 +46,7 @@ import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
@@ -94,6 +95,9 @@ class FileCreateTest extends FileTestBase {
     @Mock
     private CreateFileRecordBuilder recordBuilder;
 
+    @Mock
+    private FileOpsUsage fileOpsUsage;
+
     private FilesConfig config;
 
     private WritableFileStore fileStore;
@@ -122,7 +126,7 @@ class FileCreateTest extends FileTestBase {
 
     @BeforeEach
     void setUp() {
-        subject = new FileCreateHandler();
+        subject = new FileCreateHandler(fileOpsUsage);
         fileStore = new WritableFileStore(writableStates);
         config = HederaTestConfigBuilder.createConfig().getConfigData(FilesConfig.class);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
@@ -200,7 +204,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), anyBoolean()))
                 .willReturn(new ExpiryMeta(expirationTime, NA, null));
         given(handleContext.newEntityNum()).willReturn(1_234L);
         given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
@@ -231,7 +235,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), anyBoolean()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
         given(handleContext.newEntityNum()).willReturn(1_234L);
         given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
@@ -261,7 +265,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), anyBoolean()))
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
 
         final var failure = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -278,7 +282,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), anyBoolean()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
 
         doThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))

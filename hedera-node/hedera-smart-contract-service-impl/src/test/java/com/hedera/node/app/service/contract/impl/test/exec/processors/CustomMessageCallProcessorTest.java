@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.test.exec.processors;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REMAINING_GAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.isSameResult;
-import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +32,8 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.swirlds.config.api.Configuration;
@@ -67,6 +68,7 @@ class CustomMessageCallProcessorTest {
     private static final Address CODE_ADDRESS = Address.fromHexString("0x111222333");
     private static final Address SENDER_ADDRESS = Address.fromHexString("0x222333444");
     private static final Address RECEIVER_ADDRESS = Address.fromHexString("0x33344455");
+    private static final Address ADDRESS_6 = Address.fromHexString("0x6");
 
     @Mock
     private EVM evm;
@@ -81,7 +83,7 @@ class CustomMessageCallProcessorTest {
     private AddressChecks addressChecks;
 
     @Mock
-    private PrecompiledContract prngPrecompile;
+    private PrngSystemContract prngPrecompile;
 
     @Mock
     private PrecompiledContract nativePrecompile;
@@ -121,13 +123,12 @@ class CustomMessageCallProcessorTest {
 
     @Test
     void callPrngSystemContractHappyPath() {
-        givenPrngCall();
+        givenPrngCall(ZERO_GAS_REQUIREMENT);
         given(result.getState()).willReturn(MessageFrame.State.CODE_SUCCESS);
 
         subject.start(frame, operationTracer);
 
-        verify(prngPrecompile).computePrecompile(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS, frame);
-        verify(prngPrecompile).gasRequirement(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS);
+        verify(prngPrecompile).computeFully(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS, frame);
         verify(operationTracer).tracePrecompileCall(frame, ZERO_GAS_REQUIREMENT, OUTPUT_DATA);
         verify(result).isRefundGas();
         verify(frame).decrementRemainingGas(ZERO_GAS_REQUIREMENT);
@@ -138,13 +139,11 @@ class CustomMessageCallProcessorTest {
 
     @Test
     void callPrngSystemContractInsufficientGas() {
-        givenPrngCall();
-        given(prngPrecompile.gasRequirement(any())).willReturn(GAS_REQUIREMENT);
+        givenPrngCall(GAS_REQUIREMENT);
 
         subject.start(frame, operationTracer);
 
-        verify(prngPrecompile).computePrecompile(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS, frame);
-        verify(prngPrecompile).gasRequirement(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS);
+        verify(prngPrecompile).computeFully(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS, frame);
         verify(operationTracer).tracePrecompileCall(frame, GAS_REQUIREMENT, OUTPUT_DATA);
         verifyHalt(INSUFFICIENT_GAS, false);
     }
@@ -165,14 +164,14 @@ class CustomMessageCallProcessorTest {
     void valueCannotBeTransferredToSystemContracts() {
         final var isHalted = new AtomicBoolean();
         givenHaltableFrame(isHalted);
-        givenCallWithCode(ALTBN128_ADD);
-        given(addressChecks.isSystemAccount(ALTBN128_ADD)).willReturn(true);
-        given(registry.get(ALTBN128_ADD)).willReturn(nativePrecompile);
+        givenCallWithCode(ADDRESS_6);
+        given(addressChecks.isSystemAccount(ADDRESS_6)).willReturn(true);
+        given(registry.get(ADDRESS_6)).willReturn(nativePrecompile);
         given(frame.getValue()).willReturn(Wei.ONE);
 
         subject.start(frame, operationTracer);
 
-        verifyHalt(CustomExceptionalHaltReason.INVALID_VALUE_TRANSFER);
+        verifyHalt(CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED);
     }
 
     @Test
@@ -296,17 +295,18 @@ class CustomMessageCallProcessorTest {
     }
 
     private void givenEvmPrecompileCall() {
-        given(addressChecks.isSystemAccount(ALTBN128_ADD)).willReturn(true);
-        given(registry.get(ALTBN128_ADD)).willReturn(nativePrecompile);
-        given(frame.getContractAddress()).willReturn(ALTBN128_ADD);
+        given(addressChecks.isSystemAccount(ADDRESS_6)).willReturn(true);
+        given(registry.get(ADDRESS_6)).willReturn(nativePrecompile);
+        given(frame.getContractAddress()).willReturn(ADDRESS_6);
         given(frame.getInputData()).willReturn(INPUT_DATA);
         given(frame.getValue()).willReturn(Wei.ZERO);
     }
 
-    private void givenPrngCall() {
+    private void givenPrngCall(long gasRequirement) {
         givenCallWithCode(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS);
         given(frame.getInputData()).willReturn(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS);
-        given(prngPrecompile.computePrecompile(any(), any())).willReturn(result);
+        given(prngPrecompile.computeFully(any(), any()))
+                .willReturn(new HederaSystemContract.FullResult(result, gasRequirement));
         given(result.getOutput()).willReturn(OUTPUT_DATA);
     }
 

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
+import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakeIdChangeType.FROM_ACCOUNT_TO_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.getPossibleRewardReceivers;
@@ -31,12 +32,13 @@ import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
-import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
+import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -71,16 +73,13 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         final var stakingRewardAccountId = asAccount(accountsConfig.stakingRewardAccount());
         final var consensusNow = context.consensusTime();
 
-        // TODO: confirm if the getDeletedAccountBeneficiaries should be in
-        //  SingleTransactionRecordBuilder interface instead
-        final var recordBuilder = context.userTransactionRecordBuilder(CryptoDeleteRecordBuilder.class);
-
         // Apply all changes related to stakedId changes, and adjust stakedToMe
         // for all accounts staking to an account
         adjustStakedToMeForAccountStakees(writableStore);
         // Get list of possible reward receivers and pay rewards to them
         final var rewardReceivers = getPossibleRewardReceivers(writableStore);
         // Pay rewards to all possible reward receivers, returns all rewards paid
+        final var recordBuilder = context.userTransactionRecordBuilder(DeleteCapableTransactionRecordBuilder.class);
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
                 rewardReceivers, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow, recordBuilder);
         // Adjust stakes for nodes
@@ -102,7 +101,11 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
      * @param writableStore The store to write to for updated values
      */
     public void adjustStakedToMeForAccountStakees(@NonNull final WritableAccountStore writableStore) {
-        final var modifiedAccounts = writableStore.modifiedAccountsInState();
+        // If there is a FROM_ACCOUNT_ or _TO_ACCOUNT stake change scenario, the set of modified
+        // accounts in the writable store can change inside the body of the for loop below; so we
+        // create a new ArrayList to iterate through just the accounts modified by the initial
+        // transaction
+        final var modifiedAccounts = new ArrayList<>(writableStore.modifiedAccountsInState());
 
         for (final var id : modifiedAccounts) {
             final var originalAccount = writableStore.getOriginalValue(id);
@@ -244,19 +247,21 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             final Instant consensusNow) {
         if (scenario.withdrawsFromNode()) {
             final var currentStakedNodeId = originalAccount.stakedNodeId();
-
-            stakeInfoHelper.withdrawStake(currentStakedNodeId, originalAccount, stakingInfoStore);
-            if (containStakeMetaChanges) {
-                // Pending rewards are calculated midnight each day for every account.
-                // If this account has changed to a different stakeId or choose to decline reward
-                // in mid of the day, it will not receive rewards for that day.
-                // So, it will be leaving some rewards from its current node unclaimed.
-                // We need to record that, so we don't include them in the pendingRewards
-                // calculation later
-                final var effectiveStakeRewardStart = rewardableStakeStartFor(
-                        stakingRewardStore.isStakingRewardsActivated(), originalAccount, consensusNow);
-                stakeInfoHelper.increaseUnclaimedStakeRewards(
-                        currentStakedNodeId, effectiveStakeRewardStart, stakingInfoStore);
+            // SENTINEL_NODE_ID is a special value to remove the account's staked node ID.
+            if (currentStakedNodeId != SENTINEL_NODE_ID) {
+                stakeInfoHelper.withdrawStake(currentStakedNodeId, originalAccount, stakingInfoStore);
+                if (containStakeMetaChanges) {
+                    // Pending rewards are calculated midnight each day for every account.
+                    // If this account has changed to a different stakeId or choose to decline reward
+                    // in mid of the day, it will not receive rewards for that day.
+                    // So, it will be leaving some rewards from its current node unclaimed.
+                    // We need to record that, so we don't include them in the pendingRewards
+                    // calculation later
+                    final var effectiveStakeRewardStart = rewardableStakeStartFor(
+                            stakingRewardStore.isStakingRewardsActivated(), originalAccount, consensusNow);
+                    stakeInfoHelper.increaseUnclaimedStakeRewards(
+                            currentStakedNodeId, effectiveStakeRewardStart, stakingInfoStore);
+                }
             }
         }
         // If account chose to stake to a node, the new node's stake will be increased
@@ -265,7 +270,8 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             final var modifiedStakedNodeId = modifiedAccount.stakedNodeId();
             // We need the latest updates to balance and stakedToMe for the account in modifications also
             // to be reflected in stake awarded. So use the modifiedAccount instead of originalAccount
-            stakeInfoHelper.awardStake(modifiedStakedNodeId, modifiedAccount, stakingInfoStore);
+            if (modifiedStakedNodeId != SENTINEL_NODE_ID)
+                stakeInfoHelper.awardStake(modifiedStakedNodeId, modifiedAccount, stakingInfoStore);
         }
     }
 
@@ -369,15 +375,18 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             @NonNull final AccountID stakee,
             final long roundedFinalBalance,
             @NonNull final WritableAccountStore writableStore) {
-        final var account = writableStore.get(stakee);
-        final var initialStakedToMe = account.stakedToMe();
-        final var finalStakedToMe = initialStakedToMe + roundedFinalBalance;
-        if (finalStakedToMe < 0) {
-            log.warn("StakedToMe for account {} is negative after reward distribution, set it to 0", stakee);
+        // stakee is null when SENTINEL_ACCOUNT_ID sent as staked_account_id in update crypto transaction
+        if (stakee != null) {
+            final var account = writableStore.get(stakee);
+            final var initialStakedToMe = account.stakedToMe();
+            final var finalStakedToMe = initialStakedToMe + roundedFinalBalance;
+            if (finalStakedToMe < 0) {
+                log.warn("StakedToMe for account {} is negative after reward distribution, set it to 0", stakee);
+            }
+            final var copy = account.copyBuilder()
+                    .stakedToMe(finalStakedToMe < 0 ? 0 : finalStakedToMe)
+                    .build();
+            writableStore.put(copy);
         }
-        final var copy = account.copyBuilder()
-                .stakedToMe(finalStakedToMe < 0 ? 0 : finalStakedToMe)
-                .build();
-        writableStore.put(copy);
     }
 }

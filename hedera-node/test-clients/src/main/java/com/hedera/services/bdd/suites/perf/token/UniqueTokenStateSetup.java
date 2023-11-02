@@ -38,7 +38,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -82,7 +81,6 @@ import org.apache.logging.log4j.Logger;
  *       well.
  * </ol>
  */
-@HapiTestSuite
 public class UniqueTokenStateSetup extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UniqueTokenStateSetup.class);
 

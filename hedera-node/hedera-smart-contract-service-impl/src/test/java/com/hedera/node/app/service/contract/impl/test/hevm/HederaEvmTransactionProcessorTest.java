@@ -22,6 +22,8 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKno
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.hevm.*;
 import com.swirlds.config.api.Configuration;
 import java.util.Map;
@@ -36,6 +38,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HederaEvmTransactionProcessorTest {
     @Mock
     private HederaEvmBlocks blocks;
+
+    @Mock
+    private TinybarValues tinybarValues;
+
+    @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
 
     @Mock
     private HederaWorldUpdater worldUpdater;
@@ -71,7 +79,7 @@ class HederaEvmTransactionProcessorTest {
     @Test
     void calls030AsExpected() {
         final var transaction = wellKnownHapiCall();
-        final var context = wellKnownContextWith(blocks, false);
+        final var context = wellKnownContextWith(blocks, false, tinybarValues, systemContractGasCalculator);
 
         subject.process(transaction, worldUpdater, feesOnlyUpdater, context, VERSION_030, tracer, config);
 
@@ -81,7 +89,7 @@ class HederaEvmTransactionProcessorTest {
     @Test
     void calls034AsExpected() {
         final var transaction = wellKnownHapiCall();
-        final var context = wellKnownContextWith(blocks, false);
+        final var context = wellKnownContextWith(blocks, false, tinybarValues, systemContractGasCalculator);
 
         subject.process(transaction, worldUpdater, feesOnlyUpdater, context, VERSION_034, tracer, config);
 
@@ -91,7 +99,7 @@ class HederaEvmTransactionProcessorTest {
     @Test
     void calls038AsExpected() {
         final var transaction = wellKnownHapiCall();
-        final var context = wellKnownContextWith(blocks, false);
+        final var context = wellKnownContextWith(blocks, false, tinybarValues, systemContractGasCalculator);
 
         subject.process(transaction, worldUpdater, feesOnlyUpdater, context, VERSION_038, tracer, config);
 

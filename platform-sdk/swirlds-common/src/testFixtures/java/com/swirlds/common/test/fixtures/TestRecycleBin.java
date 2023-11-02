@@ -18,6 +18,7 @@ package com.swirlds.common.test.fixtures;
 
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -43,15 +44,7 @@ public class TestRecycleBin implements RecycleBin {
      * {@inheritDoc}
      */
     @Override
-    public void recycle(final Path path) throws IOException {
+    public void recycle(@NonNull final Path path) throws IOException {
         FileUtils.deleteDirectory(path);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void clear() throws IOException {
-        // Nothing to clear, files are deleted immediately
     }
 }

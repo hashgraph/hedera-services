@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.AccountIDConverter;
 import com.hedera.node.config.converter.BytesConverter;
@@ -28,6 +29,7 @@ import com.hedera.node.config.converter.ContractIDConverter;
 import com.hedera.node.config.converter.EntityScaleFactorsConverter;
 import com.hedera.node.config.converter.EntityTypeConverter;
 import com.hedera.node.config.converter.FileIDConverter;
+import com.hedera.node.config.converter.FunctionalitySetConverter;
 import com.hedera.node.config.converter.HederaFunctionalityConverter;
 import com.hedera.node.config.converter.KeyValuePairConverter;
 import com.hedera.node.config.converter.KnownBlockValuesConverter;
@@ -95,7 +97,7 @@ import org.apache.logging.log4j.Logger;
  * Implementation of the {@link ConfigProvider} interface.
  */
 @Singleton
-public class ConfigProviderImpl extends ConfigProviderBase implements ConfigProvider {
+public class ConfigProviderImpl extends ConfigProviderBase {
     private static final Logger logger = LogManager.getLogger(ConfigProviderImpl.class);
 
     /**
@@ -205,6 +207,7 @@ public class ConfigProviderImpl extends ConfigProviderBase implements ConfigProv
                 .withConverter(new SemanticVersionConverter())
                 .withConverter(new LongPairConverter())
                 .withConverter(new KeyValuePairConverter())
+                .withConverter(new FunctionalitySetConverter())
                 .withConverter(new BytesConverter())
                 .withValidator(new EmulatesMapValidator());
     }

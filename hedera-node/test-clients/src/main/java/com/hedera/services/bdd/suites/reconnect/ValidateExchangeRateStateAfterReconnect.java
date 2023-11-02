@@ -26,7 +26,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
@@ -36,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
 public class ValidateExchangeRateStateAfterReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidateExchangeRateStateAfterReconnect.class);
 

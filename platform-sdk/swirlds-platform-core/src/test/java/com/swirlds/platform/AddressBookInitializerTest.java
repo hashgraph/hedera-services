@@ -31,6 +31,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
@@ -69,6 +70,7 @@ class AddressBookInitializerTest {
         final AddressBook configAddressBook = getRandomAddressBook();
         final SignedState signedState = getMockSignedState7WeightRandomAddressBook();
         final AddressBookInitializer initializer = new AddressBookInitializer(
+                new NodeId(0),
                 getMockSoftwareVersion(2),
                 // no software upgrade
                 false,
@@ -95,6 +97,7 @@ class AddressBookInitializerTest {
         final AddressBook configAddressBook = getRandomAddressBook();
         final SignedState signedState = getMockSignedState(10, configAddressBook, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
+                new NodeId(0),
                 getMockSoftwareVersion(2),
                 // no software upgrade
                 false,
@@ -118,6 +121,7 @@ class AddressBookInitializerTest {
         final AddressBook configAddressBook = getRandomAddressBook();
         final SignedState signedState = getMockSignedState(10, configAddressBook, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
+                new NodeId(0),
                 getMockSoftwareVersion(2),
                 // no software upgrade
                 false,
@@ -141,6 +145,7 @@ class AddressBookInitializerTest {
         final AddressBook configAddressBook = getRandomAddressBook();
         final SignedState signedState = getMockSignedState(7, configAddressBook, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
+                new NodeId(0),
                 getMockSoftwareVersion(2),
                 // no software upgrade
                 false,
@@ -164,6 +169,7 @@ class AddressBookInitializerTest {
         final SignedState signedState = getMockSignedState(2, getRandomAddressBook(), false);
         final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
+                new NodeId(0),
                 getMockSoftwareVersion(2),
                 // no software upgrade
                 false,
@@ -176,9 +182,9 @@ class AddressBookInitializerTest {
                 inititializedAddressBook,
                 "The initial address book must equal the state address book.");
         assertEquals(
-                signedState.getAddressBook(),
+                null,
                 initializer.getPreviousAddressBook(),
-                "The previous address book must equal the state address book.");
+                "When there is no upgrade, the address book should not change");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }
@@ -190,6 +196,7 @@ class AddressBookInitializerTest {
         final SignedState signedState = getMockSignedState(0, getRandomAddressBook(), false);
         final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
+                new NodeId(0),
                 getMockSoftwareVersion(3),
                 // software upgrade
                 true,
@@ -216,6 +223,7 @@ class AddressBookInitializerTest {
         final SignedState signedState = getMockSignedState(2, getRandomAddressBook(), false);
         final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 3);
         final AddressBookInitializer initializer = new AddressBookInitializer(
+                new NodeId(0),
                 getMockSoftwareVersion(3),
                 // software upgrade
                 true,
@@ -242,6 +250,7 @@ class AddressBookInitializerTest {
         final SignedState signedState = getMockSignedState7WeightRandomAddressBook();
         final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 5);
         final AddressBookInitializer initializer = new AddressBookInitializer(
+                new NodeId(0),
                 getMockSoftwareVersion(3),
                 // software upgrade
                 true,

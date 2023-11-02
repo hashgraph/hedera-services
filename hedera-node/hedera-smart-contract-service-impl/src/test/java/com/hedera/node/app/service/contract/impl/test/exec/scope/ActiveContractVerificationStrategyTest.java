@@ -17,15 +17,13 @@
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ActiveContractVerificationStrategyTest {
@@ -63,78 +61,52 @@ class ActiveContractVerificationStrategyTest {
             .build();
 
     @Test
-    void validatesKeysAsExpectedWhenDelegatePermissionNotRequired() {
-        final var subject = new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, false);
+    void validatesKeysAsExpectedWhenDelegatePermissionNotRequiredAndUsingTopLevelSigs() {
+        final var subject =
+                new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, false, UseTopLevelSigs.YES);
 
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(ACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(ACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(INACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(INACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(DELEGATABLE_ACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(DELEGATABLE_ACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(DELEGATABLE_INACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(DELEGATABLE_INACTIVE_ADDRESS_KEY));
         assertEquals(
-                VerificationStrategy.Decision.VALID,
-                subject.maybeVerifySignature(ACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.VALID,
-                subject.maybeVerifySignature(ACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.INVALID,
-                subject.maybeVerifySignature(INACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.INVALID,
-                subject.maybeVerifySignature(INACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.VALID,
-                subject.maybeVerifySignature(DELEGATABLE_ACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.VALID,
-                subject.maybeVerifySignature(DELEGATABLE_ACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.INVALID,
-                subject.maybeVerifySignature(DELEGATABLE_INACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.INVALID,
-                subject.maybeVerifySignature(DELEGATABLE_INACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION,
-                subject.maybeVerifySignature(CRYPTO_KEY, VerificationStrategy.KeyRole.OTHER));
+                VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION, subject.decideFor(CRYPTO_KEY));
     }
 
     @Test
-    void validatesKeysAsExpectedWhenDelegatePermissionRequired() {
-        final var subject = new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, true);
+    void validatesKeysAsExpectedWhenDelegatePermissionRequiredAndUsingTopLevelSigs() {
+        final var subject =
+                new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, true, UseTopLevelSigs.YES);
 
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(ACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(ACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(INACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(INACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(DELEGATABLE_ACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(DELEGATABLE_ACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(DELEGATABLE_INACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(DELEGATABLE_INACTIVE_ADDRESS_KEY));
         assertEquals(
-                VerificationStrategy.Decision.INVALID,
-                subject.maybeVerifySignature(ACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.INVALID,
-                subject.maybeVerifySignature(ACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.INVALID,
-                subject.maybeVerifySignature(INACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.INVALID,
-                subject.maybeVerifySignature(INACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.VALID,
-                subject.maybeVerifySignature(DELEGATABLE_ACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.VALID,
-                subject.maybeVerifySignature(DELEGATABLE_ACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.INVALID,
-                subject.maybeVerifySignature(DELEGATABLE_INACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.INVALID,
-                subject.maybeVerifySignature(DELEGATABLE_INACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
-        assertEquals(
-                VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION,
-                subject.maybeVerifySignature(CRYPTO_KEY, VerificationStrategy.KeyRole.OTHER));
+                VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION, subject.decideFor(CRYPTO_KEY));
     }
 
     @Test
-    void doesNotSupportAmendingTransfer() {
-        final var subject = new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, true);
+    void validatesKeysAsExpectedWhenDelegatePermissionRequiredAndNotUsingTopLevelSigs() {
+        final var subject =
+                new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, true, UseTopLevelSigs.NO);
 
-        final List<Long> noInvalidSigners = List.of();
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.maybeAmendTransfer(CryptoTransferTransactionBody.DEFAULT, noInvalidSigners));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(ACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(ACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(INACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(INACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(DELEGATABLE_ACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.VALID, subject.decideFor(DELEGATABLE_ACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(DELEGATABLE_INACTIVE_ID_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(DELEGATABLE_INACTIVE_ADDRESS_KEY));
+        assertEquals(VerificationStrategy.Decision.INVALID, subject.decideFor(CRYPTO_KEY));
     }
 }

@@ -33,6 +33,7 @@ public class HandleException extends RuntimeException {
     private final ResponseCodeEnum status;
 
     public HandleException(final ResponseCodeEnum status) {
+        super(status.protoName());
         this.status = status;
     }
 
@@ -64,6 +65,11 @@ public class HandleException extends RuntimeException {
 
     public static void validateFalse(final boolean flag, final ResponseCodeEnum errorStatus) {
         validateTrue(!flag, errorStatus);
+    }
+
+    @Override
+    public String toString() {
+        return "HandleException{" + "status=" + status + '}';
     }
 
     /**

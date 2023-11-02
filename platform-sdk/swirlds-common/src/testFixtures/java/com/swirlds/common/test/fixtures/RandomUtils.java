@@ -20,15 +20,34 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Random;
 
+/**
+ * A collection of utilities for generating random data used for unit testing.
+ */
 public class RandomUtils {
+
+    /**
+     * Prevents instantiation.
+     */
+    private RandomUtils() {}
 
     private static final Random RANDOM = new SecureRandom();
 
-    public static String randomString(final Random random, final int length) {
+    /**
+     * Generates a random string of the given length.
+     *
+     * @param random
+     * 		the random object to use
+     * @param length
+     * 		the length of the string to generate
+     * @return a random string
+     */
+    public static @NonNull String randomString(@NonNull final Random random, final int length) {
         final int LEFT_LIMIT = 48; // numeral '0'
         final int RIGHT_LIMIT = 122; // letter 'z'
 
@@ -39,52 +58,112 @@ public class RandomUtils {
                 .toString();
     }
 
-    public static String randomIp(final Random r) {
+    /**
+     * Generates a random IP address
+     *
+     * @param r
+     * 		the random object to use
+     * @return a random IP address
+     */
+    public static @NonNull String randomIp(@NonNull final Random r) {
         return r.nextInt(256) + "." + r.nextInt(256) + "." + r.nextInt(256) + "." + r.nextInt(256);
     }
 
-    public static long randomPositiveLong(final Random random, final long maxValue) {
+    /**
+     * Generates a random positive long that is smaller than the supplied value
+     *
+     * @param random
+     * 		the random object to use
+     * @param maxValue the upper bound, the returned value will be smaller than this
+     * @return the random long
+     */
+    public static long randomPositiveLong(@NonNull final Random random, final long maxValue) {
         return random.longs(1, 1, maxValue).findFirst().orElseThrow();
     }
 
-    public static long randomPositiveLong(final Random random) {
+    /**
+     * Generates a random positive long
+     *
+     * @param random
+     * 		the random object to use
+     * @return the random long
+     */
+    public static long randomPositiveLong(@NonNull final Random random) {
         return randomPositiveLong(random, Long.MAX_VALUE);
     }
 
-    public static Hash randomHash() {
+    /**
+     * Generates a random hash
+     * @return a random hash
+     */
+    public static @NonNull Hash randomHash() {
         return randomHash(new Random());
     }
 
-    public static Hash randomHash(final Random random) {
+    /**
+     * Generates a random hash
+     * @param random
+     * 		the random object to use
+     * @return a random hash
+     */
+    public static @NonNull Hash randomHash(@NonNull final Random random) {
         return new Hash(randomHashBytes(random), DigestType.SHA_384);
     }
 
-    public static byte[] randomHashBytes(final Random random) {
+    /**
+     * Generates a byte array with random data that is the same length as a SHA-384 hash
+     * @param random the random object to use
+     * @return a random byte array
+     */
+    public static byte[] randomHashBytes(@NonNull final Random random) {
         return randomByteArray(random, DigestType.SHA_384.digestLength());
     }
 
     /**
-     * Get a random signature (doesn't actually sign anything, just random bytes.
+     * Get a random signature (doesn't actually sign anything, just random bytes)
+     * @param random the random object to use
+     * @return a random signature
      */
-    public static Signature randomSignature(final Random random) {
+    public static @NonNull Signature randomSignature(@NonNull final Random random) {
         return new Signature(SignatureType.RSA, randomByteArray(random, SignatureType.RSA.signatureLength()));
     }
 
-    public static byte[] randomByteArray(final Random random, final int size) {
+    /**
+     * Generates a random byte array
+     * @param random the random object to use
+     * @param size the size of the byte array
+     * @return a random byte array
+     */
+    public static @NonNull byte[] randomByteArray(@NonNull final Random random, final int size) {
         final byte[] bytes = new byte[size];
         random.nextBytes(bytes);
         return bytes;
     }
 
-    public static Instant randomInstant(final Random random) {
+    /**
+     * Generates a random instant
+     * @param random the random object to use
+     * @return a random instant
+     */
+    public static @NonNull Instant randomInstant(@NonNull final Random random) {
         return Instant.ofEpochMilli(randomPositiveLong(random, 2000000000000L));
     }
 
-    public static boolean randomBooleanWithProbability(final Random random, final double trueProbability) {
+    /**
+     * Generates a random boolean with a given probability of being true
+     * @param random the random object to use
+     * @param trueProbability the probability of the boolean being true
+     * @return a random boolean
+     */
+    public static boolean randomBooleanWithProbability(@NonNull final Random random, final double trueProbability) {
         return random.nextDouble() < trueProbability;
     }
 
-    public static ResettableRandom getRandomPrintSeed() {
+    /**
+     * Creates a new instance of {@link ResettableRandom} with a seed that is printed to stdout.
+     * @return a new random object
+     */
+    public static @NonNull ResettableRandom getRandomPrintSeed() {
         return getRandom(true);
     }
 
@@ -96,28 +175,61 @@ public class RandomUtils {
      * 		the seed to use
      * @return a new random object
      */
-    public static ResettableRandom getRandomPrintSeed(final long seed) {
+    public static @NonNull ResettableRandom getRandomPrintSeed(final long seed) {
         System.out.println("Random seed: " + seed + "L");
         return new ResettableRandom(seed);
     }
 
-    public static ResettableRandom getRandom() {
+    /**
+     * Creates a new instance of {@link ResettableRandom}
+     * @return a new random object
+     */
+    public static @NonNull ResettableRandom getRandom() {
         return getRandom(false);
     }
 
-    public static ResettableRandom getRandom(final boolean printSeed) {
-        final long seed = RANDOM.nextLong();
+    /**
+     * Creates a new instance of {@link ResettableRandom}
+     * @param printSeed if true, the seed will be printed to stdout
+     * @return a new random object
+     */
+    public static @NonNull ResettableRandom getRandom(final boolean printSeed) {
+        return createRandom(RANDOM.nextLong(), printSeed);
+    }
+
+    /**
+     * Creates a new instance of {@link ResettableRandom} with the supplied seed
+     * @param seed the seed to use
+     * @param printSeed if true, the seed will be printed to stdout
+     * @return a new random object
+     */
+    private static @NonNull ResettableRandom createRandom(final long seed, final boolean printSeed) {
         if (printSeed) {
             System.out.println("Random seed: " + seed + "L");
         }
         return new ResettableRandom(seed);
     }
 
-    public static ResettableRandom initRandom(final Long seed) {
+    /**
+     * Creates a new instance of {@link ResettableRandom} with the supplied seed, and prints the seed to stdout
+     * @param seed the seed to use, if null a random seed will be used
+     * @return a new random object
+     */
+    public static @NonNull ResettableRandom initRandom(@Nullable final Long seed) {
+        return initRandom(seed, true);
+    }
+
+    /**
+     * Creates a new instance of {@link ResettableRandom} with the supplied seed
+     * @param seed the seed to use, if null a random seed will be used
+     * @param printSeed if true, the seed will be printed to stdout
+     * @return a new random object
+     */
+    public static @NonNull ResettableRandom initRandom(@Nullable final Long seed, final boolean printSeed) {
         if (seed == null) {
             return getRandomPrintSeed();
         } else {
-            return new ResettableRandom(seed);
+            return createRandom(seed, printSeed);
         }
     }
 

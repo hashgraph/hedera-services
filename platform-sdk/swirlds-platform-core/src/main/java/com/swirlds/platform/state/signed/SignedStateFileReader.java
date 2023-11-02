@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.MAX_MERKLE_NODES_IN_STATE;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
@@ -29,7 +30,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -54,7 +55,7 @@ public final class SignedStateFileReader {
     private SignedStateFileReader() {}
 
     /**
-     * Looks for saved state files locally and returns an array of them sorted from newest to oldest
+     * Looks for saved state files locally and returns a list of them sorted from newest to oldest
      *
      * @param mainClassName
      * 		the name of the main app class
@@ -65,14 +66,15 @@ public final class SignedStateFileReader {
      * @return Information about saved states on disk, or null if none are found
      */
     @SuppressWarnings("resource")
-    public static SavedStateInfo[] getSavedStateFiles(
+    @NonNull
+    public static List<SavedStateInfo> getSavedStateFiles(
             final String mainClassName, final NodeId platformId, final String swirldName) {
 
         try {
             final Path dir = getSignedStatesDirectoryForSwirld(mainClassName, platformId, swirldName);
 
             if (!exists(dir) || !isDirectory(dir)) {
-                return new SavedStateInfo[0];
+                return List.of();
             }
 
             final List<Path> dirs = Files.list(dir).filter(Files::isDirectory).toList();
@@ -84,23 +86,34 @@ public final class SignedStateFileReader {
                     final Path stateFile = subDir.resolve(SIGNED_STATE_FILE_NAME);
                     if (!exists(stateFile)) {
                         logger.warn(
-                                LogMarker.ERROR.getMarker(),
+                                EXCEPTION.getMarker(),
                                 "Saved state file ({}) not found, but directory exists '{}'",
                                 stateFile.getFileName(),
                                 subDir.toAbsolutePath());
                         continue;
                     }
 
-                    savedStates.put(round, new SavedStateInfo(round, stateFile));
+                    final Path metdataPath = subDir.resolve(SavedStateMetadata.FILE_NAME);
+                    final SavedStateMetadata metadata;
+                    try {
+                        metadata = SavedStateMetadata.parse(metdataPath);
+                    } catch (final IOException e) {
+                        logger.error(
+                                EXCEPTION.getMarker(), "Unable to read saved state metadata file '{}'", metdataPath);
+                        continue;
+                    }
+
+                    savedStates.put(round, new SavedStateInfo(stateFile, metadata));
+
                 } catch (final NumberFormatException e) {
                     logger.warn(
-                            LogMarker.ERROR.getMarker(),
+                            EXCEPTION.getMarker(),
                             "Unexpected directory '{}' in '{}'",
                             subDir.getFileName(),
                             dir.toAbsolutePath());
                 }
             }
-            return savedStates.descendingMap().values().toArray(new SavedStateInfo[] {});
+            return new ArrayList<>(savedStates.descendingMap().values());
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -116,32 +129,20 @@ public final class SignedStateFileReader {
      * @throws IOException
      * 		if there is any problems with reading from a file
      */
-    public static DeserializedSignedState readStateFile(
+    public static @NonNull DeserializedSignedState readStateFile(
             @NonNull final PlatformContext platformContext, @NonNull final Path stateFile) throws IOException {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(stateFile);
 
-        if (!exists(stateFile)) {
-            throw new IOException("File " + stateFile.toAbsolutePath() + " does not exist!");
-        }
-        if (!Files.isRegularFile(stateFile)) {
-            throw new IOException("File " + stateFile.toAbsolutePath() + " is not a file!");
-        }
+        checkSignedStatePath(stateFile);
 
         final DeserializedSignedState returnState;
 
         final Triple<State, Hash, SigSet> data = deserializeAndDebugOnFailure(
                 () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
                 (final MerkleDataInputStream in) -> {
-                    final byte versionByte = in.readByte();
-                    if (versionByte != VERSIONED_FILE_BYTE) {
-                        throw new IOException(
-                                "File is not versioned -- data corrupted or is an unsupported legacy state");
-                    }
-
-                    in.readInt(); // file version
-                    in.readProtocolVersion();
+                    readAndCheckVersion(in);
 
                     final Path directory = stateFile.getParent();
 
@@ -153,7 +154,7 @@ public final class SignedStateFileReader {
                 });
 
         final SignedState newSignedState =
-                new SignedState(platformContext, data.left(), "SignedStateFileReader.readStateFile()");
+                new SignedState(platformContext, data.left(), "SignedStateFileReader.readStateFile()", false);
 
         newSignedState.setSigSet(data.right());
 
@@ -161,5 +162,60 @@ public final class SignedStateFileReader {
                 newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.middle());
 
         return returnState;
+    }
+
+    /**
+     * Read only the signed state from a file, do not read the hash and signatures
+     *
+     * @param platformContext the platform context
+     * @param stateFile the file to read from
+     * @return the signed state read
+     * @throws IOException if any problem occurs while reading
+     */
+    public static @NonNull SignedState readSignedStateOnly(
+            @NonNull final PlatformContext platformContext, @NonNull final Path stateFile) throws IOException {
+        checkSignedStatePath(stateFile);
+
+        return deserializeAndDebugOnFailure(
+                () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
+                (final MerkleDataInputStream in) -> {
+                    readAndCheckVersion(in);
+                    return new SignedState(
+                            platformContext,
+                            in.readMerkleTree(stateFile.getParent(), MAX_MERKLE_NODES_IN_STATE),
+                            "SignedStateFileReader.readSignedStateOnly()",
+                            false);
+                });
+    }
+
+    /**
+     * Check the path of a signed state file
+     *
+     * @param stateFile the path to check
+     * @throws IOException if the path is not valid
+     */
+    private static void checkSignedStatePath(@NonNull final Path stateFile) throws IOException {
+        if (!exists(stateFile)) {
+            throw new IOException("File " + stateFile.toAbsolutePath() + " does not exist!");
+        }
+        if (!Files.isRegularFile(stateFile)) {
+            throw new IOException("File " + stateFile.toAbsolutePath() + " is not a file!");
+        }
+    }
+
+    /**
+     * Read the version from a signed state file and check it
+     *
+     * @param in the stream to read from
+     * @throws IOException if the version is invalid
+     */
+    private static void readAndCheckVersion(@NonNull final MerkleDataInputStream in) throws IOException {
+        final byte versionByte = in.readByte();
+        if (versionByte != VERSIONED_FILE_BYTE) {
+            throw new IOException("File is not versioned -- data corrupted or is an unsupported legacy state");
+        }
+
+        in.readInt(); // file version
+        in.readProtocolVersion();
     }
 }

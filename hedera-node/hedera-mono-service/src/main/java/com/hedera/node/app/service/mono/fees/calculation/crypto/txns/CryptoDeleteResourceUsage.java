@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.fees.calculation.crypto.txns;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -41,7 +40,7 @@ public class CryptoDeleteResourceUsage implements TxnResourceUsageEstimator {
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
+    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) {
         return usageEstimator.getCryptoDeleteTxFeeMatrices(txn, sigUsage);
     }
 }

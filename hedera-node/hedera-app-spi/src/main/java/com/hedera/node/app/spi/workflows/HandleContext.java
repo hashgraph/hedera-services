@@ -17,15 +17,20 @@
 package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -33,6 +38,7 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.function.Predicate;
 
 /**
  * Represents the context of a single {@code handle()}-call.
@@ -114,6 +120,20 @@ public interface HandleContext {
     Key payerKey();
 
     /**
+     * Returns the Hedera resource prices (in thousandths of a tinycent) for the given {@link SubType} of
+     * the given {@link HederaFunctionality}. The contract service needs this information to determine both the
+     * gas price and the cost of storing logs (a function of the {@code rbh} price, which may itself vary by
+     * contract operation type).
+     *
+     * @param functionality the {@link HederaFunctionality} of interest
+     * @param subType the {@link SubType} of interest
+     * @return the corresponding Hedera resource prices
+     */
+    @NonNull
+    FunctionalityResourcePrices resourcePricesFor(
+            @NonNull final HederaFunctionality functionality, @NonNull final SubType subType);
+
+    /**
      * Get a calculator for calculating fees for the current transaction, and its {@link SubType}. Most transactions
      * just use {@link SubType#DEFAULT}, but some (such as crypto transfer) need to be more specific.
      *
@@ -130,6 +150,14 @@ public interface HandleContext {
      */
     @NonNull
     FeeAccumulator feeAccumulator();
+
+    /**
+     * Gets a {@link ExchangeRateInfo} which provides information about the current exchange rate.
+     *
+     * @return The {@link ExchangeRateInfo} .
+     */
+    @NonNull
+    ExchangeRateInfo exchangeRateInfo();
 
     /**
      * Consumes and returns the next entity number, for use by handlers that create entities.
@@ -231,6 +259,20 @@ public interface HandleContext {
     @NonNull
     SignatureVerification verificationFor(@NonNull final Bytes evmAlias);
 
+    /**
+     * Checks whether the payer of the current transaction refers to a superuser.
+     *
+     * @return {@code true} if the payer is a superuser, otherwise {@code false
+     */
+    boolean isSuperUser();
+
+    /**
+     * Checks whether the current transaction is a privileged transaction and the payer has sufficient rights.
+     *
+     * @return the {@code SystemPrivilege} of the current transaction
+     */
+    SystemPrivilege hasPrivilegedAuthorization();
+
     /** Gets the {@link RecordCache}. */
     @NonNull
     RecordCache recordCache();
@@ -304,16 +346,45 @@ public interface HandleContext {
      * changes have been introduced by the user transaction (either by storing state or by calling a child
      * transaction).
      *
-     * @param txBody the {@link TransactionBody} of the transaction to dispatch
+     * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
+     * any of the {@code verificationFor} methods.
+     *
+     * @param txBody             the {@link TransactionBody} of the transaction to dispatch
      * @param recordBuilderClass the record builder class of the transaction
+     * @param verifier           a {@link Predicate} that will be used to validate primitive keys
+     * @param syntheticPayer    the payer of the transaction
      * @return the record builder of the transaction
-     * @throws NullPointerException if {@code txBody} is {@code null}
+     * @throws NullPointerException     if {@code txBody} is {@code null}
      * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
-     * the record builder type is unknown to the app
-     * @throws IllegalStateException if the current transaction has already introduced state changes
+     *                                  the record builder type is unknown to the app
+     * @throws IllegalStateException    if the current transaction has already introduced state changes
      */
     @NonNull
-    <T> T dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass);
+    <T> T dispatchPrecedingTransaction(
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull Predicate<Key> verifier,
+            AccountID syntheticPayer);
+
+    /**
+     * Dispatches a preceding transaction that already has an ID.
+     *
+     * @param txBody            the {@link TransactionBody} of the transaction to dispatch
+     * @param recordBuilderClass the record builder class of the transaction
+     * @param verifier         a {@link Predicate} that will be used to validate primitive keys
+     * @return the record builder of the transaction
+     * @param <T> the record type
+     * @throws IllegalArgumentException if the transaction body did not have an id
+     */
+    default <T> T dispatchPrecedingTransaction(
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> verifier) {
+        throwIfMissingPayerId(txBody);
+        return dispatchPrecedingTransaction(
+                txBody,
+                recordBuilderClass,
+                verifier,
+                txBody.transactionIDOrThrow().accountIDOrThrow());
+    }
 
     /**
      * Dispatches a child transaction.
@@ -328,84 +399,109 @@ public interface HandleContext {
      * aware that any state changes introduced by storing data in one of the stores after calling a child transaction
      * will also be rolled back if the child transaction is rolled back.
      *
-     * <p>The provided {@link VerificationAssistant} callback will be called when the child transaction calls any
-     * of the {@code verificationFor} methods. If both, parent and child transaction, provide a
-     * {@link VerificationAssistant}, the one from the parent will be called first.
+     * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
+     * any of the {@code verificationFor} methods.
      *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
-     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
+     * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback a {@link VerificationAssistant} callback function that will observe each primitive key
+     * @param callback           a {@link Predicate} callback function that will observe each primitive key
+     * @param syntheticPayerId   the payer of the child transaction
      * @return the record builder of the child transaction
-     * @throws NullPointerException if any of the arguments is {@code null}
+     * @throws NullPointerException     if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
-     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     *                                  {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
     <T> T dispatchChildTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
-            @NonNull VerificationAssistant callback);
+            @NonNull Predicate<Key> callback,
+            @NonNull AccountID syntheticPayerId);
 
     /**
-     * Dispatches a child transaction without a {@link VerificationAssistant}.
+     * Dispatches the fee calculation for a child transaction (that might then be dispatched).
      *
-     * <p>This method is similar to {@link #dispatchChildTransaction(TransactionBody, Class, VerificationAssistant)}
-     * except that no {@link VerificationAssistant} is provided.
+     * <p>The override payer id still matters for this purpose, because a transaction can add
+     * state whose lifetime is scoped to a payer account (the main current example is a
+     * {@link HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE} dispatch).
+     *
+     * @param txBody the {@link TransactionBody} of the child transaction to compute fees for
+     * @param syntheticPayerId the child payer
+     * @return the calculated fees
+     */
+    Fees dispatchComputeFees(@NonNull TransactionBody txBody, @NonNull AccountID syntheticPayerId);
+
+    /**
+     * Dispatches a child transaction that already has a transaction ID.
      *
      * @param txBody the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
+     * @param callback a {@link Predicate} callback function that will observe each primitive key
      * @return the record builder of the child transaction
-     * @throws NullPointerException if any of the arguments is {@code null}
-     * @throws IllegalArgumentException if the current transaction is a
-     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     * @param <T> the record type
+     * @throws IllegalArgumentException if the transaction body did not have an id
      */
     @NonNull
-    <T> T dispatchChildTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass);
+    default <T> T dispatchChildTransaction(
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback) {
+        throwIfMissingPayerId(txBody);
+        return dispatchChildTransaction(
+                txBody,
+                recordBuilderClass,
+                callback,
+                txBody.transactionIDOrThrow().accountIDOrThrow());
+    }
 
     /**
      * Dispatches a removable child transaction.
      *
      * <p>A removable child transaction depends on the current transaction. It behaves in almost all aspects like a
-     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class)}. But unlike regular
-     * child transactions, the records of removable child transactions are removed and not reverted.
+     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class, Predicate, AccountID)}.
+     * But unlike regular child transactions, the records of removable child transactions are removed and not reverted.
      *
-     * <p>The provided {@link VerificationAssistant} callback will be called when the child transaction calls any
-     * of the {@code verificationFor} methods. If both, parent and child transaction, provide a
-     * {@link VerificationAssistant}, the one from the parent will be called first.
+     * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
+     * any of the {@code verificationFor} methods.
      *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
-     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
+     * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback a {@link VerificationAssistant} callback function that will observe each primitive key
+     * @param callback           a {@link Predicate} callback function that will observe each primitive key
+     * @param syntheticPayerId  the payer of the child transaction
      * @return the record builder of the child transaction
-     * @throws NullPointerException if any of the arguments is {@code null}
+     * @throws NullPointerException     if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
-     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     *                                  {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
     <T> T dispatchRemovableChildTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
-            @NonNull VerificationAssistant callback);
+            @NonNull Predicate<Key> callback,
+            @NonNull AccountID syntheticPayerId);
 
     /**
-     * Dispatches a removable child transaction without a {@link VerificationAssistant}.
+     * Dispatches a removable child transaction that already has a transaction ID.
      *
-     * <p>This method is similar to {@link #dispatchRemovableChildTransaction(TransactionBody, Class, VerificationAssistant)}
-     * except that no {@link VerificationAssistant} is provided.
-     *
-     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
+     * @param txBody          the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
+     * @param callback      a {@link Predicate} callback function that will observe each primitive key
      * @return the record builder of the child transaction
-     * @throws NullPointerException if any of the arguments is {@code null}
-     * @throws IllegalArgumentException if the current transaction is a
-     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     * @param <T> the record type
+     * @throws IllegalArgumentException if the transaction body did not have an id
      */
     @NonNull
-    <T> T dispatchRemovableChildTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass);
+    default <T> T dispatchRemovableChildTransaction(
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass, @NonNull Predicate<Key> callback) {
+        throwIfMissingPayerId(txBody);
+        return dispatchRemovableChildTransaction(
+                txBody,
+                recordBuilderClass,
+                callback,
+                txBody.transactionIDOrThrow().accountIDOrThrow());
+    }
 
     /**
      * Adds a child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
@@ -456,6 +552,11 @@ public interface HandleContext {
     SavepointStack savepointStack();
 
     /**
+     * Revert all child records in {@link RecordListBuilder}.
+     */
+    void revertChildRecords();
+
+    /**
      * A stack of savepoints.
      *
      * <p>A new savepoint can be created manually. In addition, a new entry is added to the savepoint stack every time
@@ -492,5 +593,11 @@ public interface HandleContext {
          * @return the depth of the savepoint stack
          */
         int depth();
+    }
+
+    static void throwIfMissingPayerId(@NonNull final TransactionBody body) {
+        if (!body.hasTransactionID() || !body.transactionIDOrThrow().hasAccountID()) {
+            throw new IllegalArgumentException("Transaction id must be set if dispatching without an explicit payer");
+        }
     }
 }

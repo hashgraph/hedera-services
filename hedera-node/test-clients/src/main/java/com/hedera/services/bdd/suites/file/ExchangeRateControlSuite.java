@@ -27,12 +27,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXCHANGE_RATE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
-import java.text.ParseException;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -64,6 +63,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
             .fee(ADEQUATE_FUNDS)
             .contents(spec -> spec.ratesProvider().rateSetWith(1, 12).toByteString());
 
+    @HapiTest
     private HapiSpec acct57CanMakeSmallChanges() {
         return defaultHapiSpec("Acct57CanMakeSmallChanges")
                 .given(
@@ -84,38 +84,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
                         resetRatesOp);
     }
 
-    private HapiSpec acct57UpdatesMidnightRateAtMidNight() throws ParseException {
-        return defaultHapiSpec("Acct57UpdatesMidnightRateAtMidNight")
-                .given(resetRatesOp, cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ADEQUATE_FUNDS)))
-                .when(
-                        // should be done just before midnight
-                        UtilVerbs.waitUntil("23:58"),
-                        fileUpdate(EXCHANGE_RATES)
-                                .contents(spec -> {
-                                    ByteString newRates = spec.ratesProvider()
-                                            .rateSetWith(10, 147)
-                                            .toByteString();
-                                    spec.registry().saveBytes("midnightRate", newRates);
-                                    return newRates;
-                                })
-                                .payingWith(EXCHANGE_RATE_CONTROL))
-                .then(
-                        // should be the first transaction after midnight
-                        UtilVerbs.sleepFor(300_000),
-                        fileUpdate(EXCHANGE_RATES)
-                                .contents(spec -> {
-                                    ByteString newRates = spec.ratesProvider()
-                                            .rateSetWith(10, 183)
-                                            .toByteString();
-                                    spec.registry().saveBytes("newRates", newRates);
-                                    return newRates;
-                                })
-                                .payingWith(EXCHANGE_RATE_CONTROL),
-                        getFileContents(EXCHANGE_RATES)
-                                .hasContents(spec -> spec.registry().getBytes("newRates")),
-                        resetRatesOp);
-    }
-
+    @HapiTest
     private HapiSpec midnightRateChangesWhenAcct50UpdatesFile112() {
         return defaultHapiSpec("MidnightRateChangesWhenAcct50UpdatesFile112")
                 .given(
@@ -169,6 +138,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
+    @HapiTest
     private HapiSpec anonCantUpdateRates() {
         return defaultHapiSpec("AnonCantUpdateRates")
                 .given(resetRatesOp, cryptoCreate("randomAccount"))
@@ -179,6 +149,7 @@ public class ExchangeRateControlSuite extends HapiSuite {
                         .hasPrecheck(AUTHORIZATION_FAILED));
     }
 
+    @HapiTest
     private HapiSpec acct57CantMakeLargeChanges() {
         return defaultHapiSpec("Acct57CantMakeLargeChanges")
                 .given(

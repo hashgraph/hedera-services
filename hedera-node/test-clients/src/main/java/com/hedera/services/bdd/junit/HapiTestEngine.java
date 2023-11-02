@@ -16,84 +16,21 @@
 
 package com.hedera.services.bdd.junit;
 
-import static java.util.Objects.requireNonNull;
-import static org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode.TOP_DOWN;
+import static org.junit.platform.commons.support.HierarchyTraversalMode.TOP_DOWN;
 
 import com.hedera.node.app.Hedera;
-import com.hedera.node.config.data.AccountsConfig;
-import com.hedera.node.config.data.StakingConfig;
-import com.hedera.node.config.data.TokensConfig;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.swirlds.common.config.BasicConfig;
-import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.EventConfig;
-import com.swirlds.common.config.OSHealthCheckConfig;
-import com.swirlds.common.config.SocketConfig;
-import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.TransactionConfig;
-import com.swirlds.common.config.WiringConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.config.sources.LegacyFileConfigSource;
-import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.context.DefaultPlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.io.config.TemporaryFileConfig;
-import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.RecycleBin;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
-import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
-import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.system.status.PlatformStatusConfig;
-import com.swirlds.config.api.spi.ConfigurationBuilderFactory;
-import com.swirlds.fchashmap.config.FCHashMapConfig;
-import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.platform.Crypto;
-import com.swirlds.platform.CryptoMetrics;
-import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.config.ThreadConfig;
-import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.dispatch.DispatchConfiguration;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
-import com.swirlds.platform.event.tipset.EventCreationConfig;
-import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
-import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.recovery.EmergencyRecoveryManager;
-import com.swirlds.platform.state.GenesisStateBuilder;
-import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.uptime.UptimeConfig;
-import com.swirlds.virtualmap.config.VirtualMapConfig;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
+import com.hedera.services.bdd.suites.TargetNetworkType;
 import java.lang.reflect.Method;
-import java.net.InetSocketAddress;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-import org.apache.logging.log4j.core.config.ConfigurationSource;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.Disabled;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.ReflectionSupport;
-import org.junit.platform.commons.util.ReflectionUtils;
 import org.junit.platform.engine.EngineDiscoveryRequest;
 import org.junit.platform.engine.ExecutionRequest;
 import org.junit.platform.engine.Filter;
@@ -153,7 +90,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
      */
     @Override
     public TestDescriptor discover(EngineDiscoveryRequest discoveryRequest, UniqueId uniqueId) {
-        final var engineDescriptor = new EngineDescriptor(uniqueId, "Hapi Test");
+        final var engineDescriptor = new HapiEngineDescriptor(uniqueId);
 
         discoveryRequest.getSelectorsByType(MethodSelector.class).forEach(selector -> {
             final var javaClass = selector.getJavaClass();
@@ -175,7 +112,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
     private static void addChildToEngineDescriptor(
             Class<?> javaClass, EngineDiscoveryRequest discoveryRequest, EngineDescriptor engineDescriptor) {
         if (IS_HAPI_TEST_SUITE.test(javaClass)) {
-            discoveryRequest.getConfigurationParameters().keySet().forEach(System.out::println);
             final var classDescriptor = new ClassTestDescriptor(javaClass, engineDescriptor, discoveryRequest);
             if (!classDescriptor.skip) {
                 engineDescriptor.addChild(classDescriptor);
@@ -201,7 +137,52 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
      */
     @Override
     protected HapiTestEngineExecutionContext createExecutionContext(ExecutionRequest request) {
-        return new HapiTestEngineExecutionContext(null, null);
+        // Populating the data needed for the context
+        return new HapiTestEngineExecutionContext(Path.of("data"), Path.of("eventstreams"));
+    }
+
+    private static final class HapiEngineDescriptor extends EngineDescriptor
+            implements Node<HapiTestEngineExecutionContext> {
+        /** The Hedera test environment to use. We start it once at the start of all tests and reuse it. */
+        private HapiTestEnv env;
+
+        public HapiEngineDescriptor(UniqueId uniqueId) {
+            super(uniqueId, "Hapi Test");
+        }
+
+        @Override
+        public HapiTestEngineExecutionContext before(HapiTestEngineExecutionContext context) {
+            // If there are no children, then there is nothing to do.
+            if (super.getChildren().isEmpty()) {
+                return context;
+            }
+
+            env = new HapiTestEnv("HAPI Tests", true);
+            env.start();
+
+            final var tmpDir = Path.of("data");
+            final var defaultProperties = JutilPropertySource.getDefaultInstance();
+            final String recordStreamPath = tmpDir.resolve("recordStream").toString();
+            final var parameters =
+                    Map.of("recordStream.path", recordStreamPath, "ci.properties.map", "secondsWaitingServerUp=300");
+            HapiSpec.runInCiMode(
+                    String.valueOf(env.getNodes()),
+                    defaultProperties.get("default.payer"),
+                    defaultProperties.get("default.node").split("\\.")[2],
+                    defaultProperties.get("tls"),
+                    defaultProperties.get("txn.proto.structure"),
+                    defaultProperties.get("node.selector"),
+                    parameters);
+            return context;
+        }
+
+        @Override
+        public void after(HapiTestEngineExecutionContext context) throws Exception {
+            if (env != null) {
+                env.terminate();
+                env = null;
+            }
+        }
     }
 
     /**
@@ -215,8 +196,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         private final Class<?> testClass;
         /** We will skip initialization of a {@link Hedera} instance if there are no test methods */
         private final boolean skip;
-        /** The Hedera instance we are testing */
-        private Hedera hedera;
 
         /** Creates a new descriptor for the given test class. */
         public ClassTestDescriptor(Class<?> testClass, TestDescriptor parent, EngineDiscoveryRequest discoveryRequest) {
@@ -228,7 +207,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             setParent(parent);
 
             // Look for any methods supported by this class.
-            ReflectionUtils.findMethods(testClass, IS_HAPI_TEST, TOP_DOWN).stream()
+            ReflectionSupport.findMethods(testClass, IS_HAPI_TEST, TOP_DOWN).stream()
                     .filter(method -> {
                         // The selectors tell me if some specific method was selected by the IDE or command line,
                         // so I will filter out and only include test methods that were in the selectors, if there
@@ -257,230 +236,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         @Override
         public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
             return skip ? SkipResult.skip("No test methods") : SkipResult.doNotSkip();
-        }
-
-        @Override
-        public HapiTestEngineExecutionContext before(HapiTestEngineExecutionContext context) {
-            try {
-                // If we have a HapiTestSuite that is without tests we still want to show it as ignored,
-                // but we don't want to waste time setting up a node
-                if (allTestsSkipped()) {
-                    return new HapiTestEngineExecutionContext(null, null);
-                }
-
-                final var tmpDir = Files.createTempDirectory("hapiTest");
-
-                // Setup logging
-                try (final var log4j2ConfigFile = HapiTestEngine.class.getResourceAsStream("/log4j2.xml")) {
-                    final var source = new ConfigurationSource(requireNonNull(log4j2ConfigFile));
-                    try (final var ignored = Configurator.initialize(null, source)) {
-                        // Nothing to do here.
-                    }
-                }
-
-                // Setup the constructable registry so the platform can deserialize the state.
-                final var registry = ConstructableRegistry.getInstance();
-                registry.reset();
-                registry.registerConstructables("com.swirlds.merklemap");
-                registry.registerConstructables("com.swirlds.merkledb");
-                registry.registerConstructables("com.swirlds.fcqueue");
-                registry.registerConstructables("com.swirlds.virtualmap");
-                registry.registerConstructables("com.swirlds.common.merkle");
-                registry.registerConstructables("com.swirlds.common");
-                registry.registerConstructables("com.swirlds.merkle");
-                registry.registerConstructables("com.swirlds.merkle.tree");
-
-                // 1. Create a configuration instance with any desired overrides.
-                System.setProperty("version.services", "0.40.0"); // TBD Get from actual build args...
-                System.setProperty("version.hapi", "0.40.0"); // TBD Get from actual build args...
-                System.setProperty(
-                        "hedera.recordStream.logDir",
-                        tmpDir.resolve("recordStream").toString());
-                System.setProperty("accounts.storeOnDisk", "true");
-                System.setProperty("grpc.port", "0");
-                System.setProperty("grpc.tlsPort", "0");
-                System.setProperty("grpc.workflowsPort", "0");
-                System.setProperty("grpc.workflowsTlsPort", "0");
-                System.setProperty("hedera.workflows.enabled", "CryptoCreate");
-                System.setProperty("platformStatus.observingStatusDelay", "0");
-                // This setting is needed for a single node network to run correctly.
-                // This is by default set to 0 in platform code, which will not work for single node network.
-                System.setProperty("event.creation.maxCreationRate", "20");
-
-                final var factory = ServiceLoader.load(ConfigurationBuilderFactory.class);
-                final var configBuilder = factory.findFirst().orElseThrow().create();
-                final var config = configBuilder
-                        .withConfigDataType(BasicConfig.class)
-                        .withConfigDataType(StateConfig.class)
-                        .withConfigDataType(CryptoConfig.class)
-                        .withConfigDataType(TemporaryFileConfig.class)
-                        .withConfigDataType(ReconnectConfig.class)
-                        .withConfigDataType(FCHashMapConfig.class)
-                        .withConfigDataType(PreconsensusEventStreamConfig.class)
-                        .withConfigDataType(EventConfig.class)
-                        .withConfigDataType(TransactionConfig.class)
-                        .withConfigDataType(EventCreationConfig.class)
-                        .withConfigDataType(SocketConfig.class)
-                        .withConfigDataType(MerkleDbConfig.class)
-                        .withConfigDataType(ChatterConfig.class)
-                        .withConfigDataType(AddressBookConfig.class)
-                        .withConfigDataType(VirtualMapConfig.class)
-                        .withConfigDataType(ThreadConfig.class)
-                        .withConfigDataType(DispatchConfiguration.class)
-                        .withConfigDataType(MetricsConfig.class)
-                        .withConfigDataType(PrometheusConfig.class)
-                        .withConfigDataType(OSHealthCheckConfig.class)
-                        .withConfigDataType(WiringConfig.class)
-                        .withConfigDataType(SyncConfig.class)
-                        .withConfigDataType(UptimeConfig.class)
-                        .withConfigDataType(PlatformStatusConfig.class)
-                        // Configure all services configs
-                        .withConfigDataType(ConsensusConfig.class)
-                        .withConfigDataType(AccountsConfig.class)
-                        .withConfigDataType(TokensConfig.class)
-                        .withConfigDataType(StakingConfig.class)
-                        // 2. Configure Settings
-                        .withSource(new LegacyFileConfigSource(tmpDir.resolve("settings.txt")))
-                        .withSource(SystemPropertiesConfigSource.getInstance())
-                        .build();
-
-                ConfigurationHolder.getInstance().setConfiguration(config);
-                CryptographyHolder.reset();
-
-                final var port = new InetSocketAddress(0).getPort();
-
-                // 3. Create a new Node ID for our node
-                final var nodeId = new NodeId(0);
-
-                // 4. Set up Metrics
-                final var metricsProvider = new DefaultMetricsProvider(config);
-                final Metrics globalMetrics = metricsProvider.createGlobalMetrics();
-                CryptoMetrics.registerMetrics(globalMetrics);
-
-                // 5. Create the Platform Context
-                final var platformContext = new DefaultPlatformContext(
-                        config, metricsProvider.createPlatformMetrics(nodeId), CryptographyHolder.get());
-
-                // 6. Create an Address Book
-                final var addressBook = new AddressBook();
-                addressBook.add(
-                        new Address(nodeId, "TEST0", "TEST0", 1, "127.0.0.1", port, "127.0.0.1", port, "0.0.3"));
-
-                // 7. Setup some cryptography
-                //        final var crypto = CryptoSetup.initNodeSecurity(addressBook, config)[0];
-                final var keysAndCertsForAllNodes =
-                        CryptoStatic.generateKeysAndCerts(addressBook, Executors.newFixedThreadPool(4));
-                final var crypto = new Crypto(keysAndCertsForAllNodes.get(nodeId), Executors.newFixedThreadPool(4));
-                CryptographyHolder.get().digestSync(addressBook);
-
-                // 8. Create the Main
-                hedera = new Hedera(registry);
-
-                // 9. Create a SwirldsPlatform (using nasty reflection. Eek).
-                final var constructor = SwirldsPlatform.class.getDeclaredConstructors()[0];
-                constructor.setAccessible(true);
-
-                final var recycleBin = new RecycleBin() {
-                    @Override
-                    public void recycle(@NonNull Path path) throws IOException {
-                        // TODO No-op for now
-                    }
-
-                    @Override
-                    public void clear() throws IOException {
-                        // TODO No-op for now
-                    }
-                };
-
-                final var initialState = GenesisStateBuilder.buildGenesisState(
-                        platformContext, addressBook, new BasicSoftwareVersion(Long.MAX_VALUE), hedera.newState());
-                final var initialSignedState =
-                        new SignedState(platformContext, initialState.get().getState(), "Genesis");
-
-                final SwirldsPlatform platform = (SwirldsPlatform) constructor.newInstance(
-                        platformContext,
-                        crypto,
-                        recycleBin,
-                        nodeId,
-                        "Hedera", // main class name
-                        "Hedera", // swirld name
-                        new BasicSoftwareVersion(Long.MAX_VALUE), // App Version :TODO USE REAL VERSION NUMBER
-                        initialSignedState,
-                        new AddressBook(),
-                        new EmergencyRecoveryManager(
-                                platformContext.getConfiguration().getConfigData(StateConfig.class),
-                                (s, exitCode) -> {
-                                    System.out.println("Asked to shutdownGrpcServer because of " + s);
-                                    System.exit(exitCode.getExitCode());
-                                },
-                                tmpDir.resolve("recovery")));
-
-                // 10. Init and Start
-                hedera.init(platform, nodeId);
-                final var latch = new CountDownLatch(1);
-                platform.getNotificationEngine().register(PlatformStatusChangeListener.class, notification -> {
-                    if (notification.getNewStatus() == PlatformStatus.ACTIVE) {
-                        latch.countDown();
-                    }
-                });
-                platform.start();
-
-                // 11. Initialize the HAPI Spec system
-                latch.await(30, TimeUnit.SECONDS);
-                hedera.run();
-
-                final var defaultProperties = JutilPropertySource.getDefaultInstance();
-                HapiSpec.runInCiMode(
-                        String.valueOf(hedera.getGrpcPort()),
-                        defaultProperties.get("default.payer"),
-                        defaultProperties.get("default.node").split("\\.")[2],
-                        defaultProperties.get("tls"),
-                        defaultProperties.get("txn.proto.structure"),
-                        defaultProperties.get("node.selector"),
-                        Map.of(
-                                "recordStream.path",
-                                tmpDir.resolve("recordStream").toString()));
-
-                // Populating the data needed for the context
-                StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-                Path savedStateDirectory = stateConfig.savedStateDirectory();
-
-                EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
-                Path eventsLogDir = Path.of(eventConfig.eventsLogDir());
-
-                return new HapiTestEngineExecutionContext(
-                        savedStateDirectory, eventsLogDir); // <--- Actually, this is going to have connection info to
-                // connect to the node!?
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public void after(HapiTestEngineExecutionContext context) throws Exception {
-            if (allTestsSkipped()) {
-                return;
-            }
-
-            if (hedera != null) {
-                hedera.shutdown();
-                hedera = null;
-            }
-
-            // Deleting the test data. Currently, we are deleting the data/saved and the eventstreams folders.
-            // We need to do that in order to be able to run all tests at the same time. Without that the tests
-            // are interfering with each other.
-            // Also, If we encounter a scenario where tests in the same suite are interfering with each other we
-            // can move this logic inside the after method in the MethodTestDescriptor class.
-            // This way we will clean up the data after each test.
-            if (context.getSavedStateDirectory() != null) FileUtils.deleteDirectory(context.getSavedStateDirectory());
-            if (context.getEventsLogDir() != null) FileUtils.deleteDirectory(context.getEventsLogDir());
-        }
-
-        private boolean allTestsSkipped() {
-            return getChildren().stream()
-                    .allMatch(ch ->
-                            ((MethodTestDescriptor) ch).shouldBeSkipped(null).isSkipped());
         }
     }
 
@@ -528,6 +283,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             // Second, call the method to get the HapiSpec
             testMethod.setAccessible(true);
             final var spec = (HapiSpec) testMethod.invoke(suite);
+            spec.setTargetNetworkType(TargetNetworkType.HAPI_TEST_NETWORK);
             // Third, call `runSuite` with just the one HapiSpec.
             final var result = suite.runSpecSync(spec);
             // Fourth, report the result. YAY!!

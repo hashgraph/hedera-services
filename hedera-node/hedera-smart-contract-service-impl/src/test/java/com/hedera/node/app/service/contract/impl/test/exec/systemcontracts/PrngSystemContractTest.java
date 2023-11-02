@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PRECOMP
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PRECOMPILE_CONTRACT_SUCCESS_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
@@ -64,12 +65,17 @@ class PrngSystemContractTest {
     }
 
     @Test
-    void gasRequirementTest() {
-        // when:
-        var actual = subject.gasRequirement(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS);
+    void gasRequirementRequiresFrameToBeSupported() {
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.gasRequirement(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS));
+    }
 
-        // then:
-        assertEquals(0, actual);
+    @Test
+    void onlyFullResultsAreSupported() {
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.computePrecompile(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame));
     }
 
     @Test
@@ -81,7 +87,8 @@ class PrngSystemContractTest {
         given(proxyWorldUpdater.entropy()).willReturn(EXPECTED_RANDOM_NUMBER);
 
         // when:
-        var actual = subject.computePrecompile(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame);
+        var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame)
+                .result();
 
         // then:
         assertEqualContractResult(PRECOMPILE_CONTRACT_SUCCESS_RESULT, actual);
@@ -96,7 +103,8 @@ class PrngSystemContractTest {
         given(proxyWorldUpdater.entropy()).willReturn(EXPECTED_RANDOM_NUMBER);
 
         // when:
-        var actual = subject.computePrecompile(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame);
+        var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame)
+                .result();
 
         // then:
         assertEqualContractResult(PRECOMPILE_CONTRACT_SUCCESS_RESULT, actual);
@@ -111,7 +119,8 @@ class PrngSystemContractTest {
         given(proxyWorldUpdater.entropy()).willReturn(Bytes.wrap(ZERO_ENTROPY.toByteArray()));
 
         // when:
-        var actual = subject.computePrecompile(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame);
+        var actual = subject.computeFully(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame)
+                .result();
 
         // then:
         assertEqualContractResult(PRECOMPILE_CONTRACT_FAILED_RESULT, actual);
@@ -123,7 +132,7 @@ class PrngSystemContractTest {
         givenCommon();
 
         // when:
-        var actual = subject.computePrecompile(EXPECTED_RANDOM_NUMBER, messageFrame);
+        var actual = subject.computeFully(EXPECTED_RANDOM_NUMBER, messageFrame).result();
 
         // then:
         assertEqualContractResult(PRECOMPILE_CONTRACT_FAILED_RESULT, actual);

@@ -17,7 +17,7 @@
 package com.swirlds.platform.util;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.STATE_HASH;
+import static com.swirlds.logging.legacy.LogMarker.STATE_HASH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.platform.state.PlatformData;
@@ -59,7 +58,7 @@ public class HashLoggerTest {
      * @return the regex
      */
     private String getRoundEqualsRegex(final long round) {
-        return String.format("[\\S\\s]*Round\\s+%s[\\S\\s]*", round);
+        return String.format("State Info, round = %s[\\S\\s]*", round);
     }
 
     @BeforeEach
@@ -67,7 +66,7 @@ public class HashLoggerTest {
         mockLogger = mock(Logger.class);
         final StateConfig stateConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
-        hashLogger = new HashLogger(getStaticThreadManager(), new NodeId(123), stateConfig, mockLogger);
+        hashLogger = new HashLogger(getStaticThreadManager(), stateConfig, mockLogger);
         logged = new ArrayList<>();
 
         doAnswer(invocation -> {
@@ -129,7 +128,7 @@ public class HashLoggerTest {
                 .getOrCreateConfig()
                 .getConfigData(StateConfig.class);
 
-        hashLogger = new HashLogger(getStaticThreadManager(), new NodeId(123), stateConfig, mockLogger);
+        hashLogger = new HashLogger(getStaticThreadManager(), stateConfig, mockLogger);
         hashLogger.logHashes(createSignedState(1));
         assertThat(logged).isEmpty();
         assertThat(hashLogger.queue()).isNullOrEmpty();
@@ -141,7 +140,7 @@ public class HashLoggerTest {
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
 
         assertDoesNotThrow(() -> {
-            hashLogger = new HashLogger(getStaticThreadManager(), new NodeId(123), stateConfig);
+            hashLogger = new HashLogger(getStaticThreadManager(), stateConfig);
             hashLogger.logHashes(createSignedState(1));
             flush();
         });

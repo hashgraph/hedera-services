@@ -36,6 +36,8 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -114,8 +116,6 @@ public class FileAppendHandler implements TransactionHandler {
         }
         final var file = optionalFile.get();
 
-        feeCalculation(handleContext, fileAppend, file, fileServiceConfig);
-
         // TODO: skip at least the mutability check for privileged "payer" accounts
 
         // First validate this file is mutable; and the pending mutations are allowed
@@ -146,40 +146,57 @@ public class FileAppendHandler implements TransactionHandler {
         fileStore.put(fileBuilder.build());
     }
 
-    private void feeCalculation(
-            HandleContext handleContext,
-            FileAppendTransactionBody fileAppend,
-            File file,
-            @NonNull FilesConfig fileServiceConfig) {
-        final var dataLength =
-                (fileAppend.contents() != null) ? fileAppend.contents().length() : 0;
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull FeeContext feeContext) {
+        final var body = feeContext.body();
+        final var op = body.fileAppendOrThrow();
+        final var fileID = op.fileIDOrThrow();
+        final var fileStore = feeContext.readableStore(ReadableFileStore.class);
+        final var config = feeContext.configuration();
+        final var fileServiceConfig = config.getConfigData(FilesConfig.class);
+
+        final var dataLength = op.contents().length();
 
         /**
          * TODO: revisit after modularizaion completed
          * PR conversation: 8089
          */
         final long effectiveLifeTime;
-        final var fileNum = file.fileId().fileNum();
+        final var file = fileStore.getFileLeaf(fileID);
+
+        if (file == null) {
+            return feeContext
+                    .feeCalculator(SubType.DEFAULT)
+                    .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE)
+                    .calculate();
+        }
+
+        final var fileNum = fileID.fileNum();
+
         final var firstSoftwareUpdateFile =
                 fileServiceConfig.softwareUpdateRange().left();
         final var lastSoftwareUpdateFile =
                 fileServiceConfig.softwareUpdateRange().right();
+
+        /* Since only authorized payers can update special files---and their
+        fees will be waived---just return something immediately, without the
+        expense of looking up actual file metadata. */
         if (firstSoftwareUpdateFile <= fileNum && fileNum <= lastSoftwareUpdateFile) {
             effectiveLifeTime = THREE_MONTHS_IN_SECONDS;
         } else {
             final var effCreationTime =
-                    handleContext.body().transactionID().transactionValidStart().seconds();
-            final var effExpiration = (file.expirationSecond() > 0) ? file.expirationSecond() : effCreationTime;
+                    body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
+            final var effExpiration =
+                    (file != null && file.expirationSecond() > 0) ? file.expirationSecond() : effCreationTime;
             effectiveLifeTime = effExpiration - effCreationTime;
         }
 
-        final var fees = handleContext
+        return feeContext
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE + dataLength)
                 .addStorageBytesSeconds(dataLength * effectiveLifeTime)
                 .calculate();
-
-        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
     }
 
     private void handleAppendUpgradeFile(FileAppendTransactionBody fileAppend, HandleContext handleContext) {

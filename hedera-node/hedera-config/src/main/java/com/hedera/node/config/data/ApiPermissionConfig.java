@@ -74,6 +74,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REVOKE_KYC_FRO
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNPAUSE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECEIPT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECORD;
 import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
@@ -101,6 +102,7 @@ import java.util.function.Function;
  *                                   functionality
  * @param getTxRecordByTxID          the permission for {@link HederaFunctionality#TRANSACTION_GET_RECORD}
  *                                   functionality
+ * @param getTxFastRecordByTxID     the permission for {@link HederaFunctionality#TRANSACTION_GET_FAST_RECORD}  functionality
  * @param getTransactionReceipts     the permission for {@link HederaFunctionality#TRANSACTION_GET_RECEIPT}
  *                                   functionality
  * @param approveAllowances          the permission for {@link HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE}
@@ -179,6 +181,7 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange cryptoDelete,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getAccountRecords,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getTxRecordByTxID,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getTxFastRecordByTxID,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getTransactionReceipts,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange approveAllowances,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteAllowances,
@@ -290,6 +293,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(FILE_GET_INFO, c -> c.getFileInfo);
         permissionKeys.put(TRANSACTION_GET_RECEIPT, c -> c.getTransactionReceipts);
         permissionKeys.put(TRANSACTION_GET_RECORD, c -> c.getTxRecordByTxID);
+        permissionKeys.put(TRANSACTION_GET_FAST_RECORD, c -> c.getTxFastRecordByTxID);
         permissionKeys.put(GET_VERSION_INFO, c -> c.getVersionInfo);
         permissionKeys.put(NETWORK_GET_EXECUTION_TIME, c -> c.networkGetExecutionTime);
         permissionKeys.put(GET_ACCOUNT_DETAILS, c -> c.getAccountDetails);

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Objects.requireNonNull;
 
@@ -30,12 +31,16 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.file.FileGetInfoQuery;
 import com.hedera.hapi.node.file.FileGetInfoResponse;
 import com.hedera.hapi.node.file.FileInfo;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.base.FileQueryBase;
+import com.hedera.node.app.service.mono.fees.calculation.file.queries.GetFileInfoResourceUsage;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.FilesConfig;
@@ -44,6 +49,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyHolder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -53,10 +59,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FileGetInfoHandler extends FileQueryBase {
+    private final FileOpsUsage fileOpsUsage;
 
     @Inject
-    public FileGetInfoHandler() {
-        // Exists for injection
+    public FileGetInfoHandler(final FileOpsUsage fileOpsUsage) {
+        this.fileOpsUsage = fileOpsUsage;
     }
 
     @Override
@@ -82,6 +89,18 @@ public class FileGetInfoHandler extends FileQueryBase {
     }
 
     @Override
+    public @NonNull Fees computeFees(@NonNull QueryContext queryContext) {
+        final var query = queryContext.query();
+        final var fileStore = queryContext.createStore(ReadableFileStore.class);
+        final var op = query.fileGetInfoOrThrow();
+        final var fileId = op.fileIDOrThrow();
+        final File file = fileStore.getFileLeaf(fileId);
+
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetFileInfoResourceUsage(fileOpsUsage)
+                .usageGiven(fromPbj(query), file));
+    }
+
+    @Override
     public @NonNull Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(header);
         final var query = context.query();
@@ -100,7 +119,7 @@ public class FileGetInfoHandler extends FileQueryBase {
             try {
                 optionalInfo = infoForFile(file, fileStore, ledgerConfig, upgradeFileStore, fileServiceConfig);
             } catch (IOException e) {
-                throw new RuntimeException("Unable to read file contents", e);
+                throw new UncheckedIOException("Unable to read file contents", e);
             }
 
             if (optionalInfo.isEmpty()) {
@@ -122,6 +141,7 @@ public class FileGetInfoHandler extends FileQueryBase {
      * @param ledgerConfig
      * @return the information about the file
      */
+    @SuppressWarnings("java:S5738") // Suppress the warning that we are using deprecated class(CryptographyHolder)
     private Optional<FileInfo> infoForFile(
             @NonNull final FileID fileID,
             @NonNull final ReadableFileStore fileStore,
@@ -148,7 +168,10 @@ public class FileGetInfoHandler extends FileQueryBase {
                         file.keys(),
                         Bytes.EMPTY,
                         upgradeHash,
-                        file.deleted());
+                        file.deleted(),
+                        Timestamp.newBuilder()
+                                .seconds(file.preSystemDeleteExpirationSecond())
+                                .build());
             }
         } else {
             meta = fileStore.getFileMetadata(fileID);

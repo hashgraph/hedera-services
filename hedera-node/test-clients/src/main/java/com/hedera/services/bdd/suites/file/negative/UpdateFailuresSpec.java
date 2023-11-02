@@ -73,6 +73,7 @@ public class UpdateFailuresSpec extends HapiSuite {
                 confusedUpdateCantExtendExpiry());
     }
 
+    @HapiTest
     private HapiSpec confusedUpdateCantExtendExpiry() {
         // this test verify that the exchange rate file parsed correctly on update, it doesn't check expiry
         var initialExpiry = new AtomicLong();
@@ -92,6 +93,7 @@ public class UpdateFailuresSpec extends HapiSuite {
                 .then(QueryVerbs.getFileInfo(EXCHANGE_RATES).hasExpiry(initialExpiry::get));
     }
 
+    @HapiTest
     private HapiSpec precheckRejectsUnauthorized() {
         // this test is to verify that the system files cannot be updated without privileged account
         return defaultHapiSpec("precheckRejectsUnauthorized")
@@ -127,6 +129,7 @@ public class UpdateFailuresSpec extends HapiSuite {
                 .then(fileUpdate("tbd").hasPrecheck(OK).hasKnownStatus(FILE_DELETED));
     }
 
+    @HapiTest
     private HapiSpec precheckRejectsPrematureExpiry() {
         long now = Instant.now().getEpochSecond();
         return defaultHapiSpec("PrecheckRejectsPrematureExpiry")

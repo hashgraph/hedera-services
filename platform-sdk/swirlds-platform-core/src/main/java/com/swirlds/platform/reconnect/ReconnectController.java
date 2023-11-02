@@ -16,19 +16,23 @@
 
 package com.swirlds.platform.reconnect;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.common.threading.BlockingResourceProvider;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.locks.locked.LockedResource;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
@@ -39,7 +43,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class ReconnectController implements Runnable {
     private static final Logger logger = LogManager.getLogger(ReconnectController.class);
-    private static final int FAILED_RECONNECT_SLEEP_MILLIS = 1000;
 
     private final ReconnectHelper helper;
     private final Semaphore threadRunning;
@@ -47,22 +50,25 @@ public class ReconnectController implements Runnable {
     private final Runnable resumeGossip;
     private final AtomicReference<SignedStateValidator> validator = new AtomicReference<>();
     private final ThreadManager threadManager;
+    private final Duration minTimeBetweenReconnects;
 
     /**
-     * @param threadManager
-     * 		responsible for creating and managing threads
-     * @param helper
-     * 		executes phases of a reconnect
-     * @param resumeGossip
-     * 		starts gossip if previously suspended
+     * @param reconnectConfig configuration for reconnect
+     * @param threadManager   responsible for creating and managing threads
+     * @param helper          executes phases of a reconnect
+     * @param resumeGossip    starts gossip if previously suspended
      */
     public ReconnectController(
-            final ThreadManager threadManager, final ReconnectHelper helper, final Runnable resumeGossip) {
-        this.threadManager = threadManager;
-        this.helper = helper;
-        this.resumeGossip = resumeGossip;
+            @NonNull final ReconnectConfig reconnectConfig,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final ReconnectHelper helper,
+            @NonNull final Runnable resumeGossip) {
+        this.threadManager = Objects.requireNonNull(threadManager);
+        this.helper = Objects.requireNonNull(helper);
+        this.resumeGossip = Objects.requireNonNull(resumeGossip);
         this.threadRunning = new Semaphore(1);
         this.connectionProvider = new BlockingResourceProvider<>();
+        this.minTimeBetweenReconnects = reconnectConfig.minimumTimeBetweenReconnects();
     }
 
     /**
@@ -88,7 +94,7 @@ public class ReconnectController implements Runnable {
             // so in this thread we can just try until it succeeds or the throttle kicks in
             while (!executeReconnect()) {
                 logger.error(LogMarker.RECONNECT.getMarker(), "Reconnect failed, retrying");
-                Thread.sleep(FAILED_RECONNECT_SLEEP_MILLIS);
+                Thread.sleep(minTimeBetweenReconnects.toMillis());
             }
         } catch (final RuntimeException | InterruptedException e) {
             logger.error(EXCEPTION.getMarker(), "Unexpected error occurred while reconnecting", e);
