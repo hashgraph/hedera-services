@@ -14,28 +14,24 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.v2.extensions.emergency;
+package com.swirlds.logging.extensions.event;
 
-import com.swirlds.logging.v2.internal.emergency.EmergencyLoggerImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * This class is used to get an instance of the emergency logger.
+ * A log message that is part of a {@link LogEvent}. A message can be a simple String (see {@link SimpleLogMessage}) or
+ * a parameterized String (see {@link ParameterizedLogMessage}).
+ *
+ * @see SimpleLogMessage
+ * @see ParameterizedLogMessage
  */
-public final class EmergencyLoggerProvider {
+public sealed interface LogMessage permits SimpleLogMessage, ParameterizedLogMessage {
 
     /**
-     * Private constructor to prevent instantiation.
-     */
-    private EmergencyLoggerProvider() {}
-
-    /**
-     * Gets an instance of the emergency logger.
+     * Returns the message as a String. If the message is parameterized, the parameters are resolved.
      *
-     * @return an instance of the emergency logger
+     * @return the message as a String
      */
     @NonNull
-    public static EmergencyLogger getEmergencyLogger() {
-        return EmergencyLoggerImpl.getInstance();
-    }
+    String getMessage();
 }

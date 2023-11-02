@@ -737,6 +737,10 @@ public class SwirldsPlatform implements Platform {
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                         Pair.of(transactionPool, "transactionPool")));
 
+        if (platformContext.getConfiguration().getConfigData(ThreadConfig.class).jvmAnchor()) {
+            components.add(new JvmAnchor(threadManager));
+        }
+
         // To be removed once the GUI component is better integrated with the platform.
         GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
         GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
