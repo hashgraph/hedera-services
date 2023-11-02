@@ -111,6 +111,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
         baseEventHashedData = in.readSerializable(false, BaseEventHashedData::new);
         if (baseEventHashedData.getVersion() < ClassVersion.ROSTER_ROUND) {
             baseEventUnhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
+            baseEventUnhashedData.updateOtherParentEventDescriptor(baseEventHashedData);
         } else {
             final byte[] signature = in.readByteArray(BaseEventUnhashedData.MAX_SIG_LENGTH);
             baseEventUnhashedData = new BaseEventUnhashedData(null, signature);

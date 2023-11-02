@@ -124,7 +124,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
         final BaseEventUnhashedData that = (BaseEventUnhashedData) o;
 
-        return otherId.equals(that.otherId) && Arrays.equals(signature, that.signature);
+        return Objects.equals(otherId, that.otherId) && Arrays.equals(signature, that.signature);
     }
 
     @Override
