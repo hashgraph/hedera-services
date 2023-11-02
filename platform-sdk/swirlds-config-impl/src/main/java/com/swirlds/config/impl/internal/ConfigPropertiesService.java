@@ -16,7 +16,7 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -80,19 +80,19 @@ class ConfigPropertiesService implements ConfigLifecycle {
 
     boolean containsKey(@NonNull final String propertyName) {
         throwIfNotInitialized();
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         return internalProperties.containsKey(propertyName);
     }
 
     @Nullable
     String getProperty(@NonNull final String propertyName) {
         throwIfNotInitialized();
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         return internalProperties.get(propertyName);
     }
 
     private void addProperty(@NonNull final String propertyName, @Nullable final String propertyValue) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         internalProperties.put(propertyName, propertyValue);
     }
 }

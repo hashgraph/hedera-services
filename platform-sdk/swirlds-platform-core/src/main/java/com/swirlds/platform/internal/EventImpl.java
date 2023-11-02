@@ -565,10 +565,6 @@ public class EventImpl extends EventMetadata
         return Objects.equals(getCreatorId(), id);
     }
 
-    public boolean hasUserTransactions() {
-        return baseEvent.getHashedData().hasUserTransactions();
-    }
-
     //////////////////////////////////////////
     // BaseEventUnhashedData
     //////////////////////////////////////////
