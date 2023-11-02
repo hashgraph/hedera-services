@@ -192,6 +192,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         }));
     }
 
+    @HapiTest
     private HapiSpec htsTokenAllowance() {
         final var theSpender = SPENDER;
         final var allowanceTxn = ALLOWANCE_TX;
@@ -396,6 +397,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                         .withIsApprovedForAll(SUCCESS, false)))));
     }
 
+    @HapiTest
     private HapiSpec hapiNftGetApproved() {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
