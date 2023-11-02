@@ -83,6 +83,7 @@ public class FakePreHandleContext implements PreHandleContext {
 
     private final boolean userTransaction;
     private final Map<Class<?>, Object> stores = new ConcurrentHashMap<>();
+    private Configuration configuration;
 
     /**
      * Create a new PreHandleContext instance. The payer and key will be extracted from the transaction body.
@@ -98,6 +99,15 @@ public class FakePreHandleContext implements PreHandleContext {
                 txn,
                 txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
                 true);
+    }
+
+    public FakePreHandleContext(
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final TransactionBody txn,
+            @NonNull final Configuration configuration)
+            throws PreCheckException {
+        this(accountStore, txn);
+        this.configuration = configuration;
     }
 
     /** Create a new instance */
@@ -154,7 +164,7 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     @NonNull
     public Configuration configuration() {
-        throw new UnsupportedOperationException("Not implemented");
+        return configuration;
     }
 
     @Override
