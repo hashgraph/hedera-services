@@ -28,7 +28,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -89,9 +88,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     /** the payload: an array of transactions */
     private ConsensusTransactionImpl[] transactions;
 
-    /** are any of the transactions user transactions */
-    private boolean hasUserTransactions;
-
     public BaseEventHashedData() {}
 
     /**
@@ -131,7 +127,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         this.otherParentHash = otherParentHash;
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
         this.transactions = transactions;
-        checkUserTransactions();
     }
 
     /**
@@ -236,25 +231,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         timeCreated = in.readInstant();
         in.readInt(); // read serialized length
         transactions = in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true);
-        checkUserTransactions();
-    }
-
-    /**
-     * Check if array of transactions has any user created transaction inside
-     */
-    private void checkUserTransactions() {
-        if (transactions != null) {
-            for (final ConsensusTransaction t : getTransactions()) {
-                if (!t.isSystem()) {
-                    hasUserTransactions = true;
-                    break;
-                }
-            }
-        }
-    }
-
-    public boolean hasUserTransactions() {
-        return hasUserTransactions;
     }
 
     @Override
