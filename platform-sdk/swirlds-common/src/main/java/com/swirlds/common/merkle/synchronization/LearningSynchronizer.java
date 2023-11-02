@@ -36,6 +36,7 @@ import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationEx
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.merkle.synchronization.views.StandardLearnerTreeView;
+import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.logging.payloads.SynchronizationCompletePayload;
@@ -149,7 +150,14 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      * Attempt to free any and all resources that were acquired during the reconnect attempt.
      */
     private void abort() {
-        logger.warn(RECONNECT.getMarker(), "deleting partially constructed tree");
+        logger.warn(
+                RECONNECT.getMarker(),
+                "Deleting partially constructed tree:\n{}",
+                new MerkleTreeVisualizer(newRoot)
+                        .setDepth(5)
+                        .setUseHashes(false)
+                        .setUseMnemonics(false)
+                        .render());
         try {
             if (newRoot != null) {
                 newRoot.release();
