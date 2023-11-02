@@ -325,10 +325,16 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 
     private void save(
             final ExpirableTxnRecord baseRecord,
-            final AccountID effPayer,
+            AccountID effPayer,
             final TransactionID txnId,
             final long submittingMember,
             final long consensusSecond) {
+        if (txnId.getScheduled() && txnCtx.isPayerSigKnownActive()) {
+            // Give the record of executing this scheduled transaction to the ScheduleCreate payer account,
+            // since the override payer account (if any) is not trivial to derive from just the record; and
+            // the record is all the information we will have when purging it at expiry
+            effPayer = txnId.getAccountID();
+        }
         final var expiringRecord = creator.saveExpiringRecord(effPayer, baseRecord, consensusSecond, submittingMember);
         recordCache.setPostConsensus(txnId, baseRecord.getEnumStatus(), expiringRecord);
     }

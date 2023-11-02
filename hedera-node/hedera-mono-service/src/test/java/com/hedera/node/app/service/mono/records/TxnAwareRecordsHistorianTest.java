@@ -23,6 +23,7 @@ import static com.hedera.test.utils.TxnUtils.assertExhaustsResourceLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -397,11 +398,61 @@ class TxnAwareRecordsHistorianTest {
 
     @Test
     void systemTransactionIdsClearScheduledAndIncrementNonce() {
-        final var scheduledTopLevelId = txnIdA.toBuilder().setScheduled(true).build();
+        final var scheduleCreatePayer =
+                AccountID.newBuilder().setAccountNum(666_777_888L).build();
+        final var scheduledTopLevelId = TransactionID.newBuilder()
+                .setAccountID(scheduleCreatePayer)
+                .setScheduled(true)
+                .build();
+        final var scheduledFinalRecordBuilder = ExpirableTxnRecord.newBuilder()
+                .setTxnId(TxnId.fromGrpc(scheduledTopLevelId))
+                .setHbarAdjustments(initialTransfers)
+                .setMemo("This is different!")
+                .setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build());
+        final var scheduledFinalRecord = scheduledFinalRecordBuilder.build();
         givenTopLevelContextWith(scheduledTopLevelId);
-        given(txnCtx.recordSoFar()).willReturn(jFinalRecord);
-        given(creator.saveExpiringRecord(effPayer, finalRecord.build(), nows, submittingMember))
-                .willReturn(payerRecord);
+        given(txnCtx.recordSoFar()).willReturn(scheduledFinalRecordBuilder);
+        given(txnCtx.isPayerSigKnownActive()).willReturn(true);
+        given(creator.saveExpiringRecord(scheduleCreatePayer, scheduledFinalRecord, nows, submittingMember))
+                .willReturn(scheduledFinalRecord);
+        final var mockTxn = Transaction.getDefaultInstance();
+        given(accessor.getSignedTxnWrapper()).willReturn(mockTxn);
+
+        // when:
+        subject.saveExpirableTransactionRecords();
+
+        // then:
+        final var firstExpectedId = TxnId.fromGrpc(
+                scheduledTopLevelId.toBuilder().clearScheduled().setNonce(1).build());
+        final var secondExpectedId = TxnId.fromGrpc(
+                scheduledTopLevelId.toBuilder().clearScheduled().setNonce(2).build());
+        assertFalse(subject.nextSystemTransactionIdIsUnknown());
+        assertEquals(firstExpectedId, subject.computeNextSystemTransactionId());
+        assertEquals(secondExpectedId, subject.computeNextSystemTransactionId());
+    }
+
+    @Test
+    void scheduledInvalidPayerSigStillGoesToNodeAccount() {
+        final var scheduleCreatePayer =
+                AccountID.newBuilder().setAccountNum(666_777_888L).build();
+        final var scheduledTopLevelId = TransactionID.newBuilder()
+                .setAccountID(scheduleCreatePayer)
+                .setScheduled(true)
+                .build();
+        final var scheduledFinalRecordBuilder = ExpirableTxnRecord.newBuilder()
+                .setTxnId(TxnId.fromGrpc(scheduledTopLevelId))
+                .setHbarAdjustments(initialTransfers)
+                .setMemo("This is different!")
+                .setReceipt(TxnReceipt.newBuilder()
+                        .setStatus(INVALID_PAYER_SIGNATURE.name())
+                        .build());
+        final var scheduledFinalRecord = scheduledFinalRecordBuilder.build();
+        givenTopLevelContextWith(scheduledTopLevelId);
+        final var nodeAccountId = AccountID.newBuilder().setAccountNum(8L).build();
+        given(txnCtx.effectivePayer()).willReturn(nodeAccountId);
+        given(txnCtx.recordSoFar()).willReturn(scheduledFinalRecordBuilder);
+        given(creator.saveExpiringRecord(nodeAccountId, scheduledFinalRecord, nows, submittingMember))
+                .willReturn(scheduledFinalRecord);
         final var mockTxn = Transaction.getDefaultInstance();
         given(accessor.getSignedTxnWrapper()).willReturn(mockTxn);
 
