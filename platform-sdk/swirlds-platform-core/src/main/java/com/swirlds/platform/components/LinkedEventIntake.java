@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.components;
 
-import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
-import static com.swirlds.logging.LogMarker.STALE_EVENTS;
+import static com.swirlds.logging.legacy.LogMarker.INTAKE_EVENT;
+import static com.swirlds.logging.legacy.LogMarker.STALE_EVENTS;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
