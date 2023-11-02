@@ -295,7 +295,7 @@ class CompressionBenchmarks {
 
         for (int i = 0; i < cycles; i++) {
             results.add(testNoCompression(data));
-            //results.add(testGzipCompression(data));
+            results.add(testGzipCompression(data));
             results.add(testAircompressorCompression(data));
             results.add(testLz4JavaCompression(data));
         }
