@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEq
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.test.framework.TestQualifierTags.ISOLATED;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,6 +57,7 @@ class QueueThreadPoolTests {
 
     @Test
     @DisplayName("Parallel Work Test")
+    @Tag(ISOLATED)
     void parallelWorkTest() throws InterruptedException {
 
         final AtomicInteger sleepCount = new AtomicInteger();
@@ -156,7 +158,7 @@ class QueueThreadPoolTests {
 
     @Test
     @DisplayName("Seed Test")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
+    @Tag(TIME_CONSUMING)
     void seedTest() throws InterruptedException {
 
         final AtomicLong count = new AtomicLong();
@@ -234,6 +236,7 @@ class QueueThreadPoolTests {
 
     @Test
     @DisplayName("Configuration Mutability Test")
+    @Tag(ISOLATED)
     void configurationMutabilityTest() {
         // Build should make the configuration immutable
         final QueueThreadPoolConfiguration<Integer> configuration = new QueueThreadPoolConfiguration<Integer>(
@@ -253,6 +256,7 @@ class QueueThreadPoolTests {
 
     @Test
     @DisplayName("Single Use Per Config Test")
+    @Tag(ISOLATED)
     void singleUsePerConfigTest() {
 
         // build() should cause future calls to build() to fail, and start() should cause buildSeed() to fail.
@@ -288,6 +292,7 @@ class QueueThreadPoolTests {
 
     @Test
     @DisplayName("Copy Test")
+    @Tag(ISOLATED)
     void copyTest() {
         final QueueThreadPoolConfiguration<?> configuration =
                 new QueueThreadPoolConfiguration<Integer>(getStaticThreadManager()).setThreadCount(1234);
@@ -343,6 +348,7 @@ class QueueThreadPoolTests {
 
     @Test
     @DisplayName("Uninterruptable Test")
+    @Tag(ISOLATED)
     void uninterruptableTest() throws InterruptedException {
         final Set<Thread> threads = Collections.synchronizedSet(new HashSet<>());
 
@@ -383,6 +389,7 @@ class QueueThreadPoolTests {
 
     @Test
     @DisplayName("Blocking Stop Override Test")
+    @Tag(ISOLATED)
     void blockingStopOverrideTest() throws InterruptedException {
         final Set<Thread> threads = Collections.synchronizedSet(new HashSet<>());
 

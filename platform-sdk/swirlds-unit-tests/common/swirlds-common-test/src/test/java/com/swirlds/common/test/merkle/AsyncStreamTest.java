@@ -17,6 +17,7 @@
 package com.swirlds.common.test.merkle;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.test.framework.TestQualifierTags.ISOLATED;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -194,6 +195,7 @@ class AsyncStreamTest {
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.RECONNECT)
+    @Tag(ISOLATED)
     @DisplayName("Max Input Queue Size")
     void maxInputQueueSize() throws IOException, InterruptedException {
 
@@ -269,6 +271,7 @@ class AsyncStreamTest {
     @Test()
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
+    @Tag(ISOLATED)
     @DisplayName("AsyncInputStream Deadlock")
     void asyncInputStreamAbortDeadlock() throws InterruptedException {
         try (final PairedStreams pairedStreams = new PairedStreams()) {

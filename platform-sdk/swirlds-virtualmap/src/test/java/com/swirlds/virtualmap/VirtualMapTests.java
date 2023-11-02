@@ -21,6 +21,7 @@ import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_F
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
+import static com.swirlds.test.framework.TestQualifierTags.ISOLATED;
 import static com.swirlds.virtualmap.VirtualMapTestUtils.createMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -822,6 +823,7 @@ class VirtualMapTests extends VirtualTestBase {
      * result in the detached state having a data source.
      */
     @Test
+    @Tag(ISOLATED)
     void canFlushDetachedStateForStateSaving() throws InterruptedException {
         final VirtualMap<TestKey, TestValue> map0 = createMap();
         map0.put(A_KEY, APPLE);
@@ -868,6 +870,7 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test
     @Tags({@Tag("VirtualMerkle")})
+    @Tag(ISOLATED)
     @DisplayName("Tests nodeCacheSizeB metric")
     void testNodeCacheSizeMetric() throws IOException, InterruptedException {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
@@ -927,6 +930,7 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test
     @Tags({@Tag("VirtualMerkle")})
+    @Tag(ISOLATED)
     @DisplayName("Tests vMapFlushes metric")
     void testFlushCount() throws IOException, InterruptedException {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
@@ -990,6 +994,7 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test
     @Tags({@Tag("VirtualMerkle")})
+    @Tag(ISOLATED)
     @DisplayName("A copied map is serializable and then deserializable")
     void testExternalSerializationAndDeserialization() throws IOException {
         final VirtualMap<TestKey, TestValue> map0 = createMap();

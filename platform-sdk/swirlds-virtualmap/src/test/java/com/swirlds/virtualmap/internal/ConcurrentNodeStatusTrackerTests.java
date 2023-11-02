@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.internal;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.test.framework.TestQualifierTags.ISOLATED;
 import static com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker.Status;
 import static com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker.Status.KNOWN;
 import static com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker.Status.NOT_KNOWN;
@@ -72,6 +73,7 @@ class ConcurrentNodeStatusTrackerTests {
      * 		if the checking (current) thread is interrupted
      */
     @Test
+    @Tag(ISOLATED)
     void acknowledgeBigNumbers() throws InterruptedException, ExecutionException, TimeoutException {
         final long capacity = 4L * Integer.MAX_VALUE;
         final ConcurrentNodeStatusTracker tracker = new ConcurrentNodeStatusTracker(capacity);
@@ -133,6 +135,7 @@ class ConcurrentNodeStatusTrackerTests {
      * 		if the checking (current) thread is interrupted
      */
     @Test
+    @Tag(ISOLATED)
     void setsBoundValue() throws InterruptedException, ExecutionException, TimeoutException {
         final long capacity = Long.MAX_VALUE;
         final long value = Long.MAX_VALUE - 1;

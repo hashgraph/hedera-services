@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.health;
 
+import static com.swirlds.test.framework.TestQualifierTags.ISOLATED;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -28,6 +29,7 @@ import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -40,6 +42,7 @@ class OSFileSystemCheckTests {
      * Test basic invalid files and a valid file.
      */
     @Test
+    @Tag(ISOLATED)
     @DisplayName("Basic Tests")
     void basicTest() {
         // Directory

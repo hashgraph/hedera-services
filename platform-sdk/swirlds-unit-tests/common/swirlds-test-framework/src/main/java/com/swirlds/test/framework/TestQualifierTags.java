@@ -47,4 +47,10 @@ public abstract class TestQualifierTags {
      * Denotes a test that normally needs more than 100 ms to be executed
      */
     public static final String TIME_CONSUMING = "TIME_CONSUMING";
+
+    /**
+     * Denotes that a test is so resource sensitive (e.g. uses Thread.sleep()) that the test task running the test
+     * needs to run without anything in parallel
+     */
+    public static final String ISOLATED = "ISOLATED";
 }
