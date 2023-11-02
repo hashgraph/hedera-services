@@ -23,8 +23,10 @@ module com.hedera.node.test.clients {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.github.docker.java.api;
+    requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.config.api;
+    requires com.swirlds.merkledb;
     requires com.swirlds.platform.core;
     requires grpc.netty;
     requires io.netty.handler;
@@ -38,7 +40,5 @@ module com.hedera.node.test.clients {
     requires org.json;
     requires org.opentest4j;
     requires tuweni.units;
-    requires com.hedera.pbj.runtime;
-    requires com.swirlds.merkledb;
     requires static com.github.spotbugs.annotations;
 }
