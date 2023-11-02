@@ -150,6 +150,249 @@ class RecordListBuilderTest extends AppTestBase {
     }
 
     @Test
+    void testRevertSinglePreceding() {
+        // given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        final var base = addUserTransaction(recordListBuilder);
+        recordListBuilder.addPreceding(CONFIGURATION).transaction(simpleCryptoTransfer());
+
+        // when
+        recordListBuilder.revertChildrenOf(base);
+        recordListBuilder.addPreceding(CONFIGURATION).transaction(simpleCryptoTransfer());
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // Then, we will find all three records exist, none will be reverted.
+        assertThat(records).hasSize(3);
+        assertThat(records.get(2)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(0))
+                .nanosBefore(2, result.userTransactionRecord())
+                .hasNonce(2)
+                .hasResponseCode(OK)
+                .hasNoParent();
+        assertCreatedRecord(records.get(1))
+                .nanosBefore(1, result.userTransactionRecord())
+                .hasNonce(1)
+                .hasResponseCode(OK)
+                .hasNoParent();
+        assertCreatedRecord(records.get(2)).hasNonce(0).hasNoParent();
+    }
+
+    @Test
+    void testAddSingleReversiblePreceding() {
+        // given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        addUserTransaction(recordListBuilder);
+
+        // when
+        recordListBuilder.addReversiblePreceding(CONFIGURATION).transaction(simpleCryptoTransfer());
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // Then there are two records: a preceding record, and the user transaction record. The preceding record
+        // will have a consensus timestamp that is ONE NANOSECOND before the user transaction record, and the
+        // transaction ID of the preceding record will be the same as the user transaction record, except with a
+        // nonce of 1.
+        assertThat(records).hasSize(2);
+        assertThat(records.get(1)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(0))
+                .nanosBefore(1, result.userTransactionRecord())
+                .hasNonce(1)
+                .hasNoParent();
+        assertCreatedRecord(records.get(1)).hasNonce(0).hasNoParent();
+    }
+
+    @Test
+    void testAddMultipleReversiblePrecedingRecords() {
+        // given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        addUserTransaction(recordListBuilder);
+
+        // when
+        recordListBuilder.addReversiblePreceding(CONFIGURATION).transaction(simpleCryptoTransfer());
+        recordListBuilder.addReversiblePreceding(CONFIGURATION).transaction(simpleCryptoTransfer());
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // then
+        assertThat(records).hasSize(3);
+        assertThat(records.get(2)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(0))
+                .nanosBefore(2, result.userTransactionRecord())
+                .hasNonce(2)
+                .hasNoParent();
+        assertCreatedRecord(records.get(1))
+                .nanosBefore(1, result.userTransactionRecord())
+                .hasNonce(1)
+                .hasNoParent();
+        assertCreatedRecord(records.get(2)).hasNonce(0).hasNoParent();
+    }
+
+    @Test
+    void testAddTooManyReversiblePrecedingRecordsFails() {
+        // given
+        final var maxPreceding = 2L;
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("consensus.message.maxPrecedingRecords", maxPreceding)
+                .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
+                .getOrCreateConfig();
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        addUserTransaction(recordListBuilder);
+
+        // when
+        recordListBuilder.addReversiblePreceding(config);
+        recordListBuilder.addReversiblePreceding(config);
+
+        // then
+        assertThatThrownBy(() -> recordListBuilder.addPreceding(config))
+                .isInstanceOf(HandleException.class)
+                .hasFieldOrPropertyWithValue("status", ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
+    }
+
+    @Test
+    void testRevertSingleReversiblePreceding() {
+        // given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        final var base = addUserTransaction(recordListBuilder);
+        recordListBuilder.addReversiblePreceding(CONFIGURATION).transaction(simpleCryptoTransfer());
+
+        // when
+        recordListBuilder.revertChildrenOf(base);
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // Then, we will find all three records exist, none will be reverted.
+        assertThat(records).hasSize(2);
+        assertThat(records.get(1)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(1)).hasNonce(0).hasNoParent();
+        assertCreatedRecord(records.get(0))
+                .nanosBefore(1, result.userTransactionRecord())
+                .hasNonce(1)
+                .hasResponseCode(REVERTED_SUCCESS)
+                .hasNoParent();
+    }
+
+    @Test
+    void testRevertMultipleReversiblePreceding() {
+        // given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        final var base = addUserTransaction(recordListBuilder);
+        recordListBuilder.addReversiblePreceding(CONFIGURATION).transaction(simpleCryptoTransfer());
+        final var preceding2 =
+                recordListBuilder.addReversiblePreceding(CONFIGURATION).transaction(simpleCryptoTransfer());
+        preceding2.status(ACCOUNT_ID_DOES_NOT_EXIST);
+        recordListBuilder.addReversiblePreceding(CONFIGURATION).transaction(simpleCryptoTransfer());
+
+        // when
+        recordListBuilder.revertChildrenOf(base);
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // then
+        assertThat(records).hasSize(4);
+        assertThat(records.get(3)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(3)).hasNonce(0).hasResponseCode(OK).hasNoParent();
+        assertCreatedRecord(records.get(0))
+                .nanosBefore(3, result.userTransactionRecord())
+                .hasNonce(3)
+                .hasResponseCode(REVERTED_SUCCESS)
+                .hasNoParent();
+        assertCreatedRecord(records.get(1))
+                .nanosBefore(2, result.userTransactionRecord())
+                .hasNonce(2)
+                .hasResponseCode(ACCOUNT_ID_DOES_NOT_EXIST) // Keeps it's error response code
+                .hasNoParent();
+        assertCreatedRecord(records.get(2))
+                .nanosBefore(1, result.userTransactionRecord())
+                .hasNonce(1)
+                .hasResponseCode(REVERTED_SUCCESS)
+                .hasNoParent();
+    }
+
+    @Test
+    void testRevertingChildDoesNotRevertPreceding() {
+        // given
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        addUserTransaction(recordListBuilder);
+        recordListBuilder.addReversiblePreceding(CONFIGURATION).transaction(simpleCryptoTransfer());
+        final var child = recordListBuilder.addChild(CONFIGURATION).transaction(simpleCryptoTransfer());
+
+        // when
+        recordListBuilder.revertChildrenOf(child);
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // Then, we will find all three records exist, none will be reverted.
+        assertThat(records).hasSize(3);
+        assertThat(records.get(1)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(1)).hasNonce(0).hasNoParent();
+        assertCreatedRecord(records.get(0))
+                .nanosBefore(1, result.userTransactionRecord())
+                .hasNonce(1)
+                .hasResponseCode(OK)
+                .hasNoParent();
+        assertCreatedRecord(records.get(2))
+                .nanosAfter(1, result.userTransactionRecord())
+                .hasNonce(2)
+                .hasResponseCode(OK)
+                .hasParent(result.userTransactionRecord());
+    }
+
+    @Test
+    void testRevertMultipleMixedPreceding() {
+        // given
+        final var maxPreceding = 4L;
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("consensus.message.maxPrecedingRecords", maxPreceding)
+                .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
+                .getOrCreateConfig();
+        final var consensusTime = Instant.now();
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        final var base = addUserTransaction(recordListBuilder);
+        recordListBuilder.addPreceding(config).transaction(simpleCryptoTransfer());
+        recordListBuilder.addReversiblePreceding(config).transaction(simpleCryptoTransfer());
+        recordListBuilder.addPreceding(config).transaction(simpleCryptoTransfer());
+        recordListBuilder.addReversiblePreceding(config).transaction(simpleCryptoTransfer());
+
+        // when
+        recordListBuilder.revertChildrenOf(base);
+        final var result = recordListBuilder.build();
+        final var records = result.records();
+
+        // then
+        assertThat(records).hasSize(5);
+        assertThat(records.get(4)).isSameAs(result.userTransactionRecord());
+        assertCreatedRecord(records.get(4)).hasNonce(0).hasResponseCode(OK).hasNoParent();
+        assertCreatedRecord(records.get(0))
+                .nanosBefore(4, result.userTransactionRecord())
+                .hasNonce(4)
+                .hasResponseCode(REVERTED_SUCCESS)
+                .hasNoParent();
+        assertCreatedRecord(records.get(1))
+                .nanosBefore(3, result.userTransactionRecord())
+                .hasNonce(3)
+                .hasResponseCode(OK)
+                .hasNoParent();
+        assertCreatedRecord(records.get(2))
+                .nanosBefore(2, result.userTransactionRecord())
+                .hasNonce(2)
+                .hasResponseCode(REVERTED_SUCCESS)
+                .hasNoParent();
+        assertCreatedRecord(records.get(3))
+                .nanosBefore(1, result.userTransactionRecord())
+                .hasNonce(1)
+                .hasResponseCode(OK)
+                .hasNoParent();
+    }
+
+    @Test
     void testAddSingleChild() {
         // given
         final var consensusTime = Instant.now();

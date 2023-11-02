@@ -151,7 +151,25 @@ public class SingleTransactionRecordBuilderImpl
     private ContractFunctionResult contractFunctionResult;
 
     // Used for some child records builders.
-    private final boolean removable;
+    private final ReversingBehavior reversingBehavior;
+
+    /**
+     * Possible behavior of a {@link SingleTransactionRecord} when a parent transaction fails,
+     * and it is asked to be reverted
+     */
+    public enum ReversingBehavior {
+        /**
+         * Changes are not committed. The record is kept in the record stream,
+         * but the status is set to {@link ResponseCodeEnum#REVERTED_SUCCESS}
+         */
+        REVERSIBLE,
+
+        /** Changes are not committed and the record is removed from the record stream. */
+        REMOVABLE,
+
+        /** Changes are committed independent of the user and parent transactions. */
+        IRREVERSIBLE
+    }
 
     /**
      * Creates new transaction record builder.
@@ -160,18 +178,19 @@ public class SingleTransactionRecordBuilderImpl
      */
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        this.removable = false;
+        this.reversingBehavior = ReversingBehavior.REVERSIBLE;
     }
 
     /**
      * Creates new transaction record builder.
      *
      * @param consensusNow the consensus timestamp for the transaction
-     * @param removable    whether the record is removable (see {@link RecordListBuilder}
+     * @param reversingBehavior the reversing behavior (see {@link RecordListBuilder}
      */
-    public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow, final boolean removable) {
+    public SingleTransactionRecordBuilderImpl(
+            @NonNull final Instant consensusNow, final ReversingBehavior reversingBehavior) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        this.removable = removable;
+        this.reversingBehavior = reversingBehavior;
     }
 
     /**
@@ -237,8 +256,8 @@ public class SingleTransactionRecordBuilderImpl
         return new SingleTransactionRecord(transaction, transactionRecord, transactionSidecarRecords);
     }
 
-    public boolean removable() {
-        return removable;
+    public ReversingBehavior reversingBehavior() {
+        return reversingBehavior;
     }
 
     // ------------------------------------------------------------------------------------------------------------------------

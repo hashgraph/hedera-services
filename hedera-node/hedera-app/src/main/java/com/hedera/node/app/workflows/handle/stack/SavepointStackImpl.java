@@ -57,7 +57,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     @Override
     public void createSavepoint() {
-        setupSavepoint(peek());
+        setupSavepoint(stack.isEmpty() ? root : peek());
     }
 
     @Override
