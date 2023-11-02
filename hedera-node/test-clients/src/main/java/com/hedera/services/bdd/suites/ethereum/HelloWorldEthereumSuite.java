@@ -399,7 +399,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     @HapiTest
     HapiSpec doesNotCreateChildRecordIfEthereumContractCreateFails() {
         final Long insufficientGasAllowance = 1L;
-        return defaultHapiSpec("smallContractCreate")
+        return defaultHapiSpec("doesNotCreateChildRecordIfEthereumContractCreateFails")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -414,7 +414,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .nonce(0)
                         .maxGasAllowance(insufficientGasAllowance)
                         .gasLimit(1_000_000L)
-                        .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                         .via("insufficientTxFeeTxn"))
                 .then(getTxnRecord("insufficientTxFeeTxn")
                         .andAllChildRecords()
