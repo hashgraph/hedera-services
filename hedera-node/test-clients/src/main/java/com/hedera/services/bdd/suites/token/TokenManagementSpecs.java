@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -285,7 +284,7 @@ public class TokenManagementSpecs extends HapiSuite {
         var multiKey = "wipeAndSupplyKey";
         var someMeta = ByteString.copyFromUtf8("HEY");
 
-        return onlyDefaultHapiSpec("WipeAccountFailureCasesWork")
+        return defaultHapiSpec("WipeAccountFailureCasesWork")
                 .given(
                         newKeyNamed(multiKey).type(KeyFactory.KeyType.SIMPLE),
                         newKeyNamed("alias"),
