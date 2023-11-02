@@ -22,10 +22,10 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateSigF
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.FREEZE;
-import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
-import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.FREEZE;
+import static com.swirlds.logging.legacy.LogMarker.OBJECT_STREAM;
+import static com.swirlds.logging.legacy.LogMarker.OBJECT_STREAM_FILE;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;

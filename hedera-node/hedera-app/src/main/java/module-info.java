@@ -42,6 +42,7 @@ module com.hedera.node.app {
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
+    requires static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app to
             com.swirlds.platform.core,
