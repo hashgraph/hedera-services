@@ -64,6 +64,11 @@ public class AbstractCodeCache {
             cache.put(cacheKey, code);
         }
 
+        if (code == null) {
+            code = CodeFactory.createCode(Bytes.EMPTY, 0, false);
+            cache.put(cacheKey, code);
+        }
+
         return code;
     }
 

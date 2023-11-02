@@ -99,6 +99,14 @@ public class AccountStore {
         return loadEntityOrFailWith(id, null, INVALID_CONTRACT_ID, CONTRACT_DELETED);
     }
 
+    public boolean isContractUsable(final Id id) {
+        // check existence
+        // check expired
+        // check deleted
+        // check is contract
+        return false;
+    }
+
     /**
      * Returns a model of the requested entity. The method is to be used for loading both Accounts
      * and Contracts as it does not validate the type of the entity. Additional validation is to be
