@@ -30,7 +30,7 @@ import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;

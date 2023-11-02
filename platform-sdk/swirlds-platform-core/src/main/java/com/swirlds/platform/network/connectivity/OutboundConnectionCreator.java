@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.network.connectivity;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.NETWORK;
-import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
-import static com.swirlds.logging.LogMarker.TCP_CONNECT_EXCEPTIONS;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.NETWORK;
+import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
+import static com.swirlds.logging.legacy.LogMarker.TCP_CONNECT_EXCEPTIONS;
 
 import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.context.PlatformContext;

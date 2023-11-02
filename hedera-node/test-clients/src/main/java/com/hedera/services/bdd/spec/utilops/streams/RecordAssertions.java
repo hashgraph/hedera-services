@@ -32,9 +32,11 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class RecordAssertions extends UtilOp {
-    private static final Duration DEFAULT_RECORD_CLOSE_DELAY = Duration.ofMillis(100L);
+    private static final Logger LOG = LogManager.getLogger(RecordAssertions.class);
     private static final Duration DEFAULT_INTER_CHECK_DELAY = Duration.ofMillis(2_000L);
 
     @Nullable
@@ -77,6 +79,16 @@ public class RecordAssertions extends UtilOp {
                 .hasAnyStatusAtAll()
                 .noLogging();
         allRunFor(spec, triggerOp);
+    }
+
+    public static void triggerAndCloseAtLeastOneFileIfNotInterrupted(final HapiSpec spec) {
+        try {
+            RecordAssertions.triggerAndCloseAtLeastOneFile(spec);
+            LOG.info("Sleeping for a second to give the record stream a (very generous) chance to close");
+            Thread.sleep(1000L);
+        } catch (final InterruptedException ignore) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Nullable
