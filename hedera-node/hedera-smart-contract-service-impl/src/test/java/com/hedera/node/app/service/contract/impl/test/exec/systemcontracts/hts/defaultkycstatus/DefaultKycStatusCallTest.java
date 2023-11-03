@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBL
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultfreezestatus.DefaultFreezeStatusCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultkycstatus.DefaultKycStatusCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.defaultkycstatus.DefaultKycStatusTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import org.apache.tuweni.bytes.Bytes;
@@ -35,7 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class DefaultKycStatusCallTest extends HtsCallTestBase {
     @Test
     void returnsDefaultKycStatusForPresentToken() {
-        final var subject = new DefaultFreezeStatusCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN);
+        final var subject = new DefaultKycStatusCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN);
 
         final var result = subject.execute().fullResult().result();
 
@@ -50,7 +50,7 @@ class DefaultKycStatusCallTest extends HtsCallTestBase {
 
     @Test
     void returnsDefaultKycStatusForMissingToken() {
-        final var subject = new DefaultFreezeStatusCall(gasCalculator, mockEnhancement(), false, null);
+        final var subject = new DefaultKycStatusCall(gasCalculator, mockEnhancement(), false, null);
 
         final var result = subject.execute().fullResult().result();
 
@@ -65,7 +65,7 @@ class DefaultKycStatusCallTest extends HtsCallTestBase {
 
     @Test
     void returnsDefaultKycStatusForMissingTokenStaticCall() {
-        final var subject = new DefaultFreezeStatusCall(gasCalculator, mockEnhancement(), true, null);
+        final var subject = new DefaultKycStatusCall(gasCalculator, mockEnhancement(), true, null);
 
         final var result = subject.execute().fullResult().result();
 

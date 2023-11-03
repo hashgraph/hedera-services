@@ -147,7 +147,6 @@ public class IssHandler {
         }
     }
 
-    // TODO test
     /**
      * Record the latest ISS round in the scratchpad. Does nothing if this is not the latest ISS that has been
      * observed.

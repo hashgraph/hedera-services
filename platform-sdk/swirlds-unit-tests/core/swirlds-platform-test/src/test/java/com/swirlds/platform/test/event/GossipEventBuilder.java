@@ -180,7 +180,7 @@ public class GossipEventBuilder {
                 ? fakeGeneration - 1
                 : getOtherParentGossip() != null ? getOtherParentGossip().getGeneration() : -1;
         final BaseEventHashedData hashedData = new BaseEventHashedData(
-                new BasicSoftwareVersion(1), // TODO use constant
+                new BasicSoftwareVersion(1),
                 creatorId,
                 selfParentGen,
                 otherParentGen,
