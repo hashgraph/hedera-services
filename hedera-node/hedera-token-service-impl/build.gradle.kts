@@ -30,12 +30,12 @@ testModuleInfo {
     requires("com.swirlds.merkle")
     requires("com.swirlds.test.framework")
     requires("org.assertj.core")
-    requires("org.bouncycastle.provider")
     requires("org.hamcrest")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
+    runtimeOnly("org.bouncycastle.provider")
     runtimeOnly("org.mockito.inline")
 }
