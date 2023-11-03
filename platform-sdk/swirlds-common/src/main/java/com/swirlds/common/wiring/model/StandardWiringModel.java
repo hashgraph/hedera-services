@@ -132,10 +132,14 @@ public class StandardWiringModel extends WiringModel {
     @NonNull
     private ModelVertex getVertex(@NonNull final String vertexName) {
         final ModelVertex vertex = vertices.get(vertexName);
-        if (vertex == null) {
-            throw new IllegalArgumentException("Unknown vertex name: " + vertexName);
+        if (vertex != null) {
+            return vertex;
         }
-        return vertex;
+
+        // Create an ad hoc vertex. This is needed when wires are soldered to lambdas.
+        final ModelVertex adHocVertex = new ModelVertex(vertexName, true);
+        vertices.put(vertexName, adHocVertex);
+        return adHocVertex;
     }
 
     /**
