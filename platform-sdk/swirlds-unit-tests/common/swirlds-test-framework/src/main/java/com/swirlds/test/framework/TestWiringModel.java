@@ -19,9 +19,11 @@ package com.swirlds.test.framework;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.utility.ModelGroup;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
@@ -88,7 +90,10 @@ public class TestWiringModel extends WiringModel {
      * {@inheritDoc}
      */
     @Override
-    public void registerVertex(@NonNull final String vertexName, final boolean insertionIsBlocking) {}
+    public void registerVertex(
+            @NonNull final String vertexName,
+            @Nullable final TaskSchedulerType type,
+            final boolean insertionIsBlocking) {}
 
     /**
      * {@inheritDoc}

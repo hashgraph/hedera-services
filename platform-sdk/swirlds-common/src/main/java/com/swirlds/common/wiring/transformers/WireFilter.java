@@ -44,7 +44,7 @@ public class WireFilter<T> implements Consumer<T> {
             @NonNull final WiringModel model, @NonNull final String name, @NonNull final Predicate<T> predicate) {
         this.predicate = Objects.requireNonNull(predicate);
         this.outputWire = new OutputWire<>(model, name);
-        model.registerVertex(name, true);
+        model.registerVertex(name, null, true);
     }
 
     /**

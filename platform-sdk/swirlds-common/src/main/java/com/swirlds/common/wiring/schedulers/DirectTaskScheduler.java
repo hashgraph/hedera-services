@@ -19,6 +19,7 @@ package com.swirlds.common.wiring.schedulers;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -55,7 +56,7 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
             @NonNull final ObjectCounter onRamp,
             @NonNull final ObjectCounter offRamp,
             @NonNull final FractionalTimer busyTimer) {
-        super(model, name, false, true);
+        super(model, name, TaskSchedulerType.DIRECT, false, true);
 
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
         this.onRamp = Objects.requireNonNull(onRamp);

@@ -16,7 +16,9 @@
 
 package com.swirlds.common.wiring.model;
 
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -27,19 +29,47 @@ import java.util.Objects;
  */
 public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex> {
 
+    /**
+     * The name of the vertex.
+     */
     private final String name;
+
+    /**
+     * When tasks are inserted into this vertex, is this component capable of applying back pressure?
+     */
     private final boolean insertionIsBlocking;
 
+    /**
+     * The task scheduler that corresponds to this vertex, or null if this vertex does not correspond to a task
+     * scheduler.
+     */
+    private final TaskSchedulerType type;
+
+    /**
+     * Some verticies are "pass through". That is, they always execute immediately on the caller's thread and never
+     * buffer work. If a vertex is a pass through, this field will be non-null and will point to the vertex where the
+     * work will actually be executed. If null then this vertex is not a pass through.
+     */
+    private final ModelVertex passThroughOrigin = null; // TODO set this value!
+
+    /**
+     * The outgoing edges of this vertex.
+     */
     private final List<ModelEdge> outgoingEdges = new ArrayList<>();
 
     /**
      * Constructor.
      *
      * @param name                the name of the vertex
+     * @param type                the type of task scheduler that corresponds to this vertex, or null if this vertex
+     *                            does not correspond to a task scheduler
      * @param insertionIsBlocking true if the insertion of this vertex may block until capacity is available
+     *                            // TODO we could infer this from the type...
      */
-    public ModelVertex(@NonNull final String name, final boolean insertionIsBlocking) {
+    public ModelVertex(
+            @NonNull final String name, @Nullable final TaskSchedulerType type, final boolean insertionIsBlocking) {
         this.name = name;
+        this.type = type;
         this.insertionIsBlocking = insertionIsBlocking;
     }
 
@@ -51,6 +81,18 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
     @NonNull
     public String getName() {
         return name;
+    }
+
+    /**
+     * Get the type of task scheduler that corresponds to this vertex, or null if this vertex does not correspond to a
+     * task scheduler.
+     *
+     * @return the type of task scheduler that corresponds to this vertex, or null if this vertex does not correspond to
+     * a task scheduler
+     */
+    @Nullable
+    public TaskSchedulerType getType() {
+        return type;
     }
 
     /**

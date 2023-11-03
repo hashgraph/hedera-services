@@ -20,9 +20,11 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.schedulers.HeartbeatScheduler;
 import com.swirlds.common.wiring.utility.ModelGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -111,13 +113,22 @@ public class StandardWiringModel extends WiringModel {
         return WiringFlowchart.generateWiringDiagram(vertices, edges, groups);
     }
 
+    // TODO we need to ensure the following:
+    // - at most one scheduler has edges leading into each direct scheduler
+    // - concurrent schedulers never have edges leading into a direct scheduler
+    // - it should be legal for wires travelling through direct schedulers and through transformers to have edges
+    //   into a direct scheduler, as long as they all originate from the same scheduler and it is non-concurrent
+
     /**
      * {@inheritDoc}
      */
     @Override
-    public void registerVertex(@NonNull final String vertexName, final boolean insertionIsBlocking) {
+    public void registerVertex(
+            @NonNull final String vertexName,
+            @Nullable final TaskSchedulerType type,
+            final boolean insertionIsBlocking) {
         Objects.requireNonNull(vertexName);
-        final boolean unique = vertices.put(vertexName, new ModelVertex(vertexName, insertionIsBlocking)) == null;
+        final boolean unique = vertices.put(vertexName, new ModelVertex(vertexName, type, insertionIsBlocking)) == null;
         if (!unique) {
             throw new IllegalArgumentException("Duplicate vertex name: " + vertexName);
         }
@@ -137,7 +148,7 @@ public class StandardWiringModel extends WiringModel {
         }
 
         // Create an ad hoc vertex. This is needed when wires are soldered to lambdas.
-        final ModelVertex adHocVertex = new ModelVertex(vertexName, true);
+        final ModelVertex adHocVertex = new ModelVertex(vertexName, null, true);
         vertices.put(vertexName, adHocVertex);
         return adHocVertex;
     }

@@ -18,6 +18,7 @@ package com.swirlds.common.wiring;
 
 import com.swirlds.common.wiring.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.builders.TaskSchedulerMetricsBuilder;
+import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -50,6 +51,7 @@ public abstract class TaskScheduler<OUT> {
      *
      * @param model               the wiring model containing this task scheduler
      * @param name                the name of the task scheduler
+     * @param type                the type of task scheduler
      * @param flushEnabled        if true, then {@link #flush()} will be enabled, otherwise it will throw.
      * @param insertionIsBlocking when data is inserted into this task scheduler, will it block until capacity is
      *                            available?
@@ -57,6 +59,7 @@ public abstract class TaskScheduler<OUT> {
     protected TaskScheduler(
             @NonNull final WiringModel model,
             @NonNull final String name,
+            @NonNull final TaskSchedulerType type,
             final boolean flushEnabled,
             final boolean insertionIsBlocking) {
 
@@ -64,7 +67,7 @@ public abstract class TaskScheduler<OUT> {
         this.name = Objects.requireNonNull(name);
         this.flushEnabled = flushEnabled;
         primaryOutputWire = new OutputWire<>(model, name);
-        model.registerVertex(name, insertionIsBlocking);
+        model.registerVertex(name, type, insertionIsBlocking);
     }
 
     /**
