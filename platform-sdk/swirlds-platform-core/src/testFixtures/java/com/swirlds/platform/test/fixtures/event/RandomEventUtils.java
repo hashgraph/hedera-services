@@ -273,7 +273,7 @@ public class RandomEventUtils {
                 new BasicSoftwareVersion(1),
                 creatorId,
                 selfDescriptor,
-                otherDescriptor == null ? null : Collections.singletonList(otherDescriptor),
+                otherDescriptor == null ? Collections.emptyList() : Collections.singletonList(otherDescriptor),
                 EventConstants.ROSTER_ROUND_UNDEFINED,
                 timestamp,
                 transactions);

@@ -131,7 +131,7 @@ class OrphanBufferTests {
         when(hashedData.getTimeCreated()).thenReturn(Instant.now());
         when(hashedData.getSelfParent()).thenReturn(selfParent == null ? null : selfParent);
         when(hashedData.getOtherParents())
-                .thenReturn(otherParent == null ? null : Collections.singletonList(otherParent));
+                .thenReturn(otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent));
 
         final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
         when(unhashedData.getOtherId()).thenReturn(otherParent.getCreator());
