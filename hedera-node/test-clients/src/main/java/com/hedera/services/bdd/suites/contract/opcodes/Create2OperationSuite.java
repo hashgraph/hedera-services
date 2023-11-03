@@ -59,10 +59,12 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -350,9 +352,8 @@ public class Create2OperationSuite extends HapiSuite {
 
         return defaultHapiSpec("PayableCreate2WorksAsExpected")
                 .given(
-                        //                        // FUTURE - enable this; current failure is missing transactionFee
-                        // field
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
+                        // FUTURE - enable this; current failure is missing transactionFee field
+                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS).gas(1_000_000))
                 .when(

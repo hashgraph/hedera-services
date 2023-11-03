@@ -22,8 +22,10 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toSet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.bdd.junit.HapiTestEnv;
 import com.hedera.services.bdd.junit.RecordStreamAccess;
@@ -47,7 +49,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -159,7 +163,9 @@ public class SnapshotModeOp extends UtilOp {
      */
     public SnapshotModeOp(@NonNull final SnapshotMode mode, @NonNull final SnapshotMatchMode... specialMatchModes) {
         this.mode = requireNonNull(mode);
-        this.matchModes = EnumSet.copyOf(Arrays.asList(specialMatchModes));
+        this.matchModes = specialMatchModes.length > 0
+                ? EnumSet.copyOf(Arrays.asList(specialMatchModes))
+                : EnumSet.noneOf(SnapshotMatchMode.class);
         // Each snapshot should have a unique placeholder memo so that we can take multiple snapshots
         // without clearing the record streams directory in between
         placeholderMemo = PLACEHOLDER_MEMO + Instant.now();
@@ -332,8 +338,9 @@ public class SnapshotModeOp extends UtilOp {
                 new ArrayList<>(expectedMessage.getAllFields().entrySet());
         final var actualFields = new ArrayList<>(actualMessage.getAllFields().entrySet());
         if (expectedFields.size() != actualFields.size()) {
-            Assertions.fail("Mismatched field counts between expected " + expectedMessage + " and " + actualMessage
-                    + " - " + mismatchContext.get());
+            Assertions.fail("Mismatched field counts "
+                    + " (" + describeFieldCountMismatch(expectedFields, actualFields) + ") " + "between expected "
+                    + expectedMessage + " and " + actualMessage + " - " + mismatchContext.get());
         }
         for (int i = 0, n = expectedFields.size(); i < n; i++) {
             final var expectedField = expectedFields.get(i);
@@ -356,6 +363,44 @@ public class SnapshotModeOp extends UtilOp {
                     actualPlaceholderNum,
                     mismatchContext);
         }
+    }
+
+    // inline initializers
+    @SuppressWarnings({"java:S3599", "java:S1171"})
+    private String describeFieldCountMismatch(
+            @NonNull final List<Map.Entry<Descriptors.FieldDescriptor, Object>> expectedFields,
+            @NonNull final List<Map.Entry<Descriptors.FieldDescriptor, Object>> actualFields) {
+        final Set<String> expectedNames = fieldNamesOf(expectedFields);
+        final Set<String> actualNames = fieldNamesOf(actualFields);
+        final var expectedButNotObservedNames = new HashSet<>(expectedNames) {
+            {
+                removeAll(actualNames);
+            }
+        };
+        final var observedButNotExpectedNames = new HashSet<>(actualNames) {
+            {
+                removeAll(expectedNames);
+            }
+        };
+        final var description = new StringBuilder();
+        if (!expectedButNotObservedNames.isEmpty()) {
+            description.append("expected but not find ").append(expectedButNotObservedNames);
+        }
+        if (!observedButNotExpectedNames.isEmpty()) {
+            if (!description.isEmpty()) {
+                description.append(" AND ");
+            }
+            description.append("found but did not expect ").append(observedButNotExpectedNames);
+        }
+
+        return description.toString();
+    }
+
+    private Set<String> fieldNamesOf(@NonNull final List<Map.Entry<Descriptors.FieldDescriptor, Object>> fields) {
+        return fields.stream()
+                .map(Map.Entry::getKey)
+                .map(Descriptors.FieldDescriptor::getName)
+                .collect(toSet());
     }
 
     /**
