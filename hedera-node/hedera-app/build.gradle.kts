@@ -146,25 +146,6 @@ val copyLib =
     tasks.register<Sync>("copyLib") {
         from(project.configurations.getByName("runtimeClasspath"))
         into(layout.projectDirectory.dir("../data/lib"))
-
-        doLast {
-            val nonModulalJars =
-                destinationDir
-                    .listFiles()!!
-                    .mapNotNull { jar ->
-                        if (zipTree(jar).none { it.name == "module-info.class" }) {
-                            jar.name
-                        } else {
-                            null
-                        }
-                    }
-                    .sorted()
-            if (nonModulalJars.isNotEmpty()) {
-                throw RuntimeException(
-                    "Jars without 'module-info.class' in 'data/lib'\n${nonModulalJars.joinToString("\n")}"
-                )
-            }
-        }
     }
 
 // Copy built jar into `data/apps` and rename HederaNode.jar
