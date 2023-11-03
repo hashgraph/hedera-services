@@ -16,10 +16,16 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_PRECOMPILE_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -31,10 +37,12 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import org.hyperledger.besu.datatypes.Address;
 
 public class ClassicCreatesCall extends AbstractHtsCall {
     /**
@@ -65,6 +73,21 @@ public class ClassicCreatesCall extends AbstractHtsCall {
 
     @Override
     public @NonNull PricedResult execute() {
+        final var token = ((TokenCreateTransactionBody) syntheticCreate.data().value());
+        if (token.symbol().isEmpty()) {
+            return externalizeUnsuccessfulResult(MISSING_TOKEN_SYMBOL, gasCalculator.viewGasRequirement());
+        }
+
+        final var treasuryAccount =
+                nativeOperations().getAccount(token.treasury().accountNum());
+        if (treasuryAccount == null) {
+            return externalizeUnsuccessfulResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement());
+        }
+
+        if (token.autoRenewAccount() == null) {
+            return externalizeUnsuccessfulResult(INVALID_EXPIRATION_TIME, gasCalculator.viewGasRequirement());
+        }
+
         final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
         final var recordBuilder = systemContractOperations()
                 .dispatch(syntheticCreate, verificationStrategy, spenderId, CryptoCreateRecordBuilder.class);
@@ -98,5 +121,18 @@ public class ClassicCreatesCall extends AbstractHtsCall {
             final long gasRequirement = gasCalculator.gasRequirement(syntheticCreate, spenderId, MINIMUM_TINYBAR_PRICE);
             return gasOnly(successResult(encodedOutput, gasRequirement));
         }
+    }
+
+    private PricedResult externalizeUnsuccessfulResult(ResponseCodeEnum responseCode, long gasRequirement) {
+        final var result = gasOnly(revertResult(responseCode, gasRequirement));
+        final var contractID = asEvmContractId(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
+
+        enhancement
+                .systemOperations()
+                .externalizeResult(
+                        contractFunctionResultFailedFor(MINIMUM_TINYBAR_PRICE, responseCode.toString(), contractID),
+                        ResultStatus.IS_ERROR,
+                        responseCode);
+        return result;
     }
 }
