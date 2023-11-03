@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.spec.utilops;
+package com.hedera.services.bdd.suites.hip796;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
@@ -52,6 +52,10 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 public class Hip796Verbs {
     private Hip796Verbs() {
         throw new UnsupportedOperationException();
+    }
+
+    public static void main(String... args)  {
+        System.out.println("Hello world");
     }
 
     public static HapiSpecOperation tokenDefinition(String token) {

@@ -2,7 +2,6 @@ package com.hedera.services.bdd.suites.hip796;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.Hip796Verbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,8 +10,11 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 
-public class TokenDefinitionSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(TokenDefinitionSuite.class);
+/**
+ * A suite for user stories Keys-1 through Keys-4 from HIP-796.
+ */
+public class TokenKeysDefinitionSuite extends HapiSuite {
+    private static final Logger log = LogManager.getLogger(TokenKeysDefinitionSuite.class);
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
@@ -20,6 +22,13 @@ public class TokenDefinitionSuite extends HapiSuite {
         );
     }
 
+    /**
+     * <b>Keys-1</b>
+     * <p>As a `token-administrator`, I want to administer (set, rotate/update, or remove)
+     * a `lock-key` on the `token-definition`
+     *
+     * @return the HapiSpec for this HIP-796 user story
+     */
     @HapiTest
     private HapiSpec manageLockKeyCapabilities() {
         return defaultHapiSpec("ManageLockKeyCapabilities")
@@ -51,6 +60,13 @@ public class TokenDefinitionSuite extends HapiSuite {
                 );
     }
 
+    /**
+     * <b>Keys-2</b>
+     * <p>As a `token-administrator`, I want to administer (set, rotate/update, or remove) a
+     * `partition-key` on the `token-definition`
+     *
+     * @return the HapiSpec for this HIP-796 user story
+     */
     @HapiTest
     private HapiSpec managePartitionKeyCapabilities() {
         return defaultHapiSpec("ManagePartitionKeyCapabilities")
@@ -73,6 +89,13 @@ public class TokenDefinitionSuite extends HapiSuite {
                 );
     }
 
+    /**
+     * <b>Keys-3</b>
+     * <p>As a `token-administrator`, I want to administer (set, rotate/update, or remove) a
+     * `partition-move-key` on the `token-definition`.
+     *
+     * @return the HapiSpec for this HIP-796 user story
+     */
     @HapiTest
     private HapiSpec managePartitionMoveKeyCapabilities() {
         return defaultHapiSpec("ManagePartitionMoveKeyCapabilities")
@@ -95,6 +118,13 @@ public class TokenDefinitionSuite extends HapiSuite {
                 );
     }
 
+    /**
+     * <b>Keys-4</b>
+     * <p>As a `token-administrator` smart contract, I want to administer each of the
+     * above-mentioned keys.
+     *
+     * @return the HapiSpec for this HIP-796 user story
+     */
     @HapiTest
     private HapiSpec manageKeysViaSmartContract() {
         return defaultHapiSpec("ManageKeysViaSmartContract")
