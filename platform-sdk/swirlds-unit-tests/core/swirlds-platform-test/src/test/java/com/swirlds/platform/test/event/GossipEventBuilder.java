@@ -211,7 +211,7 @@ public class GossipEventBuilder {
                                 EventConstants.ROSTER_ROUND_UNDEFINED)
                         : null;
         final BaseEventHashedData hashedData = new BaseEventHashedData(
-                new BasicSoftwareVersion(1), // TODO use constant
+                new BasicSoftwareVersion(1),
                 creatorId,
                 selfParent,
                 otherParent == null ? Collections.emptyList() : Collections.singletonList(otherParent),

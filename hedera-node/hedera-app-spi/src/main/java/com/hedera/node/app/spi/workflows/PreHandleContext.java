@@ -74,6 +74,26 @@ public interface PreHandleContext extends TransactionKeys {
     Configuration configuration();
 
     /**
+     * Returns true if the transaction associated with this context was created by the user, false if the transaction
+     * was created by another transaction, or by the system.
+     *
+     * @return {@code true} this transaction was created by a user, {@code false} if it was a system or child
+     *         transaction.
+     */
+    boolean isUserTransaction();
+
+    /**
+     * Returns the opposite of {@link #isUserTransaction()}. A transaction is either a user transaction, or a
+     * synthetic transaction, but not both.
+     *
+     * @return {@code false} this transaction was created by a user, {@code true} if it was a system or child
+     *         transaction.
+     */
+    default boolean isSyntheticTransaction() {
+        return !isUserTransaction();
+    }
+
+    /**
      * Create a new store given the store's interface. This gives read-only access to the store.
      *
      * @param storeInterface The store interface to find and create a store for
@@ -227,8 +247,7 @@ public interface PreHandleContext extends TransactionKeys {
     /**
      * Adds the given hollow account to the required signing set. If the account has already been added, then
      * the call is a no-op. The account must not be null. During signature verification, the app will verify that the
-     * transaction was signed by an ECDSA(secp256k1) key corresponding to the given account's alias. Since the account
-     * is being created, we just
+     * transaction was signed by an ECDSA(secp256k1) key corresponding to the given account's alias.
      *
      * @param hollowAccountAlias the EVM address alias
      * @return {@code this} object
