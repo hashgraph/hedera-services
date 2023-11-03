@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.components;
 
-import static com.swirlds.logging.legacy.LogMarker.INTAKE_EVENT;
-import static com.swirlds.logging.legacy.LogMarker.STALE_EVENTS;
-
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -41,8 +38,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This class is responsible for adding events to {@link Consensus} and notifying event observers, including
@@ -53,8 +48,6 @@ import org.apache.logging.log4j.Logger;
  * {@link EventIntake} works with the legacy intake monolith.
  */
 public class LinkedEventIntake {
-    private static final Logger logger = LogManager.getLogger(LinkedEventIntake.class);
-
     /**
      * A functor that provides access to a {@code Consensus} instance.
      */
@@ -130,16 +123,17 @@ public class LinkedEventIntake {
      *
      * @param event an event to be added
      */
-    public void addEvent(final EventImpl event) {
+    public void addEvent(@NonNull final EventImpl event) {
+        Objects.requireNonNull(event);
+
         try {
-            // an expired event will cause ShadowGraph to throw an exception, so we just to discard it
-            if (consensusSupplier.get().isExpired(event)) {
+            if (event.getGeneration() < consensusSupplier.get().getMinGenerationNonAncient()) {
+                // ancient events *may* be discarded, and stale events *must* be discarded
                 return;
             }
 
             dispatcher.preConsensusEvent(event);
 
-            logger.debug(INTAKE_EVENT.getMarker(), "Adding {} ", event::toShortString);
             final long minGenNonAncientBeforeAdding = consensusSupplier.get().getMinGenerationNonAncient();
 
             // Prehandle transactions on the thread pool.
@@ -192,7 +186,6 @@ public class LinkedEventIntake {
         for (final EventImpl staleEvent : staleEvents) {
             staleEvent.setStale(true);
             dispatcher.staleEvent(staleEvent);
-            logger.warn(STALE_EVENTS.getMarker(), "Stale event {}", staleEvent::toShortString);
         }
     }
 
@@ -202,7 +195,7 @@ public class LinkedEventIntake {
      * @param event the event to check
      * @return true if the event has not reached consensus
      */
-    private static boolean isNotConsensus(final EventImpl event) {
+    private static boolean isNotConsensus(@NonNull final EventImpl event) {
         return !event.isConsensus();
     }
 
