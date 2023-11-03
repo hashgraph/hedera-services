@@ -401,7 +401,8 @@ public class SwirldsPlatform implements Platform {
 
         final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
         /* A queue thread that asynchronously invokes NewLatestCompleteStateConsumers */
-        final QueueThread<Runnable> asyncLatestCompleteStateQueue = new QueueThreadConfiguration<Runnable>(threadManager)
+        final QueueThread<Runnable> asyncLatestCompleteStateQueue = new QueueThreadConfiguration<Runnable>(
+                        threadManager)
                 .setThreadName("new-latest-complete-state-consumer-queue")
                 .setComponent("wiring")
                 .setCapacity(wiringConfig.newLatestCompleteStateConsumerQueueSize())
@@ -412,7 +413,8 @@ public class SwirldsPlatform implements Platform {
         metrics.addUpdater(
                 () -> wiringMetrics.updateLatestCompleteStateQueueSize(asyncLatestCompleteStateQueue.size()));
 
-        final AppCommunicationComponent appCommunicationComponent = new DefaultAppCommunicationComponent(notificationEngine);
+        final AppCommunicationComponent appCommunicationComponent =
+                new DefaultAppCommunicationComponent(notificationEngine);
         components.add(appCommunicationComponent);
 
         final Hash epochHash;

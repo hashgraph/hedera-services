@@ -37,8 +37,6 @@ import com.swirlds.platform.components.common.query.PrioritySystemTransactionSub
 import com.swirlds.platform.components.state.output.IssConsumer;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
-import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
-import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
