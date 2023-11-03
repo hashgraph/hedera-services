@@ -31,6 +31,7 @@ import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Implementation support for view calls that require an extant token.
@@ -49,7 +50,7 @@ public abstract class AbstractRevertibleTokenViewCall extends AbstractHtsCall {
     }
 
     @Override
-    public @NonNull PricedResult execute() {
+    public @NonNull PricedResult execute(final MessageFrame frame) {
         PricedResult result;
 
         if (token == null) {

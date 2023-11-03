@@ -32,6 +32,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhance
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
 
@@ -49,7 +50,7 @@ public class ERCGrantApprovalCall extends AbstractGrantApprovalCall {
 
     @NonNull
     @Override
-    public PricedResult execute() {
+    public PricedResult execute(final MessageFrame frame) {
         if (token == null) {
             return reversionWith(INVALID_TOKEN_ID, gasCalculator.canonicalGasRequirement(DispatchType.APPROVE));
         }

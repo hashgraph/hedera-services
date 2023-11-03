@@ -41,6 +41,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Implements the "classic" HTS transfer calls, which differ from the ERC redirects in three notable ways:
@@ -97,7 +98,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull PricedResult execute() {
+    public @NonNull PricedResult execute(final MessageFrame frame) {
         final var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, spenderId);
         // https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol
         if (systemAccountCreditScreen.creditsToSystemAccount(syntheticTransfer.cryptoTransferOrThrow())) {

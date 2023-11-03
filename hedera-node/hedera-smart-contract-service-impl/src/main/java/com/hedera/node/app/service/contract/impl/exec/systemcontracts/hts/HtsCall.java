@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
 /**
@@ -48,5 +49,5 @@ public interface HtsCall {
      * @return the result, the gas requirement, and any non-gas cost
      */
     @NonNull
-    PricedResult execute();
+    PricedResult execute(final MessageFrame frame);
 }
