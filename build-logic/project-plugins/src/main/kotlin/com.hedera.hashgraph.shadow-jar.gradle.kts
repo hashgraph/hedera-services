@@ -32,5 +32,5 @@ tasks.withType<ShadowJar>().configureEach {
     // See: https://github.com/johnrengelman/shadow/issues/882
     inputs.files(project.configurations.runtimeClasspath)
     configurations = emptyList()
-    doFirst { configurations = listOf(project.configurations.runtimeClasspath.get()) }
+    doFirst { configurations = listOf(inputs.files.filter { it.extension == "jar" }) }
 }
