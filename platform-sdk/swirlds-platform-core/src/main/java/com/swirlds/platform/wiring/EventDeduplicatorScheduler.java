@@ -28,11 +28,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Wiring for the {@link EventDeduplicator}.
  */
 public class EventDeduplicatorScheduler {
-
+    private final TaskScheduler<GossipEvent> taskScheduler;
     private final InputWire<GossipEvent, GossipEvent> eventInput;
     private final InputWire<Long, GossipEvent> minimumGenerationNonAncientInput;
-
-    private final OutputWire<GossipEvent> eventOutput;
 
     /**
      * Constructor.
@@ -40,7 +38,7 @@ public class EventDeduplicatorScheduler {
      * @param model the wiring model
      */
     public EventDeduplicatorScheduler(@NonNull final WiringModel model) {
-        final TaskScheduler<GossipEvent> taskScheduler = model.schedulerBuilder("eventDeduplicator")
+        taskScheduler = model.schedulerBuilder("eventDeduplicator")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
@@ -50,8 +48,6 @@ public class EventDeduplicatorScheduler {
 
         eventInput = taskScheduler.buildInputWire("non-deduplicated events");
         minimumGenerationNonAncientInput = taskScheduler.buildInputWire("minimum generation non ancient");
-
-        eventOutput = taskScheduler.getOutputWire().buildSplitter();
     }
 
     /**
@@ -81,7 +77,7 @@ public class EventDeduplicatorScheduler {
      */
     @NonNull
     public OutputWire<GossipEvent> getEventOutput() {
-        return eventOutput;
+        return taskScheduler.getOutputWire();
     }
 
     /**

@@ -28,9 +28,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Wiring for the {@link com.swirlds.platform.event.validation.InternalEventValidator InternalEventValidator}.
  */
 public class InternalEventValidatorScheduler {
+    private final TaskScheduler<GossipEvent> taskScheduler;
     private final InputWire<GossipEvent, GossipEvent> eventInput;
-
-    private final OutputWire<GossipEvent> eventOutput;
 
     /**
      * Constructor.
@@ -38,7 +37,7 @@ public class InternalEventValidatorScheduler {
      * @param model the wiring model
      */
     public InternalEventValidatorScheduler(@NonNull final WiringModel model) {
-        final TaskScheduler<GossipEvent> taskScheduler = model.schedulerBuilder("internalEventValidator")
+        taskScheduler = model.schedulerBuilder("internalEventValidator")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
@@ -47,7 +46,6 @@ public class InternalEventValidatorScheduler {
                 .cast();
 
         eventInput = taskScheduler.buildInputWire("non-validated events");
-        eventOutput = taskScheduler.getOutputWire();
     }
 
     /**
@@ -61,19 +59,19 @@ public class InternalEventValidatorScheduler {
     }
 
     /**
-     * Get the output of the orphan buffer, i.e. a stream of events with validated internal data.
+     * Get the output of the internal validator, i.e. a stream of events with validated internal data.
      *
      * @return the event output channel
      */
     @NonNull
     public OutputWire<GossipEvent> getEventOutput() {
-        return eventOutput;
+        return taskScheduler.getOutputWire();
     }
 
     /**
      * Bind an internal event validator to this wiring.
      *
-     * @param internalEventValidator the orphan buffer to bind
+     * @param internalEventValidator the validator to bind
      */
     public void bind(@NonNull final InternalEventValidator internalEventValidator) {
         eventInput.bind(internalEventValidator::handleEvent);

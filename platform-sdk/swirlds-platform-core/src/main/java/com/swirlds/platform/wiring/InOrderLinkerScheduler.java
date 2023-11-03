@@ -29,11 +29,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Wiring for the {@link com.swirlds.platform.event.linking.InOrderLinker InOrderLinker}.
  */
 public class InOrderLinkerScheduler {
+    private final TaskScheduler<EventImpl> taskScheduler;
 
     private final InputWire<GossipEvent, EventImpl> eventInput;
     private final InputWire<Long, EventImpl> minimumGenerationNonAncientInput;
-
-    private final OutputWire<EventImpl> eventOutput;
 
     /**
      * Constructor.
@@ -41,7 +40,7 @@ public class InOrderLinkerScheduler {
      * @param model the wiring model
      */
     public InOrderLinkerScheduler(@NonNull final WiringModel model) {
-        final TaskScheduler<EventImpl> taskScheduler = model.schedulerBuilder("inOrderLinker")
+        taskScheduler = model.schedulerBuilder("inOrderLinker")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
@@ -51,8 +50,6 @@ public class InOrderLinkerScheduler {
 
         eventInput = taskScheduler.buildInputWire("unlinked events");
         minimumGenerationNonAncientInput = taskScheduler.buildInputWire("minimum generation non ancient");
-
-        eventOutput = taskScheduler.getOutputWire().buildSplitter();
     }
 
     /**
@@ -82,7 +79,7 @@ public class InOrderLinkerScheduler {
      */
     @NonNull
     public OutputWire<EventImpl> getEventOutput() {
-        return eventOutput;
+        return taskScheduler.getOutputWire();
     }
 
     /**

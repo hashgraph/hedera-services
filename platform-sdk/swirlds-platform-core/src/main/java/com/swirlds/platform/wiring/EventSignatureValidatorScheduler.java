@@ -55,7 +55,7 @@ public class EventSignatureValidatorScheduler {
     /**
      * Get the input of the signature validator, i.e. a stream of events with unvalidated signatures.
      *
-     * @return the event input channel
+     * @return the event input wire
      */
     @NonNull
     public InputWire<GossipEvent, GossipEvent> getEventInput() {
@@ -65,7 +65,7 @@ public class EventSignatureValidatorScheduler {
     /**
      * Get the input of the minimum generation non ancient
      *
-     * @return the minimum generation non ancient input channel
+     * @return the minimum generation non ancient input wire
      */
     @NonNull
     public InputWire<Long, GossipEvent> getMinimumGenerationNonAncientInput() {
@@ -89,5 +89,6 @@ public class EventSignatureValidatorScheduler {
      */
     public void bind(@NonNull final EventSignatureValidator eventSignatureValidator) {
         eventInput.bind(eventSignatureValidator::validateEventSignature);
+        minimumGenerationNonAncientInput.bind(eventSignatureValidator::setMinimumGenerationNonAncient);
     }
 }
