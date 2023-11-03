@@ -26,7 +26,7 @@ import org.junit.platform.engine.support.hierarchical.EngineExecutionContext;
  * now this class is just empty (we need it to satisfy the API, but we don't use it).
  */
 public class HapiTestEngineExecutionContext implements EngineExecutionContext {
-    
+
     private HapiTestEnv env;
 
     /**
