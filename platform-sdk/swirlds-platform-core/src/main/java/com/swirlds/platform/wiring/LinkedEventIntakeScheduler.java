@@ -43,7 +43,7 @@ public class LinkedEventIntakeScheduler {
                 .build()
                 .cast();
 
-        eventInput = taskScheduler.buildInputWire("events from intake");
+        eventInput = taskScheduler.buildInputWire("linked events");
     }
 
     /**
