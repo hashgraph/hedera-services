@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -104,11 +105,12 @@ class StateSigningTests {
             final boolean previouslyComplete = signedState.isComplete();
             final boolean completed = signedState.addSignature(address.getNodeId(), signature);
             final boolean nowComplete = signedState.isComplete();
+            final boolean verifiable = signedState.isVerifiable();
 
-            if (nowComplete) {
-                signedState.throwIfIncomplete();
+            if (verifiable) {
+                signedState.throwIfNotVerifiable();
             } else {
-                assertThrows(SignedStateInvalidException.class, signedState::throwIfIncomplete);
+                assertThrows(SignedStateInvalidException.class, signedState::throwIfNotVerifiable);
             }
 
             if (!previouslyComplete || !nowComplete) {
@@ -128,7 +130,10 @@ class StateSigningTests {
             }
 
             assertEquals(
-                    MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()), signedState.isComplete());
+                    SUPER_MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()),
+                    signedState.isComplete());
+            assertEquals(
+                    MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()), signedState.isVerifiable());
             assertEquals(expectedWeight, signedState.getSigningWeight());
             assertEquals(count, sigSet.size());
 
@@ -228,7 +233,10 @@ class StateSigningTests {
             }
 
             assertEquals(
-                    MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()), signedState.isComplete());
+                    SUPER_MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()),
+                    signedState.isComplete());
+            assertEquals(
+                    MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()), signedState.isVerifiable());
             assertEquals(expectedWeight, signedState.getSigningWeight());
             assertEquals(count, sigSet.size());
 
