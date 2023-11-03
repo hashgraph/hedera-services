@@ -16,7 +16,7 @@
 
 package com.swirlds.gui.model;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import java.math.BigInteger;
 import java.security.InvalidParameterException;

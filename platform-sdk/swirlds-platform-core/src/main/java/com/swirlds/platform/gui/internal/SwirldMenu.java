@@ -17,7 +17,7 @@
 package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.common.system.SystemExitUtils.exitSystem;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SystemExitCode;
