@@ -17,6 +17,7 @@
 package com.swirlds.common.threading.framework.internal;
 
 import com.swirlds.common.metrics.extensions.FractionalTimer;
+import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -39,7 +40,7 @@ public class QueueThreadMetrics {
             this.busyTime = null;
             return;
         }
-        this.busyTime = new FractionalTimer(metricsConfig.getTime());
+        this.busyTime = new StandardFractionalTimer(metricsConfig.getTime());
         busyTime.registerMetric(
                 metricsConfig.getMetrics(),
                 metricsConfig.getCategory(),
