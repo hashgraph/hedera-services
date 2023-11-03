@@ -980,24 +980,24 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             stack.createSavepoint();
 
             // then
-            assertThatNoException()
-                    .isThrownBy(() -> context.dispatchPrecedingTransaction(
+            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT));
-            assertThatNoException()
-                    .isThrownBy((() -> context.dispatchReversiblePrecedingTransaction(
+                            AccountID.DEFAULT))
+                    .isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> context.dispatchReversiblePrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT)));
-            verify(recordListBuilder, times(1)).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
-            verify(dispatcher, times(2)).dispatchHandle(any());
+                            AccountID.DEFAULT))
+                    .isInstanceOf(IllegalStateException.class);
+            verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
+            verify(dispatcher, never()).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
-                    .isEqualTo(ACAI);
+                    .isEqualTo(APPLE);
         }
 
         @Test
