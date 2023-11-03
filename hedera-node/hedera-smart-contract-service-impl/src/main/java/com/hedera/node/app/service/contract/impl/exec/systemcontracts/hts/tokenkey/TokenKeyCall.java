@@ -68,7 +68,7 @@ public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
     protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
         if (key == null) {
-            return revertResult(CONTRACT_REVERT_EXECUTED, gasCalculator.viewGasRequirement());
+            return fullResultsFor(CONTRACT_REVERT_EXECUTED, gasCalculator.viewGasRequirement(), Key.DEFAULT);
         }
         return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), key);
     }
@@ -106,7 +106,7 @@ public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
                             SystemContractUtils.ResultStatus.IS_ERROR,
                             INVALID_TOKEN_ID);
         } else if (key == null) {
-            result = gasOnly(resultOfViewingToken(token));
+            result = gasOnly(viewCallResultWith(KEY_NOT_PROVIDED, gasCalculator.viewGasRequirement()));
 
             gasRequirement = result.fullResult().gasRequirement();
             enhancement

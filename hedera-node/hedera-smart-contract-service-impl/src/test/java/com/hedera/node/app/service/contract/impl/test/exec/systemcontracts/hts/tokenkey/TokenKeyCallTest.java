@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.tokenkey;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_NOT_PROVIDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.ZERO_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
@@ -139,20 +140,8 @@ class TokenKeyCallTest extends HtsCallTestBase {
 
         final var result = subject.execute().fullResult().result();
 
-        assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
-        assertEquals(
-                Bytes.wrap(TokenKeyTranslator.TOKEN_KEY
-                        .getOutputs()
-                        .encodeElements(
-                                INVALID_TOKEN_ID.protoOrdinal(),
-                                Tuple.of(
-                                        false,
-                                        headlongAddressOf(ZERO_CONTRACT_ID),
-                                        com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY.toByteArray(),
-                                        com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY.toByteArray(),
-                                        headlongAddressOf(ZERO_CONTRACT_ID)))
-                        .array()),
-                result.getOutput());
+        assertEquals(MessageFrame.State.REVERT, result.getState());
+        assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
     }
 
     @Test
@@ -163,5 +152,15 @@ class TokenKeyCallTest extends HtsCallTestBase {
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
+    }
+
+    @Test
+    void returnsTokenKeyStatusForMissingKey() {
+        final var subject = new TokenKeyCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN, null);
+
+        final var result = subject.execute().fullResult().result();
+
+        assertEquals(MessageFrame.State.REVERT, result.getState());
+        assertEquals(revertOutputFor(KEY_NOT_PROVIDED), result.getOutput());
     }
 }
