@@ -148,8 +148,6 @@ val hapiProtoBranchOrTag = "add-pbj-types-for-state"
 
 gitRepositories {
     checkoutsDirectory.set(File(rootDir, "hedera-node/hapi"))
-    // check branch in repo for updates every second
-    refreshIntervalMillis.set(1000)
 
     if (!gradle.startParameter.isOffline) {
         include("hedera-protobufs") {
