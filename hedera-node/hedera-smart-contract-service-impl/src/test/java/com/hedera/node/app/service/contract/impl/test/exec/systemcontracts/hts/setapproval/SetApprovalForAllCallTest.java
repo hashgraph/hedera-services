@@ -16,13 +16,16 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.setapproval;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.asBytesResult;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -33,6 +36,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapp
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import java.math.BigInteger;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,10 +64,17 @@ public class SetApprovalForAllCallTest extends HtsCallTestBase {
 
     @BeforeEach
     void setup() {
+        final Tuple tuple =
+                new Tuple(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS, Boolean.TRUE);
+        final byte[] inputBytes = Bytes.wrapByteBuffer(
+                        SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL.encodeCall(tuple))
+                .toArray();
+
         given(attempt.enhancement()).willReturn(mockEnhancement());
         given(attempt.addressIdConverter()).willReturn(addressIdConverter);
         given(attempt.addressIdConverter().convertSender(any())).willReturn(OWNER_ID);
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
+        given(attempt.inputBytes()).willReturn(inputBytes);
 
         subject = new SetApprovalForAllCall(
                 attempt, TransactionBody.newBuilder().build(), SetApprovalForAllTranslator::gasRequirement);

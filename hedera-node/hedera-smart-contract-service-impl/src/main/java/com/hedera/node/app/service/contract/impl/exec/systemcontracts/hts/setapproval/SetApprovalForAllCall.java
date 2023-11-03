@@ -100,5 +100,4 @@ public class SetApprovalForAllCall extends AbstractHtsCall {
                 .forDataItem(approved)
                 .build();
     }
-
 }
