@@ -1,0 +1,210 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.token;
+
+import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.HexFormat;
+
+/**
+ * A collection of static utility methods for working with aliases on {@link Account}s.
+ */
+public final class AliasUtils {
+    /**
+     * The first 12 bytes of an "entity num alias". See {@link #isEntityNumAlias(Bytes)}.
+     *
+     * <p>FUTURE: The actual shard and realm are defined in config, and we should use that. However, the config can only
+     * be read dynamically, not statically. But, the shard and realm *cannot change* once a node has been started with
+     * a given state. So we really could have some static way to get the shard and realm, based on bootstrap config,
+     * or based on state as it has been loaded. This detail has not been worked out, and on all networks today shard
+     * and realm are 0, so we just let this byte array be all zeros for now.
+     */
+    private static final byte[] ENTITY_NUM_ALIAS_PREFIX = new byte[12];
+    /** All EVM addresses are 20 bytes long, and key-encoded keys are not. */
+    private static final int EVM_ADDRESS_SIZE = 20;
+    /** All valid ECDSA protobuf encoded keys have this prefix */
+    private static final Bytes ECDSA_KEY_ALIAS_PREFIX =
+            Bytes.wrap(HexFormat.of().parseHex("3a21"));
+    /** All valid ECDSA protobuf encoded keys are 33 bytes long */
+    private static final int ECDSA_SECP256K1_ALIAS_SIZE = 33;
+    /** All valid ED25519 protobuf encoded keys are 32 bytes long */
+    private static final int ED25519_ALIAS_SIZE = 32;
+
+    private AliasUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
+    /**
+     * Gets whether the given alias is the right length to be an EVM address. Today, this number is 20 bytes.
+     *
+     * @param alias The alias to check
+     * @return {@code true} if the alias is the right length to be an EVM address.
+     */
+    public static boolean isOfEvmAddressSize(@NonNull final Bytes alias) {
+        return alias.length() == EVM_ADDRESS_SIZE;
+    }
+
+    /**
+     * Given an alias, attempts to extract from it an EVM address. If the alias is already an EVM address, simply return
+     * it. If the alias is a key alias, and the key is an ECDSA_SECP256K1 key, return the EVM address derived from the
+     * public key. Otherwise, return null.
+     *
+     * @param alias The alias to extract an EVM address from.
+     * @return The EVM address, or null if the alias is not an EVM address or an ECDSA_SECP256K1 key alias.
+     */
+    @Nullable
+    public static Bytes extractEvmAddress(@NonNull final Bytes alias) {
+        requireNonNull(alias);
+        if (isOfEvmAddressSize(alias)) return alias;
+        final var key = asKeyFromAliasOrElse(alias, null);
+        return (key != null && key.hasEcdsaSecp256k1()) ? recoverAddressFromPubKey(key.ecdsaSecp256k1OrThrow()) : null;
+    }
+
+    @Nullable
+    public static Bytes extractEvmAddress(@Nullable final Key key) {
+        return key != null && key.hasEcdsaSecp256k1() ? recoverAddressFromPubKey(key.ecdsaSecp256k1OrThrow()) : null;
+    }
+
+    /**
+     * Given some alias, determine whether it is an "entity num alias". If the alias is exactly 20 bytes long, and
+     * if its initial bytes match the {@link #ENTITY_NUM_ALIAS_PREFIX}, then it is an entity num alias.
+     *
+     * <p>Every entity in the system (accounts, tokens, etc.) may be represented within ethereum with a 20-byte EVM
+     * address. This address can be explicit (as part of the alias), or it can be based on the entity ID number. When
+     * based on the entity number, the first 20 bytes represent the shard and alias, while the last 8 bytes represent
+     * the entity number. When shard and realm are zero, this prefix is all zeros, which is why it is sometimes known as
+     * the "long-zero" alias.
+     *
+     * @param alias The alias to check
+     * @return True if the alias is an entity num alias
+     */
+    public static boolean isEntityNumAlias(final Bytes alias) {
+        return isOfEvmAddressSize(alias) && alias.matchesPrefix(ENTITY_NUM_ALIAS_PREFIX);
+    }
+
+    public static boolean isKeyAlias(@NonNull final Bytes alias) {
+        final var key = asKeyFromAliasOrElse(alias, null);
+        if (key == null) return false;
+        if (!isValid(key)) return false;
+        if (key.hasEcdsaSecp256k1()) {
+            final var ecdsa = key.ecdsaSecp256k1OrThrow();
+            return ecdsa.length() == ECDSA_SECP256K1_ALIAS_SIZE && alias.matchesPrefix(ECDSA_KEY_ALIAS_PREFIX);
+        } else if (key.hasEd25519()) {
+            return key.ed25519OrThrow().length() == ED25519_ALIAS_SIZE;
+        }
+        return false;
+    }
+
+    @NonNull
+    public static Bytes recoverAddressFromPubKey(@NonNull final Bytes alias) {
+        return EthSigsUtils.recoverAddressFromPubKey(alias);
+    }
+
+    /**
+     * Attempts to parse a {@code Key} from given alias {@code ByteString}. If the Key is of type
+     * Ed25519 or ECDSA(secp256k1), returns true if it is a valid key; and false otherwise.
+     *
+     * @param alias given alias byte string
+     * @return whether it parses to a valid primitive key
+     */
+    public static boolean isSerializedProtoKey(@NonNull final Bytes alias) {
+        requireNonNull(alias);
+
+        // Determine whether these bytes represent a serialized Key (as protobuf bytes).
+        // FUTURE: Rather than parsing and catching an error, we could have PBJ provide a method that simply returns
+        // a boolean instead of throwing an exception. Or maybe we can make sure the alias is a valid ECDSA key length
+        // or ED25519 key length as a short circuit in case of very long aliases (no point parsing those).
+        try {
+            final var key = Key.PROTOBUF.parseStrict(alias.toReadableSequentialData());
+            return (key.hasEcdsaSecp256k1() || key.hasEd25519()) /* && isValid(key)*/;
+        } catch (final Exception e) {
+            // There are many possible exceptions thrown here, both checked (IOException) and unchecked. See the
+            // documentation for ReadableStreamingData as well as the parse method for all the various exceptions.
+            return false;
+        }
+    }
+
+    /**
+     * A utility method that, given an address alias, extracts the account or contract ID number (skipping shard
+     * and realm).
+     * @param addressAlias The address alias, where the 0.0.1234 style address has been encoded into 20 bytes
+     * @return
+     */
+    public static Long extractIdFromAddressAlias(final Bytes addressAlias) {
+        return addressAlias.getLong(12);
+    }
+
+    public static boolean isAlias(@NonNull final AccountID idOrAlias) {
+        requireNonNull(idOrAlias);
+        return !idOrAlias.hasAccountNum() && idOrAlias.hasAlias();
+    }
+
+    public static boolean isNotAlias(@NonNull final AccountID idOrAlias) {
+        requireNonNull(idOrAlias);
+        return idOrAlias.hasAccountNum() && !idOrAlias.hasAlias();
+    }
+
+    /**
+     * Parse a {@code Key} from given alias {@code Bytes}. If there is a parse error, throws a
+     * {@code HandleException} with {@code INVALID_ALIAS_KEY} response code.
+     * @param alias given alias bytes
+     * @return the parsed key
+     */
+    @NonNull
+    public static Key asKeyFromAlias(@NonNull final Bytes alias) {
+        requireNonNull(alias);
+        final var key = asKeyFromAliasOrElse(alias, null);
+        if (key == null) throw new HandleException(ResponseCodeEnum.INVALID_ALIAS_KEY);
+        return key;
+    }
+
+    /**
+     * Parse a {@code Key} from given alias {@code Bytes}. If there is a parse error, throws a
+     * {@code HandleException} with {@code INVALID_ALIAS_KEY} response code.
+     * @param alias given alias bytes
+     * @return the parsed key
+     */
+    @NonNull
+    public static Key asKeyFromAliasPreCheck(@NonNull final Bytes alias) throws PreCheckException {
+        requireNonNull(alias);
+        final var key = asKeyFromAliasOrElse(alias, null);
+        if (key == null) throw new PreCheckException(ResponseCodeEnum.INVALID_ALIAS_KEY);
+        return key;
+    }
+
+    @Nullable
+    public static Key asKeyFromAliasOrElse(@NonNull final Bytes alias, @Nullable final Key def) {
+        requireNonNull(alias);
+        try {
+            return Key.PROTOBUF.parseStrict(alias.toReadableSequentialData());
+        } catch (final Exception e) {
+            // There are many possible exceptions, not just IOException. We want to catch all of them.
+            return def;
+        }
+    }
+}

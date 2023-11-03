@@ -38,4 +38,7 @@ testModuleInfo {
     requiresStatic("com.github.spotbugs.annotations")
     runtimeOnly("org.bouncycastle.provider")
     runtimeOnly("org.mockito.inline")
+    requires("com.google.protobuf")
+    requires("com.hedera.node.app.service.evm")
+    requires("com.swirlds.common")
 }
