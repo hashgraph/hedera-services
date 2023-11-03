@@ -986,14 +986,14 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT));
-            assertThatThrownBy(() -> context.dispatchReversiblePrecedingTransaction(
+            assertThatNoException()
+                    .isThrownBy((() -> context.dispatchReversiblePrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT))
-                    .isInstanceOf(IllegalStateException.class);
+                            AccountID.DEFAULT)));
             verify(recordListBuilder, times(1)).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
-            verify(dispatcher, times(1)).dispatchHandle(any());
+            verify(dispatcher, times(2)).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))
@@ -1007,19 +1007,20 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             stack.peek().createWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).put(B_KEY, BLUEBERRY);
 
             // then
-            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
+            assertThatNoException()
+                    .isThrownBy(() -> context.dispatchPrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT))
-                    .isInstanceOf(IllegalStateException.class);
-            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
-                    defaultTransactionBody(),
-                    SingleTransactionRecordBuilder.class,
-                    VERIFIER_CALLBACK,
-                    AccountID.DEFAULT));
-            verify(recordListBuilder, times(1)).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
-            verify(dispatcher, times(1)).dispatchHandle(any());
+                            AccountID.DEFAULT));
+            assertThatNoException()
+                    .isThrownBy((() -> context.dispatchPrecedingTransaction(
+                            defaultTransactionBody(),
+                            SingleTransactionRecordBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT)));
+            verify(recordListBuilder, times(2)).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
+            verify(dispatcher, times(2)).dispatchHandle(any());
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
                             .get(A_KEY))

@@ -209,7 +209,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     }
 
     protected void givenAutoCreationDispatchEffects(AccountID syntheticPayer) {
-        given(handleContext.dispatchPrecedingTransaction(
+        given(handleContext.dispatchReversiblePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(syntheticPayer)))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
