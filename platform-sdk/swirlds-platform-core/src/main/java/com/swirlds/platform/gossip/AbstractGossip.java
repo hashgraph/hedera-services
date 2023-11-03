@@ -37,7 +37,6 @@ import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.Crypto;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.config.ThreadConfig;
@@ -122,7 +121,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
      * @param time                          the time object used to get the current time
-     * @param crypto                        can be used to sign things
+     * @param keysAndCerts                  private keys and public certificates
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
      * @param appVersion                    the version of the app
@@ -139,7 +138,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull final Crypto crypto,
+            @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
@@ -170,7 +169,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         topology = new StaticTopology(
                 addressBook, selfId, basicConfig.numConnections(), unidirectionalConnectionsEnabled());
 
-        final SocketFactory socketFactory = socketFactory(crypto.getKeysAndCerts(), cryptoConfig, socketConfig);
+        final SocketFactory socketFactory = socketFactory(keysAndCerts, cryptoConfig, socketConfig);
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
                 platformContext, selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);
