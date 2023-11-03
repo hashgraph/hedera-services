@@ -77,7 +77,7 @@ public class SetApprovalForAllCallTest extends HtsCallTestBase {
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.SUCCESS);
 
         // When
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         // Then
         verifyResultStatus(result, ResponseCodeEnum.SUCCESS);
@@ -89,7 +89,7 @@ public class SetApprovalForAllCallTest extends HtsCallTestBase {
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.ACCOUNT_DELETED);
 
         // When
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         // Then
         assertEquals(MessageFrame.State.REVERT, result.getState());
@@ -102,7 +102,7 @@ public class SetApprovalForAllCallTest extends HtsCallTestBase {
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.INVALID_TOKEN_ID);
 
         // When
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         // Then
         verifyResultStatus(result, ResponseCodeEnum.INVALID_TOKEN_ID);
@@ -114,7 +114,7 @@ public class SetApprovalForAllCallTest extends HtsCallTestBase {
         given(recordBuilder.status()).willReturn(ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID);
 
         // When
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         // Then
         assertEquals(MessageFrame.State.REVERT, result.getState());

@@ -63,7 +63,7 @@ class TokenInfoCallTest extends HtsCallTestBase {
         final var subject =
                 new TokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, config);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -103,7 +103,7 @@ class TokenInfoCallTest extends HtsCallTestBase {
 
         final var subject = new TokenInfoCall(gasCalculator, mockEnhancement(), false, null, config);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -142,7 +142,7 @@ class TokenInfoCallTest extends HtsCallTestBase {
 
         final var subject = new TokenInfoCall(gasCalculator, mockEnhancement(), true, null, config);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());

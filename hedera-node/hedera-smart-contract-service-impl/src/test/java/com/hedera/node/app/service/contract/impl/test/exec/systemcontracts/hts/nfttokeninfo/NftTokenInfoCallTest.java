@@ -67,7 +67,7 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
         final var subject =
                 new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, 2L, config);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -114,7 +114,7 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
 
         final var subject = new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, null, 0L, config);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -159,7 +159,7 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
 
         final var subject = new NftTokenInfoCall(gasCalculator, mockEnhancement(), true, null, 0L, config);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());

@@ -40,7 +40,7 @@ class TokenUriCallTest extends HtsCallTestBase {
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), NFT_SERIAL_NO))
                 .willReturn(CIVILIAN_OWNED_NFT);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(

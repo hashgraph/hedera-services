@@ -44,7 +44,7 @@ public class GetApprovedCallTest extends HtsCallTestBase {
     void revertsWithFungibleTokenStaticCall() {
         subject = new GetApprovedCall(gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN, 123L, true, true);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
@@ -54,7 +54,7 @@ public class GetApprovedCallTest extends HtsCallTestBase {
     void revertsWithFungibleToken() {
         subject = new GetApprovedCall(gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN, 123L, true, false);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_TOKEN_NFT_SERIAL_NUMBER), result.getOutput());
@@ -67,7 +67,7 @@ public class GetApprovedCallTest extends HtsCallTestBase {
         given(nativeOperations.getNft(9898L, 123)).willReturn(CIVILIAN_OWNED_NFT);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
                 Bytes.wrap(GetApprovedTranslator.ERC_GET_APPROVED
@@ -83,7 +83,7 @@ public class GetApprovedCallTest extends HtsCallTestBase {
         given(nativeOperations.getNft(9898L, 123)).willReturn(CIVILIAN_OWNED_NFT);
         given(nativeOperations.getAccount(B_NEW_ACCOUNT_ID.accountNumOrThrow())).willReturn(OPERATOR);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
                 Bytes.wrap(GetApprovedTranslator.HAPI_GET_APPROVED

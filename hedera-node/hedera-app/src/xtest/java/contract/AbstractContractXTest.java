@@ -266,7 +266,7 @@ public abstract class AbstractContractXTest extends AbstractXTest {
 
         final var call = callAttemptFactory.createCallFrom(input, frame);
 
-        final var pricedResult = call.execute();
+        final var pricedResult = call.execute(frame);
         resultAssertions.accept(pricedResult);
         // Note that committing a reverted calls should have no effect on state
         ((SavepointStackImpl) context.savepointStack()).commitFullStack();

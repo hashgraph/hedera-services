@@ -41,7 +41,7 @@ class TokenCustomFeesCallTest extends HtsCallTestBase {
     void returnsTokenCustomFeesStatusForPresentToken() {
         final var subject = new TokenCustomFeesCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -61,7 +61,7 @@ class TokenCustomFeesCallTest extends HtsCallTestBase {
     void returnsTokenCustomFeesStatusForMissingToken() {
         final var subject = new TokenCustomFeesCall(gasCalculator, mockEnhancement(), false, null);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -80,7 +80,7 @@ class TokenCustomFeesCallTest extends HtsCallTestBase {
     void returnsTokenCustomFeesStatusForMissingTokenStaticCall() {
         final var subject = new TokenCustomFeesCall(gasCalculator, mockEnhancement(), true, null);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(

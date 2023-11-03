@@ -35,7 +35,7 @@ class NameCallTest extends HtsCallTestBase {
     void revertsWithMissingToken() {
         subject = new NameCall(gasCalculator, mockEnhancement(), null);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
@@ -45,7 +45,7 @@ class NameCallTest extends HtsCallTestBase {
     void returnsNameForPresentToken() {
         subject = new NameCall(gasCalculator, mockEnhancement(), FUNGIBLE_TOKEN);
 
-        final var result = subject.execute().fullResult().result();
+        final var result = subject.execute(frame).fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
