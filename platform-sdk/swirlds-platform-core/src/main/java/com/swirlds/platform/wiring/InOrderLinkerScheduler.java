@@ -21,26 +21,27 @@ import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.validation.EventValidator;
+import com.swirlds.platform.event.linking.InOrderLinker;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Wiring for the event signature validator.
+ * Wiring for the {@link com.swirlds.platform.event.linking.InOrderLinker InOrderLinker}.
  */
-public class EventSignatureValidationScheduler {
+public class InOrderLinkerScheduler {
 
-    private final TaskScheduler<GossipEvent> taskScheduler;
+    private final InputWire<GossipEvent, EventImpl> eventInput;
+    private final InputWire<Long, EventImpl> minimumGenerationNonAncientInput;
 
-    private final InputWire<GossipEvent, GossipEvent> eventInput;
-    private final InputWire<Long, GossipEvent> minimumGenerationNonAncientInput;
+    private final OutputWire<EventImpl> eventOutput;
 
     /**
      * Constructor.
      *
      * @param model the wiring model
      */
-    public EventSignatureValidationScheduler(@NonNull final WiringModel model) {
-        taskScheduler = model.schedulerBuilder("eventSignatureValidator")
+    public InOrderLinkerScheduler(@NonNull final WiringModel model) {
+        final TaskScheduler<EventImpl> taskScheduler = model.schedulerBuilder("inOrderLinker")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
@@ -48,49 +49,49 @@ public class EventSignatureValidationScheduler {
                 .build()
                 .cast();
 
-        eventInput = taskScheduler.buildInputWire("unvalidated events");
+        eventInput = taskScheduler.buildInputWire("unlinked events");
         minimumGenerationNonAncientInput = taskScheduler.buildInputWire("minimum generation non ancient");
+
+        eventOutput = taskScheduler.getOutputWire().buildSplitter();
     }
 
     /**
-     * Passes events to the signature validator.
+     * Gets the event input wire.
      *
-     * @return the event input channel
+     * @return the event input wire
      */
     @NonNull
-    public InputWire<GossipEvent, GossipEvent> getEventInput() {
+    public InputWire<GossipEvent, EventImpl> getEventInput() {
         return eventInput;
     }
 
     /**
-     * Passes the minimum generation non ancient to the signature validator.
+     * Gets the minimum generation non ancient input wire.
      *
-     * @return the minimum generation non ancient input channel
+     * @return the minimum generation non ancient input wire
      */
     @NonNull
-    public InputWire<Long, GossipEvent> getMinimumGenerationNonAncientInput() {
+    public InputWire<Long, EventImpl> getMinimumGenerationNonAncientInput() {
         return minimumGenerationNonAncientInput;
     }
 
     /**
-     * Get the output of the signature validator, i.e. a stream of events with valid signatures.
+     * Get the output of the in order linker, i.e. a stream of linked events
      *
-     * @return the event output channel
+     * @return the event output wire
      */
     @NonNull
-    public OutputWire<GossipEvent> getEventOutput() {
-        return taskScheduler.getOutputWire();
+    public OutputWire<EventImpl> getEventOutput() {
+        return eventOutput;
     }
 
     /**
-     * Bind an orphan buffer to this wiring.
+     * Bind an in order linker to this wiring.
      *
-     * @param eventValidator the orphan buffer to bind
+     * @param inOrderLinker the in order linker to bind
      */
-    public void bind(@NonNull final EventValidator eventValidator) {
-        // Future work:
-        //   - ensure that the signature validator passed in is the new implementation.
-        //   - Bind the input channels to the appropriate functions.
-        //   - Ensure that functions return a value instead of passing it to an internal lambda.
+    public void bind(@NonNull final InOrderLinker inOrderLinker) {
+        eventInput.bind(inOrderLinker::linkEvent);
+        minimumGenerationNonAncientInput.bind(inOrderLinker::setMinimumGenerationNonAncient);
     }
 }
