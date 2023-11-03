@@ -150,11 +150,11 @@ public class StandardWiringModel extends WiringModel {
             @NonNull final String originVertex,
             @NonNull final String destinationVertex,
             @NonNull final String label,
-            final boolean injection) {
+            final boolean nonBLocking) {
 
         final ModelVertex origin = getVertex(originVertex);
         final ModelVertex destination = getVertex(destinationVertex);
-        final boolean blocking = !injection && destination.isInsertionIsBlocking();
+        final boolean blocking = !nonBLocking && destination.isInsertionIsBlocking();
 
         final ModelEdge edge = new ModelEdge(origin, destination, label, blocking);
         origin.connectToEdge(edge);

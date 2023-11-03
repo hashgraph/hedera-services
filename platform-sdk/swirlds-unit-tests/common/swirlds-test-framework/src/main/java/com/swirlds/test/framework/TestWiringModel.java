@@ -98,7 +98,7 @@ public class TestWiringModel extends WiringModel {
             @NonNull final String originVertex,
             @NonNull final String destinationVertex,
             @NonNull final String label,
-            final boolean injection) {}
+            final boolean nonBLocking) {}
 
     /**
      * {@inheritDoc}

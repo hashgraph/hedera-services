@@ -47,8 +47,8 @@ public final class OutputWire<OUT> {
     /**
      * Constructor.
      *
-     * @param model               the wiring model containing this output wire
-     * @param name                the name of the output wire
+     * @param model the wiring model containing this output wire
+     * @param name  the name of the output wire
      */
     public OutputWire(@NonNull final WiringModel model, @NonNull final String name) {
 
@@ -91,7 +91,28 @@ public final class OutputWire<OUT> {
     }
 
     /**
+     * The type of solder connection.
+     */
+    public enum SolderType {
+        /**
+         * When data is passed to the input wire, call {@link InputWire#put(Object)}. May block if the input wire has
+         * backpressure enabled and the input wire is full.
+         */
+        PUT,
+        /**
+         * When data is passed to the input wire, call {@link InputWire#inject(Object)}. Ignores back pressure.
+         */
+        INJECT,
+        /**
+         * When data is passed to the input wire, call {@link InputWire#offer(Object)}. If the input wire has
+         * backpressure enabled and the input wire is full, then the data will be dropped.
+         */
+        OFFER
+    }
+
+    /**
      * Specify an input wire where output data should be passed. This forwarding operation respects back pressure.
+     * Equivalent to calling {@link #solderTo(InputWire, SolderType)} with {@link SolderType#PUT}.
      *
      * <p>
      * Soldering is the act of connecting two wires together, usually by melting a metal alloy between them. See
@@ -104,7 +125,7 @@ public final class OutputWire<OUT> {
      * @param inputWire the input wire to forward output data to
      */
     public void solderTo(@NonNull final InputWire<OUT, ?> inputWire) {
-        solderTo(inputWire, false);
+        solderTo(inputWire, SolderType.PUT);
     }
 
     /**
@@ -118,15 +139,18 @@ public final class OutputWire<OUT> {
      * Forwarding should be fully configured prior to data being inserted into the system. Adding forwarding
      * destinations after data has been inserted into the system is not thread safe and has undefined behavior.
      *
-     * @param inputWire the input wire to forward output data to
-     * @param inject    if true, then the output data will be injected into the input wire, ignoring back pressure
+     * @param inputWire  the input wire to forward output data to
+     * @param solderType the semantics of the soldering operation
      */
-    public void solderTo(@NonNull final InputWire<OUT, ?> inputWire, final boolean inject) {
-        model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), inject);
-        if (inject) {
-            forwardingDestinations.add(inputWire::inject);
-        } else {
-            forwardingDestinations.add(inputWire::put);
+    public void solderTo(@NonNull final InputWire<OUT, ?> inputWire, @NonNull final SolderType solderType) {
+        final boolean nonBlocking = solderType == SolderType.INJECT || solderType == SolderType.OFFER;
+        model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), nonBlocking);
+
+        switch (solderType) {
+            case PUT -> forwardingDestinations.add(inputWire::put);
+            case INJECT -> forwardingDestinations.add(inputWire::inject);
+            case OFFER -> forwardingDestinations.add(inputWire::offer);
+            default -> throw new IllegalArgumentException("Unknown solder type: " + solderType);
         }
     }
 

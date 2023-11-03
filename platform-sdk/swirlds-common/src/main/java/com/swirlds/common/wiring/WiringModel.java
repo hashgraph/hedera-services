@@ -151,11 +151,11 @@ public abstract class WiringModel implements Startable, Stoppable {
      * @param originVertex      the origin vertex
      * @param destinationVertex the destination vertex
      * @param label             the label of the edge
-     * @param injection         true if this edge is an injection edge, false otherwise
+     * @param nonBLocking       true if this edge is an injection edge or an offer edge, false otherwise
      */
     public abstract void registerEdge(
             @NonNull String originVertex,
             @NonNull String destinationVertex,
             @NonNull String label,
-            final boolean injection);
+            final boolean nonBLocking);
 }
