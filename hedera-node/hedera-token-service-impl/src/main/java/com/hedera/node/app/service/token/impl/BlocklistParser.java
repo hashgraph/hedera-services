@@ -79,9 +79,8 @@ public class BlocklistParser {
 
     @NonNull
     private static List<String> readPrivateKeyBlocklist(@NonNull final String fileName) {
-        final var inputStream = BlocklistParser.class.getClassLoader().getResourceAsStream(fileName);
-        requireNonNull(inputStream);
-        try (var reader = new BufferedReader(new InputStreamReader(inputStream))) {
+        try (final var inputStream = BlocklistParser.class.getClassLoader().getResourceAsStream(fileName);
+                final var reader = new BufferedReader(new InputStreamReader(requireNonNull(inputStream)))) {
             return reader.lines().toList();
         } catch (IOException e) {
             throw new RuntimeException("Failed to load blocklist", e);
