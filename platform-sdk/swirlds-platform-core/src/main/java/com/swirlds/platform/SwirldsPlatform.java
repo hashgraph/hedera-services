@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 import static com.swirlds.common.system.SoftwareVersion.NO_VERSION;
+import static com.swirlds.common.system.SystemExitCode.FATAL_ERROR;
 import static com.swirlds.common.system.UptimeData.NO_ROUND;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -37,6 +38,7 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -59,6 +61,8 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.SystemExitCode;
+import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookUtils;
@@ -79,12 +83,15 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.logging.legacy.LogMarker;
+import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
+import com.swirlds.platform.components.appcomm.DefaultAppCommunicationComponent;
+import com.swirlds.platform.components.state.DefaultStateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
-import com.swirlds.platform.components.wiring.ManualWiring;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -141,6 +148,7 @@ import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
+import com.swirlds.platform.metrics.WiringMetrics;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
@@ -161,6 +169,7 @@ import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -388,11 +397,23 @@ public class SwirldsPlatform implements Platform {
 
         EventCounter.registerEventCounterMetrics(metrics);
 
-        // Manually wire components for now.
-        final ManualWiring wiring = new ManualWiring(platformContext, threadManager, dispatchBuilder, getAddressBook());
-        metrics.addUpdater(wiring::updateMetrics);
-        final AppCommunicationComponent appCommunicationComponent =
-                wiring.wireAppCommunicationComponent(notificationEngine);
+        final WiringMetrics wiringMetrics = new WiringMetrics(platformContext.getMetrics());
+
+        final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
+        /* A queue thread that asynchronously invokes NewLatestCompleteStateConsumers */
+        final QueueThread<Runnable> asyncLatestCompleteStateQueue = new QueueThreadConfiguration<Runnable>(threadManager)
+                .setThreadName("new-latest-complete-state-consumer-queue")
+                .setComponent("wiring")
+                .setCapacity(wiringConfig.newLatestCompleteStateConsumerQueueSize())
+                .setHandler(Runnable::run)
+                .build();
+        components.add(asyncLatestCompleteStateQueue);
+
+        metrics.addUpdater(
+                () -> wiringMetrics.updateLatestCompleteStateQueueSize(asyncLatestCompleteStateQueue.size()));
+
+        final AppCommunicationComponent appCommunicationComponent = new DefaultAppCommunicationComponent(notificationEngine);
+        components.add(appCommunicationComponent);
 
         final Hash epochHash;
         if (emergencyRecoveryManager.getEmergencyRecoveryFile() != null) {
@@ -448,24 +469,50 @@ public class SwirldsPlatform implements Platform {
                 selfId,
                 platformStatusManager,
                 this::haltRequested,
-                wiring::handleFatalError,
+                this::handleFatalError,
                 appCommunicationComponent,
                 issScratchpad));
 
         components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
 
-        stateManagementComponent = wiring.wireStateManagementComponent(
+        final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = (ss -> {
+            final ReservedSignedState reservedSignedState = ss.reserve("ManualWiring newLatestCompleteStateConsumer");
+
+            final boolean success = asyncLatestCompleteStateQueue.offer(() -> {
+                try (reservedSignedState) {
+                    appCommunicationComponent.newLatestCompleteStateEvent(reservedSignedState.get());
+                }
+            });
+            if (!success) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Unable to add new latest complete state task " + "(state round = {}) to {} because it is full",
+                        ss.getRound(),
+                        asyncLatestCompleteStateQueue.getName());
+                reservedSignedState.close();
+            }
+        });
+
+        stateManagementComponent = new DefaultStateManagementComponent(
+                platformContext,
+                threadManager,
+                dispatchBuilder,
+                getAddressBook(),
                 new PlatformSigner(keysAndCerts),
                 actualMainClassName,
                 selfId,
                 swirldName,
                 txn -> this.createSystemTransaction(txn, true),
-                this::haltRequested,
                 appCommunicationComponent,
+                newLatestCompleteStateConsumer,
+                appCommunicationComponent,
+                this::haltRequested,
+                this::handleFatalError,
                 preconsensusEventWriter,
-                platformStatusManager::getCurrentStatus,
-                platformStatusManager::submitStatusAction);
-        wiring.registerComponents(components);
+                platformStatusManager,
+                platformStatusManager);
+
+        components.add(stateManagementComponent);
 
         final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
 
@@ -1210,5 +1257,47 @@ public class SwirldsPlatform implements Platform {
      */
     private boolean isLastEventBeforeRestart(final EventImpl event) {
         return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
+    }
+
+    /**
+     * Inform all components that a fatal error has occurred, log the error, and shutdown the JVM.
+     */
+    private void handleFatalError(
+            @Nullable final String msg, @Nullable final Throwable throwable, @NonNull final SystemExitCode exitCode) {
+
+        // Log this fatal error first, to make sure it ends up in the logs, no matter what else happens
+        final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(new FatalErrorPayload("Fatal error, node will shut down. Reason: " + msg))
+                .append("\n");
+
+        for (final StackTraceElement element : stackTrace) {
+            sb.append("   ").append(element).append("\n");
+        }
+
+        if (throwable == null) {
+            logger.fatal(EXCEPTION.getMarker(), sb);
+        } else {
+            logger.fatal(EXCEPTION.getMarker(), sb, throwable);
+        }
+
+        // Let the state management component attempt to handle the fatal error
+        stateManagementComponent.onFatalError();
+
+        // It may be that null was passed in, despite our compiler warnings. In that case, we want to log this fact
+        // with a stack trace for who called this method, so we can track down what code is passing in null.
+        //noinspection ConstantValue
+        if (exitCode == null) {
+            try {
+                throw new NullPointerException("exitCode was null");
+            } catch (final NullPointerException e) {
+                logger.error("exitCode was null. Exiting anyway with FATAL_ERROR", e);
+            }
+        }
+
+        // We will either exit with the code given to us, or FATAL_ERROR if somebody failed to give us a code
+        //noinspection ConstantValue
+        SystemExitUtils.exitSystem(exitCode == null ? FATAL_ERROR : exitCode, msg);
     }
 }
