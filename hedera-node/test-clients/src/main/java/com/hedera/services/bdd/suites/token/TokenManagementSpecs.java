@@ -36,10 +36,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccountWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
@@ -66,7 +68,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -293,6 +295,7 @@ public class TokenManagementSpecs extends HapiSuite {
         return defaultHapiSpec("WipeAccountFailureCasesWork")
                 .given(
                         newKeyNamed(multiKey),
+                        newKeyNamed("alias").type(KeyFactory.KeyType.SIMPLE),
                         cryptoCreate("misc").balance(0L),
                         cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(
@@ -324,7 +327,16 @@ public class TokenManagementSpecs extends HapiSuite {
                         wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
                                 .hasKnownStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT),
                         wipeTokenAccount(anotherWipeableToken, "misc", 501).hasKnownStatus(INVALID_WIPING_AMOUNT),
-                        wipeTokenAccount(anotherWipeableToken, "misc", -1).hasPrecheck(INVALID_WIPING_AMOUNT));
+                        wipeTokenAccount(anotherWipeableToken, "misc", -1).hasPrecheck(INVALID_WIPING_AMOUNT),
+                        withOpContext((spec, opLog) -> {
+                            final var key = spec.registry().getKey("alias");
+                            final var alias = key.hasECDSASecp256K1() ? key.getECDSASecp256K1() : key.getEd25519();
+                            allRunFor(
+                                    spec,
+                                    wipeTokenAccountWithAlias(unwipeableToken, alias, 1)
+                                            .signedBy(GENESIS)
+                                            .hasKnownStatus(INVALID_ACCOUNT_ID));
+                        }));
     }
 
     @HapiTest
@@ -451,7 +463,7 @@ public class TokenManagementSpecs extends HapiSuite {
                 .then(
                         getTxnRecord(SHOULD_NOT_APPEAR).showsNoTransfers(),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 0),
-                        UtilVerbs.withOpContext((spec, opLog) -> {
+                        withOpContext((spec, opLog) -> {
                             var mintNFT = getTxnRecord(SHOULD_NOT_APPEAR);
                             allRunFor(spec, mintNFT);
                             var receipt = mintNFT.getResponseRecord().getReceipt();

@@ -294,6 +294,10 @@ public class TxnVerbs {
         return new HapiTokenWipe(token, account, amount);
     }
 
+    public static HapiTokenWipe wipeTokenAccountWithAlias(String token, ByteString alias, long amount) {
+        return new HapiTokenWipe(token, alias, amount);
+    }
+
     public static HapiTokenWipe wipeTokenAccount(String token, String account, List<Long> serialNumbers) {
         return new HapiTokenWipe(token, account, serialNumbers);
     }

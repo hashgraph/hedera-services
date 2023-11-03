@@ -454,7 +454,11 @@ public class SignedTxnAccessor implements TxnAccessor {
     }
 
     protected EntityNum lookUpAlias(final ByteString alias) {
-        return view.aliases().get(alias);
+        final var entityNum = view.aliases().get(alias);
+        if (entityNum == null) {
+            return EntityNum.MISSING_NUM;
+        }
+        return entityNum;
     }
 
     protected EntityNum unaliased(final AccountID idOrAlias) {
