@@ -27,5 +27,4 @@ testModuleInfo {
     requires("org.junit.jupiter.params")
     requires("com.swirlds.base.test.fixtures")
     requires("jakarta.inject")
-    requires("com.github.spotbugs.annotations")
 }

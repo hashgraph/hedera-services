@@ -23,12 +23,12 @@ module com.swirlds.logging {
 
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.swirlds.config.api;
     requires transitive org.apache.logging.log4j;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.datatype.jsr310;
+    requires com.swirlds.base;
     requires static com.github.spotbugs.annotations;
-    requires transitive com.swirlds.base;
-    requires transitive com.swirlds.config.api;
 
     uses LogHandlerFactory;
     uses LogProviderFactory;

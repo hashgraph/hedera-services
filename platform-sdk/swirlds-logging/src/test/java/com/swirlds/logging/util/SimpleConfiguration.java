@@ -17,8 +17,6 @@
 package com.swirlds.logging.util;
 
 import com.swirlds.config.api.Configuration;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -32,42 +30,38 @@ public class SimpleConfiguration implements Configuration {
 
     private final Map<String, String> properties = new ConcurrentHashMap<>();
 
-    public void setProperty(String name, String value) {
+    public void setProperty(final String name, final String value) {
         properties.put(name, value);
     }
 
-    public SimpleConfiguration withProperty(String name, String value) {
+    public SimpleConfiguration withProperty(final String name, final String value) {
         setProperty(name, value);
         return this;
     }
 
-    @NonNull
     @Override
     public Stream<String> getPropertyNames() {
         return properties.keySet().stream();
     }
 
     @Override
-    public boolean exists(@NonNull String s) {
+    public boolean exists(final String s) {
         return properties.containsKey(s);
     }
 
-    @Nullable
     @Override
-    public String getValue(@NonNull String s) throws NoSuchElementException {
+    public String getValue(final String s) throws NoSuchElementException {
         return properties.get(s);
     }
 
-    @Nullable
     @Override
-    public String getValue(@NonNull String s, @Nullable String s1) {
+    public String getValue(final String s, final String s1) {
         return Optional.ofNullable(properties.get(s)).orElse(s1);
     }
 
     @SuppressWarnings("unchecked")
-    @Nullable
     @Override
-    public <T> T getValue(@NonNull String s, @NonNull Class<T> aClass)
+    public <T> T getValue(final String s, final Class<T> aClass)
             throws NoSuchElementException, IllegalArgumentException {
         if (aClass == String.class) {
             return (T) getValue(s);
@@ -78,71 +72,60 @@ public class SimpleConfiguration implements Configuration {
         throw new IllegalStateException("Unsupported type: " + aClass.getName());
     }
 
-    @Nullable
     @Override
-    public <T> T getValue(@NonNull String s, @NonNull Class<T> aClass, @Nullable T t) throws IllegalArgumentException {
+    public <T> T getValue(final String s, final Class<T> aClass, final T t) throws IllegalArgumentException {
         return Optional.ofNullable(getValue(s, aClass)).orElse(t);
     }
 
-    @Nullable
     @Override
-    public List<String> getValues(@NonNull String s) {
+    public List<String> getValues(final String s) {
         throw new IllegalStateException("Not supported");
     }
 
-    @Nullable
     @Override
-    public List<String> getValues(@NonNull String s, @Nullable List<String> list) {
+    public List<String> getValues(final String s, final List<String> list) {
         throw new IllegalStateException("Not supported");
     }
 
-    @Nullable
     @Override
-    public <T> List<T> getValues(@NonNull String s, @NonNull Class<T> aClass)
+    public <T> List<T> getValues(final String s, final Class<T> aClass)
             throws NoSuchElementException, IllegalArgumentException {
         throw new IllegalStateException("Not supported");
     }
 
-    @Nullable
     @Override
-    public <T> List<T> getValues(@NonNull String s, @NonNull Class<T> aClass, @Nullable List<T> list)
+    public <T> List<T> getValues(final String s, final Class<T> aClass, final List<T> list)
             throws IllegalArgumentException {
         throw new IllegalStateException("Not supported");
     }
 
-    @Nullable
     @Override
-    public Set<String> getValueSet(@NonNull String s) {
+    public Set<String> getValueSet(final String s) {
         throw new IllegalStateException("Not supported");
     }
 
-    @Nullable
     @Override
-    public Set<String> getValueSet(@NonNull String s, @Nullable Set<String> set) {
+    public Set<String> getValueSet(final String s, final Set<String> set) {
         throw new IllegalStateException("Not supported");
     }
 
-    @Nullable
     @Override
-    public <T> Set<T> getValueSet(@NonNull String s, @NonNull Class<T> aClass)
+    public <T> Set<T> getValueSet(final String s, final Class<T> aClass)
             throws NoSuchElementException, IllegalArgumentException {
         throw new IllegalStateException("Not supported");
     }
 
-    @Nullable
     @Override
-    public <T> Set<T> getValueSet(@NonNull String s, @NonNull Class<T> aClass, @Nullable Set<T> set)
+    public <T> Set<T> getValueSet(final String s, final Class<T> aClass, final Set<T> set)
             throws IllegalArgumentException {
         throw new IllegalStateException("Not supported");
     }
 
-    @NonNull
     @Override
-    public <T extends Record> T getConfigData(@NonNull Class<T> aClass) {
+    public <T extends Record> T getConfigData(Class<T> aClass) {
         throw new IllegalStateException("Not supported");
     }
 
-    @NonNull
     @Override
     public Collection<Class<? extends Record>> getConfigDataTypes() {
         throw new IllegalStateException("Not supported");
