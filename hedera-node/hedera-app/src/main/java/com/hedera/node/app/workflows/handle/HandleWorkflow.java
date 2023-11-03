@@ -23,8 +23,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
@@ -213,7 +213,7 @@ public class HandleWorkflow {
                 // We were given an event for a node that *does not exist in the address book*. This will be logged as
                 // a warning, as this should never happen, and we will skip the event. The platform should guarantee
                 // that we never receive an event that isn't associated with the address book, and every node in the
-                // address book must have an account ID, since you cannot delete an account belonging to a node and
+                // address book must have an account ID, since you cannot delete an account belonging to a node, and
                 // you cannot change the address book non-deterministically.
                 logger.warn("Received event from node {} which is not in the address book", event.getCreatorId());
                 return;
