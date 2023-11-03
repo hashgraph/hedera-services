@@ -22,7 +22,6 @@ import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
-import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -66,8 +65,6 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
-import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.state.HederaRecordCache;
@@ -677,9 +674,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     private void validate(
-            @NonNull final KeyVerifier verifier,
+            @NonNull final KeyVerifier keyVerifier,
             final HederaFunctionality function,
-            final TransactionBody txBody,
+            final TransactionBody transactionBody,
             final AccountID payer,
             final Key payerKey,
             final TransactionCategory txCategory,
@@ -688,7 +685,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         final PreHandleContextImpl preHandleContext;
 
-        preHandleContext = new PreHandleContextImpl(readableStoreFactory(), txBody, payer, configuration(), dispatcher);
+        preHandleContext =
+                new PreHandleContextImpl(readableStoreFactory(), transactionBody, payer, configuration(), dispatcher);
         dispatcher.dispatchPreHandle(preHandleContext);
 
         // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
@@ -696,23 +694,18 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
         // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
         // and create an appropriate record to save in state and send to the record stream.
-        final var duplicateCheckResult = recordCache.hasDuplicate(txBody.transactionID(), nodeID);
-        if (duplicateCheckResult != NO_DUPLICATE && duplicateCheckResult != SAME_NODE) {
+        final var duplicateCheckResult = recordCache.hasDuplicate(transactionBody.transactionID(), nodeID);
+        if (duplicateCheckResult != NO_DUPLICATE) {
             throw new PreCheckException(DUPLICATE_TRANSACTION);
         }
 
         // Check the status and solvency of the payer
-        try {
-
-            final var fee = dispatchComputeFees(txBody, payer);
-            final var payerAccount = solvencyPreCheck.getPayerAccount(readableStoreFactory(), payer);
-            solvencyPreCheck.checkSolvency(txBody, payer, functionality, payerAccount, fee, true);
-        } catch (final InsufficientServiceFeeException | InsufficientNonFeeDebitsException e) {
-            throw new PreCheckException(e.responseCode());
-        }
+        final var fee = dispatchComputeFees(body(), payer);
+        final var payerAccount = solvencyPreCheck.getPayerAccount(readableStoreFactory(), payer);
+        solvencyPreCheck.checkSolvency(body(), payer, functionality, payerAccount, fee, true);
 
         // Check the time box of the transaction
-        checker.checkTimeBox(txBody, userTransactionConsensusTime);
+        checker.checkTimeBox(transactionBody, userTransactionConsensusTime);
 
         // Check if the payer has the required permissions
         if (!authorizer.isAuthorized(payer, function)) {
@@ -723,7 +716,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         // Check if the transaction is privileged and if the payer has the required privileges
-        final var privileges = authorizer.hasPrivilegedAuthorization(payer, function, txBody);
+        final var privileges = authorizer.hasPrivilegedAuthorization(payer, function, transactionBody);
         if (privileges == SystemPrivilege.UNAUTHORIZED) {
             throw new PreCheckException(ResponseCodeEnum.AUTHORIZATION_FAILED);
         }
@@ -734,7 +727,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         // Skip payer verification when dispatching a child transaction
         if (!txCategory.equals(CHILD)) {
             // Check all signature verifications. This will also wait, if validation is still ongoing.
-            final var payerKeyVerification = verifier.verificationFor(payerKey);
+            final var payerKeyVerification = keyVerifier.verificationFor(payerKey);
             if (payerKeyVerification.failed()) {
                 throw new PreCheckException(INVALID_SIGNATURE);
             }
@@ -742,14 +735,14 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         // verify all the keys
         for (final var key : preHandleContext.requiredNonPayerKeys()) {
-            final var verification = verifier.verificationFor(key);
+            final var verification = keyVerifier.verificationFor(key);
             if (verification.failed()) {
                 throw new PreCheckException(INVALID_SIGNATURE);
             }
         }
         // If there are any hollow accounts whose signatures need to be verified, verify them
         for (final var hollowAccount : preHandleContext.requiredHollowAccounts()) {
-            final var verification = verifier.verificationFor(hollowAccount.alias());
+            final var verification = keyVerifier.verificationFor(hollowAccount.alias());
             if (verification.failed()) {
                 throw new PreCheckException(INVALID_SIGNATURE);
             }
