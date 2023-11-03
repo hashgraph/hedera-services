@@ -25,9 +25,6 @@ import com.swirlds.platform.event.orphan.OrphanBuffer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
-// Future work: it may actually make more sense to colocate the scheduler classes with the implementations.
-//              This decision can be delayed until we begin migration in earnest.
-
 /**
  * Wiring for the {@link OrphanBuffer}.
  */
@@ -94,9 +91,6 @@ public class OrphanBufferScheduler {
      * @param orphanBuffer the orphan buffer to bind
      */
     public void bind(@NonNull final OrphanBuffer orphanBuffer) {
-        // Future work: these handlers currently do not return anything. They need to be refactored so that
-        // they return a list of events (as opposed to passing them to a handler lambda).
-
         eventInput.bind(orphanBuffer::handleEvent);
         minimumGenerationNonAncientInput.bind(orphanBuffer::setMinimumGenerationNonAncient);
     }
