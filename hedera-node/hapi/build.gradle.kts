@@ -61,20 +61,3 @@ tasks.test {
     minHeapSize = "512m"
     maxHeapSize = "4096m"
 }
-
-// ----
-// TODO move the following things to 'hashgraph/pbj' plugin
-tasks.withType<com.hedera.pbj.compiler.PbjCompilerTask> {
-    doFirst {
-        // Clean output directories before generating new code. Belongs into:
-        // 'pbj-core/pbj-compiler/src/main/java/com/hedera/pbj/compiler/PbjCompilerTask.java'
-        delete(javaMainOutputDirectory)
-        delete(javaTestOutputDirectory)
-    }
-}
-
-tasks.withType<com.autonomousapps.tasks.CodeSourceExploderTask>().configureEach {
-    // Wire the source generation so that the source sets know which tasks
-    // generate code for them. Then this additional 'dependsOn' is not necessary.
-    dependsOn(tasks.withType<com.hedera.pbj.compiler.PbjCompilerTask>())
-} // ----
