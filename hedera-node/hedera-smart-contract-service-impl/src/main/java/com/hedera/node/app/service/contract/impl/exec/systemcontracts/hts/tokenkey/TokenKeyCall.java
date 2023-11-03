@@ -28,6 +28,7 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.keyTupleFor;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenkey.TokenKeyTranslator.TOKEN_KEY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
 import static java.util.Objects.requireNonNull;
 
@@ -98,22 +99,20 @@ public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
             result = gasOnly(viewCallResultWith(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement()));
 
             gasRequirement = result.fullResult().gasRequirement();
-            output = result.fullResult().result().getOutput();
             enhancement
                     .systemOperations()
                     .externalizeResult(
-                            contractFunctionResultSuccessFor(gasRequirement, output, contractID),
+                            contractFunctionResultFailedFor(gasRequirement, INVALID_TOKEN_ID.toString(), contractID),
                             SystemContractUtils.ResultStatus.IS_ERROR,
                             INVALID_TOKEN_ID);
         } else if (key == null) {
             result = gasOnly(resultOfViewingToken(token));
 
             gasRequirement = result.fullResult().gasRequirement();
-            output = result.fullResult().result().getOutput();
             enhancement
                     .systemOperations()
                     .externalizeResult(
-                            contractFunctionResultSuccessFor(gasRequirement, output, contractID),
+                            contractFunctionResultFailedFor(gasRequirement, KEY_NOT_PROVIDED.toString(), contractID),
                             SystemContractUtils.ResultStatus.IS_ERROR,
                             KEY_NOT_PROVIDED);
         } else {
