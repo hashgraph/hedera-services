@@ -116,6 +116,7 @@ public class SingleTransactionRecordBuilderImpl
                 FeeRecordBuilder,
                 ContractDeleteRecordBuilder,
                 GenesisAccountRecordBuilder {
+
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;

@@ -339,6 +339,11 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         return oldAccount == null ? 0 : oldAccount.contractKvPairsNumber();
     }
 
+    @Override
+    public void updateContract(Account contract) {
+        accountStore.put(contract);
+    }
+
     /**
      * A utility method that charges (debits) the payer up to the given total fee. If the payer account doesn't exist,
      * then an exception is thrown.
