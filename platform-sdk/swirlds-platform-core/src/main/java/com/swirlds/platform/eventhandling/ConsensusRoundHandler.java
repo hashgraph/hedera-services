@@ -18,8 +18,8 @@ package com.swirlds.platform.eventhandling;
 
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.logging.LogMarker.RECONNECT;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.function.CheckedConsumer;
@@ -318,11 +318,11 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     }
 
     private boolean isRoundInFreezePeriod(final ConsensusRound round) {
-        if (round.getLastEvent() == null) {
+        if (round.isEmpty()) {
             // there are no events in this round
             return false;
         }
-        return swirldStateManager.isInFreezePeriod(round.getLastEvent().getLastTransTime());
+        return swirldStateManager.isInFreezePeriod(round.getConsensusTimestamp());
     }
 
     /**
@@ -368,7 +368,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         propagateConsensusData(round);
 
         if (round.getEventCount() > 0) {
-            consensusHandlingMetrics.recordConsensusTime(round.getLastEvent().getLastTransTime());
+            consensusHandlingMetrics.recordConsensusTime(round.getConsensusTimestamp());
         }
         swirldStateManager.handleConsensusRound(round);
 
@@ -380,14 +380,19 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         consensusTimingStat.setTimePoint(4);
 
+        EventImpl lastEvent = null;
         for (final EventImpl event : round.getConsensusEvents()) {
+            lastEvent = event;
             if (event.getHash() == null) {
                 CryptographyHolder.get().digestSync(event);
             }
         }
 
         // update the running hash object
-        eventsConsRunningHash = round.getLastEvent().getRunningHash();
+        // if there are no events, the running hash does not change
+        if (lastEvent != null) {
+            eventsConsRunningHash = lastEvent.getRunningHash();
+        }
 
         // time point 3 to the end is misleading on its own because it is recorded even when no signed state is created
         // . For an accurate stat on how much time it takes to create a signed state, refer to
@@ -444,7 +449,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 .getPlatformData()
                 .setRound(round.getRoundNum())
                 .setHashEventsCons(runningHash)
-                .setConsensusTimestamp(round.getLastEvent().getLastTransTime())
+                .setConsensusTimestamp(round.getConsensusTimestamp())
                 .setCreationSoftwareVersion(softwareVersion)
                 .setRoundsNonAncient(roundsNonAncient)
                 .setSnapshot(round.getSnapshot());

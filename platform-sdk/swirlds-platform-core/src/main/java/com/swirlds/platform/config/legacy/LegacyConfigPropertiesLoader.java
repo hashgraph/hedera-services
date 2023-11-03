@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.config.legacy;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.internal.ConfigurationException;
 import com.swirlds.common.system.NodeId;

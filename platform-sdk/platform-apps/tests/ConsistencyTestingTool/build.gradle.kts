@@ -19,6 +19,7 @@ plugins { id("com.hedera.hashgraph.application") }
 application.mainClass.set("com.swirlds.demo.consistency.ConsistencyTestingToolMain")
 
 testModuleInfo {
+    requires("com.swirlds.platform.core")
     requires("org.junit.jupiter.api")
     requires("org.mockito")
 }
