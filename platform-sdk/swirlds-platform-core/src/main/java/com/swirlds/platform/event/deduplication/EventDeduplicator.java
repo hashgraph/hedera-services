@@ -26,6 +26,7 @@ import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -42,7 +43,7 @@ public class EventDeduplicator {
     /**
      * Avoid the creation of lambdas for Map.computeIfAbsent() by reusing this lambda.
      */
-    private static final Function<EventDescriptor, Set<byte[]>> NEW_HASH_SET = ignored -> new HashSet<>();
+    private static final Function<EventDescriptor, Set<ByteBuffer>> NEW_HASH_SET = ignored -> new HashSet<>();
 
     /**
      * Initial capacity of {@link #observedEvents}.
@@ -67,7 +68,7 @@ public class EventDeduplicator {
     /**
      * A map from event descriptor to a set of signatures that have been received for that event.
      */
-    private final SequenceMap<EventDescriptor, Set<byte[]>> observedEvents =
+    private final SequenceMap<EventDescriptor, Set<ByteBuffer>> observedEvents =
             new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, EventDescriptor::getGeneration);
 
     private static final LongAccumulator.Config DUPLICATE_EVENT_CONFIG = new LongAccumulator.Config(
@@ -117,8 +118,8 @@ public class EventDeduplicator {
             return;
         }
 
-        final Set<byte[]> signatures = observedEvents.computeIfAbsent(event.getDescriptor(), NEW_HASH_SET);
-        if (signatures.add(event.getUnhashedData().getSignature())) {
+        final Set<ByteBuffer> signatures = observedEvents.computeIfAbsent(event.getDescriptor(), NEW_HASH_SET);
+        if (signatures.add(ByteBuffer.wrap(event.getUnhashedData().getSignature()))) {
             if (signatures.size() != 1) {
                 // signature is unique, but descriptor is not
                 disparateSignatureAccumulator.update(1);
