@@ -430,6 +430,13 @@ public interface HandleContext {
             @NonNull Predicate<Key> verifier,
             AccountID syntheticPayer);
 
+    @NonNull
+    <T> T dispatchRemovablePrecedingTransaction(
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass,
+            @NonNull Predicate<Key> verifier,
+            AccountID syntheticPayer);
+
     /**
      * Dispatches a reversible preceding transaction that already has an ID.
      *

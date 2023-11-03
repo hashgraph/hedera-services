@@ -50,7 +50,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -733,8 +732,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                             TRANSFER_TXN_2,
                             MAX_CHILD_RECORDS_EXCEEDED,
                             recordWith().status(SUCCESS),
-                            recordWith().status(SUCCESS),
-                            recordWith().status(REVERTED_SUCCESS));
+                            recordWith().status(SUCCESS));
                     // assert that the payer has been finalized
                     final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                     final var payerEvmAddress = ByteString.copyFrom(recoverAddressFromPubKey(

@@ -482,6 +482,19 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
     }
 
+    @Override
+    @NonNull
+    public <T> T dispatchRemovablePrecedingTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayerId) {
+        final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
+                () -> recordListBuilder.addRemovablePreceding(configuration());
+        return doDispatchPrecedingTransaction(
+                syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
+    }
+
     @NonNull
     public <T> T doDispatchPrecedingTransaction(
             @NonNull final AccountID syntheticPayer,
@@ -649,7 +662,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             childStack.commitFullStack();
         } catch (HandleException e) {
             childRecordBuilder.status(e.getStatus());
-            recordListBuilder.revertChildrenOf(childRecordBuilder);
+            recordListBuilder.revertChildrenOf(recordBuilder);
         }
     }
 

@@ -33,6 +33,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * This class manages all record builders that are used while a single user transaction is running.
@@ -140,6 +141,11 @@ public final class RecordListBuilder {
     public SingleTransactionRecordBuilderImpl addReversiblePreceding(@NonNull final Configuration configuration) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
         return doAddPreceding(configuration, ReversingBehavior.REVERSIBLE, LIMITED_CHILD_RECORDS);
+    }
+
+    public SingleTransactionRecordBuilderImpl addRemovablePreceding(@NonNull final Configuration configuration) {
+        requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
+        return doAddPreceding(configuration, ReversingBehavior.REMOVABLE, LIMITED_CHILD_RECORDS);
     }
 
     public SingleTransactionRecordBuilderImpl doAddPreceding(
@@ -272,13 +278,17 @@ public final class RecordListBuilder {
             index = 0;
 
             // The user transaction fails and therefore we also have to revert preceding transactions
-            if (precedingTxnRecordBuilders != null) {
-                for (final var preceding : precedingTxnRecordBuilders) {
+            if (!precedingTxnRecordBuilders.isEmpty()) {
+                for (int i = 0; i < precedingTxnRecordBuilders.size(); i++) {
+                    final var preceding = precedingTxnRecordBuilders.get(i);
                     if (preceding.reversingBehavior() == ReversingBehavior.REVERSIBLE
                             && SUCCESSES.contains(preceding.status())) {
                         preceding.status(ResponseCodeEnum.REVERTED_SUCCESS);
+                    } else if (preceding.reversingBehavior() == ReversingBehavior.REMOVABLE) {
+                        precedingTxnRecordBuilders.set(i, null);
                     }
                 }
+                precedingTxnRecordBuilders.removeIf(Objects::isNull);
             }
         } else {
             // Traverse from end to start, since we are most likely going to be reverting the most recent child,
