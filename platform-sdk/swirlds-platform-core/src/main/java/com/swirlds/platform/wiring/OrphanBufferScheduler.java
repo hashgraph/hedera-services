@@ -56,9 +56,9 @@ public class OrphanBufferScheduler {
     }
 
     /**
-     * Passes events to the orphan buffer.
+     * Gets the event input wire.
      *
-     * @return the event input channel
+     * @return the event input wire
      */
     @NonNull
     public InputWire<GossipEvent, List<GossipEvent>> getEventInput() {
@@ -66,9 +66,9 @@ public class OrphanBufferScheduler {
     }
 
     /**
-     * Passes the minimum generation non ancient to the orphan buffer.
+     * Gets the minimum generation non ancient input wire.
      *
-     * @return the minimum generation non ancient input channel
+     * @return the minimum generation non ancient input wire
      */
     @NonNull
     public InputWire<Long, List<GossipEvent>> getMinimumGenerationNonAncientInput() {
@@ -78,7 +78,7 @@ public class OrphanBufferScheduler {
     /**
      * Get the output of the orphan buffer, i.e. a stream of events in topological order.
      *
-     * @return the event output channel
+     * @return the event output wire
      */
     @NonNull
     public OutputWire<GossipEvent> getEventOutput() {
