@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.payloads.test;
+package com.swirlds.logging.legacy.payloads;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
