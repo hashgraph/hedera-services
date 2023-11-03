@@ -50,13 +50,21 @@ import java.util.Set;
  */
 public class PreHandleContextImpl implements PreHandleContext {
 
-    /** Used to get keys for accounts and contracts. */
+    /**
+     * Used to get keys for accounts and contracts.
+     */
     private final ReadableAccountStore accountStore;
-    /** The transaction body. */
+    /**
+     * The transaction body.
+     */
     private final TransactionBody txn;
-    /** The payer account ID. Specified in the transaction body, extracted and stored separately for convenience. */
+    /**
+     * The payer account ID. Specified in the transaction body, extracted and stored separately for convenience.
+     */
     private final AccountID payer;
-    /** The payer's key, as found in state */
+    /**
+     * The payer's key, as found in state
+     */
     private final Key payerKey;
     /**
      * The set of all required non-payer keys. A {@link LinkedHashSet} is used to maintain a consistent ordering.
@@ -64,7 +72,9 @@ public class PreHandleContextImpl implements PreHandleContext {
      * be updated to compare set contents rather than ordering.
      */
     private final Set<Key> requiredNonPayerKeys = new LinkedHashSet<>();
-    /** The set of all hollow accounts that need to be validated. */
+    /**
+     * The set of all hollow accounts that need to be validated.
+     */
     private final Set<Account> requiredHollowAccounts = new LinkedHashSet<>();
     /**
      * The set of all optional non-payer keys. A {@link LinkedHashSet} is used to maintain a consistent ordering.
@@ -72,17 +82,24 @@ public class PreHandleContextImpl implements PreHandleContext {
      * be updated to compare set contents rather than ordering.
      */
     private final Set<Key> optionalNonPayerKeys = new LinkedHashSet<>();
-    /** The set of all hollow accounts that <strong>might</strong> need to be validated, but also might not. */
+    /**
+     * The set of all hollow accounts that <strong>might</strong> need to be validated, but also might not.
+     */
     private final Set<Account> optionalHollowAccounts = new LinkedHashSet<>();
-    /** Scheduled transactions have a secondary "inner context". Seems not quite right. */
+    /**
+     * Scheduled transactions have a secondary "inner context". Seems not quite right.
+     */
     private PreHandleContext innerContext;
 
     private final ReadableStoreFactory storeFactory;
 
-    /** Configuration to be used during pre-handle */
+    /**
+     * Configuration to be used during pre-handle
+     */
     private final Configuration configuration;
 
     private final TransactionDispatcher dispatcher;
+    private final boolean isUserTx;
 
     public PreHandleContextImpl(
             @NonNull final ReadableStoreFactory storeFactory,
@@ -95,10 +112,10 @@ public class PreHandleContextImpl implements PreHandleContext {
                 txn,
                 txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
                 configuration,
-                dispatcher);
+                dispatcher,
+                true);
     }
 
-    /** Create a new instance */
     public PreHandleContextImpl(
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final TransactionBody txn,
@@ -106,11 +123,26 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull final Configuration configuration,
             @NonNull final TransactionDispatcher dispatcher)
             throws PreCheckException {
+        this(storeFactory, txn, payer, configuration, dispatcher, false);
+    }
+
+    /**
+     * Create a new instance
+     */
+    private PreHandleContextImpl(
+            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final TransactionBody txn,
+            @NonNull final AccountID payer,
+            @NonNull final Configuration configuration,
+            @NonNull final TransactionDispatcher dispatcher,
+            final boolean isUserTx)
+            throws PreCheckException {
         this.storeFactory = requireNonNull(storeFactory, "storeFactory must not be null.");
         this.txn = requireNonNull(txn, "txn must not be null!");
         this.payer = requireNonNull(payer, "payer msut not be null!");
         this.configuration = requireNonNull(configuration, "configuration must not be null!");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null!");
+        this.isUserTx = isUserTx;
 
         this.accountStore = storeFactory.getStore(ReadableAccountStore.class);
 
@@ -145,6 +177,11 @@ public class PreHandleContextImpl implements PreHandleContext {
     @NonNull
     public Configuration configuration() {
         return configuration;
+    }
+
+    @Override
+    public boolean isUserTransaction() {
+        return isUserTx;
     }
 
     @NonNull

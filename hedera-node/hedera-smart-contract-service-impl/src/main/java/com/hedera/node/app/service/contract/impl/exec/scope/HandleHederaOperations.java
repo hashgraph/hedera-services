@@ -249,7 +249,7 @@ public class HandleHederaOperations implements HederaOperations {
     public void deleteAliasedContract(@NonNull final Bytes evmAddress) {
         requireNonNull(evmAddress);
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        tokenServiceApi.deleteAndMaybeUnaliasContract(
+        tokenServiceApi.deleteContract(
                 ContractID.newBuilder().evmAddress(evmAddress).build());
     }
 
@@ -259,7 +259,7 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void deleteUnaliasedContract(final long number) {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        tokenServiceApi.deleteAndMaybeUnaliasContract(
+        tokenServiceApi.deleteContract(
                 ContractID.newBuilder().contractNum(number).build());
     }
 

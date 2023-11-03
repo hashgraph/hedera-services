@@ -59,6 +59,7 @@ public interface RecordCache {
      *                handled. This is an unordered set, since deterministic ordering is not required for this in-memory
      *                data structure
      * @param records Every {@link TransactionRecord} handled for every user transaction that came to consensus
+     * @param childRecords The list of child records
      */
     record History(
             @NonNull Set<Long> nodeIds,

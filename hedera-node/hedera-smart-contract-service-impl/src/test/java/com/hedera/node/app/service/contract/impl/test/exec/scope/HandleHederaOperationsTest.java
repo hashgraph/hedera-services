@@ -326,7 +326,7 @@ class HandleHederaOperationsTest {
     void deleteUnaliasedContractUsesApi() {
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         subject.deleteUnaliasedContract(CALLED_CONTRACT_ID.contractNumOrThrow());
-        verify(tokenServiceApi).deleteAndMaybeUnaliasContract(CALLED_CONTRACT_ID);
+        verify(tokenServiceApi).deleteContract(CALLED_CONTRACT_ID);
     }
 
     @Test
@@ -334,7 +334,7 @@ class HandleHederaOperationsTest {
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         subject.deleteAliasedContract(CANONICAL_ALIAS);
         verify(tokenServiceApi)
-                .deleteAndMaybeUnaliasContract(
+                .deleteContract(
                         ContractID.newBuilder().evmAddress(CANONICAL_ALIAS).build());
     }
 

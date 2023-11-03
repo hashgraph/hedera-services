@@ -16,29 +16,19 @@
 
 package com.hedera.node.app.service.token.impl.validators;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl.isMirror;
-import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
-import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -49,88 +39,47 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoCreateValidator {
-    private static final int EVM_ADDRESS_SIZE = 20;
-    public static final String ECDSA_KEY_ALIAS_PREFIX = "3a21";
-    public static final int ECDSA_SECP256K1_ALIAS_SIZE = 35;
-    public static final int ED25519_ALIAS_SIZE = 34;
-
     @Inject
     public CryptoCreateValidator() { // Exists for injection
     }
 
     /**
-     * Validates Key Alias and EVM Address combinations.
+     * Validates the key.
      *
-     * @param op                   the crypto create transaction body
-     * @param attributeValidator   AttributeValidator
-     * @param config               CryptoCreateWithAliasConfig
-     * @param readableAccountStore ReadableAccountStore
-     * @param isInternalDispatch whether this is a hollow account creation (permits empty key list)
-     * @throws HandleException if the inputs are not invalid
+     * <p>If the key is dispatched internally, then it is allowed to use {@link KeyUtils#IMMUTABILITY_SENTINEL_KEY} as
+     * its key. Otherwise, this key is disallowed. Otherwise, we throw {@link HandleException} with
+     * {@link ResponseCodeEnum#BAD_ENCODING} if the key is empty or exceeds the maximum key depth. All other invalid
+     * scenarios throw {@link HandleException} with {@link ResponseCodeEnum#INVALID_ADMIN_KEY}.
+     *
+     * @param key                The key to validate
+     * @param attributeValidator AttributeValidator
+     * @param isInternalDispatch Whether this is a hollow account creation (permits empty key list)
+     * @throws HandleException If the inputs are not invalid
      */
-    public void validateKeyAliasAndEvmAddressCombinations(
-            @NonNull final CryptoCreateTransactionBody op,
+    public void validateKey(
+            @NonNull final Key key,
             @NonNull final AttributeValidator attributeValidator,
-            @NonNull final CryptoCreateWithAliasConfig config,
-            @NonNull final ReadableAccountStore readableAccountStore,
             final boolean isInternalDispatch) {
-        if (op.hasKey() && op.alias().equals(Bytes.EMPTY)) {
-            validateKey(op, attributeValidator);
-        } else if (!op.hasKey() && !op.alias().equals(Bytes.EMPTY)) {
-            final var responseCode = config.enabled() ? INVALID_ALIAS_KEY : NOT_SUPPORTED;
-            throw new HandleException(responseCode);
-        } else if (op.hasKey() && !op.alias().equals(Bytes.EMPTY)) {
-            validateKeyAndAliasProvidedCase(op, attributeValidator, config, readableAccountStore, isInternalDispatch);
-        } else {
-            // This is the case when no key and no alias are provided
+
+        final var isSentinel = IMMUTABILITY_SENTINEL_KEY.equals(key);
+        if (isSentinel && !isInternalDispatch) {
+            // IMMUTABILITY_SENTINEL_KEY is only allowed for internal dispatches.
             throw new HandleException(KEY_REQUIRED);
-        }
-    }
-
-    private void validateKey(
-            @NonNull final CryptoCreateTransactionBody op, @NonNull final AttributeValidator attributeValidator) {
-        final var key = op.key();
-
-        if (isEmpty(key)) {
-            if (key.hasThresholdKey() || key.hasKeyList()) {
-                throw new HandleException(KEY_REQUIRED);
+        } else if (!isSentinel) {
+            // If it is not the sentinel key, we need to validate the key, no matter whether internal or HAPI.
+            //
+            // This solution is not nice, but for now, it is the best we can do and maintain compatibility and some
+            // semblance of maintainability. There is a lot of duplicated work, because `isEmpty` is called by
+            // `isValid(Key)`, and `isValid(Key)` is called by `validateKey(Key)`! So `isEmpty` gets called at least
+            // three times (once in pureChecks), and `isValid` at least twice. But this is the only way to make sure the
+            // right exceptions are thrown, without breaking key validation steps down in a granular way which would be
+            // hard to maintain.
+            if (!isValid(key)) {
+                throw new HandleException(INVALID_ADMIN_KEY);
             } else {
-                throw new HandleException(BAD_ENCODING);
+                attributeValidator.validateKey(key);
             }
         }
-
-        if (!isValid(key)) {
-            throw new HandleException(INVALID_ADMIN_KEY);
-        }
-        attributeValidator.validateKey(key);
-    }
-
-    private void validateKeyAndAliasProvidedCase(
-            @NonNull final CryptoCreateTransactionBody op,
-            @NonNull final AttributeValidator attributeValidator,
-            @NonNull final CryptoCreateWithAliasConfig config,
-            @NonNull final ReadableAccountStore readableAccountStore,
-            final boolean isInternalDispatch) {
-        validateTrue(config.enabled(), NOT_SUPPORTED);
-        if (!canSkipNormalKeyValidation(op.keyOrThrow(), isInternalDispatch)) {
-            validateKey(op, attributeValidator);
-        }
-        final boolean isECDSAValidAlias = op.alias().length() == EVM_ADDRESS_SIZE
-                || (op.alias().length() == ECDSA_SECP256K1_ALIAS_SIZE
-                        && op.alias().toHex().startsWith(ECDSA_KEY_ALIAS_PREFIX));
-        final boolean isED25519ValidAlias = op.alias().length() == ED25519_ALIAS_SIZE;
-        validateTrue(isECDSAValidAlias || isED25519ValidAlias, INVALID_ALIAS_KEY);
-        validateFalse(isMirror(op.alias()), INVALID_ALIAS_KEY);
-
-        // find account by alias and check if it was deleted
-        var accountId = readableAccountStore.getAccountIDByAlias(op.alias());
-        var account = accountId != null ? readableAccountStore.getAccountById(accountId) : null;
-        var isDeleted = account == null || account.deleted();
-        validateTrue(accountId == null || isDeleted, ALIAS_ALREADY_ASSIGNED);
-    }
-
-    private boolean canSkipNormalKeyValidation(@NonNull final Key key, final boolean isInternalDispatch) {
-        return isInternalDispatch && IMMUTABILITY_SENTINEL_KEY.equals(key);
     }
 
     /** check if the number of auto associations is too many

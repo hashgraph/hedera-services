@@ -104,7 +104,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         // There are no non-payer keys that will need to sign this transaction; therefore, activate no keys
         final var childRecordBuilder = context.dispatchChildTransaction(
                 synthTxn, CryptoCreateRecordBuilder.class, key -> false, context.payer());
-        // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
+        // FUTURE - switch OK to SUCCESS once some status-setting responsibilities are clarified
         if (childRecordBuilder.status() != OK && childRecordBuilder.status() != SUCCESS) {
             throw new AssertionError("Not implemented");
         }
@@ -121,7 +121,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         final var hollowAccountId = requireNonNull(accountStore.getAccountIDByAlias(evmAddress));
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         tokenServiceApi.finalizeHollowAccountAsContract(hollowAccountId, INITIAL_CONTRACT_NONCE);
-        // For temporary backward-compatibility with mono-service, consume an entity id
+        // FUTURE: For temporary backward-compatibility with mono-service, consume an entity id
         context.newEntityNum();
     }
 

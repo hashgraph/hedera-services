@@ -145,7 +145,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     }
 
     public AccountInfoAsserts hasEmptyKey() {
-        registerProvider((spec, o) -> assertEquals(((AccountInfo) o).getKey(), EMPTY_KEY, "Has non-empty key!"));
+        registerProvider((spec, o) -> assertEquals(EMPTY_KEY, ((AccountInfo) o).getKey(), "Has non-empty key!"));
         return this;
     }
 

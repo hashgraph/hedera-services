@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.api;
 
-import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -229,7 +229,7 @@ class TokenServiceApiImplTest {
                 .smartContract(true)
                 .build());
 
-        subject.deleteAndMaybeUnaliasContract(CONTRACT_ID_BY_NUM);
+        subject.deleteContract(CONTRACT_ID_BY_NUM);
 
         assertEquals(1, accountStore.sizeOfAccountState());
         final var deletedContract = accountStore.getContractById(CONTRACT_ID_BY_NUM);
@@ -245,7 +245,7 @@ class TokenServiceApiImplTest {
                 .build());
         accountStore.putAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
 
-        subject.deleteAndMaybeUnaliasContract(CONTRACT_ID_BY_ALIAS);
+        subject.deleteContract(CONTRACT_ID_BY_ALIAS);
 
         assertEquals(1, accountStore.sizeOfAccountState());
         final var deletedContract = accountStore.getContractById(CONTRACT_ID_BY_NUM);
@@ -266,7 +266,7 @@ class TokenServiceApiImplTest {
         accountStore.putAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
         accountStore.putAlias(OTHER_EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
 
-        subject.deleteAndMaybeUnaliasContract(CONTRACT_ID_BY_ALIAS);
+        subject.deleteContract(CONTRACT_ID_BY_ALIAS);
 
         assertEquals(1, accountStore.sizeOfAccountState());
         final var deletedContract = requireNonNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));

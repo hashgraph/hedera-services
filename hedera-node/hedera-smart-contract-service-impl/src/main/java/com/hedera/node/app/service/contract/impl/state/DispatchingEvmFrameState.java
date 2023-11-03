@@ -32,6 +32,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pb
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniUInt256;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 
@@ -294,12 +295,9 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         if (account.deleted()) {
             return null;
         }
-        final var alias = account.alias();
-        if (alias.length() == EVM_ADDRESS_LENGTH_AS_LONG) {
-            return pbjToBesuAddress(alias);
-        } else {
-            return asLongZeroAddress(number);
-        }
+
+        final var evmAddress = extractEvmAddress(account.alias());
+        return evmAddress == null ? asLongZeroAddress(number) : pbjToBesuAddress(evmAddress);
     }
 
     @Override

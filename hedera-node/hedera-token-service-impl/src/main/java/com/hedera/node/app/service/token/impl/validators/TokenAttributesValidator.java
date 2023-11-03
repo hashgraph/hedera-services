@@ -28,6 +28,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -35,6 +36,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -49,16 +51,13 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenAttributesValidator {
 
-    public static final Key IMMUTABILITY_SENTINEL_KEY =
-            Key.newBuilder().keyList(KeyList.DEFAULT).build();
-
     @Inject
     public TokenAttributesValidator() {
         // Dagger
     }
 
     /**
-     * Validates the token symbol, if it is exists and is not empty or not too long.
+     * Validates the token symbol, if it exists and is not empty or not too long.
      * @param symbol the token symbol to validate
      */
     public void validateTokenSymbol(@Nullable final String symbol, @NonNull final TokensConfig tokensConfig) {
@@ -152,7 +151,7 @@ public class TokenAttributesValidator {
     }
 
     /**
-     * Checks if the given key is a key removal, if it is set as {@link #IMMUTABILITY_SENTINEL_KEY}.
+     * Checks if the given key is a key removal, if it is set as {@link KeyUtils#IMMUTABILITY_SENTINEL_KEY}.
      * @param source the key to check
      * @return true if the key is a key removal, false otherwise
      */

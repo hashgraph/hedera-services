@@ -32,6 +32,8 @@ import java.util.Collections;
 // !!!!!!!!!!🔥🔥🔥 It should be moved once we find where to keep it. 🔥🔥🔥!!!!!!!!!!!
 public class KeyUtils {
 
+    public static final Key IMMUTABILITY_SENTINEL_KEY =
+            Key.newBuilder().keyList(KeyList.DEFAULT).build();
     public static final int ED25519_BYTE_LENGTH = 32;
     private static final byte ODD_PARITY = (byte) 0x03;
     private static final byte EVEN_PARITY = (byte) 0x02;
@@ -39,6 +41,10 @@ public class KeyUtils {
 
     private KeyUtils() {
         throw new UnsupportedOperationException("Utility Class");
+    }
+
+    public static boolean isEmptyAndNotImmutable(@Nullable final Key pbjKey) {
+        return isEmptyInternal(pbjKey, true);
     }
 
     /**
@@ -50,6 +56,19 @@ public class KeyUtils {
      * @return true if the key is empty, false otherwise
      */
     public static boolean isEmpty(@Nullable final Key pbjKey) {
+        return isEmptyInternal(pbjKey, false);
+    }
+
+    /**
+     * Checks if the given key is empty.
+     * For a KeyList type checks if the list is empty.
+     * For a ThresholdKey type checks if the list is empty.
+     * For an Ed25519 or EcdsaSecp256k1 type checks if there are zero bytes.
+     * @param pbjKey the key to check
+     * @param honorImmutable if true, the key is NOT considered EMPTY if it is the IMMUTABILITY_SENTINEL_KEY
+     * @return true if the key is empty, false otherwise
+     */
+    private static boolean isEmptyInternal(@Nullable final Key pbjKey, boolean honorImmutable) {
         if (pbjKey == null) {
             return true;
         }
@@ -57,9 +76,12 @@ public class KeyUtils {
         if (key == null || KeyOneOfType.UNSET.equals(key.kind())) {
             return true;
         }
+        if (honorImmutable && IMMUTABILITY_SENTINEL_KEY.equals(pbjKey)) {
+            return false;
+        }
         if (pbjKey.hasKeyList()) {
             final var keyList = (KeyList) key.value();
-            if (!keyList.hasKeys() || keyList.keys().size() == 0) {
+            if (!keyList.hasKeys() || keyList.keysOrThrow().isEmpty()) {
                 return true;
             }
             for (final var k : keyList.keys()) {

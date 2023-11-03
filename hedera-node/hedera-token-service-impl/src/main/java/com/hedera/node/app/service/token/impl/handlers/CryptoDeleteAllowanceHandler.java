@@ -16,7 +16,11 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.NFT_DELETE_ALLOWANCE_SIZE;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.isValidOwner;
@@ -41,7 +45,11 @@ import com.hedera.node.app.service.token.impl.validators.DeleteAllowanceValidato
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.*;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
@@ -62,20 +70,6 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
-        requireNonNull(context);
-        final var txn = context.body();
-        pureChecks(txn);
-        final var op = txn.cryptoDeleteAllowanceOrThrow();
-        // Every owner whose allowances are being removed should sign (or the payer, if there is no owner)
-        for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
-            if (allowance.hasOwner()) {
-                context.requireKeyOrThrow(allowance.ownerOrThrow(), INVALID_ALLOWANCE_OWNER_ID);
-            }
-        }
-    }
-
-    @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         requireNonNull(txn);
         final var op = txn.cryptoDeleteAllowanceOrThrow();
@@ -83,6 +77,19 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         validateTruePreCheck(!allowances.isEmpty(), EMPTY_ALLOWANCES);
         for (final var allowance : allowances) {
             validateTruePreCheck(!allowance.serialNumbers().isEmpty(), EMPTY_ALLOWANCES);
+        }
+    }
+
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var txn = context.body();
+        final var op = txn.cryptoDeleteAllowanceOrThrow();
+        // Every owner whose allowances are being removed should sign (or the payer, if there is no owner)
+        for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
+            if (allowance.hasOwner()) {
+                context.requireKeyOrThrow(allowance.ownerOrThrow(), INVALID_ALLOWANCE_OWNER_ID);
+            }
         }
     }
 

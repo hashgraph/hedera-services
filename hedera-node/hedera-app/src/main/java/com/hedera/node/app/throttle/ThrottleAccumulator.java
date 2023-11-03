@@ -25,8 +25,8 @@ import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxDat
 import static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor.ONE_TO_ONE;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.isAlias;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.isSerializedProtoKey;
+import static com.hedera.node.app.service.token.AliasUtils.isAlias;
+import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -377,7 +377,7 @@ public class ThrottleAccumulator implements HandleThrottleParser {
                 return UNKNOWN_NUM_IMPLICIT_CREATIONS;
             }
 
-            final var doesNotExist = accountStore.getAccountIDByAlias(Bytes.wrap(ethTxData.to())) == null;
+            final var doesNotExist = accountStore.containsAlias(Bytes.wrap(ethTxData.to()));
             if (doesNotExist && ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
                 implicitCreationsCount++;
             }

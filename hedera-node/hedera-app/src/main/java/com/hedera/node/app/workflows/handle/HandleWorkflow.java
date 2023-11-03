@@ -204,7 +204,7 @@ public class HandleWorkflow {
                 // We were given an event for a node that *does not exist in the address book*. This will be logged as
                 // a warning, as this should never happen, and we will skip the event. The platform should guarantee
                 // that we never receive an event that isn't associated with the address book, and every node in the
-                // address book must have an account ID, since you cannot delete an account belonging to a node and
+                // address book must have an account ID, since you cannot delete an account belonging to a node, and
                 // you cannot change the address book non-deterministically.
                 logger.warn("Received event from node {} which is not in the address book", event.getCreatorId());
                 return;
