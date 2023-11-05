@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KYC_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
@@ -706,13 +707,13 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(AUTORENEW_DURATION_NOT_IN_RANGE));
+                .has(responseCode(INVALID_RENEWAL_PERIOD));
 
         txn = new TokenCreateBuilder().withAutoRenewPeriod(100).build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(AUTORENEW_DURATION_NOT_IN_RANGE));
+                .has(responseCode(INVALID_RENEWAL_PERIOD));
     }
 
     @Test
