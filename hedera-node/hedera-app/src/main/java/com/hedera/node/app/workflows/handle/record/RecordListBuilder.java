@@ -16,12 +16,15 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.UNLIMITED_CHILD_RECORDS;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl.ReversingBehavior;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
@@ -30,6 +33,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * This class manages all record builders that are used while a single user transaction is running.
@@ -127,18 +131,27 @@ public final class RecordListBuilder {
      * @throws NullPointerException      if {@code consensusConfig} is {@code null}
      * @throws HandleException if no more preceding slots are available
      */
-    public SingleTransactionRecordBuilderImpl addPreceding(@NonNull final Configuration configuration) {
+    public SingleTransactionRecordBuilderImpl addPreceding(
+            @NonNull final Configuration configuration,
+            final HandleContextImpl.PrecedingTransactionCategory precedingTxnCategory) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddPreceding(configuration, ReversingBehavior.IRREVERSIBLE);
+        return doAddPreceding(configuration, ReversingBehavior.IRREVERSIBLE, precedingTxnCategory);
     }
 
     public SingleTransactionRecordBuilderImpl addReversiblePreceding(@NonNull final Configuration configuration) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddPreceding(configuration, ReversingBehavior.REVERSIBLE);
+        return doAddPreceding(configuration, ReversingBehavior.REVERSIBLE, LIMITED_CHILD_RECORDS);
+    }
+
+    public SingleTransactionRecordBuilderImpl addRemovablePreceding(@NonNull final Configuration configuration) {
+        requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
+        return doAddPreceding(configuration, ReversingBehavior.REMOVABLE, LIMITED_CHILD_RECORDS);
     }
 
     public SingleTransactionRecordBuilderImpl doAddPreceding(
-            @NonNull final Configuration configuration, @NonNull final ReversingBehavior reversingBehavior) {
+            @NonNull final Configuration configuration,
+            @NonNull final ReversingBehavior reversingBehavior,
+            @NonNull final HandleContextImpl.PrecedingTransactionCategory precedingTxnCategory) {
         // Lazily create. FUTURE: We should reuse the RecordListBuilder between handle calls, and we should
         // reuse these lists. Then we can omit this lazy create entirely and produce less garbage overall.
         if (precedingTxnRecordBuilders == null) {
@@ -151,7 +164,10 @@ public final class RecordListBuilder {
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
         final var precedingCount = precedingTxnRecordBuilders.size();
         final var maxRecords = consensusConfig.handleMaxPrecedingRecords();
-        if (precedingCount >= maxRecords) {
+        // On genesis start we create almost 700 preceding child records for creating system accounts.
+        // Also, we should not be failing for stake update transaction records that happen every midnight.
+        // In these two cases need to allow for this, but we don't want to allow for this on every handle call.
+        if (precedingTxnRecordBuilders.size() >= maxRecords && (precedingTxnCategory != UNLIMITED_CHILD_RECORDS)) {
             // We do not have a MAX_PRECEDING_RECORDS_EXCEEDED error, so use this.
             throw new HandleException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
         }
@@ -249,6 +265,9 @@ public final class RecordListBuilder {
         if (childRecordBuilders == null) {
             childRecordBuilders = new ArrayList<>();
         }
+        if (precedingTxnRecordBuilders == null) {
+            precedingTxnRecordBuilders = new ArrayList<>();
+        }
 
         // Find the index into the list of records from which to revert. If the record builder is the user transaction,
         // then we start at index 0, which is the first child transaction after the user transaction. If the record
@@ -259,13 +278,17 @@ public final class RecordListBuilder {
             index = 0;
 
             // The user transaction fails and therefore we also have to revert preceding transactions
-            if (precedingTxnRecordBuilders != null) {
-                for (final var preceding : precedingTxnRecordBuilders) {
+            if (!precedingTxnRecordBuilders.isEmpty()) {
+                for (int i = 0; i < precedingTxnRecordBuilders.size(); i++) {
+                    final var preceding = precedingTxnRecordBuilders.get(i);
                     if (preceding.reversingBehavior() == ReversingBehavior.REVERSIBLE
                             && SUCCESSES.contains(preceding.status())) {
                         preceding.status(ResponseCodeEnum.REVERTED_SUCCESS);
+                    } else if (preceding.reversingBehavior() == ReversingBehavior.REMOVABLE) {
+                        precedingTxnRecordBuilders.set(i, null);
                     }
                 }
+                precedingTxnRecordBuilders.removeIf(Objects::isNull);
             }
         } else {
             // Traverse from end to start, since we are most likely going to be reverting the most recent child,
