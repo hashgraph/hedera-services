@@ -50,7 +50,7 @@ class ParentIterator implements Iterator<EventDescriptor> {
         final EventDescriptor selfParent = event.getHashedData().getSelfParent();
         final List<EventDescriptor> otherParents = event.getHashedData().getOtherParents();
 
-        if(selfParent != null) {
+        if (selfParent != null) {
             parents.add(selfParent);
         }
         otherParents.forEach(parents::add);
