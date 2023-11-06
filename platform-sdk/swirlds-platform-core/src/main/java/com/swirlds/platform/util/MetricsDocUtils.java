@@ -19,11 +19,11 @@ package com.swirlds.platform.util;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.platform.SwirldsPlatform;
 import java.io.File;
 import java.io.FileOutputStream;

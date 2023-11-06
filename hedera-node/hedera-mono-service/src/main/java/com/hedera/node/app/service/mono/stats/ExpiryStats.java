@@ -20,9 +20,9 @@ import static com.hedera.node.app.service.mono.stats.ServicesStatsManager.RUNNIN
 import static com.hedera.node.app.service.mono.stats.ServicesStatsManager.STAT_CATEGORY;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.metrics.Counter;
 import javax.inject.Singleton;
 
 @Singleton

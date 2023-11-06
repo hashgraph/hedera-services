@@ -28,6 +28,7 @@ package com.swirlds.demo.hashgraph;
 
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -37,7 +38,6 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.gui.model.GuiModel;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.GuiPlatformAccessor;

@@ -16,18 +16,18 @@
 
 package com.swirlds.platform.event.validation;
 
-import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;

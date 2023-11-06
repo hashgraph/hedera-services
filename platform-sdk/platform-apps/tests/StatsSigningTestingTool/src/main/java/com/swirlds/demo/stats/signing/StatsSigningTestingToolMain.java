@@ -32,6 +32,7 @@ import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
@@ -44,7 +45,6 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.gui.model.GuiModel;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;

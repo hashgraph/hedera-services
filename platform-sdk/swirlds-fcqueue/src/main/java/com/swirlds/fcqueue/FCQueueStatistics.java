@@ -18,11 +18,11 @@ package com.swirlds.fcqueue;
 
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.common.metrics.Metrics;
 
 /**
  * Singleton factory for loading and registering {@link FCQueue} statistics. This is the primary entry point for all

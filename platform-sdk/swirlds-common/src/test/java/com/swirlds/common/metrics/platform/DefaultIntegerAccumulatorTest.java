@@ -22,11 +22,11 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
