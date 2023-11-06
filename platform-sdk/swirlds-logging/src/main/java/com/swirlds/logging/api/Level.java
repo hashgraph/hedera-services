@@ -24,6 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * The level of a log message
  */
 public enum Level {
+    OFF(1),
     ERROR(10),
     WARN(20),
     INFO(30),

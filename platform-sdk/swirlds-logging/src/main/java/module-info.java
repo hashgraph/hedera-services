@@ -13,7 +13,8 @@ module com.swirlds.logging {
     exports com.swirlds.logging.api.internal.level to
             com.swirlds.loggingfixture,
             com.swirlds.logging.handler.synced,
-            com.swirlds.logging;
+            com.swirlds.logging,
+            com.swirlds.config.impl;
     exports com.swirlds.logging.api.internal.emergency to
             com.swirlds.loggingfixture,
             com.swirlds.logging;

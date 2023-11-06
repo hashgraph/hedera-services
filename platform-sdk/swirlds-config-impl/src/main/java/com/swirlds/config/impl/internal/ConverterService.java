@@ -22,6 +22,7 @@ import com.swirlds.config.impl.converters.BigIntegerConverter;
 import com.swirlds.config.impl.converters.BooleanConverter;
 import com.swirlds.config.impl.converters.ByteConverter;
 import com.swirlds.config.impl.converters.ChronoUnitConverter;
+import com.swirlds.config.impl.converters.ConfigLevelConverter;
 import com.swirlds.config.impl.converters.DoubleConverter;
 import com.swirlds.config.impl.converters.DurationConverter;
 import com.swirlds.config.impl.converters.FileConverter;
@@ -34,6 +35,7 @@ import com.swirlds.config.impl.converters.StringConverter;
 import com.swirlds.config.impl.converters.UriConverter;
 import com.swirlds.config.impl.converters.UrlConverter;
 import com.swirlds.config.impl.converters.ZonedDateTimeConverter;
+import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -93,6 +95,8 @@ class ConverterService implements ConfigLifecycle {
     private static final ConfigConverter<Duration> DURATION_CONVERTER = new DurationConverter();
 
     private static final ConfigConverter<ChronoUnit> CHRONO_UNIT_CONVERTER = new ChronoUnitConverter();
+    private static final ConfigConverter<HandlerLoggingLevelConfig.ConfigLevel> CONFIG_LEVEL_CONVERTER =
+            new ConfigLevelConverter();
 
     ConverterService() {
         this.converters = new HashMap<>();
@@ -189,6 +193,7 @@ class ConverterService implements ConfigLifecycle {
         add(ZonedDateTime.class, ZONED_DATE_TIME_CONVERTER);
         add(Duration.class, DURATION_CONVERTER);
         add(ChronoUnit.class, CHRONO_UNIT_CONVERTER);
+        add(HandlerLoggingLevelConfig.ConfigLevel.class, CONFIG_LEVEL_CONVERTER);
         initialized = true;
     }
 
