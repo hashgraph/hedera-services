@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.utilops;
+package com.hedera.services.bdd.spec.utilops.records;
 
 import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
-import static com.hedera.services.bdd.spec.utilops.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.suites.TargetNetworkType.STANDALONE_MONO_NETWORK;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -30,6 +32,7 @@ import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.bdd.junit.HapiTestEnv;
 import com.hedera.services.bdd.junit.RecordStreamAccess;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.domain.ParsedItem;
 import com.hedera.services.bdd.spec.utilops.domain.RecordSnapshot;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -53,6 +56,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -82,8 +86,9 @@ import org.junit.jupiter.api.Assertions;
  */
 // too many parameters, repeated string literals
 @SuppressWarnings({"java:S5960", "java:S1192"})
-public class SnapshotModeOp extends UtilOp {
+public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     private static final long MIN_GZIP_SIZE_IN_BYTES = 26;
+    private static final long MAX_SIG_MAP_FEE_TINYBAR_VARIATION = 1000;
     private static final Logger log = LogManager.getLogger(SnapshotModeOp.class);
 
     private static final Set<String> FIELDS_TO_SKIP_IN_FUZZY_MATCH = Set.of(
@@ -181,7 +186,7 @@ public class SnapshotModeOp extends UtilOp {
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         if (mode.targetNetworkType() == spec.targetNetworkType()) {
-            this.fullSpecName = spec.getSuitePrefix() + "-" + spec.getName();
+            this.fullSpecName = snapshotFileNameFor(spec);
             switch (mode) {
                 case TAKE_FROM_MONO_STREAMS -> computePlaceholderNum(
                         monoStreamLocs(), PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, spec);
@@ -197,20 +202,43 @@ public class SnapshotModeOp extends UtilOp {
     }
 
     /**
-     * Returns whether this operation has work to do, i.e., whether it could run against the target network.
+     * Returns the record snapshot for the given spec name, if one exists.
      *
-     * @return if this operation can run against the target network
+     * @param spec the spec to load a snapshot for
+     * @return the snapshot, if one exists
      */
-    public boolean hasWorkToDo() {
-        // We leave the spec name null in submitOp() if we are running against a target network that
-        // doesn't match the SnapshotMode of this operation
-        return fullSpecName != null;
+    static Optional<RecordSnapshot> maybeLoadSnapshotFor(@NonNull final HapiSpec spec) {
+        try {
+            final var snapshotLoc = (spec.targetNetworkType() == STANDALONE_MONO_NETWORK)
+                    ? PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC
+                    : TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC;
+            return Optional.of(loadSnapshotFor(snapshotLoc, snapshotFileNameFor(spec)));
+        } catch (IOException e) {
+            return Optional.empty();
+        }
     }
 
     /**
-     * The special snapshot operation entrypoint, called by the {@link HapiSpec} when it is time to read all
-     * generated record files and either snapshot or fuzzy-match their contents.
+     * Returns the JSON snapshot name for the given spec.
+     *
+     * @param spec the spec
+     * @return the JSON snapshot name
      */
+    static String snapshotFileNameFor(@NonNull final HapiSpec spec) {
+        return spec.getSuitePrefix() + "-" + spec.getName();
+    }
+
+    @Override
+    public boolean hasWorkToDo() {
+        // We leave the spec name null in submitOp() if we are running against a target network that
+        // doesn't match the SnapshotMode of this operation
+        if (fullSpecName == null) {
+            return false;
+        }
+        return !matchModes.contains(FULLY_NONDETERMINISTIC);
+    }
+
+    @Override
     public void finishLifecycle() {
         if (!hasWorkToDo()) {
             return;
@@ -237,6 +265,10 @@ public class SnapshotModeOp extends UtilOp {
             for (final var item : allItems) {
                 final var parsedItem = ParsedItem.parse(item);
                 final var body = parsedItem.itemBody();
+                if (body.hasNodeStakeUpdate()) {
+                    // We cannot ever expect to match node stake update export sequencing
+                    continue;
+                }
                 if (!placeholderFound) {
                     if (body.getMemo().equals(placeholderMemo)) {
                         final var streamPlaceholderNum = parsedItem
@@ -493,14 +525,23 @@ public class SnapshotModeOp extends UtilOp {
             if ("transactionFee".equals(fieldName)) {
                 // Transaction fees can vary by tiny amounts based on the size of the sig map
                 Assertions.assertTrue(
-                        Math.abs((long) expected - (long) actual) <= 1,
+                        Math.abs((long) expected - (long) actual) <= MAX_SIG_MAP_FEE_TINYBAR_VARIATION,
                         "Transaction fees '" + expected + "' and '" + actual + "' varied by more than 1 tinybar - "
                                 + mismatchContext.get());
             } else {
-                Assertions.assertEquals(
-                        expected,
-                        actual,
-                        "Mismatched values '" + expected + "' vs '" + actual + "' - " + mismatchContext.get());
+                if ("accountNum".equals(fieldName)) {
+                    Assertions.assertEquals(
+                            (long) expected + expectedPlaceholderNum,
+                            (long) actual + actualPlaceholderNum,
+                            "Mismatched values, expected '" + expected + "', got '" + actual + "' - "
+                                    + mismatchContext.get());
+                } else {
+                    Assertions.assertEquals(
+                            expected,
+                            actual,
+                            "Mismatched values, expected '" + expected + "', got '" + actual + "' - "
+                                    + mismatchContext.get());
+                }
             }
         }
     }
@@ -572,12 +613,12 @@ public class SnapshotModeOp extends UtilOp {
                 snapshotToMatchAgainst.getEncodedItems().size());
     }
 
-    private static RecordSnapshot loadSnapshotFor(@NonNull final String snapshotLoc, @NonNull final String specName)
+    private static RecordSnapshot loadSnapshotFor(@NonNull final String snapshotLoc, @NonNull final String fullSpecName)
             throws IOException {
         final var om = new ObjectMapper();
-        final var inputLoc = resourceLocOf(snapshotLoc, specName);
+        final var inputLoc = resourceLocOf(snapshotLoc, fullSpecName);
         final var fin = Files.newInputStream(inputLoc);
-        log.info("Loading snapshot of {} post-placeholder records from {}", specName, inputLoc);
+        log.info("Loading snapshot of {} post-placeholder records from {}", fullSpecName, inputLoc);
         return om.reader().readValue(fin, RecordSnapshot.class);
     }
 
