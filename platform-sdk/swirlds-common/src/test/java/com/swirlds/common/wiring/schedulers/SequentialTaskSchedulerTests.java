@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.OutputWire;
-import com.swirlds.common.wiring.OutputWire.SolderType;
+import com.swirlds.common.wiring.SolderType;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
@@ -1961,9 +1961,9 @@ class SequentialTaskSchedulerTests {
         // Unblock C. Entire pipeline is now unblocked and new things will be added.
         latchC.countDown();
         assertEventuallyEquals(0L, counter::getCount, Duration.ofSeconds(1), "Counter should be empty");
-        assertEquals(expectedCount, countA.get());
-        assertEquals(expectedCount, countB.get());
-        assertEquals(expectedCount, countC.get());
+        assertEventuallyEquals(expectedCount, countA::get, Duration.ofSeconds(1), "A should have processed task");
+        assertEventuallyEquals(expectedCount, countB::get, Duration.ofSeconds(1), "B should have processed task");
+        assertEventuallyEquals(expectedCount, countC::get, Duration.ofSeconds(1), "C should have processed task");
         assertTrue(allWOrkInserted.get());
     }
 

@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.OutputWire;
-import com.swirlds.common.wiring.OutputWire.SolderType;
+import com.swirlds.common.wiring.SolderType;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.utility.ModelGroup;
