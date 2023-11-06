@@ -296,6 +296,10 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final DataOneOfType transactionType =
                 scheduleCreate.scheduledTransactionBody().data().kind();
         final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
+        // @todo('9447') this is a hack to match mono and should be removed once differential test has been completed.
+        if(functionType == HederaFunctionality.NONE){
+            throw new PreCheckException(ResponseCodeEnum.BUSY);
+        }
         if (!whitelist.contains(functionType)) {
             throw new PreCheckException(ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         }
