@@ -17,13 +17,10 @@
 package com.swirlds.common.wiring.builders;
 
 /**
- * Various types of task schedulers.
+ * Various types of task schedulers. Pass one of these types to {@link TaskSchedulerBuilder#withType(TaskSchedulerType)}
+ * to create a task scheduler of the desired type. If unspecified, the default scheduler type is {@link #SEQUENTIAL}.
  */
 public enum TaskSchedulerType {
-    /**
-     * Tasks are executed on a fork join pool. Ordering is not guaranteed.
-     */
-    CONCURRENT,
     /**
      * Tasks are executed in a fork join pool one at a time in the order they were enqueued. There is a happens before
      * relationship between each task.
@@ -34,7 +31,12 @@ public enum TaskSchedulerType {
      * relationship between each task. This scheduler type has very similar semantics as {@link #SEQUENTIAL}, although
      * the implementation and performance characteristics are not identical.
      */
-    SEQUENTIAL_QUEUE,
+    SEQUENTIAL_THREAD,
+    /**
+     * Tasks are executed on a fork join pool. Tasks may be executed in parallel with each other. Ordering is not
+     * guaranteed.
+     */
+    CONCURRENT,
     /**
      * Tasks are executed immediately on the callers thread. There is no queue for tasks waiting to be handled (logical
      * or otherwise). Useful for scenarios where tasks are extremely small and not worth the scheduling overhead.
@@ -43,5 +45,5 @@ public enum TaskSchedulerType {
      * schedulers are forbidden from sending data to a direct task scheduler. These constraints are enforced by the
      * framework.
      */
-    DIRECT
+    DIRECT;
 }

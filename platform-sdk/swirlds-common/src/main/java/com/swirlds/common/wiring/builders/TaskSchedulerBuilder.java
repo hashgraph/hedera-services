@@ -343,7 +343,7 @@ public class TaskSchedulerBuilder<O> {
                     busyFractionTimer,
                     flushingEnabled,
                     insertionIsBlocking);
-            case SEQUENTIAL_QUEUE -> throw new UnsupportedOperationException("Sequential queue not yet implemented");
+            case SEQUENTIAL_THREAD -> throw new UnsupportedOperationException("SEQUENTIAL_THREAD not yet implemented");
             case DIRECT -> new DirectTaskScheduler<>(
                     model, name, buildUncaughtExceptionHandler(), onRamp, offRamp, busyFractionTimer);
         };
