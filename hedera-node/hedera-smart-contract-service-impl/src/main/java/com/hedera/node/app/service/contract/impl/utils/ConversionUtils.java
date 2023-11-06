@@ -279,9 +279,9 @@ public class ConversionUtils {
             final List<StorageChange> changes = new ArrayList<>();
             for (final var access : storageAccess.accesses()) {
                 changes.add(new StorageChange(
-                        tuweniToPbjBytes(access.key()),
-                        tuweniToPbjBytes(access.value()),
-                        access.isReadOnly() ? null : tuweniToPbjBytes(requireNonNull(access.writtenValue()))));
+                        tuweniToPbjBytes(access.key().trimLeadingZeros()),
+                        tuweniToPbjBytes(access.value().trimLeadingZeros()),
+                        access.isReadOnly() ? null : tuweniToPbjBytes(requireNonNull(access.writtenValue()).trimLeadingZeros())));
             }
             allStateChanges.add(new ContractStateChange(
                     ContractID.newBuilder()

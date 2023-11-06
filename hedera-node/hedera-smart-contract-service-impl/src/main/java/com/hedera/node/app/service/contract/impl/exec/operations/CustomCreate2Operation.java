@@ -17,10 +17,20 @@
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.operations.CustomizedOpcodes.CREATE2;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPbjStateChanges;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
+import com.hedera.hapi.streams.ContractBytecode;
+import com.hedera.hapi.streams.ContractStateChanges;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.tuweni.bytes.Bytes;
@@ -30,6 +40,8 @@ import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+
+import java.util.List;
 
 public class CustomCreate2Operation extends AbstractCustomCreateOperation {
     private static final Bytes EIP_1014_PREFIX = Bytes.fromHexString("0xFF");
@@ -66,10 +78,16 @@ public class CustomCreate2Operation extends AbstractCustomCreateOperation {
     }
 
     @Override
-    protected void onSuccess(@NonNull final MessageFrame frame, @NonNull final Address creation) {
+    protected void onSuccess(@NonNull final MessageFrame frame, @NonNull MessageFrame childFrame, @NonNull final Address creation) {
         final var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
+        final var contractBytecode = ContractBytecode.newBuilder()
+                .contractId(updater.getHederaContractId(creation))
+                .initcode(tuweniToPbjBytes(childFrame.getCode().getBytes()))
+                .runtimeBytecode(tuweniToPbjBytes(updater.get(childFrame.getContractAddress()).getCode()))
+                .build();
+
         if (updater.isHollowAccount(creation)) {
-            updater.finalizeHollowAccount(creation);
+            updater.finalizeHollowAccount(creation, contractBytecode);
         }
     }
 

@@ -19,6 +19,9 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.streams.ContractBytecode;
+import com.hedera.hapi.streams.ContractStateChanges;
+import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
@@ -28,6 +31,9 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+
 import java.util.List;
 
 /**
@@ -241,5 +247,12 @@ public interface HederaOperations {
      * @param contractId    ContractId of hollow account
      * @param evmAddress    Evm address of hollow account
      */
-    void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress);
+    void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress, @Nullable ContractBytecode bytecode);
+
+    void addSidecars(MessageFrame frame,
+                     ActionSidecarContentTracer tracer,
+                     ContractStateChanges stateChanges,
+                     ContractID recipientId,
+                     MutableAccount recipientAccount
+    );
 }

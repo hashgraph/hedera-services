@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
 import static java.util.Objects.requireNonNull;
 
@@ -26,10 +27,16 @@ import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.streams.*;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
+import com.hedera.node.app.service.contract.impl.exec.utils.ActionWrapper;
+import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
+import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
@@ -40,6 +47,10 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+
+import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -319,17 +330,54 @@ public class HandleHederaOperations implements HederaOperations {
         tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
     }
 
-    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
+    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress, @Nullable ContractBytecode bytecode) {
         var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class);
         recordBuilder
                 .contractID(contractId)
                 // add dummy transaction, because SingleTransactionRecord require NonNull on build
-                .transaction(Transaction.newBuilder()
-                        .signedTransactionBytes(Bytes.EMPTY)
-                        .build())
+                .transaction(Transaction.DEFAULT)
+                //todo add null check or make it nonNull
+                .addContractBytecode(bytecode, false)
                 .contractCreateResult(ContractFunctionResult.newBuilder()
                         .contractID(contractId)
                         .evmAddress(evmAddress)
                         .build());
+    }
+
+    public void addSidecars(MessageFrame frame,
+                            ActionSidecarContentTracer tracer,
+                            ContractStateChanges stateChanges,
+                            ContractID recipientId,
+                            MutableAccount recipientAccount
+    ) {
+        var enabledSidecars = context.configuration().getConfigData(ContractsConfig.class).sidecars();
+        if(enabledSidecars.contains(SidecarType.CONTRACT_ACTION)) {
+            context.recordBuilder(ContractCallRecordBuilder.class).contractActions(
+                    List.of(new AbstractMap.SimpleEntry<>(
+                            ContractActions.newBuilder().contractActions(
+                                    ((EvmActionTracer)tracer).actionStack().allActions().stream().map(ActionWrapper::get).toList()
+                            ).build()
+                            , false)));
+        }
+
+        if(enabledSidecars.contains(SidecarType.CONTRACT_STATE_CHANGE)) {
+            if(stateChanges.contractStateChanges().size() > 0 ){
+                context.recordBuilder(ContractCallRecordBuilder.class).addContractStateChanges(stateChanges, false);
+            }
+        }
+
+        if (enabledSidecars.contains(SidecarType.CONTRACT_BYTECODE)
+                && recipientId != null
+                && recipientAccount!= null
+                && frame.getType().equals(MessageFrame.Type.CONTRACT_CREATION)) {
+            context.recordBuilder(ContractCreateRecordBuilder.class)
+                    .addContractBytecode(
+                            ContractBytecode.newBuilder()
+                                    .contractId(recipientId)
+                                    .initcode(tuweniToPbjBytes(frame.getCode().getBytes()))
+                                    .runtimeBytecode(tuweniToPbjBytes(recipientAccount.getCode()))
+                                    .build(),
+                    false);
+        }
     }
 }

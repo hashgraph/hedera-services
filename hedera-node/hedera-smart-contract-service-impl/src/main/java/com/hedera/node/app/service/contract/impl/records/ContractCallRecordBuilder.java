@@ -19,8 +19,13 @@ package com.hedera.node.app.service.contract.impl.records;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.streams.ContractActions;
+import com.hedera.hapi.streams.ContractStateChanges;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.util.AbstractMap;
+import java.util.List;
 
 /**
  * Exposes the record customizations needed for a HAPI contract call transaction.
@@ -53,4 +58,12 @@ public interface ContractCallRecordBuilder {
      */
     @NonNull
     ContractCallRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
+
+    @NonNull
+    ContractCallRecordBuilder contractActions(
+            @NonNull final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions);
+
+    @NonNull
+    ContractCallRecordBuilder addContractStateChanges(
+            @NonNull final ContractStateChanges contractStateChanges, final boolean isMigration);
 }

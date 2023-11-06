@@ -21,13 +21,19 @@ import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaO
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.streams.ContractBytecode;
+import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
+import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -252,7 +258,16 @@ public class QueryHederaOperations implements HederaOperations {
         throw new UnsupportedOperationException("Queries cannot get original slot usage");
     }
 
-    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
+    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress, @Nullable ContractBytecode bytecode) {
         throw new UnsupportedOperationException("Queries cannot create accounts");
+    }
+
+    public void addSidecars(MessageFrame frame,
+                     ActionSidecarContentTracer tracer,
+                     ContractStateChanges stateChanges,
+                     ContractID recipientId,
+                     MutableAccount recipientAccount
+    ){
+
     }
 }

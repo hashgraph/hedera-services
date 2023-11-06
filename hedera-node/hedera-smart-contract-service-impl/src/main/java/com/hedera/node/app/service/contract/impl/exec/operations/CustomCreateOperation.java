@@ -35,7 +35,7 @@ public class CustomCreateOperation extends AbstractCustomCreateOperation {
     }
 
     @Override
-    protected void onSuccess(@NonNull final MessageFrame frame, @NonNull final Address createdAddress) {
+    protected void onSuccess(@NonNull final MessageFrame frame, @NonNull MessageFrame childFrame, @NonNull final Address createdAddress) {
         // Nothing to do here, the record of the creation will be tracked as
         // a side-effect of dispatching from ProxyWorldUpdater#createAccount()
     }

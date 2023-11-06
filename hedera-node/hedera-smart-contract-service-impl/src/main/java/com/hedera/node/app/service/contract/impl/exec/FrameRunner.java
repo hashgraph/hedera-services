@@ -92,10 +92,15 @@ public class FrameRunner {
 
         // And return the result, success or failure
         final var gasUsed = effectiveGasUsed(gasLimit, frame);
+        var updater = ((ProxyWorldUpdater)frame.getWorldUpdater());
         if (frame.getState() == COMPLETED_SUCCESS) {
-            return successFrom(gasUsed, senderId, recipientId, asEvmContractId(recipientAddress), frame);
+            var result = successFrom(gasUsed, senderId, recipientId, asEvmContractId(recipientAddress), frame);
+            updater.addSidecars(frame, tracer, result.stateChanges(), recipientId, updater.getAccount(recipientAddress));
+            return result;
         } else {
-            return failureFrom(gasUsed, senderId, frame);
+            var result = failureFrom(gasUsed, senderId, frame);
+            updater.addSidecars(frame, tracer, result.stateChanges(), null, null);
+            return result;
         }
     }
 

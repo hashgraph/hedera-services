@@ -42,12 +42,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesToGrpc;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -119,6 +114,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
@@ -135,7 +131,9 @@ import org.apache.tuweni.units.bigints.UInt256;
 public class TraceabilitySuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TraceabilitySuite.class);
-    private static final String RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY = "recordStream.path";
+    private static final String RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY = "recordStream.path.mono";
+    private static final String RECORD_STREAM_FOLDER_PATH_MOD_PROPERTY_KEY = "recordStream.sidecarDir.mod";
+    private static final String SIDECAR_FOLDER_PATH_MOD_PROPERTY_KEY = "recordStream.sidecarDir.mod";
 
     private static SidecarWatcher sidecarWatcher;
     private static final ByteString EMPTY = ByteStringUtils.wrapUnsafely(new byte[0]);
@@ -171,7 +169,8 @@ public class TraceabilitySuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         try {
-            initialize();
+            var initSpec = defaultHapiSpec("initialize").given().when().then();
+            initialize(initSpec);
         } catch (final Exception e) {
             log.warn("An exception occurred initializing watch service", e);
             return List.of(defaultHapiSpec("initialize")
@@ -212,8 +211,9 @@ public class TraceabilitySuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec beforeAll() {
+        var initSpec = defaultHapiSpec("initialize").given().when().then();
         try {
-            initialize();
+            initialize(initSpec);
         } catch (final Exception e) {
             log.warn("An exception occurred initializing watch service", e);
             return defaultHapiSpec("initialize")
@@ -221,8 +221,7 @@ public class TraceabilitySuite extends HapiSuite {
                     .when()
                     .then(assertionsHold((spec, opLog) -> fail("Watch service couldn't be" + " initialized.")));
         }
-
-        return defaultHapiSpec("initialize").given().when().then();
+        return initSpec;
     }
 
     @HapiTest
@@ -4912,6 +4911,8 @@ public class TraceabilitySuite extends HapiSuite {
                 }));
     }
 
+
+    @HapiTest
     @SuppressWarnings("java:S5960")
     private HapiSpec hollowAccountCreate2MergeExportsExpectedSidecars() {
         final var tcValue = 1_234L;
@@ -4933,7 +4934,7 @@ public class TraceabilitySuite extends HapiSuite {
                 .preserving(LAZY_CREATE_PROPERTY, SIDECARS_PROP)
                 .given(
                         overriding(LAZY_CREATE_PROPERTY, "true"),
-                        overriding(SIDECARS_PROP, ""),
+                        overriding(SIDECARS_PROP, "SIDECAR_TYPE_UNKNOWN"),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(create2Factory),
@@ -5079,6 +5080,7 @@ public class TraceabilitySuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
+    @HapiTest
     private HapiSpec assertSidecars() {
         return defaultHapiSpec("assertSidecars")
                 .given(
@@ -5257,20 +5259,26 @@ public class TraceabilitySuite extends HapiSuite {
         return initCode.concat(ByteStringUtils.wrapUnsafely(params.length > 4 ? stripSelector(params) : params));
     }
 
-    private static void initialize() throws Exception {
-        final var recordStreamFolderPath = HapiSpec.isRunningInCi()
-                ? HapiSpec.ciPropOverrides().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY)
-                : HapiSpecSetup.getDefaultPropertySource().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY);
+    private static void initialize(HapiSpec initSpec) throws Exception {
+        final var recordStreamFolderPath = getRecordStreamFolderPath(initSpec);
+        final var absolutePath =
+                recordStreamFolderPath.toAbsolutePath().toString();
+        log.info("recordStreamFolderPath from config %s: %s (absolute %s)"
+                .formatted(HapiSpec.isRunningInCi() ? "CI" : "not CI", recordStreamFolderPath, absolutePath));
 
-        {
-            final var absolutePath =
-                    Paths.get(recordStreamFolderPath).toAbsolutePath().toString();
-            log.info("recordStreamFolderPath from config %s: %s (absolute %s)"
-                    .formatted(HapiSpec.isRunningInCi() ? "CI" : "not CI", recordStreamFolderPath, absolutePath));
-        }
-
-        sidecarWatcher = new SidecarWatcher(Paths.get(recordStreamFolderPath));
+        sidecarWatcher = new SidecarWatcher(recordStreamFolderPath);
         sidecarWatcher.watch();
+    }
+
+    private static Path getRecordStreamFolderPath(HapiSpec initSpec) {
+        return switch (initSpec.targetNetworkType()) {
+            case HAPI_TEST_NETWORK -> Paths.get(
+                    HapiSpecSetup.getDefaultPropertySource().get(RECORD_STREAM_FOLDER_PATH_MOD_PROPERTY_KEY),
+                    HapiSpecSetup.getDefaultPropertySource().get(SIDECAR_FOLDER_PATH_MOD_PROPERTY_KEY));
+            case CI_DOCKER_NETWORK -> Paths.get(HapiSpec.ciPropOverrides().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY));
+            case STANDALONE_MONO_NETWORK -> Paths.get(
+                    HapiSpecSetup.getDefaultPropertySource().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY));
+        };
     }
 
     private ByteString encodeFunctionCall(final String contractName, final String functionName, final Object... args) {

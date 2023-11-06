@@ -32,8 +32,12 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.ExchangeRate;
+import com.hedera.hapi.streams.ContractBytecode;
+import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
+import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.ResultStatus;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -273,12 +277,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public void finalizeHollowAccount(@NonNull final Address alias) {
+    public void finalizeHollowAccount(@NonNull final Address alias, @Nullable ContractBytecode bytecode) {
         evmFrameState.finalizeHollowAccount(alias);
         // add child record on merge
         var contractId = getHederaContractId(alias);
         var evmAddress = aliasFrom(alias);
-        enhancement.operations().externalizeHollowAccountMerge(contractId, evmAddress);
+        enhancement.operations().externalizeHollowAccountMerge(contractId, evmAddress, bytecode);
     }
 
     @Override
@@ -484,7 +488,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             @Nullable final Address origin,
             @Nullable final ContractCreateTransactionBody body,
             @Nullable final Address alias) {
-        final var number = enhancement.operations().peekNextEntityNumber();
+        var number = enhancement.operations().peekNextEntityNumber();
+        if(alias != null && isHollowAccount(alias)) {
+            var aliasBytes = ConversionUtils.aliasFrom(alias);
+            number = enhancement.nativeOperations().resolveAlias(aliasBytes);
+        }
+        
         pendingCreation = new PendingCreation(
                 alias == null ? asLongZeroAddress(number) : alias,
                 number,
@@ -495,5 +504,14 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     // Visible for testing
     public @Nullable PendingCreation getPendingCreation() {
         return pendingCreation;
+    }
+
+    public void addSidecars(MessageFrame frame,
+                            ActionSidecarContentTracer tracer,
+                            ContractStateChanges stateChanges,
+                            ContractID recipientId,
+                            MutableAccount recipientAccount
+                            ) {
+        enhancement.operations().addSidecars(frame, tracer, stateChanges,recipientId, recipientAccount);
     }
 }

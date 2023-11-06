@@ -398,4 +398,8 @@ public class ActionStack {
             @NonNull final E subject, final Function<E, I> getter, final Function<I, String> processor) {
         return processor.compose(getter).apply(subject);
     }
+
+    public List<ActionWrapper> allActions() {
+        return allActions;
+    }
 }

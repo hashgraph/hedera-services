@@ -361,7 +361,7 @@ class HandleHederaOperationsTest {
                 .willReturn(contractCreateRecordBuilder);
 
         // when
-        subject.externalizeHollowAccountMerge(ContractID.DEFAULT, VALID_CONTRACT_ADDRESS.evmAddress());
+        subject.externalizeHollowAccountMerge(ContractID.DEFAULT, VALID_CONTRACT_ADDRESS.evmAddress(), null);
 
         // then
         verify(contractCreateRecordBuilder).contractID(ContractID.DEFAULT);
