@@ -171,8 +171,10 @@ tasks.jacocoTestReport {
 }
 
 testlogger {
-    theme = ThemeType.MOCHA
+    theme = ThemeType.MOCHA_PARALLEL
     slowThreshold = 10000
+    showPassed = false
+    showSkipped = false
     showStandardStreams = true
     showPassedStandardStreams = false
     showSkippedStandardStreams = false
