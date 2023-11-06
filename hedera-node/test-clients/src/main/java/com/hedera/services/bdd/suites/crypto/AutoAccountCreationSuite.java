@@ -20,6 +20,7 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -364,7 +365,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .logged(),
                         getAliasedAccountInfo(VALID_ALIAS).hasOwnedNfts(2));
     }
-
+    @HapiTest
     private HapiSpec canAutoCreateWithNftTransfersToAlias() {
         final var civilianBal = 10 * ONE_HBAR;
         // The expected fee to transfer four serial numbers of two token types to a receiver with
@@ -450,7 +451,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .has(accountWith().approxBalance((long) (civilianBal - approxTransferFee), 2600)))
                 .then();
     }
-
+    @HapiTest
     private HapiSpec multipleTokenTransfersSucceed() {
         final var initialTokenSupply = 1000;
         final var multiTokenXfer = "multiTokenXfer";
@@ -533,7 +534,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .hasToken(relationshipWith(A_TOKEN).balance(10))
                                 .hasToken(relationshipWith(B_TOKEN).balance(20)));
     }
-
+    @HapiTest
     private HapiSpec payerBalanceIsReflectsAllChangesBeforeFeeCharging() {
         final var secondAliasKey = "secondAlias";
         final var secondPayer = "secondPayer";
@@ -581,7 +582,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                 ? Optional.empty()
                                                 : Optional.of("Payer was" + " over-charged!")));
     }
-
+    @HapiTest
     private HapiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
         final var initialTokenSupply = 1000;
         final var sameTokenXfer = "sameTokenXfer";
@@ -663,7 +664,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .signedBy(CIVILIAN, VALID_ALIAS, TOKEN_TREASURY)
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS));
     }
-
+    @HapiTest
     private HapiSpec noStakePeriodStartIfNotStakingToNode() {
         final var user = "user";
         final var contract = "contract";
@@ -1140,11 +1141,11 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         .via("transferTxnBad"))
                 .then();
     }
-
+    @HapiTest
     private HapiSpec autoAccountCreationsHappyPath() {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;
-        return defaultHapiSpec("autoAccountCreationsHappyPath")
+        return onlyDefaultHapiSpec("autoAccountCreationsHappyPath")
                 .given(
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),

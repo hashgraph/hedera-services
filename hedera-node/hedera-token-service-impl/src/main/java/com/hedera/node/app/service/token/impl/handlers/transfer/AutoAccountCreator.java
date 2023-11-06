@@ -18,6 +18,8 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.asPbjKey;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
@@ -30,6 +32,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -43,12 +46,16 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
 public class AutoAccountCreator {
+    private static final Logger logger = LogManager.getLogger(AutoAccountCreator.class);
     private WritableAccountStore accountStore;
     private HandleContext handleContext;
     // checks tokenAliasMap if the change consists an alias that is already used in previous
@@ -88,22 +95,11 @@ public class AutoAccountCreator {
             memo = LAZY_MEMO;
         } else {
             final var key = asKeyFromAlias(alias);
-            syntheticCreation = createAccount(alias, key, 0L, maxAutoAssociations);
+            syntheticCreation = createAccount(alias, asPbjKey(EMPTY_KEY), 0L, maxAutoAssociations);
             memo = AUTO_MEMO;
         }
 
-        // TODO : distribute autocreation fee and deduct payer balance
-        //        final var payer = handleContext.body().transactionID().accountID();
-        //        final var payerAccount = accountStore.get(payer);
-        //        final var currentBalance = payerAccount.tinybarBalance();
-        //        validateTrue(currentBalance >= fee, INSUFFICIENT_PAYER_BALANCE);
-        //        final var payerCopy = payerAccount.copyBuilder()
-        //                .tinybarBalance(currentBalance - fee)
-        //                .build();
-        //        accountStore.put(payerCopy.copyBuilder().build());
-
-        final Predicate<Key> verifier =
-                key -> handleContext.verificationFor(key).passed();
+        final Predicate<Key> verifier = key -> handleContext.verificationFor(key).passed();
 
         final var childRecord = handleContext.dispatchRemovableChildTransaction(
                 syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier, handleContext.payer());
@@ -142,11 +138,9 @@ public class AutoAccountCreator {
         final var topLevelPayer = handleContext.payer();
         final var payerAccount = accountStore.get(topLevelPayer);
         validateTrue(payerAccount != null, PAYER_ACCOUNT_NOT_FOUND);
-        final var txn = Transaction.newBuilder().body(syntheticCreation.build()).build();
-        //        final var fees = handleContext.feeCalculator().computePayment(txn, payerAccount.key());
-        //        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
-        // TODO : need to use fee calculator
-        return 100;
+        final var fees = handleContext.dispatchComputeFees(syntheticCreation.build(), topLevelPayer);
+        logger.info("Fees for auto create: " + fees);
+        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
     /**
