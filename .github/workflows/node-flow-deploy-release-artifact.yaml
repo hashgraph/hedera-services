@@ -74,6 +74,7 @@ jobs:
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
       svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
       svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
       svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
@@ -96,6 +97,7 @@ jobs:
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
       svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
       svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
       svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
