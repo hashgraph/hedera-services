@@ -195,10 +195,10 @@ jobs:
           PRERELEASE_SUFFIX="$(semver get prerel "${EFF_VERSION}")"
           PRERELEASE="false"
           [[ -n "${PRERELEASE_SUFFIX}" ]] && PRERELEASE="true"
-          
+
           MAJOR_VERSION="$(semver get major "${EFF_VERSION}")"
           MINOR_VERSION="$(semver get minor "${EFF_VERSION}")"
-          
+
           echo "number=${EFF_VERSION}" >>"${GITHUB_OUTPUT}"
           echo "prefix=${MAJOR_VERSION}.${MINOR_VERSION" >>"${GITHUB_OUTPUT}"
           echo "prerelease=${PRERELEASE}" >>"${GITHUB_OUTPUT}"
