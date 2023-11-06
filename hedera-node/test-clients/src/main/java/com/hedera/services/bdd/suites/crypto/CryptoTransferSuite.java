@@ -285,7 +285,6 @@ public class CryptoTransferSuite extends HapiSuite {
     private HapiSpec okToRepeatSerialNumbersInBurnList() {
         return defaultHapiSpec("okToRepeatSerialNumbersInBurnList")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(WIPE_KEY),
                         cryptoCreate(TREASURY),
