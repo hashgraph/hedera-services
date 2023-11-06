@@ -602,10 +602,6 @@ public final class MerkleDb {
     @SuppressWarnings("rawtypes")
     private void storeMetadata(final Path dir, final Collection<TableMetadata> tables) {
         final Path tableConfigFile = dir.resolve(METADATA_FILENAME);
-        logger.info(
-                MERKLE_DB.getMarker(),
-                "Creating new metadata file at {}",
-                tableConfigFile.toFile().getAbsolutePath());
         try (OutputStream fileOut =
                         Files.newOutputStream(tableConfigFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
                 SerializableDataOutputStream out = new SerializableDataOutputStream(fileOut)) {
