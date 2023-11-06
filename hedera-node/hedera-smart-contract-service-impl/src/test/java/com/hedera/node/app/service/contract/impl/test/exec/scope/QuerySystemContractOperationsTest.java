@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MOCK_VERIFICATION_STRATEGY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -97,10 +98,9 @@ class QuerySystemContractOperationsTest {
                 () -> subject.dispatch(
                         TransactionBody.DEFAULT, MOCK_VERIFICATION_STRATEGY, AccountID.DEFAULT, Object.class));
         assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.externalizeResult(ContractFunctionResult.DEFAULT, ResultStatus.IS_SUCCESS));
-        assertThrows(
                 UnsupportedOperationException.class, () -> subject.activeSignatureTestWith(MOCK_VERIFICATION_STRATEGY));
+
+        assertDoesNotThrow(() -> subject.externalizeResult(ContractFunctionResult.DEFAULT, ResultStatus.IS_SUCCESS));
     }
 
     @Test

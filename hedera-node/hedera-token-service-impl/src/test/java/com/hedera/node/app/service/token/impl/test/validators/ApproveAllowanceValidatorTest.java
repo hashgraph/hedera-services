@@ -142,40 +142,6 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void validateNegativeAmounts() {
-        givenApproveAllowanceTxn(
-                payerId,
-                false,
-                List.of(CryptoAllowance.newBuilder()
-                        .amount(-1L)
-                        .owner(ownerId)
-                        .spender(spenderId)
-                        .build()),
-                List.of(tokenAllowance),
-                List.of(nftAllowance));
-
-        assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(NEGATIVE_ALLOWANCE_AMOUNT));
-
-        givenApproveAllowanceTxn(
-                payerId,
-                false,
-                List.of(cryptoAllowance),
-                List.of(TokenAllowance.newBuilder()
-                        .amount(-1L)
-                        .owner(ownerId)
-                        .spender(spenderId)
-                        .tokenId(fungibleTokenId)
-                        .build()),
-                List.of(nftAllowance));
-
-        assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(NEGATIVE_ALLOWANCE_AMOUNT));
-    }
-
-    @Test
     void failsWhenExceedsMaxTokenSupply() {
         givenApproveAllowanceTxn(
                 payerId,

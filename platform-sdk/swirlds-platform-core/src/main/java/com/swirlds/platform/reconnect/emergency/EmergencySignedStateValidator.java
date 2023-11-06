@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.reconnect.emergency;
 
-import static com.swirlds.logging.LogMarker.SIGNED_STATE;
+import static com.swirlds.logging.legacy.LogMarker.SIGNED_STATE;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
@@ -166,6 +166,6 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
 
     private static void checkSignatures(final SignedState signedState, final AddressBook addressBook) {
         signedState.pruneInvalidSignatures(addressBook);
-        signedState.throwIfIncomplete();
+        signedState.throwIfNotVerifiable();
     }
 }

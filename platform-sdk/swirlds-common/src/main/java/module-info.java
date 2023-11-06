@@ -78,6 +78,8 @@ module com.swirlds.common {
     exports com.swirlds.common.utility.throttle;
     exports com.swirlds.common.jackson;
     exports com.swirlds.common.units;
+    exports com.swirlds.common.wiring;
+    exports com.swirlds.common.wiring.counters;
 
     /* Targeted exports */
     exports com.swirlds.common.internal to
@@ -167,6 +169,7 @@ module com.swirlds.common {
     requires transitive io.prometheus.simpleclient;
     requires transitive lazysodium.java;
     requires transitive org.apache.logging.log4j;
+    requires com.sun.jna;
     requires io.github.classgraph;
     requires io.prometheus.simpleclient.httpserver;
     requires java.desktop;
@@ -175,6 +178,5 @@ module com.swirlds.common {
     requires org.apache.logging.log4j.core;
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.secp256k1;
-    requires com.sun.jna;
     requires static com.github.spotbugs.annotations;
 }
