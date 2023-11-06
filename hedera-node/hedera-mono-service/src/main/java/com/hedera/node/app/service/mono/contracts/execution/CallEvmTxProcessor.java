@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.contracts.execution;
 
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -25,7 +24,6 @@ import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Map;
@@ -133,7 +131,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
          * If there is no bytecode, it means we have a non-token and non-contract account,
          * hence the code should be null and there must be a value transfer.
          */
-        validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION);
+        //        validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION);
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)

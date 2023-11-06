@@ -90,7 +90,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
          * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,
          * it doesn't mean a system invariant has been violated (FAIL_INVALID); instead it means
          * the target contract is not yet in a valid state to be queried (INVALID_CONTRACT_ID). */
-        validateTrue(code != null, INVALID_CONTRACT_ID);
+//        validateTrue(code != null, INVALID_CONTRACT_ID);
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)
