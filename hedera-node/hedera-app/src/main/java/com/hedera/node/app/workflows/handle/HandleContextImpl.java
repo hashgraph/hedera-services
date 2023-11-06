@@ -206,7 +206,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     verifier.numSignaturesVerified(),
                     signatureMapSize,
                     userTransactionConsensusTime,
-                    subType);
+                    subType,
+                    false);
             final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
             this.feeAccumulator = new FeeAccumulatorImpl(tokenApi, recordBuilder);
         }
@@ -600,6 +601,13 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (transactionID != null) {
             childRecordBuilder.transactionID(transactionID);
         }
+        // transaction fee is set _only_ in preceding child records in mono-service
+//        if(childCategory == PRECEDING){
+//            final var fees = dispatcher.dispatchComputeFees(new ChildFeeContextImpl(feeManager, this, txBody, syntheticPayer));
+//            final var fee = fees.serviceFee() + fees.networkFee() + fees.nodeFee();
+//            childRecordBuilder.transactionFee(fee);
+//        }
+
 
         try {
             // Synthetic transaction bodies do not have transaction ids, node account
@@ -661,6 +669,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
             childStack.commitFullStack();
         } catch (HandleException e) {
+            e.printStackTrace();
             childRecordBuilder.status(e.getStatus());
             recordListBuilder.revertChildrenOf(recordBuilder);
         }

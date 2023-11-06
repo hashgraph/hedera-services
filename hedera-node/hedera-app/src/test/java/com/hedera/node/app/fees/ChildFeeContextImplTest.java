@@ -100,7 +100,8 @@ class ChildFeeContextImplTest {
                         0,
                         0,
                         NOW,
-                        SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES))
+                        SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
+                false))
                 .willReturn(feeCalculator);
         assertSame(feeCalculator, subject.feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
     }

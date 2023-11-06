@@ -83,7 +83,8 @@ public class FeeCalculatorImpl implements FeeCalculator {
             final int numVerifications,
             final int signatureMapSize,
             @NonNull final FeeData feeData,
-            @NonNull final ExchangeRate currentRate) {
+            @NonNull final ExchangeRate currentRate,
+            final boolean isInternalDispatch) {
         //  Perform basic validations, and convert the PBJ objects to Google protobuf objects for `hapi-fees`.
         requireNonNull(txBody);
         requireNonNull(payerKey);
@@ -101,7 +102,8 @@ public class FeeCalculatorImpl implements FeeCalculator {
         // not something we really should know about here. But, since we're going to replace the fee system later
         // with a simpler model, for now, we'll go ahead and check the transaction body type here.
         final var baseMeta = new BaseTransactionMeta(
-                txBody.memo().getBytes(StandardCharsets.UTF_8).length, // Has to be a faster way...
+                // For some reason in mono-service while auto-creating we don't consider memo bytes for fees
+                isInternalDispatch ? 0 : txBody.memo().getBytes(StandardCharsets.UTF_8).length, // Has to be a faster way...
                 txBody.data().kind() == TransactionBody.DataOneOfType.CRYPTO_TRANSFER
                         ? ((CryptoTransferTransactionBody) txBody.data().as())
                                 .transfersOrElse(TransferList.DEFAULT)
