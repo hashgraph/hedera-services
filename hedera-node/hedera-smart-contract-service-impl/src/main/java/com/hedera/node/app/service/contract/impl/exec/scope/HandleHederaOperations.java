@@ -370,14 +370,15 @@ public class HandleHederaOperations implements HederaOperations {
                 && recipientId != null
                 && recipientAccount!= null
                 && frame.getType().equals(MessageFrame.Type.CONTRACT_CREATION)) {
+            var bytecodeBuilder = ContractBytecode.newBuilder()
+                    .contractId(recipientId)
+                    .runtimeBytecode(tuweniToPbjBytes(recipientAccount.getCode()));
+            var body = (ContractCreateTransactionBody)context.body().data().value();
+            if(!body.hasInitcode()) {
+                bytecodeBuilder.initcode(tuweniToPbjBytes(frame.getCode().getBytes()));
+            }
             context.recordBuilder(ContractCreateRecordBuilder.class)
-                    .addContractBytecode(
-                            ContractBytecode.newBuilder()
-                                    .contractId(recipientId)
-                                    .initcode(tuweniToPbjBytes(frame.getCode().getBytes()))
-                                    .runtimeBytecode(tuweniToPbjBytes(recipientAccount.getCode()))
-                                    .build(),
-                    false);
+                    .addContractBytecode(bytecodeBuilder.build(), false);
         }
     }
 }
