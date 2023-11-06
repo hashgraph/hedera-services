@@ -256,7 +256,7 @@ jobs:
           fi
 
       - name: Install SSH key
-        uses: shimataro/ssh-key-action@685d0f20da72e4b53cc81d373a2ed0a867770e46 # v2.5.1
+        uses: shimataro/ssh-key-action@38b53cb2f445ea2e0eb8872407e366677c41dbc6 # v2.6.1
         with:
           name: jrs-ssh-keyfile
           key: ${{ secrets.jrs-ssh-key-file }}
