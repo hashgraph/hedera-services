@@ -125,7 +125,7 @@ public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
                     .externalizeResult(
                             contractFunctionResultSuccessFor(gasRequirement, output, contractID),
                             SystemContractUtils.ResultStatus.IS_SUCCESS,
-                            FAIL_INVALID);
+                            SUCCESS);
         }
         return result;
     }
