@@ -423,7 +423,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var baseSize = op.memo().length() + keySize + (op.maxAutomaticTokenAssociations() > 0 ? INT_SIZE : 0L);
         final var lifeTime = op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
         final var feeCalculator = feeContext.feeCalculator(SubType.DEFAULT);
-        final var fees =  feeCalculator
+        final var fees = feeCalculator
                 .addBytesPerTransaction(baseSize + (2 * LONG_SIZE) + BOOL_SIZE)
                 .addRamByteSeconds((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime)
                 .addRamByteSeconds(op.maxAutomaticTokenAssociations() * lifeTime * CREATE_SLOT_MULTIPLIER)

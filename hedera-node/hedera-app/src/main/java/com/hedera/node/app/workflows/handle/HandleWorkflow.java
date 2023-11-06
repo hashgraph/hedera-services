@@ -438,6 +438,7 @@ public class HandleWorkflow {
 
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
+                    // Transaction fee is set _only_ in preceding child records in mono-service
                     if (!recordListBuilder.precedingRecordBuilders().isEmpty()) {
                         final var childFees = recordListBuilder.precedingRecordBuilders().stream()
                                 .mapToLong(SingleTransactionRecordBuilderImpl::transactionFee)

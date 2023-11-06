@@ -71,7 +71,6 @@ import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.nio.charset.StandardCharsets;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -388,16 +387,22 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var baseSize = baseSizeOf(op, keySize);
         final var newMemoSize = op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length;
         final var accountMemoSize = account == null ? 0L : account.memo().getBytes(StandardCharsets.UTF_8).length;
-        final long newVariableBytes =
-                (newMemoSize != 0L ? newMemoSize : accountMemoSize + (keySize == 0L ? getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT))) : keySize));
+        final long newVariableBytes = (newMemoSize != 0L
+                ? newMemoSize
+                : accountMemoSize
+                        + (keySize == 0L
+                                ? getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
+                                : keySize));
 
-        final long tokenRelBytes = (account == null ? 0 : account.numberAssociations()) * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
+        final long tokenRelBytes =
+                (account == null ? 0 : account.numberAssociations()) * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
         final long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + tokenRelBytes;
         final var effectiveNow =
                 body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
         final long newLifetime = ESTIMATOR_UTILS.relativeLifetime(
                 effectiveNow, op.expirationTimeOrElse(Timestamp.DEFAULT).seconds());
-        final long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(effectiveNow, (account == null ? 0 : account.expirationSecond()));
+        final long oldLifetime =
+                ESTIMATOR_UTILS.relativeLifetime(effectiveNow, (account == null ? 0 : account.expirationSecond()));
         final long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
                 cryptoAutoRenewRb(account), oldLifetime, sharedFixedBytes + newVariableBytes, newLifetime);
 
