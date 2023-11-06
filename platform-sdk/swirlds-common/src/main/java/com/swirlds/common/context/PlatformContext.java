@@ -17,8 +17,8 @@
 package com.swirlds.common.context;
 
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 
 /**
  * Public interface of the platform context that provides access to all basic services and resources. By using the

@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.swirlds.common.metrics;
@@ -22,8 +21,7 @@ import com.swirlds.metrics.api.MetricConfig;
 import com.swirlds.metrics.api.MetricsFactory;
 
 public abstract class PlatformMetricConfig<T extends Metric, C extends MetricConfig<T, C>> extends MetricConfig<T, C> {
-    protected PlatformMetricConfig(String category, String name, String description, String unit,
-            String format) {
+    protected PlatformMetricConfig(String category, String name, String description, String unit, String format) {
         super(category, name, description, unit, format);
     }
 

@@ -26,10 +26,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.metrics.api.IntegerGauge;
-import com.swirlds.metrics.api.Metric;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.Metric;
 import java.util.List;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;

@@ -18,8 +18,8 @@ package com.swirlds.platform.event;
 
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicLong;
 

@@ -200,7 +200,7 @@ class WinTab2Stats extends PrePaintableJPanel implements ChartLabelModel {
             }
             if (metric instanceof PlatformMetric platformMetric
                     && (platformMetric.getStatsBuffered() == null
-                    || platformMetric.getStatsBuffered().getAllHistory() == null)) {
+                            || platformMetric.getStatsBuffered().getAllHistory() == null)) {
                 // if no history, then box is gray, and not clickable
                 statBoxes[i].setBackground(LIGHT_GRAY);
                 statBoxes[i].setOpaque(true);

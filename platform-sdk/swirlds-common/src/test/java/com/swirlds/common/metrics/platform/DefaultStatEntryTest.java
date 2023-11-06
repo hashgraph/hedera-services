@@ -31,12 +31,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.metrics.api.IntegerGauge;
-import com.swirlds.metrics.api.Metric;
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.Metric;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.function.Consumer;

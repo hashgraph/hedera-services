@@ -19,8 +19,8 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.metrics.api.IntegerAccumulator;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.api.IntegerAccumulator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntBinaryOperator;

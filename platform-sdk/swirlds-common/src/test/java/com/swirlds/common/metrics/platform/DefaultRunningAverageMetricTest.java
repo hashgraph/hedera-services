@@ -27,10 +27,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.util.List;

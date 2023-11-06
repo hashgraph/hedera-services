@@ -21,8 +21,8 @@ import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
-import com.swirlds.metrics.api.Metric;
 import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
 import java.time.Duration;
 import java.util.List;

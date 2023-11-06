@@ -20,8 +20,8 @@ import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
 

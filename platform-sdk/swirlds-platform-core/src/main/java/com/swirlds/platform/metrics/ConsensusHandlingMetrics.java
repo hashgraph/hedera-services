@@ -21,9 +21,9 @@ import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.stats.AverageAndMax;

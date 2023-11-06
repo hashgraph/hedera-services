@@ -19,9 +19,9 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.metrics.api.DoubleAccumulator;
 import com.swirlds.common.metrics.atomic.AtomicDouble;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.api.DoubleAccumulator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.DoubleBinaryOperator;

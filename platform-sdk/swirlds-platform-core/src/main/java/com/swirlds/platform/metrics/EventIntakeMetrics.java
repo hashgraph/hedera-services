@@ -21,11 +21,11 @@ import static com.swirlds.metrics.api.FloatFormats.FORMAT_14_2;
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
-import com.swirlds.metrics.api.LongAccumulator;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.StaleEventObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;

@@ -19,12 +19,12 @@ package com.swirlds.platform.metrics;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_0;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
-import com.swirlds.metrics.api.Counter;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;

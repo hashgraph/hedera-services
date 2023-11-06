@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.platform;
 
-import com.swirlds.metrics.api.Metric;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.metrics.api.Metric;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;

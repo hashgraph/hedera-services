@@ -23,11 +23,11 @@ import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.stats.AverageTimeStat;
 import java.time.temporal.ChronoUnit;
 

@@ -16,12 +16,12 @@
 
 package com.swirlds.common.metrics.noop;
 
-import com.swirlds.metrics.api.Metric;
-import com.swirlds.metrics.api.MetricConfig;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.PlatformMetrics;
 import com.swirlds.common.metrics.noop.internal.NoOpMetricsFactory;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.metrics.api.Metrics;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;

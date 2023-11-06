@@ -19,9 +19,9 @@ package com.swirlds.platform.metrics;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_1_3;
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.SwirldTransactionSubmitter;
 import com.swirlds.platform.stats.AverageStat;
 

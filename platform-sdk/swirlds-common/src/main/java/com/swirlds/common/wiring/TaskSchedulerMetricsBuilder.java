@@ -18,11 +18,11 @@ package com.swirlds.common.wiring;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
 import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
