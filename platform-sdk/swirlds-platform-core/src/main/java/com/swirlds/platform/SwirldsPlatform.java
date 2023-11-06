@@ -82,6 +82,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
+import com.swirlds.common.utility.StackTrace;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.platform.components.EventIntake;
@@ -1235,40 +1236,14 @@ public class SwirldsPlatform implements Platform {
      */
     private void handleFatalError(
             @Nullable final String msg, @Nullable final Throwable throwable, @NonNull final SystemExitCode exitCode) {
-
-        // Log this fatal error first, to make sure it ends up in the logs, no matter what else happens
-        final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-
-        final StringBuilder sb = new StringBuilder();
-        sb.append(new FatalErrorPayload("Fatal error, node will shut down. Reason: " + msg))
-                .append("\n");
-
-        for (final StackTraceElement element : stackTrace) {
-            sb.append("   ").append(element).append("\n");
-        }
-
-        if (throwable == null) {
-            logger.fatal(EXCEPTION.getMarker(), sb);
-        } else {
-            logger.fatal(EXCEPTION.getMarker(), sb, throwable);
-        }
-
+        logger.fatal(EXCEPTION.getMarker(),
+                "{}\nCaller stack trace:\n{}\nThrowable provided:",
+                new FatalErrorPayload("Fatal error, node will shut down. Reason: " + msg),
+                StackTrace.getStackTrace().toString(),
+                throwable);
         // Let the state management component attempt to handle the fatal error
         stateManagementComponent.onFatalError();
 
-        // It may be that null was passed in, despite our compiler warnings. In that case, we want to log this fact
-        // with a stack trace for who called this method, so we can track down what code is passing in null.
-        //noinspection ConstantValue
-        if (exitCode == null) {
-            try {
-                throw new NullPointerException("exitCode was null");
-            } catch (final NullPointerException e) {
-                logger.error("exitCode was null. Exiting anyway with FATAL_ERROR", e);
-            }
-        }
-
-        // We will either exit with the code given to us, or FATAL_ERROR if somebody failed to give us a code
-        //noinspection ConstantValue
-        SystemExitUtils.exitSystem(exitCode == null ? FATAL_ERROR : exitCode, msg);
+        SystemExitUtils.exitSystem(exitCode, msg);
     }
 }
