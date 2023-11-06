@@ -25,10 +25,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -187,27 +185,28 @@ final class SubProcessHapiTestNode implements HapiTestNode {
     }
 
     @Override
-    public void waitForActive(long seconds) throws TimeoutException {
+    public void waitForActive(long seconds) {
         final var waitUntil = System.currentTimeMillis() + (seconds * 1000);
+        final var log = workingDir.resolve("output").resolve("hgcaa.log");
         while (handle != null) {
             if (System.currentTimeMillis() > waitUntil) {
-                throw new TimeoutException(
+                throw new RuntimeException(
                         "node " + nodeId + ": Waited " + seconds + " seconds, but node did not become active!");
             }
 
-            if ("ACTIVE".equals(getPlatformStatus())) {
-                // Actually try to open a connection with the node, to make sure it is really up and running.
-                // The platform may be active, but the node may not be listening.
-                try {
-                    final var url = new URL("http://localhost:" + grpcPort + "/");
-                    final var connection = url.openConnection();
-                    connection.connect();
-                    return;
-                } catch (MalformedURLException e) {
-                    throw new RuntimeException("Should never happen", e);
-                } catch (IOException ignored) {
-                    // This is expected, the node is not up yet.
+            try {
+                if (Files.exists(log)) {
+                    try (final var in = Files.newBufferedReader(log)) {
+                        String line;
+                        while ((line = in.readLine()) != null) {
+                            if (line.contains("ACTIVE")) {
+                                return;
+                            }
+                        }
+                    }
                 }
+            } catch (Exception e) {
+                throw new RuntimeException("node " + nodeId + ": Unable to read from the hgcaa log file " + log, e);
             }
 
             try {
