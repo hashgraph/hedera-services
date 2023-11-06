@@ -182,6 +182,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // deleted, we skip the signature verification.
             return preHandleFailure(creator, null, PAYER_ACCOUNT_DELETED, txInfo, null, null, null);
         }
+
         // 3. Expand and verify signatures
         return expandAndVerifySignatures(txInfo, payer, payerAccount, storeFactory);
     }
@@ -235,7 +236,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         // 2b. Call Pre-Transaction Handlers
         try {
-            // FUTURE: First, perform semantic checks on the transaction (TBD)
+            // First, perform semantic checks on the transaction
+            dispatcher.dispatchPureChecks(txInfo.txBody());
             // Then gather the signatures from the transaction handler
             dispatcher.dispatchPreHandle(context);
             // FUTURE: Finally, let the transaction handler do warm up of other state it may want to use later (TBD)
@@ -243,6 +245,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.
             // In that case, the payer will end up paying for the transaction. So we still need to do the signature
             // verifications that we have determined so far.
+            logger.debug("Transaction failed pre-check", preCheck);
             final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
             return preHandleFailure(payer, payerKey, preCheck.responseCode(), txInfo, Set.of(), Set.of(), results);
         }
