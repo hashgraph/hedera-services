@@ -97,7 +97,7 @@ public interface TokenServiceApi {
      *
      * @param contractId the id of the contract to delete
      */
-    void deleteAndMaybeUnaliasContract(@NonNull ContractID contractId);
+    void deleteContract(@NonNull ContractID contractId);
 
     /**
      * Increments the nonce of the given contract.
