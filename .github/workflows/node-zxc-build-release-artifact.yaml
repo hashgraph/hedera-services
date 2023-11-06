@@ -157,7 +157,7 @@ jobs:
           fi
 
       - name: Checkout Code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Setup Java
         uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
@@ -243,7 +243,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Checkout Code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
@@ -389,7 +389,7 @@ jobs:
       - build-artifact
     steps:
       - name: Checkout Code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Authenticate to Google Cloud
         id: google-auth
@@ -517,7 +517,7 @@ jobs:
       - validate
     steps:
       - name: Checkout Code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Install GnuPG Tools
         if: ${{ inputs.dry-run-enabled != true }}
@@ -609,7 +609,7 @@ jobs:
     if: ${{ inputs.sdk-release-profile != 'none' }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Install GnuPG Tools
         if: ${{ inputs.dry-run-enabled != true }}
