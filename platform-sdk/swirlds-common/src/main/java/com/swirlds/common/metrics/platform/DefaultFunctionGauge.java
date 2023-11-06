@@ -20,8 +20,8 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.MetricConfig;
+import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import java.util.List;
 import java.util.function.Supplier;
 

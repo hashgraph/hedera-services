@@ -22,10 +22,10 @@ import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
-import com.swirlds.common.metrics.MetricConfig;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;

@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.statistics;
 
-import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 
 /**
  * A statistic such as StatsSpeedometer or StatsRunningAverage should implement this if it will

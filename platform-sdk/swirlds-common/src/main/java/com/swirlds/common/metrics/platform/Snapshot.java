@@ -18,8 +18,8 @@ package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 
 /**
