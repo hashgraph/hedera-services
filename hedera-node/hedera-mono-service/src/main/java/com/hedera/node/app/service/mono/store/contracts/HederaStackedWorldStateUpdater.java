@@ -46,7 +46,6 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFro
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldUpdater;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateGhostAccount;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -77,6 +76,15 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
     private int numAllocatedIds = 0;
     private ContractID lastAllocatedId = null;
     private ContractCustomizer pendingCreationCustomizer = null;
+
+    public void setCreationCustomizerForSponsor(final Address sponsorAddressOrAlias) {
+        final var sponsor = aliases().resolveForEvm(sponsorAddressOrAlias);
+        final var sponsorId = accountIdFromEvmAddress(sponsor);
+        pendingCreationCustomizer = customizerFactory.apply(sponsorId, trackingAccounts());
+        if (!dynamicProperties.areContractAutoAssociationsEnabled()) {
+            pendingCreationCustomizer.accountCustomizer().maxAutomaticAssociations(0);
+        }
+    }
 
     public HederaStackedWorldStateUpdater(
             final AbstractLedgerWorldUpdater<HederaMutableWorldState, Account> updater,
@@ -216,12 +224,6 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
     @Override
     public MutableAccount getAccount(final Address addressOrAlias) {
         final var address = aliases().resolveForEvm(addressOrAlias);
-
-        if (isMissingTarget(addressOrAlias)) {
-            return new UpdateTrackingAccount<>(
-                    new HederaEvmWorldStateGhostAccount(addressOrAlias),
-                    new UpdateAccountTrackerImpl(trackingAccounts()));
-        }
 
         if (isTokenRedirect(address)) {
             final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);

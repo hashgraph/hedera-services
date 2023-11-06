@@ -111,6 +111,9 @@ public class HederaEvmMessageCallProcessorV038 extends MessageCallProcessor {
                 }
             }
 
+            ((AbstractLedgerEvmWorldUpdater) frame.getWorldUpdater())
+                    .setCreationCustomizerForSponsor(frame.getSenderAddress());
+
             super.start(frame, operationTracer);
         }
     }

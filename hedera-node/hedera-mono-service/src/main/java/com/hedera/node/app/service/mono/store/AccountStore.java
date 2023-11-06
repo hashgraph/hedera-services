@@ -100,11 +100,12 @@ public class AccountStore {
     }
 
     public boolean isContractUsable(final Id id) {
-        // check existence
-        // check expired
-        // check deleted
-        // check is contract
-        return false;
+        try {
+            loadContract(id);
+            return true;
+        } catch (InvalidTransactionException e) {
+            return false;
+        }
     }
 
     /**
