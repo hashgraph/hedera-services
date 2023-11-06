@@ -1,7 +1,9 @@
 # Panel, Test Name, Owner, Notes URL
 
 3NReconnect, MixedOps-Interrupted-2NReconnect-6k-41m, services, https://www.notion.so/swirldslabs/3NReconnect-MixedOps-Interrupted-2NReconnect-6k-41m-d51de29ec7234747835a045792c37989?pvs=4
+3NReconnect, MixedOps-Interrupted-2NReconnect-1k-41m, services, https://www.notion.so/swirldslabs/3NReconnect-MixedOps-Interrupted-2NReconnect-6k-41m-d51de29ec7234747835a045792c37989?pvs=4
 3NReconnect, MixedOps-NI-3NReconnect-6k-30m, services, https://www.notion.so/swirldslabs/3NReconnect-MixedOps-Interrupted-2NReconnect-6k-41m-d51de29ec7234747835a045792c37989?pvs=4
+3NReconnect, MixedOps-NI-3NReconnect-2k-30m, services, https://www.notion.so/swirldslabs/3NReconnect-MixedOps-Interrupted-2NReconnect-6k-41m-d51de29ec7234747835a045792c37989?pvs=4
 
 Abbrev, Consistency-Hard-Restart-10m, platform, https://www.notion.so/swirldslabs/Abbrev-Consistency-Hard-Restart-10m-ba9b0aa74a074bc7b6da0ebe9ec13e80
 Abbrev, Consistency-NDReconnect-10m, platform, https://www.notion.so/swirldslabs/Abbrev-Consistency-NDReconnect-10m-8b83db4b23064472a5450d0cb8640e33
@@ -24,6 +26,8 @@ BalanceValid, HTS-Restart-AccountBalances-2k-20m, services, https://www.notion.s
 
 Basic, Crypto-Basic-50k-20m, platform, https://www.notion.so/swirldslabs/Basic-Crypto-Basic-50k-20m-561c84b78b3142d19081f75ddb0a2f79
 Basic, Crypto-LargeTx-50k-20m, platform, https://www.notion.so/swirldslabs/Basic-Crypto-LargeTx-50k-20m-ec9f7e26c7cb4dc3b3c23f7e129f0994
+Basic, Stress-Basic-50k-20m, platform, https://www.notion.so/swirldslabs/Basic-Stress-Basic-50k-20m-fad689adc9e042cfbc43d220c244cd82
+Basic, Stress-LargeTx-50k-20m, platform, https://www.notion.so/swirldslabs/Basic-Stress-LargeTx-50k-20m-234c0900a39c445cad2e78929f96ca0d
 
 CentOS7_Update, Crypto-Update-Jar-1.5k-25m, services, https://www.notion.so/swirldslabs/CentOS7_Update-Crypto-Update-Jar-1-5k-25m-979f86b5e10c4992ac98da1692000384
 CentOS7_Update, Crypto-Update-Setting-1.5k-15m, services, https://www.notion.so/swirldslabs/CentOS7_Update-Crypto-Update-Setting-1-5k-15m-caf2ab2df6dc48f0ba4a15423e84b802
@@ -111,11 +115,15 @@ Reconnect, FileOps-NIReconnect-12-21m, services, https://www.notion.so/swirldsla
 Reconnect, MixedOps-GenesisReconnect-500-15m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-GenesisReconnect-500-15m-d9bfb9a925cb466db9b622ace80fa289
 Reconnect, MixedOps-GenesisReconnect-6k-15m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-GenesisReconnect-6k-15m-4043841860f94b629e7238e4131bc465
 Reconnect, MixedOps-NDReconnect-1.5k-25m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NDReconnect-1-5k-25m-df8817b8d3c2437fa61a2cc0ff5b2bfb
+Reconnect, MixedOps-NDReconnect-500-25m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NDReconnect-1-5k-25m-df8817b8d3c2437fa61a2cc0ff5b2bfb
 Reconnect, MixedOps-NI-MultiReconnect-10k-32m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NI-MultiReconnect-10k-32m-bd9f0ef494894310b4bae6f66ad86faa
+Reconnect, MixedOps-NI-MultiReconnect-2k-32m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NI-MultiReconnect-10k-32m-bd9f0ef494894310b4bae6f66ad86faa
 Reconnect, MixedOps-NIReconnect-1.5k-25m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnect-1-5k-25m-e7f791b62e52431b9a73539f6a5145b0
+Reconnect, MixedOps-NIReconnect-400-25m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnect-1-5k-25m-e7f791b62e52431b9a73539f6a5145b0
 Reconnect, MixedOps-NIReconnect-2k-28m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnect-2k-28m-a49b6253fd56491c945b962c3306aa1d
 Reconnect, MixedOps-NIReconnect-6k-28m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnect-6k-28m-5f652bb45a854f949ee40ddf1a2f9c58
 Reconnect, MixedOps-NIReconnectFail-1.5k-10m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnectFail-1-5k-10m-482531712c6a4a14b4b744705ba708c5
+Reconnect, MixedOps-NIReconnectFail-500-15m, services, https://www.notion.so/swirldslabs/Reconnect-MixedOps-NIReconnectFail-1-5k-10m-482531712c6a4a14b4b744705ba708c5
 Reconnect, SmartContractOps-NIReconnect-14-21m, services, https://www.notion.so/swirldslabs/Reconnect-SmartContractOps-NIReconnect-14-21m-0a33c4c3f497450d89c2c62f5d0afd1e
 Reconnect, VMerkleDual-NDReconnect-500-60m, platform, https://www.notion.so/swirldslabs/Reconnect-VMerkleDual-NDReconnect-500-60m-bed1119b943141cc986c07ff10145468
 
