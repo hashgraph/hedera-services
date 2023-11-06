@@ -32,7 +32,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -64,13 +63,13 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
-            						failsForDeletedAccount(),
-            						failsForMissingAccount(),
-                                    failsForInvalidTrxBody(),
-            						failsForInsufficientPayment(),
-            						failsForMalformedPayment(),
-            						failsForUnfundablePayment(),
-            						succeedsNormally(),
+            failsForDeletedAccount(),
+            failsForMissingAccount(),
+            failsForInvalidTrxBody(),
+            failsForInsufficientPayment(),
+            failsForMalformedPayment(),
+            failsForUnfundablePayment(),
+            succeedsNormally(),
             getAccountRecords_testForDuplicates()
         });
     }
@@ -129,7 +128,10 @@ public class CryptoGetRecordsRegression extends HapiSuite {
         return defaultHapiSpec("FailsForInsufficientPayment")
                 .given(cryptoCreate(PAYER))
                 .when()
-                .then(getAccountRecords(GENESIS).payingWith(PAYER).nodePayment(1L).hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
+                .then(getAccountRecords(GENESIS)
+                        .payingWith(PAYER)
+                        .nodePayment(1L)
+                        .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
     }
 
     @HapiTest
@@ -137,7 +139,9 @@ public class CryptoGetRecordsRegression extends HapiSuite {
         return defaultHapiSpec("failsForInvalidTrxBody")
                 .given()
                 .when()
-                .then(getAccountRecords(GENESIS).useEmptyTxnAsAnswerPayment().hasAnswerOnlyPrecheck(INVALID_TRANSACTION_BODY));
+                .then(getAccountRecords(GENESIS)
+                        .useEmptyTxnAsAnswerPayment()
+                        .hasAnswerOnlyPrecheck(INVALID_TRANSACTION_BODY));
     }
 
     @HapiTest
