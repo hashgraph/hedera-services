@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.records;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractStateChanges;
@@ -58,6 +59,15 @@ public interface ContractCallRecordBuilder {
      */
     @NonNull
     ContractCallRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
+
+    /**
+     * Tracks the transaction contained in child records resulting from the contract call.
+     *
+     * @param txn the transaction
+     * @return this builder
+     */
+    @NonNull
+    ContractCallRecordBuilder transaction(@NonNull final Transaction txn);
 
     @NonNull
     ContractCallRecordBuilder contractActions(

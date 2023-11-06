@@ -30,9 +30,9 @@ import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.LONG_ACCOUNT_AMOUNT_BYTES;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.isAlias;
+import static com.hedera.node.app.service.token.AliasUtils.isAlias;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
-import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -284,8 +284,8 @@ public class CryptoTransferHandler implements TransactionHandler {
                 // then we fail with ACCOUNT_IS_IMMUTABLE. And if the account is being debited and has no key,
                 // then we also fail with the same error. It should be that being credited value DOES NOT require
                 // a key, unless `receiverSigRequired` is true.
-                final var accountKey = account.key();
-                if ((isEmpty(accountKey)) && (isDebit || isCredit && !hbarTransfer) && !isHollow(account)) {
+                if (isStakingAccount(ctx.configuration(), account.accountId())
+                        && (isDebit || (isCredit && !hbarTransfer))) {
                     // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
                     throw new PreCheckException(INVALID_ACCOUNT_ID);
                 }
@@ -359,7 +359,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         }
 
         final var receiverKey = receiverAccount.key();
-        if (isEmpty(receiverKey)) {
+        if (isStakingAccount(meta.configuration(), receiverAccount.accountId())) {
             // If the receiver account has no key, then fail with INVALID_ACCOUNT_ID.
             // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
             throw new PreCheckException(INVALID_ACCOUNT_ID);

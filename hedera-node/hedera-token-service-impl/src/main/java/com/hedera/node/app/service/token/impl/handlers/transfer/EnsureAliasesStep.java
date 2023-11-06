@@ -179,7 +179,7 @@ public class EnsureAliasesStep implements TransferStep {
      */
     public static boolean isAlias(@NonNull AccountID accountID) {
         requireNonNull(accountID);
-        return accountID.hasAlias() && (!accountID.hasAccountNum() || accountID.accountNum() == 0L);
+        return accountID.hasAlias() && accountID.accountNumOrElse(0L) == 0L;
     }
 
     /**
