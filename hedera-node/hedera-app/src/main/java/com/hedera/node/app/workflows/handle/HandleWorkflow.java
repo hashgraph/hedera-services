@@ -438,6 +438,12 @@ public class HandleWorkflow {
 
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
+                    if (!recordListBuilder.precedingRecordBuilders().isEmpty()) {
+                        final var childFees = recordListBuilder.precedingRecordBuilders().stream()
+                                .mapToLong(SingleTransactionRecordBuilderImpl::transactionFee)
+                                .sum();
+                        feeAccumulator.chargeNetworkFee(payer, childFees);
+                    }
                     recordBuilder.status(SUCCESS);
 
                     // After transaction is successfully handled update the gas throttle by leaking the unused gas
