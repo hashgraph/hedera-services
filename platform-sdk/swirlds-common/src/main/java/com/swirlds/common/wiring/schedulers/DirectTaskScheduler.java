@@ -48,6 +48,7 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * @param onRamp                   an object counter that is incremented when data is added to the task scheduler
      * @param offRamp                  an object counter that is decremented when data is removed from the task
      * @param busyTimer                a timer that tracks the amount of time the task scheduler is busy
+     * @param stateless                true if the work scheduled by this object is stateless
      */
     public DirectTaskScheduler(
             @NonNull final WiringModel model,
@@ -55,8 +56,9 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
             @NonNull final ObjectCounter onRamp,
             @NonNull final ObjectCounter offRamp,
-            @NonNull final FractionalTimer busyTimer) {
-        super(model, name, TaskSchedulerType.DIRECT, false, true);
+            @NonNull final FractionalTimer busyTimer,
+            final boolean stateless) {
+        super(model, name, stateless ? TaskSchedulerType.DIRECT_STATELESS : TaskSchedulerType.DIRECT, false, true);
 
         this.uncaughtExceptionHandler = Objects.requireNonNull(uncaughtExceptionHandler);
         this.onRamp = Objects.requireNonNull(onRamp);

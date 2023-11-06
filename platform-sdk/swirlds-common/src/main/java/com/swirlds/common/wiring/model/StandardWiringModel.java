@@ -108,17 +108,19 @@ public class StandardWiringModel extends WiringModel {
     /**
      * {@inheritDoc}
      */
+    @Override
+    public boolean checkForIllegalDirectSchedulerUsage() {
+        return DirectSchedulerChecks.checkForIllegalDirectSchedulerUse(vertices.values());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public String generateWiringDiagram(@NonNull final Set<ModelGroup> groups) {
         return WiringFlowchart.generateWiringDiagram(vertices, edges, groups);
     }
-
-    // TODO we need to ensure the following:
-    // - at most one scheduler has edges leading into each direct scheduler
-    // - concurrent schedulers never have edges leading into a direct scheduler
-    // - it should be legal for wires travelling through direct schedulers and through transformers to have edges
-    //   into a direct scheduler, as long as they all originate from the same scheduler and it is non-concurrent
 
     /**
      * {@inheritDoc}

@@ -46,13 +46,6 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
     private final TaskSchedulerType type;
 
     /**
-     * Some verticies are "pass through". That is, they always execute immediately on the caller's thread and never
-     * buffer work. If a vertex is a pass through, this field will be non-null and will point to the vertex where the
-     * work will actually be executed. If null then this vertex is not a pass through.
-     */
-    private final ModelVertex passThroughOrigin = null; // TODO set this value!
-
-    /**
      * The outgoing edges of this vertex.
      */
     private final List<ModelEdge> outgoingEdges = new ArrayList<>();
@@ -64,7 +57,6 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
      * @param type                the type of task scheduler that corresponds to this vertex, or null if this vertex
      *                            does not correspond to a task scheduler
      * @param insertionIsBlocking true if the insertion of this vertex may block until capacity is available
-     *                            // TODO we could infer this from the type...
      */
     public ModelVertex(
             @NonNull final String name, @Nullable final TaskSchedulerType type, final boolean insertionIsBlocking) {
@@ -124,6 +116,7 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
         return outgoingEdges.iterator();
     }
 
+    // TODO unused
     /**
      * Get the outgoing edges of this vertex.
      *
@@ -146,7 +139,7 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(@Nullable final Object obj) {
         if (obj instanceof final ModelVertex that) {
             return name.equals(that.name);
         }

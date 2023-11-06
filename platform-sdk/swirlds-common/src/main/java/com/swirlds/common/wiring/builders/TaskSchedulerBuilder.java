@@ -345,7 +345,9 @@ public class TaskSchedulerBuilder<O> {
                     insertionIsBlocking);
             case SEQUENTIAL_THREAD -> throw new UnsupportedOperationException("SEQUENTIAL_THREAD not yet implemented");
             case DIRECT -> new DirectTaskScheduler<>(
-                    model, name, buildUncaughtExceptionHandler(), onRamp, offRamp, busyFractionTimer);
+                    model, name, buildUncaughtExceptionHandler(), onRamp, offRamp, busyFractionTimer, false);
+            case DIRECT_STATELESS -> new DirectTaskScheduler<>(
+                    model, name, buildUncaughtExceptionHandler(), onRamp, offRamp, busyFractionTimer, true);
         };
     }
 }

@@ -41,9 +41,34 @@ public enum TaskSchedulerType {
      * Tasks are executed immediately on the callers thread. There is no queue for tasks waiting to be handled (logical
      * or otherwise). Useful for scenarios where tasks are extremely small and not worth the scheduling overhead.
      * <p>
-     * Only a single task scheduler is permitted to send data to a direct task scheduler. {@link #CONCURRENT} task
-     * schedulers are forbidden from sending data to a direct task scheduler. These constraints are enforced by the
-     * framework.
+     * Only a single logical thread of execution is permitted to send data to a direct task scheduler.
+     * {@link #SEQUENTIAL} and {@link #SEQUENTIAL_THREAD} are permitted to send data to a direct task scheduler, but it
+     * is illegal for more than one of these schedulers to send data to the same direct task scheduler. It is legal for
+     * operations that are executed on the calling thread (e.g. filters, transformers, other direct executors) to call
+     * into a direct executor. Such calls are treated as equivalent to the parent sequential scheduler calling into the
+     * direct scheduler.
+     *
+     * <p>
+     * {@link #CONCURRENT} task schedulers are forbidden from sending data to a direct task scheduler.
+     *
+     * <p>
+     * These constraints are enforced by the framework.
      */
-    DIRECT;
+    DIRECT,
+    /**
+     * Similar to {@link #DIRECT} except that work performed by this scheduler is required to be stateless. This means
+     * that it is safe to concurrently execute multiple instances of the same task, freeing it from the restrictions of
+     * {@link #DIRECT}.
+     *
+     * <p>
+     * There is no enforcement mechanism in the framework to ensure that the task is actually stateless. It is advised
+     * that this scheduler type be used with caution, as improper use can lead to can lead to nasty race conditions.
+     *
+     * <p>
+     * In theory, it would be safe to use this task scheduler type for stateful work if the state is protected by the
+     * necessary synchronization mechanisms. However, this pattern is strongly discouraged. A general design philosophy
+     * of the framework is enable the creation of simple business logic that it does not need to care about threading
+     * and which relies on the framework to ensure that work is scheduled in a thread safe manner.
+     */
+    DIRECT_STATELESS
 }

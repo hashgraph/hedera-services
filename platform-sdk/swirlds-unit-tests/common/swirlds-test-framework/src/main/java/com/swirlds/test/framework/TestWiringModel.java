@@ -81,6 +81,14 @@ public class TestWiringModel extends WiringModel {
     /**
      * {@inheritDoc}
      */
+    @Override
+    public boolean checkForIllegalDirectSchedulerUsage() {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public String generateWiringDiagram(@NonNull final Set<ModelGroup> modelGroups) {

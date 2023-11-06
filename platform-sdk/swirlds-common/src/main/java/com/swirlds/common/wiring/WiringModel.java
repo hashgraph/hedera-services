@@ -125,6 +125,18 @@ public abstract class WiringModel implements Startable, Stoppable {
     public abstract boolean checkForCyclicalBackpressure();
 
     /**
+     * Task schedulers using the {@link TaskSchedulerType#DIRECT} strategy have very strict rules about how data can be
+     * added to input wires. This method checks to see if these rules are being followed.
+     *
+     * <p>
+     * If this method finds illegal direct scheduler usage, it will log a message that will fail standard platform
+     * tests.
+     *
+     * @return true if there is illegal direct scheduler usage, false otherwise
+     */
+    public abstract boolean checkForIllegalDirectSchedulerUsage();
+
+    /**
      * Generate a mermaid style wiring diagram.
      *
      * @param groups optional groupings of vertices
