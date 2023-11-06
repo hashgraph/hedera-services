@@ -59,6 +59,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -418,7 +419,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         // Variable bytes plus two additional longs for balance and auto-renew period; plus a boolean for receiver sig
         // required.
         final var op = feeContext.body().cryptoCreateAccountOrThrow();
-        final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.keyOrThrow())) : 0L;
+        final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.keyOrElse(Key.DEFAULT))) : 0L;
         final var baseSize = op.memo().length() + keySize + (op.maxAutomaticTokenAssociations() > 0 ? INT_SIZE : 0L);
         final var lifeTime = op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
         final var feeCalculator = feeContext.feeCalculator(SubType.DEFAULT);

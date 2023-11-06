@@ -95,12 +95,11 @@ public class AutoAccountCreator {
             memo = LAZY_MEMO;
         } else {
             final var key = asKeyFromAlias(alias);
-            syntheticCreation = createAccount(alias, asPbjKey(EMPTY_KEY), 0L, maxAutoAssociations);
+            syntheticCreation = createAccount(alias, key, 0L, maxAutoAssociations);
             memo = AUTO_MEMO;
         }
 
-        final Predicate<Key> verifier =
-                key -> handleContext.verificationFor(key).passed();
+        final Predicate<Key> verifier = key -> handleContext.verificationFor(key).passed();
         // dispatch the auto-creation record as a preceding record
         final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
                 syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier, handleContext.payer());
@@ -140,7 +139,6 @@ public class AutoAccountCreator {
         final var payerAccount = accountStore.get(topLevelPayer);
         validateTrue(payerAccount != null, PAYER_ACCOUNT_NOT_FOUND);
         final var fees = handleContext.dispatchComputeFees(syntheticCreation.build(), topLevelPayer);
-        logger.info("Fees for auto create: " + fees);
         return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
@@ -182,7 +180,11 @@ public class AutoAccountCreator {
     private TransactionBody.Builder createAccount(
             @NonNull final Bytes alias, @NonNull final Key key, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
-        baseBuilder.key(key).alias(alias).memo(AUTO_MEMO);
+        baseBuilder
+                .key(key)
+                .alias(alias)
+                .memo(AUTO_MEMO)
+                .receiverSigRequired(false);
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }
 }
