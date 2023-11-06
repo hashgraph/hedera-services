@@ -135,7 +135,7 @@ public class HollowAccountFinalizationLogic {
 
     /**
      * Given a mutable list of {@link PendingCompletion}, checks whether the current transaction
-     * is a valid EthereumTransaction and its sender sender is a hollow account. If such is the case,
+     * is a valid EthereumTransaction and its sender is a hollow account. If such is the case,
      * adds a new {@link PendingCompletion} for the hollow wrapped sender of the EthereumTransaction.
      *
      * @param pendingFinalizations a mutable list of {@link PendingCompletion}
