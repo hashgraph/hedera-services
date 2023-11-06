@@ -42,7 +42,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.CallOptions;
 import io.grpc.Channel;

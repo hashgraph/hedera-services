@@ -16,10 +16,6 @@
 
 package com.swirlds.common.metrics;
 
-import com.swirlds.metrics.api.Metric;
-import com.swirlds.metrics.api.MetricConfig;
-import com.swirlds.metrics.api.MetricsFactory;
-
 public abstract class PlatformMetricConfig<T extends Metric, C extends MetricConfig<T, C>> extends MetricConfig<T, C> {
     protected PlatformMetricConfig(String category, String name, String description, String unit, String format) {
         super(category, name, description, unit, format);

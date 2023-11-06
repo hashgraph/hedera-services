@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.metrics;
 
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_3;
-import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
+import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
 

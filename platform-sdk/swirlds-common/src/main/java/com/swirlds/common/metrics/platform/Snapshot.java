@@ -16,10 +16,10 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
+import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.metrics.api.Metric;
+import com.swirlds.common.metrics.Metric;
 import java.util.List;
 
 /**

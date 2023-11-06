@@ -47,7 +47,7 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;

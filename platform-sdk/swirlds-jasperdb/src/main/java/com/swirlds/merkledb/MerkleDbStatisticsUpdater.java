@@ -22,7 +22,7 @@ import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.OffHeapUser;
 import com.swirlds.merkledb.files.DataFileReader;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.atomic.AtomicBoolean;

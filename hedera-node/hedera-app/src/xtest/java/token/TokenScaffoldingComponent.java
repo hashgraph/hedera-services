@@ -20,7 +20,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import common.BaseScaffoldingComponent;
 import common.BaseScaffoldingModule;
 import dagger.BindsInstance;

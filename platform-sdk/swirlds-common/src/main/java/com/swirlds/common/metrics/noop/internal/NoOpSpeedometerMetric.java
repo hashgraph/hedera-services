@@ -17,7 +17,7 @@
 package com.swirlds.common.metrics.noop.internal;
 
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.common.metrics.MetricConfig;
 
 /**
  * A no-op implementation of a speedometer metric.

@@ -17,7 +17,7 @@
 package com.swirlds.common.threading.framework.config;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 

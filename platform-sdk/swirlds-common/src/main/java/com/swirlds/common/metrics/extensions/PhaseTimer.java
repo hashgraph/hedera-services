@@ -22,7 +22,7 @@ import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.units.TimeUnit;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;

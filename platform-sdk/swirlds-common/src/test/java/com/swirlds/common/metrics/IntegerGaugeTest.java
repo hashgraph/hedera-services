@@ -5,49 +5,44 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.swirlds.metrics.api.test;
+package com.swirlds.common.metrics;
 
-import static com.swirlds.metrics.api.Metric.DataType.FLOAT;
+import static com.swirlds.metrics.api.Metric.DataType.INT;
 import static com.swirlds.metrics.api.Metric.ValueType.MAX;
 import static com.swirlds.metrics.api.Metric.ValueType.MIN;
 import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
-import static com.swirlds.metrics.api.MetricType.ACCUMULATOR;
+import static com.swirlds.metrics.api.MetricType.GAUGE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.swirlds.metrics.api.DoubleAccumulator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("Testing DoubleAccumulator")
-class DoubleAccumulatorTest {
+@DisplayName("Testing IntegerGauge")
+class IntegerGaugeTest {
 
-    private final DoubleAccumulator sut = new DoubleAccumulator() {
+    private final IntegerGauge sut = new IntegerGauge() {
         @Override
-        public double get() {
+        public int get() {
             return 0;
         }
 
         @Override
-        public double getInitialValue() {
-            return 0;
-        }
-
-        @Override
-        public void update(double other) {}
+        public void set(int newValue) {}
 
         @Override
         public String getCategory() {
@@ -80,12 +75,12 @@ class DoubleAccumulatorTest {
 
     @Test
     void getMetricType() {
-        assertThat(sut.getMetricType()).isEqualTo(ACCUMULATOR);
+        assertThat(sut.getMetricType()).isEqualTo(GAUGE);
     }
 
     @Test
     void getDataType() {
-        assertThat(sut.getDataType()).isEqualTo(FLOAT);
+        assertThat(sut.getDataType()).isEqualTo(INT);
     }
 
     @Test
@@ -95,12 +90,12 @@ class DoubleAccumulatorTest {
 
     @Test
     void get_ShouldReturnValueByValueType() {
-        final DoubleAccumulator accumulator = spy(sut);
+        final IntegerGauge gauge = spy(sut);
 
-        final Double value = accumulator.get(VALUE);
+        final Integer value = gauge.get(VALUE);
 
         assertThat(value).isEqualTo(sut.get());
-        verify(accumulator, times(1)).get();
+        verify(gauge, times(1)).get();
     }
 
     @Test

@@ -44,7 +44,7 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.gui.model.GuiModel;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;

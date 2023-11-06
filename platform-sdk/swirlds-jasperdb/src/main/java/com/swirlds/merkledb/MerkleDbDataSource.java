@@ -50,7 +50,7 @@ import com.swirlds.merkledb.files.hashmap.HalfDiskVirtualKeySet;
 import com.swirlds.merkledb.files.hashmap.VirtualKeySetSerializer;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;

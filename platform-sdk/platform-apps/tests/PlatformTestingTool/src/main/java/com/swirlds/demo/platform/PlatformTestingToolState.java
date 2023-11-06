@@ -23,7 +23,7 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction.BodyCase.FCMTRANSACTION;
 import static com.swirlds.logging.legacy.LogMarker.*;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.*;
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_11_0;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_11_0;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.InvalidProtocolBufferException;

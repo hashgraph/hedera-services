@@ -20,7 +20,7 @@ import com.hedera.node.app.service.contract.impl.exec.processors.HtsTranslatorsM
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import common.BaseScaffoldingComponent;
 import common.BaseScaffoldingModule;
 import dagger.BindsInstance;

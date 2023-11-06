@@ -5,18 +5,19 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.swirlds.metrics.api.test;
+package com.swirlds.common.metrics;
 
-import static com.swirlds.metrics.api.Metric.DataType.INT;
+import static com.swirlds.metrics.api.Metric.DataType.FLOAT;
 import static com.swirlds.metrics.api.Metric.ValueType.MAX;
 import static com.swirlds.metrics.api.Metric.ValueType.MIN;
 import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
@@ -28,21 +29,20 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.swirlds.metrics.api.IntegerGauge;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("Testing IntegerGauge")
-class IntegerGaugeTest {
+@DisplayName("Testing DoubleGauge")
+class DoubleGaugeTest {
 
-    private final IntegerGauge sut = new IntegerGauge() {
+    private final DoubleGauge sut = new DoubleGauge() {
         @Override
-        public int get() {
+        public double get() {
             return 0;
         }
 
         @Override
-        public void set(int newValue) {}
+        public void set(double newValue) {}
 
         @Override
         public String getCategory() {
@@ -80,7 +80,7 @@ class IntegerGaugeTest {
 
     @Test
     void getDataType() {
-        assertThat(sut.getDataType()).isEqualTo(INT);
+        assertThat(sut.getDataType()).isEqualTo(FLOAT);
     }
 
     @Test
@@ -90,9 +90,9 @@ class IntegerGaugeTest {
 
     @Test
     void get_ShouldReturnValueByValueType() {
-        final IntegerGauge gauge = spy(sut);
+        final DoubleGauge gauge = spy(sut);
 
-        final Integer value = gauge.get(VALUE);
+        final Double value = gauge.get(VALUE);
 
         assertThat(value).isEqualTo(sut.get());
         verify(gauge, times(1)).get();

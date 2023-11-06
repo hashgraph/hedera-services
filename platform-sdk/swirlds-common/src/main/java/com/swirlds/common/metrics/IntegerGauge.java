@@ -5,29 +5,30 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.swirlds.metrics.api;
+package com.swirlds.common.metrics;
 
-import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
+import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import java.util.EnumSet;
 import java.util.Objects;
 
 /**
- * An {@code LongGauge} stores a single {@code long} value.
+ * An {@code IntegerGauge} stores a single {@code int} value.
  * <p>
  * Only the current value is stored, no history or distribution is kept.
  */
-public interface LongGauge extends Metric {
+public interface IntegerGauge extends Metric {
 
     /**
      * {@inheritDoc}
@@ -57,7 +58,7 @@ public interface LongGauge extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default Long get(final ValueType valueType) {
+    default Integer get(final ValueType valueType) {
         Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
@@ -70,7 +71,7 @@ public interface LongGauge extends Metric {
      *
      * @return the current value
      */
-    long get();
+    int get();
 
     /**
      * Set the current value
@@ -78,20 +79,19 @@ public interface LongGauge extends Metric {
      * @param newValue
      * 		the new value
      */
-    void set(final long newValue);
+    void set(final int newValue);
 
     /**
-     * Configuration of a {@link LongGauge}
+     * Configuration of a {@link IntegerGauge}
      */
-    final class Config extends MetricConfig<LongGauge, LongGauge.Config> {
+    final class Config extends MetricConfig<IntegerGauge, IntegerGauge.Config> {
 
-        private final long initialValue;
+        private final int initialValue;
 
         /**
-         * Constructor of {@code LongGauge.Config}
+         * Constructor of {@code IntegerGauge.Config}
          *
-         *
-         * The {@link #getInitialValue() initialValue} is by default set to {@code 0L},
+         * The {@link #getInitialValue() initialValue} is by default set to {@code 0},
          * the {@link #getFormat() format} is set to "%d".
          *
          * @param category
@@ -102,8 +102,9 @@ public interface LongGauge extends Metric {
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
         public Config(final String category, final String name) {
+
             super(category, name, "%d");
-            this.initialValue = 0L;
+            this.initialValue = 0;
         }
 
         private Config(
@@ -112,7 +113,7 @@ public interface LongGauge extends Metric {
                 final String description,
                 final String unit,
                 final String format,
-                final long initialValue) {
+                final int initialValue) {
 
             super(category, name, description, unit, format);
             this.initialValue = initialValue;
@@ -122,8 +123,8 @@ public interface LongGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public LongGauge.Config withDescription(final String description) {
-            return new LongGauge.Config(
+        public IntegerGauge.Config withDescription(final String description) {
+            return new IntegerGauge.Config(
                     getCategory(), getName(), description, getUnit(), getFormat(), getInitialValue());
         }
 
@@ -131,8 +132,8 @@ public interface LongGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public LongGauge.Config withUnit(final String unit) {
-            return new LongGauge.Config(
+        public IntegerGauge.Config withUnit(final String unit) {
+            return new IntegerGauge.Config(
                     getCategory(), getName(), getDescription(), unit, getFormat(), getInitialValue());
         }
 
@@ -145,8 +146,8 @@ public interface LongGauge extends Metric {
          * @throws IllegalArgumentException
          * 		if {@code format} is {@code null} or consists only of whitespaces
          */
-        public LongGauge.Config withFormat(final String format) {
-            return new LongGauge.Config(
+        public IntegerGauge.Config withFormat(final String format) {
+            return new IntegerGauge.Config(
                     getCategory(), getName(), getDescription(), getUnit(), format, getInitialValue());
         }
 
@@ -155,7 +156,7 @@ public interface LongGauge extends Metric {
          *
          * @return the {@code initialValue}
          */
-        public long getInitialValue() {
+        public int getInitialValue() {
             return initialValue;
         }
 
@@ -166,8 +167,8 @@ public interface LongGauge extends Metric {
          * 		the initial value
          * @return a new configuration-object with updated {@code initialValue}
          */
-        public LongGauge.Config withInitialValue(final long initialValue) {
-            return new LongGauge.Config(
+        public IntegerGauge.Config withInitialValue(final int initialValue) {
+            return new IntegerGauge.Config(
                     getCategory(), getName(), getDescription(), getUnit(), getFormat(), initialValue);
         }
 
@@ -175,16 +176,16 @@ public interface LongGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public Class<LongGauge> getResultClass() {
-            return LongGauge.class;
+        public Class<IntegerGauge> getResultClass() {
+            return IntegerGauge.class;
         }
 
         /**
          * {@inheritDoc}
          */
         @Override
-        public LongGauge create(final MetricsFactory factory) {
-            return factory.createLongGauge(this);
+        public IntegerGauge create(final MetricsFactory factory) {
+            return factory.createIntegerGauge(this);
         }
 
         /**

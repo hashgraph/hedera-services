@@ -51,7 +51,7 @@ import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import java.time.InstantSource;
 import java.util.ArrayDeque;
 import java.util.Map;

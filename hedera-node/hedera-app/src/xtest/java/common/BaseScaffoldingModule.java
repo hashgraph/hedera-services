@@ -73,7 +73,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import contract.ContractScaffoldingComponent;
 import dagger.Binds;
 import dagger.Module;

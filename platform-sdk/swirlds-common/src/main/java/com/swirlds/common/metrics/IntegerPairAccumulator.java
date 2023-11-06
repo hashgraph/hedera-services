@@ -16,10 +16,9 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
+import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.metrics.api.Metric;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.BiFunction;

@@ -5,29 +5,31 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.swirlds.metrics.api;
+package com.swirlds.common.metrics;
 
-import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
+import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import java.util.EnumSet;
 import java.util.Objects;
 
 /**
- * An {@code IntegerGauge} stores a single {@code int} value.
+ * A {@code DoubleGauge} stores a single {@code double} value.
  * <p>
- * Only the current value is stored, no history or distribution is kept.
+ * Only the current value is stored, no history or distribution is kept. Special values ({@link Double#NaN},
+ * {@link Double#POSITIVE_INFINITY}, {@link Double#NEGATIVE_INFINITY}) are supported.
  */
-public interface IntegerGauge extends Metric {
+public interface DoubleGauge extends Metric {
 
     /**
      * {@inheritDoc}
@@ -42,7 +44,7 @@ public interface IntegerGauge extends Metric {
      */
     @Override
     default DataType getDataType() {
-        return DataType.INT;
+        return DataType.FLOAT;
     }
 
     /**
@@ -57,7 +59,7 @@ public interface IntegerGauge extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default Integer get(final ValueType valueType) {
+    default Double get(final ValueType valueType) {
         Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
@@ -70,28 +72,31 @@ public interface IntegerGauge extends Metric {
      *
      * @return the current value
      */
-    int get();
+    double get();
 
     /**
      * Set the current value
+     * <p>
+     * {@link Double#NaN}, {@link Double#POSITIVE_INFINITY}, {@link Double#NEGATIVE_INFINITY} are supported.
      *
      * @param newValue
      * 		the new value
      */
-    void set(final int newValue);
+    void set(final double newValue);
 
     /**
-     * Configuration of a {@link IntegerGauge}
+     * Configuration of a {@link DoubleGauge}
      */
-    final class Config extends MetricConfig<IntegerGauge, IntegerGauge.Config> {
+    final class Config extends MetricConfig<DoubleGauge, DoubleGauge.Config> {
 
-        private final int initialValue;
+        private final double initialValue;
 
         /**
-         * Constructor of {@code IntegerGauge.Config}
+         * Constructor of {@code DoubleGauge.Config}
          *
-         * The {@link #getInitialValue() initialValue} is by default set to {@code 0},
-         * the {@link #getFormat() format} is set to "%d".
+         * The {@link #getInitialValue() initialValue} is by default set to {@code 0.0}
+         *
+         * The initial value is set to {@code 0.0}.
          *
          * @param category
          * 		the kind of metric (metrics are grouped or filtered by this)
@@ -101,9 +106,8 @@ public interface IntegerGauge extends Metric {
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
         public Config(final String category, final String name) {
-
-            super(category, name, "%d");
-            this.initialValue = 0;
+            super(category, name, FloatFormats.FORMAT_11_3);
+            this.initialValue = 0.0;
         }
 
         private Config(
@@ -112,7 +116,7 @@ public interface IntegerGauge extends Metric {
                 final String description,
                 final String unit,
                 final String format,
-                final int initialValue) {
+                final double initialValue) {
 
             super(category, name, description, unit, format);
             this.initialValue = initialValue;
@@ -122,8 +126,8 @@ public interface IntegerGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public IntegerGauge.Config withDescription(final String description) {
-            return new IntegerGauge.Config(
+        public DoubleGauge.Config withDescription(final String description) {
+            return new DoubleGauge.Config(
                     getCategory(), getName(), description, getUnit(), getFormat(), getInitialValue());
         }
 
@@ -131,8 +135,8 @@ public interface IntegerGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public IntegerGauge.Config withUnit(final String unit) {
-            return new IntegerGauge.Config(
+        public DoubleGauge.Config withUnit(final String unit) {
+            return new DoubleGauge.Config(
                     getCategory(), getName(), getDescription(), unit, getFormat(), getInitialValue());
         }
 
@@ -145,8 +149,8 @@ public interface IntegerGauge extends Metric {
          * @throws IllegalArgumentException
          * 		if {@code format} is {@code null} or consists only of whitespaces
          */
-        public IntegerGauge.Config withFormat(final String format) {
-            return new IntegerGauge.Config(
+        public DoubleGauge.Config withFormat(final String format) {
+            return new DoubleGauge.Config(
                     getCategory(), getName(), getDescription(), getUnit(), format, getInitialValue());
         }
 
@@ -155,7 +159,7 @@ public interface IntegerGauge extends Metric {
          *
          * @return the {@code initialValue}
          */
-        public int getInitialValue() {
+        public double getInitialValue() {
             return initialValue;
         }
 
@@ -166,8 +170,8 @@ public interface IntegerGauge extends Metric {
          * 		the initial value
          * @return a new configuration-object with updated {@code initialValue}
          */
-        public IntegerGauge.Config withInitialValue(final int initialValue) {
-            return new IntegerGauge.Config(
+        public DoubleGauge.Config withInitialValue(final double initialValue) {
+            return new DoubleGauge.Config(
                     getCategory(), getName(), getDescription(), getUnit(), getFormat(), initialValue);
         }
 
@@ -175,16 +179,16 @@ public interface IntegerGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public Class<IntegerGauge> getResultClass() {
-            return IntegerGauge.class;
+        public Class<DoubleGauge> getResultClass() {
+            return DoubleGauge.class;
         }
 
         /**
          * {@inheritDoc}
          */
         @Override
-        public IntegerGauge create(final MetricsFactory factory) {
-            return factory.createIntegerGauge(this);
+        public DoubleGauge create(final MetricsFactory factory) {
+            return factory.createDoubleGauge(this);
         }
 
         /**

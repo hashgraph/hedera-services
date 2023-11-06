@@ -5,27 +5,28 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.swirlds.metrics.api.test;
+package com.swirlds.common.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
-import com.swirlds.metrics.api.IntegerGauge;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class IntegerGaugeConfigTest {
+class DoubleGaugeConfigTest {
 
-    private static final String DEFAULT_FORMAT = "%d";
+    private static final String DEFAULT_FORMAT = FloatFormats.FORMAT_11_3;
 
     private static final String CATEGORY = "CaTeGoRy";
     private static final String NAME = "NaMe";
@@ -33,11 +34,13 @@ class IntegerGaugeConfigTest {
     private static final String UNIT = "UnIt";
     private static final String FORMAT = "FoRmAt";
 
+    private static final double EPSILON = 1e-6;
+
     @Test
     @DisplayName("Constructor should store values")
     void testConstructor() {
         // when
-        final IntegerGauge.Config config = new IntegerGauge.Config(CATEGORY, NAME);
+        final DoubleGauge.Config config = new DoubleGauge.Config(CATEGORY, NAME);
 
         // then
         assertThat(config.getCategory()).isEqualTo(CATEGORY);
@@ -45,32 +48,32 @@ class IntegerGaugeConfigTest {
         assertThat(config.getDescription()).isEqualTo(NAME);
         assertThat(config.getUnit()).isEmpty();
         assertThat(config.getFormat()).isEqualTo(DEFAULT_FORMAT);
-        assertThat(config.getInitialValue()).isZero();
+        assertThat(config.getInitialValue()).isEqualTo(0.0, within(EPSILON));
     }
 
     @Test
     @DisplayName("Constructor should throw IAE when passing illegal parameters")
     void testConstructorWithIllegalParameter() {
-        assertThatThrownBy(() -> new IntegerGauge.Config(null, NAME)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IntegerGauge.Config("", NAME)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new IntegerGauge.Config(" \t\n", NAME)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new DoubleGauge.Config(null, NAME)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new DoubleGauge.Config("", NAME)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new DoubleGauge.Config(" \t\n", NAME)).isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> new IntegerGauge.Config(CATEGORY, null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IntegerGauge.Config(CATEGORY, "")).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new IntegerGauge.Config(CATEGORY, " \t\n"))
+        assertThatThrownBy(() -> new DoubleGauge.Config(CATEGORY, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new DoubleGauge.Config(CATEGORY, "")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new DoubleGauge.Config(CATEGORY, " \t\n"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testSetters() {
         // given
-        final IntegerGauge.Config config = new IntegerGauge.Config(CATEGORY, NAME);
+        final DoubleGauge.Config config = new DoubleGauge.Config(CATEGORY, NAME);
 
         // when
-        final IntegerGauge.Config result = config.withDescription(DESCRIPTION)
+        final DoubleGauge.Config result = config.withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT)
-                .withInitialValue(42);
+                .withInitialValue(Math.PI);
 
         // then
         assertThat(config.getCategory()).isEqualTo(CATEGORY);
@@ -78,20 +81,20 @@ class IntegerGaugeConfigTest {
         assertThat(config.getDescription()).isEqualTo(NAME);
         assertThat(config.getUnit()).isEmpty();
         assertThat(config.getFormat()).isEqualTo(DEFAULT_FORMAT);
-        assertThat(config.getInitialValue()).isZero();
+        assertThat(config.getInitialValue()).isEqualTo(0.0, within(EPSILON));
 
         assertThat(result.getCategory()).isEqualTo(CATEGORY);
         assertThat(result.getName()).isEqualTo(NAME);
         assertThat(result.getDescription()).isEqualTo(DESCRIPTION);
         assertThat(result.getUnit()).isEqualTo(UNIT);
         assertThat(result.getFormat()).isEqualTo(FORMAT);
-        assertThat(result.getInitialValue()).isEqualTo(42);
+        assertThat(result.getInitialValue()).isEqualTo(Math.PI, within(EPSILON));
     }
 
     @Test
     void testSettersWithIllegalParameters() {
         // given
-        final IntegerGauge.Config config = new IntegerGauge.Config(CATEGORY, NAME);
+        final DoubleGauge.Config config = new DoubleGauge.Config(CATEGORY, NAME);
         final String longDescription = DESCRIPTION.repeat(50);
 
         // then
@@ -99,9 +102,7 @@ class IntegerGaugeConfigTest {
         assertThatThrownBy(() -> config.withDescription("")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withDescription(" \t\n")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withDescription(longDescription)).isInstanceOf(IllegalArgumentException.class);
-
         assertThatThrownBy(() -> config.withUnit(null)).isInstanceOf(NullPointerException.class);
-
         assertThatThrownBy(() -> config.withFormat(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> config.withFormat("")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withFormat(" \t\n")).isInstanceOf(IllegalArgumentException.class);
@@ -110,13 +111,13 @@ class IntegerGaugeConfigTest {
     @Test
     void testToString() {
         // given
-        final IntegerGauge.Config config = new IntegerGauge.Config(CATEGORY, NAME)
+        final DoubleGauge.Config config = new DoubleGauge.Config(CATEGORY, NAME)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT)
-                .withInitialValue(42);
+                .withInitialValue(Math.PI);
 
         // then
-        assertThat(config.toString()).contains(CATEGORY, NAME, DESCRIPTION, UNIT, FORMAT, "42");
+        assertThat(config.toString()).contains(CATEGORY, NAME, DESCRIPTION, UNIT, FORMAT, "3.1415");
     }
 }

@@ -29,7 +29,7 @@ import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.InetSocketAddress;

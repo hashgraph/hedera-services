@@ -20,8 +20,8 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
-import com.swirlds.metrics.api.Metric;
-import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.MetricConfig;
 import java.util.List;
 import java.util.Objects;
 

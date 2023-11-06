@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.stats;
 
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.common.metrics.Metrics;
 
 /**
  * A metrics object to track an average number, without history. This class uses an {@link AtomicAverage} so it is both

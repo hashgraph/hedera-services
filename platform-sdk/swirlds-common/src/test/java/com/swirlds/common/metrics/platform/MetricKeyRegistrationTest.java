@@ -20,8 +20,8 @@ import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetric
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.metrics.api.Counter;
-import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.IntegerGauge;
 import org.junit.jupiter.api.Test;
 
 class MetricKeyRegistrationTest {

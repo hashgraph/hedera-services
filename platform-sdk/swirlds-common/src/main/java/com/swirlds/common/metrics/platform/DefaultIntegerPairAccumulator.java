@@ -16,14 +16,14 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
+import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.atomic.AtomicIntPair;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.metrics.api.MetricConfig;
-import com.swirlds.metrics.api.MetricType;
+import com.swirlds.common.metrics.MetricConfig;
+import com.swirlds.common.metrics.MetricType;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.IntSupplier;

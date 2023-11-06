@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.metrics.api.DoubleAccumulator;
-import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.common.metrics.DoubleAccumulator;
+import com.swirlds.common.metrics.MetricConfig;
 
 /**
  * A no-op double accumulator.

@@ -17,7 +17,7 @@
 package com.swirlds.demo.platform;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.metrics.SpeedometerMetric;

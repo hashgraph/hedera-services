@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.metrics.api.LongGauge;
-import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.common.metrics.LongGauge;
+import com.swirlds.common.metrics.MetricConfig;
 
 /**
  * A no-op implementation of a long gauge.
