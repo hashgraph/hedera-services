@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.record;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -26,6 +27,7 @@ import com.hedera.node.app.spi.throttle.HandleThrottleParser;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * An implementation of {@link MigrationContext}.
@@ -35,6 +37,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param configuration The configuration to use
  * @param genesisRecordsBuilder The instance responsible for genesis records
  * @param handleThrottling The instance responsible for handle throttling
+ * @param writableEntityIdStore The instance responsible for generating new entity IDs (ONLY during
+ *                              migrations). Note that this is nullable only because it cannot exist
+ *                              when the entity ID service itself is being migrated
  */
 public record MigrationContextImpl(
         @NonNull ReadableStates previousStates,
@@ -42,7 +47,8 @@ public record MigrationContextImpl(
         @NonNull Configuration configuration,
         @NonNull NetworkInfo networkInfo,
         @NonNull GenesisRecordsBuilder genesisRecordsBuilder,
-        @NonNull HandleThrottleParser handleThrottling)
+        @NonNull HandleThrottleParser handleThrottling,
+        @Nullable WritableEntityIdStore writableEntityIdStore)
         implements MigrationContext {
 
     public MigrationContextImpl {
@@ -52,5 +58,11 @@ public record MigrationContextImpl(
         requireNonNull(networkInfo);
         requireNonNull(genesisRecordsBuilder);
         requireNonNull(handleThrottling);
+    }
+
+    @Override
+    public long newEntityNum() {
+        return requireNonNull(writableEntityIdStore, "Entity ID store needs to exist first")
+                .incrementAndGet();
     }
 }

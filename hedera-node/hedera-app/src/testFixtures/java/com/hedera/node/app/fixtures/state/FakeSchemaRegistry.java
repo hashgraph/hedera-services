@@ -111,6 +111,11 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                 public NetworkInfo networkInfo() {
                     return networkInfo;
                 }
+
+                @Override
+                public long newEntityNum() {
+                    return 0;
+                }
             });
 
             // Now commit them all

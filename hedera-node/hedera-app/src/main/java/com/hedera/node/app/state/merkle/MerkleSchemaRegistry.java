@@ -20,6 +20,7 @@ import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.info.NetworkInfo;
@@ -154,7 +155,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final SemanticVersion currentVersion,
             @NonNull final Configuration config,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final HandleThrottleParser handleThrottling) {
+            @NonNull final HandleThrottleParser handleThrottling,
+            @Nullable final WritableEntityIdStore entityIdStore) {
         requireNonNull(hederaState);
         requireNonNull(currentVersion);
         requireNonNull(config);
@@ -165,6 +167,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // of those schemas, create the new states and remove the old states and migrate the data.
         final var schemasToApply = computeApplicableSchemas(previousVersion, currentVersion);
         final var updateInsteadOfMigrate = isSameVersion(previousVersion, currentVersion);
+
         for (final var schema : schemasToApply) {
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
@@ -221,13 +224,25 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             remainingStates.removeAll(statesToRemove);
             final var newStates = new FilteredWritableStates(writeableStates, remainingStates);
 
+            // For any changes to state that depend on other services outside the current service, we need a reference
+            // to the overall state that we can pass into the context. This reference to overall state will be strictly
+            // controlled via the MigrationContext API so that only changes explicitly specified in the interface can be
+            // made (instead of allowing any arbitrary change to overall state). As above, we won't commit anything
+            // until after this service's migration
             final var migrationContext = new MigrationContextImpl(
-                    previousStates, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling);
+                    previousStates,
+                    newStates,
+                    config,
+                    networkInfo,
+                    genesisRecordsBuilder,
+                    handleThrottling,
+                    entityIdStore);
             if (updateInsteadOfMigrate) {
                 schema.restart(migrationContext);
             } else {
                 schema.migrate(migrationContext);
             }
+            // Now commit all the service-specific changes made during this service's update or migration
             if (writeableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
                 mws.commit();
             }

@@ -45,4 +45,9 @@ public interface GenesisRecordsBuilder {
      * Tracks the treasury clones created during node startup
      */
     void treasuryClones(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts);
+
+    /**
+     * Tracks the blocklist accounts created during node startup
+     */
+    void blocklistAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts);
 }

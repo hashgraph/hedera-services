@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_IN
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 
@@ -43,6 +44,8 @@ import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.node.app.service.token.impl.BlocklistParser;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -51,10 +54,12 @@ import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
@@ -76,11 +81,14 @@ public class GenesisSchema extends Schema {
     private static final long LAST_RESERVED_SYSTEM_CONTRACT = 399L;
     private static final long FIRST_POST_SYSTEM_FILE_ENTITY = 200L;
 
+    private final BlocklistParser blocklistParser;
+
     /**
      * Create a new instance
      */
     public GenesisSchema() {
         super(GENESIS_VERSION);
+        blocklistParser = new BlocklistParser();
     }
 
     @NonNull
@@ -213,6 +221,62 @@ public class GenesisSchema extends Schema {
                 "Ledger float is {} tinyBars in {} accounts.",
                 totalBalance,
                 accounts.modifiedKeys().size());
+
+        // ---------- Create blocklist accounts (if enabled) -------------------------
+        final Map<Account, CryptoCreateTransactionBody.Builder> blocklistAccts = new HashMap<>();
+        if (accountsConfig.blocklistEnabled()) {
+            final var blocklistResourceName = accountsConfig.blocklistResource();
+            final var blocklist = blocklistParser.parse(blocklistResourceName);
+            if (blocklist.isEmpty()) {
+                return;
+            }
+
+            final var aliases = ctx.newStates().<Bytes, AccountID>get(TokenServiceImpl.ALIASES_KEY);
+
+            // We only want to create accounts that are not already in state, so we filter based on blocked account EVM
+            // addresses that don't yet exist in state
+            final var blockedToCreate = blocklist.stream()
+                    .filter(blockedAccount -> aliases.get(blockedAccount.evmAddress()) == null)
+                    .toList();
+
+            for (final var blockedInfo : blockedToCreate) {
+                final var newId = ctx.newEntityNum();
+                final var account = blockedAccountWith(blockedInfo, bootstrapConfig)
+                        .accountId(asAccount(newId))
+                        .build();
+                blocklistAccts.put(account, newCryptoCreate(account));
+                accounts.put(account.accountIdOrThrow(), account);
+                aliases.put(account.alias(), account.accountIdOrThrow());
+            }
+        }
+        recordsKeeper.blocklistAccounts(blocklistAccts);
+        log.info("Created {} blocklist accounts", blocklistAccts.size());
+    }
+
+    /**
+     * Creates a blocked Hedera account with the given memo and EVM address.
+     * A blocked account has receiverSigRequired flag set to true, key set to the genesis key, and balance set to 0.
+     *
+     * @param blockedInfo record containing EVM address and memo for the blocked account
+     * @return a Hedera account with the given memo and EVM address
+     */
+    @NonNull
+    private Account.Builder blockedAccountWith(
+            @NonNull final BlocklistParser.BlockedInfo blockedInfo, @NonNull final BootstrapConfig bootstrapConfig) {
+        final var expiry = bootstrapConfig.systemEntityExpiry();
+        final var acctBuilder = Account.newBuilder()
+                .receiverSigRequired(true)
+                .declineReward(true)
+                .deleted(false)
+                .expirationSecond(expiry)
+                .smartContract(false)
+                .key(superUserKey(bootstrapConfig))
+                .autoRenewSeconds(expiry)
+                .alias(blockedInfo.evmAddress());
+
+        if (!blockedInfo.memo().isEmpty()) acctBuilder.memo(blockedInfo.memo());
+
+        return acctBuilder;
     }
 
     private static AccountID asAccountId(final long acctNum, final HederaConfig hederaConfig) {
@@ -239,10 +303,13 @@ public class GenesisSchema extends Schema {
         return Key.newBuilder().ed25519(superUserKeyBytes).build();
     }
 
-    private Account createAccount(@NonNull final AccountID id, final long balance, final long expiry, final Key key) {
+    @NonNull
+    private Account createAccount(
+            @NonNull final AccountID id, final long balance, final long expiry, @NonNull final Key key) {
         return createAccount(id, balance, expiry, key, true);
     }
 
+    @NonNull
     private Account createAccount(
             @NonNull final AccountID id,
             final long balance,
@@ -264,7 +331,7 @@ public class GenesisSchema extends Schema {
                 .build();
     }
 
-    private void initializeStakingNodeInfo(final MigrationContext ctx) {
+    private void initializeStakingNodeInfo(@NonNull final MigrationContext ctx) {
         // TODO: This need to go through address book and set all the nodes
         final var config = ctx.configuration();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
@@ -289,7 +356,7 @@ public class GenesisSchema extends Schema {
         stakingInfoState.put(EntityNumber.newBuilder().number(0L).build(), stakingInfo);
     }
 
-    private void initializeNetworkRewards(final MigrationContext ctx) {
+    private void initializeNetworkRewards(@NonNull final MigrationContext ctx) {
         // Set genesis network rewards state
         final var networkRewardsState = ctx.newStates().getSingleton(STAKING_NETWORK_REWARDS_KEY);
         final var networkRewards = NetworkStakingRewards.newBuilder()
@@ -301,7 +368,7 @@ public class GenesisSchema extends Schema {
         networkRewardsState.put(networkRewards);
     }
 
-    private static CryptoCreateTransactionBody.Builder newCryptoCreate(Account account) {
+    private static CryptoCreateTransactionBody.Builder newCryptoCreate(@NonNull final Account account) {
         return CryptoCreateTransactionBody.newBuilder()
                 .key(account.key())
                 .memo(account.memo())
@@ -310,6 +377,7 @@ public class GenesisSchema extends Schema {
                 .autoRenewPeriod(Duration.newBuilder()
                         .seconds(account.autoRenewSeconds())
                         .build())
-                .initialBalance(account.tinybarBalance());
+                .initialBalance(account.tinybarBalance())
+                .alias(account.alias());
     }
 }
