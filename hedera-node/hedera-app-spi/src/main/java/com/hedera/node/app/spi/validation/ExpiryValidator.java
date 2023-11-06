@@ -42,8 +42,8 @@ public interface ExpiryValidator {
     @NonNull
     ExpiryMeta resolveCreationAttempt(
             boolean entityCanSelfFundRenewal,
-            @NonNull ExpiryMeta creationMetadata,
-            final HederaFunctionality functionality);
+            @NonNull final ExpiryMeta creationMetadata,
+            @NonNull final HederaFunctionality functionality);
 
     /**
      * Validates the expiry metadata for an attempt to update an entity, and returns the

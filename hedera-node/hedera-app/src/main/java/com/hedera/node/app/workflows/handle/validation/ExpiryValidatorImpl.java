@@ -65,7 +65,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
     public ExpiryMeta resolveCreationAttempt(
             final boolean entityCanSelfFundRenewal,
             @NonNull final ExpiryMeta creationMeta,
-            final HederaFunctionality functionality) {
+            @NonNull final HederaFunctionality functionality) {
         if (creationMeta.hasAutoRenewAccountId()) {
             validateAutoRenewAccount(creationMeta.autoRenewAccountId());
         }
@@ -83,18 +83,14 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
             // In mono-service this check is done first for topic creation.
             context.attributeValidator().validateExpiry(effectiveExpiry);
             // Even if the effective expiry is valid, we still also require any explicit auto-renew period to be valid
-            if (creationMeta.hasAutoRenewPeriod()) {
-                context.attributeValidator().validateAutoRenewPeriod(creationMeta.autoRenewPeriod());
-            }
+            validateAutoRenew(creationMeta);
         } else if (functionality == HederaFunctionality.TOKEN_CREATE) {
             // In mono-service, INVALID_RENEWAL_PERIOD is thrown for token creation and update
             // if the autoRenewPeriod is not in range.
             // It would be more correct to throw AUTO_RENEW_DURATION_NOT_IN_RANGE like the other services do,
             // but this would break differential testing. So for now, we replicate the mono-service behaviour.
             try {
-                if (creationMeta.hasAutoRenewPeriod()) {
-                    context.attributeValidator().validateAutoRenewPeriod(creationMeta.autoRenewPeriod());
-                }
+                validateAutoRenew(creationMeta);
             } catch (HandleException e) {
                 if (e.getStatus() == AUTORENEW_DURATION_NOT_IN_RANGE) {
                     throw new HandleException(INVALID_RENEWAL_PERIOD);
@@ -105,13 +101,17 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
             context.attributeValidator().validateExpiry(effectiveExpiry);
         } else {
             // Even if the effective expiry is valid, we still also require any explicit auto-renew period to be valid
-            if (creationMeta.hasAutoRenewPeriod()) {
-                context.attributeValidator().validateAutoRenewPeriod(creationMeta.autoRenewPeriod());
-            }
+            validateAutoRenew(creationMeta);
             context.attributeValidator().validateExpiry(effectiveExpiry);
         }
 
         return new ExpiryMeta(effectiveExpiry, creationMeta.autoRenewPeriod(), creationMeta.autoRenewAccountId());
+    }
+
+    private void validateAutoRenew(final ExpiryMeta creationMeta) {
+        if (creationMeta.hasAutoRenewPeriod()) {
+            context.attributeValidator().validateAutoRenewPeriod(creationMeta.autoRenewPeriod());
+        }
     }
 
     /**

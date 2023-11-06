@@ -38,7 +38,7 @@ import javax.inject.Singleton;
  * in the future.
  * Transactions that are wrapped in an unchecked submit call are unwrapped during ingest and then submitted directly.
  * Therefore, unchecked submit is not a transaction type that is actually submitted to the network and there is no
- * reason to implement a handler for it. This class exists for completeness but will never actually be called.
+ * reason to implement a handler for it. This class exists for completeness but should never actually be called.
  */
 @Singleton
 public class NetworkUncheckedSubmitHandler implements TransactionHandler {

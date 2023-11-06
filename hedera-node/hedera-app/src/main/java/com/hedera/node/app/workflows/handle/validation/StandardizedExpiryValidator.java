@@ -81,7 +81,7 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
     public ExpiryMeta resolveCreationAttempt(
             final boolean entityCanSelfFundRenewal,
             @NonNull final ExpiryMeta creationMeta,
-            final HederaFunctionality functionality) {
+            @NonNull final HederaFunctionality functionality) {
         if (creationMeta.hasAutoRenewAccountId()) {
             validateAutoRenewAccount(creationMeta.autoRenewAccountId());
         }
