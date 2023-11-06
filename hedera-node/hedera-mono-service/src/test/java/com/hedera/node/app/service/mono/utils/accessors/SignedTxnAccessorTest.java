@@ -978,6 +978,23 @@ class SignedTxnAccessorTest {
         assertEquals(EntityNum.fromLong(10L), subject.unaliased(asAliasAccount(alias)));
     }
 
+    @Test
+    void lookUpMissingAliasDoesntReturnNull() {
+        final var stateView = mock(StateView.class);
+        final var alias = ByteString.copyFromUtf8("someString");
+        final Map<ByteString, EntityNum> accountsMap = new HashMap<>();
+        given(stateView.aliases()).willReturn(accountsMap);
+
+        final var op = ContractCallTransactionBody.newBuilder().build();
+        final var txn = buildTransactionFrom(
+                TransactionBody.newBuilder().setContractCall(op).build());
+        final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+        subject.setStateView(stateView);
+
+        assertEquals(EntityNum.MISSING_NUM, subject.lookUpAlias(alias));
+        assertEquals(EntityNum.MISSING_NUM, subject.unaliased(asAliasAccount(alias)));
+    }
+
     private Transaction signedCryptoCreateTxn() {
         return buildTransactionFrom(cryptoCreateOp());
     }

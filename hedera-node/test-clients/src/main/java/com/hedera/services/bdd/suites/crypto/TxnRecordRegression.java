@@ -41,7 +41,11 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/* ! WARNING - Requires a RecordCache TTL of 3s to pass ! */
+/**
+ * ! WARNING - Requires a RecordCache TTL of 3s to pass !
+ *
+ * <p>Even with a 3s TTL, a number of these tests fail. FUTURE: revisit
+ * */
 @HapiTestSuite
 public class TxnRecordRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(TxnRecordRegression.class);
@@ -67,6 +71,7 @@ public class TxnRecordRegression extends HapiSuite {
         });
     }
 
+    // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
     private HapiSpec recordAvailableInPayerState() {
         return defaultHapiSpec("RecordAvailableInPayerState")
                 .given(
@@ -80,6 +85,7 @@ public class TxnRecordRegression extends HapiSuite {
                         getTxnRecord("recordTxn").hasPriority(recordWith().status(SUCCESS)));
     }
 
+    // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
     private HapiSpec deletedAccountRecordsUnavailableAfterTtl() {
         return defaultHapiSpec("DeletedAccountRecordsUnavailableAfterTtl")
                 .given(
@@ -121,6 +127,7 @@ public class TxnRecordRegression extends HapiSuite {
                         getTxnRecord("success").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
+    // FUTURE: revisit this test, which isn't passing in modular or mono code (even with a 3 second TTL)
     private HapiSpec recordUnavailableIfRejectedInPrecheck() {
         return defaultHapiSpec("RecordUnavailableIfRejectedInPrecheck")
                 .given(usableTxnIdNamed("failingTxn"), cryptoCreate("misc").balance(1_000L))
