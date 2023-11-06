@@ -45,7 +45,7 @@ public interface SignedStateInfo {
      * Note that there is a special edge case during emergency state recovery. A state with a root hash that matches the
      * current epoch hash is considered to be complete regardless of the signatures it has collected.
      *
-     * @return does this contain signatures from members with greater than 1/2 of the total weight?
+     * @return does this contain signatures from members with greater than 2/3 of the total weight?
      */
     boolean isComplete();
 

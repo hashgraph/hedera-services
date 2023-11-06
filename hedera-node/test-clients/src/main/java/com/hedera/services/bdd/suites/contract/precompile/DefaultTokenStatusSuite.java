@@ -37,6 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -78,6 +79,7 @@ public class DefaultTokenStatusSuite extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec getTokenDefaultFreezeStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -120,6 +122,7 @@ public class DefaultTokenStatusSuite extends HapiSuite {
                                                 .withTokenDefaultFreezeStatus(true)))));
     }
 
+    @HapiTest
     private HapiSpec getTokenDefaultKycStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
