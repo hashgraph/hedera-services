@@ -99,9 +99,10 @@ public class AutoAccountCreator {
             memo = AUTO_MEMO;
         }
 
-        final Predicate<Key> verifier = key -> handleContext.verificationFor(key).passed();
-
-        final var childRecord = handleContext.dispatchRemovableChildTransaction(
+        final Predicate<Key> verifier =
+                key -> handleContext.verificationFor(key).passed();
+        // dispatch the auto-creation record as a preceding record
+        final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
                 syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier, handleContext.payer());
 
         var fee = autoCreationFeeFor(syntheticCreation);
