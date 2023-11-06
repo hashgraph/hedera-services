@@ -142,7 +142,7 @@ class EventSignatureValidatorTests {
 
         final EventSignatureValidator validator =
                 useTrueVerifier ? validatorWithTrueVerifier : validatorWithFalseVerifier;
-        validator.handleEvent(event);
+        validator.validateEventSignature(event);
 
         assertEquals(expectedConsumedEventCount, consumedEventCount.get());
         assertEquals(expectedExitedIntakePipelineCount, exitedIntakePipelineCount.get());
@@ -222,7 +222,7 @@ class EventSignatureValidatorTests {
 
         final GossipEvent event =
                 generateMockEvent(new BasicSoftwareVersion(1), randomHash(random), previousNodeAddress.getNodeId());
-        signatureValidator.handleEvent(event);
+        signatureValidator.validateEventSignature(event);
 
         assertEquals(0, consumedEventCount.get());
         assertEquals(1, exitedIntakePipelineCount.get());
