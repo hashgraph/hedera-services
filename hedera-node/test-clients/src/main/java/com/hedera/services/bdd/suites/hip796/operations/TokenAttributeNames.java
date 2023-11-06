@@ -1,0 +1,52 @@
+package com.hedera.services.bdd.suites.hip796.operations;
+
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.function.UnaryOperator;
+
+/**
+ * Self-explanatory factory methods that return the canonical {@link HapiSpecRegistry} names of
+ * various token attributes that refer to entities like keys and accounts.
+ *
+ * <p>By relying on conventions for these names, we reduce the number of string literals
+ * that need to explicitly appear in a given {@link HapiSpec} definition.
+ */
+public class TokenAttributeNames {
+    public static String lockKeyOf(@NonNull final String tokenName) {
+        return tokenName + "-LOCK-KEY";
+    }
+
+    public static String partitionKeyOf(@NonNull final String tokenName) {
+        return tokenName + "-PARTITION-KEY";
+    }
+
+    public static String freezeKeyOf(@NonNull final String tokenName) {
+        return tokenName + "-FREEZE-KEY";
+    }
+
+    public static String wipeKeyOf(@NonNull final String tokenName) {
+        return tokenName + "-WIPE-KEY";
+    }
+
+    public static String pauseKeyOf(@NonNull final String tokenName) {
+        return tokenName + "-PAUSE-KEY";
+    }
+
+    public static String kcyKeyOf(@NonNull final String tokenName) {
+        return tokenName + "-KYC-KEY";
+    }
+
+    public static String supplyKeyOf(@NonNull final String tokenName) {
+        return tokenName + "-SUPPLY-KEY";
+    }
+
+    public static String customFeeScheduleKeyOf(@NonNull final String tokenName) {
+        return tokenName + "-FEE-SCHEDULE-KEY";
+    }
+
+    public static String adminKeyOf(@NonNull final String tokenName) {
+        return tokenName + "-ADMIN-KEY";
+    }
+}
