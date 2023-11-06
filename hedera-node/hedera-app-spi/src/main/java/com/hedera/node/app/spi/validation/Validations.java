@@ -61,14 +61,35 @@ public final class Validations {
      * @throws PreCheckException If the account ID is not valid, {@link ResponseCodeEnum#INVALID_ACCOUNT_ID} will
      * be thrown.
      */
+    @NonNull
     public static AccountID validateAccountID(@Nullable final AccountID subject) throws PreCheckException {
+        final var result = validateNullableAccountID(subject);
         // Cannot be null
-        if (subject == null) {
+        if (result == null) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
         }
+        return result;
+    }
 
-        // Must have either alias or account num
-        if (!subject.hasAlias() && !subject.hasAccountNum()) {
+    /**
+     * Common validation of an {@link AccountID} that it is internally consistent, but which permits an account ID to
+     * be null. A valid ID must be null, or have either an alias or an account number, and if it has an account number,
+     * it must be positive. And if there is an alias instead, it must have at least one byte.
+     *
+     * @param subject The {@link AccountID} to validate.
+     * @return The {@link AccountID} if valid.
+     * @throws PreCheckException If the account ID is not valid, {@link ResponseCodeEnum#INVALID_ACCOUNT_ID} will
+     * be thrown.
+     */
+    @Nullable
+    public static AccountID validateNullableAccountID(@Nullable final AccountID subject) throws PreCheckException {
+        // We'll permit it to be null.
+        if (subject == null) {
+            return null;
+        }
+
+        // The account ID must have the account type (number or alias) set. It cannot be UNSET.
+        if (subject.account().kind() == AccountID.AccountOneOfType.UNSET) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
         }
 
@@ -85,6 +106,11 @@ public final class Validations {
             }
         }
 
+        // FUTURE: the shard and realm need to match the configuration for this node. But we have to be careful. In
+        // theory, shard and realm are config properties, and are network-wide, so they would be in the network-wide
+        // configuration. And that configuration is dynamic. But if the shard/realm where to ever change, that would
+        // be very bad. And we wouldn't want to look up shard and realm over and over every time we validated an
+        // account, that would be terrible for performance. So we need to think this through.
         return subject;
     }
 }

@@ -19,7 +19,7 @@ package com.swirlds.platform.reconnect;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
@@ -50,7 +50,7 @@ public class DefaultSignedStateValidator implements SignedStateValidator {
             final SignedState signedState, final AddressBook addressBook, SignedStateValidationData previousStateData) {
         throwIfOld(signedState, previousStateData);
         signedState.pruneInvalidSignatures(addressBook);
-        signedState.throwIfIncomplete();
+        signedState.throwIfNotVerifiable();
     }
 
     /**
