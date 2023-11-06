@@ -50,6 +50,15 @@ public interface ReadableAccountStore {
     AccountID getAccountIDByAlias(@NonNull final Bytes alias);
 
     /**
+     * Gets whether the given alias is known to this store. It is known if it is present in the alias-to-accountID
+     * map.
+     *
+     * @param alias The alias to check.
+     * @return true if the given alias has a mapping to an AccountID in this store.
+     */
+    boolean containsAlias(@NonNull final Bytes alias);
+
+    /**
      * Returns the number of accounts in state.
      *
      * @return the number of accounts in state
