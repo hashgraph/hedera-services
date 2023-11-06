@@ -91,26 +91,6 @@ public final class OutputWire<OUT> {
     }
 
     /**
-     * The type of solder connection.
-     */
-    public enum SolderType {
-        /**
-         * When data is passed to the input wire, call {@link InputWire#put(Object)}. May block if the input wire has
-         * backpressure enabled and the input wire is full.
-         */
-        PUT,
-        /**
-         * When data is passed to the input wire, call {@link InputWire#inject(Object)}. Ignores back pressure.
-         */
-        INJECT,
-        /**
-         * When data is passed to the input wire, call {@link InputWire#offer(Object)}. If the input wire has
-         * backpressure enabled and the input wire is full, then the data will be dropped.
-         */
-        OFFER
-    }
-
-    /**
      * Specify an input wire where output data should be passed. This forwarding operation respects back pressure.
      * Equivalent to calling {@link #solderTo(InputWire, SolderType)} with {@link SolderType#PUT}.
      *
@@ -143,8 +123,7 @@ public final class OutputWire<OUT> {
      * @param solderType the semantics of the soldering operation
      */
     public void solderTo(@NonNull final InputWire<OUT, ?> inputWire, @NonNull final SolderType solderType) {
-        final boolean nonBlocking = solderType == SolderType.INJECT || solderType == SolderType.OFFER;
-        model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), nonBlocking);
+        model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), solderType);
 
         switch (solderType) {
             case PUT -> forwardingDestinations.add(inputWire::put);
@@ -169,7 +148,7 @@ public final class OutputWire<OUT> {
      * @param handler     the consumer to forward output data to
      */
     public void solderTo(@NonNull final String handlerName, @NonNull final Consumer<OUT> handler) {
-        model.registerEdge(name, handlerName, "", false);
+        model.registerEdge(name, handlerName, "", SolderType.PUT);
         forwardingDestinations.add(Objects.requireNonNull(handler));
     }
 

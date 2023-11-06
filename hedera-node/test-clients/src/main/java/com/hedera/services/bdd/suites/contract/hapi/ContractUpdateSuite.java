@@ -102,6 +102,7 @@ public class ContractUpdateSuite extends HapiSuite {
                 updateStakingFieldsWorks());
     }
 
+    @HapiTest
     private HapiSpec updateStakingFieldsWorks() {
         return defaultHapiSpec("updateStakingFieldsWorks")
                 .given(
@@ -207,6 +208,7 @@ public class ContractUpdateSuite extends HapiSuite {
                                                                 }))))));
     }
 
+    @HapiTest
     private HapiSpec updateWithBothMemoSettersWorks() {
         final var firstMemo = "First";
         final var secondMemo = "Second";
@@ -226,6 +228,7 @@ public class ContractUpdateSuite extends HapiSuite {
                         getContractInfo(CONTRACT).has(contractWith().memo(thirdMemo)));
     }
 
+    @HapiTest
     private HapiSpec updatingExpiryWorks() {
         final var newExpiry = Instant.now().getEpochSecond() + 5 * ONE_MONTH;
         return defaultHapiSpec("UpdatingExpiryWorks")
@@ -234,6 +237,7 @@ public class ContractUpdateSuite extends HapiSuite {
                 .then(getContractInfo(CONTRACT).has(contractWith().expiry(newExpiry)));
     }
 
+    @HapiTest
     private HapiSpec rejectsExpiryTooFarInTheFuture() {
         final var smallBuffer = 12_345L;
         final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
@@ -244,6 +248,7 @@ public class ContractUpdateSuite extends HapiSuite {
                 .then(contractUpdate(CONTRACT).newExpirySecs(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME));
     }
 
+    @HapiTest
     private HapiSpec updateAutoRenewWorks() {
         return defaultHapiSpec("UpdateAutoRenewWorks")
                 .given(
@@ -254,6 +259,7 @@ public class ContractUpdateSuite extends HapiSuite {
                 .then(getContractInfo(CONTRACT).has(contractWith().autoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY)));
     }
 
+    @HapiTest
     private HapiSpec updateAutoRenewAccountWorks() {
         final var autoRenewAccount = "autoRenewAccount";
         final var newAutoRenewAccount = "newAutoRenewAccount";
@@ -280,6 +286,7 @@ public class ContractUpdateSuite extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     private HapiSpec updateAdminKeyWorks() {
         return defaultHapiSpec("UpdateAdminKeyWorks")
                 .given(
@@ -419,6 +426,7 @@ public class ContractUpdateSuite extends HapiSuite {
                         contractDelete(contract + suffix).payingWith(payer).hasKnownStatus(SUCCESS));
     }
 
+    @HapiTest
     private HapiSpec updateDoesNotChangeBytecode() {
         // HSCS-DCPR-001
         final var simpleStorageContract = "SimpleStorage";

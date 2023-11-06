@@ -20,18 +20,15 @@ import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
-import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.validation.EventValidator;
+import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Wiring for the event signature validator.
+ * Wiring for the {@link EventDeduplicator}.
  */
-public class EventSignatureValidationScheduler {
-
+public class EventDeduplicatorScheduler {
     private final TaskScheduler<GossipEvent> taskScheduler;
-
     private final InputWire<GossipEvent, GossipEvent> eventInput;
     private final InputWire<Long, GossipEvent> minimumGenerationNonAncientInput;
 
@@ -40,23 +37,23 @@ public class EventSignatureValidationScheduler {
      *
      * @param model the wiring model
      */
-    public EventSignatureValidationScheduler(@NonNull final WiringModel model) {
-        taskScheduler = model.schedulerBuilder("eventSignatureValidator")
-                .withType(TaskSchedulerType.SEQUENTIAL)
+    public EventDeduplicatorScheduler(@NonNull final WiringModel model) {
+        taskScheduler = model.schedulerBuilder("eventDeduplicator")
+                .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
                 .withMetricsBuilder(model.metricsBuilder().withUnhandledTaskMetricEnabled(true))
                 .build()
                 .cast();
 
-        eventInput = taskScheduler.buildInputWire("unvalidated events");
+        eventInput = taskScheduler.buildInputWire("non-deduplicated events");
         minimumGenerationNonAncientInput = taskScheduler.buildInputWire("minimum generation non ancient");
     }
 
     /**
-     * Passes events to the signature validator.
+     * Get the event input wire.
      *
-     * @return the event input channel
+     * @return the event input wire
      */
     @NonNull
     public InputWire<GossipEvent, GossipEvent> getEventInput() {
@@ -64,9 +61,9 @@ public class EventSignatureValidationScheduler {
     }
 
     /**
-     * Passes the minimum generation non ancient to the signature validator.
+     * Get the minimum generation non ancient input wire.
      *
-     * @return the minimum generation non ancient input channel
+     * @return the minimum generation non ancient input wire
      */
     @NonNull
     public InputWire<Long, GossipEvent> getMinimumGenerationNonAncientInput() {
@@ -74,7 +71,7 @@ public class EventSignatureValidationScheduler {
     }
 
     /**
-     * Get the output of the signature validator, i.e. a stream of events with valid signatures.
+     * Get the output of the deduplicator, i.e. a stream of deduplicated events
      *
      * @return the event output channel
      */
@@ -84,14 +81,12 @@ public class EventSignatureValidationScheduler {
     }
 
     /**
-     * Bind an orphan buffer to this wiring.
+     * Bind a deduplicator to this wiring.
      *
-     * @param eventValidator the orphan buffer to bind
+     * @param deduplicator the deduplicator to bind
      */
-    public void bind(@NonNull final EventValidator eventValidator) {
-        // Future work:
-        //   - ensure that the signature validator passed in is the new implementation.
-        //   - Bind the input channels to the appropriate functions.
-        //   - Ensure that functions return a value instead of passing it to an internal lambda.
+    public void bind(@NonNull final EventDeduplicator deduplicator) {
+        eventInput.bind(deduplicator::handleEvent);
+        minimumGenerationNonAncientInput.bind(deduplicator::setMinimumGenerationNonAncient);
     }
 }

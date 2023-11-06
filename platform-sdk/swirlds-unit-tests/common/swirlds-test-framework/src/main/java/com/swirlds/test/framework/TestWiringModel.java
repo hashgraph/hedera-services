@@ -18,6 +18,7 @@ package com.swirlds.test.framework;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.wiring.OutputWire;
+import com.swirlds.common.wiring.SolderType;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.utility.ModelGroup;
@@ -103,7 +104,7 @@ public class TestWiringModel extends WiringModel {
             @NonNull final String originVertex,
             @NonNull final String destinationVertex,
             @NonNull final String label,
-            final boolean nonBLocking) {}
+            @NonNull final SolderType solderType) {}
 
     /**
      * {@inheritDoc}
