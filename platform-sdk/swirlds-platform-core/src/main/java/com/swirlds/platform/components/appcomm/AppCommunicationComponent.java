@@ -113,7 +113,7 @@ public class AppCommunicationComponent implements PlatformComponent, StateToDisk
         if (!success) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    "Unable to add new latest complete state task " + "(state round = {}) to {} because it is full",
+                    "Unable to add new latest complete state task (state round = {}) to {} because it is full",
                     signedState.getRound(),
                     asyncLatestCompleteStateQueue.getName());
             reservedSignedState.close();
