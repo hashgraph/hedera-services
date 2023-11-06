@@ -365,6 +365,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         getReceipt(COPYCAT).hasSchedule(ORIGINAL).hasScheduledTxnId(ORIGINAL));
     }
 
+    @HapiTest
     private HapiSpec rejectsSentinelKeyListAsAdminKey() {
         return defaultHapiSpec("RejectsSentinelKeyListAsAdminKey")
                 .given()
@@ -374,6 +375,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
+    @HapiTest
     private HapiSpec rejectsMalformedScheduledTxnMemo() {
         return defaultHapiSpec("RejectsMalformedScheduledTxnMemo")
                 .given(
@@ -393,6 +395,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                                 .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
 
+    @HapiTest
     private HapiSpec infoIncludesTxnIdFromCreationReceipt() {
         return defaultHapiSpec("InfoIncludesTxnIdFromCreationReceipt")
                 .given(
@@ -407,6 +410,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     private HapiSpec preservesRevocationServiceSemanticsForFileDelete() {
         KeyShape waclShape = listOf(SIMPLE, threshOf(2, 3));
         SigControl adequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, ON, OFF)));
@@ -489,6 +493,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST));
     }
 
+    @HapiTest
     public HapiSpec doesntTriggerUntilPayerSigns() {
         return defaultHapiSpec("DoesntTriggerUntilPayerSigns")
                 .given(
@@ -529,6 +534,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         getTxnRecord(BASIC_XFER).scheduled());
     }
 
+    @HapiTest
     public HapiSpec rejectsUnresolvableReqSigners() {
         return defaultHapiSpec("RejectsUnresolvableReqSigners")
                 .given()
@@ -551,6 +557,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .payingWith(GENESIS));
     }
 
+    @HapiTest
     public HapiSpec functionlessTxnBusyWithNonExemptPayer() {
         return defaultHapiSpec("FunctionlessTxnBusyWithNonExemptPayer")
                 .given()
