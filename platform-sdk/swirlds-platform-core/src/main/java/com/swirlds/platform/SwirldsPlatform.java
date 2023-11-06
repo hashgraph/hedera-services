@@ -400,8 +400,6 @@ public class SwirldsPlatform implements Platform {
 
         metrics.addUpdater(appCommunicationComponent::updateLatestCompleteStateQueueSize);
 
-        components.add(appCommunicationComponent);
-
         final Hash epochHash;
         if (emergencyRecoveryManager.getEmergencyRecoveryFile() != null) {
             epochHash = emergencyRecoveryManager.getEmergencyRecoveryFile().hash();
