@@ -16,9 +16,10 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.metrics.api.Metric;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -100,7 +101,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
     /**
      * Configuration of a {@link IntegerPairAccumulator}
      */
-    final class Config<T> extends MetricConfig<IntegerPairAccumulator<T>, IntegerPairAccumulator.Config<T>> {
+    final class Config<T> extends PlatformMetricConfig<IntegerPairAccumulator<T>, Config<T>> {
 
         private final Class<T> type;
 
@@ -415,7 +416,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
          * {@inheritDoc}
          */
         @Override
-        IntegerPairAccumulator<T> create(final MetricsFactory factory) {
+        public IntegerPairAccumulator<T> create(final PlatformMetricsFactory factory) {
             return factory.createIntegerPairAccumulator(this);
         }
 

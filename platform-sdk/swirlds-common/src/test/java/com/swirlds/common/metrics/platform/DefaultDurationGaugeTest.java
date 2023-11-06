@@ -16,13 +16,13 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.metrics.DurationGauge;
-import com.swirlds.common.metrics.FloatFormats;
-import com.swirlds.common.metrics.Metric;
+import com.swirlds.metrics.api.FloatFormats;
+import com.swirlds.metrics.api.Metric;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;

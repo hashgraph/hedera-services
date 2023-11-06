@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.hedera.node.app.utils.TestUtils;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

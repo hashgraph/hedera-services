@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.Metric.DataType.STRING;
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.DataType.STRING;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,8 +26,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.Metric;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.Metric;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;

@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.metrics.Metric;
+import com.swirlds.metrics.api.Metric;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

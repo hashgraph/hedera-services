@@ -44,7 +44,7 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.common.notification.NotificationEngine;

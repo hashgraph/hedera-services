@@ -17,6 +17,7 @@
 package com.swirlds.common.metrics;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.metrics.api.Metrics;
 
 /**
  * A {@link Metrics} implementation that knows about the platform. This interface has been extracted from the

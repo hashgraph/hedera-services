@@ -30,9 +30,9 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metric.ValueType;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.Metric.ValueType;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;

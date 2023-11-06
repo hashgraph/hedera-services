@@ -24,10 +24,10 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 import com.swirlds.benchmark.config.BenchmarkConfig;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.LongGauge;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metric.ValueType;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.LongGauge;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.Metric.ValueType;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;

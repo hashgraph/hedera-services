@@ -34,7 +34,7 @@ import com.hedera.node.config.data.NettyConfig;
 import com.hedera.pbj.runtime.RpcMethodDefinition;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;

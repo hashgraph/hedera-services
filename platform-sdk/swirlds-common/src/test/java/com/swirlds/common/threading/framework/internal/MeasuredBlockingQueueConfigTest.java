@@ -19,13 +19,13 @@ package com.swirlds.common.threading.framework.internal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.MetricsFactory;
+import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -47,7 +47,7 @@ class MeasuredBlockingQueueConfigTest {
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        final MetricsFactory factory = new DefaultMetricsFactory(metricsConfig);
+        final PlatformMetricsFactory factory = new DefaultMetricsFactory(metricsConfig);
         metrics = new DefaultMetrics(null, registry, executor, factory, metricsConfig);
     }
 

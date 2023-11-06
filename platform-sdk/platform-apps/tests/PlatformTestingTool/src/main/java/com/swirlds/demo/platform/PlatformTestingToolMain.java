@@ -26,8 +26,8 @@ package com.swirlds.demo.platform;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_6_2;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_6_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.DEMO_INFO;
@@ -43,8 +43,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.base.utility.Triple;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;

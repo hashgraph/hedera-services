@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.data.Offset.offset;
 
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metric;
+import com.swirlds.metrics.api.Metric;
 import com.swirlds.common.metrics.platform.DefaultFunctionGauge;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.system.NodeId;

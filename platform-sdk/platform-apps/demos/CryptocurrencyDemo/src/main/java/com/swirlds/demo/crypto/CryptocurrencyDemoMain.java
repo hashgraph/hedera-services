@@ -30,7 +30,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 
 import com.swirlds.common.Console;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;

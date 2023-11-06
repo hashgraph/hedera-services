@@ -22,14 +22,14 @@ import com.sun.net.httpserver.HttpServer;
 import com.swirlds.base.state.Lifecycle;
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.MetricsFactory;
-import com.swirlds.common.metrics.MetricsProvider;
+import com.swirlds.common.metrics.PlatformMetricsFactory;
+import com.swirlds.common.metrics.PlatformMetricsProvider;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -43,13 +43,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * The default implementation of {@link MetricsProvider}
+ * The default implementation of {@link PlatformMetricsProvider}
  */
-public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
+public class DefaultMetricsProvider implements PlatformMetricsProvider, Lifecycle {
 
     private static final Logger logger = LogManager.getLogger(DefaultMetricsProvider.class);
 
-    private final MetricsFactory factory;
+    private final PlatformMetricsFactory factory;
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(
             getStaticThreadManager().createThreadFactory("platform-core", "MetricsThread"));
 

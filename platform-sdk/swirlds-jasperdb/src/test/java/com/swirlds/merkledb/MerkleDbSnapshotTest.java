@@ -31,7 +31,7 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;

@@ -71,7 +71,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.config.api.Configuration;
 import contract.ContractScaffoldingComponent;

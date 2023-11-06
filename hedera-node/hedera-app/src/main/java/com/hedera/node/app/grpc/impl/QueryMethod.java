@@ -22,8 +22,8 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

@@ -16,11 +16,11 @@
 
 package com.swirlds.demo.platform;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 
 import com.swirlds.base.utility.Pair;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.throttle.MultiThrottle;
 import com.swirlds.common.utility.throttle.Throttle;

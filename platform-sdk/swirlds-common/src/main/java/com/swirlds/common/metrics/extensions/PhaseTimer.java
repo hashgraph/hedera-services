@@ -20,7 +20,7 @@ import static com.swirlds.common.units.TimeUnit.UNIT_MICROSECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.units.TimeUnit;
 import edu.umd.cs.findbugs.annotations.NonNull;

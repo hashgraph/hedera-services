@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.components;
 
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
 
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.internal.EventImpl;

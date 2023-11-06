@@ -16,13 +16,16 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.MAX;
-import static com.swirlds.common.metrics.Metric.ValueType.MIN;
-import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.ValueType.MAX;
+import static com.swirlds.metrics.api.Metric.ValueType.MIN;
+import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.metrics.api.FloatFormats;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricType;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -109,7 +112,7 @@ public interface StatEntry extends Metric {
      *
      * @param <T> the type of the value that will be contained in the {@code StatEntry}
      */
-    final class Config<T> extends MetricConfig<StatEntry, Config<T>> {
+    final class Config<T> extends PlatformMetricConfig<StatEntry, Config<T>> {
 
         private final Class<T> type;
         private final StatsBuffered buffered;
@@ -426,7 +429,7 @@ public interface StatEntry extends Metric {
          * {@inheritDoc}
          */
         @Override
-        StatEntry create(final MetricsFactory factory) {
+        public StatEntry create(final PlatformMetricsFactory factory) {
             return factory.createStatEntry(this);
         }
 

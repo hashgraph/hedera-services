@@ -16,13 +16,13 @@
 
 package com.swirlds.common.test.threading;
 
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
 import static com.swirlds.common.threading.framework.internal.AbstractQueueThreadConfiguration.UNLIMITED_CAPACITY;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -38,8 +38,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.MetricsFactory;
+import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultIntegerAccumulator;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
@@ -55,6 +54,7 @@ import com.swirlds.common.threading.framework.internal.QueueThreadMetrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
@@ -117,7 +117,7 @@ class QueueThreadTests {
         executor = Executors.newSingleThreadScheduledExecutor();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        final MetricsFactory factory = new DefaultMetricsFactory(metricsConfig);
+        final PlatformMetricsFactory factory = new DefaultMetricsFactory(metricsConfig);
         metrics = new DefaultMetrics(null, registry, executor, factory, metricsConfig);
     }
 

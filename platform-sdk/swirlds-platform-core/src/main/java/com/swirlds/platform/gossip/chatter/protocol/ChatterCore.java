@@ -18,7 +18,7 @@ package com.swirlds.platform.gossip.chatter.protocol;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.DurationGauge;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.common.system.NodeId;

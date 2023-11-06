@@ -36,7 +36,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
 import java.time.Instant;

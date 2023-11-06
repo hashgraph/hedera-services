@@ -30,7 +30,7 @@ import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.collections.HashListByteBuffer;

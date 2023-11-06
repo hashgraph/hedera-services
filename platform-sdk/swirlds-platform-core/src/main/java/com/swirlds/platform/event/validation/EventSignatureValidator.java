@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.event.validation;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.metrics.LongAccumulator;
+import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;

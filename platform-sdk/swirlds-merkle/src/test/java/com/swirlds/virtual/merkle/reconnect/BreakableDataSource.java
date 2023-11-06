@@ -21,7 +21,7 @@ import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.merkledb.files.hashmap.HalfDiskVirtualKeySet;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestKeySerializer;

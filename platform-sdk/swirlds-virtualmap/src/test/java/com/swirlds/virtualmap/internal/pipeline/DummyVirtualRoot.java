@@ -24,7 +24,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.config.VirtualMapConfig;

@@ -16,9 +16,9 @@
 
 package com.swirlds.fcqueue;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
 
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;

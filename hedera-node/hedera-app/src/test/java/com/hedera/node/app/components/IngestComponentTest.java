@@ -47,7 +47,7 @@ import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.status.PlatformStatus;

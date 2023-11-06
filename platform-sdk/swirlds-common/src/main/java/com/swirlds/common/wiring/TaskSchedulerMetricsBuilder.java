@@ -18,7 +18,7 @@ package com.swirlds.common.wiring;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.metrics.extensions.StandardFractionalTimer;

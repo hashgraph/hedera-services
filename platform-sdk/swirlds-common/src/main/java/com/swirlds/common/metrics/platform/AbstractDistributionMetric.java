@@ -16,7 +16,7 @@
 
 package com.swirlds.common.metrics.platform;
 
-import com.swirlds.common.metrics.MetricConfig;
+import com.swirlds.metrics.api.MetricConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;

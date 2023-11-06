@@ -24,7 +24,7 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;

@@ -16,9 +16,9 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
-import com.swirlds.common.metrics.Metric;
+import com.swirlds.metrics.api.Metric;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 
@@ -57,7 +57,7 @@ public record Snapshot(Metric metric, List<SnapshotEntry> entries) {
      * As single entry within a {@code Snapshot}
      *
      * @param valueType
-     * 		the {@link com.swirlds.common.metrics.Metric.ValueType} of this entry
+     * 		the {@link Metric.ValueType} of this entry
      * @param value
      * 		the actual value
      */

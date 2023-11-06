@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.event.deduplication;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.metrics.LongAccumulator;
+import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.system.events.EventDescriptor;

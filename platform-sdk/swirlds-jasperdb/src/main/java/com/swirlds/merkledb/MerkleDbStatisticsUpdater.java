@@ -19,7 +19,7 @@ package com.swirlds.merkledb;
 import static com.swirlds.common.units.UnitConstants.BYTES_TO_MEBIBYTES;
 
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.OffHeapUser;
 import com.swirlds.merkledb.files.DataFileReader;

@@ -17,7 +17,7 @@
 package com.swirlds.common.metrics.noop.internal;
 
 import com.swirlds.common.metrics.DurationGauge;
-import com.swirlds.common.metrics.MetricConfig;
+import com.swirlds.metrics.api.MetricConfig;
 import java.time.Duration;
 
 /**

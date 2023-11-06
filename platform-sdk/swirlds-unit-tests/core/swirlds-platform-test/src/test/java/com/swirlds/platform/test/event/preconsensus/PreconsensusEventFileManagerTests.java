@@ -35,7 +35,7 @@ import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBinImpl;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.TestRecycleBin;

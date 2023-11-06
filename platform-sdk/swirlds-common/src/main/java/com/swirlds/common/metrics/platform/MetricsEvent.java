@@ -18,7 +18,7 @@ package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
-import com.swirlds.common.metrics.Metric;
+import com.swirlds.metrics.api.Metric;
 import com.swirlds.common.system.NodeId;
 
 public record MetricsEvent(Type type, NodeId nodeId, Metric metric) {

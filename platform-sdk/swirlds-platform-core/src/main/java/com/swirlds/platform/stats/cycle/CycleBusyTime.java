@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.stats.cycle;
 
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.units.UnitConstants;
 
 /**

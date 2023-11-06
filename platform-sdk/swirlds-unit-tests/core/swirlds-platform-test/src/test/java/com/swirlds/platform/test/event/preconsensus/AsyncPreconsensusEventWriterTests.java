@@ -35,7 +35,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;

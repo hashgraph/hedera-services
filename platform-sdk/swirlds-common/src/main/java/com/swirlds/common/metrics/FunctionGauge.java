@@ -16,9 +16,11 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricType;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -75,7 +77,7 @@ public interface FunctionGauge<T> extends Metric {
      *
      * @param <T> the type of the value that will be contained in the {@code FunctionGauge}
      */
-    final class Config<T> extends MetricConfig<FunctionGauge<T>, FunctionGauge.Config<T>> {
+    final class Config<T> extends PlatformMetricConfig<FunctionGauge<T>, Config<T>> {
 
         private final Class<T> type;
         private final Supplier<T> supplier;
@@ -176,7 +178,7 @@ public interface FunctionGauge<T> extends Metric {
          * {@inheritDoc}
          */
         @Override
-        FunctionGauge<T> create(final MetricsFactory factory) {
+        public FunctionGauge<T> create(final PlatformMetricsFactory factory) {
             return factory.createFunctionGauge(this);
         }
 

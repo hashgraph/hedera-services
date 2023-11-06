@@ -16,10 +16,10 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.metrics.Counter;
+import com.swirlds.metrics.api.Counter;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;

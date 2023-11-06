@@ -16,14 +16,15 @@
 
 package com.swirlds.common.metrics.extensions;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
+import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_2;
 import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
-import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.LongAccumulator;
+import com.swirlds.metrics.api.IntegerAccumulator;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.time.IntegerEpochTime;
 import com.swirlds.common.units.UnitConstants;
 import java.util.Objects;
@@ -70,7 +71,7 @@ public class CountPerSecond {
     }
 
     /**
-     * An implementation of a {@link com.swirlds.common.metrics.IntegerAccumulator} that does not change the value
+     * An implementation of a {@link IntegerAccumulator} that does not change the value
      */
     public static int noChangeAccumulator(final int currentValue, final int ignored) {
         return currentValue;

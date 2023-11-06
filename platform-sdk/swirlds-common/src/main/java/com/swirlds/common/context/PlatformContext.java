@@ -17,7 +17,7 @@
 package com.swirlds.common.context;
 
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.config.api.Configuration;
 
 /**

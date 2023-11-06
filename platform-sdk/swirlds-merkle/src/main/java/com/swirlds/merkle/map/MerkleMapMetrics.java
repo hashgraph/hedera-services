@@ -16,7 +16,7 @@
 
 package com.swirlds.merkle.map;
 
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;

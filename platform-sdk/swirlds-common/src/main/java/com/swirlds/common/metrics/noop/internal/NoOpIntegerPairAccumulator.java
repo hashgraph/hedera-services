@@ -17,8 +17,8 @@
 package com.swirlds.common.metrics.noop.internal;
 
 import com.swirlds.common.metrics.IntegerPairAccumulator;
-import com.swirlds.common.metrics.MetricConfig;
-import com.swirlds.common.metrics.MetricType;
+import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.metrics.api.MetricType;
 
 /**
  * A no-op implementation of an integer pair accumulator.

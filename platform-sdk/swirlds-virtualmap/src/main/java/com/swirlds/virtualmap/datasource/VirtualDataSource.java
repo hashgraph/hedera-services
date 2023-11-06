@@ -18,7 +18,7 @@ package com.swirlds.virtualmap.datasource;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;

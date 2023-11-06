@@ -16,13 +16,16 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.MAX;
-import static com.swirlds.common.metrics.Metric.ValueType.MIN;
-import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.api.Metric.ValueType.MAX;
+import static com.swirlds.metrics.api.Metric.ValueType.MIN;
+import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
+import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.metrics.api.FloatFormats;
+import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.MetricType;
 import java.util.EnumSet;
 
 /**
@@ -95,7 +98,7 @@ public interface RunningAverageMetric extends Metric {
     /**
      * Configuration of a {@link RunningAverageMetric}
      */
-    final class Config extends MetricConfig<RunningAverageMetric, RunningAverageMetric.Config> {
+    final class Config extends PlatformMetricConfig<RunningAverageMetric, Config> {
 
         private final double halfLife;
         private final boolean useDefaultHalfLife;
@@ -227,7 +230,7 @@ public interface RunningAverageMetric extends Metric {
          * {@inheritDoc}
          */
         @Override
-        RunningAverageMetric create(final MetricsFactory factory) {
+        public RunningAverageMetric create(final PlatformMetricsFactory factory) {
             return factory.createRunningAverageMetric(this);
         }
 
