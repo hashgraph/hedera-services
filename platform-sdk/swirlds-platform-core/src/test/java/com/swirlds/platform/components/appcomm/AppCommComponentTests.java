@@ -21,6 +21,13 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import com.swirlds.common.config.WiringConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.context.DefaultPlatformContext;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.crypto.config.CryptoConfig;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.system.NodeId;
@@ -30,6 +37,7 @@ import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Random;
@@ -43,12 +51,21 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Basic sanity check tests for the {@link DefaultAppCommunicationComponent} class
+ * Basic sanity check tests for the {@link AppCommunicationComponent} class
  */
 public class AppCommComponentTests {
 
     @TempDir
     private Path tmpDir;
+
+    private final PlatformContext context;
+
+    public AppCommComponentTests() {
+        context = new DefaultPlatformContext(
+                ConfigurationHolder.getInstance().get(),
+                new NoOpMetrics(),
+                CryptographyHolder.get());
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
@@ -69,7 +86,7 @@ public class AppCommComponentTests {
             assertEquals(tmpDir, n.getFolder(), "Unexpected notification folder");
         });
 
-        final AppCommunicationComponent component = new DefaultAppCommunicationComponent(notificationEngine);
+        final AppCommunicationComponent component = new AppCommunicationComponent(notificationEngine, context);
         component.stateToDiskAttempt(signedState, tmpDir, success);
 
         if (success) {
@@ -103,7 +120,8 @@ public class AppCommComponentTests {
             }
         });
 
-        final AppCommunicationComponent component = new DefaultAppCommunicationComponent(notificationEngine);
+        final AppCommunicationComponent component = new AppCommunicationComponent(notificationEngine, context);
+        component.start();
         component.newLatestCompleteStateEvent(signedState);
 
         // Allow the notification callback to execute
@@ -136,7 +154,7 @@ public class AppCommComponentTests {
             assertEquals(otherNodeId, n.getOtherNodeId(), "Unexpected other node id");
         });
 
-        final AppCommunicationComponent component = new DefaultAppCommunicationComponent(notificationEngine);
+        final AppCommunicationComponent component = new AppCommunicationComponent(notificationEngine, context);
         component.iss(round, issType, otherNodeId);
 
         assertEquals(1, numInvocations.get(), "Unexpected number of notification callbacks");

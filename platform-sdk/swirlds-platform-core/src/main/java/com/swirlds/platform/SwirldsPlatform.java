@@ -86,7 +86,6 @@ import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
-import com.swirlds.platform.components.appcomm.DefaultAppCommunicationComponent;
 import com.swirlds.platform.components.state.DefaultStateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
@@ -148,7 +147,6 @@ import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
-import com.swirlds.platform.metrics.WiringMetrics;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
@@ -397,24 +395,13 @@ public class SwirldsPlatform implements Platform {
 
         EventCounter.registerEventCounterMetrics(metrics);
 
-        final WiringMetrics wiringMetrics = new WiringMetrics(platformContext.getMetrics());
-
-        final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
-        /* A queue thread that asynchronously invokes NewLatestCompleteStateConsumers */
-        final QueueThread<Runnable> asyncLatestCompleteStateQueue = new QueueThreadConfiguration<Runnable>(
-                        threadManager)
-                .setThreadName("new-latest-complete-state-consumer-queue")
-                .setComponent("wiring")
-                .setCapacity(wiringConfig.newLatestCompleteStateConsumerQueueSize())
-                .setHandler(Runnable::run)
-                .build();
-        components.add(asyncLatestCompleteStateQueue);
-
-        metrics.addUpdater(
-                () -> wiringMetrics.updateLatestCompleteStateQueueSize(asyncLatestCompleteStateQueue.size()));
-
         final AppCommunicationComponent appCommunicationComponent =
-                new DefaultAppCommunicationComponent(notificationEngine);
+                new AppCommunicationComponent(notificationEngine, platformContext);
+
+        components.add(appCommunicationComponent);
+
+        metrics.addUpdater(appCommunicationComponent::updateLatestCompleteStateQueueSize);
+
         components.add(appCommunicationComponent);
 
         final Hash epochHash;
@@ -477,24 +464,6 @@ public class SwirldsPlatform implements Platform {
 
         components.add(new IssMetrics(platformContext.getMetrics(), currentAddressBook));
 
-        final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = (ss -> {
-            final ReservedSignedState reservedSignedState = ss.reserve("ManualWiring newLatestCompleteStateConsumer");
-
-            final boolean success = asyncLatestCompleteStateQueue.offer(() -> {
-                try (reservedSignedState) {
-                    appCommunicationComponent.newLatestCompleteStateEvent(reservedSignedState.get());
-                }
-            });
-            if (!success) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "Unable to add new latest complete state task " + "(state round = {}) to {} because it is full",
-                        ss.getRound(),
-                        asyncLatestCompleteStateQueue.getName());
-                reservedSignedState.close();
-            }
-        });
-
         stateManagementComponent = new DefaultStateManagementComponent(
                 platformContext,
                 threadManager,
@@ -506,7 +475,7 @@ public class SwirldsPlatform implements Platform {
                 swirldName,
                 txn -> this.createSystemTransaction(txn, true),
                 appCommunicationComponent,
-                newLatestCompleteStateConsumer,
+                appCommunicationComponent,
                 appCommunicationComponent,
                 this::haltRequested,
                 this::handleFatalError,
