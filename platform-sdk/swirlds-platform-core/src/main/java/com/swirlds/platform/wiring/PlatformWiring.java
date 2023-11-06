@@ -19,22 +19,27 @@ package com.swirlds.platform.wiring;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.event.deduplication.EventDeduplicator;
+import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
-import com.swirlds.platform.event.validation.EventValidator;
+import com.swirlds.platform.event.validation.EventSignatureValidator;
+import com.swirlds.platform.event.validation.InternalEventValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
  */
 public class PlatformWiring {
-
-    // Note: this class is currently a placeholder; it's not functional in its current form.
-    //       As we migrate the platform into the new framework, we should expand this class.
-
     private final WiringModel model;
 
-    private final EventSignatureValidationScheduler eventSignatureValidationScheduler;
+    private final InternalEventValidatorScheduler internalEventValidatorScheduler;
+    private final EventDeduplicatorScheduler eventDeduplicatorScheduler;
+    private final EventSignatureValidatorScheduler eventSignatureValidatorScheduler;
     private final OrphanBufferScheduler orphanBufferScheduler;
+    private final InOrderLinkerScheduler inOrderLinkerScheduler;
+    private final LinkedEventIntakeScheduler linkedEventIntakeScheduler;
+
     private final boolean cyclicalBackpressurePresent;
 
     /**
@@ -46,8 +51,12 @@ public class PlatformWiring {
     public PlatformWiring(@NonNull final PlatformContext platformContext, @NonNull final Time time) {
         model = WiringModel.create(platformContext, time);
 
+        internalEventValidatorScheduler = new InternalEventValidatorScheduler(model);
+        eventDeduplicatorScheduler = new EventDeduplicatorScheduler(model);
+        eventSignatureValidatorScheduler = new EventSignatureValidatorScheduler(model);
         orphanBufferScheduler = new OrphanBufferScheduler(model);
-        eventSignatureValidationScheduler = new EventSignatureValidationScheduler(model);
+        inOrderLinkerScheduler = new InOrderLinkerScheduler(model);
+        linkedEventIntakeScheduler = new LinkedEventIntakeScheduler(model);
 
         wire();
 
@@ -79,17 +88,40 @@ public class PlatformWiring {
      * Wire the components together.
      */
     private void wire() {
-        eventSignatureValidationScheduler.getEventOutput().solderTo(orphanBufferScheduler.getEventInput());
+        internalEventValidatorScheduler.getEventOutput().solderTo(eventDeduplicatorScheduler.getEventInput());
+        eventDeduplicatorScheduler.getEventOutput().solderTo(eventSignatureValidatorScheduler.getEventInput());
+        eventSignatureValidatorScheduler.getEventOutput().solderTo(orphanBufferScheduler.getEventInput());
+        orphanBufferScheduler.getEventOutput().solderTo(inOrderLinkerScheduler.getEventInput());
+        inOrderLinkerScheduler.getEventOutput().solderTo(linkedEventIntakeScheduler.getEventInput());
+
         // FUTURE WORK: solder all the things!
     }
 
     /**
-     * Bind an orphan buffer to this wiring.
+     * Bind schedulers to their components.
      *
-     * @param orphanBuffer the orphan buffer to bind
+     * @param internalEventValidator  the internal event validator to bind
+     * @param eventDeduplicator       the event deduplicator to bind
+     * @param eventSignatureValidator the event signature validator to bind
+     * @param orphanBuffer            the orphan buffer to bind
+     * @param inOrderLinker           the in order linker to bind
+     * @param linkedEventIntake       the linked event intake to bind
      */
-    public void bind(@NonNull final EventValidator eventValidator, @NonNull final OrphanBuffer orphanBuffer) {
-        eventSignatureValidationScheduler.bind(eventValidator);
+    public void bind(
+            @NonNull final InternalEventValidator internalEventValidator,
+            @NonNull final EventDeduplicator eventDeduplicator,
+            @NonNull final EventSignatureValidator eventSignatureValidator,
+            @NonNull final OrphanBuffer orphanBuffer,
+            @NonNull final InOrderLinker inOrderLinker,
+            @NonNull final LinkedEventIntake linkedEventIntake) {
+
+        internalEventValidatorScheduler.bind(internalEventValidator);
+        eventDeduplicatorScheduler.bind(eventDeduplicator);
+        eventSignatureValidatorScheduler.bind(eventSignatureValidator);
         orphanBufferScheduler.bind(orphanBuffer);
+        inOrderLinkerScheduler.bind(inOrderLinker);
+        linkedEventIntakeScheduler.bind(linkedEventIntake);
+
+        // FUTURE WORK: bind all the things!
     }
 }
