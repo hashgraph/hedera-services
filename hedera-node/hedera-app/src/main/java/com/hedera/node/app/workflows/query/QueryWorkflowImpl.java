@@ -36,6 +36,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -80,6 +81,13 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             EnumSet.of(ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF);
     private static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES =
             List.of(NETWORK_GET_EXECUTION_TIME, GET_ACCOUNT_DETAILS);
+
+    private static final Response DEFAULT_UNSUPPORTED_RESPONSE = Response.newBuilder()
+            .transactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
+                    .header(ResponseHeader.newBuilder()
+                            .nodeTransactionPrecheckCode(NOT_SUPPORTED)
+                            .build()))
+            .build();
 
     private final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
     private final SubmissionManager submissionManager;
@@ -156,120 +164,125 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
         final var function = functionOf(query);
 
-        final var handler = dispatcher.getHandler(query);
-        var queryHeader = handler.extractHeader(query);
-        if (queryHeader == null) {
-            queryHeader = QueryHeader.DEFAULT;
-        }
-        final ResponseType responseType = queryHeader.responseType();
-        logger.debug("Started answering a {} query of type {}", function, responseType);
-
         Response response;
-        try (final var wrappedState = stateAccessor.apply(responseType)) {
-            // 2. Do some general pre-checks
-            ingestChecker.checkNodeState();
-            if (UNSUPPORTED_RESPONSE_TYPES.contains(responseType)) {
-                throw new PreCheckException(NOT_SUPPORTED);
+        if (!HederaFunctionality.NONE.equals(function)) {
+            final var handler = dispatcher.getHandler(query);
+            var queryHeader = handler.extractHeader(query);
+            if (queryHeader == null) {
+                queryHeader = QueryHeader.DEFAULT;
             }
+            final ResponseType responseType = queryHeader.responseType();
+            logger.debug("Started answering a {} query of type {}", function, responseType);
 
-            final var state = wrappedState.get();
-            final var storeFactory = new ReadableStoreFactory(state);
-            final var paymentRequired = handler.requiresNodePayment(responseType);
-            final var feeCalculator = feeManager.createFeeCalculator(function, consensusTime);
-            final QueryContext context;
-            Transaction allegedPayment = null;
-            TransactionBody txBody = null;
-            AccountID payerID = null;
-            if (paymentRequired) {
-                allegedPayment = queryHeader.paymentOrThrow();
-                final var configuration = configProvider.getConfiguration();
-
-                // 3.i Ingest checks
-                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment, configuration);
-                txBody = transactionInfo.txBody();
-
-                // get payer
-                payerID = transactionInfo.payerID();
-                context = new QueryContextImpl(
-                        state,
-                        storeFactory,
-                        query,
-                        configuration,
-                        recordCache,
-                        exchangeRateManager,
-                        feeCalculator,
-                        payerID);
-
-                // A super-user does not have to pay for a query and has all permissions
-                if (!authorizer.isSuperUser(payerID)) {
-
-                    // 3.ii Validate CryptoTransfer
-                    queryChecker.validateCryptoTransfer(transactionInfo);
-
-                    // 3.iii Check permissions
-                    queryChecker.checkPermissions(payerID, function);
-
-                    // Get the payer
-                    final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
-                    final var payer = accountStore.getAccountById(payerID);
-                    if (payer == null) {
-                        // This should never happen, because the account is checked in the pure checks
-                        throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
-                    }
-
-                    // 3.iv Calculate costs
-                    final var queryFees = handler.computeFees(context).totalFee();
-                    final var txFees = queryChecker.estimateTxFees(
-                            storeFactory, consensusTime, transactionInfo, payer.keyOrThrow(), configuration);
-
-                    // 3.v Check account balances
-                    queryChecker.validateAccountBalances(accountStore, transactionInfo, payer, queryFees, txFees);
-
-                    // 3.vi Submit payment to platform
-                    final var txBytes = Transaction.PROTOBUF.toBytes(allegedPayment);
-                    submissionManager.submit(txBody, txBytes);
-                }
-            } else {
-                if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
+            try (final var wrappedState = stateAccessor.apply(responseType)) {
+                // 2. Do some general pre-checks
+                ingestChecker.checkNodeState();
+                if (UNSUPPORTED_RESPONSE_TYPES.contains(responseType)) {
                     throw new PreCheckException(NOT_SUPPORTED);
                 }
-                context = new QueryContextImpl(
-                        state,
-                        storeFactory,
-                        query,
-                        configProvider.getConfiguration(),
-                        recordCache,
-                        exchangeRateManager,
-                        feeCalculator,
-                        null);
-            }
 
-            // 4. Check validity of query
-            handler.validate(context);
+                final var state = wrappedState.get();
+                final var storeFactory = new ReadableStoreFactory(state);
+                final var paymentRequired = handler.requiresNodePayment(responseType);
+                final var feeCalculator = feeManager.createFeeCalculator(function, consensusTime);
+                final QueryContext context;
+                Transaction allegedPayment = null;
+                TransactionBody txBody = null;
+                AccountID payerID = null;
+                if (paymentRequired) {
+                    allegedPayment = queryHeader.paymentOrThrow();
+                    final var configuration = configProvider.getConfiguration();
 
-            // 5. Check query throttles
-            if (synchronizedThrottleAccumulator.shouldThrottle(function, query, payerID)
-                    && !RESTRICTED_FUNCTIONALITIES.contains(function)) {
-                throw new PreCheckException(BUSY);
-            }
+                    // 3.i Ingest checks
+                    final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment, configuration);
+                    txBody = transactionInfo.txBody();
 
-            if (handler.needsAnswerOnlyCost(responseType)) {
-                // 6.i Estimate costs
-                final var queryFees = handler.computeFees(context).totalFee();
+                    // get payer
+                    payerID = transactionInfo.payerID();
+                    context = new QueryContextImpl(
+                            state,
+                            storeFactory,
+                            query,
+                            configuration,
+                            recordCache,
+                            exchangeRateManager,
+                            feeCalculator,
+                            payerID);
 
-                final var header = createResponseHeader(responseType, OK, queryFees);
+                    // A super-user does not have to pay for a query and has all permissions
+                    if (!authorizer.isSuperUser(payerID)) {
+
+                        // 3.ii Validate CryptoTransfer
+                        queryChecker.validateCryptoTransfer(transactionInfo);
+
+                        // 3.iii Check permissions
+                        queryChecker.checkPermissions(payerID, function);
+
+                        // Get the payer
+                        final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
+                        final var payer = accountStore.getAccountById(payerID);
+                        if (payer == null) {
+                            // This should never happen, because the account is checked in the pure checks
+                            throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
+                        }
+
+                        // 3.iv Calculate costs
+                        final var queryFees = handler.computeFees(context).totalFee();
+                        final var txFees = queryChecker.estimateTxFees(
+                                storeFactory, consensusTime, transactionInfo, payer.keyOrThrow(), configuration);
+
+                        // 3.v Check account balances
+                        queryChecker.validateAccountBalances(accountStore, transactionInfo, payer, queryFees, txFees);
+
+                        // 3.vi Submit payment to platform
+                        final var txBytes = Transaction.PROTOBUF.toBytes(allegedPayment);
+                        submissionManager.submit(txBody, txBytes);
+                    }
+                } else {
+                    if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
+                        throw new PreCheckException(NOT_SUPPORTED);
+                    }
+                    context = new QueryContextImpl(
+                            state,
+                            storeFactory,
+                            query,
+                            configProvider.getConfiguration(),
+                            recordCache,
+                            exchangeRateManager,
+                            feeCalculator,
+                            null);
+                }
+
+                // 4. Check validity of query
+                handler.validate(context);
+
+                // 5. Check query throttles
+                if (synchronizedThrottleAccumulator.shouldThrottle(function, query, payerID)
+                        && !RESTRICTED_FUNCTIONALITIES.contains(function)) {
+                    throw new PreCheckException(BUSY);
+                }
+
+                if (handler.needsAnswerOnlyCost(responseType)) {
+                    // 6.i Estimate costs
+                    final var queryFees = handler.computeFees(context).totalFee();
+
+                    final var header = createResponseHeader(responseType, OK, queryFees);
+                    response = handler.createEmptyResponse(header);
+                } else {
+                    // 6.ii Find response
+                    final var header = createResponseHeader(responseType, OK, 0L);
+                    response = handler.findResponse(context, header);
+                }
+            } catch (InsufficientBalanceException e) {
+                final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
                 response = handler.createEmptyResponse(header);
-            } else {
-                // 6.ii Find response
-                final var header = createResponseHeader(responseType, OK, 0L);
-                response = handler.findResponse(context, header);
+            } catch (PreCheckException e) {
+                final var header = createResponseHeader(responseType, e.responseCode(), 0L);
+                response = handler.createEmptyResponse(header);
             }
-        } catch (InsufficientBalanceException e) {
-            final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
-            response = handler.createEmptyResponse(header);
-        } catch (PreCheckException e) {
-            final var header = createResponseHeader(responseType, e.responseCode(), 0L);
-            response = handler.createEmptyResponse(header);
+        } else {
+            response = DEFAULT_UNSUPPORTED_RESPONSE;
+            logger.warn("Received a query for an unknown functionality");
         }
 
         try {
@@ -310,7 +323,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         try {
             return HapiUtils.functionOf(query);
         } catch (UnknownHederaFunctionality e) {
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
+            return HederaFunctionality.NONE;
         }
     }
 }

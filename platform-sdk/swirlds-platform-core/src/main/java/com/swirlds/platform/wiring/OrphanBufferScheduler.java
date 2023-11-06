@@ -25,9 +25,6 @@ import com.swirlds.platform.event.orphan.OrphanBuffer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
-// Future work: it may actually make more sense to colocate the scheduler classes with the implementations.
-//              This decision can be delayed until we begin migration in earnest.
-
 /**
  * Wiring for the {@link OrphanBuffer}.
  */
@@ -59,9 +56,9 @@ public class OrphanBufferScheduler {
     }
 
     /**
-     * Passes events to the orphan buffer.
+     * Gets the event input wire.
      *
-     * @return the event input channel
+     * @return the event input wire
      */
     @NonNull
     public InputWire<GossipEvent, List<GossipEvent>> getEventInput() {
@@ -69,9 +66,9 @@ public class OrphanBufferScheduler {
     }
 
     /**
-     * Passes the minimum generation non ancient to the orphan buffer.
+     * Gets the minimum generation non ancient input wire.
      *
-     * @return the minimum generation non ancient input channel
+     * @return the minimum generation non ancient input wire
      */
     @NonNull
     public InputWire<Long, List<GossipEvent>> getMinimumGenerationNonAncientInput() {
@@ -81,7 +78,7 @@ public class OrphanBufferScheduler {
     /**
      * Get the output of the orphan buffer, i.e. a stream of events in topological order.
      *
-     * @return the event output channel
+     * @return the event output wire
      */
     @NonNull
     public OutputWire<GossipEvent> getEventOutput() {
@@ -94,9 +91,6 @@ public class OrphanBufferScheduler {
      * @param orphanBuffer the orphan buffer to bind
      */
     public void bind(@NonNull final OrphanBuffer orphanBuffer) {
-        // Future work: these handlers currently do not return anything. They need to be refactored so that
-        // they return a list of events (as opposed to passing them to a handler lambda).
-
         eventInput.bind(orphanBuffer::handleEvent);
         minimumGenerationNonAncientInput.bind(orphanBuffer::setMinimumGenerationNonAncient);
     }

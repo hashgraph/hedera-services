@@ -65,6 +65,8 @@ public class CryptoHandlerTestBase {
     protected final Key key = A_COMPLEX_KEY;
     protected final Key otherKey = C_COMPLEX_KEY;
     protected final AccountID id = AccountID.newBuilder().accountNum(3).build();
+    protected final AccountID invalidId =
+            AccountID.newBuilder().accountNum(Long.MAX_VALUE).build();
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final Instant consensusInstant = Instant.ofEpochSecond(consensusTimestamp.seconds());
@@ -72,7 +74,7 @@ public class CryptoHandlerTestBase {
     protected final HederaKey accountHederaKey = asHederaKey(accountKey).get();
     protected final Long accountNum = id.accountNumOrThrow();
 
-    private static final Key aPrimitiveKey = Key.newBuilder()
+    protected static final Key aPrimitiveKey = Key.newBuilder()
             .ed25519(Bytes.wrap("01234567890123456789012345678901"))
             .build();
     protected static final ProtoBytes edKeyAlias = new ProtoBytes(Bytes.wrap(asBytes(Key.PROTOBUF, aPrimitiveKey)));
