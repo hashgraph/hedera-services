@@ -147,5 +147,4 @@ class LongConverterTest {
         // then
         Assertions.assertEquals(-781000L, value, "Negative numerical literals must be supported");
     }
-
 }
