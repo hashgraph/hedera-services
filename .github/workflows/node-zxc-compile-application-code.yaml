@@ -174,7 +174,7 @@ jobs:
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: Unit Test Results'
-          check_run_disabled: true
+          check_run_disabled: false
           json_thousands_separator: ','
           junit_files: "**/build/test-results/test/TEST-*.xml"
 
@@ -204,7 +204,7 @@ jobs:
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: Integration Test Results'
-          check_run_disabled: true
+          check_run_disabled: false
           json_thousands_separator: ','
           junit_files: "**/build/test-results/itest/TEST-*.xml"
 
@@ -232,7 +232,7 @@ jobs:
         if: ${{ inputs.enable-hapi-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: HAPI Test Results'
-          check_run_disabled: true
+          check_run_disabled: false
           json_thousands_separator: ','
           junit_files: "**/build/test-results/hapiTest/TEST-*.xml"
 
@@ -257,7 +257,7 @@ jobs:
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: E2E Test Results'
-          check_run_disabled: true
+          check_run_disabled: false
           json_thousands_separator: ','
           junit_files: "**/build/test-results/eet/TEST-*.xml"
 
