@@ -1102,13 +1102,18 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     })
                     .when(dispatcher)
                     .dispatchHandle(any());
+            given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
+            given(selfNodeInfo.nodeId()).willReturn(0L);
+            when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
+            when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
+            Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
 
             // when
             context.dispatchReversiblePrecedingTransaction(
                     defaultTransactionBody(),
                     SingleTransactionRecordBuilder.class,
                     VERIFIER_CALLBACK,
-                    AccountID.DEFAULT);
+                    ALICE.accountID());
 
             // then
             assertThat(stack.depth()).isEqualTo(1);
