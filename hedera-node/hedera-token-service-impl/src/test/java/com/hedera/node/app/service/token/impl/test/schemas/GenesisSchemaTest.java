@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.token.impl.test.schemas;
 
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,8 +26,11 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.GenesisSchema;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
@@ -33,6 +38,7 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
+import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.throttle.HandleThrottleParser;
@@ -63,6 +69,16 @@ final class GenesisSchemaTest {
     private static final long EXPECTED_ENTITY_EXPIRY = 1812637686L;
     private static final long TREASURY_ACCOUNT_NUM = 2L;
     private static final long NUM_RESERVED_SYSTEM_ENTITIES = 750L;
+    private static final String EVM_ADDRESS_0 = "e261e26aecce52b3788fac9625896ffbc6bb4424";
+    private static final String EVM_ADDRESS_1 = "ce16e8eb8f4bf2e65ba9536c07e305b912bafacf";
+    private static final String EVM_ADDRESS_2 = "f39fd6e51aad88f6f4ce6ab8827279cfffb92266";
+    private static final String EVM_ADDRESS_3 = "70997970c51812dc3a010c7d01b50e0d17dc79c8";
+    private static final String EVM_ADDRESS_4 = "7e5f4552091a69125d5dfcb7b8c2659029395bdf";
+    private static final String EVM_ADDRESS_5 = "a04a864273e77be6fe500ad2f5fad320d9168bb6";
+    private static final String[] EVM_ADDRESSES = {
+        EVM_ADDRESS_0, EVM_ADDRESS_1, EVM_ADDRESS_2, EVM_ADDRESS_3, EVM_ADDRESS_4, EVM_ADDRESS_5
+    };
+    private static final long BEGINNING_ENTITY_ID = 3000;
 
     @Mock
     private GenesisRecordsBuilder genesisRecordsBuilder;
@@ -82,28 +98,42 @@ final class GenesisSchemaTest {
     @Captor
     private ArgumentCaptor<Map<Account, CryptoCreateTransactionBody.Builder>> treasuryCloneMapCaptor;
 
+    @Captor
+    private ArgumentCaptor<Map<Account, CryptoCreateTransactionBody.Builder>> blocklistMapCaptor;
+
     private MapWritableKVState<AccountID, Account> accounts;
+    private MapWritableKVState<Bytes, AccountID> aliases;
     private WritableStates newStates;
     private Configuration config;
     private NetworkInfo networkInfo;
+    private WritableEntityIdStore entityIdStore;
 
     @BeforeEach
     void setUp() {
         accounts = MapWritableKVState.<AccountID, Account>builder(TokenServiceImpl.ACCOUNTS_KEY)
                 .build();
+        aliases = MapWritableKVState.<Bytes, AccountID>builder(ALIASES_KEY).build();
 
-        newStates = newStatesInstance(accounts);
+        newStates = newStatesInstance(accounts, aliases, newWritableEntityIdState());
+
+        entityIdStore = new WritableEntityIdStore(newStates);
 
         networkInfo = new FakeNetworkInfo();
 
-        config = buildConfig(NUM_SYSTEM_ACCOUNTS);
+        config = buildConfig(NUM_SYSTEM_ACCOUNTS, true);
     }
 
     @Test
     void createsAllAccounts() {
         final var schema = new GenesisSchema();
         final var migrationContext = new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling);
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                handleThrottling,
+                entityIdStore);
 
         schema.migrate(migrationContext);
 
@@ -158,6 +188,26 @@ final class GenesisSchemaTest {
                         .map(AccountID::accountNum))
                 .allMatch(acctNum ->
                         Arrays.contains(GenesisSchema.nonContractSystemNums(NUM_RESERVED_SYSTEM_ENTITIES), acctNum));
+
+        // Verify created blocklist accounts
+        verify(genesisRecordsBuilder).blocklistAccounts(blocklistMapCaptor.capture());
+        final var blocklistAcctsResult = blocklistMapCaptor.getValue();
+        Assertions.assertThat(blocklistAcctsResult).isNotNull().hasSize(6).allSatisfy((account, builder) -> {
+            Assertions.assertThat(account).isNotNull();
+
+            Assertions.assertThat(account.accountId().accountNum())
+                    .isBetween(BEGINNING_ENTITY_ID, BEGINNING_ENTITY_ID + EVM_ADDRESSES.length);
+            Assertions.assertThat(account.receiverSigRequired()).isTrue();
+            Assertions.assertThat(account.declineReward()).isTrue();
+            Assertions.assertThat(account.deleted()).isFalse();
+            Assertions.assertThat(account.expirationSecond()).isEqualTo(EXPECTED_ENTITY_EXPIRY);
+            Assertions.assertThat(account.autoRenewSeconds()).isEqualTo(EXPECTED_ENTITY_EXPIRY);
+            Assertions.assertThat(account.smartContract()).isFalse();
+            Assertions.assertThat(account.key()).isNotNull();
+            Assertions.assertThat(account.alias()).isNotNull();
+
+            verifyCryptoCreateBuilder(account, builder);
+        });
     }
 
     @Test
@@ -165,7 +215,7 @@ final class GenesisSchemaTest {
         final var schema = new GenesisSchema();
 
         // We'll only configure 4 system accounts, half of which will already exist
-        config = buildConfig(4);
+        config = buildConfig(4, true);
         final var accts = new HashMap<AccountID, Account>();
         IntStream.rangeClosed(1, 2).forEach(i -> putNewAccount(i, accts));
         // One of the two staking accounts will already exist
@@ -177,9 +227,24 @@ final class GenesisSchemaTest {
         IntStream.rangeClosed(200, 745).forEach(i -> {
             if (isRegularAcctNum(i)) putNewAccount(i, accts);
         });
-        newStates = newStatesInstance(new MapWritableKVState<>(ACCOUNTS_KEY, accts));
+        // Half of the blocklist accounts will already exist (simulated by the existence of alias mappings, not the
+        // account objects)
+        final var blocklistAccts = Map.of(
+                Bytes.fromHex(EVM_ADDRESS_0), asAccount(BEGINNING_ENTITY_ID),
+                Bytes.fromHex(EVM_ADDRESS_2), asAccount(BEGINNING_ENTITY_ID + 2),
+                Bytes.fromHex(EVM_ADDRESS_4), asAccount(BEGINNING_ENTITY_ID + 4));
+        newStates = newStatesInstance(
+                new MapWritableKVState<>(ACCOUNTS_KEY, accts),
+                new MapWritableKVState<>(ALIASES_KEY, blocklistAccts),
+                newWritableEntityIdState());
         final var migrationContext = new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling);
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                handleThrottling,
+                entityIdStore);
 
         schema.migrate(migrationContext);
 
@@ -202,6 +267,11 @@ final class GenesisSchemaTest {
         final var treasuryCloneAcctsResult = treasuryCloneMapCaptor.getValue();
         // Only treasury clones with IDs 746-750 should have been created
         Assertions.assertThat(treasuryCloneAcctsResult).hasSize(5);
+
+        verify(genesisRecordsBuilder).blocklistAccounts(blocklistMapCaptor.capture());
+        final var blocklistAcctsResult = blocklistMapCaptor.getValue();
+        // Only half of the blocklist accts should have been created
+        Assertions.assertThat(blocklistAcctsResult).hasSize(3);
     }
 
     @Test
@@ -219,9 +289,26 @@ final class GenesisSchemaTest {
         IntStream.rangeClosed(200, 750).forEach(i -> {
             if (isRegularAcctNum(i)) putNewAccount(i, accts);
         });
-        newStates = newStatesInstance(new MapWritableKVState<>(ACCOUNTS_KEY, accts));
+        // All the blocklist accounts will already exist
+        final var blocklistEvmAliasMappings = Map.of(
+                Bytes.fromHex(EVM_ADDRESS_0), asAccount(BEGINNING_ENTITY_ID),
+                Bytes.fromHex(EVM_ADDRESS_1), asAccount(BEGINNING_ENTITY_ID + 1),
+                Bytes.fromHex(EVM_ADDRESS_2), asAccount(BEGINNING_ENTITY_ID + 2),
+                Bytes.fromHex(EVM_ADDRESS_3), asAccount(BEGINNING_ENTITY_ID + 3),
+                Bytes.fromHex(EVM_ADDRESS_4), asAccount(BEGINNING_ENTITY_ID + 4),
+                Bytes.fromHex(EVM_ADDRESS_5), asAccount(BEGINNING_ENTITY_ID + 5));
+        newStates = newStatesInstance(
+                new MapWritableKVState<>(ACCOUNTS_KEY, accts),
+                new MapWritableKVState<>(ALIASES_KEY, blocklistEvmAliasMappings),
+                newWritableEntityIdState());
         final var migrationContext = new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling);
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                handleThrottling,
+                entityIdStore);
 
         schema.migrate(migrationContext);
 
@@ -229,13 +316,40 @@ final class GenesisSchemaTest {
         verify(genesisRecordsBuilder).stakingAccounts(emptyMap());
         verify(genesisRecordsBuilder).miscAccounts(emptyMap());
         verify(genesisRecordsBuilder).treasuryClones(emptyMap());
+        verify(genesisRecordsBuilder).blocklistAccounts(emptyMap());
+    }
+
+    @Test
+    void blocklistNotEnabled() {
+        final var schema = new GenesisSchema();
+
+        // None of the blocklist accounts will exist, but they shouldn't be created since blocklists aren't enabled
+        config = buildConfig(NUM_SYSTEM_ACCOUNTS, false);
+        final var migrationContext = new MigrationContextImpl(
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                handleThrottling,
+                entityIdStore);
+
+        schema.migrate(migrationContext);
+
+        verify(genesisRecordsBuilder).blocklistAccounts(emptyMap());
     }
 
     @Test
     void systemAccountsCreated() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                handleThrottling,
+                entityIdStore));
 
         for (int i = 1; i <= 100; i++) {
             final var balance = i == 2 ? EXPECTED_TREASURY_TINYBARS_BALANCE : 0L;
@@ -253,7 +367,13 @@ final class GenesisSchemaTest {
     void accountsBetweenFilesAndContracts() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                handleThrottling,
+                entityIdStore));
 
         for (int i = 200; i < 350; i++) {
             final var account = accounts.get(accountID(i));
@@ -268,7 +388,13 @@ final class GenesisSchemaTest {
     void contractEntityIdsNotUsed() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                handleThrottling,
+                entityIdStore));
 
         for (int i = 350; i < 400; i++) {
             assertThat(accounts.contains(accountID(i))).isFalse();
@@ -279,7 +405,13 @@ final class GenesisSchemaTest {
     void accountsAfterContracts() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                handleThrottling,
+                entityIdStore));
 
         for (int i = 400; i <= 750; i++) {
             final var account = accounts.get(accountID(i));
@@ -294,7 +426,13 @@ final class GenesisSchemaTest {
     void entityIdsBetweenSystemAccountsAndRewardAccountsAreEmpty() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                handleThrottling,
+                entityIdStore));
 
         for (int i = 751; i < 800; i++) {
             assertThat(accounts.contains(accountID(i))).isFalse();
@@ -305,7 +443,13 @@ final class GenesisSchemaTest {
     void stakingRewardAccounts() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                handleThrottling,
+                entityIdStore));
 
         final var stakingRewardAccount = accounts.get(accountID(800));
         verifyStakingAccount(stakingRewardAccount);
@@ -318,7 +462,13 @@ final class GenesisSchemaTest {
     void entityIdsAfterRewardAccountsAreEmpty() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                handleThrottling,
+                entityIdStore));
 
         for (int i = 802; i < 900; i++) {
             assertThat(accounts.contains(accountID(i))).isFalse();
@@ -326,16 +476,40 @@ final class GenesisSchemaTest {
     }
 
     @Test
-    void specialAccountsAfter900() {
+    void miscAccountsAfter900() {
         final var schema = new GenesisSchema();
         schema.migrate(new MigrationContextImpl(
-                EmptyReadableStates.INSTANCE, newStates, config, networkInfo, genesisRecordsBuilder, handleThrottling));
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                handleThrottling,
+                entityIdStore));
 
         for (int i = 900; i <= 1000; i++) {
             final var account = accounts.get(accountID(i));
             assertThat(account).isNotNull();
             assertThat(account.accountId()).isEqualTo(accountID(i));
             verifyMultiUseAccount(account);
+        }
+    }
+
+    @Test
+    void blocklistAccountIdsMatchEntityIds() {
+        final var schema = new GenesisSchema();
+        schema.migrate(new MigrationContextImpl(
+                EmptyReadableStates.INSTANCE,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                handleThrottling,
+                entityIdStore));
+
+        for (int i = 0; i < EVM_ADDRESSES.length; i++) {
+            final var acctId = aliases.get(Bytes.fromHex(EVM_ADDRESSES[i]));
+            assertThat(acctId).isEqualTo(accountID((int) BEGINNING_ENTITY_ID + i + 1));
         }
     }
 
@@ -417,6 +591,7 @@ final class GenesisSchemaTest {
                         .autoRenewPeriod(Duration.newBuilder()
                                 .seconds(acctResult.autoRenewSeconds())
                                 .build())
+                        .alias(acctResult.alias())
                         .build());
     }
 
@@ -428,12 +603,14 @@ final class GenesisSchemaTest {
         accts.put(acctId, acct);
     }
 
-    private Configuration buildConfig(int numSystemAccounts) {
+    private Configuration buildConfig(final int numSystemAccounts, final boolean blocklistEnabled) {
         return HederaTestConfigBuilder.create()
                 // Accounts Config
                 .withValue("accounts.treasury", TREASURY_ACCOUNT_NUM)
                 .withValue("accounts.stakingRewardAccount", 800L)
                 .withValue("accounts.nodeRewardAccount", 801L)
+                .withValue("accounts.blocklist.enabled", blocklistEnabled)
+                .withValue("accounts.blocklist.path", "blocklist-parsing/test-evm-addresses-blocklist.csv")
                 // Bootstrap Config
                 .withValue("bootstrap.genesisPublicKey", "0x" + GENESIS_KEY)
                 .withValue("bootstrap.system.entityExpiry", EXPECTED_ENTITY_EXPIRY)
@@ -447,13 +624,23 @@ final class GenesisSchemaTest {
                 .getOrCreateConfig();
     }
 
-    private MapWritableStates newStatesInstance(final MapWritableKVState<AccountID, Account> accts) {
+    private WritableSingletonState<EntityNumber> newWritableEntityIdState() {
+        return new WritableSingletonStateBase<>(
+                EntityIdService.ENTITY_ID_STATE_KEY, () -> new EntityNumber(BEGINNING_ENTITY_ID), c -> {});
+    }
+
+    private MapWritableStates newStatesInstance(
+            final MapWritableKVState<AccountID, Account> accts,
+            final MapWritableKVState<Bytes, AccountID> aliases,
+            final WritableSingletonState<EntityNumber> entityIdState) {
         return MapWritableStates.builder()
                 .state(accts)
+                .state(aliases)
                 .state(MapWritableKVState.builder(TokenServiceImpl.STAKING_INFO_KEY)
                         .build())
                 .state(new WritableSingletonStateBase<>(
                         TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY, () -> null, c -> {}))
+                .state(entityIdState)
                 .build();
     }
 
