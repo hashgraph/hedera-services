@@ -64,7 +64,7 @@ class InOrderLinkerTests {
      * @param otherParentGeneration the generation of the other parent of the event
      * @return the mock event
      */
-    private GossipEvent generateMockEvent(
+    private static GossipEvent generateMockEvent(
             @NonNull final Hash selfHash,
             final long selfGeneration,
             @Nullable final Hash selfParentHash,
