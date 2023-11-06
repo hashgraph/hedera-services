@@ -1074,8 +1074,9 @@ public class UtilVerbs {
      * @param mode the snapshot mode to use
      * @return a {@link SnapshotModeOp} that either takes or fuzzy-matches a snapshot of generated records
      */
-    public static HapiSpecOperation snapshotMode(@NonNull final SnapshotModeOp.SnapshotMode mode) {
-        return new SnapshotModeOp(mode);
+    public static HapiSpecOperation snapshotMode(
+            @NonNull final SnapshotMode mode, @NonNull final SnapshotMatchMode... matchModes) {
+        return new SnapshotModeOp(mode, matchModes);
     }
 
     public static HapiSpecOperation updateLargeFile(

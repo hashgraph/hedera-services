@@ -33,9 +33,10 @@ public class HapiTestEnv {
     private static final int CAPTIVE_NODE_STARTUP_TIME_LIMIT = 300;
     private final List<HapiTestNode> nodes = new ArrayList<>();
     private final List<String> nodeHosts = new ArrayList<>();
+    public static final int CLUSTER_SIZE = 4;
 
     public HapiTestEnv(@NonNull final String testName, final boolean cluster) {
-        final var numNodes = cluster ? 4 : 1;
+        final var numNodes = cluster ? CLUSTER_SIZE : 1;
         try {
             final var sb = new StringBuilder();
             sb.append("swirld, ")
