@@ -234,7 +234,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
 
-        given(handleContext.dispatchRemovableChildTransaction(
+        given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
@@ -265,7 +265,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         writableTokenStore.put(fungibleToken.copyBuilder().kycKey((Key) null).build());
         givenStoresAndConfig(handleContext);
 
-        given(handleContext.dispatchRemovableChildTransaction(
+        given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
@@ -341,7 +341,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
 
-        given(handleContext.dispatchRemovableChildTransaction(
+        given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
@@ -387,7 +387,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
 
-        given(handleContext.dispatchRemovableChildTransaction(
+        given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =

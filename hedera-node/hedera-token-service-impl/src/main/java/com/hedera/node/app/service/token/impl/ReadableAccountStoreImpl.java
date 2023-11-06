@@ -96,7 +96,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
      *
      * @param accountID the {@code AccountID} which {@code Account is requested}
      * @return an {@link Optional} with the {@code Account}, if it was found, an empty {@code
-     *     Optional} otherwise
+     * Optional} otherwise
      */
     @Override
     @Nullable

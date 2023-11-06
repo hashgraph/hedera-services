@@ -135,6 +135,12 @@ public final class AliasUtils {
     public static boolean isSerializedProtoKey(@NonNull final Bytes alias) {
         requireNonNull(alias);
 
+        // If the alias is an evmAddress we don't need to parse with Key.PROTOBUF.
+        // This will cause BufferUnderflowException
+        if (!isAliasSizeGreaterThanEvmAddress(alias)) {
+            return false;
+        }
+
         // Determine whether these bytes represent a serialized Key (as protobuf bytes).
         // FUTURE: Rather than parsing and catching an error, we could have PBJ provide a method that simply returns
         // a boolean instead of throwing an exception. Or maybe we can make sure the alias is a valid ECDSA key length
@@ -200,11 +206,21 @@ public final class AliasUtils {
     @Nullable
     public static Key asKeyFromAliasOrElse(@NonNull final Bytes alias, @Nullable final Key def) {
         requireNonNull(alias);
+        // If the alias is an evmAddress we don't need to parse with Key.PROTOBUF.
+        // This will cause BufferUnderflowException
+        if (!isAliasSizeGreaterThanEvmAddress(alias)) {
+            return def;
+        }
         try {
             return Key.PROTOBUF.parseStrict(alias.toReadableSequentialData());
         } catch (final Exception e) {
             // There are many possible exceptions, not just IOException. We want to catch all of them.
             return def;
         }
+    }
+
+    public static boolean isAliasSizeGreaterThanEvmAddress(@NonNull final Bytes alias) {
+        requireNonNull(alias);
+        return alias.length() > EVM_ADDRESS_SIZE;
     }
 }

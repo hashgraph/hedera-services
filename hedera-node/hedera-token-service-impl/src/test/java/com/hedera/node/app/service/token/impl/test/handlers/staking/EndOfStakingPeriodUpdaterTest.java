@@ -200,7 +200,7 @@ class EndOfStakingPeriodUpdaterTest {
                 .willReturn((WritableSingletonState) stakingRewardsState);
         final var stakingRewardsStore = new WritableNetworkStakingRewardsStore(states);
         given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(stakingRewardsStore);
-        given(context.addPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class))
+        given(context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class))
                 .willReturn(nodeStakeUpdateRecordBuilder);
 
         // Assert preconditions

@@ -205,19 +205,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         final var expanded = new HashSet<ExpandedSignaturePair>();
         signatureExpander.expand(originals, expanded);
 
-        // 1. Expand the Payer signature
-        final Key payerKey;
-        if (!isHollow(payerAccount)) {
-            // If the account IS a hollow account, then we will discover all such possible signatures when expanding
-            // all "full prefix" keys above, so we already have it covered. We only need to do this if the payer is
-            // NOT a hollow account (which is the common case).
-            payerKey = payerAccount.keyOrThrow();
-            signatureExpander.expand(payerKey, originals, expanded);
-        } else {
-            payerKey = null;
-        }
-
-        // 2a. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
+        // 1a. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
         final PreHandleContext context;
         final VersionedConfiguration configuration = configProvider.getConfiguration();
         try {
@@ -232,6 +220,21 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // that it does exist.
             throw new RuntimeException(
                     "Payer account disappeared between preHandle and preHandleContext creation!", preCheck);
+        }
+
+        // 2. Expand the Payer signature
+        final Key payerKey;
+        if (!isHollow(payerAccount)) {
+            // If the account IS a hollow account, then we will discover all such possible signatures when expanding
+            // all "full prefix" keys above, so we already have it covered. We only need to do this if the payer is
+            // NOT a hollow account (which is the common case).
+            payerKey = payerAccount.keyOrThrow();
+            signatureExpander.expand(payerKey, originals, expanded);
+        } else {
+            payerKey = null;
+            // If the account is hollow and since it is the payer that needs to sign the transaction, we need to
+            // add to the list of requiredHollowAccounts so that we can finalize the hollow accounts in handle workflow
+            context.requireSignatureForHollowAccount(payerAccount);
         }
 
         // 2b. Call Pre-Transaction Handlers

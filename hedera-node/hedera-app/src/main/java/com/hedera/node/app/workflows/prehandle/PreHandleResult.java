@@ -46,6 +46,7 @@ import java.util.concurrent.Future;
  * @param txInfo Information about the transaction that is being handled. If the transaction was not parseable, then
  *               this will be null, and an appropriate error status will be set.
  * @param requiredKeys The set of cryptographic keys that are required to be present.
+ * @param hollowAccounts The set of required hollow accounts to be finalized
  * @param verificationResults A map of {@link Future<SignatureVerificationFuture>} yielding the
  *                            {@link SignatureVerificationFuture} for a given cryptographic key. Ony cryptographic keys
  *                            are used as the key of this map.

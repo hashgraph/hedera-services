@@ -47,6 +47,7 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Comparator;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -122,7 +123,13 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
                     responseBuilder.duplicateTransactionRecords(history.duplicateRecords());
                 }
                 if (op.includeChildRecords()) {
-                    responseBuilder.childTransactionRecords(history.childRecords());
+                    // Sort the transaction records based on nonce, so that the user transaction is always first,
+                    // followed by any preceding transactions, followed by any child transactions.
+                    final var sortedRecords = history.childRecords().stream()
+                            .sorted(Comparator.comparingLong(
+                                    a -> a.transactionIDOrThrow().nonce()))
+                            .toList();
+                    responseBuilder.childTransactionRecords(sortedRecords);
                 }
             }
         }

@@ -199,12 +199,9 @@ final class RecordCacheImplTest extends AppTestBase {
             assertThat(getReceipt(cache, txId1))
                     .isEqualTo(entries.get(1).transactionRecordOrThrow().receipt());
 
-            assertThat(getRecords(cache, pTxId1)).containsExactly(entries.get(0).transactionRecord());
-            assertThat(getReceipts(cache, pTxId1))
-                    .containsExactly(entries.get(0).transactionRecordOrThrow().receipt());
-
             assertThat(getRecords(cache, txId1))
                     .containsExactly(
+                            entries.get(0).transactionRecord(),
                             entries.get(1).transactionRecord(),
                             entries.get(2).transactionRecord(),
                             entries.get(5).transactionRecord());
@@ -216,6 +213,7 @@ final class RecordCacheImplTest extends AppTestBase {
                             entries.get(5).transactionRecord());
             assertThat(getReceipts(cache, txId1))
                     .containsExactly(
+                            entries.get(0).transactionRecordOrThrow().receipt(),
                             entries.get(1).transactionRecordOrThrow().receipt(),
                             entries.get(2).transactionRecordOrThrow().receipt(),
                             entries.get(5).transactionRecordOrThrow().receipt());
