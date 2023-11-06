@@ -21,12 +21,10 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
@@ -37,7 +35,6 @@ import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Random;
@@ -62,9 +59,7 @@ public class AppCommComponentTests {
 
     public AppCommComponentTests() {
         context = new DefaultPlatformContext(
-                ConfigurationHolder.getInstance().get(),
-                new NoOpMetrics(),
-                CryptographyHolder.get());
+                ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
     }
 
     @ParameterizedTest

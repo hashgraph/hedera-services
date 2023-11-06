@@ -50,8 +50,8 @@ import org.apache.logging.log4j.Logger;
 /**
  * This component responsible for notifying the application of various platform events
  */
-public class AppCommunicationComponent implements PlatformComponent, StateToDiskAttemptConsumer,
-        NewLatestCompleteStateConsumer, IssConsumer {
+public class AppCommunicationComponent
+        implements PlatformComponent, StateToDiskAttemptConsumer, NewLatestCompleteStateConsumer, IssConsumer {
     private static final Logger logger = LogManager.getLogger(AppCommunicationComponent.class);
 
     private final NotificationEngine notificationEngine;
@@ -68,7 +68,8 @@ public class AppCommunicationComponent implements PlatformComponent, StateToDisk
      * @param notificationEngine the notification engine
      * @param context the platform context
      */
-    public AppCommunicationComponent(@NonNull final NotificationEngine notificationEngine,@NonNull final PlatformContext context) {
+    public AppCommunicationComponent(
+            @NonNull final NotificationEngine notificationEngine, @NonNull final PlatformContext context) {
         this.notificationEngine = notificationEngine;
         this.asyncLatestCompleteStateQueueSize = new AverageAndMax(
                 context.getMetrics(),
@@ -77,11 +78,12 @@ public class AppCommunicationComponent implements PlatformComponent, StateToDisk
                 "average number of new latest complete state occurrences waiting to be sent to consumers",
                 FORMAT_10_3,
                 AverageStat.WEIGHT_VOLATILE);
-        this.asyncLatestCompleteStateQueue = new QueueThreadConfiguration<ReservedSignedState>(
-                getStaticThreadManager())
+        this.asyncLatestCompleteStateQueue = new QueueThreadConfiguration<ReservedSignedState>(getStaticThreadManager())
                 .setThreadName("new-latest-complete-state-consumer-queue")
                 .setComponent("wiring")
-                .setCapacity(context.getConfiguration().getConfigData(WiringConfig.class).newLatestCompleteStateConsumerQueueSize())
+                .setCapacity(context.getConfiguration()
+                        .getConfigData(WiringConfig.class)
+                        .newLatestCompleteStateConsumerQueueSize())
                 .setHandler(this::latestCompleteStateHandler)
                 .build();
     }
@@ -108,7 +110,8 @@ public class AppCommunicationComponent implements PlatformComponent, StateToDisk
         // it will be released by the notification engine after the app consumes it
         // this is done by latestCompleteStateAppNotify()
         // if the state does not make into the queue, it will be released below
-        final ReservedSignedState reservedSignedState = signedState.reserve("AppCommunicationComponent newLatestCompleteStateEvent");
+        final ReservedSignedState reservedSignedState =
+                signedState.reserve("AppCommunicationComponent newLatestCompleteStateEvent");
         final boolean success = asyncLatestCompleteStateQueue.offer(reservedSignedState);
         if (!success) {
             logger.error(
