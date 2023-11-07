@@ -36,7 +36,6 @@ import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
-import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
@@ -47,14 +46,13 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.hyperledger.besu.evm.account.MutableAccount;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-
 import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
+import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * A fully mutable {@link HederaOperations} implementation based on a {@link HandleContext}.
@@ -330,13 +328,14 @@ public class HandleHederaOperations implements HederaOperations {
         tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
     }
 
-    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress, @Nullable ContractBytecode bytecode) {
+    public void externalizeHollowAccountMerge(
+            @NonNull ContractID contractId, @Nullable Bytes evmAddress, @Nullable ContractBytecode bytecode) {
         var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class);
         recordBuilder
                 .contractID(contractId)
                 // add dummy transaction, because SingleTransactionRecord require NonNull on build
                 .transaction(Transaction.DEFAULT)
-                //todo add null check or make it nonNull
+                // todo add null check or make it nonNull
                 .addContractBytecode(bytecode, false)
                 .contractCreateResult(ContractFunctionResult.newBuilder()
                         .contractID(contractId)
@@ -344,38 +343,42 @@ public class HandleHederaOperations implements HederaOperations {
                         .build());
     }
 
-    public void addSidecars(MessageFrame frame,
-                            ActionSidecarContentTracer tracer,
-                            ContractStateChanges stateChanges,
-                            ContractID recipientId,
-                            MutableAccount recipientAccount
-    ) {
-        var enabledSidecars = context.configuration().getConfigData(ContractsConfig.class).sidecars();
-        if(enabledSidecars.contains(SidecarType.CONTRACT_ACTION)) {
-            context.recordBuilder(ContractCallRecordBuilder.class).contractActions(
-                    List.of(new AbstractMap.SimpleEntry<>(
-                            ContractActions.newBuilder().contractActions(
-                                    ((EvmActionTracer)tracer).actionStack().allActions().stream().map(ActionWrapper::get).toList()
-                            ).build()
-                            , false)));
+    public void addSidecars(
+            MessageFrame frame,
+            ActionSidecarContentTracer tracer,
+            ContractStateChanges stateChanges,
+            ContractID recipientId,
+            MutableAccount recipientAccount) {
+        var enabledSidecars =
+                context.configuration().getConfigData(ContractsConfig.class).sidecars();
+        if (enabledSidecars.contains(SidecarType.CONTRACT_ACTION)) {
+            context.recordBuilder(ContractCallRecordBuilder.class)
+                    .contractActions(List.of(new AbstractMap.SimpleEntry<>(
+                            ContractActions.newBuilder()
+                                    .contractActions(((EvmActionTracer) tracer)
+                                            .actionStack().allActions().stream()
+                                                    .map(ActionWrapper::get)
+                                                    .toList())
+                                    .build(),
+                            false)));
         }
 
-        if(enabledSidecars.contains(SidecarType.CONTRACT_STATE_CHANGE)) {
-            if(stateChanges.contractStateChanges().size() > 0 ){
+        if (enabledSidecars.contains(SidecarType.CONTRACT_STATE_CHANGE)) {
+            if (stateChanges.contractStateChanges().size() > 0) {
                 context.recordBuilder(ContractCallRecordBuilder.class).addContractStateChanges(stateChanges, false);
             }
         }
 
         if (enabledSidecars.contains(SidecarType.CONTRACT_BYTECODE)
                 && frame.getType().equals(MessageFrame.Type.CONTRACT_CREATION)) {
-            var bytecodeBuilder = ContractBytecode.newBuilder()
-                    .contractId(recipientId);
+            var bytecodeBuilder = ContractBytecode.newBuilder().contractId(recipientId);
             if (recipientAccount != null && !frame.getState().equals(MessageFrame.State.REVERT)) {
                 bytecodeBuilder.runtimeBytecode(tuweniToPbjBytes(recipientAccount.getCode()));
             }
 
-            var body = (ContractCreateTransactionBody)context.body().data().value();
-            if(!body.hasInitcode()) {
+            var body = context.body().data().value();
+            if (body instanceof ContractCreateTransactionBody
+                    && !((ContractCreateTransactionBody) body).hasInitcode()) {
                 bytecodeBuilder.initcode(tuweniToPbjBytes(frame.getCode().getBytes()));
             }
             context.recordBuilder(ContractCreateRecordBuilder.class)
