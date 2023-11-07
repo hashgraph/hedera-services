@@ -71,6 +71,7 @@ class ReconnectProtocolTests {
      * Status getter that always returns ACTIVE
      */
     private PlatformStatusGetter activeStatusGetter;
+    private ReconnectController reconnectController;
 
     private static Stream<Arguments> initiateParams() {
         return Stream.of(
@@ -127,6 +128,9 @@ class ReconnectProtocolTests {
     void setup() {
         activeStatusGetter = mock(PlatformStatusGetter.class);
         when(activeStatusGetter.getCurrentStatus()).thenReturn(PlatformStatus.ACTIVE);
+
+        reconnectController = mock(ReconnectController.class);
+        when(reconnectController.acquireLearnerPermit()).thenReturn(true);
     }
 
     @DisplayName("Test the conditions under which the protocol should and should not be initiated")
@@ -191,7 +195,7 @@ class ReconnectProtocolTests {
                 () -> reservedSignedState,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
-                mock(ReconnectController.class),
+                reconnectController,
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
                 activeStatusGetter,
@@ -269,7 +273,7 @@ class ReconnectProtocolTests {
                 () -> null,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
-                mock(ReconnectController.class),
+                reconnectController,
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
                 activeStatusGetter,
@@ -289,7 +293,7 @@ class ReconnectProtocolTests {
                 () -> reservedSignedState,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
-                mock(ReconnectController.class),
+                reconnectController,
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
                 activeStatusGetter,
@@ -373,7 +377,7 @@ class ReconnectProtocolTests {
                 () -> reservedSignedState,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
-                mock(ReconnectController.class),
+                reconnectController,
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
                 activeStatusGetter,
@@ -455,9 +459,6 @@ class ReconnectProtocolTests {
     @Test
     @DisplayName("Teacher holds the learner permit while teaching")
     void teacherHoldsLearnerPermit() {
-        final ReconnectController reconnectController = mock(ReconnectController.class);
-        when(reconnectController.acquireLearnerPermit()).thenReturn(true);
-
         final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
         signedState.reserve("test");
