@@ -52,17 +52,6 @@ import java.util.stream.Collectors;
  * Various static utility method used in syncing
  */
 public final class SyncUtils {
-    /**
-     * send a {@link ByteConstants#COMM_SYNC_ONGOING} every this many milliseconds after we are done writing events,
-     * until we are done reading events
-     */
-    private static final int SYNC_ONGOING_SEND_EVERY_MS = 500;
-
-    /**
-     * The maximum time we will allow sending and receiving events. If not done within this time limit, we will abort
-     * the sync.
-     */
-    private static final Duration SEND_AND_RECEIVE_EVENTS_MAX_TIME = Duration.ofMinutes(1);
 
     /**
      * Private constructor to never instantiate this class
@@ -183,19 +172,22 @@ public final class SyncUtils {
 
     /**
      * Send the events the peer needs. The complementary function to
-     * {@link #readEventsINeed(Connection, Consumer, SyncMetrics, CountDownLatch, IntakeEventCounter)}.
+     * {@link #readEventsINeed(Connection, Consumer, SyncMetrics, CountDownLatch, IntakeEventCounter, Duration)}.
      *
-     * @param connection       the connection to write to
-     * @param events           the events to write
-     * @param eventReadingDone used to know when the writing thread is done
-     * @param writeAborted     set to true if writing is aborted
+     * @param connection          the connection to write to
+     * @param events              the events to write
+     * @param eventReadingDone    used to know when the writing thread is done
+     * @param writeAborted        set to true if writing is aborted
+     * @param syncKeepalivePeriod send a keepalive message every this many milliseconds when writing events during a
+     *                            sync
      * @return A {@link Callable} that executes this part of the sync
      */
     public static Callable<Void> sendEventsTheyNeed(
             final Connection connection,
             final List<EventImpl> events,
             final CountDownLatch eventReadingDone,
-            final AtomicBoolean writeAborted) {
+            final AtomicBoolean writeAborted,
+            final Duration syncKeepalivePeriod) {
         return () -> {
             for (final EventImpl event : events) {
                 if (event.isFromSignedState()) {
@@ -215,7 +207,7 @@ public final class SyncUtils {
             connection.getDos().flush();
 
             // if we are still reading events, send keepalive messages
-            while (!eventReadingDone.await(SYNC_ONGOING_SEND_EVERY_MS, TimeUnit.MILLISECONDS)) {
+            while (!eventReadingDone.await(syncKeepalivePeriod.toMillis(), TimeUnit.MILLISECONDS)) {
                 connection.getDos().writeByte(ByteConstants.COMM_SYNC_ONGOING);
                 connection.getDos().flush();
             }
@@ -233,13 +225,15 @@ public final class SyncUtils {
 
     /**
      * Read events from the peer that I need. The complementary function to
-     * {@link #sendEventsTheyNeed(Connection, List, CountDownLatch, AtomicBoolean)}.
+     * {@link #sendEventsTheyNeed(Connection, List, CountDownLatch, AtomicBoolean, Duration)}.
      *
      * @param connection         the connection to read from
      * @param eventHandler       the consumer of received events
      * @param syncMetrics        tracks event reading metrics
      * @param eventReadingDone   used to notify the writing thread that reading is done
      * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
+     * @param maxSyncTime        the maximum amount of time to spend syncing with a peer, syncs that take longer than
+     *                           this will be aborted
      * @return A {@link Callable} that executes this part of the sync
      */
     public static Callable<Integer> readEventsINeed(
@@ -247,7 +241,8 @@ public final class SyncUtils {
             final Consumer<GossipEvent> eventHandler,
             final SyncMetrics syncMetrics,
             final CountDownLatch eventReadingDone,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final IntakeEventCounter intakeEventCounter,
+            @NonNull final Duration maxSyncTime) {
 
         return () -> {
             int eventsRead = 0;
@@ -258,7 +253,7 @@ public final class SyncUtils {
                     final byte next = connection.getDis().readByte();
                     // if the peer continuously sends COMM_SYNC_ONGOING, or sends the data really slowly,
                     // this timeout will be triggered
-                    checkEventExchangeTime(startTime);
+                    checkEventExchangeTime(maxSyncTime, startTime);
                     switch (next) {
                         case ByteConstants.COMM_EVENT_NEXT -> {
                             final GossipEvent gossipEvent = connection.getDis().readEventData();
@@ -303,13 +298,16 @@ public final class SyncUtils {
      * Checks if the time spent sending and receiving events exceeds maximum allowed. If it has, it throws an
      * exception.
      *
-     * @param startTime the time at which phase 3 started
+     * @param maxSyncTime the maximum amount of time to spend syncing with a peer, syncs that take longer than this will
+     *                    be aborted
+     * @param startTime   the time at which sending and receiving of events started
      * @throws SyncTimeoutException thrown if the time is exceeded
      */
-    private static void checkEventExchangeTime(final long startTime) throws SyncTimeoutException {
-        final long phase3Nanos = System.nanoTime() - startTime;
-        if (phase3Nanos > SEND_AND_RECEIVE_EVENTS_MAX_TIME.toNanos()) {
-            throw new SyncTimeoutException(Duration.ofNanos(phase3Nanos), SEND_AND_RECEIVE_EVENTS_MAX_TIME);
+    private static void checkEventExchangeTime(@NonNull final Duration maxSyncTime, final long startTime)
+            throws SyncTimeoutException {
+        final long syncTime = System.nanoTime() - startTime;
+        if (syncTime > maxSyncTime.toNanos()) {
+            throw new SyncTimeoutException(Duration.ofNanos(syncTime), maxSyncTime);
         }
     }
 
@@ -338,7 +336,7 @@ public final class SyncUtils {
      * have and that are unlikely to end up being duplicate events.
      *
      * <p>
-     * General principals:
+     * General principles:
      * <ul>
      * <li>Always send self events right away.</li>
      * <li>Don't send non-ancestors of self events unless we've known about that event for a long time.</li>
@@ -347,10 +345,13 @@ public final class SyncUtils {
      *
      * @param shadowGraph          the shadow graph
      * @param selfId               the id of this node
-     * @param ancestorThreshold    the amount of time an event must be known about before we send its ancestors
-     * @param nonAncestorThreshold the amount of time an event must be known about before we send it
+     * @param ancestorThreshold    for each event that is not a self event but is an ancestor of a self event, the
+     *                             amount of time the event must be known about before it is eligible to be sent
+     * @param nonAncestorThreshold for each event that is not a self event and is not an ancestor of a self event, the
+     *                             amount of time the event must be known about before it is eligible to be sent
      * @param now                  the current time
      * @param eventsTheyNeed       the list of events we think they need
+     * @return the events that should be actually sent, will be a subset of the eventsTheyNeed list
      */
     @NonNull
     public static List<EventImpl> filterLikelyDuplicates(
@@ -371,7 +372,7 @@ public final class SyncUtils {
             selfEventAncestors = shadowGraph.findAncestors(listOfLatestSelfEvent, event -> true);
         }
 
-        // Convert to a set of hashes for easy lookup.
+        // Convert to a list of hashes for easy lookup.
         final List<Hash> selfEventAncestorHashes =
                 selfEventAncestors.stream().map(ShadowEvent::getEventBaseHash).toList();
 

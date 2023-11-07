@@ -265,6 +265,7 @@ public class ChatterGossip extends AbstractGossip {
                                             platformContext.getConfiguration(),
                                             time),
                                     new ChatterSyncProtocol(
+                                            platformContext,
                                             otherId,
                                             chatterPeer.communicationState(),
                                             chatterPeer.outputAggregator(),

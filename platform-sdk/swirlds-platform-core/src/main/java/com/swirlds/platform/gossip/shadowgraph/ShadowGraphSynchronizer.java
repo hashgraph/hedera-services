@@ -117,8 +117,24 @@ public class ShadowGraphSynchronizer {
     private final InterruptableRunnable executePreFetchTips;
 
     private final Time time;
+
+    /**
+     * If true then we do not send all events during a sync that the peer says we need. Instead, we send events that we
+     * know are unlikely to be duplicates (e.g. self events), and only send other events if we have had them for a long
+     * time and the peer still needs them.
+     */
     private final boolean filterLikelyDuplicates;
+
+    /**
+     * For events that are not self events but are an ancestor of a self event, we must have had this event for at least
+     * this amount of time before it is eligible to be sent. Ignored if {@link #filterLikelyDuplicates} is false.
+     */
     private final Duration ancestorFilterThreshold;
+
+    /**
+     * For events that are neither self events nor ancestors of self events, we must have had this event for at least
+     * this amount of time before it is eligible to be sent. Ignored if {@link #filterLikelyDuplicates} is false.
+     */
     private final Duration nonAncestorFilterThreshold;
 
     public ShadowGraphSynchronizer(
@@ -199,9 +215,11 @@ public class ShadowGraphSynchronizer {
     /**
      * Executes a sync using the supplied connection.
      *
-     * @param connection the connection to use
+     * @param platformContext the platform context
+     * @param connection      the connection to use
+     * @return true if the sync was successful, false if it was aborted
      */
-    public boolean synchronize(@NonNull final Connection connection)
+    public boolean synchronize(@NonNull final PlatformContext platformContext, @NonNull final Connection connection)
             throws IOException, ParallelExecutionException, SyncException, InterruptedException {
         // accumulates time points for each step in the execution of a single gossip session, used for stats
         // reporting and performance analysis
@@ -230,7 +248,6 @@ public class ShadowGraphSynchronizer {
             timing.setTimePoint(1);
 
             if (theirTipsAndGenerations.isSyncRejected()) {
-                // null means the sync was rejected
                 return false;
             }
 
@@ -242,7 +259,7 @@ public class ShadowGraphSynchronizer {
             }
 
             // events that I know they already have
-            final Set<ShadowEvent> knownSet = new HashSet<>();
+            final Set<ShadowEvent> eventsTheyHave = new HashSet<>();
 
             // process the hashes received
             final List<ShadowEvent> theirTips = shadowGraph.shadows(theirTipsAndGenerations.getTips());
@@ -251,8 +268,8 @@ public class ShadowGraphSynchronizer {
             // For each tip, send true if we have the event and false if we don't.
             final List<Boolean> theirTipsIHave = getTheirTipsIHave(theirTips);
 
-            // add known shadows to known set
-            theirTips.stream().filter(Objects::nonNull).forEach(knownSet::add);
+            // Add their tips to the set of events they are known to have
+            theirTips.stream().filter(Objects::nonNull).forEach(eventsTheyHave::add);
 
             // Step 2: each peer tells the other which of the other's tips it already has.
 
@@ -265,14 +282,17 @@ public class ShadowGraphSynchronizer {
 
             // Add each tip they know to the known set
             final List<ShadowEvent> knownTips = getMyTipsTheyKnow(connection, myTips, theirBooleans);
-            knownSet.addAll(knownTips);
+            eventsTheyHave.addAll(knownTips);
 
             // create a send list based on the known set
             sendList = createSendList(
-                    connection.getSelfId(), knownSet, myGenerations, theirTipsAndGenerations.getGenerations());
+                    connection.getSelfId(), eventsTheyHave, myGenerations, theirTipsAndGenerations.getGenerations());
         }
 
-        return sendAndReceiveEvents(connection, timing, sendList);
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
+        return sendAndReceiveEvents(
+                connection, timing, sendList, syncConfig.syncKeepalivePeriod(), syncConfig.maxSyncTime());
     }
 
     @NonNull
@@ -386,18 +406,24 @@ public class ShadowGraphSynchronizer {
     }
 
     /**
-     * Executes phase 3 of a sync
+     * By this point in time, we have figured out which events we want to send the peer, and the peer has figured out
+     * which events it wants to send us. In parallel, send and receive those events.
      *
-     * @param connection the connection to use
-     * @param timing     metrics that track sync timing
-     * @param sendList   the events to send
+     * @param connection          the connection to use
+     * @param timing              metrics that track sync timing
+     * @param sendList            the events to send
+     * @param syncKeepAlivePeriod the period at which the reading thread should send keepalive messages
+     * @param maxSyncTime         the maximum amount of time to spend syncing with a peer, syncs that take longer than
+     *                            this will be aborted
      * @return true if the phase was successful, false if it was aborted
      * @throws ParallelExecutionException if anything goes wrong
      */
     private boolean sendAndReceiveEvents(
             @NonNull final Connection connection,
             @NonNull final SyncTiming timing,
-            @NonNull final List<EventImpl> sendList)
+            @NonNull final List<EventImpl> sendList,
+            @NonNull final Duration syncKeepAlivePeriod,
+            @NonNull final Duration maxSyncTime)
             throws ParallelExecutionException {
 
         Objects.requireNonNull(connection);
@@ -409,8 +435,9 @@ public class ShadowGraphSynchronizer {
         // the writer will set it to true if writing is aborted
         final AtomicBoolean writeAborted = new AtomicBoolean(false);
         final Integer eventsRead = readWriteParallel(
-                readEventsINeed(connection, eventHandler, syncMetrics, eventReadingDone, intakeEventCounter),
-                sendEventsTheyNeed(connection, sendList, eventReadingDone, writeAborted),
+                readEventsINeed(
+                        connection, eventHandler, syncMetrics, eventReadingDone, intakeEventCounter, maxSyncTime),
+                sendEventsTheyNeed(connection, sendList, eventReadingDone, writeAborted, syncKeepAlivePeriod),
                 connection);
         if (eventsRead < 0 || writeAborted.get()) {
             // sync was aborted
