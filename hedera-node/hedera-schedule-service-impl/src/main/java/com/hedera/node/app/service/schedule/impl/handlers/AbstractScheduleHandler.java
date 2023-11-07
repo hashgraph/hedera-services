@@ -69,8 +69,21 @@ abstract class AbstractScheduleHandler {
         // note, payerAccount should never be null, but we're dealing with Sonar here.
         final AccountID payerForNested =
                 scheduleInState.payerAccountIdOrElse(scheduleInState.schedulerAccountIdOrThrow());
-        final TransactionKeys keyStructure = context.allKeysForTransaction(scheduledAsOrdinary, payerForNested);
-        return getKeySetFromTransactionKeys(keyStructure);
+        try {
+            // check keys for nested transaction
+            final TransactionKeys keyStructure = context.allKeysForTransaction(scheduledAsOrdinary, payerForNested);
+            return getKeySetFromTransactionKeys(keyStructure);
+        } catch (PreCheckException e) {
+            // if the nested transaction is invalid, we return UNRESOLVABLE_REQUIRED_SIGNERS
+            // instead of whatever the nested transaction returned.
+            if (e.responseCode() == ResponseCodeEnum.INVALID_ACCOUNT_ID
+                    || e.responseCode() == ResponseCodeEnum.INVALID_TOKEN_ID
+                    || e.responseCode() == ResponseCodeEnum.INVALID_TOPIC_ID) {
+                throw new PreCheckException(ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS);
+            } else {
+                throw e;
+            }
+        }
     }
 
     @NonNull

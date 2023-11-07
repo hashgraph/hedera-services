@@ -529,6 +529,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         getTxnRecord(BASIC_XFER).scheduled());
     }
 
+    @HapiTest
     public HapiSpec rejectsUnresolvableReqSigners() {
         return defaultHapiSpec("RejectsUnresolvableReqSigners")
                 .given()
