@@ -26,7 +26,6 @@ import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.model.StandardWiringModel;
 import com.swirlds.common.wiring.utility.ModelGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -153,12 +152,13 @@ public abstract class WiringModel implements Startable, Stoppable {
      * many input types.
      *
      * @param vertexName          the name of the vertex
-     * @param type                the type of task scheduler that corresponds to this vertex, or null if this vertex
-     *                            does not correspond to a task scheduler
+     * @param type                the type of task scheduler that corresponds to this vertex. If this vertex represents
+     *                            something like a transformer or a filter, it should use the type
+     *                            {@link TaskSchedulerType#DIRECT}.
      * @param insertionIsBlocking if true then insertion may block until capacity is available
      */
     public abstract void registerVertex(
-            @NonNull String vertexName, @Nullable TaskSchedulerType type, boolean insertionIsBlocking);
+            @NonNull String vertexName, @NonNull TaskSchedulerType type, boolean insertionIsBlocking);
 
     /**
      * Reserved for internal framework use. Do not call this method directly.

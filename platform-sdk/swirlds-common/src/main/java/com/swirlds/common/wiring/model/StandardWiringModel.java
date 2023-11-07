@@ -25,7 +25,6 @@ import com.swirlds.common.wiring.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.schedulers.HeartbeatScheduler;
 import com.swirlds.common.wiring.utility.ModelGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -128,9 +127,10 @@ public class StandardWiringModel extends WiringModel {
     @Override
     public void registerVertex(
             @NonNull final String vertexName,
-            @Nullable final TaskSchedulerType type,
+            @NonNull final TaskSchedulerType type,
             final boolean insertionIsBlocking) {
         Objects.requireNonNull(vertexName);
+        Objects.requireNonNull(type);
         final boolean unique = vertices.put(vertexName, new ModelVertex(vertexName, type, insertionIsBlocking)) == null;
         if (!unique) {
             throw new IllegalArgumentException("Duplicate vertex name: " + vertexName);
@@ -150,8 +150,8 @@ public class StandardWiringModel extends WiringModel {
             return vertex;
         }
 
-        // Create an ad hoc vertex. This is needed when wires are soldered to lambdas.
-        final ModelVertex adHocVertex = new ModelVertex(vertexName, null, true);
+        // Create an ad hoc vertex.
+        final ModelVertex adHocVertex = new ModelVertex(vertexName, TaskSchedulerType.DIRECT, true);
 
         vertices.put(vertexName, adHocVertex);
         return adHocVertex;

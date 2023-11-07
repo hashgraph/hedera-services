@@ -54,14 +54,15 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
      * Constructor.
      *
      * @param name                the name of the vertex
-     * @param type                the type of task scheduler that corresponds to this vertex, or null if this vertex
-     *                            does not correspond to a task scheduler
+     * @param type                the type of task scheduler that corresponds to this vertex. If this vertex does not
+     *                            correspond to a task scheduler (e.g. a transformer or a filter), then this should be
+     *                            {@link TaskSchedulerType#DIRECT};
      * @param insertionIsBlocking true if the insertion of this vertex may block until capacity is available
      */
     public ModelVertex(
-            @NonNull final String name, @Nullable final TaskSchedulerType type, final boolean insertionIsBlocking) {
-        this.name = name;
-        this.type = type;
+            @NonNull final String name, @NonNull final TaskSchedulerType type, final boolean insertionIsBlocking) {
+        this.name = Objects.requireNonNull(name);
+        this.type = Objects.requireNonNull(type);
         this.insertionIsBlocking = insertionIsBlocking;
     }
 
@@ -117,6 +118,7 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
     }
 
     // TODO unused
+
     /**
      * Get the outgoing edges of this vertex.
      *
