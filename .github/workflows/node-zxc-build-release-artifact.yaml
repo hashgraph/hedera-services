@@ -200,7 +200,7 @@ jobs:
           MINOR_VERSION="$(semver get minor "${EFF_VERSION}")"
 
           echo "number=${EFF_VERSION}" >>"${GITHUB_OUTPUT}"
-          echo "prefix=${MAJOR_VERSION}.${MINOR_VERSION" >>"${GITHUB_OUTPUT}"
+          echo "prefix=${MAJOR_VERSION}.${MINOR_VERSION}" >>"${GITHUB_OUTPUT}"
           echo "prerelease=${PRERELEASE}" >>"${GITHUB_OUTPUT}"
 
       - name: Cache Build Version
