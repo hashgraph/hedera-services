@@ -20,12 +20,15 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
@@ -37,12 +40,15 @@ import com.swirlds.common.utility.ValueReference;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
+import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -446,5 +452,54 @@ class ReconnectProtocolTests {
                 Time.getCurrent());
 
         assertFalse(protocol.shouldAccept());
+    }
+
+    @Test
+    @DisplayName("Teacher holds the learner permit while teaching")
+    void teacherHoldsLearnerPermit() {
+        final ReconnectController reconnectController = mock(ReconnectController.class);
+        when(reconnectController.acquireLearnerPermit()).thenReturn(true);
+
+        final SignedState signedState= spy(new RandomSignedStateGenerator().build());
+            when(signedState.isComplete()).thenReturn(true);
+            signedState.reserve("test");
+
+        final ReconnectThrottle teacherThrottle = mock(ReconnectThrottle.class);
+        when(teacherThrottle.initiateReconnect(any())).thenReturn(true);
+
+        final ReconnectProtocol protocol = new ReconnectProtocol(
+                getStaticThreadManager(),
+                new NodeId(0),
+                teacherThrottle,
+                () -> signedState.reserve("test"),
+                Duration.of(100, ChronoUnit.MILLIS),
+                mock(ReconnectMetrics.class),
+                reconnectController,
+                mock(SignedStateValidator.class),
+                mock(FallenBehindManager.class),
+                activeStatusGetter,
+                configuration,
+                Time.getCurrent());
+
+        assertTrue(protocol.shouldAccept());
+
+        verify(reconnectController, times(1)).acquireLearnerPermit();
+        verify(reconnectController, times(0)).cancelLearnerPermit();
+
+        protocol.acceptFailed();
+
+        verify(reconnectController, times(1)).acquireLearnerPermit();
+        verify(reconnectController, times(1)).cancelLearnerPermit();
+
+        assertTrue(protocol.shouldAccept());
+
+        verify(reconnectController, times(2)).acquireLearnerPermit();
+        verify(reconnectController, times(1)).cancelLearnerPermit();
+
+        assertThrows(Exception.class, ()->protocol.runProtocol(mock(Connection.class)));
+
+        verify(reconnectController, times(2)).acquireLearnerPermit();
+        verify(reconnectController, times(2)).cancelLearnerPermit();
+
     }
 }
