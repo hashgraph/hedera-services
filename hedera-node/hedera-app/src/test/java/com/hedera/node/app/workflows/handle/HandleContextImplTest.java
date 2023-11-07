@@ -1032,7 +1032,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             // given
             final var context = createContext(defaultTransactionBody(), TransactionCategory.USER);
             stack.peek().createWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).put(B_KEY, BLUEBERRY);
-
+            when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
+            when(selfNodeInfo.nodeId()).thenReturn(0L);
+            when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
+            Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
+            when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
             // then
             assertThatNoException()
                     .isThrownBy(() -> context.dispatchPrecedingTransaction(
