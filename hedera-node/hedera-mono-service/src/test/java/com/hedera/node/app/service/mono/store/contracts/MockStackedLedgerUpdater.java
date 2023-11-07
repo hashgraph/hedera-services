@@ -33,16 +33,13 @@ public class MockStackedLedgerUpdater extends AbstractStackedLedgerUpdater<Heder
         this.customizer = customizer;
     }
 
-
     @Override
     public ContractCustomizer customizerForPendingCreation() {
         return customizer;
     }
 
     @Override
-    public void setCreationCustomizerForSponsor(Address sponsorAddressOrAlias) {
-
-    }
+    public void setCreationCustomizerForSponsor(Address sponsorAddressOrAlias) {}
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})

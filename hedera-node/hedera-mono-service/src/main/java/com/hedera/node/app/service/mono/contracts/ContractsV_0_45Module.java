@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.mono.contracts;
 
+import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
+import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
+
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperationV045;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperationV045;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmChainIdOperation;
@@ -40,6 +43,14 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
+import java.math.BigInteger;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.EvmSpecVersion;
@@ -51,18 +62,6 @@ import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-
-import javax.inject.Named;
-import javax.inject.Singleton;
-import java.math.BigInteger;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
-import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
 
 @Module
 public interface ContractsV_0_45Module {

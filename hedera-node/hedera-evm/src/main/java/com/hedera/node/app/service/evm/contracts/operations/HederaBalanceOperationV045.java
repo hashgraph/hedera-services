@@ -17,16 +17,15 @@
 package com.hedera.node.app.service.evm.contracts.operations;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.BalanceOperation;
-
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 /**
  * Hedera adapted version of the {@link BalanceOperation}. Performs an existence check on the

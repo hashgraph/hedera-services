@@ -21,6 +21,8 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.util.Map;
+import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.code.CodeV0;
@@ -28,12 +30,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
-
-import javax.inject.Provider;
-import java.util.Map;
-
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 /**
  * Extension of the base {@link EvmTxProcessor} that provides interface for executing {@link
@@ -92,7 +88,7 @@ public class CallLocalEvmTxProcessorV045 extends EvmTxProcessor {
          * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,
          * it doesn't mean a system invariant has been violated (FAIL_INVALID); instead it means
          * the target contract is not yet in a valid state to be queried (INVALID_CONTRACT_ID). */
-//                validateTrue(code != null, INVALID_CONTRACT_ID);
+        //                validateTrue(code != null, INVALID_CONTRACT_ID);
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)

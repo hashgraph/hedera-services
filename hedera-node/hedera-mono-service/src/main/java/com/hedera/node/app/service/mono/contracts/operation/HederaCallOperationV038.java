@@ -81,8 +81,8 @@ public class HederaCallOperationV038 extends CallOperation {
     private boolean isLazyCreateAttempt(final MessageFrame frame) {
         return !addressValidator.test(to(frame), frame)
                 && !((HederaStackedWorldStateUpdater) frame.getWorldUpdater())
-                .aliases()
-                .isMirror(to(frame))
+                        .aliases()
+                        .isMirror(to(frame))
                 && value(frame).greaterThan(Wei.ZERO);
     }
 }

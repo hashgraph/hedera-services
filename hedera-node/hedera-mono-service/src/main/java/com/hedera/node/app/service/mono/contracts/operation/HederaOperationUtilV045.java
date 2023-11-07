@@ -16,12 +16,20 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.TreeMap;
+import java.util.function.BiPredicate;
+import java.util.function.BooleanSupplier;
+import java.util.function.LongSupplier;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -29,15 +37,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
-
-import java.util.TreeMap;
-import java.util.function.BiPredicate;
-import java.util.function.BooleanSupplier;
-import java.util.function.LongSupplier;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 
 /** Utility methods used by Hedera adapted {@link Operation} */
 public final class HederaOperationUtilV045 {
