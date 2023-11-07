@@ -102,6 +102,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -682,6 +683,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         getContractInfo(contract).has(contractWith().noStakePeriodStart()));
     }
 
+    @HapiTest
     private HapiSpec hollowAccountCreationWithCryptoTransfer() {
         final var initialTokenSupply = 1000;
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
@@ -834,6 +836,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).logged());
     }
 
+    @HapiTest
     private HapiSpec canGetBalanceAndInfoViaAlias() {
         final var ed25519SourceKey = "ed25519Alias";
         final var secp256k1SourceKey = "secp256k1Alias";
@@ -1083,6 +1086,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)));
     }
 
+    @HapiTest
     private HapiSpec autoAccountCreationUnsupportedAlias() {
         final var threshKeyAlias = Key.newBuilder()
                 .setThresholdKey(ThresholdKey.newBuilder()
@@ -1126,6 +1130,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec autoAccountCreationBadAlias() {
         final var invalidAlias = VALID_25519_ALIAS.substring(0, 10);
 
@@ -1277,6 +1282,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .has(accountWith().balance((INITIAL_BALANCE * ONE_HBAR) - 3 * ONE_HUNDRED_HBARS)));
     }
 
+    @HapiTest
     private HapiSpec transferHbarsToEVMAddressAlias() {
 
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
@@ -1333,6 +1339,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .has(accountWith().expectedBalanceWithChargedUsd(3 * ONE_HBAR, 0, 0)));
     }
 
+    @HapiTest
     private HapiSpec transferHbarsToECDSAKey() {
 
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
@@ -1379,6 +1386,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then(getTxnRecord(transferToECDSA).andAllChildRecords().logged());
     }
 
+    @HapiTest
     private HapiSpec transferFungibleToEVMAddressAlias() {
 
         final var fungibleToken = "fungibleToken";
@@ -1405,6 +1413,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             counterAlias.set(evmAddressBytes);
                         }))
                 .when(withOpContext((spec, opLog) -> {
+                    opLog.warn("Creating hollow account with alias "
+                            + Arrays.toString(counterAlias.get().toByteArray()));
+                    opLog.warn("From party with alias "
+                            + Arrays.toString(partyAlias.get().toByteArray()));
                     /* hollow account created with fungible token transfer as expected */
                     final var cryptoTransferWithLazyCreate = cryptoTransfer(
                                     (s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
@@ -1470,6 +1482,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 
+    @HapiTest
     private HapiSpec transferNonFungibleToEVMAddressAlias() {
 
         final var nonFungibleToken = "nonFungibleToken";
@@ -1569,6 +1582,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 
+    @HapiTest
     private HapiSpec cannotAutoCreateWithTxnToLongZero() {
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
         final var longZeroAddress = ByteString.copyFrom(CommonUtils.unhex("0000000000000000000000000000000fffffffff"));
@@ -1592,7 +1606,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
                     final var invalidTransferToLongZero = cryptoTransfer(
                                     tinyBarsFromTo(PAYER, longZeroAddress, ONE_HBAR))
-                            .hasKnownStatus(INVALID_ACCOUNT_ID)
+                            .hasKnownStatusFrom(INVALID_ACCOUNT_ID, INVALID_ALIAS_KEY)
                             .via("failedTxn");
 
                     allRunFor(spec, validTransfer, invalidTransferToLongZero);
