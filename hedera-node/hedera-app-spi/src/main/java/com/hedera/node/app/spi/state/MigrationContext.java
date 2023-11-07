@@ -77,4 +77,10 @@ public interface MigrationContext {
 
     @NonNull
     HandleThrottleParser handleThrottling();
+
+    /**
+     * Consumes and returns the next entity number. For use by migrations that need to create entities.
+     * @return the next entity number
+     */
+    long newEntityNum();
 }

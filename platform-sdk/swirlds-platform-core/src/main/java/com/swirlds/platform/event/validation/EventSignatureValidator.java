@@ -36,7 +36,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,11 +57,6 @@ public class EventSignatureValidator {
      * A verifier for checking event signatures.
      */
     private final SignatureVerifier signatureVerifier;
-
-    /**
-     * Events with valid signature are passed to this consumer.
-     */
-    private final Consumer<GossipEvent> eventConsumer;
 
     /**
      * The previous address book. May be null.
@@ -109,7 +103,6 @@ public class EventSignatureValidator {
      * @param currentSoftwareVersion the current software version
      * @param previousAddressBook    the previous address book
      * @param currentAddressBook     the current address book
-     * @param eventConsumer          validated events are passed to this consumer
      * @param intakeEventCounter     keeps track of the number of events in the intake pipeline from each peer
      */
     public EventSignatureValidator(
@@ -119,7 +112,6 @@ public class EventSignatureValidator {
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @Nullable final AddressBook previousAddressBook,
             @NonNull final AddressBook currentAddressBook,
-            @NonNull final Consumer<GossipEvent> eventConsumer,
             @NonNull final IntakeEventCounter intakeEventCounter) {
 
         Objects.requireNonNull(time);
@@ -128,7 +120,6 @@ public class EventSignatureValidator {
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
         this.previousAddressBook = previousAddressBook;
         this.currentAddressBook = Objects.requireNonNull(currentAddressBook);
-        this.eventConsumer = Objects.requireNonNull(eventConsumer);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         this.rateLimitedLogger = new RateLimitedLogger(logger, time, MINIMUM_LOG_PERIOD);
@@ -224,22 +215,26 @@ public class EventSignatureValidator {
     }
 
     /**
-     * Verify event signature
+     * Validate event signature
      *
      * @param event the event to verify the signature of
+     * @return the event if the signature is valid, otherwise null
      */
-    public void handleEvent(@NonNull final GossipEvent event) {
+    @Nullable
+    public GossipEvent validateSignature(@NonNull final GossipEvent event) {
         if (event.getGeneration() < minimumGenerationNonAncient) {
             // ancient events can be safely ignored
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
-            return;
+            return null;
         }
 
         if (isSignatureValid(event)) {
-            eventConsumer.accept(event);
+            return event;
         } else {
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
             validationFailedAccumulator.update(1);
+
+            return null;
         }
     }
 

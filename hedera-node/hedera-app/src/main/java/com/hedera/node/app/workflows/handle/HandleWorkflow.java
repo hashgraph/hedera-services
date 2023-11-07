@@ -20,9 +20,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
@@ -44,6 +46,8 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
@@ -66,11 +70,13 @@ import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
 import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -88,6 +94,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -102,6 +109,8 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -385,6 +394,7 @@ public class HandleWorkflow {
                     networkUtilizationManager.trackFeePayments(payer, consensusNow, stack);
                 }
                 recordBuilder.status(validationResult.responseCodeEnum());
+
                 try {
                     if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
                         feeAccumulator.chargeNetworkFee(creator.accountId(), fees.networkFee());
@@ -408,12 +418,17 @@ public class HandleWorkflow {
                 }
 
             } else {
-                networkUtilizationManager.trackTxn(transactionInfo, consensusNow, stack);
-                if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)) {
-                    // privileged transactions are not charged fees
-                    feeAccumulator.chargeFees(payer, creator.accountId(), fees);
-                }
                 try {
+                    // Any hollow accounts that must sign to have all needed signatures, need to be finalized
+                    // as a result of transaction being handled.
+                    finalizeHollowAccounts(context, configuration, preHandleResult.hollowAccounts(), verifier);
+
+                    networkUtilizationManager.trackTxn(transactionInfo, consensusNow, stack);
+                    if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)) {
+                        // privileged transactions are not charged fees
+                        feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                    }
+
                     if (networkUtilizationManager.wasLastTxnGasThrottled()) {
                         // Don't charge the payer the service fee component, because the user-submitted transaction
                         // was fully valid but network capacity was unavailable to satisfy it
@@ -475,6 +490,53 @@ public class HandleWorkflow {
         recordCache.add(creator.nodeId(), payer, recordListResult.records());
 
         blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
+    }
+
+    /**
+     * Updates key on the hollow accounts that need to be finalized. This is done by dispatching a preceding
+     * synthetic update transaction. The ksy is derived from the signature expansion, by looking up the ECDSA key
+     * for the alias.
+     *
+     * @param context the handle context
+     * @param configuration the configuration
+     * @param accounts the set of hollow accounts that need to be finalized
+     * @param verifier the key verifier
+     */
+    private void finalizeHollowAccounts(
+            @NonNull final HandleContext context,
+            @NonNull final Configuration configuration,
+            @NonNull final Set<Account> accounts,
+            @NonNull final DefaultKeyVerifier verifier) {
+        final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
+        final var precedingHollowAccountRecords = accounts.size();
+        final var maxRecords = consensusConfig.handleMaxPrecedingRecords();
+        // If the hollow accounts that need to be finalized is greater than the max preceding
+        // records allowed throw an exception
+        if (precedingHollowAccountRecords >= maxRecords) {
+            throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
+        } else {
+            for (final var hollowAccount : accounts) {
+                // get the verified key for this hollow account
+                final var verification = Objects.requireNonNull(
+                        verifier.verificationFor(hollowAccount.alias()),
+                        "Required hollow account verified signature did not exist");
+                if (verification.key() != null) {
+                    if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
+                        logger.error("Hollow account {} has a key other than the sentinel key", hollowAccount);
+                        return;
+                    }
+                    // dispatch synthetic update transaction for updating key on this hollow account
+                    final var syntheticUpdateTxn = TransactionBody.newBuilder()
+                            .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
+                                    .accountIDToUpdate(hollowAccount.accountId())
+                                    .key(verification.key())
+                                    .build())
+                            .build();
+                    context.dispatchPrecedingTransaction(
+                            syntheticUpdateTxn, SingleTransactionRecordBuilder.class, k -> true, context.payer());
+                }
+            }
+        }
     }
 
     @NonNull
@@ -673,8 +735,8 @@ public class HandleWorkflow {
 
         // re-expand keys only if any of the keys have changed
         final var previousResults = previousResult.verificationResults();
-        final var currentRequiredPayerKeys = context.requiredNonPayerKeys();
-        final var currentOptionalPayerKeys = context.optionalNonPayerKeys();
+        final var currentRequiredNonPayerKeys = context.requiredNonPayerKeys();
+        final var currentOptionalNonPayerKeys = context.optionalNonPayerKeys();
         final var anyKeyChanged = haveKeyChanges(previousResults, context);
         // If none of the keys changed then non need to re-expand all signatures.
         if (!anyKeyChanged) {
@@ -691,9 +753,11 @@ public class HandleWorkflow {
         signatureExpander.expand(sigPairs, expanded);
         if (payerKey != null && !isHollow(payer)) {
             signatureExpander.expand(payerKey, sigPairs, expanded);
+        } else if (isHollow(payer)) {
+            context.requireSignatureForHollowAccount(payer);
         }
-        signatureExpander.expand(currentRequiredPayerKeys, sigPairs, expanded);
-        signatureExpander.expand(currentOptionalPayerKeys, sigPairs, expanded);
+        signatureExpander.expand(currentRequiredNonPayerKeys, sigPairs, expanded);
+        signatureExpander.expand(currentOptionalNonPayerKeys, sigPairs, expanded);
 
         // remove all keys that were already verified
         for (final var it = expanded.iterator(); it.hasNext(); ) {
