@@ -601,13 +601,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         if (transactionID != null) {
             childRecordBuilder.transactionID(transactionID);
         }
-        // transaction fee is set _only_ in preceding child records in mono-service
-        //        if(childCategory == PRECEDING){
-        //            final var fees = dispatcher.dispatchComputeFees(new ChildFeeContextImpl(feeManager, this, txBody,
-        // syntheticPayer));
-        //            final var fee = fees.serviceFee() + fees.networkFee() + fees.nodeFee();
-        //            childRecordBuilder.transactionFee(fee);
-        //        }
 
         try {
             // Synthetic transaction bodies do not have transaction ids, node account
