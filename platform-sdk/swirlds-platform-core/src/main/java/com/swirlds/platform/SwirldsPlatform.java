@@ -224,9 +224,10 @@ public class SwirldsPlatform implements Platform {
     private final EventLinker eventLinker;
 
     /**
-     * Validates events and passes valid events further down the pipeline.
+     * Validates events and passes valid events further down the intake pipeline.
      */
-    private final EventValidator eventValidator;
+    private final InterruptableConsumer<GossipEvent> intakeHandler;
+
     /** Contains all validators for events */
     private final GossipEventValidators eventValidators;
 
@@ -637,14 +638,12 @@ public class SwirldsPlatform implements Platform {
                 time));
 
         eventValidators = new GossipEventValidators(validators);
-        eventValidator = new EventValidator(
+
+        final EventValidator eventValidator = new EventValidator(
                 eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer, intakeEventCounter);
 
-        final PlatformWiring platformWiring = new PlatformWiring(platformContext, time);
-
-        final InterruptableConsumer<GossipEvent> eventIntakeHandler;
         if (eventConfig.useLegacyIntake()) {
-            eventIntakeHandler = eventValidator::validateEvent;
+            intakeHandler = eventValidator::validateEvent;
         } else {
             final InternalEventValidator internalEventValidator = new InternalEventValidator(
                     platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
@@ -669,6 +668,7 @@ public class SwirldsPlatform implements Platform {
                     preConsensusEventHandler::preconsensusEvent,
                     intakeEventCounter);
 
+            final PlatformWiring platformWiring = new PlatformWiring(platformContext, time);
             platformWiring.bind(
                     internalEventValidator,
                     eventDeduplicator,
@@ -677,14 +677,14 @@ public class SwirldsPlatform implements Platform {
                     inOrderLinker,
                     linkedEventIntake);
 
-            eventIntakeHandler = platformWiring.getEventInput();
+            intakeHandler = platformWiring.getEventInput();
         }
 
         intakeQueue = components.add(new QueueThreadConfiguration<GossipEvent>(threadManager)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("event-intake")
-                .setHandler(eventIntakeHandler)
+                .setHandler(intakeHandler)
                 .setCapacity(eventConfig.eventIntakeQueueSize())
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())
@@ -1169,7 +1169,7 @@ public class SwirldsPlatform implements Platform {
                     Time.getCurrent(),
                     preconsensusEventFileManager,
                     preconsensusEventWriter,
-                    eventValidator,
+                    intakeHandler,
                     intakeQueue,
                     consensusRoundHandler,
                     stateHashSignQueue,
