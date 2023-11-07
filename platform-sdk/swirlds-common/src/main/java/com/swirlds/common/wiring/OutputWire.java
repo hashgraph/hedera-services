@@ -103,7 +103,7 @@ public final class OutputWire<OUT> {
      *
      * @param inputWire the input wire to forward output data to
      */
-    public final void solderTo(@NonNull final InputWire<OUT, ?> inputWire) {
+    public void solderTo(@NonNull final InputWire<OUT, ?> inputWire) {
         solderTo(inputWire, false);
     }
 
@@ -121,7 +121,7 @@ public final class OutputWire<OUT> {
      * @param inputWire the input wire to forward output data to
      * @param inject    if true, then the output data will be injected into the input wire, ignoring back pressure
      */
-    public final void solderTo(@NonNull final InputWire<OUT, ?> inputWire, final boolean inject) {
+    public void solderTo(@NonNull final InputWire<OUT, ?> inputWire, final boolean inject) {
         model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), inject);
         if (inject) {
             forwardingDestinations.add(inputWire::inject);
