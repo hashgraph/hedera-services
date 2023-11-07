@@ -1929,40 +1929,40 @@ class SequentialTaskSchedulerTests {
         }
 
         // This thread wants to add 11 things to the pipeline.
-        final AtomicBoolean allWOrkInserted = new AtomicBoolean(false);
+        final AtomicBoolean allWorkInserted = new AtomicBoolean(false);
         new ThreadConfiguration(getStaticThreadManager())
                 .setRunnable(() -> {
                     for (int i = 0; i < 11; i++) {
                         aIn.put(i);
                     }
-                    allWOrkInserted.set(true);
+                    allWorkInserted.set(true);
                 })
                 .build(true);
 
         // Work is currently stuck at A. No matter how much time passes, we should not be able to exceed A's capacity.
         MILLISECONDS.sleep(50);
-        assertFalse(allWOrkInserted.get());
+        assertFalse(allWorkInserted.get());
         assertEquals(5, counter.getCount());
 
         // Unblock A. Work will flow forward and get blocked at B. A can fit 5 items, B can fit another 5.
         latchA.countDown();
         MILLISECONDS.sleep(50);
-        assertFalse(allWOrkInserted.get());
+        assertFalse(allWorkInserted.get());
         assertEquals(10, counter.getCount());
 
         // Unblock B. Work will flow forward and get blocked at C. We shouldn't be able to add additional items
         // since that would violate the global capacity.
         latchB.countDown();
         MILLISECONDS.sleep(50);
-        assertFalse(allWOrkInserted.get());
+        assertFalse(allWorkInserted.get());
         assertEquals(10, counter.getCount());
 
         // Unblock C. Entire pipeline is now unblocked and new things will be added.
         latchC.countDown();
+        assertEventuallyTrue(allWorkInserted::get, Duration.ofSeconds(1), "All work should have been inserted");
         assertEventuallyEquals(0L, counter::getCount, Duration.ofSeconds(1), "Counter should be empty");
         assertEquals(expectedCount, countA.get());
         assertEquals(expectedCount, countB.get());
         assertEquals(expectedCount, countC.get());
-        assertTrue(allWOrkInserted.get());
     }
 }
