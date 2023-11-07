@@ -365,6 +365,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         getAliasedAccountInfo(VALID_ALIAS).hasOwnedNfts(2));
     }
 
+    @HapiTest
     private HapiSpec canAutoCreateWithNftTransfersToAlias() {
         final var civilianBal = 10 * ONE_HBAR;
         // The expected fee to transfer four serial numbers of two token types to a receiver with
@@ -451,6 +452,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec multipleTokenTransfersSucceed() {
         final var initialTokenSupply = 1000;
         final var multiTokenXfer = "multiTokenXfer";
@@ -534,6 +536,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .hasToken(relationshipWith(B_TOKEN).balance(20)));
     }
 
+    @HapiTest
     private HapiSpec payerBalanceIsReflectsAllChangesBeforeFeeCharging() {
         final var secondAliasKey = "secondAlias";
         final var secondPayer = "secondPayer";
@@ -582,6 +585,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                 : Optional.of("Payer was" + " over-charged!")));
     }
 
+    @HapiTest
     private HapiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
         final var initialTokenSupply = 1000;
         final var sameTokenXfer = "sameTokenXfer";
@@ -664,6 +668,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS));
     }
 
+    @HapiTest
     private HapiSpec noStakePeriodStartIfNotStakingToNode() {
         final var user = "user";
         final var contract = "contract";
@@ -1141,6 +1146,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec autoAccountCreationsHappyPath() {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;

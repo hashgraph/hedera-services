@@ -236,7 +236,7 @@ public interface BaseScaffoldingModule {
                     parentRecordBuilder,
                     new SavepointStackImpl(state),
                     configuration,
-                    new DefaultKeyVerifier(configuration.getConfigData(HederaConfig.class), Map.of()),
+                    new DefaultKeyVerifier(1, configuration.getConfigData(HederaConfig.class), Map.of()),
                     recordListBuilder,
                     new TransactionChecker(6192, AccountID.DEFAULT, configProvider, metrics),
                     dispatcher,

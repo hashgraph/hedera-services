@@ -152,8 +152,9 @@ public interface TokenServiceApi {
      * @param payer the id of the account that should be charged
      * @param amount the amount to charge
      * @param recordBuilder the record builder to record the fees in
+     * @return true if the full amount was charged, false otherwise
      */
-    void chargeNetworkFee(@NonNull AccountID payer, long amount, @NonNull final FeeRecordBuilder recordBuilder);
+    boolean chargeNetworkFee(@NonNull AccountID payer, long amount, @NonNull final FeeRecordBuilder recordBuilder);
 
     /**
      * Charges the payer the given fees, and records those fees in the given record builder.

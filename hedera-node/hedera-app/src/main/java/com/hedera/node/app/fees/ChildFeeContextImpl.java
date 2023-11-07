@@ -73,7 +73,7 @@ public class ChildFeeContextImpl implements FeeContext {
     public @NonNull FeeCalculator feeCalculator(@NonNull final SubType subType) {
         try {
             return feeManager.createFeeCalculator(
-                    body, Key.DEFAULT, functionOf(body), 0, 0, context.consensusNow(), subType);
+                    body, Key.DEFAULT, functionOf(body), 0, 0, context.consensusNow(), subType, true);
         } catch (UnknownHederaFunctionality e) {
             throw new IllegalStateException(
                     "Child fee context was constructed with invalid transaction body " + body, e);

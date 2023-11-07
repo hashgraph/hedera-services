@@ -26,6 +26,7 @@ import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -76,6 +77,7 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.records.FinalizeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
@@ -941,6 +943,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
         given(context.readableStore(ReadableNetworkStakingRewardsStore.class)).willReturn(readableRewardsStore);
         given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(writableRewardsStore);
+        given(context.dispatchComputeFees(any(), any())).willReturn(new Fees(1l, 2l, 3l));
     }
 
     protected void givenStoresAndConfig(final FinalizeContext context) {

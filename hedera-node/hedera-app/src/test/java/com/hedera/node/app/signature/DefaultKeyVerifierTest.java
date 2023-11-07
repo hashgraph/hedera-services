@@ -72,6 +72,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class DefaultKeyVerifierTest {
+    private static final int LEGACY_FEE_CALC_NETWORK_VPT = 13;
 
     private static final HederaConfig HEDERA_CONFIG =
             HederaTestConfigBuilder.createConfig().getConfigData(HederaConfig.class);
@@ -88,15 +89,22 @@ class DefaultKeyVerifierTest {
         final var key = ALICE.keyInfo().publicKey();
 
         // then
-        assertThatThrownBy(() -> new DefaultKeyVerifier(null, keyVerifications))
+        assertThatThrownBy(() -> new DefaultKeyVerifier(0, null, keyVerifications))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new DefaultKeyVerifier(HEDERA_CONFIG, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new DefaultKeyVerifier(0, HEDERA_CONFIG, null))
+                .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> verifier.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> verifier.verificationFor(null, verificationAssistant))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> verifier.verificationFor(key, null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> verifier.verificationFor((Bytes) null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void reportsLegacyVptAsNumSigsVerified() {
+        final var verifier = createVerifier(emptyMap());
+        assertThat(verifier.numSignaturesVerified()).isEqualTo(LEGACY_FEE_CALC_NETWORK_VPT);
     }
 
     /**
@@ -1258,7 +1266,7 @@ class DefaultKeyVerifierTest {
     }
 
     private KeyVerifier createVerifier(@NonNull final Map<Key, SignatureVerificationFuture> map) {
-        return new DefaultKeyVerifier(HEDERA_CONFIG, map);
+        return new DefaultKeyVerifier(LEGACY_FEE_CALC_NETWORK_VPT, HEDERA_CONFIG, map);
     }
 
     /** Convenience method for creating a key list */

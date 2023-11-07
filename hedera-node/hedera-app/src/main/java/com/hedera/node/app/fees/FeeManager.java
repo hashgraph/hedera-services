@@ -142,7 +142,8 @@ public final class FeeManager {
             final int numVerifications,
             final int signatureMapSize,
             @NonNull final Instant consensusTime,
-            @NonNull final SubType subType) {
+            @NonNull final SubType subType,
+            final boolean isInternalDispatch) {
 
         if (txBody == null || payerKey == null || functionality == null) {
             return NoOpFeeCalculator.INSTANCE;
@@ -163,7 +164,8 @@ public final class FeeManager {
                 numVerifications,
                 signatureMapSize,
                 feeData,
-                exchangeRateManager.activeRate(consensusTime));
+                exchangeRateManager.activeRate(consensusTime),
+                isInternalDispatch);
     }
 
     @NonNull

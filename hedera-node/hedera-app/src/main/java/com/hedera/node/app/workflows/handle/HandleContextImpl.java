@@ -206,7 +206,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     verifier.numSignaturesVerified(),
                     signatureMapSize,
                     userTransactionConsensusTime,
-                    subType);
+                    subType,
+                    false);
             final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
             this.feeAccumulator = new FeeAccumulatorImpl(tokenApi, recordBuilder);
         }

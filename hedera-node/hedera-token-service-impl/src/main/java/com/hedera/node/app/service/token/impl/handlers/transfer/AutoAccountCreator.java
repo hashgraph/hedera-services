@@ -31,7 +31,6 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
@@ -132,11 +131,8 @@ public class AutoAccountCreator {
         final var topLevelPayer = handleContext.payer();
         final var payerAccount = accountStore.get(topLevelPayer);
         validateTrue(payerAccount != null, PAYER_ACCOUNT_NOT_FOUND);
-        final var txn = Transaction.newBuilder().body(syntheticCreation.build()).build();
-        //        final var fees = handleContext.feeCalculator().computePayment(txn, payerAccount.key());
-        //        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
-        // TODO : need to use fee calculator
-        return 100;
+        final var fees = handleContext.dispatchComputeFees(syntheticCreation.build(), topLevelPayer);
+        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
     /**
@@ -177,7 +173,7 @@ public class AutoAccountCreator {
     private TransactionBody.Builder createAccount(
             @NonNull final Bytes alias, @NonNull final Key key, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
-        baseBuilder.key(key).alias(alias).memo(AUTO_MEMO);
+        baseBuilder.key(key).alias(alias).memo(AUTO_MEMO).receiverSigRequired(false);
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }
 }

@@ -47,16 +47,21 @@ public class DefaultKeyVerifier implements KeyVerifier {
 
     private static final Logger logger = LogManager.getLogger(DefaultKeyVerifier.class);
 
+    private final int legacyFeeCalcNetworkVpt;
     private final long timeout;
     private final Map<Key, SignatureVerificationFuture> keyVerifications;
 
     /**
      * Creates a {@link DefaultKeyVerifier}
      *
+     * @param legacyFeeCalcNetworkVpt the number of verifications to report for temporary mono-service parity
      * @param keyVerifications A {@link Map} with all data to verify signatures
      */
     public DefaultKeyVerifier(
-            @NonNull final HederaConfig config, @NonNull final Map<Key, SignatureVerificationFuture> keyVerifications) {
+            final int legacyFeeCalcNetworkVpt,
+            @NonNull final HederaConfig config,
+            @NonNull final Map<Key, SignatureVerificationFuture> keyVerifications) {
+        this.legacyFeeCalcNetworkVpt = legacyFeeCalcNetworkVpt;
         this.timeout = requireNonNull(config, "config must not be null").workflowVerificationTimeoutMS();
         this.keyVerifications = requireNonNull(keyVerifications, "keyVerifications must not be null");
     }
@@ -128,7 +133,8 @@ public class DefaultKeyVerifier implements KeyVerifier {
 
     @Override
     public int numSignaturesVerified() {
-        return keyVerifications.size();
+        // FUTURE - keyVerifications.size(); now this for mono-service differential testing
+        return legacyFeeCalcNetworkVpt;
     }
 
     /**
