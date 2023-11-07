@@ -365,7 +365,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .logged(),
                         getAliasedAccountInfo(VALID_ALIAS).hasOwnedNfts(2));
     }
-    @HapiTest //here
+
+    @HapiTest // here
     private HapiSpec canAutoCreateWithNftTransfersToAlias() {
         final var civilianBal = 10 * ONE_HBAR;
         // The expected fee to transfer four serial numbers of two token types to a receiver with
@@ -451,7 +452,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .has(accountWith().approxBalance((long) (civilianBal - approxTransferFee), 2600)))
                 .then();
     }
-    @HapiTest //here
+
+    @HapiTest // here
     private HapiSpec multipleTokenTransfersSucceed() {
         final var initialTokenSupply = 1000;
         final var multiTokenXfer = "multiTokenXfer";
@@ -534,7 +536,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .hasToken(relationshipWith(A_TOKEN).balance(10))
                                 .hasToken(relationshipWith(B_TOKEN).balance(20)));
     }
-    @HapiTest //here
+
+    @HapiTest // here
     private HapiSpec payerBalanceIsReflectsAllChangesBeforeFeeCharging() {
         final var secondAliasKey = "secondAlias";
         final var secondPayer = "secondPayer";
@@ -582,7 +585,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                 ? Optional.empty()
                                                 : Optional.of("Payer was" + " over-charged!")));
     }
-    @HapiTest //here
+
+    @HapiTest // here
     private HapiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
         final var initialTokenSupply = 1000;
         final var sameTokenXfer = "sameTokenXfer";
@@ -590,6 +594,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         // note it is approximate because the fee will vary slightly with the size of
         // the sig map, depending on the lengths of the public key prefixes required
         final long approxTransferFee = 1163019L;
+        // 1162008
 
         return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
                 .given(
@@ -664,6 +669,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .signedBy(CIVILIAN, VALID_ALIAS, TOKEN_TREASURY)
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS));
     }
+
     @HapiTest
     private HapiSpec noStakePeriodStartIfNotStakingToNode() {
         final var user = "user";
@@ -1141,7 +1147,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         .via("transferTxnBad"))
                 .then();
     }
-    @HapiTest //here
+
+    @HapiTest // here
     private HapiSpec autoAccountCreationsHappyPath() {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;

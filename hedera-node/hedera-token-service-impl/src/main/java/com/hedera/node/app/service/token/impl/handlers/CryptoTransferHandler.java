@@ -81,6 +81,8 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -88,6 +90,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoTransferHandler implements TransactionHandler {
+    private static final Logger logger = LogManager.getLogger(CryptoTransferHandler.class);
+
     private final CryptoTransferValidator validator;
 
     @Inject
@@ -496,6 +500,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         /* Get subType based on the above information */
         final var subType = getSubType(
                 numNftOwnershipChanges, totalTokenTransfers, customFeeHbarTransfers, customFeeTokenTransfers);
+        logger.info("subType: {}", subType);
         return feeContext
                 .feeCalculator(subType)
                 .addBytesPerTransaction(bpt)

@@ -343,7 +343,10 @@ public class HandleWorkflow {
 
             // Set up the verifier
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
-            final var verifier = new DefaultKeyVerifier(hederaConfig, preHandleResult.verificationResults());
+            final var legacyFeeCalcNetworkVpt =
+                    transactionInfo.signatureMap().sigPairOrElse(emptyList()).size();
+            final var verifier = new DefaultKeyVerifier(
+                    legacyFeeCalcNetworkVpt, hederaConfig, preHandleResult.verificationResults());
             final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(transactionInfo.signatureMap());
 
             // Setup context
@@ -438,6 +441,7 @@ public class HandleWorkflow {
 
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
+                    // Possibly charge assessed fees for preceding child transactions
                     if (!recordListBuilder.precedingRecordBuilders().isEmpty()) {
                         final var childFees = recordListBuilder.precedingRecordBuilders().stream()
                                 .mapToLong(SingleTransactionRecordBuilderImpl::transactionFee)
