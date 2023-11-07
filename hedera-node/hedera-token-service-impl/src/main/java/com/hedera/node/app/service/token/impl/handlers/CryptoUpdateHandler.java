@@ -346,9 +346,13 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      * @return the calculated bytes
      */
     private static long cryptoAutoRenewRb(@Nullable final Account account) {
-        return CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
-                + (account == null ? 0 : currentNonBaseBytes(account))
-                + (account == null ? 0 : account.numberAssociations()) * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
+        final var fixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
+        if (account == null) {
+            return fixedBytes;
+        }
+        return fixedBytes
+                + currentNonBaseBytes(account)
+                + (account.numberAssociations() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
     }
 
     /**
