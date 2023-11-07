@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test.sync;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
@@ -26,27 +24,19 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.threading.ReplaceSyncPhaseParallelExecutor;
 import com.swirlds.common.test.fixtures.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
@@ -59,14 +49,7 @@ import com.swirlds.platform.test.graph.SplitForkGraphCreator;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.FileNotFoundException;
 import java.net.SocketException;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -1070,122 +1053,5 @@ public class SyncTests {
         executor.execute();
         SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
         SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
-    }
-
-    @Test
-    void filterLikelyDuplicatesTest() {
-        final Random random = getRandomPrintSeed();
-
-        final NodeId selfId = new NodeId(0);
-
-        final FakeTime clock = new FakeTime();
-
-        // Step 1: create a bunch of fake data
-
-        final List<EventImpl> selfEvents = new ArrayList<>();
-        final List<EventImpl> ancestors = new ArrayList<>();
-        final List<EventImpl> nonAncestors = new ArrayList<>();
-
-        final Map<NodeId, EventImpl> tipMap = new HashMap<>();
-        Instant lastTime = null;
-        for (int i = 0; i < 1000; i++) {
-            final EventImpl event = mock(EventImpl.class);
-            final GossipEvent gossipEvent = mock(GossipEvent.class);
-            when(event.getBaseEvent()).thenReturn(gossipEvent);
-            lastTime = clock.now();
-            when(gossipEvent.getTimeReceived()).thenReturn(lastTime);
-            final Hash hash = randomHash(random);
-            when(event.getBaseHash()).thenReturn(hash);
-
-            if (i % 10 == 0) {
-                // create self event
-                when(event.getCreatorId()).thenReturn(selfId);
-                selfEvents.add(event);
-            } else {
-                // create an other event
-
-                when(event.getCreatorId()).thenReturn(new NodeId(random.nextInt(1, 10)));
-
-                if (i % 10 == 1) {
-                    // create non-ancestor
-                    nonAncestors.add(event);
-                } else {
-                    // create ancestor (these are likely to be the most common type during a large sync)
-                    ancestors.add(event);
-                }
-            }
-
-            tipMap.put(event.getCreatorId(), event);
-            clock.tick(Duration.ofMillis(random.nextInt(50, 100)));
-        }
-
-        final List<EventImpl> allEvents = new ArrayList<>();
-        allEvents.addAll(selfEvents);
-        allEvents.addAll(ancestors);
-        allEvents.addAll(nonAncestors);
-
-        // Step 2: create mock shadowgraph that returns the fake data generated in step 1
-
-        final ShadowGraph shadowGraph = mock(ShadowGraph.class);
-
-        final List<ShadowEvent> tips = new ArrayList<>();
-        for (final EventImpl event : tipMap.values()) {
-            final ShadowEvent shadowEvent = new ShadowEvent(event, null, null);
-            tips.add(shadowEvent);
-        }
-        when(shadowGraph.getTips()).thenReturn(tips);
-
-        final Set<ShadowEvent> ancestorShadowEvents = new HashSet<>();
-        for (final EventImpl event : ancestors) {
-            final ShadowEvent shadowEvent = new ShadowEvent(event, null, null);
-            ancestorShadowEvents.add(shadowEvent);
-        }
-        for (final EventImpl event : selfEvents) {
-            final ShadowEvent shadowEvent = new ShadowEvent(event, null, null);
-            ancestorShadowEvents.add(shadowEvent);
-        }
-        when(shadowGraph.findAncestors(any(), any())).thenReturn(ancestorShadowEvents);
-
-        // Step 3: see what gets filtered out depending on the current time
-
-        final Duration ancestorThreshold = Duration.ofSeconds(1);
-        final Duration nonAncestorThreshold = Duration.ofSeconds(3);
-
-        clock.reset();
-        while (CompareTo.isLessThan(clock.now().plus(nonAncestorThreshold), clock.now())) {
-
-            final Set<EventImpl> expectedEvents = new HashSet<>();
-
-            // we always expect all self events
-            for (final EventImpl event : selfEvents) {
-                expectedEvents.add(event);
-            }
-
-            // We only expect ancestor events if we've had them for longer than the ancestor threshold
-            for (final EventImpl event : ancestors) {
-                final Duration eventAge = Duration.between(event.getBaseEvent().getTimeReceived(), clock.now());
-                if (CompareTo.isGreaterThan(eventAge, ancestorThreshold)) {
-                    expectedEvents.add(event);
-                }
-            }
-
-            // We only expect non-ancestor events if we've had them for longer than the non-ancestor threshold
-            for (final EventImpl event : nonAncestors) {
-                final Duration eventAge = Duration.between(event.getBaseEvent().getTimeReceived(), clock.now());
-                if (CompareTo.isGreaterThan(eventAge, nonAncestorThreshold)) {
-                    expectedEvents.add(event);
-                }
-            }
-
-            final List<EventImpl> filteredEvents = SyncUtils.filterLikelyDuplicates(
-                    shadowGraph, selfId, ancestorThreshold, nonAncestorThreshold, clock.now(), allEvents);
-
-            assertEquals(expectedEvents.size(), filteredEvents.size());
-            for (final EventImpl event : filteredEvents) {
-                assertTrue(expectedEvents.contains(event));
-            }
-
-            clock.tick(Duration.ofMillis(random.nextInt(25, 100)));
-        }
     }
 }
