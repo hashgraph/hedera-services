@@ -96,7 +96,6 @@ public class VirtualMapReconnectTestBase {
     protected VirtualMap<TestKey, TestValue> learnerMap;
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
-    protected BooleanSupplier requestTeacherToStop;
 
     VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException {
         // The tests create maps with identical names. They would conflict with each other in the default
@@ -132,7 +131,6 @@ public class VirtualMapReconnectTestBase {
         learnerBuilder = createBrokenBuilder(dataSourceBuilder);
         teacherMap = new VirtualMap<>("Teacher", teacherBuilder);
         learnerMap = new VirtualMap<>("Learner", learnerBuilder);
-        requestTeacherToStop = () -> false; // don't interrupt teaching by default
     }
 
     @BeforeAll
@@ -223,7 +221,6 @@ public class VirtualMapReconnectTestBase {
                     final MerkleNode node = MerkleTestUtils.hashAndTestSynchronization(
                             learnerTree,
                             failureExpected ? brokenTeacherTree : teacherTree,
-                            requestTeacherToStop,
                             reconnectConfig);
                     node.release();
                     assertFalse(failureExpected, "We should only succeed on the last try");

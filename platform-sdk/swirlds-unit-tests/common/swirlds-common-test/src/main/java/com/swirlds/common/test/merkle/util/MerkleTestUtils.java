@@ -969,7 +969,7 @@ public final class MerkleTestUtils {
     public static <T extends MerkleNode> T testSynchronization(
             final MerkleNode startingTree, final MerkleNode desiredTree, final ReconnectConfig reconnectConfig)
             throws Exception {
-        return testSynchronization(startingTree, desiredTree, 0, () -> false, reconnectConfig);
+        return testSynchronization(startingTree, desiredTree, 0, reconnectConfig);
     }
 
     /**
@@ -980,16 +980,6 @@ public final class MerkleTestUtils {
             final MerkleNode startingTree,
             final MerkleNode desiredTree,
             final int latencyMilliseconds,
-            final ReconnectConfig reconnectConfig)
-            throws Exception {
-        return testSynchronization(startingTree, desiredTree, latencyMilliseconds, () -> false, reconnectConfig);
-    }
-
-    public static <T extends MerkleNode> T testSynchronization(
-            final MerkleNode startingTree,
-            final MerkleNode desiredTree,
-            final int latencyMilliseconds,
-            @Nullable final BooleanSupplier requestToStopTeaching,
             final ReconnectConfig reconnectConfig)
             throws Exception {
         try (PairedStreams streams = new PairedStreams()) {
@@ -1026,7 +1016,6 @@ public final class MerkleTestUtils {
                                 e.printStackTrace();
                             }
                         },
-                        requestToStopTeaching,
                         reconnectConfig);
             } else {
                 learner = new LaggingLearningSynchronizer(
@@ -1048,7 +1037,6 @@ public final class MerkleTestUtils {
                         streams.getTeacherOutput(),
                         desiredTree,
                         latencyMilliseconds,
-                        requestToStopTeaching,
                         () -> {
                             try {
                                 streams.disconnect();
@@ -1184,15 +1172,6 @@ public final class MerkleTestUtils {
     public static <T extends MerkleNode> T hashAndTestSynchronization(
             final MerkleNode startingTree, final MerkleNode desiredTree, final ReconnectConfig reconnectConfig)
             throws Exception {
-        return hashAndTestSynchronization(startingTree, desiredTree, () -> false, reconnectConfig);
-    }
-
-    public static <T extends MerkleNode> T hashAndTestSynchronization(
-            final MerkleNode startingTree,
-            final MerkleNode desiredTree,
-            final BooleanSupplier requestTeacherToStop,
-            final ReconnectConfig reconnectConfig)
-            throws Exception {
         System.out.println("------------");
         System.out.println("starting: " + startingTree);
         System.out.println("desired: " + desiredTree);
@@ -1203,7 +1182,7 @@ public final class MerkleTestUtils {
         if (desiredTree != null && desiredTree.getHash() == null) {
             MerkleCryptoFactory.getInstance().digestTreeSync(desiredTree);
         }
-        return testSynchronization(startingTree, desiredTree, 0, requestTeacherToStop, reconnectConfig);
+        return testSynchronization(startingTree, desiredTree, 0, reconnectConfig);
     }
 
     /**

@@ -176,7 +176,6 @@ public class EmergencyReconnectProtocol implements Protocol {
                             threadManager,
                             stateFinder,
                             reconnectSocketTimeout,
-                            fallenBehindManager::hasFallenBehind,
                             reconnectMetrics,
                             configuration)
                     .execute(connection);

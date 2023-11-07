@@ -46,7 +46,6 @@ public class LaggingTeachingSynchronizer extends TeachingSynchronizer {
             final MerkleDataOutputStream out,
             final MerkleNode root,
             final int latencyMilliseconds,
-            @Nullable final BooleanSupplier shouldKeepTeaching,
             final Runnable breakConnection,
             final ReconnectConfig reconnectConfig) {
         super(
@@ -56,7 +55,6 @@ public class LaggingTeachingSynchronizer extends TeachingSynchronizer {
                 out,
                 root,
                 breakConnection,
-                shouldKeepTeaching,
                 reconnectConfig);
         this.latencyMilliseconds = latencyMilliseconds;
     }

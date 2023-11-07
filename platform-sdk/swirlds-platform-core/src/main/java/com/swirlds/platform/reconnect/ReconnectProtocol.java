@@ -269,7 +269,6 @@ public class ReconnectProtocol implements Protocol {
                             connection.getSelfId(),
                             connection.getOtherId(),
                             state.get().getRound(),
-                            fallenBehindManager::hasFallenBehind,
                             reconnectMetrics,
                             configuration)
                     .execute(state.get());

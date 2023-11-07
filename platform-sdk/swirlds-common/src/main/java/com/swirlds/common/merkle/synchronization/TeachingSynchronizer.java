@@ -87,13 +87,6 @@ public class TeachingSynchronizer {
 
     protected final ReconnectConfig reconnectConfig;
 
-    /**
-     * A mechanism to check if teaching should be stopped, e.g. when the teacher itself has
-     * fallen behind network.
-     */
-    @Nullable
-    private final BooleanSupplier requestToStopTeaching;
-
     private final Time time;
 
     /**
@@ -113,8 +106,6 @@ public class TeachingSynchronizer {
      * 		if there is a thread stuck on a blocking IO
      * 		operation that will never finish due to a
      * 		failure.
-     * @param requestToStopTeaching
-     *      a function to check periodically if teaching should be stopped
      * @param reconnectConfig
      *      reconnect configuration from platform
      */
@@ -125,7 +116,6 @@ public class TeachingSynchronizer {
             @NonNull final MerkleDataOutputStream out,
             @NonNull final MerkleNode root,
             @Nullable final Runnable breakConnection,
-            @Nullable final BooleanSupplier requestToStopTeaching,
             @NonNull final ReconnectConfig reconnectConfig) {
 
         this.time = Objects.requireNonNull(time);
@@ -137,7 +127,6 @@ public class TeachingSynchronizer {
         subtrees.add(new TeacherSubtree(root));
 
         this.breakConnection = breakConnection;
-        this.requestToStopTeaching = requestToStopTeaching;
         this.reconnectConfig = Objects.requireNonNull(reconnectConfig, "reconnectConfig must not be null");
     }
 
@@ -210,7 +199,6 @@ public class TeachingSynchronizer {
                         out,
                         subtrees,
                         view,
-                        requestToStopTeaching,
                         senderIsFinished)
                 .start();
         new TeacherReceivingThread<>(workGroup, in, view, senderIsFinished).start();
