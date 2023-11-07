@@ -670,6 +670,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             childStack.commitFullStack();
         } catch (HandleException e) {
             childRecordBuilder.status(e.getStatus());
+
+            var output = ReturnTypes.encodedRc(e.getStatus());
+            childRecordBuilder.contractCallResult(ContractFunctionResult.newBuilder()
+                    .contractCallResult(Bytes.wrap(output.array()))
+                    .build());
+
             recordListBuilder.revertChildrenOf(recordBuilder);
         }
     }

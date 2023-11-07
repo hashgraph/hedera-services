@@ -1454,7 +1454,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN));
     }
 
-    // related to contract call result
+    // PASSES
     @HapiTest
     public HapiSpec dissociatePrecompileWithDelegateContractKeyForFungibleFrozen() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -1519,7 +1519,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(FROZEN_TOKEN));
     }
 
-    // related to contract call result
+    // PASSES
     @HapiTest
     public HapiSpec dissociatePrecompileWithDelegateContractKeyForFungibleWithKYC() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -1582,7 +1582,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(KYC_TOKEN));
     }
 
-    // related to contract call result
+    // PASSES
     @HapiTest
     public HapiSpec dissociatePrecompileWithDelegateContractKeyForNonFungibleVanilla() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -1684,7 +1684,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN));
     }
 
-    // related to contract call result
+    // PASSES
     @HapiTest
     public HapiSpec dissociatePrecompileWithDelegateContractKeyForNonFungibleFrozen() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -1751,7 +1751,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(FROZEN_TOKEN));
     }
 
-    // related to contract call result
+    // PASSES
     @HapiTest
     public HapiSpec dissociatePrecompileWithDelegateContractKeyForNonFungibleWithKYC() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
