@@ -296,7 +296,8 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     }
 
     @Override
-    public void chargeNetworkFee(@NonNull AccountID payerId, long amount, @NonNull FeeRecordBuilder rb) {
+    public boolean chargeNetworkFee(
+            @NonNull final AccountID payerId, final long amount, @NonNull final FeeRecordBuilder rb) {
         requireNonNull(rb);
         requireNonNull(payerId);
 
@@ -311,6 +312,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         // We may be charging for preceding child record fees, which are additive to the base fee
         rb.transactionFee(rb.transactionFee() + amountToCharge);
         distributeToNetworkFundingAccounts(amountToCharge, rb);
+        return amountToCharge == amount;
     }
 
     @Override

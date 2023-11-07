@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
@@ -443,10 +444,14 @@ public class HandleWorkflow {
                     dispatcher.dispatchHandle(context);
                     // Possibly charge assessed fees for preceding child transactions
                     if (!recordListBuilder.precedingRecordBuilders().isEmpty()) {
+                        // We intentionally charge fees even if the transaction failed (may need to update
+                        // mono-service to this behavior?)
                         final var childFees = recordListBuilder.precedingRecordBuilders().stream()
                                 .mapToLong(SingleTransactionRecordBuilderImpl::transactionFee)
                                 .sum();
-                        feeAccumulator.chargeNetworkFee(payer, childFees);
+                        if (!feeAccumulator.chargeNetworkFee(payer, childFees)) {
+                            throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
+                        }
                     }
                     recordBuilder.status(SUCCESS);
 

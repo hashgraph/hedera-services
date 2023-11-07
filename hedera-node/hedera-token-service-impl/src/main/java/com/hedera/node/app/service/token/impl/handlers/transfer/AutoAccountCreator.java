@@ -46,11 +46,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class AutoAccountCreator {
-    private static final Logger logger = LogManager.getLogger(AutoAccountCreator.class);
     private WritableAccountStore accountStore;
     private HandleContext handleContext;
     // checks tokenAliasMap if the change consists an alias that is already used in previous
