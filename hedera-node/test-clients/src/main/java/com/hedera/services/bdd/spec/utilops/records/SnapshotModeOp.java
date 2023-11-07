@@ -21,7 +21,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.TargetNetworkType.STANDALONE_MONO_NETWORK;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
@@ -88,7 +88,10 @@ import org.junit.jupiter.api.Assertions;
 @SuppressWarnings({"java:S5960", "java:S1192"})
 public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     private static final long MIN_GZIP_SIZE_IN_BYTES = 26;
-    private static final long MAX_SIG_MAP_FEE_TINYBAR_VARIATION = 1000;
+    private static final long MAX_NORMAL_FEE_VARIATION_IN_TINYBARS = 1;
+    // For large key structures, there can be "significant" fee variation in tinybar units
+    // due to different public key sizes and signature map prefixes
+    private static final long MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR = 25_000;
     private static final Logger log = LogManager.getLogger(SnapshotModeOp.class);
 
     private static final Set<String> FIELDS_TO_SKIP_IN_FUZZY_MATCH = Set.of(
@@ -185,7 +188,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      */
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
-        if (mode.targetNetworkType() == spec.targetNetworkType()) {
+        final var isDeterministic = !matchModes.contains(FULLY_NONDETERMINISTIC);
+        if (isDeterministic && mode.targetNetworkType() == spec.targetNetworkType()) {
             this.fullSpecName = snapshotFileNameFor(spec);
             switch (mode) {
                 case TAKE_FROM_MONO_STREAMS -> computePlaceholderNum(
@@ -231,11 +235,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     @Override
     public boolean hasWorkToDo() {
         // We leave the spec name null in submitOp() if we are running against a target network that
-        // doesn't match the SnapshotMode of this operation
-        if (fullSpecName == null) {
-            return false;
-        }
-        return !matchModes.contains(FULLY_NONDETERMINISTIC);
+        // doesn't match the SnapshotMode of this operation; or if the HapiSpec is non-deterministic
+        return fullSpecName != null;
     }
 
     @Override
@@ -522,26 +523,29 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         + actual.getClass().getSimpleName() + " '" + actual + "' - " + mismatchContext.get());
             }
         } else {
+            final var nonDeterministicTransactionFees = matchModes.contains(NONDETERMINISTIC_TRANSACTION_FEES);
             if ("transactionFee".equals(fieldName)) {
-                // Transaction fees can vary by tiny amounts based on the size of the sig map
+                // Transaction fees can vary by based on the size of the sig map
+                final var maxVariation = nonDeterministicTransactionFees
+                        ? MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR
+                        : MAX_NORMAL_FEE_VARIATION_IN_TINYBARS;
                 Assertions.assertTrue(
-                        Math.abs((long) expected - (long) actual) <= MAX_SIG_MAP_FEE_TINYBAR_VARIATION,
-                        "Transaction fees '" + expected + "' and '" + actual + "' varied by more than 1 tinybar - "
+                        Math.abs((long) expected - (long) actual) <= maxVariation,
+                        "Transaction fees '" + expected + "' and '" + actual
+                                + "' varied by more than " + maxVariation + " tinybar - "
+                                + mismatchContext.get());
+            } else if ("amount".equals(fieldName) && nonDeterministicTransactionFees) {
+                Assertions.assertTrue(
+                        Math.abs((long) expected - (long) actual) <= MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR,
+                        "Amount '" + expected + "' and '" + actual
+                                + "' varied by more than " + MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR + " tinybar - "
                                 + mismatchContext.get());
             } else {
-                if ("accountNum".equals(fieldName)) {
-                    Assertions.assertEquals(
-                            (long) expected + expectedPlaceholderNum,
-                            (long) actual + actualPlaceholderNum,
-                            "Mismatched values, expected '" + expected + "', got '" + actual + "' - "
-                                    + mismatchContext.get());
-                } else {
-                    Assertions.assertEquals(
-                            expected,
-                            actual,
-                            "Mismatched values, expected '" + expected + "', got '" + actual + "' - "
-                                    + mismatchContext.get());
-                }
+                Assertions.assertEquals(
+                        expected,
+                        actual,
+                        "Mismatched values, expected '" + expected + "', got '" + actual + "' - "
+                                + mismatchContext.get());
             }
         }
     }
@@ -650,7 +654,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         if ("contractCallResult".equals(expectedName)) {
             return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
         } else if ("functionParameters".equals(expectedName)) {
-            return matchModes.contains(NONDETERMINISTIC_FUNCTION_PARAMETERS);
+            return matchModes.contains(NONDETERMINISTIC_TRANSACTION_FEES);
         } else {
             return FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName);
         }

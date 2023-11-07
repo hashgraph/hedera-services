@@ -29,6 +29,10 @@ public enum SnapshotMatchMode {
      */
     NONDETERMINISTIC_FUNCTION_PARAMETERS,
     /**
+     * Allows for non-deterministic amounts.
+     */
+    NONDETERMINISTIC_TRANSACTION_FEES,
+    /**
      * Lets a spec advertise itself as being non-deterministic.
      *
      * <p>We need this to let such specs to opt out of auto record snapshots, since fuzzy-matching would never pass.

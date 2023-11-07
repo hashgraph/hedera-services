@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.utilops.records.AutoSnapshotRecordSou
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -41,10 +40,13 @@ public class AutoSnapshotModeOp extends UtilOp implements SnapshotOp {
     private final AutoSnapshotRecordSource autoMatchSource;
 
     private SnapshotModeOp delegate;
+    private final SnapshotMatchMode[] snapshotMatchModes;
 
-    public static @Nullable SnapshotOp from(@NonNull final HapiSpecSetup setup) {
+    public static @Nullable SnapshotOp from(@NonNull final HapiSpec spec) {
+        final var setup = spec.setup();
         if (setup.autoSnapshotManagement()) {
-            return new AutoSnapshotModeOp(setup.autoSnapshotTarget(), setup.autoMatchTarget());
+            return new AutoSnapshotModeOp(
+                    setup.autoSnapshotTarget(), setup.autoMatchTarget(), spec.getSnapshotMatchModes());
         } else {
             return null;
         }
@@ -52,9 +54,11 @@ public class AutoSnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public AutoSnapshotModeOp(
             @NonNull final AutoSnapshotRecordSource autoTakeSource,
-            @NonNull final AutoSnapshotRecordSource autoMatchSource) {
+            @NonNull final AutoSnapshotRecordSource autoMatchSource,
+            @NonNull final SnapshotMatchMode[] snapshotMatchModes) {
         this.autoTakeSource = autoTakeSource;
         this.autoMatchSource = autoMatchSource;
+        this.snapshotMatchModes = snapshotMatchModes;
     }
 
     @Override
@@ -64,12 +68,12 @@ public class AutoSnapshotModeOp extends UtilOp implements SnapshotOp {
             final var snapshotMode = (autoMatchSource == MONO_SERVICE)
                     ? SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS
                     : SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
-            delegate = snapshotMode(snapshotMode);
+            delegate = snapshotMode(snapshotMode, snapshotMatchModes);
         } else {
             final var snapshotMode = (autoTakeSource == MONO_SERVICE)
                     ? SnapshotMode.TAKE_FROM_MONO_STREAMS
                     : SnapshotMode.TAKE_FROM_HAPI_TEST_STREAMS;
-            delegate = snapshotMode(snapshotMode);
+            delegate = snapshotMode(snapshotMode, snapshotMatchModes);
         }
         return delegate.submitOp(spec);
     }

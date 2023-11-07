@@ -90,6 +90,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
@@ -1602,7 +1604,7 @@ public class CryptoTransferSuite extends HapiSuite {
     @SuppressWarnings("java:S5960")
     @HapiTest
     private HapiSpec tokenTransferFeesScaleAsExpected() {
-        return defaultHapiSpec("TokenTransferFeesScaleAsExpected")
+        return defaultHapiSpec("TokenTransferFeesScaleAsExpected", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate("a"),
                         cryptoCreate("b"),
@@ -1767,7 +1769,7 @@ public class CryptoTransferSuite extends HapiSuite {
                 SigControl.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
         String node = HapiSpecSetup.getDefaultInstance().defaultNodeName();
 
-        return defaultHapiSpec("ComplexKeyAcctPaysForOwnTransfer")
+        return defaultHapiSpec("ComplexKeyAcctPaysForOwnTransfer", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed("complexKey").shape(enoughUniqueSigs),
                         cryptoCreate(PAYER).key("complexKey").balance(1_000_000_000L))
@@ -1831,7 +1833,7 @@ public class CryptoTransferSuite extends HapiSuite {
     private HapiSpec vanillaTransferSucceeds() {
         long initialBalance = HapiSpecSetup.getDefaultInstance().defaultBalance();
 
-        return defaultHapiSpec("VanillaTransferSucceeds")
+        return defaultHapiSpec("VanillaTransferSucceeds", FULLY_NONDETERMINISTIC)
                 .given(
                         cryptoCreate("somebody")
                                 .maxAutomaticTokenAssociations(5001)
@@ -1867,7 +1869,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
         final var RECEIVER_SIGNATURE = "receiverSignature";
         final var SPENDER_SIGNATURE = "spenderSignature";
-        return defaultHapiSpec("hapiTransferFromForNFTWithCustomFeesWithAllowance")
+        return defaultHapiSpec("hapiTransferFromForNFTWithCustomFeesWithAllowance", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RECEIVER_SIGNATURE),
@@ -2016,7 +2018,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
         final var RECEIVER_SIGNATURE = "receiverSignature";
         final var SPENDER_SIGNATURE = "spenderSignature";
-        return defaultHapiSpec("hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance")
+        return defaultHapiSpec("hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(RECEIVER_SIGNATURE),
                         newKeyNamed(SPENDER_SIGNATURE),

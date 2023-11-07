@@ -146,6 +146,10 @@ public class HapiSpec implements Runnable {
 
     static final Logger log = LogManager.getLogger(HapiSpec.class);
 
+    public SnapshotMatchMode[] getSnapshotMatchModes() {
+        return snapshotMatchModes;
+    }
+
     public enum SpecStatus {
         PENDING,
         RUNNING,
@@ -488,7 +492,7 @@ public class HapiSpec implements Runnable {
                 .deferStatusResolution()
                 .hasAnyStatusAtAll()
                 .execFor(this);
-        var snapshotOp = AutoSnapshotModeOp.from(setup());
+        var snapshotOp = AutoSnapshotModeOp.from(this);
         if (snapshotOp != null) {
             // Ensure a mutable list
             ops = new ArrayList<>(ops);
@@ -862,7 +866,7 @@ public class HapiSpec implements Runnable {
         return (String... props) -> internalDefaultHapiSpec(name, true, Arrays.asList(props));
     }
 
-    public static Def.Given onlyDefaultHapiSpec(final String name) {
+    public static Def.Given onlyDefaultHapiSpec(final String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         return internalDefaultHapiSpec(name, true, Collections.emptyList());
     }
 
