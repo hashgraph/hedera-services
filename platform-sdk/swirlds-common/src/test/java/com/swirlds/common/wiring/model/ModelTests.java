@@ -20,12 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.wiring.InputWire;
-import com.swirlds.common.wiring.ModelGroup;
 import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
+import com.swirlds.common.wiring.utility.ModelGroup;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -1252,6 +1253,52 @@ class ModelTests {
 
         secondaryOutputI.solderTo(inputE);
         tertiaryOutputI.solderTo(inputJ2);
+
+        validateModel(model, true);
+    }
+
+    /**
+     * Make sure that adding a heartbeat doesn't break the model.
+     */
+    @Test
+    void heartbeatTest() {
+        final WiringModel model =
+                WiringModel.create(TestPlatformContextBuilder.create().build(), Time.getCurrent());
+
+        /*
+
+        A -----> B <----- heartbeat
+        ^        |
+        |        v
+        D <----- C
+
+        */
+
+        final TaskScheduler<Integer> taskSchedulerA =
+                model.schedulerBuilder("A").withUnhandledTaskCapacity(1).build().cast();
+        final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
+
+        final TaskScheduler<Integer> taskSchedulerB =
+                model.schedulerBuilder("B").withUnhandledTaskCapacity(1).build().cast();
+        final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
+        final InputWire<Instant, Integer> heartbeatInputB = taskSchedulerB.buildInputWire("heartbeatInputB");
+
+        final TaskScheduler<Integer> taskSchedulerC =
+                model.schedulerBuilder("C").withUnhandledTaskCapacity(1).build().cast();
+        final InputWire<Integer, Integer> inputC = taskSchedulerC.buildInputWire("inputC");
+
+        final TaskScheduler<Integer> taskSchedulerD =
+                model.schedulerBuilder("D").withUnhandledTaskCapacity(1).build().cast();
+        final InputWire<Integer, Integer> inputD = taskSchedulerD.buildInputWire("inputD");
+
+        final OutputWire<Instant> heartbeatWire = model.buildHeartbeatWire(100);
+
+        taskSchedulerA.getOutputWire().solderTo(inputB);
+        taskSchedulerB.getOutputWire().solderTo(inputC);
+        taskSchedulerC.getOutputWire().solderTo(inputD);
+        taskSchedulerD.getOutputWire().solderTo(inputA);
+
+        heartbeatWire.solderTo(heartbeatInputB);
 
         validateModel(model, true);
     }
