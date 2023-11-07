@@ -81,7 +81,7 @@ public abstract class TaskScheduler<OUT> {
     }
 
     /**
-     * Get the default output wire for this task scheduler. Sometimes referred to as the "primary" output wire.All data
+     * Get the default output wire for this task scheduler. Sometimes referred to as the "primary" output wire. All data
      * returned by handlers is passed ot this output wire. Calling this method more than once will always return the
      * same object.
      *
