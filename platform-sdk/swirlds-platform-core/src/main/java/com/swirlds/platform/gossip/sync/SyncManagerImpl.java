@@ -24,10 +24,8 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.FallenBehindManager;
-import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.network.RandomGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
@@ -59,10 +57,7 @@ public class SyncManagerImpl implements FallenBehindManager {
     private final RandomGraph connectionGraph;
     /** The id of this node */
     private final NodeId selfId;
-    /** Tracks recent events */
-    private final CriticalQuorum criticalQuorum;
 
-    private final boolean useCriticalQuorum;
     /** The initial address book */
     private final AddressBook addressBook;
 
@@ -86,7 +81,6 @@ public class SyncManagerImpl implements FallenBehindManager {
             @NonNull final BlockingQueue<GossipEvent> intakeQueue,
             @NonNull final RandomGraph connectionGraph,
             @NonNull final NodeId selfId,
-            @NonNull final CriticalQuorum criticalQuorum,
             @NonNull final AddressBook addressBook,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final EventConfig eventConfig) {
@@ -95,16 +89,10 @@ public class SyncManagerImpl implements FallenBehindManager {
         this.connectionGraph = Objects.requireNonNull(connectionGraph);
         this.selfId = Objects.requireNonNull(selfId);
 
-        this.criticalQuorum = Objects.requireNonNull(criticalQuorum);
         this.addressBook = Objects.requireNonNull(addressBook);
 
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.eventConfig = Objects.requireNonNull(eventConfig);
-
-        useCriticalQuorum = platformContext
-                .getConfiguration()
-                .getConfigData(SyncConfig.class)
-                .criticalQuorumEnabled();
 
         platformContext
                 .getMetrics()
@@ -182,15 +170,7 @@ public class SyncManagerImpl implements FallenBehindManager {
                 continue;
             }
 
-            if (useCriticalQuorum) {
-                // we try to call a neighbor in the bottom 1/3 by number of events created in the latest round, if
-                // we fail to find one after 10 tries, we just call the last neighbor we find
-                if (criticalQuorum.isInCriticalQuorum(neighborId) || i == MAXIMUM_NEIGHBORS_TO_QUERY - 1) {
-                    list.add(neighborId);
-                }
-            } else {
-                list.add(neighborId);
-            }
+            list.add(neighborId);
         }
 
         return list;

@@ -42,8 +42,6 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.components.CriticalQuorum;
-import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
@@ -285,7 +283,6 @@ public class SyncGossip extends AbstractGossip {
                                             syncShadowgraphSynchronizer,
                                             fallenBehindManager,
                                             syncPermitProvider,
-                                            criticalQuorum,
                                             peerAgnosticSyncChecks,
                                             Duration.ZERO,
                                             syncMetrics,
@@ -317,15 +314,6 @@ public class SyncGossip extends AbstractGossip {
         for (final StoppableThread thread : syncProtocolThreads) {
             thread.stop();
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    protected CriticalQuorum buildCriticalQuorum() {
-        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId, addressBook);
     }
 
     /**

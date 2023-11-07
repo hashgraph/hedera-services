@@ -37,7 +37,6 @@ import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -93,7 +92,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected final AddressBook addressBook;
     protected final NodeId selfId;
     protected final NetworkTopology topology;
-    protected final CriticalQuorum criticalQuorum;
     protected final NetworkMetrics networkMetrics;
     protected final SyncMetrics syncMetrics;
     protected final ReconnectHelper reconnectHelper;
@@ -159,8 +157,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         Objects.requireNonNull(time);
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
-        criticalQuorum = buildCriticalQuorum();
-        eventObserverDispatcher.addObserver(criticalQuorum);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final CryptoConfig cryptoConfig = platformContext.getConfiguration().getConfigData(CryptoConfig.class);
@@ -206,7 +202,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 intakeQueue,
                 topology.getConnectionGraph(),
                 selfId,
-                criticalQuorum,
                 addressBook,
                 fallenBehindManager,
                 platformContext.getConfiguration().getConfigData(EventConfig.class));
@@ -270,12 +265,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * If true, use unidirectional connections between nodes.
      */
     protected abstract boolean unidirectionalConnectionsEnabled();
-
-    /**
-     * Build the critical quorum object.
-     */
-    @NonNull
-    protected abstract CriticalQuorum buildCriticalQuorum();
 
     /**
      * {@inheritDoc}
