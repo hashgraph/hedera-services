@@ -71,6 +71,8 @@ on:
         required: true
       bucket-name:
         required: true
+      cdn-bucket-name:
+        required: true
       svcs-ossrh-username:
         required: true
       svcs-ossrh-password:
@@ -115,6 +117,8 @@ jobs:
       commit-id: ${{ steps.parameters.outputs.commit-id }}
       commit-id-short: ${{ steps.parameters.outputs.commit-id-short }}
       version: ${{ steps.effective-version.outputs.number }}
+      version-prefix: ${{ steps.effective-version.outputs.prefix }}
+      prerelease: ${{ steps.effective-version.outputs.prerelease }}
     steps:
       - name: Install Semantic Version Tools
         run: |
@@ -157,7 +161,7 @@ jobs:
           fi
 
       - name: Checkout Code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Setup Java
         uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
@@ -188,7 +192,16 @@ jobs:
         id: effective-version
         run: |
           EFF_VERSION="$(./gradlew showVersion --quiet | tr -d '[:space:]')"
+          PRERELEASE_SUFFIX="$(semver get prerel "${EFF_VERSION}")"
+          PRERELEASE="false"
+          [[ -n "${PRERELEASE_SUFFIX}" ]] && PRERELEASE="true"
+
+          MAJOR_VERSION="$(semver get major "${EFF_VERSION}")"
+          MINOR_VERSION="$(semver get minor "${EFF_VERSION}")"
+
           echo "number=${EFF_VERSION}" >>"${GITHUB_OUTPUT}"
+          echo "prefix=${MAJOR_VERSION}.${MINOR_VERSION}" >>"${GITHUB_OUTPUT}"
+          echo "prerelease=${PRERELEASE}" >>"${GITHUB_OUTPUT}"
 
       - name: Cache Build Version
         uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
@@ -243,7 +256,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Checkout Code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
@@ -347,6 +360,14 @@ jobs:
           destination: ${{ secrets.bucket-name }}
           parent: false
 
+      - name: Upload Artifacts (CDN Bucket)
+        uses: google-github-actions/upload-cloud-storage@e95a15f226403ed658d3e65f40205649f342ba2c # v1.0.3
+        if: ${{ inputs.dry-run-enabled != true && needs.validate.outputs.prerelease != 'true' && !cancelled() && !failure() }}
+        with:
+          path: ${{ steps.artifact-release.outputs.folder }}
+          destination: ${{ secrets.cdn-bucket-name }}/node/software/v${{ needs.validate.outputs.version-prefix }}/
+          parent: false
+
       - name: Notify Jenkins of Release (Integration)
         id: jenkins-integration
         uses: fjogeleit/http-request-action@eab8015483ccea148feff7b1c65f320805ddc2bf # v1.14.1
@@ -389,7 +410,7 @@ jobs:
       - build-artifact
     steps:
       - name: Checkout Code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Authenticate to Google Cloud
         id: google-auth
@@ -517,7 +538,7 @@ jobs:
       - validate
     steps:
       - name: Checkout Code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Install GnuPG Tools
         if: ${{ inputs.dry-run-enabled != true }}
@@ -609,7 +630,7 @@ jobs:
     if: ${{ inputs.sdk-release-profile != 'none' }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Install GnuPG Tools
         if: ${{ inputs.dry-run-enabled != true }}

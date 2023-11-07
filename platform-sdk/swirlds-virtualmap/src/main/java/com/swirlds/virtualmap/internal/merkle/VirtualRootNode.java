@@ -17,11 +17,11 @@
 package com.swirlds.virtualmap.internal.merkle;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.RECONNECT;
-import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.logging.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
-import static com.swirlds.logging.LogMarker.VIRTUAL_MERKLE_STATS;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.VIRTUAL_MERKLE_STATS;
 import static com.swirlds.virtualmap.internal.Path.FIRST_LEFT_PATH;
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
@@ -965,7 +965,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         if (dataSource != null) {
             try {
                 dataSource.close();
-            } catch (final IOException e) {
+            } catch (final Exception e) {
                 logger.error(
                         EXCEPTION.getMarker(), "Could not close the dataSource after all copies were destroyed", e);
             }

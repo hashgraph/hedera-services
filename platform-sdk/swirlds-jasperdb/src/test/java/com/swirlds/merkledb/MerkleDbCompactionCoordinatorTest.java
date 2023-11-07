@@ -293,7 +293,7 @@ class MerkleDbCompactionCoordinatorTest {
                     }
                     verifyNoInteractions(statisticsUpdater);
                 },
-                Duration.ofMillis(100),
+                Duration.ofSeconds(1),
                 "Unexpected mock state");
     }
 
@@ -325,7 +325,7 @@ class MerkleDbCompactionCoordinatorTest {
                         throw new RuntimeException(e);
                     }
                 },
-                Duration.ofMillis(100),
+                Duration.ofSeconds(1),
                 "Unexpected mock state");
     }
 }

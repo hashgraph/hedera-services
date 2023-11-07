@@ -16,12 +16,10 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import java.io.IOException;
-import java.util.List;
 
 /**
  * An intentionally broken teacher tree view. Throws an IO exception after a certain number of nodes have been
@@ -120,8 +118,8 @@ public class BrokenVirtualMapTeacherView implements TeacherTreeView<Long> {
     }
 
     @Override
-    public List<Hash> getChildHashes(final Long parent) {
-        return baseView.getChildHashes(parent);
+    public void writeChildHashes(final Long parent, final SerializableDataOutputStream out) throws IOException {
+        baseView.writeChildHashes(parent, out);
     }
 
     @Override
