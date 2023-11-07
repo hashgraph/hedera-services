@@ -28,10 +28,10 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -69,11 +69,6 @@ public class InOrderLinker {
     private final Map<Hash, EventImpl> parentHashMap = new HashMap<>(INITIAL_CAPACITY);
 
     /**
-     * Linked events are passed to this consumer.
-     */
-    private final Consumer<EventImpl> eventConsumer;
-
-    /**
      * The current minimum generation required for an event to be non-ancient.
      */
     private long minimumGenerationNonAncient = 0;
@@ -86,13 +81,9 @@ public class InOrderLinker {
     /**
      * Constructor
      *
-     * @param eventConsumer      the consumer that successfully linked events are passed to
      * @param intakeEventCounter keeps track of the number of events in the intake pipeline from each peer
      */
-    public InOrderLinker(
-            @NonNull final Consumer<EventImpl> eventConsumer, @NonNull final IntakeEventCounter intakeEventCounter) {
-
-        this.eventConsumer = Objects.requireNonNull(eventConsumer);
+    public InOrderLinker(@NonNull final IntakeEventCounter intakeEventCounter) {
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
     }
 
@@ -100,12 +91,14 @@ public class InOrderLinker {
      * Find and link the parents of the given event.
      *
      * @param event the event to link
+     * @return the linked event, or null if linking fails
      */
-    public void linkEvent(@NonNull final GossipEvent event) {
+    @Nullable
+    public EventImpl linkEvent(@NonNull final GossipEvent event) {
         if (event.getGeneration() < minimumGenerationNonAncient) {
             // This event is ancient, so we don't need to link it.
             this.intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
-            return;
+            return null;
         }
 
         final BaseEventHashedData hashedData = event.getHashedData();
@@ -124,7 +117,7 @@ public class InOrderLinker {
                         selfParentHash,
                         selfParentGen);
                 this.intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
-                return;
+                return null;
             }
         } else {
             // ancient parents don't need to be linked
@@ -145,7 +138,7 @@ public class InOrderLinker {
                         otherParentHash,
                         otherParentGen);
                 this.intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
-                return;
+                return null;
             }
         } else {
             // ancient parents don't need to be linked
@@ -159,7 +152,7 @@ public class InOrderLinker {
         parentDescriptorMap.put(eventDescriptor, linkedEvent);
         parentHashMap.put(eventDescriptor.getHash(), linkedEvent);
 
-        eventConsumer.accept(linkedEvent);
+        return linkedEvent;
     }
 
     /**

@@ -88,7 +88,7 @@ public class EventSignatureValidatorScheduler {
      * @param eventSignatureValidator the event signature validator to bind
      */
     public void bind(@NonNull final EventSignatureValidator eventSignatureValidator) {
-        eventInput.bind(eventSignatureValidator::validateEventSignature);
+        eventInput.bind(eventSignatureValidator::validateSignature);
         minimumGenerationNonAncientInput.bind(eventSignatureValidator::setMinimumGenerationNonAncient);
     }
 }

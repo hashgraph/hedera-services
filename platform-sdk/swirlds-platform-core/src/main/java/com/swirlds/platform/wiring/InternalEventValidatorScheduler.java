@@ -74,6 +74,6 @@ public class InternalEventValidatorScheduler {
      * @param internalEventValidator the validator to bind
      */
     public void bind(@NonNull final InternalEventValidator internalEventValidator) {
-        eventInput.bind(internalEventValidator::handleEvent);
+        eventInput.bind(internalEventValidator::validateEvent);
     }
 }

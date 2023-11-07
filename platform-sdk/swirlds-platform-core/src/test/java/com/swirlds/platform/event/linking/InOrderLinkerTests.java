@@ -20,6 +20,8 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.event.EventConstants.GENERATION_UNDEFINED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -31,13 +33,10 @@ import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,12 +45,6 @@ import org.junit.jupiter.api.Test;
  * Tests the {@link InOrderLinker} class
  */
 class InOrderLinkerTests {
-    /**
-     * How many events have been consumed by the consumer. This value includes to 2 genesis events submitted to the
-     * linker in the {@link #setup()} method.
-     */
-    private AtomicInteger consumedEventCount;
-
     private AtomicLong exitedIntakePipelineCount;
     private Random random;
 
@@ -59,11 +52,6 @@ class InOrderLinkerTests {
 
     private GossipEvent genesisSelfParent;
     private GossipEvent genesisOtherParent;
-
-    /**
-     * The number of events handled in the setup method. Included as a constant for assertion clarity
-     */
-    private final int genesisEventCount = 2;
 
     /**
      * Generates a mock event with the given parameters
@@ -76,7 +64,7 @@ class InOrderLinkerTests {
      * @param otherParentGeneration the generation of the other parent of the event
      * @return the mock event
      */
-    private GossipEvent generateMockEvent(
+    private static GossipEvent generateMockEvent(
             @NonNull final Hash selfHash,
             final long selfGeneration,
             @Nullable final Hash selfParentHash,
@@ -125,12 +113,7 @@ class InOrderLinkerTests {
                 .when(intakeEventCounter)
                 .eventExitedIntakePipeline(any());
 
-        consumedEventCount = new AtomicInteger(0);
-        final Consumer<EventImpl> eventConsumer = event -> {
-            consumedEventCount.incrementAndGet();
-        };
-
-        inOrderLinker = new InOrderLinker(eventConsumer, intakeEventCounter);
+        inOrderLinker = new InOrderLinker(intakeEventCounter);
 
         genesisSelfParent =
                 generateMockEvent(randomHash(random), 0, null, GENERATION_UNDEFINED, null, GENERATION_UNDEFINED);
@@ -153,7 +136,7 @@ class InOrderLinkerTests {
                 genesisSelfParent.getGeneration(),
                 genesisOtherParent.getHashedData().getHash(),
                 genesisOtherParent.getGeneration());
-        inOrderLinker.linkEvent(child1);
+        assertNotEquals(null, inOrderLinker.linkEvent(child1));
 
         inOrderLinker.setMinimumGenerationNonAncient(2);
 
@@ -167,14 +150,13 @@ class InOrderLinkerTests {
                 child1Generation,
                 genesisOtherParent.getHashedData().getHash(),
                 genesisOtherParent.getGeneration());
-        inOrderLinker.linkEvent(child2);
 
-        assertEquals(genesisEventCount + 2, consumedEventCount.get());
+        assertNotEquals(null, inOrderLinker.linkEvent(child2));
         assertEquals(0, exitedIntakePipelineCount.get());
     }
 
     @Test
-    @DisplayName("Events with ancient parents should still be passed to the consumer")
+    @DisplayName("Events with ancient parents should still be linkable")
     void parentBecomesAncient() {
         // this will cause the genesis parents to be purged, since they are now ancient
         inOrderLinker.setMinimumGenerationNonAncient(3);
@@ -186,9 +168,8 @@ class InOrderLinkerTests {
                 genesisSelfParent.getGeneration(),
                 genesisOtherParent.getHashedData().getHash(),
                 genesisOtherParent.getGeneration());
-        inOrderLinker.linkEvent(child);
 
-        assertEquals(genesisEventCount + 1, consumedEventCount.get());
+        assertNotEquals(null, inOrderLinker.linkEvent(child));
         assertEquals(0, exitedIntakePipelineCount.get());
     }
 
@@ -202,9 +183,8 @@ class InOrderLinkerTests {
                 genesisSelfParent.getGeneration(),
                 genesisOtherParent.getHashedData().getHash(),
                 genesisOtherParent.getGeneration());
-        inOrderLinker.linkEvent(child);
 
-        assertEquals(genesisEventCount, consumedEventCount.get());
+        assertNull(inOrderLinker.linkEvent(child));
         assertEquals(1, exitedIntakePipelineCount.get());
     }
 
@@ -218,9 +198,8 @@ class InOrderLinkerTests {
                 genesisSelfParent.getGeneration(),
                 null,
                 genesisOtherParent.getGeneration());
-        inOrderLinker.linkEvent(child);
 
-        assertEquals(genesisEventCount, consumedEventCount.get());
+        assertNull(inOrderLinker.linkEvent(child));
         assertEquals(1, exitedIntakePipelineCount.get());
     }
 
@@ -236,7 +215,8 @@ class InOrderLinkerTests {
                 genesisSelfParent.getGeneration(),
                 genesisOtherParent.getHashedData().getHash(),
                 genesisOtherParent.getGeneration());
-        inOrderLinker.linkEvent(child1);
+
+        assertNull(inOrderLinker.linkEvent(child1));
 
         // barely ancient
         final GossipEvent child2 = generateMockEvent(
@@ -246,9 +226,8 @@ class InOrderLinkerTests {
                 genesisSelfParent.getGeneration(),
                 genesisOtherParent.getHashedData().getHash(),
                 genesisOtherParent.getGeneration());
-        inOrderLinker.linkEvent(child2);
 
-        assertEquals(genesisEventCount, consumedEventCount.get());
+        assertNull(inOrderLinker.linkEvent(child2));
         assertEquals(2, exitedIntakePipelineCount.get());
     }
 }
