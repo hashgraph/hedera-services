@@ -490,7 +490,28 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                         .accountId(payerId)
                         .tokenId(fungibleTokenId)
                         .balance(1000)
+                        .build(),
+                tokenRel.copyBuilder()
+                        .accountId(ownerId)
+                        .tokenId(fungibleTokenIDB)
+                        .balance(1000)
+                        .build(),
+                tokenRel.copyBuilder()
+                        .accountId(ownerId)
+                        .tokenId(fungibleTokenId)
+                        .balance(2000)
+                        .build(),
+                tokenRel.copyBuilder()
+                        .accountId(payerId)
+                        .tokenId(fungibleTokenIDB)
+                        .balance(1000)
+                        .build(),
+                tokenRel.copyBuilder()
+                        .accountId(payerId)
+                        .tokenId(fungibleTokenId)
+                        .balance(1000)
                         .build());
+
         when(handleContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
 
         return replaceAliasesWithIDsInOp.replaceAliasesWithIds(body, transferContext);

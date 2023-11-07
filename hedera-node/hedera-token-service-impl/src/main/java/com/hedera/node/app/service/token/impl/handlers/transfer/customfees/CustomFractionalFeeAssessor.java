@@ -99,6 +99,7 @@ public class CustomFractionalFeeAssessor {
             if (filteredCredits.isEmpty()) {
                 continue;
             }
+
             // calculate amount that should be paid for fractional custom fee
             var assessedAmount = amountOwed(unitsLeft, fractionalFee);
 
@@ -108,6 +109,12 @@ public class CustomFractionalFeeAssessor {
                         asFixedFee(assessedAmount, denom, fee.feeCollectorAccountId(), fee.allCollectorsAreExempt());
                 fixedFeeAssessor.assessFixedFee(feeMeta, sender, addedFee, result);
             } else {
+                boolean cont = false;
+                for (final var acc : effectivePayerAccounts) {
+                    if (isPayerExempt(feeMeta, fee, acc)) cont = true;
+                }
+                if (cont) continue;
+
                 // amount that should be deducted from the credits to token
                 // Inside this reclaim there will be debits to the input transaction
                 final long exemptAmount = reclaim(assessedAmount, filteredCredits);
