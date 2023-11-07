@@ -647,7 +647,8 @@ public class SwirldsPlatform implements Platform {
         } else {
             final InternalEventValidator internalEventValidator = new InternalEventValidator(
                     platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
-            final EventDeduplicator eventDeduplicator = new EventDeduplicator(platformContext, intakeEventCounter);
+            final EventDeduplicator eventDeduplicator =
+                    new EventDeduplicator(platformContext, intakeEventCounter, eventIntakeMetrics);
             final EventSignatureValidator eventSignatureValidator = new EventSignatureValidator(
                     platformContext,
                     time,
