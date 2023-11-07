@@ -28,7 +28,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -73,7 +73,7 @@ public class CallOperationSuite extends HapiSuite {
                 .when()
                 .then(
                         contractCall(contract, "call", asHeadlongAddress(INVALID_ADDRESS))
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                                .hasKnownStatus(SUCCESS),
                         withOpContext((spec, opLog) -> {
                             final var id = spec.registry().getAccountID(ACCOUNT);
 
@@ -101,7 +101,7 @@ public class CallOperationSuite extends HapiSuite {
                                         "callContract",
                                         asHeadlongAddress(INVALID_ADDRESS),
                                         BigInteger.valueOf(222))
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))
+                                .hasKnownStatus(SUCCESS))
                 .then(contractCallLocal(contract, "getVar1").logged());
     }
 

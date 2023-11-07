@@ -26,7 +26,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -71,7 +70,7 @@ public class DelegateCallOperationSuite extends HapiSuite {
                 .when()
                 .then(
                         contractCall(contract, "delegateCall", asHeadlongAddress(INVALID_ADDRESS))
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
+                                .hasKnownStatus(SUCCESS),
                         withOpContext((spec, opLog) -> {
                             final var id = spec.registry().getAccountID(DEFAULT_PAYER);
                             final var solidityAddress = HapiPropertySource.asHexedSolidityAddress(id);

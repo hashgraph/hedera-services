@@ -16,18 +16,17 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
+
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.ExtCodeCopyOperation;
-
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
-import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 /**
  * Hedera adapted version of the {@link ExtCodeCopyOperation}.
