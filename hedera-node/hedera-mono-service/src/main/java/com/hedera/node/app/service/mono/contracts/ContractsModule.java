@@ -28,6 +28,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessorV038;
+import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessorV045;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCreateOperationExternalizer;
@@ -79,7 +80,8 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
             StoresModule.class,
             ContractsV_0_30Module.class,
             ContractsV_0_34Module.class,
-            ContractsV_0_38Module.class
+            ContractsV_0_38Module.class,
+            ContractsV_0_45Module.class
         })
 public interface ContractsModule {
     int SYSTEM_ACCOUNT_BOUNDARY = 750;
@@ -93,6 +95,9 @@ public interface ContractsModule {
 
     @Qualifier
     @interface V_0_38 {}
+
+    @Qualifier
+    @interface V_0_45 {}
 
     @Binds
     @Singleton
@@ -215,6 +220,20 @@ public interface ContractsModule {
     @Provides
     @Singleton
     @IntoMap
+    @StringKey(ContractsV_0_45Module.EVM_VERSION_0_45)
+    static MessageCallProcessor provideV_0_45MessageCallProcessor(
+            final @V_0_45 EVM evm,
+            final @V_0_45 PrecompileContractRegistry precompiles,
+            final Map<String, PrecompiledContract> hederaPrecompileList,
+            final InfrastructureFactory infrastructureFactory,
+            final @Named("HederaSystemAccountDetector") Predicate<Address> hederaSystemAccountDetector) {
+        return new HederaMessageCallProcessorV045(
+                evm, precompiles, hederaPrecompileList, infrastructureFactory, hederaSystemAccountDetector);
+    }
+
+    @Provides
+    @Singleton
+    @IntoMap
     @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
     static ContractCreationProcessor provideV_0_30ContractCreateProcessor(
             final GasCalculator gasCalculator, final @V_0_30 EVM evm, Set<ContractValidationRule> validationRules) {
@@ -236,6 +255,15 @@ public interface ContractsModule {
     @StringKey(ContractsV_0_38Module.EVM_VERSION_0_38)
     static ContractCreationProcessor provideV_0_38ContractCreateProcessor(
             final GasCalculator gasCalculator, final @V_0_38 EVM evm, Set<ContractValidationRule> validationRules) {
+        return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
+    }
+
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey(ContractsV_0_45Module.EVM_VERSION_0_45)
+    static ContractCreationProcessor provideV_0_45ContractCreateProcessor(
+            final GasCalculator gasCalculator, final @V_0_45 EVM evm, Set<ContractValidationRule> validationRules) {
         return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
     }
 

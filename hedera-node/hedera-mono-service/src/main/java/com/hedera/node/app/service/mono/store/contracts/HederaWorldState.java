@@ -221,8 +221,7 @@ public class HederaWorldState implements HederaMutableWorldState {
     public static class Updater extends AbstractLedgerWorldUpdater<HederaMutableWorldState, Account>
             implements HederaEvmWorldUpdater, HederaWorldUpdater {
 
-        public void setCreationCustomizerForSponsor(final Address sponsorAddressOrAlias) {
-        }
+        public void setCreationCustomizerForSponsor(final Address sponsorAddressOrAlias) {}
 
         Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>();
         GlobalDynamicProperties dynamicProperties;

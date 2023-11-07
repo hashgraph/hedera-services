@@ -21,14 +21,15 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallOperation;
+
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 /**
  * Hedera adapted version of the {@link CallOperation} for version EVM v0.34
@@ -42,13 +43,13 @@ import org.hyperledger.besu.evm.operation.CallOperation;
  * to true, verification of the provided signature is performed. If the signature is not active, the
  * execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
  */
-public class HederaCallOperationV038 extends CallOperation {
+public class HederaCallOperationV045 extends CallOperation {
     private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> systemAccountDetector;
     private final GlobalDynamicProperties globalDynamicProperties;
 
-    public HederaCallOperationV038(
+    public HederaCallOperationV045(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
@@ -66,7 +67,7 @@ public class HederaCallOperationV038 extends CallOperation {
         if (globalDynamicProperties.isImplicitCreationEnabled() && isLazyCreateAttempt(frame)) {
             return super.execute(frame, evm);
         } else {
-            return HederaOperationUtilV038.addressSignatureCheckExecution(
+            return HederaOperationUtilV045.addressSignatureCheckExecution(
                     sigsVerifier,
                     frame,
                     to(frame),
@@ -81,8 +82,8 @@ public class HederaCallOperationV038 extends CallOperation {
     private boolean isLazyCreateAttempt(final MessageFrame frame) {
         return !addressValidator.test(to(frame), frame)
                 && !((HederaStackedWorldStateUpdater) frame.getWorldUpdater())
-                .aliases()
-                .isMirror(to(frame))
+                        .aliases()
+                        .isMirror(to(frame))
                 && value(frame).greaterThan(Wei.ZERO);
     }
 }

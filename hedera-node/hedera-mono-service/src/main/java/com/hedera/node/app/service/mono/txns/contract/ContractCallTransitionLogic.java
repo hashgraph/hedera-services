@@ -138,14 +138,10 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         final var targetId = target.toId();
         Account receiver;
         final var targetAddressIsMissing = target.equals(EntityNum.MISSING_NUM);
-        if (targetAddressIsMissing
-                && relayerId != null
+        if (relayerId != null
                 && !properties.evmVersion().equals(EVM_VERSION_0_30)
                 && properties.isAutoCreationEnabled()
                 && properties.isLazyCreationEnabled()) {
-            // allow Ethereum transactions to lazy create a hollow account
-            // if `to` is non-existent and `value` is non-zero
-            validateTrue(op.getAmount() > 0, INVALID_CONTRACT_ID);
             final var evmAddress = op.getContractID().getEvmAddress();
             validateTrue(isOfEvmAddressSize(evmAddress), INVALID_CONTRACT_ID);
             receiver = new Account(evmAddress);

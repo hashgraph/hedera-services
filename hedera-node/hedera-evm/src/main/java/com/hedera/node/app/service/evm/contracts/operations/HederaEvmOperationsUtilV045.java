@@ -17,20 +17,20 @@
 package com.hedera.node.app.service.evm.contracts.operations;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.BiPredicate;
-import java.util.function.LongSupplier;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.internal.OverflowException;
-import org.hyperledger.besu.evm.internal.UnderflowException;
+import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
 
-public interface HederaEvmOperationsUtilV038 {
+import java.util.function.BiPredicate;
+import java.util.function.LongSupplier;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+public interface HederaEvmOperationsUtilV045 {
 
     /**
      * An extracted address check and execution of extended Hedera Operations. Halts the execution
@@ -60,10 +60,10 @@ public interface HederaEvmOperationsUtilV038 {
                 return systemAccountExecutionSupplier.get();
             }
             return supplierExecution.get();
-        } catch (final UnderflowException ufe) {
+        } catch (final FixedStack.UnderflowException ufe) {
             return new Operation.OperationResult(
                     supplierHaltGasCost.getAsLong(), ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
-        } catch (final OverflowException ofe) {
+        } catch (final FixedStack.OverflowException ofe) {
             return new Operation.OperationResult(
                     supplierHaltGasCost.getAsLong(), ExceptionalHaltReason.TOO_MANY_STACK_ITEMS);
         }

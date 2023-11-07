@@ -76,4 +76,4 @@ public record ContractsConfig(
                 boolean precompileHrcFacadeAssociateEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
                 boolean evmVersionDynamic,
-        @ConfigProperty(value = "evm.version", defaultValue = "v0.38") @NetworkProperty String evmVersion) {}
+        @ConfigProperty(value = "evm.version", defaultValue = "v0.45") @NetworkProperty String evmVersion) {}

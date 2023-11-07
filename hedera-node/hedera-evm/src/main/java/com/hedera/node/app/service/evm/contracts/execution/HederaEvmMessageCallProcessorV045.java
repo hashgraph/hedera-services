@@ -16,18 +16,9 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
-
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -40,8 +31,18 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
+
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
+
 /** Overrides Besu precompiler handling, so we can break model layers in Precompile execution */
-public class HederaEvmMessageCallProcessorV038 extends MessageCallProcessor {
+public class HederaEvmMessageCallProcessorV045 extends MessageCallProcessor {
     private static final Optional<ExceptionalHaltReason> ILLEGAL_STATE_CHANGE =
             Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
 
@@ -51,7 +52,7 @@ public class HederaEvmMessageCallProcessorV038 extends MessageCallProcessor {
     private final Predicate<Address> evmNativePrecompileDetector;
     private final Predicate<Address> systemAccountDetector;
 
-    public HederaEvmMessageCallProcessorV038(
+    public HederaEvmMessageCallProcessorV045(
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
@@ -110,6 +111,9 @@ public class HederaEvmMessageCallProcessorV038 extends MessageCallProcessor {
                     }
                 }
             }
+
+            ((AbstractLedgerEvmWorldUpdater) frame.getWorldUpdater())
+                    .setCreationCustomizerForSponsor(frame.getSenderAddress());
 
             super.start(frame, operationTracer);
         }

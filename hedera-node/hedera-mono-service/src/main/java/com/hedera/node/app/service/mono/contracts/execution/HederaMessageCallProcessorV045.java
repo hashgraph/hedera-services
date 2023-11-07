@@ -16,12 +16,9 @@
 
 package com.hedera.node.app.service.mono.contracts.execution;
 
-import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
-
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessorV038;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessorV045;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
@@ -33,28 +30,34 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
-public class HederaMessageCallProcessorV038 extends HederaEvmMessageCallProcessorV038 {
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
+
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
+
+public class HederaMessageCallProcessorV045 extends HederaEvmMessageCallProcessorV045 {
     private static final String INVALID_TRANSFER_MSG = "Transfer of Value to Hedera Precompile";
     public static final Bytes INVALID_TRANSFER = Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
     private final Predicate<Address> isNativePrecompileCheck;
     private InfrastructureFactory infrastructureFactory;
 
-    public HederaMessageCallProcessorV038(
+    public HederaMessageCallProcessorV045(
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
@@ -63,7 +66,7 @@ public class HederaMessageCallProcessorV038 extends HederaEvmMessageCallProcesso
         isNativePrecompileCheck = addr -> precompiles.get(addr) != null;
     }
 
-    public HederaMessageCallProcessorV038(
+    public HederaMessageCallProcessorV045(
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
@@ -156,5 +159,7 @@ public class HederaMessageCallProcessorV038 extends HederaEvmMessageCallProcesso
         final var wrappedHaltReason = Optional.of(haltReason);
         frame.setExceptionalHaltReason(wrappedHaltReason);
         operationTracer.traceAccountCreationResult(frame, wrappedHaltReason);
+        final var result = new Operation.OperationResult(frame.getRemainingGas(), haltReason);
+        operationTracer.tracePostExecution(frame, result);
     }
 }

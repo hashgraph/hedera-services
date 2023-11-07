@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.store.contracts;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
@@ -32,9 +33,15 @@ public class MockStackedLedgerUpdater extends AbstractStackedLedgerUpdater<Heder
         this.customizer = customizer;
     }
 
+
     @Override
     public ContractCustomizer customizerForPendingCreation() {
         return customizer;
+    }
+
+    @Override
+    public void setCreationCustomizerForSponsor(Address sponsorAddressOrAlias) {
+
     }
 
     @Override
