@@ -30,7 +30,7 @@ import org.apache.tuweni.units.bigints.UInt256;
  *
  * @param key the key of the access
  * @param value the value read or overwritten
- * @param writtenValue if not Bytes.EMPTY, the overwriting value
+ * @param writtenValue if not null, the overwriting value
  */
 public record StorageAccess(@NonNull UInt256 key, @NonNull UInt256 value, @Nullable UInt256 writtenValue) {
     public StorageAccess {

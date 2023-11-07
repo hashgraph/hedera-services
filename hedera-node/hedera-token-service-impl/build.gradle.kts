@@ -30,7 +30,6 @@ testModuleInfo {
     requires("com.swirlds.merkle")
     requires("com.swirlds.test.framework")
     requires("org.assertj.core")
-    requires("org.bouncycastle.provider")
     requires("org.hamcrest")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
@@ -39,6 +38,5 @@ testModuleInfo {
     requiresStatic("com.github.spotbugs.annotations")
     runtimeOnly("org.mockito.inline")
     requires("com.google.protobuf")
-    requires("com.hedera.node.app.service.evm")
     requires("com.swirlds.common")
 }
