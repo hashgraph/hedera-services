@@ -367,12 +367,13 @@ public class HandleHederaOperations implements HederaOperations {
         }
 
         if (enabledSidecars.contains(SidecarType.CONTRACT_BYTECODE)
-                && recipientId != null
-                && recipientAccount!= null
                 && frame.getType().equals(MessageFrame.Type.CONTRACT_CREATION)) {
             var bytecodeBuilder = ContractBytecode.newBuilder()
-                    .contractId(recipientId)
-                    .runtimeBytecode(tuweniToPbjBytes(recipientAccount.getCode()));
+                    .contractId(recipientId);
+            if (recipientAccount != null && !frame.getState().equals(MessageFrame.State.REVERT)) {
+                bytecodeBuilder.runtimeBytecode(tuweniToPbjBytes(recipientAccount.getCode()));
+            }
+
             var body = (ContractCreateTransactionBody)context.body().data().value();
             if(!body.hasInitcode()) {
                 bytecodeBuilder.initcode(tuweniToPbjBytes(frame.getCode().getBytes()));
