@@ -102,7 +102,8 @@ public class SnapshotModeOp extends UtilOp {
             "ed25519",
             "ECDSA_secp256k1",
             // Plus some other fields that we might prefer to make deterministic
-            "symbol");
+            "symbol",
+            "alias");
 
     private static final String PLACEHOLDER_MEMO = "<entity-num-placeholder-creation>";
     private static final String MONO_STREAMS_LOC = "hedera-node/data/recordstreams/record0.0.3";

@@ -676,7 +676,7 @@ public final class JrsTestReportGenerator {
         }
 
         if (!testCountMap.containsKey("")) {
-            testCountMap.put("", new TestCount(0, 0, 0, 0));
+            testCountMap.put("", countTestsForOwner(results, metadata, ""));
         }
 
         if (!testCountMap.containsKey("all")) {

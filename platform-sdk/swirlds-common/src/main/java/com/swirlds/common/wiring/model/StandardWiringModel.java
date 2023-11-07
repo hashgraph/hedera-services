@@ -152,6 +152,7 @@ public class StandardWiringModel extends WiringModel {
 
         // Create an ad hoc vertex. This is needed when wires are soldered to lambdas.
         final ModelVertex adHocVertex = new ModelVertex(vertexName, null, true);
+
         vertices.put(vertexName, adHocVertex);
         return adHocVertex;
     }
