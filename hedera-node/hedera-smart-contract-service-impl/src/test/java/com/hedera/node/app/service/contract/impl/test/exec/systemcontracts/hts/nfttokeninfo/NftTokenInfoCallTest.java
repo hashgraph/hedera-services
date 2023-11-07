@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -91,18 +92,6 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
                                         headlongAddressOf(B_NEW_ACCOUNT)))
                         .array()),
                 result.getOutput());
-    }
-
-    @Test
-    void revertsWhenTryingToFetchMissingTokenNonStaticCall() {
-        when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
-        when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("01"));
-
-        final var subject = new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, null, 0L, config);
-        final var result = subject.execute().fullResult().result();
-
-        assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
     }
 
     @Test

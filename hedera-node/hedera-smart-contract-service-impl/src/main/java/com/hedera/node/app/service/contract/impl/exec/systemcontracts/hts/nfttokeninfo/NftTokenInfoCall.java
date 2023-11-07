@@ -85,11 +85,11 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
                 .nativeOperations()
                 .getNft(token.tokenIdOrElse(ZERO_TOKEN_ID).tokenNum(), serialNumber);
         // @Future remove to revert #9074 after modularization is completed
-        if ((isStaticCall && (status != SUCCESS)) || nft == null) {
+        if (isStaticCall && (status != SUCCESS || nft == null)) {
             return revertResult(status, gasCalculator.viewGasRequirement());
         }
 
-        Account ownerAccount = getOwnerAccount(nft, token);
+        final var ownerAccount = getOwnerAccount(nft, token);
         if (ownerAccount == null) {
             return revertResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement());
         }
@@ -102,16 +102,17 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
                 gasRequirement);
     }
 
-    private Account getOwnerAccount(Nft nft, Token token) {
+    private Account getOwnerAccount(@NonNull Nft nft, Token token) {
+        requireNonNull(nft);
         final var explicitId = nft.ownerIdOrElse(AccountID.DEFAULT);
         if (explicitId.account().kind() == AccountID.AccountOneOfType.UNSET) {
             return null;
         }
         final long ownerNum;
-        if (explicitId.accountNumOrElse(TREASURY_OWNER_NUM) == TREASURY_OWNER_NUM) {
-            ownerNum = token.treasuryAccountIdOrThrow().accountNumOrThrow();
-        } else {
+        if (explicitId.hasAccountNum()) {
             ownerNum = explicitId.accountNumOrThrow();
+        } else {
+            ownerNum = token.treasuryAccountIdOrThrow().accountNumOrThrow();
         }
         return nativeOperations().getAccount(ownerNum);
     }
