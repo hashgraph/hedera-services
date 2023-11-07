@@ -67,6 +67,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -88,6 +89,27 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
     private static final List<TokenMovement> MISSING_TOKEN_AWARE_PROVIDERS = Collections.emptyList();
     private static final Function<HapiSpec, TransferList> MISSING_HBAR_ONLY_PROVIDER = null;
+
+    private static final Comparator<AccountID> ACCOUNT_NUM_COMPARATOR = Comparator.comparingLong(
+                    AccountID::getAccountNum)
+            .thenComparingLong(AccountID::getShardNum)
+            .thenComparingLong(AccountID::getRealmNum);
+    private static final Comparator<AccountID> ACCOUNT_NUM_OR_ALIAS_COMPARATOR = (a, b) -> {
+        if (!a.getAlias().isEmpty() || !b.getAlias().isEmpty()) {
+            return ByteString.unsignedLexicographicalComparator().compare(a.getAlias(), b.getAlias());
+        } else {
+            return ACCOUNT_NUM_COMPARATOR.compare(a, b);
+        }
+    };
+    private static final Comparator<AccountAmount> ACCOUNT_AMOUNT_COMPARATOR =
+            Comparator.comparing(AccountAmount::getAccountID, ACCOUNT_NUM_OR_ALIAS_COMPARATOR);
+    private static final Comparator<NftTransfer> NFT_TRANSFER_COMPARATOR = Comparator.comparing(
+                    NftTransfer::getSenderAccountID, ACCOUNT_NUM_OR_ALIAS_COMPARATOR)
+            .thenComparing(NftTransfer::getReceiverAccountID, ACCOUNT_NUM_OR_ALIAS_COMPARATOR)
+            .thenComparingLong(NftTransfer::getSerialNumber);
+    private static final Comparator<TokenID> TOKEN_ID_COMPARATOR = Comparator.comparingLong(TokenID::getTokenNum);
+    private static final Comparator<TokenTransferList> TOKEN_TRANSFER_LIST_COMPARATOR =
+            (o1, o2) -> Objects.compare(o1.getToken(), o2.getToken(), TOKEN_ID_COMPARATOR);
 
     private boolean logResolvedStatus = false;
     private boolean breakNetZeroTokenChangeInvariant = false;
@@ -131,10 +153,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     private static Collector<TransferList, ?, TransferList> sortedTransferCollector(
             final BinaryOperator<List<AccountAmount>> reducer) {
         return collectingAndThen(
-                reducing(Collections.emptyList(), TransferList::getAccountAmountsList, reducer), aList -> {
-                    aList.sort(ACCOUNT_AMOUNT_COMPARATOR);
-                    return TransferList.newBuilder().addAllAccountAmounts(aList).build();
-                });
+                reducing(Collections.emptyList(), TransferList::getAccountAmountsList, reducer),
+                aList -> TransferList.newBuilder()
+                        .addAllAccountAmounts(
+                                aList.stream().sorted(ACCOUNT_AMOUNT_COMPARATOR).toList())
+                        .build());
     }
 
     private static final BinaryOperator<List<AccountAmount>> accountMerge = (a, b) -> Stream.of(a, b)
@@ -158,7 +181,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                                 }
                                 return accountAmounts.stream();
                             })
-                            .collect(toList())));
+                            .sorted(ACCOUNT_AMOUNT_COMPARATOR)
+                            .toList()));
     private static final Collector<TransferList, ?, TransferList> mergingAccounts = transferCollector(accountMerge);
     private static final Collector<TransferList, ?, TransferList> mergingSortedAccounts =
             sortedTransferCollector(accountMerge);
@@ -588,7 +612,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
     private List<TokenTransferList> transfersAllFor(final HapiSpec spec) {
         return Stream.concat(transfersFor(spec).stream(), transfersForNft(spec).stream())
-                .collect(toList());
+                .sorted(TOKEN_TRANSFER_LIST_COMPARATOR)
+                .toList();
     }
 
     private List<TokenTransferList> transfersFor(final HapiSpec spec) {
@@ -610,7 +635,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                     }
                     return builder.build();
                 })
-                .collect(toList());
+                .sorted(TOKEN_TRANSFER_LIST_COMPARATOR)
+                .toList();
     }
 
     private Map<TokenID, Pair<Integer, List<AccountAmount>>> aggregateOnTokenIds(final HapiSpec spec) {
@@ -623,7 +649,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                     final var existingVal = map.get(list.getToken());
                     final List<AccountAmount> newList = Stream.of(existingVal.getRight(), list.getTransfersList())
                             .flatMap(Collection::stream)
-                            .collect(Collectors.toList());
+                            .sorted(ACCOUNT_AMOUNT_COMPARATOR)
+                            .toList();
 
                     map.put(list.getToken(), Pair.of(existingVal.getLeft(), newList));
                 } else {
@@ -644,7 +671,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                     final var existingVal = map.get(list.getToken());
                     final List<AccountAmount> newList = Stream.of(existingVal.getRight(), list.getTransfersList())
                             .flatMap(Collection::stream)
-                            .collect(Collectors.toList());
+                            .sorted(ACCOUNT_AMOUNT_COMPARATOR)
+                            .toList();
 
                     map.put(list.getToken(), Pair.of(existingVal.getLeft(), aggregateTransfers(newList)));
                 } else {
@@ -680,7 +708,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                     }
                     return accountAmounts.stream();
                 })
-                .collect(Collectors.toList());
+                .sorted(ACCOUNT_AMOUNT_COMPARATOR)
+                .toList();
     }
 
     private List<TokenTransferList> transfersForNft(final HapiSpec spec) {
@@ -697,7 +726,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                         TokenTransferList::getNftTransfersList,
                         (left, right) -> Stream.of(left, right)
                                 .flatMap(Collection::stream)
-                                .collect(toList()),
+                                .sorted(NFT_TRANSFER_COMPARATOR)
+                                .toList(),
                         LinkedHashMap::new));
         if (aggregated.size() != 0 && uniqueCount != aggregated.size()) {
             throw new RuntimeException("Aggregation seems to have failed (expected "
@@ -711,7 +741,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                         .setToken(entry.getKey())
                         .addAllNftTransfers(entry.getValue())
                         .build())
-                .collect(toList());
+                .sorted(TOKEN_TRANSFER_LIST_COMPARATOR)
+                .toList();
     }
 
     @Override
@@ -720,18 +751,4 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
             log.info("Resolved to {}", actualStatus);
         }
     }
-
-    private static final Comparator<AccountID> ACCOUNT_NUM_COMPARATOR = Comparator.comparingLong(
-                    AccountID::getAccountNum)
-            .thenComparingLong(AccountID::getShardNum)
-            .thenComparingLong(AccountID::getRealmNum);
-    private static final Comparator<AccountID> ACCOUNT_NUM_OR_ALIAS_COMPARATOR = (a, b) -> {
-        if (!a.getAlias().isEmpty() || !b.getAlias().isEmpty()) {
-            return ByteString.unsignedLexicographicalComparator().compare(a.getAlias(), b.getAlias());
-        } else {
-            return ACCOUNT_NUM_COMPARATOR.compare(a, b);
-        }
-    };
-    private static final Comparator<AccountAmount> ACCOUNT_AMOUNT_COMPARATOR =
-            Comparator.comparing(AccountAmount::getAccountID, ACCOUNT_NUM_OR_ALIAS_COMPARATOR);
 }

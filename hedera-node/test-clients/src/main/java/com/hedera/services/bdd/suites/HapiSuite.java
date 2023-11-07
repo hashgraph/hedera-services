@@ -249,13 +249,15 @@ public abstract class HapiSuite {
     }
 
     @SuppressWarnings("java:S2629")
-    private FinalOutcome runSuite(final Consumer<List<HapiSpec>> runner) {
+    private FinalOutcome runSuite(Consumer<List<HapiSpec>> runner) {
         if (!getDeferResultsSummary() || onlyLogHeader) {
             getResultsLogger().info(STARTING_SUITE, name());
         }
 
         List<HapiSpec> specs = getSpecsInSuite();
+        boolean autoSnapshotManagementOn = false;
         for (final var spec : specs) {
+            autoSnapshotManagementOn |= spec.setup().autoSnapshotManagement();
             if (!overrides.isEmpty()) {
                 spec.addOverrideProperties(overrides);
             }
@@ -263,6 +265,11 @@ public abstract class HapiSuite {
                 specs = List.of(spec);
                 break;
             }
+        }
+        if (autoSnapshotManagementOn) {
+            // Coerce to sequential spec runner if auto-snapshot management is on for any spec
+            // (concurrent spec execution makes it impossible to match record stream snapshots)
+            runner = HapiSuite::runSequentialSpecs;
         }
         final var name = name();
         specs.forEach(spec -> spec.setSuitePrefix(name));

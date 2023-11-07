@@ -111,6 +111,9 @@ import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
 import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.RecordFileChecker;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
@@ -1074,7 +1077,7 @@ public class UtilVerbs {
      * @param mode the snapshot mode to use
      * @return a {@link SnapshotModeOp} that either takes or fuzzy-matches a snapshot of generated records
      */
-    public static HapiSpecOperation snapshotMode(
+    public static SnapshotModeOp snapshotMode(
             @NonNull final SnapshotMode mode, @NonNull final SnapshotMatchMode... matchModes) {
         return new SnapshotModeOp(mode, matchModes);
     }

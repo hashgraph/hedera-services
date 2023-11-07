@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.utilops;
+package com.hedera.services.bdd.spec.utilops.records;
 
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.parseRecordFileConsensusTime;
 import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
-import static com.hedera.services.bdd.spec.utilops.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.TargetNetworkType.STANDALONE_MONO_NETWORK;
+import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -30,8 +35,10 @@ import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.services.bdd.junit.HapiTestEnv;
 import com.hedera.services.bdd.junit.RecordStreamAccess;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.domain.ParsedItem;
 import com.hedera.services.bdd.spec.utilops.domain.RecordSnapshot;
+import com.hedera.services.bdd.spec.utilops.domain.SuiteSnapshots;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -53,6 +60,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -82,9 +90,14 @@ import org.junit.jupiter.api.Assertions;
  */
 // too many parameters, repeated string literals
 @SuppressWarnings({"java:S5960", "java:S1192"})
-public class SnapshotModeOp extends UtilOp {
-    private static final long MIN_GZIP_SIZE_IN_BYTES = 26;
+public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     private static final Logger log = LogManager.getLogger(SnapshotModeOp.class);
+    private static final long MIN_GZIP_SIZE_IN_BYTES = 26;
+    private static final long MAX_NORMAL_FEE_VARIATION_IN_TINYBARS = 1;
+    // For large key structures, there can be "significant" fee variation in tinybar units
+    // due to different public key sizes and signature map prefixes
+    private static final long MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR = 25_000;
+    private static final ObjectMapper om = new ObjectMapper();
 
     private static final Set<String> FIELDS_TO_SKIP_IN_FUZZY_MATCH = Set.of(
             // These time-dependent fields will necessarily vary each test execution
@@ -119,6 +132,8 @@ public class SnapshotModeOp extends UtilOp {
      * The placeholder account number that captures how many entities were in state when the snapshot was taken.
      */
     private long placeholderAccountNum;
+
+    private Instant lowerBoundConsensusStartTime;
     /**
      * The location(s) of the record stream to snapshot or fuzzy-match against. The first location containing
      * records will be used. This was added because the @HapiTest record streams were being written unpredictably,
@@ -132,7 +147,7 @@ public class SnapshotModeOp extends UtilOp {
     /**
      * The full name of the spec that generated the record stream; file name for the JSON snapshot.
      */
-    private String fullSpecName;
+    private SnapshotFileMeta snapshotFileMeta;
     /**
      * The memo to use in the {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoCreate} that
      * generates the placeholder number.
@@ -145,8 +160,8 @@ public class SnapshotModeOp extends UtilOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotToDump = "CryptoTransfer-okToRepeatSerialNumbersInBurnList";
-        final var snapshot = loadSnapshotFor(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotToDump);
+        final var snapshotFileMeta = new SnapshotFileMeta("CryptoTransfer", "okToRepeatSerialNumbersInBurnList");
+        final var snapshot = loadSnapshotFor(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta);
         final var items = snapshot.parsedItems();
         for (int i = 0, n = items.size(); i < n; i++) {
             final var item = items.get(i);
@@ -181,8 +196,9 @@ public class SnapshotModeOp extends UtilOp {
      */
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
-        if (mode.targetNetworkType() == spec.targetNetworkType()) {
-            this.fullSpecName = spec.getSuitePrefix() + "-" + spec.getName();
+        final var isDeterministic = !matchModes.contains(FULLY_NONDETERMINISTIC);
+        if (isDeterministic && mode.targetNetworkType() == spec.targetNetworkType()) {
+            this.snapshotFileMeta = SnapshotFileMeta.from(spec);
             switch (mode) {
                 case TAKE_FROM_MONO_STREAMS -> computePlaceholderNum(
                         monoStreamLocs(), PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, spec);
@@ -198,20 +214,29 @@ public class SnapshotModeOp extends UtilOp {
     }
 
     /**
-     * Returns whether this operation has work to do, i.e., whether it could run against the target network.
+     * Returns the record snapshot for the given spec name, if one exists.
      *
-     * @return if this operation can run against the target network
+     * @param spec the spec to load a snapshot for
+     * @return the snapshot, if one exists
      */
-    public boolean hasWorkToDo() {
-        // We leave the spec name null in submitOp() if we are running against a target network that
-        // doesn't match the SnapshotMode of this operation
-        return fullSpecName != null;
+    static Optional<RecordSnapshot> maybeLoadSnapshotFor(@NonNull final HapiSpec spec) {
+        final var snapshotFileMeta = SnapshotFileMeta.from(spec);
+        final var snapshotLoc = (spec.targetNetworkType() == STANDALONE_MONO_NETWORK)
+                ? PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC
+                : TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC;
+        return suiteSnapshotsFrom(resourceLocOf(snapshotLoc, snapshotFileMeta.suiteName()))
+                .flatMap(
+                        suiteSnapshots -> Optional.ofNullable(suiteSnapshots.getSnapshot(snapshotFileMeta.specName())));
     }
 
-    /**
-     * The special snapshot operation entrypoint, called by the {@link HapiSpec} when it is time to read all
-     * generated record files and either snapshot or fuzzy-match their contents.
-     */
+    @Override
+    public boolean hasWorkToDo() {
+        // We leave the spec name null in submitOp() if we are running against a target network that
+        // doesn't match the SnapshotMode of this operation; or if the HapiSpec is non-deterministic
+        return snapshotFileMeta != null;
+    }
+
+    @Override
     public void finishLifecycle() {
         if (!hasWorkToDo()) {
             return;
@@ -220,8 +245,11 @@ public class SnapshotModeOp extends UtilOp {
             RecordStreamAccess.Data data = RecordStreamAccess.Data.EMPTY_DATA;
             for (final var recordLoc : recordLocs) {
                 try {
-                    data = RECORD_STREAM_ACCESS.readStreamDataFrom(
-                            recordLoc, "sidecar", f -> new File(f).length() > MIN_GZIP_SIZE_IN_BYTES);
+                    data = RECORD_STREAM_ACCESS.readStreamDataFrom(recordLoc, "sidecar", f -> {
+                        final var fileConsTime = parseRecordFileConsensusTime(f);
+                        return fileConsTime.isAfter(lowerBoundConsensusStartTime)
+                                && new File(f).length() > MIN_GZIP_SIZE_IN_BYTES;
+                    });
                 } catch (Exception ignore) {
                     // We will try the next location, if any
                 }
@@ -238,6 +266,10 @@ public class SnapshotModeOp extends UtilOp {
             for (final var item : allItems) {
                 final var parsedItem = ParsedItem.parse(item);
                 final var body = parsedItem.itemBody();
+                if (body.hasNodeStakeUpdate()) {
+                    // We cannot ever expect to match node stake update export sequencing
+                    continue;
+                }
                 if (!placeholderFound) {
                     if (body.getMemo().equals(placeholderMemo)) {
                         final var streamPlaceholderNum = parsedItem
@@ -491,17 +523,29 @@ public class SnapshotModeOp extends UtilOp {
                         + actual.getClass().getSimpleName() + " '" + actual + "' - " + mismatchContext.get());
             }
         } else {
+            final var nonDeterministicTransactionFees = matchModes.contains(NONDETERMINISTIC_TRANSACTION_FEES);
             if ("transactionFee".equals(fieldName)) {
-                // Transaction fees can vary by tiny amounts based on the size of the sig map
+                // Transaction fees can vary by based on the size of the sig map
+                final var maxVariation = nonDeterministicTransactionFees
+                        ? MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR
+                        : MAX_NORMAL_FEE_VARIATION_IN_TINYBARS;
                 Assertions.assertTrue(
-                        Math.abs((long) expected - (long) actual) <= 1,
-                        "Transaction fees '" + expected + "' and '" + actual + "' varied by more than 1 tinybar - "
+                        Math.abs((long) expected - (long) actual) <= maxVariation,
+                        "Transaction fees '" + expected + "' and '" + actual
+                                + "' varied by more than " + maxVariation + " tinybar - "
+                                + mismatchContext.get());
+            } else if ("amount".equals(fieldName) && nonDeterministicTransactionFees) {
+                Assertions.assertTrue(
+                        Math.abs((long) expected - (long) actual) <= MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR,
+                        "Amount '" + expected + "' and '" + actual
+                                + "' varied by more than " + MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR + " tinybar - "
                                 + mismatchContext.get());
             } else {
                 Assertions.assertEquals(
                         expected,
                         actual,
-                        "Mismatched values '" + expected + "' vs '" + actual + "' - " + mismatchContext.get());
+                        "Mismatched values, expected '" + expected + "', got '" + actual + "' - "
+                                + mismatchContext.get());
             }
         }
     }
@@ -551,34 +595,60 @@ public class SnapshotModeOp extends UtilOp {
     }
 
     private void writeSnapshotOf(@NonNull final List<ParsedItem> postPlaceholderItems) throws IOException {
-        final var recordSnapshot = RecordSnapshot.from(placeholderAccountNum, postPlaceholderItems);
-        final var om = new ObjectMapper();
-        final var outputLoc = resourceLocOf(snapshotLoc, fullSpecName);
+        final var outputLoc = resourceLocOf(snapshotLoc, snapshotFileMeta.suiteName());
         log.info("Writing snapshot of {} post-placeholder items to {}", postPlaceholderItems.size(), outputLoc);
+
+        final var suiteSnapshots = suiteSnapshotsFrom(outputLoc).orElseGet(SuiteSnapshots::new);
+        final var specSnapshot = RecordSnapshot.from(placeholderAccountNum, postPlaceholderItems);
+        // Update the snapshot for this spec
+        suiteSnapshots.addSnapshot(snapshotFileMeta.specName(), specSnapshot);
         final var fout = Files.newOutputStream(outputLoc);
-        om.writeValue(fout, recordSnapshot);
+        om.writeValue(fout, suiteSnapshots);
     }
 
-    private static Path resourceLocOf(@NonNull final String snapshotLoc, @NonNull final String specName) {
-        return Paths.get(snapshotLoc, specName + ".json");
+    private static Path resourceLocOf(@NonNull final String snapshotLoc, @NonNull final String suiteName) {
+        return Paths.get(snapshotLoc, suiteName + ".json");
     }
 
     private void prepToFuzzyMatchAgainstLoc(
-            @NonNull final List<String> recordsLocs, @NonNull final String snapshotLoc, @NonNull final HapiSpec spec)
-            throws IOException {
+            @NonNull final List<String> recordsLocs, @NonNull final String snapshotLoc, @NonNull final HapiSpec spec) {
         computePlaceholderNum(recordsLocs, snapshotLoc, spec);
-        snapshotToMatchAgainst = loadSnapshotFor(snapshotLoc, fullSpecName);
+        final var suiteSnapshotsPath = resourceLocOf(snapshotLoc, snapshotFileMeta.suiteName());
+        final var suiteSnapshots = suiteSnapshotsFrom(suiteSnapshotsPath)
+                .orElseThrow(() ->
+                        new IllegalStateException("No snapshots found for suite " + snapshotFileMeta.suiteName()));
+        snapshotToMatchAgainst = requireNonNull(
+                suiteSnapshots.getSnapshot(snapshotFileMeta.specName()),
+                "No snapshot found for spec " + snapshotFileMeta.specName());
         log.info(
                 "Read {} post-placeholder records from snapshot",
                 snapshotToMatchAgainst.getEncodedItems().size());
     }
 
-    private static RecordSnapshot loadSnapshotFor(@NonNull final String snapshotLoc, @NonNull final String specName)
-            throws IOException {
+    /**
+     * Given a path, tries to read a {@link SuiteSnapshots} from it.
+     *
+     * @param p the path to read from
+     * @return the suite snapshots, if any
+     */
+    private static Optional<SuiteSnapshots> suiteSnapshotsFrom(@NonNull final Path p) {
+        final var f = p.toFile();
+        if (f.exists()) {
+            try {
+                return Optional.of(om.readValue(f, SuiteSnapshots.class));
+            } catch (IOException e) {
+                log.warn("Could not read existing snapshots", e);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static RecordSnapshot loadSnapshotFor(
+            @NonNull final String snapshotLoc, @NonNull final SnapshotFileMeta snapshotFileMeta) throws IOException {
         final var om = new ObjectMapper();
-        final var inputLoc = resourceLocOf(snapshotLoc, specName);
+        final var inputLoc = resourceLocOf(snapshotLoc, snapshotFileMeta.suiteName());
         final var fin = Files.newInputStream(inputLoc);
-        log.info("Loading snapshot of {} post-placeholder records from {}", specName, inputLoc);
+        log.info("Loading snapshot of {} post-placeholder records from {}", snapshotFileMeta.specName(), inputLoc);
         return om.reader().readValue(fin, RecordSnapshot.class);
     }
 
@@ -586,11 +656,21 @@ public class SnapshotModeOp extends UtilOp {
             @NonNull final List<String> recordLocs, @NonNull final String snapshotLoc, @NonNull final HapiSpec spec) {
         this.recordLocs = recordLocs;
         this.snapshotLoc = snapshotLoc;
+        // We will get the record's consensus time to set a lower bound on how early we need to
+        // look in the record stream for matching items
+        final var txn = snapshotFileMeta.toString() + Instant.now();
         final var placeholderCreation = cryptoCreate("PLACEHOLDER")
                 .memo(placeholderMemo)
+                .via(txn)
                 .exposingCreatedIdTo(id -> this.placeholderAccountNum = id.getAccountNum())
                 .noLogging();
-        allRunFor(spec, placeholderCreation);
+        final var consTimeLookup = getTxnRecord(txn)
+                .exposingTo(creationRecord ->
+                        // There is no reason to read a record file whose first consensus time
+                        // is more than 2 seconds before we created the placeholder account
+                        this.lowerBoundConsensusStartTime = asInstant(creationRecord.getConsensusTimestamp())
+                                .minusSeconds(2));
+        allRunFor(spec, placeholderCreation, consTimeLookup);
     }
 
     private List<String> monoStreamLocs() {
@@ -610,7 +690,7 @@ public class SnapshotModeOp extends UtilOp {
         if ("contractCallResult".equals(expectedName)) {
             return matchModes.contains(NONDETERMINISTIC_CONTRACT_CALL_RESULTS);
         } else if ("functionParameters".equals(expectedName)) {
-            return matchModes.contains(NONDETERMINISTIC_FUNCTION_PARAMETERS);
+            return matchModes.contains(NONDETERMINISTIC_TRANSACTION_FEES);
         } else {
             return FIELDS_TO_SKIP_IN_FUZZY_MATCH.contains(expectedName);
         }
