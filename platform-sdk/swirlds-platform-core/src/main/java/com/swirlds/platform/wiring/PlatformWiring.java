@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.wiring;
 
+import com.swirlds.base.state.Startable;
+import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.WiringModel;
@@ -30,7 +32,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
  */
-public class PlatformWiring {
+public class PlatformWiring implements Startable, Stoppable {
+
     private final WiringModel model;
 
     private final InternalEventValidatorScheduler internalEventValidatorScheduler;
@@ -123,5 +126,21 @@ public class PlatformWiring {
         linkedEventIntakeScheduler.bind(linkedEventIntake);
 
         // FUTURE WORK: bind all the things!
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void start() {
+        model.start();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void stop() {
+        model.stop();
     }
 }

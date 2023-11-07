@@ -153,10 +153,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     private static Collector<TransferList, ?, TransferList> sortedTransferCollector(
             final BinaryOperator<List<AccountAmount>> reducer) {
         return collectingAndThen(
-                reducing(Collections.emptyList(), TransferList::getAccountAmountsList, reducer), aList -> {
-                    aList.sort(ACCOUNT_AMOUNT_COMPARATOR);
-                    return TransferList.newBuilder().addAllAccountAmounts(aList).build();
-                });
+                reducing(Collections.emptyList(), TransferList::getAccountAmountsList, reducer),
+                aList -> TransferList.newBuilder()
+                        .addAllAccountAmounts(
+                                aList.stream().sorted(ACCOUNT_AMOUNT_COMPARATOR).toList())
+                        .build());
     }
 
     private static final BinaryOperator<List<AccountAmount>> accountMerge = (a, b) -> Stream.of(a, b)
