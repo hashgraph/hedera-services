@@ -35,13 +35,13 @@ import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -95,22 +95,26 @@ class EventDeduplicatorTests {
         return event;
     }
 
+    private static void validateEmittedEvent(
+            @Nullable final GossipEvent event,
+            final long minimumGenerationNonAncient,
+            @NonNull final Set<GossipEvent> emittedEvents) {
+        if (event != null) {
+            assertFalse(event.getGeneration() < minimumGenerationNonAncient, "Ancient events shouldn't be emitted");
+
+            assertTrue(emittedEvents.add(event), "Event was emitted twice");
+        }
+    }
+
     @Test
     @DisplayName("Test standard event deduplicator operation")
     void standardOperation() {
-        final AtomicLong minimumGenerationNonAncient = new AtomicLong(0);
+        long minimumGenerationNonAncient = 0;
         // events that have been emitted from the deduplicator
         final Set<GossipEvent> emittedEvents = new HashSet<>();
 
         // events that have been submitted to the deduplicator
         final List<GossipEvent> submittedEvents = new ArrayList<>();
-
-        final Consumer<GossipEvent> eventConsumer = event -> {
-            assertFalse(
-                    event.getGeneration() < minimumGenerationNonAncient.get(), "Ancient events shouldn't be emitted");
-
-            assertTrue(emittedEvents.add(event), "Event was emitted twice");
-        };
 
         final AtomicLong eventsExitedIntakePipeline = new AtomicLong(0);
         final IntakeEventCounter intakeEventCounter = mock(IntakeEventCounter.class);
@@ -122,7 +126,7 @@ class EventDeduplicatorTests {
                 .eventExitedIntakePipeline(any());
 
         final EventDeduplicator deduplicator =
-                new EventDeduplicator(TestPlatformContextBuilder.create().build(), eventConsumer, intakeEventCounter);
+                new EventDeduplicator(TestPlatformContextBuilder.create().build(), intakeEventCounter);
 
         int duplicateEventCount = 0;
         int ancientEventCount = 0;
@@ -132,9 +136,9 @@ class EventDeduplicatorTests {
                 // submit a brand new event half the time
                 final Hash eventHash = randomHash(random);
                 final NodeId creatorId = new NodeId(random.nextInt(NODE_ID_COUNT));
-                final long eventGeneration = Math.max(0, minimumGenerationNonAncient.get() + random.nextInt(-1, 10));
+                final long eventGeneration = Math.max(0, minimumGenerationNonAncient + random.nextInt(-1, 10));
 
-                if (eventGeneration < minimumGenerationNonAncient.get()) {
+                if (eventGeneration < minimumGenerationNonAncient) {
                     ancientEventCount++;
                 }
 
@@ -144,13 +148,17 @@ class EventDeduplicatorTests {
                         eventGeneration,
                         randomSignature(random).getSignatureBytes());
 
-                deduplicator.handleEvent(newEvent);
+                validateEmittedEvent(deduplicator.handleEvent(newEvent), minimumGenerationNonAncient, emittedEvents);
+
                 submittedEvents.add(newEvent);
             } else if (random.nextBoolean()) {
                 // submit a duplicate event 25% of the time
                 duplicateEventCount++;
 
-                deduplicator.handleEvent(submittedEvents.get(random.nextInt(submittedEvents.size())));
+                validateEmittedEvent(
+                        deduplicator.handleEvent(submittedEvents.get(random.nextInt(submittedEvents.size()))),
+                        minimumGenerationNonAncient,
+                        emittedEvents);
             } else {
                 // submit a duplicate event with a different signature 25% of the time
                 final GossipEvent duplicateEvent = submittedEvents.get(random.nextInt(submittedEvents.size()));
@@ -160,15 +168,19 @@ class EventDeduplicatorTests {
                         duplicateEvent.getDescriptor().getGeneration(),
                         randomSignature(random).getSignatureBytes());
 
-                if (duplicateEvent.getDescriptor().getGeneration() < minimumGenerationNonAncient.get()) {
+                if (duplicateEvent.getDescriptor().getGeneration() < minimumGenerationNonAncient) {
                     ancientEventCount++;
                 }
 
-                deduplicator.handleEvent(eventWithDisparateSignature);
+                validateEmittedEvent(
+                        deduplicator.handleEvent(eventWithDisparateSignature),
+                        minimumGenerationNonAncient,
+                        emittedEvents);
             }
 
             if (random.nextBoolean()) {
-                deduplicator.setMinimumGenerationNonAncient(minimumGenerationNonAncient.addAndGet(1));
+                minimumGenerationNonAncient++;
+                deduplicator.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
             }
         }
 
