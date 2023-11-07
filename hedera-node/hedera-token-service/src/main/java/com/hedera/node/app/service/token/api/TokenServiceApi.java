@@ -141,7 +141,7 @@ public interface TokenServiceApi {
      * Updates the storage metadata for the given contract.
      *
      * @param accountId the id of the contract
-     * @param firstKey       the first key in the storage linked list, empty if the storage is empty
+     * @param firstKey       the first key in the storage linked list, Bytes.EMPTY  if the storage is empty
      * @param netChangeInSlotsUsed      the net change in the number of storage slots used by the contract
      */
     void updateStorageMetadata(@NonNull AccountID accountId, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
