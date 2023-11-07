@@ -16,13 +16,16 @@
 
 package com.hedera.services.bdd.spec.utilops.records;
 
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.parseRecordFileConsensusTime;
 import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.TargetNetworkType.STANDALONE_MONO_NETWORK;
+import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -126,6 +129,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * The placeholder account number that captures how many entities were in state when the snapshot was taken.
      */
     private long placeholderAccountNum;
+
+    private Instant lowerBoundConsensusStartTime;
     /**
      * The location(s) of the record stream to snapshot or fuzzy-match against. The first location containing
      * records will be used. This was added because the @HapiTest record streams were being written unpredictably,
@@ -248,8 +253,11 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             RecordStreamAccess.Data data = RecordStreamAccess.Data.EMPTY_DATA;
             for (final var recordLoc : recordLocs) {
                 try {
-                    data = RECORD_STREAM_ACCESS.readStreamDataFrom(
-                            recordLoc, "sidecar", f -> new File(f).length() > MIN_GZIP_SIZE_IN_BYTES);
+                    data = RECORD_STREAM_ACCESS.readStreamDataFrom(recordLoc, "sidecar", f -> {
+                        final var fileConsTime = parseRecordFileConsensusTime(f);
+                        return fileConsTime.isAfter(lowerBoundConsensusStartTime)
+                                && new File(f).length() > MIN_GZIP_SIZE_IN_BYTES;
+                    });
                 } catch (Exception ignore) {
                     // We will try the next location, if any
                 }
@@ -630,11 +638,21 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             @NonNull final List<String> recordLocs, @NonNull final String snapshotLoc, @NonNull final HapiSpec spec) {
         this.recordLocs = recordLocs;
         this.snapshotLoc = snapshotLoc;
+        // We will get the record's consensus time to set a lower bound on how early we need to
+        // look in the record stream for matching items
+        final var txn = fullSpecName + Instant.now();
         final var placeholderCreation = cryptoCreate("PLACEHOLDER")
                 .memo(placeholderMemo)
+                .via(txn)
                 .exposingCreatedIdTo(id -> this.placeholderAccountNum = id.getAccountNum())
                 .noLogging();
-        allRunFor(spec, placeholderCreation);
+        final var consTimeLookup = getTxnRecord(txn)
+                .exposingTo(creationRecord ->
+                        // There is no reason to read a record file whose first consensus time
+                        // is more than 2 seconds before we created the placeholder account
+                        this.lowerBoundConsensusStartTime = asInstant(creationRecord.getConsensusTimestamp())
+                                .minusSeconds(2));
+        allRunFor(spec, placeholderCreation, consTimeLookup);
     }
 
     private List<String> monoStreamLocs() {

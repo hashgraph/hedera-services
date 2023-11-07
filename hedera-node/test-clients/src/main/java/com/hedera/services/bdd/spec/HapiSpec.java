@@ -866,7 +866,8 @@ public class HapiSpec implements Runnable {
         return (String... props) -> internalDefaultHapiSpec(name, true, Arrays.asList(props));
     }
 
-    public static Def.Given onlyDefaultHapiSpec(final String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
+    public static Def.Given onlyDefaultHapiSpec(
+            final String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         return internalDefaultHapiSpec(name, true, Collections.emptyList());
     }
 

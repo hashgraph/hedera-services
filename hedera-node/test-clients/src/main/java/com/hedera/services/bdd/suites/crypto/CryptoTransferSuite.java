@@ -2018,7 +2018,9 @@ public class CryptoTransferSuite extends HapiSuite {
         final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
         final var RECEIVER_SIGNATURE = "receiverSignature";
         final var SPENDER_SIGNATURE = "spenderSignature";
-        return defaultHapiSpec("hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec(
+                        "hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance",
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(RECEIVER_SIGNATURE),
                         newKeyNamed(SPENDER_SIGNATURE),
