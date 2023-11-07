@@ -358,6 +358,7 @@ public class CreatePrecompileSuite extends HapiSuite {
     }
 
     // TEST-018
+    @HapiTest
     private HapiSpec createTokenWithInsufficientValueSent() {
         return defaultHapiSpec("createTokenWithInsufficientValueSent")
                 .given(

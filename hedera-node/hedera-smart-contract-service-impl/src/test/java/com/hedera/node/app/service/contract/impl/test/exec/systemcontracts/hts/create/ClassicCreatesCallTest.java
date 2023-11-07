@@ -41,6 +41,8 @@ import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.H
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -59,6 +61,11 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
 
     @Mock
     private CryptoCreateRecordBuilder recordBuilder;
+
+    @Mock
+    private BlockValues blockValues;
+
+    private Wei value = Wei.MAX_WEI;
 
     private static final TransactionBody PRETEND_CREATE_TOKEN = TransactionBody.newBuilder()
             .tokenCreation(TokenCreateTransactionBody.newBuilder()
@@ -268,7 +275,9 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
                 PRETEND_CREATE_TOKEN,
                 verificationStrategy,
                 FRAME_SENDER_ADDRESS,
-                addressIdConverter);
+                addressIdConverter,
+                blockValues,
+                value);
 
         given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID);

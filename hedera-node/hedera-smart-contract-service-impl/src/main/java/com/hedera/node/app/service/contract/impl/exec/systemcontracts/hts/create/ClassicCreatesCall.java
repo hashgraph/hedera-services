@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
@@ -43,6 +44,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.BlockValues;
 
 public class ClassicCreatesCall extends AbstractHtsCall {
     /**
@@ -57,18 +60,28 @@ public class ClassicCreatesCall extends AbstractHtsCall {
     private final VerificationStrategy verificationStrategy;
     private final org.hyperledger.besu.datatypes.Address spender;
 
+    @NonNull
+    private final BlockValues blockValues;
+
+    @NonNull
+    private final Wei value;
+
     public ClassicCreatesCall(
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final TransactionBody syntheticCreate,
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final org.hyperledger.besu.datatypes.Address spender,
-            @NonNull final AddressIdConverter addressIdConverter) {
+            @NonNull final AddressIdConverter addressIdConverter,
+            @NonNull final BlockValues blockValues,
+            @NonNull final Wei value) {
         super(systemContractGasCalculator, enhancement);
         this.syntheticCreate = requireNonNull(syntheticCreate);
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.spender = requireNonNull(spender);
         this.addressIdConverter = requireNonNull(addressIdConverter);
+        this.blockValues = blockValues;
+        this.value = value;
     }
 
     @Override
@@ -87,8 +100,13 @@ public class ClassicCreatesCall extends AbstractHtsCall {
         if (token.autoRenewAccount() == null) {
             return externalizeUnsuccessfulResult(INVALID_EXPIRATION_TIME, gasCalculator.viewGasRequirement());
         }
-
         final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
+
+        final long gasRequirement = gasCalculator.gasRequirement(syntheticCreate, spenderId, MINIMUM_TINYBAR_PRICE);
+        if (!value.greaterOrEqualThan(Wei.of(gasRequirement))) {
+            return externalizeUnsuccessfulResult(INSUFFICIENT_TX_FEE, gasCalculator.viewGasRequirement());
+        }
+
         final var recordBuilder = systemContractOperations()
                 .dispatch(syntheticCreate, verificationStrategy, spenderId, CryptoCreateRecordBuilder.class);
         final var customFees =
@@ -118,7 +136,6 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                         .getOutputs()
                         .encodeElements(BigInteger.valueOf(ResponseCodeEnum.SUCCESS.protoOrdinal()));
             }
-            final long gasRequirement = gasCalculator.gasRequirement(syntheticCreate, spenderId, MINIMUM_TINYBAR_PRICE);
             return gasOnly(successResult(encodedOutput, gasRequirement));
         }
     }
