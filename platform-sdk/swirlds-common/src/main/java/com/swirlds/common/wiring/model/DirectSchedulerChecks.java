@@ -33,7 +33,28 @@ public final class DirectSchedulerChecks {
     //   into a direct scheduler, as long as they all originate from the same scheduler and it is non-concurrent
 
     /**
-     * Check for illegal direct scheduler use.
+     * Check for illegal direct scheduler use. Rules are as follows:
+     *
+     * <ul>
+     * <li>
+     * Calling a into a component with type {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT DIRECT}
+     * from a component with {@link com.swirlds.common.wiring.builders.TaskSchedulerType#CONCURRENT CONCURRENT} is not
+     * allowed.
+     * </li>
+     * <li>
+     * Calling into a component with type {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT DIRECT}
+     * from more than one component with type
+     * {@link com.swirlds.common.wiring.builders.TaskSchedulerType#SEQUENTIAL SEQUENTIAL} or type
+     * {@link com.swirlds.common.wiring.builders.TaskSchedulerType#SEQUENTIAL_THREAD SEQUENTIAL_THREAD} is not allowed.
+     * </li>
+     * <li>
+     * When calling into a component A with type
+     * {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT DIRECT} from component B with type
+     * {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT DIRECT} or type
+     * {@link com.swirlds.common.wiring.builders.TaskSchedulerType#DIRECT_STATELESS DIRECT_STATELESS} counts as a call
+     * into B from all components calling into component A.
+     * </li>
+     * </ul>
      *
      * @param vertices the vertices in the wiring model
      * @return true if there is illegal direct scheduler use

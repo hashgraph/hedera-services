@@ -38,7 +38,7 @@ public class WireListSplitter<T> implements Consumer<List<T>> {
      * @param name  the name of the output channel
      */
     public WireListSplitter(@NonNull final WiringModel model, @NonNull final String name) {
-        model.registerVertex(name, TaskSchedulerType.DIRECT, true);
+        model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
         outputWire = new OutputWire<>(model, name);
     }
 

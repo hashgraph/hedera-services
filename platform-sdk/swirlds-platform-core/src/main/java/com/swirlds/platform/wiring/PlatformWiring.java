@@ -44,6 +44,7 @@ public class PlatformWiring implements Startable, Stoppable {
     private final LinkedEventIntakeScheduler linkedEventIntakeScheduler;
 
     private final boolean cyclicalBackpressurePresent;
+    private final boolean illegalDirectSchedulerUsagePresent;
 
     /**
      * Constructor.
@@ -66,6 +67,10 @@ public class PlatformWiring implements Startable, Stoppable {
         // Logs if there is cyclical back pressure.
         // Do not throw -- in theory we might survive this, so no need to crash.
         cyclicalBackpressurePresent = model.checkForCyclicalBackpressure();
+
+        // Logs if there is illegal direct scheduler usage.
+        // Do not throw -- in theory we might survive this, so no need to crash.
+        illegalDirectSchedulerUsagePresent = model.checkForIllegalDirectSchedulerUsage();
     }
 
     /**
@@ -85,6 +90,10 @@ public class PlatformWiring implements Startable, Stoppable {
      */
     public boolean isCyclicalBackpressurePresent() {
         return cyclicalBackpressurePresent;
+    }
+
+    public boolean isIllegalDirectSchedulerUsagePresent() {
+        return illegalDirectSchedulerUsagePresent;
     }
 
     /**

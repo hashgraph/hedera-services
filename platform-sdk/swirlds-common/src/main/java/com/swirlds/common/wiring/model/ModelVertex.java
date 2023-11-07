@@ -54,9 +54,7 @@ public class ModelVertex implements Iterable<ModelEdge>, Comparable<ModelVertex>
      * Constructor.
      *
      * @param name                the name of the vertex
-     * @param type                the type of task scheduler that corresponds to this vertex. If this vertex does not
-     *                            correspond to a task scheduler (e.g. a transformer or a filter), then this should be
-     *                            {@link TaskSchedulerType#DIRECT};
+     * @param type                the type of task scheduler that corresponds to this vertex
      * @param insertionIsBlocking true if the insertion of this vertex may block until capacity is available
      */
     public ModelVertex(

@@ -152,9 +152,7 @@ public abstract class WiringModel implements Startable, Stoppable {
      * many input types.
      *
      * @param vertexName          the name of the vertex
-     * @param type                the type of task scheduler that corresponds to this vertex. If this vertex represents
-     *                            something like a transformer or a filter, it should use the type
-     *                            {@link TaskSchedulerType#DIRECT}.
+     * @param type                the type of task scheduler that corresponds to this vertex.
      * @param insertionIsBlocking if true then insertion may block until capacity is available
      */
     public abstract void registerVertex(

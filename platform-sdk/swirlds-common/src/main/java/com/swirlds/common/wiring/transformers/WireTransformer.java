@@ -47,7 +47,7 @@ public class WireTransformer<A, B> implements Consumer<A> {
      */
     public WireTransformer(
             @NonNull final WiringModel model, @NonNull final String name, @NonNull final Function<A, B> transformer) {
-        model.registerVertex(name, TaskSchedulerType.DIRECT, true);
+        model.registerVertex(name, TaskSchedulerType.DIRECT_STATELESS, true);
         this.transformer = Objects.requireNonNull(transformer);
         outputWire = new OutputWire<>(model, name);
     }
