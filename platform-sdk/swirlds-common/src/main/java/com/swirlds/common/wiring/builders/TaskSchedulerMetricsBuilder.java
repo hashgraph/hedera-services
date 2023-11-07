@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring;
+package com.swirlds.common.wiring.builders;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.FunctionGauge;
@@ -22,6 +22,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
 import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
+import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -44,7 +45,7 @@ public class TaskSchedulerMetricsBuilder {
      * @param metrics the metrics object to configure
      * @param time    the time object to use for metrics
      */
-    TaskSchedulerMetricsBuilder(@NonNull final Metrics metrics, @NonNull final Time time) {
+    public TaskSchedulerMetricsBuilder(@NonNull final Metrics metrics, @NonNull final Time time) {
         this.metrics = Objects.requireNonNull(metrics);
         this.time = Objects.requireNonNull(time);
     }

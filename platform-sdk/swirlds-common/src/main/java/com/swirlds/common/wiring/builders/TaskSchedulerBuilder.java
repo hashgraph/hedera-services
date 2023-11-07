@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring;
+package com.swirlds.common.wiring.builders;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.metrics.extensions.NoOpFractionalTimer;
+import com.swirlds.common.wiring.TaskScheduler;
+import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.MultiObjectCounter;
 import com.swirlds.common.wiring.counters.NoOpObjectCounter;
@@ -69,7 +71,7 @@ public class TaskSchedulerBuilder<O> {
      * @param name the name of the task scheduler. Used for metrics and debugging. Must be unique. Must only contain
      *             alphanumeric characters and underscores.
      */
-    TaskSchedulerBuilder(@NonNull final WiringModel model, @NonNull final String name) {
+    public TaskSchedulerBuilder(@NonNull final WiringModel model, @NonNull final String name) {
         this.model = Objects.requireNonNull(model);
 
         // The reason why wire names have a restricted character set is because downstream consumers of metrics
