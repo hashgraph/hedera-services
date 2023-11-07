@@ -36,9 +36,10 @@ public class HapiTestEnv {
     private final List<HapiTestNode> nodes = new ArrayList<>();
     private final List<String> nodeHosts = new ArrayList<>();
     private boolean started = false;
+    public static final int CLUSTER_SIZE = 4;
 
     public HapiTestEnv(@NonNull final String testName, final boolean cluster, final boolean useInProcessAlice) {
-        final var numNodes = cluster ? 4 : 1;
+        final var numNodes = cluster ? CLUSTER_SIZE : 1;
         try {
             final var sb = new StringBuilder();
             sb.append("swirld, ")

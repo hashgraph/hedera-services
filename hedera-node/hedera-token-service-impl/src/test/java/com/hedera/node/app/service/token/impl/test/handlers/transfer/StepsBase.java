@@ -209,15 +209,15 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     }
 
     protected void givenAutoCreationDispatchEffects(AccountID syntheticPayer) {
-        given(handleContext.dispatchRemovableChildTransaction(
+        given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(syntheticPayer)))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .alias(ecEvmAlias.value())
+                            .alias(ecKeyAlias.value())
                             .accountId(AccountID.newBuilder().accountNum(hbarReceiver))
                             .build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecEvmAlias, asAccount(hbarReceiver));
+                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
