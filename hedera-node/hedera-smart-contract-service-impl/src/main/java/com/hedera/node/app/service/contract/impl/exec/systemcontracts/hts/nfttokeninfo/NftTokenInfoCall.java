@@ -89,7 +89,8 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
             return revertResult(status, gasCalculator.viewGasRequirement());
         }
 
-        final var ownerAccount = getOwnerAccount(nft, token);
+        final var nonNullNft = nft != null ? nft : Nft.DEFAULT;
+        final var ownerAccount = getOwnerAccount(nonNullNft, token);
         if (ownerAccount == null) {
             return revertResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement());
         }
@@ -98,12 +99,11 @@ public class NftTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
                         .getOutputs()
                         .encodeElements(
                                 status.protoOrdinal(),
-                                nftTokenInfoTupleFor(token, nft, serialNumber, ledgerId, ownerAccount)),
+                                nftTokenInfoTupleFor(token, nonNullNft, serialNumber, ledgerId, ownerAccount)),
                 gasRequirement);
     }
 
-    private Account getOwnerAccount(@NonNull Nft nft, Token token) {
-        requireNonNull(nft);
+    private Account getOwnerAccount(Nft nft, Token token) {
         final var explicitId = nft.ownerIdOrElse(AccountID.DEFAULT);
         if (explicitId.account().kind() == AccountID.AccountOneOfType.UNSET) {
             return null;
