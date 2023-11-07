@@ -26,6 +26,7 @@ import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Objects;
@@ -101,6 +102,7 @@ public class EventDeduplicator {
      * @param event the event to handle
      * @return the event if it is not a duplicate, or null if it is a duplicate
      */
+    @Nullable
     public GossipEvent handleEvent(@NonNull final GossipEvent event) {
         if (event.getGeneration() < minimumGenerationNonAncient) {
             // Ancient events can be safely ignored.

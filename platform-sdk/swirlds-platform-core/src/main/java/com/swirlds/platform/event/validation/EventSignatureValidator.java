@@ -220,6 +220,7 @@ public class EventSignatureValidator {
      * @param event the event to verify the signature of
      * @return the event if the signature is valid, otherwise null
      */
+    @Nullable
     public GossipEvent validateSignature(@NonNull final GossipEvent event) {
         if (event.getGeneration() < minimumGenerationNonAncient) {
             // ancient events can be safely ignored
