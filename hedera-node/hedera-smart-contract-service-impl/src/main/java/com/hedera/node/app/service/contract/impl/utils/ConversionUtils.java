@@ -17,10 +17,10 @@
 package com.hedera.node.app.service.contract.impl.utils;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.NON_CANONICAL_REFERENCE_NUMBER;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.util.Objects.requireNonNull;
@@ -672,15 +672,18 @@ public class ConversionUtils {
                     explicit[18],
                     explicit[19]);
         } else {
-            final var alias = com.hedera.pbj.runtime.io.buffer.Bytes.wrap(explicit);
-            return nativeOperations.resolveAlias(alias);
+            final var evmAddress = extractEvmAddress(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(explicit));
+            return evmAddress == null
+                    ? HederaNativeOperations.MISSING_ENTITY_NUMBER
+                    : nativeOperations.resolveAlias(evmAddress);
         }
     }
 
     private static byte[] explicitAddressOf(@NonNull final Account account) {
         requireNonNull(account);
-        return account.alias().length() == EVM_ADDRESS_SIZE
-                ? account.alias().toByteArray()
+        final var evmAddress = extractEvmAddress(account.alias());
+        return evmAddress != null
+                ? evmAddress.toByteArray()
                 : asEvmAddress(account.accountIdOrThrow().accountNumOrThrow());
     }
 

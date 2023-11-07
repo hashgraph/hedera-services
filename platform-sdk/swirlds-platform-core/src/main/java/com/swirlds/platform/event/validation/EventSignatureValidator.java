@@ -228,7 +228,7 @@ public class EventSignatureValidator {
      *
      * @param event the event to verify the signature of
      */
-    public void handleEvent(@NonNull final GossipEvent event) {
+    public void validateEventSignature(@NonNull final GossipEvent event) {
         if (event.getGeneration() < minimumGenerationNonAncient) {
             // ancient events can be safely ignored
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());

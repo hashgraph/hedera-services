@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -83,6 +84,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -431,47 +433,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
-    @NonNull
-    public <T> T dispatchPrecedingTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayer) {
-        requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        requireNonNull(callback, "callback must not be null");
-
-        if (category != TransactionCategory.USER) {
-            throw new IllegalArgumentException("Only user-transactions can dispatch preceding transactions");
-        }
-        if (stack.depth() > 1) {
-            throw new IllegalStateException(
-                    "Cannot dispatch a preceding transaction when a savepoint has been created");
-        }
-
-        if (current().isModified()) {
-            throw new IllegalStateException("Cannot dispatch a preceding transaction when the state has been modified");
-        }
-
-        // run the transaction
-        final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration());
-        dispatchSyntheticTxn(syntheticPayer, txBody, PRECEDING, precedingRecordBuilder, callback);
-
-        return castRecordBuilder(precedingRecordBuilder, recordBuilderClass);
-    }
-
-    @NonNull
-    @Override
-    public <T> T dispatchChildTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayerId) {
-        final var childRecordBuilder = recordListBuilder.addChild(configuration());
-        return doDispatchChildTransaction(syntheticPayerId, txBody, childRecordBuilder, recordBuilderClass, callback);
-    }
-
-    @Override
     public @NonNull Fees dispatchComputeFees(
             @NonNull final TransactionBody txBody, @NonNull final AccountID syntheticPayerId) {
         var bodyToDispatch = txBody;
@@ -489,6 +450,98 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 new ChildFeeContextImpl(feeManager, this, bodyToDispatch, syntheticPayerId));
     }
 
+    @Override
+    @NonNull
+    public <T> T dispatchPrecedingTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayerId) {
+        final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
+                () -> recordListBuilder.addPreceding(configuration(), LIMITED_CHILD_RECORDS);
+        final var result = doDispatchPrecedingTransaction(
+                syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
+
+        // a preceding transaction must be committed immediately
+        stack.commitFullStack();
+        stack.createSavepoint();
+
+        return result;
+    }
+
+    @Override
+    @NonNull
+    public <T> T dispatchReversiblePrecedingTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayerId) {
+        final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
+                () -> recordListBuilder.addReversiblePreceding(configuration());
+        return doDispatchPrecedingTransaction(
+                syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
+    }
+
+    @Override
+    @NonNull
+    public <T> T dispatchRemovablePrecedingTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayerId) {
+        final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
+                () -> recordListBuilder.addRemovablePreceding(configuration());
+        return doDispatchPrecedingTransaction(
+                syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
+    }
+
+    @NonNull
+    public <T> T doDispatchPrecedingTransaction(
+            @NonNull final AccountID syntheticPayer,
+            @NonNull final TransactionBody txBody,
+            @NonNull final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback) {
+        requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
+        requireNonNull(callback, "callback must not be null");
+
+        if (category != TransactionCategory.USER) {
+            throw new IllegalArgumentException("Only user-transactions can dispatch preceding transactions");
+        }
+
+        if (stack.depth() > 1) {
+            throw new IllegalStateException(
+                    "Cannot dispatch a preceding transaction when a savepoint has been created");
+        }
+
+        // This condition fails, because for auto-account creation we charge fees, before dispatching the transaction,
+        // and the state will be modified.
+
+        //         if (current().isModified()) {
+        //                    throw new IllegalStateException("Cannot dispatch a preceding transaction when the state
+        // has been modified");
+        //         }
+
+        // run the transaction
+        final var precedingRecordBuilder = recordBuilderFactory.get();
+        dispatchSyntheticTxn(syntheticPayer, txBody, PRECEDING, precedingRecordBuilder, callback);
+
+        return castRecordBuilder(precedingRecordBuilder, recordBuilderClass);
+    }
+
+    @NonNull
+    @Override
+    public <T> T dispatchChildTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayerId) {
+        final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
+                () -> recordListBuilder.addChild(configuration());
+        return doDispatchChildTransaction(syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
+    }
+
     @NonNull
     @Override
     public <T> T dispatchRemovableChildTransaction(
@@ -496,15 +549,16 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final Class<T> recordBuilderClass,
             @NonNull final Predicate<Key> callback,
             @NonNull final AccountID syntheticPayerId) {
-        final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
-        return doDispatchChildTransaction(syntheticPayerId, txBody, childRecordBuilder, recordBuilderClass, callback);
+        final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
+                () -> recordListBuilder.addRemovableChild(configuration());
+        return doDispatchChildTransaction(syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
     }
 
     @NonNull
     private <T> T doDispatchChildTransaction(
             @NonNull final AccountID syntheticPayer,
             @NonNull final TransactionBody txBody,
-            @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
+            @NonNull final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory,
             @NonNull final Class<T> recordBuilderClass,
             @NonNull final Predicate<Key> callback) {
         requireNonNull(txBody, "txBody must not be null");
@@ -516,6 +570,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         // run the child-transaction
+        final var childRecordBuilder = recordBuilderFactory.get();
         dispatchSyntheticTxn(syntheticPayer, txBody, CHILD, childRecordBuilder, callback);
 
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
@@ -607,7 +662,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             childStack.commitFullStack();
         } catch (HandleException e) {
             childRecordBuilder.status(e.getStatus());
-            recordListBuilder.revertChildrenOf(childRecordBuilder);
+            recordListBuilder.revertChildrenOf(recordBuilder);
         }
     }
 
@@ -621,7 +676,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     @NonNull
     public <T> T addPrecedingChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration());
+        final var result = recordListBuilder.addPreceding(configuration(), LIMITED_CHILD_RECORDS);
         return castRecordBuilder(result, recordBuilderClass);
     }
 
@@ -641,5 +696,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     @Override
     public void revertChildRecords() {
         recordListBuilder.revertChildrenOf(recordBuilder);
+    }
+
+    public enum PrecedingTransactionCategory {
+        UNLIMITED_CHILD_RECORDS,
+        LIMITED_CHILD_RECORDS
     }
 }
