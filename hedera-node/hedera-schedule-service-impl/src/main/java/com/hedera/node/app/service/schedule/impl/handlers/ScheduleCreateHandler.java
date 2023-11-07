@@ -138,6 +138,14 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                     currentTransaction, currentConsensusTime, schedulingConfig.maxExpirationFutureSeconds());
             checkSchedulableWhitelistHandle(provisionalSchedule, schedulingConfig);
             context.attributeValidator().validateMemo(provisionalSchedule.memo());
+            if(provisionalSchedule.hasAdminKey()){
+                try{
+                    context.attributeValidator().validateKey(provisionalSchedule.adminKeyOrThrow());
+                }
+                catch (HandleException e){
+                    throw new HandleException(ResponseCodeEnum.INVALID_ADMIN_KEY);
+                }
+            }
             final ResponseCodeEnum validationResult =
                     validate(provisionalSchedule, currentConsensusTime, isLongTermEnabled);
             if (validationOk(validationResult)) {
@@ -296,10 +304,6 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final DataOneOfType transactionType =
                 scheduleCreate.scheduledTransactionBody().data().kind();
         final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
-        // @todo('9447') this is a hack to match mono and should be removed once differential test has been completed.
-        if(functionType == HederaFunctionality.NONE){
-            throw new PreCheckException(ResponseCodeEnum.BUSY);
-        }
         if (!whitelist.contains(functionType)) {
             throw new PreCheckException(ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         }
