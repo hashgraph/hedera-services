@@ -25,7 +25,9 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 
 public class ParityTestBase {
@@ -34,6 +36,7 @@ public class ParityTestBase {
     protected ReadableTokenStore readableTokenStore;
     protected WritableTokenRelationStore writableTokenRelStore;
     protected TokenID token = TokenID.newBuilder().tokenNum(1).build();
+    protected Configuration configuration;
 
     @BeforeEach
     public void setUp() {
@@ -41,6 +44,7 @@ public class ParityTestBase {
         writableAccountStore = SigReqAdapterUtils.wellKnownWritableAccountStoreAt();
         readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
         writableTokenRelStore = SigReqAdapterUtils.wellKnownTokenRelStoreAt();
+        configuration = HederaTestConfigBuilder.createConfig();
     }
 
     protected TransactionBody txnFrom(final TxnHandlingScenario scenario) {
