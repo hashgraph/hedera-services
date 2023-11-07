@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.fees;
 
+import static java.util.Collections.emptyList;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -37,7 +39,6 @@ import java.time.Instant;
  * {@link com.hedera.node.app.workflows.handle.HandleContextImpl}, which also implements{@link FeeContext}
  */
 public class FeeContextImpl implements FeeContext {
-
     private final Instant consensusTime;
     private final TransactionInfo txInfo;
     private final Key payerKey;
@@ -95,8 +96,9 @@ public class FeeContextImpl implements FeeContext {
     @NonNull
     @Override
     public FeeCalculator feeCalculator(@NonNull SubType subType) {
-        // FUTURE: Do we want to extract the exact number of verifications?
-        final var numVerifications = 1;
+        // For mono-service compatibility, we treat the sig map size as the number of verifications
+        final var numVerifications =
+                txInfo.signatureMap().sigPairOrElse(emptyList()).size();
         final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(txInfo.signatureMap());
         return feeManager.createFeeCalculator(
                 txInfo.txBody(),
@@ -105,7 +107,8 @@ public class FeeContextImpl implements FeeContext {
                 numVerifications,
                 signatureMapSize,
                 consensusTime,
-                subType);
+                subType,
+                false);
     }
 
     @NonNull

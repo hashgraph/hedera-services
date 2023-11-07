@@ -213,7 +213,7 @@ public final class IngestChecker {
 
             // Verify the signatures
             final var results = signatureVerifier.verify(txInfo.signedBytes(), expandedSigs);
-            final var verifier = new DefaultKeyVerifier(hederaConfig, results);
+            final var verifier = new DefaultKeyVerifier(sigPairs.size(), hederaConfig, results);
             final var payerKeyVerification = verifier.verificationFor(payerKey);
 
             // This can happen if the signature map was missing a signature for the payer account.

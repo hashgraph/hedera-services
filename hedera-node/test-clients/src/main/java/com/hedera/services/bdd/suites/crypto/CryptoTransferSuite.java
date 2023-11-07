@@ -84,7 +84,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -286,7 +285,6 @@ public class CryptoTransferSuite extends HapiSuite {
     private HapiSpec okToRepeatSerialNumbersInBurnList() {
         return defaultHapiSpec("okToRepeatSerialNumbersInBurnList")
                 .given(
-                        snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS),
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(WIPE_KEY),
                         cryptoCreate(TREASURY),
