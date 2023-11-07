@@ -59,6 +59,11 @@ public interface HederaEvmOperationsUtilV038 {
             if (systemAccountDetector.test(address)) {
                 return systemAccountExecutionSupplier.get();
             }
+            if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
+                return new Operation.OperationResult(
+                        supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
+            }
+
             return supplierExecution.get();
         } catch (final UnderflowException ufe) {
             return new Operation.OperationResult(

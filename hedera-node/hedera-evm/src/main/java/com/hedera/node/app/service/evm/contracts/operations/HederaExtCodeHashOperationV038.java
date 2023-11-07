@@ -58,6 +58,9 @@ public class HederaExtCodeHashOperationV038 extends ExtCodeHashOperation {
                 frame.pushStackItem(UInt256.ZERO);
                 return new OperationResult(cost(true), null);
             }
+            if (!addressValidator.test(address, frame)) {
+                return new OperationResult(cost(true), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
+            }
             final var account = frame.getWorldUpdater().get(address);
             boolean accountIsWarm =
                     frame.warmUpAddress(address) || this.gasCalculator().isPrecompile(address);
