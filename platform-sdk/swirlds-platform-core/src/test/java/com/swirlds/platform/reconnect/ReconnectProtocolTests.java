@@ -71,6 +71,7 @@ class ReconnectProtocolTests {
      * Status getter that always returns ACTIVE
      */
     private PlatformStatusGetter activeStatusGetter;
+
     private ReconnectController reconnectController;
 
     private static Stream<Arguments> initiateParams() {
