@@ -81,7 +81,7 @@ public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
     private @NonNull FullResult fullResultsFor(
             @NonNull final ResponseCodeEnum status, final long gasRequirement, @NonNull final Key key) {
         // @Future remove to revert #9069 after modularization is completed
-        if ((isStaticCall && status != SUCCESS) || status == INVALID_TOKEN_ID || status == KEY_NOT_PROVIDED) {
+        if (isStaticCall && status != SUCCESS) {
             return revertResult(status, 0);
         }
         return successResult(
