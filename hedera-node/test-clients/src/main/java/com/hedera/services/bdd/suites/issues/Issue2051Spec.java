@@ -73,6 +73,15 @@ public class Issue2051Spec extends HapiSuite {
                         getTxnRecord("selfFinanced").logged());
     }
 
+    /**
+     * Fails with:
+     * HapiSpecOperation - 'TransferAccountCannotBeDeleted' - HapiGetAccountBalance{sigs=0, node=0.0.3, account=payer} failed - Bad balance! :: Expected balance change from 'snapshot' to be <-9384399 +/- 1000>, was <-6872159>!!
+     * The balance is different when running the test against the mono-service and against the modularized version,
+     * because the network fee is different. Part of the formula for calculating the network fee is:
+     * final long verificationFee = componentCoefficients.getVpt() * componentMetrics.getVpt();
+     * In mono-service componentMetrics.getVpt() is 3
+     * In modularization componentMetrics.getVpt() is 2
+     */
     private HapiSpec transferAccountCannotBeDeleted() {
         return defaultHapiSpec("TransferAccountCannotBeDeleted")
                 .given(cryptoCreate(PAYER), cryptoCreate(TRANSFER), cryptoCreate("tbd"))
@@ -88,6 +97,7 @@ public class Issue2051Spec extends HapiSuite {
                         getAccountBalance(PAYER).hasTinyBars(approxChangeFromSnapshot(SNAPSHOT, -9384399, 1000)));
     }
 
+    @HapiTest
     private HapiSpec transferAccountCannotBeDeletedForContractTarget() {
         return defaultHapiSpec("TransferAccountCannotBeDeletedForContractTarget")
                 .given(
