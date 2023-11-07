@@ -45,6 +45,7 @@ public class HeartbeatScheduler implements Startable, Stoppable {
      * Constructor.
      *
      * @param model the wiring model containing this heartbeat scheduler
+     * @param time  provides wall clock time
      * @param name  the name of the heartbeat scheduler
      */
     public HeartbeatScheduler(@NonNull final WiringModel model, @NonNull final Time time, @NonNull final String name) {
