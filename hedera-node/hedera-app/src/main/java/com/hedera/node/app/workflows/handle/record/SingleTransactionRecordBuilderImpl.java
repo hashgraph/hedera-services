@@ -57,6 +57,7 @@ import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
@@ -115,7 +116,8 @@ public class SingleTransactionRecordBuilderImpl
                 NodeStakeUpdateRecordBuilder,
                 FeeRecordBuilder,
                 ContractDeleteRecordBuilder,
-                GenesisAccountRecordBuilder {
+                GenesisAccountRecordBuilder,
+                TokenAccountWipeRecordBuilder {
 
     // base transaction data
     private Transaction transaction;

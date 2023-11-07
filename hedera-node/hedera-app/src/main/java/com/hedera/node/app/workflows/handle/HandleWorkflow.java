@@ -398,17 +398,18 @@ public class HandleWorkflow {
                     networkUtilizationManager.trackFeePayments(payer, consensusNow, stack);
                 }
                 recordBuilder.status(validationResult.responseCodeEnum());
-
                 try {
-                    if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
-                        feeAccumulator.chargeNetworkFee(creator.accountId(), fees.networkFee());
-                    } else if (validationResult.status() == PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE) {
-                        // We do not charge partial service fees; if the payer is unwilling or unable to cover
-                        // the entire service fee, then we only charge network and node fees (prioritizing
-                        // the network fee in case of a very low payer balance)
-                        feeAccumulator.chargeFees(payer, creator.accountId(), fees.withoutServiceComponent());
-                    } else {
-                        feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                    if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)) {
+                        if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
+                            feeAccumulator.chargeNetworkFee(creator.accountId(), fees.networkFee());
+                        } else if (validationResult.status() == PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE) {
+                            // We do not charge partial service fees; if the payer is unwilling or unable to cover
+                            // the entire service fee, then we only charge network and node fees (prioritizing
+                            // the network fee in case of a very low payer balance)
+                            feeAccumulator.chargeFees(payer, creator.accountId(), fees.withoutServiceComponent());
+                        } else {
+                            feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                        }
                     }
                 } catch (HandleException ex) {
                     final var identifier = validationResult.status == NODE_DUE_DILIGENCE_FAILURE
@@ -449,7 +450,8 @@ public class HandleWorkflow {
                         final var childFees = recordListBuilder.precedingRecordBuilders().stream()
                                 .mapToLong(SingleTransactionRecordBuilderImpl::transactionFee)
                                 .sum();
-                        if (!feeAccumulator.chargeNetworkFee(payer, childFees)) {
+                        if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)
+                                && !feeAccumulator.chargeNetworkFee(payer, childFees)) {
                             throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
                         }
                     }
@@ -475,7 +477,9 @@ public class HandleWorkflow {
 
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);
-                    feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                    if(!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)){
+                        feeAccumulator.chargeFees(payer, creator.accountId(), fees);
+                    }
                 }
             }
         } catch (final Exception e) {

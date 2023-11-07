@@ -19,13 +19,11 @@ package com.hedera.node.app.service.token.records;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-import java.util.List;
-
 /**
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenWipe}
  * transaction.
  */
-public interface TokenWipeRecordBuilder extends SingleTransactionRecordBuilder {
+public interface TokenAccountWipeRecordBuilder extends SingleTransactionRecordBuilder {
 
     /**
      * Gets the new total supply of a token
@@ -38,5 +36,5 @@ public interface TokenWipeRecordBuilder extends SingleTransactionRecordBuilder {
      * @param newTotalSupply the new total supply of a token
      */
     @NonNull
-    TokenWipeRecordBuilder newTotalSupply(final long newTotalSupply);
+    TokenAccountWipeRecordBuilder newTotalSupply(final long newTotalSupply);
 }

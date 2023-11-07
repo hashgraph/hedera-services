@@ -66,9 +66,6 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         final var writableNftStore = context.writableStore(WritableNftStore.class);
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
         final var tokenStore = context.readableStore(ReadableTokenStore.class);
-//        if(!recordBuilder.status().equals(ResponseCodeEnum.SUCCESS)){
-//            return;
-//        }
 
         if (stakingConfig.isEnabled()) {
             // staking rewards are triggered for any balance changes to account's that are staked to
