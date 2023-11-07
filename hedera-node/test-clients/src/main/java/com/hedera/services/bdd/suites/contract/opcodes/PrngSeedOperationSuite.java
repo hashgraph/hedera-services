@@ -93,7 +93,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
         return defaultHapiSpec("MultipleCallsHaveIndependentResults")
                 .given(
                         uploadInitCode(prng),
-                        contractCreate(prng) ,
+                        contractCreate(prng),
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_34))
                 .when(withOpContext((spec, opLog) -> {

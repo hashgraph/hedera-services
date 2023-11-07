@@ -38,7 +38,6 @@ import com.hedera.node.app.service.contract.impl.exec.operations.CustomExtCodeCo
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomExtCodeHashOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomExtCodeSizeOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomLogOperation;
-import com.hedera.node.app.service.contract.impl.exec.operations.CustomPrevRandaoOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomSLoadOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomSStoreOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomSelfDestructOperation;
