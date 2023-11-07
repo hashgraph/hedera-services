@@ -24,7 +24,9 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.PRECOMPILE_ERROR;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
+import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -156,7 +158,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             if (result.isRefundGas()) {
                 frame.incrementRemainingGas(gasRequirement);
             }
-            finishPrecompileExecution(frame, result);
+            finishPrecompileExecution(frame, result, tracer);
         }
     }
 
@@ -182,12 +184,12 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             if (!fullResult.isRefundGas()) {
                 frame.decrementRemainingGas(gasRequirement);
             }
-            finishPrecompileExecution(frame, fullResult.result());
+            finishPrecompileExecution(frame, fullResult.result(), tracer);
         }
     }
 
     private void finishPrecompileExecution(
-            @NonNull final MessageFrame frame, @NonNull final PrecompileContractResult result) {
+            @NonNull final MessageFrame frame, @NonNull final PrecompileContractResult result, OperationTracer tracer) {
         if (frame.getState() == MessageFrame.State.REVERT) {
             frame.setRevertReason(result.getOutput());
         } else {
@@ -195,6 +197,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         }
         frame.setState(result.getState());
         frame.setExceptionalHaltReason(result.getHaltReason());
+        ((EvmActionTracer)tracer).tracePrecompileResult(frame, ContractActionType.SYSTEM);
     }
 
     private void doTransferValueOrHalt(
