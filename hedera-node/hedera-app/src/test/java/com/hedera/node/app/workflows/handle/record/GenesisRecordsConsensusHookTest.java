@@ -71,7 +71,7 @@ class GenesisRecordsConsensusHookTest {
     @BeforeEach
     void setup() {
         given(context.consensusTime()).willReturn(CONSENSUS_NOW);
-        given(context.addPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class))
+        given(context.addUncheckedPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class))
                 .willReturn(genesisAccountRecordBuilder);
 
         subject = new GenesisRecordsConsensusHook();
@@ -132,6 +132,17 @@ class GenesisRecordsConsensusHookTest {
     }
 
     @Test
+    void processCreatesBlocklistAccounts() {
+        subject.blocklistAccounts(
+                Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder(), ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
+
+        subject.process(context);
+
+        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE, null);
+        verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE, null);
+    }
+
+    @Test
     void processCreatesAllRecords() {
         final var acctId3 = ACCOUNT_ID_1.copyBuilder().accountNum(3).build();
         final var acct3 = ACCOUNT_1.copyBuilder().accountId(acctId3).build();
@@ -139,10 +150,14 @@ class GenesisRecordsConsensusHookTest {
         final var acctId4 = ACCOUNT_ID_1.copyBuilder().accountNum(4).build();
         final var acct4 = ACCOUNT_1.copyBuilder().accountId(acctId4).build();
         final var acct4Create = ACCT_1_CREATE.copyBuilder().memo("builder4").build();
+        final var acctId5 = ACCOUNT_ID_1.copyBuilder().accountNum(5).build();
+        final var acct5 = ACCOUNT_1.copyBuilder().accountId(acctId5).build();
+        final var acct5Create = ACCT_1_CREATE.copyBuilder().memo("builder5").build();
         subject.systemAccounts(Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder()));
         subject.stakingAccounts(Map.of(ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
         subject.miscAccounts(Map.of(acct3, acct3Create.copyBuilder()));
         subject.treasuryClones(Map.of(acct4, acct4Create.copyBuilder()));
+        subject.blocklistAccounts(Map.of(acct5, acct5Create.copyBuilder()));
 
         // Call the first time to make sure records are generated
         subject.process(context);
@@ -159,6 +174,7 @@ class GenesisRecordsConsensusHookTest {
                 EXPECTED_STAKING_MEMO);
         verifyBuilderInvoked(acctId3, acct3Create, null);
         verifyBuilderInvoked(acctId4, acct4Create, EXPECTED_TREASURY_CLONE_MEMO);
+        verifyBuilderInvoked(acctId5, acct5Create, null);
 
         // Call process() a second time to make sure no other records are created
         Mockito.clearInvocations(genesisAccountRecordBuilder);
@@ -204,6 +220,12 @@ class GenesisRecordsConsensusHookTest {
     @Test
     void treasuryAccountsNullParam() {
         Assertions.assertThatThrownBy(() -> subject.treasuryClones(null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    @Test
+    void blocklistAccountsNullParam() {
+        Assertions.assertThatThrownBy(() -> subject.blocklistAccounts(null)).isInstanceOf(NullPointerException.class);
     }
 
     private void verifyBuilderInvoked(

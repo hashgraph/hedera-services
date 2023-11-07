@@ -153,6 +153,28 @@ public class CustomFeeAssessor extends BaseTokenHandler {
             }
         }
 
+        for (final var fee : result.getAssessedCustomFees()) {
+            final var effectivePayers = fee.effectivePayerAccountId();
+            effectivePayers.forEach(payer -> {
+                if (fee.tokenId() != null) {
+                    final var tokenRel = tokenRelStore.get(payer, fee.tokenId());
+                    for (final var entry :
+                            result.getMutableInputTokenAdjustments().entrySet()) {
+                        if (entry.getKey().equals(fee.tokenId())) {
+                            entry.getValue().forEach((accId, v) -> {
+                                if (v < 0 && accId.equals(payer)) {
+                                    final var finalTokenRelBalance = tokenRel.balance() + v;
+                                    validateTrue(
+                                            finalTokenRelBalance >= 0,
+                                            INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+                                }
+                            });
+                        }
+                    }
+                }
+            });
+        }
+
         final var balanceChanges = result.getHbarAdjustments().size()
                 + newFungibleTransfers
                 + result.getInputHbarAdjustments().size()
