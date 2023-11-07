@@ -283,14 +283,6 @@ public interface V030Module {
     @Singleton
     @IntoSet
     @ServicesV030
-    static Operation providePrevRandaoOperation(@NonNull final GasCalculator gasCalculator) {
-        return new CustomPrevRandaoOperation(gasCalculator);
-    }
-
-    @Provides
-    @Singleton
-    @IntoSet
-    @ServicesV030
     static Operation provideSelfDestructOperation(
             @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final AddressChecks addressChecks) {
         return new CustomSelfDestructOperation(gasCalculator, addressChecks);
