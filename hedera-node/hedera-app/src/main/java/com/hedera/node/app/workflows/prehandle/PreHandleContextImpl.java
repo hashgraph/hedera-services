@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyIsNotImmutableAccount;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyNotEmptyKey;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
@@ -37,6 +37,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -50,13 +51,21 @@ import java.util.Set;
  */
 public class PreHandleContextImpl implements PreHandleContext {
 
-    /** Used to get keys for accounts and contracts. */
+    /**
+     * Used to get keys for accounts and contracts.
+     */
     private final ReadableAccountStore accountStore;
-    /** The transaction body. */
+    /**
+     * The transaction body.
+     */
     private final TransactionBody txn;
-    /** The payer account ID. Specified in the transaction body, extracted and stored separately for convenience. */
+    /**
+     * The payer account ID. Specified in the transaction body, extracted and stored separately for convenience.
+     */
     private final AccountID payer;
-    /** The payer's key, as found in state */
+    /**
+     * The payer's key, as found in state
+     */
     private final Key payerKey;
     /**
      * The set of all required non-payer keys. A {@link LinkedHashSet} is used to maintain a consistent ordering.
@@ -64,7 +73,9 @@ public class PreHandleContextImpl implements PreHandleContext {
      * be updated to compare set contents rather than ordering.
      */
     private final Set<Key> requiredNonPayerKeys = new LinkedHashSet<>();
-    /** The set of all hollow accounts that need to be validated. */
+    /**
+     * The set of all hollow accounts that need to be validated.
+     */
     private final Set<Account> requiredHollowAccounts = new LinkedHashSet<>();
     /**
      * The set of all optional non-payer keys. A {@link LinkedHashSet} is used to maintain a consistent ordering.
@@ -72,17 +83,24 @@ public class PreHandleContextImpl implements PreHandleContext {
      * be updated to compare set contents rather than ordering.
      */
     private final Set<Key> optionalNonPayerKeys = new LinkedHashSet<>();
-    /** The set of all hollow accounts that <strong>might</strong> need to be validated, but also might not. */
+    /**
+     * The set of all hollow accounts that <strong>might</strong> need to be validated, but also might not.
+     */
     private final Set<Account> optionalHollowAccounts = new LinkedHashSet<>();
-    /** Scheduled transactions have a secondary "inner context". Seems not quite right. */
+    /**
+     * Scheduled transactions have a secondary "inner context". Seems not quite right.
+     */
     private PreHandleContext innerContext;
 
     private final ReadableStoreFactory storeFactory;
 
-    /** Configuration to be used during pre-handle */
+    /**
+     * Configuration to be used during pre-handle
+     */
     private final Configuration configuration;
 
     private final TransactionDispatcher dispatcher;
+    private final boolean isUserTx;
 
     public PreHandleContextImpl(
             @NonNull final ReadableStoreFactory storeFactory,
@@ -95,10 +113,10 @@ public class PreHandleContextImpl implements PreHandleContext {
                 txn,
                 txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
                 configuration,
-                dispatcher);
+                dispatcher,
+                true);
     }
 
-    /** Create a new instance */
     public PreHandleContextImpl(
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final TransactionBody txn,
@@ -106,11 +124,26 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull final Configuration configuration,
             @NonNull final TransactionDispatcher dispatcher)
             throws PreCheckException {
+        this(storeFactory, txn, payer, configuration, dispatcher, false);
+    }
+
+    /**
+     * Create a new instance
+     */
+    private PreHandleContextImpl(
+            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final TransactionBody txn,
+            @NonNull final AccountID payer,
+            @NonNull final Configuration configuration,
+            @NonNull final TransactionDispatcher dispatcher,
+            final boolean isUserTx)
+            throws PreCheckException {
         this.storeFactory = requireNonNull(storeFactory, "storeFactory must not be null.");
         this.txn = requireNonNull(txn, "txn must not be null!");
         this.payer = requireNonNull(payer, "payer msut not be null!");
         this.configuration = requireNonNull(configuration, "configuration must not be null!");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null!");
+        this.isUserTx = isUserTx;
 
         this.accountStore = storeFactory.getStore(ReadableAccountStore.class);
 
@@ -147,6 +180,11 @@ public class PreHandleContextImpl implements PreHandleContext {
         return configuration;
     }
 
+    @Override
+    public boolean isUserTransaction() {
+        return isUserTx;
+    }
+
     @NonNull
     @Override
     public Set<Key> requiredNonPayerKeys() {
@@ -163,7 +201,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Override
     public PreHandleContext optionalKey(@NonNull final Key key) throws PreCheckException {
         // Verify this key isn't for an immutable account
-        verifyIsNotImmutableAccount(key, ResponseCodeEnum.INVALID_ACCOUNT_ID);
+        verifyNotEmptyKey(key, ResponseCodeEnum.INVALID_ACCOUNT_ID);
 
         if (!key.equals(payerKey) && isValid(key)) {
             optionalNonPayerKeys.add(key);
@@ -233,8 +271,7 @@ public class PreHandleContextImpl implements PreHandleContext {
         }
 
         // Verify this key isn't for an immutable account
-        verifyIsNotImmutableAccount(key, responseCode);
-
+        verifyNotEmptyKey(key, responseCode);
         return requireKey(key);
     }
 
@@ -253,16 +290,20 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (account == null) {
             throw new PreCheckException(responseCode);
         }
-
+        // If it is hollow account, and we require this to sign, we need to finalize the account
+        // with the corresponding ECDSA key in handle
+        if (isHollow(account)) {
+            requiredHollowAccounts.add(account);
+            return this;
+        }
+        // Verify this key isn't for an immutable account
+        verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
         final var key = account.key();
         if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
-
-        // Verify this key isn't for an immutable account
-        verifyIsNotImmutableAccount(key, responseCode);
 
         return requireKey(key);
     }
@@ -281,17 +322,20 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (account == null) {
             throw new PreCheckException(responseCode);
         }
-
+        // If it is hollow account, and we require this to sign, we need to finalize the account
+        // with the corresponding ECDSA key in handle
+        if (isHollow(account)) {
+            requiredHollowAccounts.add(account);
+            return this;
+        }
+        // Verify this key isn't for an immutable account
+        verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
         final var key = account.key();
         if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
-
-        // Verify this key isn't for an immutable account
-        verifyIsNotImmutableAccount(key, responseCode);
-
         return requireKey(key);
     }
 
@@ -316,7 +360,14 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (!account.receiverSigRequired()) {
             return this;
         }
-
+        // If it is hollow account, and we require this to sign, we need to finalize the account
+        // with the corresponding ECDSA key in handle
+        if (isHollow(account)) {
+            requiredHollowAccounts.add(account);
+            return this;
+        }
+        // Verify this key isn't for an immutable account
+        verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
         // We will require the key. If the key isn't present, then we will throw the given response code.
         final var key = account.key();
         if (key == null
@@ -325,10 +376,6 @@ public class PreHandleContextImpl implements PreHandleContext {
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
-
-        // Verify this key isn't for an immutable account
-        verifyIsNotImmutableAccount(key, responseCode);
-
         return requireKey(key);
     }
 
@@ -353,7 +400,14 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (!account.receiverSigRequired()) {
             return this;
         }
-
+        // If it is hollow account, and we require this to sign, we need to finalize the account
+        // with the corresponding ECDSA key in handle
+        if (isHollow(account)) {
+            requiredHollowAccounts.add(account);
+            return this;
+        }
+        // Verify this key isn't for an immutable account
+        verifyNotStakingAccounts(account.accountIdOrThrow(), responseCode);
         // We will require the key. If the key isn't present, then we will throw the given response code.
         final var key = account.key();
         if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
@@ -361,10 +415,6 @@ public class PreHandleContextImpl implements PreHandleContext {
             // keys? Or KeyList with Contract keys only?
             throw new PreCheckException(responseCode);
         }
-
-        // Verify this key isn't for an immutable account
-        verifyIsNotImmutableAccount(key, responseCode);
-
         return requireKey(key);
     }
 
@@ -431,5 +481,22 @@ public class PreHandleContextImpl implements PreHandleContext {
                 + requiredNonPayerKeys + ", innerContext="
                 + innerContext + ", storeFactory="
                 + storeFactory + '}';
+    }
+
+    /**
+     * Checks that an account does not represent one of the staking accounts
+     * Throws a {@link PreCheckException} with the designated response code otherwise.
+     * @param accountID the accountID to check
+     * @param responseCode the response code to throw
+     * @throws PreCheckException if the account is considered immutable
+     */
+    private void verifyNotStakingAccounts(
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
+            throws PreCheckException {
+        final var accountNum = accountID != null ? accountID.accountNum() : 0;
+        final var accountsConfig = configuration.getConfigData(AccountsConfig.class);
+        if (accountNum == accountsConfig.stakingRewardAccount() || accountNum == accountsConfig.nodeRewardAccount()) {
+            throw new PreCheckException(responseCode);
+        }
     }
 }

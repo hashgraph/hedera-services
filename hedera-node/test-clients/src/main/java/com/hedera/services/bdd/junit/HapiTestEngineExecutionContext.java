@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.junit;
 
-import java.nio.file.Path;
 import org.junit.platform.engine.support.hierarchical.EngineExecutionContext;
 
 /**
@@ -26,21 +25,4 @@ import org.junit.platform.engine.support.hierarchical.EngineExecutionContext;
  * server here. But the HAPI test system stores that information statically, so we don't need to do it here. So for
  * now this class is just empty (we need it to satisfy the API, but we don't use it).
  */
-public class HapiTestEngineExecutionContext implements EngineExecutionContext {
-
-    private final Path savedStateDirectory;
-    private final Path eventsLogDir;
-
-    public HapiTestEngineExecutionContext(final Path savedStateDirectory, final Path eventsLogDir) {
-        this.savedStateDirectory = savedStateDirectory;
-        this.eventsLogDir = eventsLogDir;
-    }
-
-    public Path getSavedStateDirectory() {
-        return savedStateDirectory;
-    }
-
-    public Path getEventsLogDir() {
-        return eventsLogDir;
-    }
-}
+public class HapiTestEngineExecutionContext implements EngineExecutionContext {}
