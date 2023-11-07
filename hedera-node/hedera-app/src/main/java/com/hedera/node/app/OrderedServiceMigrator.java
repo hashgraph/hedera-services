@@ -21,15 +21,17 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.config.VersionedConfiguration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Comparator;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,7 +39,13 @@ import org.apache.logging.log4j.Logger;
 /**
  * The entire purpose of this class is to ensure that inter-service dependencies are respected between
  * migrations. The only required dependency right now is the {@link EntityIdService}, which is needed
- * for genesis blocklist accounts.
+ * for genesis blocklist accounts in the token service genesis migration. (See {@link
+ * TokenServiceImpl#registerSchemas(SchemaRegistry)}).
+ *
+ * <p>Note: there are only two ordering requirements to maintain: first, that the entity ID service
+ * is migrated before the token service; and second, that the remaining services are migrated _in any
+ * deterministic order_. In order to ensure the entity ID service is migrated before the token service,
+ * we'll just migrate the entity ID service first.
  */
 public class OrderedServiceMigrator {
     private static final Logger logger = LogManager.getLogger(OrderedServiceMigrator.class);
@@ -45,7 +53,7 @@ public class OrderedServiceMigrator {
     private final ThrottleAccumulator backendThrottle;
 
     public OrderedServiceMigrator(
-            @NonNull final ServicesRegistryImpl servicesRegistry, @NonNull final ThrottleAccumulator backendThrottle) {
+            @NonNull final ServicesRegistry servicesRegistry, @NonNull final ThrottleAccumulator backendThrottle) {
         this.servicesRegistry = requireNonNull(servicesRegistry);
         this.backendThrottle = requireNonNull(backendThrottle);
     }
@@ -80,9 +88,12 @@ public class OrderedServiceMigrator {
                 // We call with null here because we're migrating the entity ID service itself
                 null);
 
-        // Now that the Entity ID Service is migrated, migrate the remaining services
+        // Now that the Entity ID Service is migrated, migrate the remaining services in name order. Note: the name
+        // ordering itself isn't important, just that the ordering is deterministic
         servicesRegistry.registrations().stream()
                 .filter(r -> !Objects.equals(entityIdRegistration, r))
+                .sorted(Comparator.comparing(
+                        (ServicesRegistry.Registration r) -> r.service().getServiceName()))
                 .forEach(registration -> {
                     // FUTURE We should have metrics here to keep track of how long it takes to
                     // migrate each service
@@ -93,9 +104,14 @@ public class OrderedServiceMigrator {
 
                     // The token service has a dependency on the entity ID service during genesis migrations, so we
                     // CAREFULLY create a different WritableStates specific to the entity ID service. The different
-                    // WritableStates instances won't be able to see the changes made by each other, but there shouldn't
-                    // be any conflicting changes. We'll inject this into the MigrationContext below to enable
-                    // generation of entity IDs.
+                    // WritableStates instances won't be able to "see" the changes made by each other, meaning that a
+                    // change made with WritableStates instance X would _not_ be read by a separate WritableStates
+                    // instance Y. However, since the inter-service dependencies are limited to the EntityIdService,
+                    // there shouldn't be any changes made in any single WritableStates instance that would need to be
+                    // read by any other separate WritableStates instances. This should hold true as long as the
+                    // EntityIdService is not directly injected into any genesis generation code. Instead, we'll inject
+                    // this entity ID writable states instance into the MigrationContext below, to enable generation of
+                    // entity IDs through an appropriate API.
                     final var entityIdWritableStates = state.createWritableStates(EntityIdService.NAME);
                     final var entityIdStore = new WritableEntityIdStore(entityIdWritableStates);
 
@@ -106,6 +122,9 @@ public class OrderedServiceMigrator {
                             versionedConfiguration,
                             networkInfo,
                             backendThrottle,
+                            // If we have reached this point in the code, entityIdStore should not be null because the
+                            // EntityIdService should have been migrated already. We enforce with requireNonNull in case
+                            // there are scenarios we haven't considered.
                             requireNonNull(entityIdStore));
                     // Now commit any changes that were made to the entity ID state (since other service entities could
                     // depend on newly-generated entity IDs)
