@@ -173,7 +173,7 @@ public class FileServiceUtils {
 
         final var file = optionalFile.get();
 
-        if (!file.hasKeys() || file.keys().keys().isEmpty()) {
+        if (!file.hasKeys() || !file.keys().hasKeys() || file.keys().keys().isEmpty()) {
             // @todo('protobuf change needed') change to immutable file response code
             throw new HandleException(UNAUTHORIZED);
         }
