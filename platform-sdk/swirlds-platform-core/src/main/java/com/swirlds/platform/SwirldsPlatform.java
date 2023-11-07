@@ -32,7 +32,6 @@ import static com.swirlds.platform.state.iss.ConsensusHashManager.DO_NOT_IGNORE_
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.StateConfig;
@@ -74,12 +73,14 @@ import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.components.EventIntake;
+import com.swirlds.platform.components.LinkedEventIntake;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
@@ -97,9 +98,12 @@ import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.AsyncEventCreationManager;
+import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.linking.EventLinker;
+import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
+import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.AsyncPreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.NoOpPreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
@@ -110,9 +114,11 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
+import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.event.validation.GossipEventValidator;
 import com.swirlds.platform.event.validation.GossipEventValidators;
+import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.event.validation.SignatureValidator;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
@@ -160,6 +166,7 @@ import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
+import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -613,8 +620,6 @@ public class SwirldsPlatform implements Platform {
                 preConsensusEventHandler::preconsensusEvent,
                 intakeEventCounter);
 
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-
         final List<GossipEventValidator> validators = new ArrayList<>();
         // it is very important to discard ancient events, otherwise the deduplication will not work, since it
         // doesn't track ancient events
@@ -635,11 +640,51 @@ public class SwirldsPlatform implements Platform {
         eventValidator = new EventValidator(
                 eventValidators, eventIntake::addUnlinkedEvent, eventIntakePhaseTimer, intakeEventCounter);
 
+        final PlatformWiring platformWiring = new PlatformWiring(platformContext, time);
+
+        final InterruptableConsumer<GossipEvent> eventIntakeHandler;
+        if (eventConfig.useLegacyIntake()) {
+            eventIntakeHandler = eventValidator::validateEvent;
+        } else {
+            final InternalEventValidator internalEventValidator = new InternalEventValidator(
+                    platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
+            final EventDeduplicator eventDeduplicator = new EventDeduplicator(platformContext, intakeEventCounter);
+            final EventSignatureValidator eventSignatureValidator = new EventSignatureValidator(
+                    platformContext,
+                    time,
+                    CryptoStatic::verifySignature,
+                    appVersion,
+                    initialState.getState().getPlatformState().getPreviousAddressBook(),
+                    currentAddressBook,
+                    intakeEventCounter);
+            final OrphanBuffer orphanBuffer = new OrphanBuffer(platformContext, intakeEventCounter);
+            final InOrderLinker inOrderLinker = new InOrderLinker(intakeEventCounter);
+            final LinkedEventIntake linkedEventIntake = new LinkedEventIntake(
+                    platformContext,
+                    threadManager,
+                    time,
+                    consensusRef::get,
+                    eventObserverDispatcher,
+                    shadowGraph,
+                    preConsensusEventHandler::preconsensusEvent,
+                    intakeEventCounter);
+
+            platformWiring.bind(
+                    internalEventValidator,
+                    eventDeduplicator,
+                    eventSignatureValidator,
+                    orphanBuffer,
+                    inOrderLinker,
+                    linkedEventIntake);
+
+            eventIntakeHandler = platformWiring.getEventInput();
+        }
+
         intakeQueue = components.add(new QueueThreadConfiguration<GossipEvent>(threadManager)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("event-intake")
-                .setHandler(eventValidator::validateEvent)
+                .setHandler(eventIntakeHandler)
                 .setCapacity(eventConfig.eventIntakeQueueSize())
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableMaxSizeMetric())

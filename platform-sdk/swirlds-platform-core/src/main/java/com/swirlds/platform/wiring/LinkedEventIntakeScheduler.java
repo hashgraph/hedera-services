@@ -17,17 +17,22 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.InputWire;
+import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
  * Wiring for the {@link LinkedEventIntakeScheduler}.
  */
 public class LinkedEventIntakeScheduler {
-    private final InputWire<EventImpl, Void> eventInput;
+    private final InputWire<EventImpl, List<ConsensusRound>> eventInput;
+
+    private final OutputWire<ConsensusRound> eventOutput;
 
     /**
      * Constructor.
@@ -35,7 +40,7 @@ public class LinkedEventIntakeScheduler {
      * @param model the wiring model
      */
     public LinkedEventIntakeScheduler(@NonNull final WiringModel model) {
-        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("linkedEventIntake")
+        final TaskScheduler<List<ConsensusRound>> taskScheduler = model.schedulerBuilder("linkedEventIntake")
                 .withConcurrency(false)
                 .withUnhandledTaskCapacity(500)
                 .withFlushingEnabled(true)
@@ -44,6 +49,7 @@ public class LinkedEventIntakeScheduler {
                 .cast();
 
         eventInput = taskScheduler.buildInputWire("linked events");
+        eventOutput = taskScheduler.getOutputWire().buildSplitter();
     }
 
     /**
@@ -52,8 +58,18 @@ public class LinkedEventIntakeScheduler {
      * @return the event input wire
      */
     @NonNull
-    public InputWire<EventImpl, Void> getEventInput() {
+    public InputWire<EventImpl, List<ConsensusRound>> getEventInput() {
         return eventInput;
+    }
+
+    /**
+     * Get the output of the linked event intake object, which is a stream of consensus rounds.
+     *
+     * @return the event output wire
+     */
+    @NonNull
+    public OutputWire<ConsensusRound> getEventOutput() {
+        return eventOutput;
     }
 
     /**

@@ -18,8 +18,11 @@ package com.swirlds.platform.wiring;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.components.LinkedEventIntake;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
@@ -94,6 +97,19 @@ public class PlatformWiring {
         orphanBufferScheduler.getEventOutput().solderTo(inOrderLinkerScheduler.getEventInput());
         inOrderLinkerScheduler.getEventOutput().solderTo(linkedEventIntakeScheduler.getEventInput());
 
+        final OutputWire<Long> minimumGenerationNonAncientOutput = linkedEventIntakeScheduler
+                .getEventOutput()
+                .buildTransformer(
+                        "getMinimumGenerationNonAncient",
+                        consensusRound -> consensusRound.getGenerations().getMinGenerationNonAncient());
+
+        minimumGenerationNonAncientOutput.solderTo(
+                eventDeduplicatorScheduler.getMinimumGenerationNonAncientInput(), true);
+        minimumGenerationNonAncientOutput.solderTo(
+                eventSignatureValidatorScheduler.getMinimumGenerationNonAncientInput(), true);
+        minimumGenerationNonAncientOutput.solderTo(orphanBufferScheduler.getMinimumGenerationNonAncientInput(), true);
+        minimumGenerationNonAncientOutput.solderTo(inOrderLinkerScheduler.getMinimumGenerationNonAncientInput(), true);
+
         // FUTURE WORK: solder all the things!
     }
 
@@ -123,5 +139,17 @@ public class PlatformWiring {
         linkedEventIntakeScheduler.bind(linkedEventIntake);
 
         // FUTURE WORK: bind all the things!
+    }
+
+    /**
+     * Get the input method for the internal event validator.
+     * <p>
+     * Future work: this is a temporary hook to allow events from gossip to use the new intake pipeline. This method
+     * will be removed once gossip is moved to the new framework
+     *
+     * @return the input method for the internal event validator, which is the first step in the intake pipeline
+     */
+    public InterruptableConsumer<GossipEvent> getEventInput() {
+        return internalEventValidatorScheduler.getEventInput()::put;
     }
 }
