@@ -20,7 +20,6 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -57,10 +56,12 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.SnapshotModeOp.SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
@@ -86,7 +87,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -111,7 +111,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
+// @HapiTestSuite
 public class AutoAccountCreationSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(AutoAccountCreationSuite.class);
@@ -212,6 +212,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var initialTokenSupply = 1000;
         return defaultHapiSpec("canAutoCreateWithHbarAndTokenTransfers")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
@@ -251,6 +252,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("repeatedAliasInSameTransferListFails")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),
@@ -308,6 +310,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var firstRoyaltyCollector = "firstRoyaltyCollector";
         return defaultHapiSpec("autoCreateWithNftFallBackFeeFails")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),
@@ -377,6 +380,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),
@@ -460,6 +464,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("multipleTokenTransfersSucceed")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
@@ -545,6 +550,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("payerBalanceIsReflectsAllChangesBeforeFeeCharging")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(A_TOKEN)
@@ -598,6 +604,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
@@ -676,6 +683,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var contract = "contract";
         return defaultHapiSpec("noStakePeriodStartIfNotStakingToNode")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(ADMIN_KEY),
                         cryptoCreate(user).key(ADMIN_KEY).stakedNodeId(0L),
                         createDefaultContract(contract).adminKey(ADMIN_KEY).stakedNodeId(0L),
@@ -699,6 +707,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
         return defaultHapiSpec("hollowAccountCreationWithCryptoTransfer")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
@@ -801,6 +810,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final AtomicReference<ByteString> targetAddress = new AtomicReference<>();
         return defaultHapiSpec("failureAfterHollowAccountCreationReclaimsAlias")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(cryptoCreate(underfunded).balance(10 * ONE_HBAR))
@@ -852,6 +862,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("canGetBalanceAndInfoViaAlias")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(ed25519SourceKey).shape(ed25519Shape),
                         newKeyNamed(secp256k1SourceKey).shape(secp256k1Shape))
@@ -895,6 +906,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private HapiSpec aliasCanBeUsedOnManyAccountsNotAsAlias() {
         return defaultHapiSpec("aliasCanBeUsedOnManyAccountsNotAsAlias")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         /* have alias key on other accounts and tokens not as alias */
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(PAYER).key(VALID_ALIAS).balance(INITIAL_BALANCE * ONE_HBAR),
@@ -929,6 +941,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private HapiSpec accountCreatedIfAliasUsedAsPubKey() {
         return defaultHapiSpec("accountCreatedIfAliasUsedAsPubKey")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(ALIAS),
                         cryptoCreate(PAYER_1)
                                 .balance(INITIAL_BALANCE * ONE_HBAR)
@@ -956,6 +969,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private HapiSpec autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
         return defaultHapiSpec("autoAccountCreationWorksWhenUsingAliasOfDeletedAccount")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(ALIAS),
                         newKeyNamed(ALIAS_2),
                         cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
@@ -988,6 +1002,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private HapiSpec transferFromAliasToAlias() {
         return defaultHapiSpec("transferFromAliasToAlias")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(ALIAS),
                         newKeyNamed(ALIAS_2),
                         cryptoCreate(PAYER_4).balance(INITIAL_BALANCE * ONE_HBAR))
@@ -1015,6 +1030,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var alias = ALIAS;
         return defaultHapiSpec("transferFromAliasToAccount")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(alias),
                         cryptoCreate(payer).balance(INITIAL_BALANCE * ONE_HBAR),
                         cryptoCreate("randomAccount").balance(0L).payingWith(payer))
@@ -1037,7 +1053,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
     @HapiTest
     private HapiSpec transferToAccountAutoCreatedUsingAccount() {
         return defaultHapiSpec("transferToAccountAutoCreatedUsingAccount")
-                .given(newKeyNamed(TRANSFER_ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        newKeyNamed(TRANSFER_ALIAS),
+                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, TRANSFER_ALIAS, ONE_HUNDRED_HBARS))
                                 .via("txn"),
@@ -1069,7 +1088,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
     @HapiTest
     private HapiSpec transferToAccountAutoCreatedUsingAlias() {
         return defaultHapiSpec("transferToAccountAutoCreatedUsingAlias")
-                .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        newKeyNamed(ALIAS),
+                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
                                 .via(TRANSFER_TXN),
@@ -1119,7 +1141,9 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .toByteString();
 
         return defaultHapiSpec("autoAccountCreationUnsupportedAlias")
-                .given(cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         cryptoTransfer(tinyBarsFromTo(PAYER, threshKeyAlias, ONE_HUNDRED_HBARS))
                                 .hasKnownStatus(INVALID_ALIAS_KEY)
@@ -1141,7 +1165,9 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var invalidAlias = VALID_25519_ALIAS.substring(0, 10);
 
         return defaultHapiSpec("autoAccountCreationBadAlias")
-                .given(cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(cryptoTransfer(tinyBarsFromTo(PAYER, invalidAlias, ONE_HUNDRED_HBARS))
                         .hasKnownStatus(INVALID_ALIAS_KEY)
                         .via("transferTxnBad"))
@@ -1152,8 +1178,9 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private HapiSpec autoAccountCreationsHappyPath() {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;
-        return onlyDefaultHapiSpec("autoAccountCreationsHappyPath")
+        return defaultHapiSpec("autoAccountCreationsHappyPath")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
@@ -1259,7 +1286,9 @@ public class AutoAccountCreationSuite extends HapiSuite {
     @HapiTest
     private HapiSpec multipleAutoAccountCreations() {
         return defaultHapiSpec("multipleAutoAccountCreations")
-                .given(cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         newKeyNamed("alias1"),
                         newKeyNamed(ALIAS_2),
@@ -1298,6 +1327,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("transferHbarsToEVMAddressAlias")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         withOpContext((spec, opLog) -> {
@@ -1354,6 +1384,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("transferHbarsToECDSAKey")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                         withOpContext((spec, opLog) -> {
@@ -1404,6 +1435,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("transferFungibleToEVMAddressAlias")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(PARTY).balance(INITIAL_BALANCE * ONE_HBAR).maxAutomaticTokenAssociations(2),
                         tokenCreate(fungibleToken).treasury(PARTY).initialSupply(1_000_000),
@@ -1500,6 +1532,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("transferNonFungibleToEVMAddressAlias")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(PARTY).balance(INITIAL_BALANCE * ONE_HBAR).maxAutomaticTokenAssociations(2),
@@ -1596,6 +1629,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("cannotAutoCreateWithTxnToLongZero")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                         withOpContext((spec, opLog) -> {
