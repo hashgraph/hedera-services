@@ -27,7 +27,7 @@ import com.swirlds.config.api.ConfigProperty;
  *                                   internet routers, but it is possible to make routers change their handling of
  *                                   packets based on this number, such as for providing different Quality of Service
  *                                   (QoS). <a href="https://en.wikipedia.org/wiki/Type_of_service">Type of Service</a>
- * @param bufferSize                 for BufferedInputStream and BufferedOutputStream for syncing
+ * @param bufferSize                 the stream buffer size, default is 4mb (i.e. 4194304 bytes)
  * @param timeoutSyncClientSocket    timeout when waiting for data
  * @param timeoutSyncClientConnect   timeout when establishing a connection
  * @param timeoutServerAcceptConnect timeout when server is waiting for another member to create a connection
@@ -40,7 +40,7 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData("socket")
 public record SocketConfig(
         @ConfigProperty(defaultValue = "-1") int ipTos,
-        @ConfigProperty(defaultValue = "8192") int bufferSize,
+        @ConfigProperty(defaultValue = "4194304") int bufferSize,
         @ConfigProperty(defaultValue = "5000") int timeoutSyncClientSocket,
         @ConfigProperty(defaultValue = "5000") int timeoutSyncClientConnect,
         @ConfigProperty(defaultValue = "5000") int timeoutServerAcceptConnect,

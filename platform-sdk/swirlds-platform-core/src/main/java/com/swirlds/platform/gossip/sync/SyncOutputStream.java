@@ -72,11 +72,11 @@ public class SyncOutputStream extends SerializableDataOutputStream {
 //                        wrappedStream = new DeflaterOutputStream(
 //                                meteredStream, new Deflater(level, true), bufferSize, true);
 
-            final LZ4Compressor compressor = LZ4Factory.fastestInstance().fastCompressor();
-            // TODO can we get away with not using a checksum?
-            final Checksum checksum = XXHashFactory.fastestInstance()
-                    .newStreamingHash32(0x9747b28c)
-                    .asChecksum();
+//            final LZ4Compressor compressor = LZ4Factory.fastestInstance().fastCompressor();
+//            // TODO can we get away with not using a checksum?
+//            final Checksum checksum = XXHashFactory.fastestInstance()
+//                    .newStreamingHash32(0x9747b28c)
+//                    .asChecksum();
 
 //            wrappedStream = new LZ4BlockOutputStream(meteredStream, bufferSize, compressor, checksum, true);
 
