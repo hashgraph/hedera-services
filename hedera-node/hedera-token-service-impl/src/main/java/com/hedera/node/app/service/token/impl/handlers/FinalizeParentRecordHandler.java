@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.token.impl.comparator.TokenComparators
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -65,6 +66,9 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         final var writableNftStore = context.writableStore(WritableNftStore.class);
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
         final var tokenStore = context.readableStore(ReadableTokenStore.class);
+//        if(!recordBuilder.status().equals(ResponseCodeEnum.SUCCESS)){
+//            return;
+//        }
 
         if (stakingConfig.isEnabled()) {
             // staking rewards are triggered for any balance changes to account's that are staked to

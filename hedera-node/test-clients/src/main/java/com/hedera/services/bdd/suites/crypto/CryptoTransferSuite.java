@@ -93,6 +93,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
@@ -126,6 +127,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -148,7 +150,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// @HapiTestSuite
+ @HapiTestSuite
 public class CryptoTransferSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(CryptoTransferSuite.class);
     private static final String OWNER = "owner";
@@ -1522,6 +1524,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return defaultHapiSpec("baseCryptoTransferFeeChargedAsExpected")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS, NONDETERMINISTIC_TRANSACTION_FEES),
                         cryptoCreate(nonTreasurySender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER),
@@ -1771,6 +1774,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return defaultHapiSpec("ComplexKeyAcctPaysForOwnTransfer", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed("complexKey").shape(enoughUniqueSigs),
                         cryptoCreate(PAYER).key("complexKey").balance(1_000_000_000L))
                 .when()
@@ -1794,6 +1798,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return defaultHapiSpec("TwoComplexKeysRequired", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed("payerKey").shape(payerShape),
                         newKeyNamed("receiverKey").shape(receiverShape),
                         cryptoCreate(PAYER).key("payerKey").balance(100_000_000_000L),
@@ -1822,7 +1827,8 @@ public class CryptoTransferSuite extends HapiSuite {
     @HapiTest
     private HapiSpec transferWithMissingAccountGetsInvalidAccountId() {
         return defaultHapiSpec("transferWithMissingAccountGetsInvalidAccountId")
-                .given(cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true))
+                .given(snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true))
                 .when(cryptoTransfer(tinyBarsFromTo("1.2.3", PAYEE_SIG_REQ, 1_000L))
                         .signedBy(DEFAULT_PAYER, PAYEE_SIG_REQ)
                         .hasKnownStatus(INVALID_ACCOUNT_ID))
@@ -1835,6 +1841,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return defaultHapiSpec("VanillaTransferSucceeds", FULLY_NONDETERMINISTIC)
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate("somebody")
                                 .maxAutomaticTokenAssociations(5001)
                                 .hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
