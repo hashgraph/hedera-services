@@ -36,6 +36,7 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -170,16 +171,16 @@ class MerkleDbCompactionCoordinatorTest {
     void testCompactionCancelled() throws IOException, InterruptedException {
         CountDownLatch compactLatch = new CountDownLatch(1);
         CountDownLatch testLatch = new CountDownLatch(3);
-        initCompactorMock(objectKeyToPath, nextBoolean(), testLatch, compactLatch);
-        initCompactorMock(pathToHashKeyValue, nextBoolean(), testLatch, compactLatch);
-        initCompactorMock(hashStoreDisk, nextBoolean(), testLatch, compactLatch);
+        initCompactorMock(objectKeyToPath, nextBoolean(), testLatch, compactLatch, new AtomicBoolean());
+        initCompactorMock(pathToHashKeyValue, nextBoolean(), testLatch, compactLatch, new AtomicBoolean());
+        initCompactorMock(hashStoreDisk, nextBoolean(), testLatch, compactLatch, new AtomicBoolean());
 
         coordinator.compactDiskStoreForObjectKeyToPathAsync();
         coordinator.compactDiskStoreForHashesAsync();
         coordinator.compactPathToKeyValueAsync();
 
         // let all compactions get to the latch
-        assertAwait(testLatch);
+        assertTrue(await(testLatch), "Test latch wasn't released");
 
         // latch is released by interruption of the compaction thread
         coordinator.stopAndDisableBackgroundCompaction();
@@ -216,12 +217,15 @@ class MerkleDbCompactionCoordinatorTest {
 
         CountDownLatch compactLatch = new CountDownLatch(1);
         CountDownLatch testLatch = new CountDownLatch(1);
-        initCompactorMock(pathToHashKeyValue, nextBoolean(), testLatch, compactLatch);
+        AtomicBoolean compactLatchAwaitResult = new AtomicBoolean(false);
+        initCompactorMock(pathToHashKeyValue, nextBoolean(), testLatch, compactLatch, compactLatchAwaitResult);
 
         coordinator.compactPathToKeyValueAsync();
 
         // let all compactions get to the latch
-        assertAwait(testLatch);
+        assertTrue(await(testLatch), "Test latch wasn't released");
+        compactLatch.countDown();
+        assertEventuallyTrue(compactLatchAwaitResult::get, Duration.ofSeconds(1), "Compaction latch wasn't released");
 
         // latch is released by interruption of the compaction thread
         coordinator.stopAndDisableBackgroundCompaction();
@@ -253,20 +257,25 @@ class MerkleDbCompactionCoordinatorTest {
             throws IOException, InterruptedException {
         CountDownLatch testLatch = new CountDownLatch(1);
         CountDownLatch compactLatch = new CountDownLatch(1);
-        initCompactorMock(compactorToTest, compactionPassed, testLatch, compactLatch);
+        AtomicBoolean compactLatchAwaitResult = new AtomicBoolean(false);
+        initCompactorMock(compactorToTest, compactionPassed, testLatch, compactLatch, compactLatchAwaitResult);
 
         // run twice to make sure that the second call is discarded because one compaction is already in progress
         methodCall.run();
         methodCall.run();
         if (expectCompactionStarted) {
-            assertAwait(testLatch);
+            assertTrue(await(testLatch), "Test latch wasn't released");
         }
         compactLatch.countDown();
+        if (expectCompactionStarted) {
+            assertEventuallyTrue(
+                    compactLatchAwaitResult::get, Duration.ofSeconds(1), "Compaction latch wasn't released");
+        }
 
         assertCompactable(compactorToTest, expectCompactionStarted);
 
         reset(objectKeyToPath, pathToHashKeyValue, hashStoreDisk, statisticsUpdater);
-        initCompactorMock(compactorToTest, compactionPassed, testLatch, compactLatch);
+        initCompactorMock(compactorToTest, compactionPassed, testLatch, compactLatch, new AtomicBoolean());
 
         // the second time it should succeed as well
         methodCall.run();
@@ -277,7 +286,7 @@ class MerkleDbCompactionCoordinatorTest {
             throws IOException, InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         when(compactorToTest.compact()).thenAnswer(invocation -> {
-            assertAwait(latch);
+            await(latch);
             throw new RuntimeException("testCompactionFailed");
         });
 
@@ -297,8 +306,8 @@ class MerkleDbCompactionCoordinatorTest {
                 "Unexpected mock state");
     }
 
-    private static void assertAwait(CountDownLatch latch) throws InterruptedException {
-        assertTrue(latch.await(10, TimeUnit.SECONDS), "Latch wasn't released");
+    private boolean await(CountDownLatch latch) throws InterruptedException {
+        return latch.await(500, TimeUnit.MILLISECONDS);
     }
 
     @SuppressWarnings("unchecked")
@@ -306,11 +315,12 @@ class MerkleDbCompactionCoordinatorTest {
             DataFileCompactor compactorToTest,
             boolean compactionPassed,
             CountDownLatch testLatch,
-            CountDownLatch compactLatch)
+            CountDownLatch compactLatch,
+            AtomicBoolean awaitResult)
             throws IOException, InterruptedException {
         when(compactorToTest.compact()).thenAnswer(invocation -> {
             testLatch.countDown();
-            assertAwait(compactLatch);
+            awaitResult.set(await(compactLatch));
             return compactionPassed;
         });
     }
