@@ -47,8 +47,8 @@ public final class OutputWire<OUT> {
     /**
      * Constructor.
      *
-     * @param model               the wiring model containing this output wire
-     * @param name                the name of the output wire
+     * @param model the wiring model containing this output wire
+     * @param name  the name of the output wire
      */
     public OutputWire(@NonNull final WiringModel model, @NonNull final String name) {
 
@@ -92,6 +92,7 @@ public final class OutputWire<OUT> {
 
     /**
      * Specify an input wire where output data should be passed. This forwarding operation respects back pressure.
+     * Equivalent to calling {@link #solderTo(InputWire, SolderType)} with {@link SolderType#PUT}.
      *
      * <p>
      * Soldering is the act of connecting two wires together, usually by melting a metal alloy between them. See
@@ -104,7 +105,7 @@ public final class OutputWire<OUT> {
      * @param inputWire the input wire to forward output data to
      */
     public void solderTo(@NonNull final InputWire<OUT, ?> inputWire) {
-        solderTo(inputWire, false);
+        solderTo(inputWire, SolderType.PUT);
     }
 
     /**
@@ -118,15 +119,17 @@ public final class OutputWire<OUT> {
      * Forwarding should be fully configured prior to data being inserted into the system. Adding forwarding
      * destinations after data has been inserted into the system is not thread safe and has undefined behavior.
      *
-     * @param inputWire the input wire to forward output data to
-     * @param inject    if true, then the output data will be injected into the input wire, ignoring back pressure
+     * @param inputWire  the input wire to forward output data to
+     * @param solderType the semantics of the soldering operation
      */
-    public void solderTo(@NonNull final InputWire<OUT, ?> inputWire, final boolean inject) {
-        model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), inject);
-        if (inject) {
-            forwardingDestinations.add(inputWire::inject);
-        } else {
-            forwardingDestinations.add(inputWire::put);
+    public void solderTo(@NonNull final InputWire<OUT, ?> inputWire, @NonNull final SolderType solderType) {
+        model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), solderType);
+
+        switch (solderType) {
+            case PUT -> forwardingDestinations.add(inputWire::put);
+            case INJECT -> forwardingDestinations.add(inputWire::inject);
+            case OFFER -> forwardingDestinations.add(inputWire::offer);
+            default -> throw new IllegalArgumentException("Unknown solder type: " + solderType);
         }
     }
 
@@ -145,7 +148,7 @@ public final class OutputWire<OUT> {
      * @param handler     the consumer to forward output data to
      */
     public void solderTo(@NonNull final String handlerName, @NonNull final Consumer<OUT> handler) {
-        model.registerEdge(name, handlerName, "", false);
+        model.registerEdge(name, handlerName, "", SolderType.PUT);
         forwardingDestinations.add(Objects.requireNonNull(handler));
     }
 

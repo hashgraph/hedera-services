@@ -151,11 +151,11 @@ public abstract class WiringModel implements Startable, Stoppable {
      * @param originVertex      the origin vertex
      * @param destinationVertex the destination vertex
      * @param label             the label of the edge
-     * @param injection         true if this edge is an injection edge, false otherwise
+     * @param solderType        the type of solder connection
      */
     public abstract void registerEdge(
             @NonNull String originVertex,
             @NonNull String destinationVertex,
             @NonNull String label,
-            final boolean injection);
+            @NonNull SolderType solderType);
 }

@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.OutputWire;
+import com.swirlds.common.wiring.SolderType;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.utility.ModelGroup;
@@ -149,7 +150,7 @@ class ModelTests {
                 model.schedulerBuilder("A").withUnhandledTaskCapacity(1).build().cast();
         final InputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
 
-        taskSchedulerA.getOutputWire().solderTo(inputA, true);
+        taskSchedulerA.getOutputWire().solderTo(inputA, SolderType.INJECT);
 
         validateModel(model, false);
     }
@@ -203,7 +204,7 @@ class ModelTests {
         final InputWire<Integer, Integer> inputB = taskSchedulerB.buildInputWire("inputB");
 
         taskSchedulerA.getOutputWire().solderTo(inputB);
-        taskSchedulerB.getOutputWire().solderTo(inputA, true);
+        taskSchedulerB.getOutputWire().solderTo(inputA, SolderType.INJECT);
 
         validateModel(model, false);
     }
@@ -294,7 +295,7 @@ class ModelTests {
 
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
-        taskSchedulerC.getOutputWire().solderTo(inputA, true);
+        taskSchedulerC.getOutputWire().solderTo(inputA, SolderType.INJECT);
 
         validateModel(model, false);
     }
@@ -402,7 +403,7 @@ class ModelTests {
         taskSchedulerA.getOutputWire().solderTo(inputB);
         taskSchedulerB.getOutputWire().solderTo(inputC);
         taskSchedulerC.getOutputWire().solderTo(inputD);
-        taskSchedulerD.getOutputWire().solderTo(inputA, true);
+        taskSchedulerD.getOutputWire().solderTo(inputA, SolderType.INJECT);
 
         validateModel(model, false);
     }
@@ -592,7 +593,7 @@ class ModelTests {
         taskSchedulerD.getOutputWire().solderTo(inputE);
         taskSchedulerE.getOutputWire().solderTo(inputF);
         taskSchedulerF.getOutputWire().solderTo(inputG);
-        taskSchedulerG.getOutputWire().solderTo(inputD, true);
+        taskSchedulerG.getOutputWire().solderTo(inputD, SolderType.INJECT);
 
         taskSchedulerF.getOutputWire().solderTo(inputH);
         taskSchedulerH.getOutputWire().solderTo(inputI);
@@ -830,15 +831,15 @@ class ModelTests {
         taskSchedulerD.getOutputWire().solderTo(inputE);
         taskSchedulerE.getOutputWire().solderTo(inputF);
         taskSchedulerF.getOutputWire().solderTo(inputG);
-        taskSchedulerG.getOutputWire().solderTo(inputD, true);
+        taskSchedulerG.getOutputWire().solderTo(inputD, SolderType.INJECT);
 
         taskSchedulerF.getOutputWire().solderTo(inputH);
         taskSchedulerH.getOutputWire().solderTo(inputI);
         taskSchedulerI.getOutputWire().solderTo(inputJ);
 
-        taskSchedulerJ.getOutputWire().solderTo(inputA, true);
+        taskSchedulerJ.getOutputWire().solderTo(inputA, SolderType.INJECT);
 
-        taskSchedulerI.getOutputWire().solderTo(inputE, true);
+        taskSchedulerI.getOutputWire().solderTo(inputE, SolderType.INJECT);
 
         validateModel(model, false);
     }
