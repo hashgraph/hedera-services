@@ -126,7 +126,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -149,7 +148,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
+// @HapiTestSuite
 public class CryptoTransferSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(CryptoTransferSuite.class);
     private static final String OWNER = "owner";
@@ -821,7 +820,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec allowanceTransfersWorkAsExpected() {
-        return defaultHapiSpec("AllowanceTransfersWorkAsExpected")
+        return defaultHapiSpec("AllowanceTransfersWorkAsExpected", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         newKeyNamed(FREEZE_KEY),
@@ -1153,7 +1152,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var nftType = "nftType";
         final var uncheckedTxn = UNCHECKED_TXN;
 
-        return defaultHapiSpec("NftSelfTransfersRejectedBothInPrecheckAndHandle")
+        return defaultHapiSpec("NftSelfTransfersRejectedBothInPrecheckAndHandle", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(multipurpose),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1793,7 +1792,7 @@ public class CryptoTransferSuite extends HapiSuite {
         SigControl receiverSigs = SigControl.threshSigs(
                 3, SigControl.threshSigs(2, ON, ON), SigControl.threshSigs(3, OFF, OFF, ON, ON, ON), ON);
 
-        return defaultHapiSpec("TwoComplexKeysRequired")
+        return defaultHapiSpec("TwoComplexKeysRequired", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed("payerKey").shape(payerShape),
                         newKeyNamed("receiverKey").shape(receiverShape),

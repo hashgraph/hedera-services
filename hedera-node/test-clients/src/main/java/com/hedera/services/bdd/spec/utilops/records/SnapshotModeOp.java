@@ -38,6 +38,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.domain.ParsedItem;
 import com.hedera.services.bdd.spec.utilops.domain.RecordSnapshot;
+import com.hedera.services.bdd.spec.utilops.domain.SuiteSnapshots;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -90,12 +91,13 @@ import org.junit.jupiter.api.Assertions;
 // too many parameters, repeated string literals
 @SuppressWarnings({"java:S5960", "java:S1192"})
 public class SnapshotModeOp extends UtilOp implements SnapshotOp {
+    private static final Logger log = LogManager.getLogger(SnapshotModeOp.class);
     private static final long MIN_GZIP_SIZE_IN_BYTES = 26;
     private static final long MAX_NORMAL_FEE_VARIATION_IN_TINYBARS = 1;
     // For large key structures, there can be "significant" fee variation in tinybar units
     // due to different public key sizes and signature map prefixes
     private static final long MAX_COMPLEX_KEY_FEE_VARIATION_IN_TINYBAR = 25_000;
-    private static final Logger log = LogManager.getLogger(SnapshotModeOp.class);
+    private static final ObjectMapper om = new ObjectMapper();
 
     private static final Set<String> FIELDS_TO_SKIP_IN_FUZZY_MATCH = Set.of(
             // These time-dependent fields will necessarily vary each test execution
@@ -144,7 +146,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     /**
      * The full name of the spec that generated the record stream; file name for the JSON snapshot.
      */
-    private String fullSpecName;
+    private SnapshotFileMeta snapshotFileMeta;
     /**
      * The memo to use in the {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoCreate} that
      * generates the placeholder number.
@@ -157,8 +159,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotToDump = "CryptoTransfer-okToRepeatSerialNumbersInBurnList";
-        final var snapshot = loadSnapshotFor(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotToDump);
+        final var snapshotFileMeta = new SnapshotFileMeta("CryptoTransfer", "okToRepeatSerialNumbersInBurnList");
+        final var snapshot = loadSnapshotFor(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta);
         final var items = snapshot.parsedItems();
         for (int i = 0, n = items.size(); i < n; i++) {
             final var item = items.get(i);
@@ -195,7 +197,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         final var isDeterministic = !matchModes.contains(FULLY_NONDETERMINISTIC);
         if (isDeterministic && mode.targetNetworkType() == spec.targetNetworkType()) {
-            this.fullSpecName = snapshotFileNameFor(spec);
+            this.snapshotFileMeta = SnapshotFileMeta.from(spec);
             switch (mode) {
                 case TAKE_FROM_MONO_STREAMS -> computePlaceholderNum(
                         monoStreamLocs(), PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, spec);
@@ -217,31 +219,20 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * @return the snapshot, if one exists
      */
     static Optional<RecordSnapshot> maybeLoadSnapshotFor(@NonNull final HapiSpec spec) {
-        try {
-            final var snapshotLoc = (spec.targetNetworkType() == STANDALONE_MONO_NETWORK)
-                    ? PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC
-                    : TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC;
-            return Optional.of(loadSnapshotFor(snapshotLoc, snapshotFileNameFor(spec)));
-        } catch (IOException e) {
-            return Optional.empty();
-        }
-    }
-
-    /**
-     * Returns the JSON snapshot name for the given spec.
-     *
-     * @param spec the spec
-     * @return the JSON snapshot name
-     */
-    static String snapshotFileNameFor(@NonNull final HapiSpec spec) {
-        return spec.getSuitePrefix() + "-" + spec.getName();
+        final var snapshotFileMeta = SnapshotFileMeta.from(spec);
+        final var snapshotLoc = (spec.targetNetworkType() == STANDALONE_MONO_NETWORK)
+                ? PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC
+                : TEST_CLIENTS_SNAPSHOT_RESOURCES_LOC;
+        return suiteSnapshotsFrom(resourceLocOf(snapshotLoc, snapshotFileMeta.suiteName()))
+                .flatMap(
+                        suiteSnapshots -> Optional.ofNullable(suiteSnapshots.getSnapshot(snapshotFileMeta.specName())));
     }
 
     @Override
     public boolean hasWorkToDo() {
         // We leave the spec name null in submitOp() if we are running against a target network that
         // doesn't match the SnapshotMode of this operation; or if the HapiSpec is non-deterministic
-        return fullSpecName != null;
+        return snapshotFileMeta != null;
     }
 
     @Override
@@ -603,34 +594,60 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     }
 
     private void writeSnapshotOf(@NonNull final List<ParsedItem> postPlaceholderItems) throws IOException {
-        final var recordSnapshot = RecordSnapshot.from(placeholderAccountNum, postPlaceholderItems);
-        final var om = new ObjectMapper();
-        final var outputLoc = resourceLocOf(snapshotLoc, fullSpecName);
+        final var outputLoc = resourceLocOf(snapshotLoc, snapshotFileMeta.suiteName());
         log.info("Writing snapshot of {} post-placeholder items to {}", postPlaceholderItems.size(), outputLoc);
+
+        final var suiteSnapshots = suiteSnapshotsFrom(outputLoc).orElseGet(SuiteSnapshots::new);
+        final var specSnapshot = RecordSnapshot.from(placeholderAccountNum, postPlaceholderItems);
+        // Update the snapshot for this spec
+        suiteSnapshots.addSnapshot(snapshotFileMeta.specName(), specSnapshot);
         final var fout = Files.newOutputStream(outputLoc);
-        om.writeValue(fout, recordSnapshot);
+        om.writeValue(fout, suiteSnapshots);
     }
 
-    private static Path resourceLocOf(@NonNull final String snapshotLoc, @NonNull final String specName) {
-        return Paths.get(snapshotLoc, specName + ".json");
+    private static Path resourceLocOf(@NonNull final String snapshotLoc, @NonNull final String suiteName) {
+        return Paths.get(snapshotLoc, suiteName + ".json");
     }
 
     private void prepToFuzzyMatchAgainstLoc(
-            @NonNull final List<String> recordsLocs, @NonNull final String snapshotLoc, @NonNull final HapiSpec spec)
-            throws IOException {
+            @NonNull final List<String> recordsLocs, @NonNull final String snapshotLoc, @NonNull final HapiSpec spec) {
         computePlaceholderNum(recordsLocs, snapshotLoc, spec);
-        snapshotToMatchAgainst = loadSnapshotFor(snapshotLoc, fullSpecName);
+        final var suiteSnapshotsPath = resourceLocOf(snapshotLoc, snapshotFileMeta.suiteName());
+        final var suiteSnapshots = suiteSnapshotsFrom(suiteSnapshotsPath)
+                .orElseThrow(() ->
+                        new IllegalStateException("No snapshots found for suite " + snapshotFileMeta.suiteName()));
+        snapshotToMatchAgainst = requireNonNull(
+                suiteSnapshots.getSnapshot(snapshotFileMeta.specName()),
+                "No snapshot found for spec " + snapshotFileMeta.specName());
         log.info(
                 "Read {} post-placeholder records from snapshot",
                 snapshotToMatchAgainst.getEncodedItems().size());
     }
 
-    private static RecordSnapshot loadSnapshotFor(@NonNull final String snapshotLoc, @NonNull final String fullSpecName)
-            throws IOException {
+    /**
+     * Given a path, tries to read a {@link SuiteSnapshots} from it.
+     *
+     * @param p the path to read from
+     * @return the suite snapshots, if any
+     */
+    private static Optional<SuiteSnapshots> suiteSnapshotsFrom(@NonNull final Path p) {
+        final var f = p.toFile();
+        if (f.exists()) {
+            try {
+                return Optional.of(om.readValue(f, SuiteSnapshots.class));
+            } catch (IOException e) {
+                log.warn("Could not read existing snapshots", e);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static RecordSnapshot loadSnapshotFor(
+            @NonNull final String snapshotLoc, @NonNull final SnapshotFileMeta snapshotFileMeta) throws IOException {
         final var om = new ObjectMapper();
-        final var inputLoc = resourceLocOf(snapshotLoc, fullSpecName);
+        final var inputLoc = resourceLocOf(snapshotLoc, snapshotFileMeta.suiteName());
         final var fin = Files.newInputStream(inputLoc);
-        log.info("Loading snapshot of {} post-placeholder records from {}", fullSpecName, inputLoc);
+        log.info("Loading snapshot of {} post-placeholder records from {}", snapshotFileMeta.specName(), inputLoc);
         return om.reader().readValue(fin, RecordSnapshot.class);
     }
 
@@ -640,7 +657,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         this.snapshotLoc = snapshotLoc;
         // We will get the record's consensus time to set a lower bound on how early we need to
         // look in the record stream for matching items
-        final var txn = fullSpecName + Instant.now();
+        final var txn = snapshotFileMeta.toString() + Instant.now();
         final var placeholderCreation = cryptoCreate("PLACEHOLDER")
                 .memo(placeholderMemo)
                 .via(txn)
