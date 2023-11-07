@@ -19,13 +19,14 @@ package com.hedera.node.app.service.mono.contracts.operation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallCodeOperation;
+
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 /**
  * Hedera adapted version of the {@link CallCodeOperation}.
@@ -38,12 +39,12 @@ import org.hyperledger.besu.evm.operation.CallCodeOperation;
  * verification of the provided signature is performed. If the signature is not active, the
  * execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
  */
-public class HederaCallCodeOperationV038 extends CallCodeOperation {
+public class HederaCallCodeOperationV045 extends CallCodeOperation {
     private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> systemAccountDetector;
 
-    public HederaCallCodeOperationV038(
+    public HederaCallCodeOperationV045(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
@@ -56,7 +57,7 @@ public class HederaCallCodeOperationV038 extends CallCodeOperation {
 
     @Override
     public OperationResult execute(final MessageFrame frame, final EVM evm) {
-        return HederaOperationUtilV038.addressSignatureCheckExecution(
+        return HederaOperationUtilV045.addressSignatureCheckExecution(
                 sigsVerifier,
                 frame,
                 to(frame),

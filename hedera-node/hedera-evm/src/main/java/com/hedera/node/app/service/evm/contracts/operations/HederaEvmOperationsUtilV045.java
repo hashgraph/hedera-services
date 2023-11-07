@@ -17,10 +17,6 @@
 package com.hedera.node.app.service.evm.contracts.operations;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.BiPredicate;
-import java.util.function.LongSupplier;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -29,7 +25,12 @@ import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
 
-public interface HederaEvmOperationsUtilV038 {
+import java.util.function.BiPredicate;
+import java.util.function.LongSupplier;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+public interface HederaEvmOperationsUtilV045 {
 
     /**
      * An extracted address check and execution of extended Hedera Operations. Halts the execution

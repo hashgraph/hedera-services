@@ -148,7 +148,11 @@ public class MutableEntityAccess implements EntityAccess {
 
     @Override
     public Bytes fetchCodeIfPresent(final Address address) {
-        return explicitCodeFetch(bytecode.get(), accountIdFromEvmAddress(address));
+        try {
+            return explicitCodeFetch(bytecode.get(), accountIdFromEvmAddress(address));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     @Override

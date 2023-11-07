@@ -16,22 +16,12 @@
 
 package com.hedera.node.app.service.mono.contracts.execution;
 
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
-
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.Map;
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
@@ -41,13 +31,22 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.Map;
+
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+
 @Singleton
-public class CallEvmTxProcessor extends EvmTxProcessor {
+public class CallEvmTxProcessorV045 extends EvmTxProcessor {
     private final CodeCache codeCache;
     private final AliasManager aliasManager;
 
     @Inject
-    public CallEvmTxProcessor(
+    public CallEvmTxProcessorV045(
             final HederaMutableWorldState worldState,
             final LivePricesSource livePricesSource,
             final CodeCache codeCache,
@@ -133,7 +132,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
          * If there is no bytecode, it means we have a non-token and non-contract account,
          * hence the code should be null and there must be a value transfer.
          */
-        validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION);
+        //        validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION);
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)

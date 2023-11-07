@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -28,6 +26,9 @@ import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+
 /**
  * Hedera adapted version of the {@link ExtCodeHashOperation}.
  *
@@ -35,12 +36,12 @@ import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
  * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does
  * not exist, or it is deleted.
  */
-public class HederaExtCodeHashOperationV038 extends ExtCodeHashOperation {
+public class HederaExtCodeHashOperationV045 extends ExtCodeHashOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> systemAccountDetector;
 
-    public HederaExtCodeHashOperationV038(
+    public HederaExtCodeHashOperationV045(
             GasCalculator gasCalculator,
             BiPredicate<Address, MessageFrame> addressValidator,
             Predicate<Address> systemAccountDetector) {

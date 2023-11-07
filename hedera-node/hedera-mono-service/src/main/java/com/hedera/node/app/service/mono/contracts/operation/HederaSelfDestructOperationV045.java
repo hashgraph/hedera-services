@@ -16,15 +16,11 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.numOfMirror;
-
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -34,6 +30,11 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.SelfDestructOperation;
+
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.numOfMirror;
 
 /**
  * Hedera adapted version of the {@link SelfDestructOperation}.
@@ -46,13 +47,13 @@ import org.hyperledger.besu.evm.operation.SelfDestructOperation;
  * HederaExceptionalHaltReason#SELF_DESTRUCT_TO_SELF} if the beneficiary address is the same as the
  * address being destructed
  */
-public class HederaSelfDestructOperationV038 extends SelfDestructOperation {
+public class HederaSelfDestructOperationV045 extends SelfDestructOperation {
     private final TransactionContext txnCtx;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final EvmSigsVerifier sigsVerifier;
     private final Predicate<Address> systemAccountDetector;
 
-    public HederaSelfDestructOperationV038(
+    public HederaSelfDestructOperationV045(
             final GasCalculator gasCalculator,
             final TransactionContext txnCtx,
             final BiPredicate<Address, MessageFrame> addressValidator,
@@ -70,7 +71,7 @@ public class HederaSelfDestructOperationV038 extends SelfDestructOperation {
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var beneficiaryAddress = Words.toAddress(frame.getStackItem(0));
         final var toBeDeleted = frame.getRecipientAddress();
-        if (systemAccountDetector.test(beneficiaryAddress) || !addressValidator.test(beneficiaryAddress, frame)) {
+        if (systemAccountDetector.test(beneficiaryAddress)) {
             return reversionWith(null, HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
         }
         final var beneficiary = updater.get(beneficiaryAddress);
@@ -104,7 +105,7 @@ public class HederaSelfDestructOperationV038 extends SelfDestructOperation {
         if (updater.contractOwnsNfts(toBeDeleted)) {
             return HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
         }
-        if (!HederaOperationUtil.isSigReqMetFor(beneficiaryAddress, frame, sigsVerifier)) {
+        if (!HederaOperationUtilV045.isSigReqMetFor(beneficiaryAddress, frame, sigsVerifier)) {
             return HederaExceptionalHaltReason.INVALID_SIGNATURE;
         }
         return null;

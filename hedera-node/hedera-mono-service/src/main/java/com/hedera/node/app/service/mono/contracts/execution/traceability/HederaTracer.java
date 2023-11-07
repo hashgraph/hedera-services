@@ -16,7 +16,8 @@
 
 package com.hedera.node.app.service.mono.contracts.execution.traceability;
 
-import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+// import static
+// com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_CALL;
 import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_CALLCODE;
 import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_CREATE;
@@ -49,7 +50,6 @@ import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.frame.MessageFrame.Type;
-import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 
 public class HederaTracer implements HederaOperationTracer {
@@ -174,13 +174,19 @@ public class HederaTracer implements HederaOperationTracer {
                 && messageFrame.getWorldUpdater().getAccount(contractAddress) == null) {
             action.setTargetedAddress(contractAddress.toArray());
         } else {
-            final var recipient = EntityId.fromAddress(asMirrorAddress(contractAddress, messageFrame));
-            if (CodeV0.EMPTY_CODE.equals(messageFrame.getCode())) {
-                // code can be empty when calling precompiles too, but we handle
-                // that in tracePrecompileCall, after precompile execution is completed
-                action.setRecipientAccount(recipient);
-            } else {
-                action.setRecipientContract(recipient);
+            try {
+                final var recipient = EntityId.fromAddress(asMirrorAddress(contractAddress, messageFrame));
+                if (CodeV0.EMPTY_CODE.equals(messageFrame.getCode())) {
+                    // code can be empty when calling precompiles too, but we handle
+                    // that in tracePrecompileCall, after precompile execution is completed
+                    action.setRecipientAccount(recipient);
+                } else {
+                    action.setRecipientContract(recipient);
+                }
+            } catch (IllegalArgumentException e) {
+                // handle non-existing to/receiver address
+                action.setRecipientAccount(null);
+                action.setRecipientContract(null);
             }
         }
         actionConfig.accept(action);
@@ -202,11 +208,16 @@ public class HederaTracer implements HederaOperationTracer {
                 if (action.getCallType() != CREATE) {
                     action.setOutput(frame.getOutputData().toArrayUnsafe());
                     if (action.getInvalidSolidityAddress() != null) {
-                        // we had a successful lazy create, replace targeted address with its new Hedera id
-                        final var recipientAsHederaId = EntityId.fromAddress(
-                                asMirrorAddress(Address.wrap(Bytes.of(action.getInvalidSolidityAddress())), frame));
-                        action.setTargetedAddress(null);
-                        action.setRecipientAccount(recipientAsHederaId);
+                        try {
+                            // we had a successful lazy create, replace targeted address with its new Hedera id
+                            final var recipientAsHederaId = EntityId.fromAddress(
+                                    asMirrorAddress(Address.wrap(Bytes.of(action.getInvalidSolidityAddress())), frame));
+                            action.setTargetedAddress(null);
+                            action.setRecipientAccount(recipientAsHederaId);
+                        } catch (IllegalArgumentException e) {
+                            action.setTargetedAddress(null);
+                            action.setRecipientAccount(null);
+                        }
                     }
                 } else {
                     action.setOutput(new byte[0]);
@@ -236,19 +247,22 @@ public class HederaTracer implements HederaOperationTracer {
                     // failure), we have to create a synthetic action recording this, otherwise the details of the
                     // intended call (e.g. the targeted invalid address) and sequence of events leading to the failure
                     // are lost
-                    if (action.getCallType().equals(CALL) && exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
-                        final var syntheticInvalidAction =
-                                new SolidityAction(CALL, frame.getRemainingGas(), null, 0, frame.getDepth() + 1);
-                        syntheticInvalidAction.setCallingContract(
-                                EntityId.fromAddress(asMirrorAddress(frame.getContractAddress(), frame)));
-                        syntheticInvalidAction.setTargetedAddress(
-                                Words.toAddress(frame.getStackItem(1)).toArray());
-                        syntheticInvalidAction.setError(
-                                INVALID_SOLIDITY_ADDRESS.name().getBytes(StandardCharsets.UTF_8));
-                        syntheticInvalidAction.setCallOperationType(
-                                toCallOperationType(frame.getCurrentOperation().getOpcode()));
-                        allActions.add(syntheticInvalidAction);
-                    }
+                    //                    if (action.getCallType().equals(CALL) &&
+                    // exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
+                    //                        final var syntheticInvalidAction =
+                    //                                new SolidityAction(CALL, frame.getRemainingGas(), null, 0,
+                    // frame.getDepth() + 1);
+                    //                        syntheticInvalidAction.setCallingContract(
+                    //                                EntityId.fromAddress(asMirrorAddress(frame.getContractAddress(),
+                    // frame)));
+                    //                        syntheticInvalidAction.setTargetedAddress(
+                    //                                Words.toAddress(frame.getStackItem(1)).toArray());
+                    //                        syntheticInvalidAction.setError(
+                    //                                INVALID_SOLIDITY_ADDRESS.name().getBytes(StandardCharsets.UTF_8));
+                    //                        syntheticInvalidAction.setCallOperationType(
+                    //                                toCallOperationType(frame.getCurrentOperation().getOpcode()));
+                    //                        allActions.add(syntheticInvalidAction);
+                    //                    }
                 } else {
                     action.setError(new byte[0]);
                 }

@@ -80,9 +80,11 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
     public void setCreationCustomizerForSponsor(final Address sponsorAddressOrAlias) {
         final var sponsor = aliases().resolveForEvm(sponsorAddressOrAlias);
         final var sponsorId = accountIdFromEvmAddress(sponsor);
-        pendingCreationCustomizer = customizerFactory.apply(sponsorId, trackingAccounts());
-        if (!dynamicProperties.areContractAutoAssociationsEnabled()) {
-            pendingCreationCustomizer.accountCustomizer().maxAutomaticAssociations(0);
+        if (trackingAccounts() != null) {
+            pendingCreationCustomizer = customizerFactory.apply(sponsorId, trackingAccounts());
+            if (!dynamicProperties.areContractAutoAssociationsEnabled()) {
+                pendingCreationCustomizer.accountCustomizer().maxAutomaticAssociations(0);
+            }
         }
     }
 
