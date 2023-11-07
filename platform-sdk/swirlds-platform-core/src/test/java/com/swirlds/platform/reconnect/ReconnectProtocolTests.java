@@ -41,14 +41,12 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.test.framework.config.TestConfigBuilder;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -460,9 +458,9 @@ class ReconnectProtocolTests {
         final ReconnectController reconnectController = mock(ReconnectController.class);
         when(reconnectController.acquireLearnerPermit()).thenReturn(true);
 
-        final SignedState signedState= spy(new RandomSignedStateGenerator().build());
-            when(signedState.isComplete()).thenReturn(true);
-            signedState.reserve("test");
+        final SignedState signedState = spy(new RandomSignedStateGenerator().build());
+        when(signedState.isComplete()).thenReturn(true);
+        signedState.reserve("test");
 
         final ReconnectThrottle teacherThrottle = mock(ReconnectThrottle.class);
         when(teacherThrottle.initiateReconnect(any())).thenReturn(true);
@@ -496,10 +494,9 @@ class ReconnectProtocolTests {
         verify(reconnectController, times(2)).acquireLearnerPermit();
         verify(reconnectController, times(1)).cancelLearnerPermit();
 
-        assertThrows(Exception.class, ()->protocol.runProtocol(mock(Connection.class)));
+        assertThrows(Exception.class, () -> protocol.runProtocol(mock(Connection.class)));
 
         verify(reconnectController, times(2)).acquireLearnerPermit();
         verify(reconnectController, times(2)).cancelLearnerPermit();
-
     }
 }

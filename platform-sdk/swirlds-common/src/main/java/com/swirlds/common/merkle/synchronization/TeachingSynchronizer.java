@@ -42,7 +42,6 @@ import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BooleanSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -191,15 +190,7 @@ public class TeachingSynchronizer {
 
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
-        new TeacherSendingThread<T>(
-                        time,
-                        reconnectConfig,
-                        workGroup,
-                        in,
-                        out,
-                        subtrees,
-                        view,
-                        senderIsFinished)
+        new TeacherSendingThread<T>(time, reconnectConfig, workGroup, in, out, subtrees, view, senderIsFinished)
                 .start();
         new TeacherReceivingThread<>(workGroup, in, view, senderIsFinished).start();
 

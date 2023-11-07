@@ -172,12 +172,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     private void teacher(final Connection connection) {
         try {
             new EmergencyReconnectTeacher(
-                            time,
-                            threadManager,
-                            stateFinder,
-                            reconnectSocketTimeout,
-                            reconnectMetrics,
-                            configuration)
+                            time, threadManager, stateFinder, reconnectSocketTimeout, reconnectMetrics, configuration)
                     .execute(connection);
         } finally {
             teacherThrottle.reconnectAttemptFinished();

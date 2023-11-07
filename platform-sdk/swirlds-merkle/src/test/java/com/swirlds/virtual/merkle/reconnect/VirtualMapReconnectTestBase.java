@@ -54,7 +54,6 @@ import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -219,9 +218,7 @@ public class VirtualMapReconnectTestBase {
 
                 try {
                     final MerkleNode node = MerkleTestUtils.hashAndTestSynchronization(
-                            learnerTree,
-                            failureExpected ? brokenTeacherTree : teacherTree,
-                            reconnectConfig);
+                            learnerTree, failureExpected ? brokenTeacherTree : teacherTree, reconnectConfig);
                     node.release();
                     assertFalse(failureExpected, "We should only succeed on the last try");
                     final VirtualRoot root = learnerMap.getRight();
