@@ -250,11 +250,22 @@ public class ThrottleAccumulator implements HandleThrottleParser {
         final var txGasLimit = getGasLimitForContractTx(txnInfo.txBody(), txnInfo.functionality());
         if (isGasExhausted(function, now, txGasLimit, configuration)) {
             lastTxnWasGasThrottled = true;
+
+            log.info(
+                    "Throttling {} transaction {} by gas -\n {} gas/sec (throttling {})",
+                    throttleType.name(),
+                    function,
+                    gasThrottle.capacity(),
+                    (configuration.getConfigData(ContractsConfig.class).throttleThrottleByGas() ? "ON" : "OFF"));
+
             return true;
         }
 
         final var manager = functionReqs.get(function);
         if (manager == null) {
+
+            log.info("Throttling {} transaction {} -\n no throttle requirements", throttleType.name(), function);
+
             return true;
         }
 

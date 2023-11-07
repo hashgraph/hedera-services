@@ -70,7 +70,12 @@ public class HapiTestEnv {
                 final var workingDir = Path.of("./build/hapi-test/" + testName + "/node" + nodeId)
                         .normalize();
                 setupWorkingDirectory(workingDir, configText);
-                nodes.add(new SubProcessHapiTestNode(workingDir, nodeId, FIRST_GRPC_PORT + (nodeId * 2)));
+                //  nodes.add(new SubProcessHapiTestNode(workingDir, nodeId, FIRST_GRPC_PORT + (nodeId * 2)));
+                if (nodeId == 0) {
+                    nodes.add(new InProcessHapiTestNode(workingDir, 0, FIRST_GRPC_PORT));
+                } else {
+                    nodes.add(new SubProcessHapiTestNode(workingDir, nodeId, FIRST_GRPC_PORT + (nodeId * 2)));
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
