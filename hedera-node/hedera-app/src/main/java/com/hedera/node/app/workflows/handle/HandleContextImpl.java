@@ -662,7 +662,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
             childStack.commitFullStack();
         } catch (HandleException e) {
-            e.printStackTrace();
             childRecordBuilder.status(e.getStatus());
             recordListBuilder.revertChildrenOf(recordBuilder);
         }

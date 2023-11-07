@@ -76,6 +76,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
      * @param signatureMapSize The number of bytes in the signature map.
      * @param feeData          The fee data associated with this transaction and its subtype.
      * @param currentRate      The current HBAR-to-USD exchange rate.
+     * @param isInternalDispatch Whether this is an internal child dispatch transaction
      */
     public FeeCalculatorImpl(
             @NonNull TransactionBody txBody,
