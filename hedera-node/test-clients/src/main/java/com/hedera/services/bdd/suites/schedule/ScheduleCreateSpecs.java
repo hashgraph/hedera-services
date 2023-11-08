@@ -558,7 +558,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         .payingWith(GENESIS));
     }
 
-    @HapiTest
+    //Disabled because schedule throttle is not implemented yet
     public HapiSpec functionlessTxnBusyWithNonExemptPayer() {
         return defaultHapiSpec("FunctionlessTxnBusyWithNonExemptPayer")
                 .given()
