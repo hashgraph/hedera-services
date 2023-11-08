@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites;
 import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_FAILED;
 import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_PASSED;
 
+import com.hedera.services.bdd.junit.HapiTestNode;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -216,13 +217,14 @@ public abstract class HapiSuite {
         return runSuite(HapiSuite::runSequentialSpecs);
     }
 
-    public FinalOutcome runSpecSync(HapiSpec spec) {
+    public FinalOutcome runSpecSync(HapiSpec spec, List<HapiTestNode> nodes) {
         if (!overrides.isEmpty()) {
             spec.addOverrideProperties(overrides);
         }
 
         final var name = name();
         spec.setSuitePrefix(name);
+        spec.setNodes(nodes);
         spec.run();
         finalSpecs = List.of(spec);
         //        summarizeResults(getResultsLogger());
@@ -238,13 +240,15 @@ public abstract class HapiSuite {
     }
 
     @SuppressWarnings("java:S2629")
-    private FinalOutcome runSuite(final Consumer<List<HapiSpec>> runner) {
+    private FinalOutcome runSuite(Consumer<List<HapiSpec>> runner) {
         if (!getDeferResultsSummary() || onlyLogHeader) {
             getResultsLogger().info(STARTING_SUITE, name());
         }
 
         List<HapiSpec> specs = getSpecsInSuite();
+        boolean autoSnapshotManagementOn = false;
         for (final var spec : specs) {
+            autoSnapshotManagementOn |= spec.setup().autoSnapshotManagement();
             if (!overrides.isEmpty()) {
                 spec.addOverrideProperties(overrides);
             }
@@ -252,6 +256,11 @@ public abstract class HapiSuite {
                 specs = List.of(spec);
                 break;
             }
+        }
+        if (autoSnapshotManagementOn) {
+            // Coerce to sequential spec runner if auto-snapshot management is on for any spec
+            // (concurrent spec execution makes it impossible to match record stream snapshots)
+            runner = HapiSuite::runSequentialSpecs;
         }
         final var name = name();
         specs.forEach(spec -> spec.setSuitePrefix(name));
