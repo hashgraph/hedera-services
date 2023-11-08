@@ -20,9 +20,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,6 +48,8 @@ class DataFileCollectionCompactionTest {
 
     // Would be nice to add a test to make sure files get deleted
 
+    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+
     /** Temporary directory provided by JUnit */
     @TempDir
     Path tempFileDir;
@@ -66,7 +70,7 @@ class DataFileCollectionCompactionTest {
         final Map<Long, Long> index = new HashMap<>();
         final var serializer = new ExampleFixedSizeDataSerializer();
         String storeName = "mergeTest";
-        final var coll = new DataFileCollection<>(tempFileDir.resolve(storeName), storeName, serializer, null);
+        final var coll = new DataFileCollection<>(config, tempFileDir.resolve(storeName), storeName, serializer, null);
 
         coll.startWriting();
         index.put(1L, coll.storeDataItem(new long[] {1, APPLE}));
@@ -160,7 +164,7 @@ class DataFileCollectionCompactionTest {
         String storeName = "testDoubleMerge";
         final Path testDir = tempFileDir.resolve(storeName);
         final DataFileCollection<long[]> store =
-                new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
+                new DataFileCollection<>(config, testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
 
         final int numFiles = 2;
         for (long i = 0; i < numFiles; i++) {
@@ -232,6 +236,7 @@ class DataFileCollectionCompactionTest {
         // Create a new data collection from the snapshot
         final String[] index2 = new String[MAXKEYS];
         final DataFileCollection<long[]> store2 = new DataFileCollection<>(
+                config,
                 snapshot,
                 storeName,
                 new ExampleFixedSizeDataSerializer(),
@@ -284,7 +289,7 @@ class DataFileCollectionCompactionTest {
         final Path testDir = tempFileDir.resolve(storeName);
 
         final DataFileCollection<long[]> store =
-                new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
+                new DataFileCollection<>(config, testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
 
         try {
             for (long i = 0; i < 2 * NUM_UPDATES; i++) {
@@ -356,7 +361,7 @@ class DataFileCollectionCompactionTest {
         final Path testDir = tempFileDir.resolve(storeName);
 
         final DataFileCollection<long[]> store =
-                new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
+                new DataFileCollection<>(config, testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
         try {
             // Initial values
             store.startWriting();
@@ -411,6 +416,7 @@ class DataFileCollectionCompactionTest {
             // Restore from all files
             final AtomicLongArray reindex = new AtomicLongArray(MAX_KEYS);
             final DataFileCollection<long[]> restore = new DataFileCollection<>(
+                    config,
                     testDir,
                     storeName,
                     new ExampleFixedSizeDataSerializer(),
@@ -442,7 +448,7 @@ class DataFileCollectionCompactionTest {
         Files.createDirectories(testDir);
         final LongListOffHeap index = new LongListOffHeap();
         final DataFileCollection<long[]> store =
-                new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
+                new DataFileCollection<>(config, testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
         final DataFileCompactor<long[]> compactor = new DataFileCompactor<>(storeName, store, index, null, null, null);
         // Create a few files initially
         for (int i = 0; i < numFiles; i++) {
@@ -534,7 +540,7 @@ class DataFileCollectionCompactionTest {
         // Restore
         final LongListOffHeap index2 = new LongListOffHeap(snapshotDir.resolve("index.ll"));
         final DataFileCollection<long[]> store2 =
-                new DataFileCollection<>(snapshotDir, storeName, new ExampleFixedSizeDataSerializer(), null);
+                new DataFileCollection<>(config, snapshotDir, storeName, new ExampleFixedSizeDataSerializer(), null);
         // Check index size
         assertEquals(numFiles * numValues, index2.size());
         // Check the values
@@ -559,7 +565,7 @@ class DataFileCollectionCompactionTest {
         String storeName = "testInconsistentIndex";
         final Path testDir = tempFileDir.resolve(storeName);
         final DataFileCollection<long[]> store =
-                new DataFileCollection<>(testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
+                new DataFileCollection<>(config, testDir, storeName, new ExampleFixedSizeDataSerializer(), null);
         final DataFileCompactor<long[]> compactor = new DataFileCompactor<>(storeName, store, index, null, null, null);
 
         final int numFiles = 2;
@@ -614,7 +620,7 @@ class DataFileCollectionCompactionTest {
         // Create a new data collection from the snapshot
         LongList index2 = new LongListOffHeap(savedIndex);
         final DataFileCollection<long[]> store2 =
-                new DataFileCollection<>(snapshot, storeName, new ExampleFixedSizeDataSerializer(), null);
+                new DataFileCollection<>(config, snapshot, storeName, new ExampleFixedSizeDataSerializer(), null);
 
         // Merge all files with redundant records
         final List<DataFileReader<long[]>> filesToMerge2 = getFilesToMerge(store2);

@@ -70,7 +70,7 @@ public class DataFileCollectionJdbToPbjTest {
             final Predicate<Integer> usePbj)
             throws IOException {
         final DataFileCollection<long[]> fileCollection =
-                new DataFileCollection<>(dir, STORE_NAME, testType.dataItemSerializer, null);
+                new DataFileCollection<>(config, dir, STORE_NAME, testType.dataItemSerializer, null);
         for (int f = 0; f < files; f++) {
             fileCollection.startWriting(usePbj.test(f));
             int c = count.get();
@@ -103,8 +103,8 @@ public class DataFileCollectionJdbToPbjTest {
         assertEquals(FILES, fileCollection.getNumOfFiles());
         checkData(fileCollection, index, testType, 0, FILES * COUNT_INC, VALUE_ADDITION);
 
-        final DataFileCollection<long[]> newCollection =
-                new DataFileCollection<>(dir.resolve(testType.name()), "test", testType.dataItemSerializer, null);
+        final DataFileCollection<long[]> newCollection = new DataFileCollection<>(
+                config, dir.resolve(testType.name()), "test", testType.dataItemSerializer, null);
         assertEquals(FILES, newCollection.getNumOfFiles());
         checkData(newCollection, index, testType, 0, FILES * COUNT_INC, VALUE_ADDITION);
     }
@@ -124,8 +124,8 @@ public class DataFileCollectionJdbToPbjTest {
                 dataFileCollection(testDir, testType, FILES, count, COUNT_INC, index, i -> i % 2 == 0);
         assertEquals(FILES, fileCollection.getNumOfFiles());
 
-        final DataFileCollection<long[]> newCollection =
-                new DataFileCollection<>(dir.resolve(testType.name()), STORE_NAME, testType.dataItemSerializer, null);
+        final DataFileCollection<long[]> newCollection = new DataFileCollection<>(
+                config, dir.resolve(testType.name()), STORE_NAME, testType.dataItemSerializer, null);
         assertEquals(FILES, newCollection.getNumOfFiles());
         checkData(fileCollection, index, testType, 0, FILES * COUNT_INC, VALUE_ADDITION);
     }
@@ -147,8 +147,8 @@ public class DataFileCollectionJdbToPbjTest {
         final DataFileCollection<long[]> fileCollection2 =
                 dataFileCollection(testDir, testType, FILES, count, COUNT_INC, index, i -> true);
 
-        final DataFileCollection<long[]> newCollection =
-                new DataFileCollection<>(dir.resolve(testType.name()), STORE_NAME, testType.dataItemSerializer, null);
+        final DataFileCollection<long[]> newCollection = new DataFileCollection<>(
+                config, dir.resolve(testType.name()), STORE_NAME, testType.dataItemSerializer, null);
         assertEquals(FILES * 2, newCollection.getNumOfFiles());
         checkData(newCollection, index, testType, 0, FILES * COUNT_INC * 2, VALUE_ADDITION);
     }
@@ -175,8 +175,8 @@ public class DataFileCollectionJdbToPbjTest {
         assertEquals(1, fileCollection.getNumOfFiles());
         checkData(fileCollection, index, testType, 0, FILES * COUNT_INC, VALUE_ADDITION);
 
-        final DataFileCollection<long[]> newCollection =
-                new DataFileCollection<>(dir.resolve(testType.name()), STORE_NAME, testType.dataItemSerializer, null);
+        final DataFileCollection<long[]> newCollection = new DataFileCollection<>(
+                config, dir.resolve(testType.name()), STORE_NAME, testType.dataItemSerializer, null);
         assertEquals(1, newCollection.getNumOfFiles());
         checkData(newCollection, index, testType, 0, FILES * COUNT_INC, VALUE_ADDITION);
     }
@@ -207,8 +207,8 @@ public class DataFileCollectionJdbToPbjTest {
         assertEquals(1 + FILES, fileCollection2.getNumOfFiles());
         checkData(fileCollection2, index, testType, 0, FILES * COUNT_INC * 2, VALUE_ADDITION);
 
-        final DataFileCollection<long[]> newCollection =
-                new DataFileCollection<>(dir.resolve(testType.name()), STORE_NAME, testType.dataItemSerializer, null);
+        final DataFileCollection<long[]> newCollection = new DataFileCollection<>(
+                config, dir.resolve(testType.name()), STORE_NAME, testType.dataItemSerializer, null);
         assertEquals(1 + FILES, newCollection.getNumOfFiles());
         checkData(newCollection, index, testType, 0, FILES * COUNT_INC * 2, VALUE_ADDITION);
     }

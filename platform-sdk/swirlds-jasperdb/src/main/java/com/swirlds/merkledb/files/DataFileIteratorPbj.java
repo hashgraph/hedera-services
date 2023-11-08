@@ -96,6 +96,7 @@ public final class DataFileIteratorPbj<D> implements DataFileIterator<D> {
         this.inputStream = new BufferedInputStream(
                 Files.newInputStream(path, StandardOpenOption.READ), config.iteratorInputBufferBytes());
         this.in = new ReadableStreamingData(inputStream);
+        this.in.limit(Files.size(path));
     }
 
     /** {@inheritDoc} */

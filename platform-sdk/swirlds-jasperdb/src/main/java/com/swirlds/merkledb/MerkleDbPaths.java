@@ -23,6 +23,7 @@ import java.nio.file.Path;
  */
 public class MerkleDbPaths {
     public final Path storageDir;
+    public final Path metadataFileOld;
     public final Path metadataFile;
     public final Path pathToDiskLocationInternalNodesFile;
     public final Path pathToDiskLocationLeafNodesFile;
@@ -40,7 +41,8 @@ public class MerkleDbPaths {
      */
     public MerkleDbPaths(final Path storageDir) {
         this.storageDir = storageDir;
-        metadataFile = storageDir.resolve("metadata.jdbm");
+        metadataFileOld = storageDir.resolve("metadata.jdbm");
+        metadataFile = storageDir.resolve("table_metadata.pbj");
         pathToDiskLocationInternalNodesFile = storageDir.resolve("pathToDiskLocationInternalNodes.ll");
         pathToDiskLocationLeafNodesFile = storageDir.resolve("pathToDiskLocationLeafNodes.ll");
         hashStoreRamFile = storageDir.resolve("internalHashStoreRam.hl");

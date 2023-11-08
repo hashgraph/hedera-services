@@ -169,11 +169,12 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
 
     @Override
     public boolean equals(@NonNull final BufferedData bufferedData, @NonNull final OnDiskKey<K> keyToCompare) {
-        // I really don't have a fast path for this. Which is very problematic for performance.
-        // All we can do is serialize one or deserialize the other! It would be nice if PBJ
-        // had a special method for this, but then we'd have to pipe it through all our APIs again
-        // or create some kind of Codec object with all this stuff on it.
-        return keyToCompare.equals(deserialize(bufferedData));
+        // Future work: https://github.com/hashgraph/pbj/issues/73
+        try {
+            return codec.fastEquals(keyToCompare.getKey(), bufferedData);
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

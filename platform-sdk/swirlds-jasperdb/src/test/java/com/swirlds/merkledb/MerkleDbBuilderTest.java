@@ -156,13 +156,13 @@ class MerkleDbBuilderTest {
     @DisplayName("Test key serializer in table config cannot be null")
     public void testNullKeySerializer() {
         ValueSerializer<ExampleFixedSizeVirtualValue> valueSerializer = new ExampleFixedSizeVirtualValueSerializer();
-        assertThrows(IllegalArgumentException.class, () -> createTableConfig(null, valueSerializer));
+        assertThrows(NullPointerException.class, () -> createTableConfig(null, valueSerializer));
     }
 
     @Test
     @DisplayName("Test value serializer in table config cannot be null")
     public void testNullValueSerializer() {
         KeySerializer<ExampleLongKeyFixedSize> keySerializer = new ExampleLongKeyFixedSize.Serializer();
-        assertThrows(IllegalArgumentException.class, () -> createTableConfig(keySerializer, null));
+        assertThrows(NullPointerException.class, () -> createTableConfig(keySerializer, null));
     }
 }

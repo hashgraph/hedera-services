@@ -20,8 +20,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.collections.LongListHeap;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -71,7 +73,11 @@ class DataFileCollectionCompactionHammerTest {
             final var serializer = new ExampleFixedSizeDataSerializer();
             String storeName = "benchmark";
             final var coll = new DataFileCollection<>(
-                    tempFileDir.resolve(storeName), storeName, serializer, (dataLocation, dataValue) -> {});
+                    ConfigurationHolder.getConfigData(MerkleDbConfig.class),
+                    tempFileDir.resolve(storeName),
+                    storeName,
+                    serializer,
+                    (dataLocation, dataValue) -> {});
             final var compactor = new DataFileCompactor<>(storeName, coll, index, null, null, null);
 
             final Random rand = new Random(777);
@@ -128,7 +134,11 @@ class DataFileCollectionCompactionHammerTest {
         final var serializer = new ExampleFixedSizeDataSerializer();
         String storeName = "hammer";
         final var coll = new DataFileCollection<>(
-                tempFileDir.resolve(storeName), storeName, serializer, (dataLocation, dataValue) -> {});
+                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
+                tempFileDir.resolve(storeName),
+                storeName,
+                serializer,
+                (dataLocation, dataValue) -> {});
         final var compactor = new DataFileCompactor<>(storeName, coll, index, null, null, null);
 
         final Random rand = new Random(777);

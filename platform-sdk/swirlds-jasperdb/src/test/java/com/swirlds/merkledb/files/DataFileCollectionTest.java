@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.test.logging.MockAppender;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.KeyRange;
@@ -41,6 +42,7 @@ import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
 import com.swirlds.merkledb.collections.IndexedObject;
 import com.swirlds.merkledb.collections.LongListHeap;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -76,6 +78,8 @@ import org.mockito.Mockito;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class DataFileCollectionTest {
 
+    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+
     /** Temporary directory provided by JUnit */
     @SuppressWarnings("unused")
     @TempDir
@@ -95,7 +99,7 @@ class DataFileCollectionTest {
     @EnumSource(FilesTestType.class)
     void createDataFileCollection(FilesTestType testType) throws Exception {
         final DataFileCollection<long[]> fileCollection = new DataFileCollection<>(
-                tempFileDir.resolve(testType.name()), "test", testType.dataItemSerializer, null);
+                config, tempFileDir.resolve(testType.name()), "test", testType.dataItemSerializer, null);
 
         assertSame(
                 Collections.emptyList(),
@@ -200,7 +204,11 @@ class DataFileCollectionTest {
         fileCollectionMap.get(testType).close(); // close the old one so metadata is written to disk
         final LoadedDataCallbackImpl loadedDataCallbackImpl = new LoadedDataCallbackImpl();
         final DataFileCollection<long[]> fileCollection = new DataFileCollection<>(
-                tempFileDir.resolve(testType.name()), "test", testType.dataItemSerializer, loadedDataCallbackImpl);
+                config,
+                tempFileDir.resolve(testType.name()),
+                "test",
+                testType.dataItemSerializer,
+                loadedDataCallbackImpl);
         fileCollectionMap.put(testType, fileCollection);
         reinitializeDirectMemoryUsage();
         // check that the 10 files were created previously (in the very first unit test) still are
@@ -210,6 +218,7 @@ class DataFileCollectionTest {
                 Files.list(tempFileDir.resolve(testType.name()))
                         .filter(f ->
                                 f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "Temp file should not have changed since previous test in sequence");
         // examine loadedDataCallbackImpl content's map sizes as well as checking the data
@@ -230,7 +239,11 @@ class DataFileCollectionTest {
         // also try specifying a testStore (that doesn't exist) in a storeDir that does
         final LoadedDataCallbackImpl loadedDataCallbackImpl2 = new LoadedDataCallbackImpl();
         final DataFileCollection<long[]> fileCollection2 = new DataFileCollection<>(
-                tempFileDir.resolve(testType.name()), "test2", testType.dataItemSerializer, loadedDataCallbackImpl2);
+                config,
+                tempFileDir.resolve(testType.name()),
+                "test2",
+                testType.dataItemSerializer,
+                loadedDataCallbackImpl2);
         assertEquals(
                 0,
                 loadedDataCallbackImpl2.dataLocationMap.size(),
@@ -258,7 +271,11 @@ class DataFileCollectionTest {
         assertDoesNotThrow(
                 () -> {
                     final DataFileCollection<long[]> reopenedFileCollection = new DataFileCollection<>(
-                            tempFileDir.resolve(testType.name()), "test", testType.dataItemSerializer, testCallback);
+                            config,
+                            tempFileDir.resolve(testType.name()),
+                            "test",
+                            testType.dataItemSerializer,
+                            testCallback);
                     fileCollectionMap.put(testType, reopenedFileCollection);
                 },
                 "Shouldn't be a problem re-opening a closed collection");
@@ -309,6 +326,7 @@ class DataFileCollectionTest {
         assertDoesNotThrow(
                 () -> {
                     final DataFileCollection<long[]> reopenedFileCollection = new DataFileCollection<>(
+                            config,
                             tempFileDir.resolve(testType.name()),
                             "test",
                             null,
@@ -324,13 +342,12 @@ class DataFileCollectionTest {
         assertEquals(new KeyRange(0, 1000), reopened.getValidKeyRange(), "Should still have the valid range");
     }
 
-    @SuppressWarnings("unchecked")
     @Order(100)
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void merge(final FilesTestType testType) throws Exception {
         final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
-        final DataFileCompactor fileCompactor = createFileCompactor("merge", fileCollection, testType);
+        final DataFileCompactor<long[]> fileCompactor = createFileCompactor("merge", fileCollection, testType);
         final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
         final AtomicBoolean mergeComplete = new AtomicBoolean(false);
         final int NUM_OF_KEYS = 1000;
@@ -364,8 +381,7 @@ class DataFileCollectionTest {
                 System.out.println("DataFileCollectionTest.merge");
                 List<Path> mergedFiles = null;
                 try {
-                    List<DataFileReader<?>> filesToMerge =
-                            (List<DataFileReader<?>>) (Object) fileCollection.getAllCompletedFiles(MAX_TEST_FILE_MB);
+                    List<DataFileReader<long[]>> filesToMerge = fileCollection.getAllCompletedFiles(MAX_TEST_FILE_MB);
                     System.out.println("filesToMerge = " + filesToMerge.size());
                     AtomicInteger numMoves = new AtomicInteger(0);
                     Set<Integer> allKeysExpectedToBeThere =
@@ -427,15 +443,14 @@ class DataFileCollectionTest {
                 Files.list(tempFileDir.resolve(testType.name()))
                         .filter(f ->
                                 f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "unexpected # of files #1");
         // After merge is complete, there should be only 1 "fully written" file, and that it is
         // empty.
-        List<DataFileReader<?>> filesLeft =
-                (List<DataFileReader<?>>) (Object) fileCollection.getAllCompletedFiles(Integer.MAX_VALUE);
+        List<DataFileReader<long[]>> filesLeft = fileCollection.getAllCompletedFiles(Integer.MAX_VALUE);
         assertEquals(1, filesLeft.size(), "unexpected # of files #2");
-        filesLeft = (List<DataFileReader<?>>)
-                (Object) fileCollection.getAllCompletedFiles(1); // files with size less than 1 are empty
+        filesLeft = fileCollection.getAllCompletedFiles(1); // files with size less than 1 are empty
         assertEquals(1, filesLeft.size(), "unexpected # of files #3");
 
         // and trying to merge just one file is a no-op
@@ -480,6 +495,7 @@ class DataFileCollectionTest {
                 Files.list(tempFileDir.resolve(testType.name()))
                         .filter(f ->
                                 f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "unexpected # of files");
     }
@@ -498,7 +514,7 @@ class DataFileCollectionTest {
     @EnumSource(FilesTestType.class)
     void merge2(final FilesTestType testType) throws Exception {
         final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
-        final DataFileCompactor fileCompactor = createFileCompactor("merge2", fileCollection, testType);
+        final DataFileCompactor<long[]> fileCompactor = createFileCompactor("merge2", fileCollection, testType);
         final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
         final AtomicBoolean mergeComplete = new AtomicBoolean(false);
         // start compaction paused so that we can test pausing
@@ -530,8 +546,7 @@ class DataFileCollectionTest {
             } else if (thread == 1) { // move thread
                 // merge 2 files
                 try {
-                    List<DataFileReader<?>> allFiles =
-                            (List<DataFileReader<?>>) (Object) fileCollection.getAllCompletedFiles();
+                    List<DataFileReader<long[]>> allFiles = fileCollection.getAllCompletedFiles();
                     Set<Integer> allKeysExpectedToBeThere =
                             IntStream.range(0, 1000).boxed().collect(Collectors.toSet());
                     final CASableLongIndex indexUpdater = new CASableLongIndex() {
@@ -588,13 +603,14 @@ class DataFileCollectionTest {
                 Files.list(tempFileDir.resolve(testType.name()))
                         .filter(f ->
                                 f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "unexpected # of files");
     }
 
-    private static DataFileCompactor createFileCompactor(
+    private static DataFileCompactor<long[]> createFileCompactor(
             String storeName, DataFileCollection<long[]> fileCollection, FilesTestType testType) {
-        return new DataFileCompactor(storeName, fileCollection, storedOffsetsMap.get(testType), null, null, null) {
+        return new DataFileCompactor<>(storeName, fileCollection, storedOffsetsMap.get(testType), null, null, null) {
             @Override
             int getMinNumberOfFilesToCompact() {
                 return 2;
@@ -624,7 +640,7 @@ class DataFileCollectionTest {
         final Path dbDir = tempFileDir.resolve(testType.name());
         final String storeName = "mergeWorksAfterOpen";
         final DataFileCollection<long[]> fileCollection =
-                new DataFileCollection<>(dbDir, storeName, testType.dataItemSerializer, null);
+                new DataFileCollection<>(config, dbDir, storeName, testType.dataItemSerializer, null);
         assertSame(0, fileCollection.getAllCompletedFiles().size(), "Should be no files");
         fileCollectionMap.put(testType, fileCollection);
         // create stored offsets list
@@ -647,9 +663,9 @@ class DataFileCollectionTest {
         fileCollection.close();
         // reopen
         final DataFileCollection<long[]> fileCollection2 =
-                new DataFileCollection<>(dbDir, storeName, testType.dataItemSerializer, null);
-        final DataFileCompactor fileCompactor =
-                new DataFileCompactor(storeName, fileCollection2, storedOffsetsMap.get(testType), null, null, null);
+                new DataFileCollection<>(config, dbDir, storeName, testType.dataItemSerializer, null);
+        final DataFileCompactor<long[]> fileCompactor =
+                new DataFileCompactor<>(storeName, fileCollection2, storedOffsetsMap.get(testType), null, null, null);
         fileCollectionMap.put(testType, fileCollection2);
         // check 10 files were opened and data is correct
         assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files");
@@ -657,8 +673,7 @@ class DataFileCollectionTest {
         // check all files are available for merge
         assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files available for merging");
         // merge
-        fileCompactor.compactFiles(
-                storedOffsets, (List<DataFileReader<?>>) (Object) fileCollection2.getAllCompletedFiles(), 1);
+        fileCompactor.compactFiles(storedOffsets, fileCollection2.getAllCompletedFiles(), 1);
         // check 1 files were opened and data is correct
         assertSame(1, fileCollection2.getAllCompletedFiles().size(), "Should be 1 files");
         assertEquals(
@@ -666,6 +681,7 @@ class DataFileCollectionTest {
                 Files.list(dbDir)
                         .filter(file -> file.getFileName().toString().matches(storeName + ".*pbj")
                                 || file.getFileName().toString().matches(storeName + ".*jdb"))
+                        .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "expected 1 db files but had ["
                         + Arrays.toString(Files.list(dbDir).toArray())
@@ -717,10 +733,10 @@ class DataFileCollectionTest {
 
         // init file collection with some content to compact
         final DataFileCollection<long[]> fileCollection =
-                new DataFileCollection<>(dbDir, storeName, FilesTestType.fixed.dataItemSerializer, null);
+                new DataFileCollection<>(config, dbDir, storeName, FilesTestType.fixed.dataItemSerializer, null);
         final LongListHeap storedOffsets = new LongListHeap(5000);
-        final DataFileCompactor compactor =
-                new DataFileCompactor(storeName, fileCollection, storedOffsets, null, null, null);
+        final DataFileCompactor<long[]> compactor =
+                new DataFileCompactor<>(storeName, fileCollection, storedOffsets, null, null, null);
         populateDataFileCollection(FilesTestType.fixed, fileCollection, storedOffsets);
 
         // a flag to make sure that `compactFiles` th
@@ -737,7 +753,7 @@ class DataFileCollectionTest {
                     return invocation.callRealMethod();
                 });
 
-                List<DataFileReader<?>> allCompletedFilesUpdated = new ArrayList<>(allCompletedFiles);
+                List<DataFileReader<long[]>> allCompletedFilesUpdated = new ArrayList<>(allCompletedFiles);
                 allCompletedFilesUpdated.set(0, spy);
                 compactor.compactFiles(storedOffsets, allCompletedFilesUpdated, 1);
             } catch (InterruptedException e) {

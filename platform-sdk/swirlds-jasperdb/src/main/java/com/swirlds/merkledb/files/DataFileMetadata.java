@@ -132,6 +132,7 @@ public class DataFileMetadata {
         // Read values from the file, skipping all data items
         try (final InputStream fin = Files.newInputStream(file, StandardOpenOption.READ)) {
             final ReadableSequentialData in = new ReadableStreamingData(fin);
+            in.limit(Files.size(file));
             while (in.hasRemaining() && !fieldsToRead.isEmpty()) {
                 final int tag = in.readVarInt(false);
                 final int fieldNum = tag >> TAG_FIELD_OFFSET;

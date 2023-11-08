@@ -22,6 +22,7 @@ import com.swirlds.merkledb.FileStatisticAware;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -84,6 +85,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * @throws IOException If there was a problem opening data files
      */
     public MemoryIndexDiskKeyValueStore(
+            final MerkleDbConfig config,
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
@@ -96,8 +98,8 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         // create store dir
         Files.createDirectories(storeDir);
         // create file collection
-        fileCollection =
-                new DataFileCollection<>(storeDir, storeName, legacyStoreName, dataItemSerializer, loadedDataCallback);
+        fileCollection = new DataFileCollection<>(
+                config, storeDir, storeName, legacyStoreName, dataItemSerializer, loadedDataCallback);
         // no limits for the keys on init
         minValidKey = new AtomicLong(0);
         maxValidKey = new AtomicLong(Long.MAX_VALUE);

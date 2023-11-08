@@ -17,6 +17,7 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.merkledb.collections.LongListOffHeap;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -47,14 +48,15 @@ public class KeyValueStoreBench extends BaseBench {
         final BenchmarkRecord[] map = new BenchmarkRecord[verify ? maxKey : 0];
         LongListOffHeap keyToDiskLocationIndex = new LongListOffHeap();
         final var store = new MemoryIndexDiskKeyValueStore<>(
+                getConfig(MerkleDbConfig.class),
                 getTestDir(),
                 storeName,
                 null,
                 new BenchmarkRecordSerializer(),
                 (dataLocation, dataValue) -> {},
                 keyToDiskLocationIndex);
-        final DataFileCompactor compactor =
-                new DataFileCompactor(storeName, store.getFileCollection(), keyToDiskLocationIndex, null, null, null);
+        final DataFileCompactor<BenchmarkRecord> compactor =
+                new DataFileCompactor<>(storeName, store.getFileCollection(), keyToDiskLocationIndex, null, null, null);
         System.out.println();
 
         // Write files

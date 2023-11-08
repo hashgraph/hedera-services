@@ -223,8 +223,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
             bucketIndexToBucketLocation = preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
             // calculate number of entries we can store in a disk page
             minimumBuckets = (int) (mapSize / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
-            // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of
-            // 4096
+            // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of 4096
             numOfBuckets = Integer.highestOneBit(minimumBuckets) * 2;
             // we are new so no need for a loadedDataCallback
             loadedDataCallback = null;
@@ -236,8 +235,9 @@ public class HalfDiskHashMap<K extends VirtualKey>
                     numOfBuckets);
         }
         // create file collection
-        fileCollection =
-                new DataFileCollection<>(storeDir, storeName, legacyStoreName, bucketSerializer, loadedDataCallback);
+        fileCollection = new DataFileCollection<>(
+                // Need: propagate MerkleDb config from the database
+                config, storeDir, storeName, legacyStoreName, bucketSerializer, loadedDataCallback);
     }
 
     /**
@@ -385,29 +385,26 @@ public class HalfDiskHashMap<K extends VirtualKey>
                     ++inFlight;
                 }
 
-                final ReadBucketResult<K> res = queue.poll();
-                if (res == null) {
-                    Thread.onSpinWait();
-                    continue;
-                }
-                --inFlight;
-
-                if (res.error != null) {
-                    throw new RuntimeException(res.error);
-                }
-                try (final Bucket<K> bucket = res.bucket) {
-                    final int bucketIndex = bucket.getBucketIndex();
-                    if (bucket.getBucketEntryCount() == 0) {
-                        // bucket is missing or empty, remove it from the index
-                        bucketIndexToBucketLocation.remove(bucketIndex);
-                    } else {
-                        // save bucket
-                        final long bucketLocation = fileCollection.storeDataItem(bucket);
-                        // update bucketIndexToBucketLocation
-                        bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
+                ReadBucketResult<K> res;
+                while ((res = queue.poll()) != null) {
+                    --inFlight;
+                    if (res.error != null) {
+                        throw new RuntimeException(res.error);
                     }
-                } finally {
-                    ++processed;
+                    try (final Bucket<K> bucket = res.bucket) {
+                        final int bucketIndex = bucket.getBucketIndex();
+                        if (bucket.getBucketEntryCount() == 0) {
+                            // bucket is missing or empty, remove it from the index
+                            bucketIndexToBucketLocation.remove(bucketIndex);
+                        } else {
+                            // save bucket
+                            final long bucketLocation = fileCollection.storeDataItem(bucket);
+                            // update bucketIndexToBucketLocation
+                            bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
+                        }
+                    } finally {
+                        ++processed;
+                    }
                 }
             }
             // close files session
