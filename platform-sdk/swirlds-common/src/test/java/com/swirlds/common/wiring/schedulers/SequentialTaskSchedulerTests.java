@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.InputWire;
 import com.swirlds.common.wiring.OutputWire;
+import com.swirlds.common.wiring.SolderType;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
@@ -1444,7 +1445,7 @@ class SequentialTaskSchedulerTests {
         final InputWire<Integer, Void> inC = taskSchedulerC.buildInputWire("inC");
 
         taskSchedulerA.getOutputWire().solderTo(inC); // respects capacity
-        taskSchedulerB.getOutputWire().solderTo(inC, true); // ignores capacity
+        taskSchedulerB.getOutputWire().solderTo(inC, SolderType.INJECT); // ignores capacity
 
         final AtomicInteger countA = new AtomicInteger();
         inA.bind(x -> {
@@ -1929,40 +1930,109 @@ class SequentialTaskSchedulerTests {
         }
 
         // This thread wants to add 11 things to the pipeline.
-        final AtomicBoolean allWOrkInserted = new AtomicBoolean(false);
+        final AtomicBoolean allWorkInserted = new AtomicBoolean(false);
         new ThreadConfiguration(getStaticThreadManager())
                 .setRunnable(() -> {
                     for (int i = 0; i < 11; i++) {
                         aIn.put(i);
                     }
-                    allWOrkInserted.set(true);
+                    allWorkInserted.set(true);
                 })
                 .build(true);
 
         // Work is currently stuck at A. No matter how much time passes, we should not be able to exceed A's capacity.
         MILLISECONDS.sleep(50);
-        assertFalse(allWOrkInserted.get());
+        assertFalse(allWorkInserted.get());
         assertEquals(5, counter.getCount());
 
         // Unblock A. Work will flow forward and get blocked at B. A can fit 5 items, B can fit another 5.
         latchA.countDown();
         MILLISECONDS.sleep(50);
-        assertFalse(allWOrkInserted.get());
+        assertFalse(allWorkInserted.get());
         assertEquals(10, counter.getCount());
 
         // Unblock B. Work will flow forward and get blocked at C. We shouldn't be able to add additional items
         // since that would violate the global capacity.
         latchB.countDown();
         MILLISECONDS.sleep(50);
-        assertFalse(allWOrkInserted.get());
+        assertFalse(allWorkInserted.get());
         assertEquals(10, counter.getCount());
 
         // Unblock C. Entire pipeline is now unblocked and new things will be added.
         latchC.countDown();
+        assertEventuallyTrue(allWorkInserted::get, Duration.ofSeconds(1), "All work should have been inserted");
         assertEventuallyEquals(0L, counter::getCount, Duration.ofSeconds(1), "Counter should be empty");
         assertEquals(expectedCount, countA.get());
         assertEquals(expectedCount, countB.get());
         assertEquals(expectedCount, countC.get());
-        assertTrue(allWOrkInserted.get());
+    }
+
+    @Test
+    void offerSolderingTest() {
+        final TaskScheduler<Integer> schedulerA = model.schedulerBuilder("test")
+                .withUnhandledTaskCapacity(10)
+                .build()
+                .cast();
+        final InputWire<Integer, Integer> inputA = schedulerA.buildInputWire("inputA");
+
+        final TaskScheduler<Void> schedulerB = model.schedulerBuilder("test")
+                .withUnhandledTaskCapacity(10)
+                .build()
+                .cast();
+        final InputWire<Integer, Void> inputB = schedulerB.buildInputWire("inputB");
+
+        schedulerA.getOutputWire().solderTo(inputB, SolderType.OFFER);
+
+        final AtomicInteger countA = new AtomicInteger();
+        inputA.bind(x -> {
+            countA.set(hash32(countA.get(), x));
+            return x;
+        });
+
+        final AtomicInteger countB = new AtomicInteger();
+        final CountDownLatch latch = new CountDownLatch(1);
+        inputB.bind(x -> {
+            try {
+                latch.await();
+            } catch (final InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            countB.set(hash32(countB.get(), x));
+        });
+
+        // Fill up B's buffer.
+        int expectedCountA = 0;
+        int expectedCountB = 0;
+        for (int i = 0; i < 10; i++) {
+            inputA.put(i);
+            expectedCountA = hash32(expectedCountA, i);
+            expectedCountB = hash32(expectedCountB, i);
+        }
+
+        // Add more than B is willing to accept.
+        for (int i = 10; i < 20; i++) {
+            inputA.put(i);
+            expectedCountA = hash32(expectedCountA, i);
+        }
+
+        // Wait until A has handled all of its tasks.
+        assertEventuallyEquals(expectedCountA, countA::get, Duration.ofSeconds(1), "A should have processed task");
+
+        // B should not have processed any tasks.
+        assertEquals(0, countB.get());
+
+        // Release the latch and allow B to process tasks.
+        latch.countDown();
+        assertEventuallyEquals(expectedCountB, countB::get, Duration.ofSeconds(1), "B should have processed task");
+
+        // Now, add some more data to A. That data should flow to B as well.
+        for (int i = 30, j = 0; i < 40; i++, j++) {
+            inputA.put(i);
+            expectedCountA = hash32(expectedCountA, i);
+            expectedCountB = hash32(expectedCountB, i);
+        }
+
+        assertEventuallyEquals(expectedCountA, countA::get, Duration.ofSeconds(1), "A should have processed task");
+        assertEventuallyEquals(expectedCountB, countB::get, Duration.ofSeconds(1), "B should have processed task");
     }
 }
