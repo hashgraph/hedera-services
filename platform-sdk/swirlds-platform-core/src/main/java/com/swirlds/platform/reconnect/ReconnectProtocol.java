@@ -197,19 +197,20 @@ public class ReconnectProtocol implements Protocol {
             return false;
         }
 
-        // Check if a reconnect with the learner is permitted by the throttle.
-        final boolean reconnectPermittedByThrottle = teacherThrottle.initiateReconnect(peerId);
-        if (!reconnectPermittedByThrottle) {
-            reconnectRejected();
-            return false;
-        }
-
         // we should not become a learner while we are teaching
         // this can happen if we fall behind while we are teaching
         // in this case, we want to finish teaching before we start learning
         // so we acquire the learner permit and release it when we are done teaching
-        if (!reconnectController.acquireLearnerPermit()) {
+        if (!reconnectController.blockLearnerPermit()) {
             reconnectRejected();
+            return false;
+        }
+
+        // Check if a reconnect with the learner is permitted by the throttle.
+        final boolean reconnectPermittedByThrottle = teacherThrottle.initiateReconnect(peerId);
+        if (!reconnectPermittedByThrottle) {
+            reconnectRejected();
+            reconnectController.cancelLearnerPermit();
             return false;
         }
 
