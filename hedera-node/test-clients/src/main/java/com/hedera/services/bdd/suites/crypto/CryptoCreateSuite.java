@@ -64,7 +64,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class CryptoCreateSuite extends HapiSuite {
@@ -263,7 +262,6 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled("Failing or intermittently failing HAPI Test")
     public HapiSpec syntaxChecksAreAsExpected() {
         return defaultHapiSpec("SyntaxChecksAreAsExpected")
                 .given()
@@ -271,9 +269,6 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then(
                         cryptoCreate("broken").autoRenewSecs(1L).hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
                         cryptoCreate("alsoBroken").entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
-        // In modular code this error is thrown in handle, but it is fixed using dynamic property
-        // spec.streamlinedIngestChecks
-        // to accommodate error codes moved from Ingest to handle
     }
 
     @HapiTest

@@ -35,6 +35,7 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -90,11 +91,11 @@ class ExpiryValidatorImplTest {
                 .given(attributeValidator)
                 .validateExpiry(anyLong());
         final var expiryMeta1 = new ExpiryMeta(NA, NA, AN_AUTO_RENEW_ID);
-        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta1, false))
+        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta1, HederaFunctionality.NONE))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_EXPIRATION_TIME));
         final var expiryMeta2 = new ExpiryMeta(NA, A_PERIOD, null);
-        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta2, false))
+        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta2, HederaFunctionality.NONE))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_EXPIRATION_TIME));
     }
@@ -109,7 +110,7 @@ class ExpiryValidatorImplTest {
                 A_PERIOD,
                 AccountID.newBuilder().shardNum(2L).realmNum(2L).accountNum(888).build());
 
-        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, newMeta, false))
+        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, newMeta, HederaFunctionality.NONE))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_AUTORENEW_ACCOUNT));
     }
@@ -126,7 +127,7 @@ class ExpiryValidatorImplTest {
                 A_PERIOD,
                 AccountID.newBuilder().shardNum(1L).realmNum(3L).accountNum(888).build());
 
-        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, newMeta, false))
+        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, newMeta, HederaFunctionality.NONE))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_AUTORENEW_ACCOUNT));
     }
@@ -138,7 +139,7 @@ class ExpiryValidatorImplTest {
                 .validateExpiry(A_TIME);
 
         final var expiryMeta = new ExpiryMeta(A_TIME, NA, AN_AUTO_RENEW_ID);
-        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, false))
+        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, HederaFunctionality.NONE))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_EXPIRATION_TIME));
     }
@@ -150,14 +151,15 @@ class ExpiryValidatorImplTest {
                         com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT));
 
         final var expiryMeta = new ExpiryMeta(A_TIME, NA, AN_AUTO_RENEW_ID);
-        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, false))
+        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, HederaFunctionality.NONE))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_AUTORENEW_ACCOUNT));
     }
 
     @Test
     void onCreationUsesAutoRenewPeriodEvenWithoutFullSpecIfSelfFunding() {
-        assertThatCode(() -> subject.resolveCreationAttempt(true, new ExpiryMeta(NA, A_PERIOD, null), false))
+        assertThatCode(() -> subject.resolveCreationAttempt(
+                        true, new ExpiryMeta(NA, A_PERIOD, null), HederaFunctionality.NONE))
                 .doesNotThrowAnyException();
     }
 
@@ -168,7 +170,7 @@ class ExpiryValidatorImplTest {
                 .validateExpiry(NOW.getEpochSecond() + A_PERIOD);
 
         final var expiryMeta = new ExpiryMeta(NA, A_PERIOD, AN_AUTO_RENEW_ID);
-        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, false))
+        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, HederaFunctionality.NONE))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_EXPIRATION_TIME));
     }
@@ -180,7 +182,7 @@ class ExpiryValidatorImplTest {
                 .validateAutoRenewPeriod(A_PERIOD);
 
         final var expiryMeta = new ExpiryMeta(A_TIME, A_PERIOD, null);
-        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, false))
+        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, HederaFunctionality.NONE))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
@@ -192,33 +194,38 @@ class ExpiryValidatorImplTest {
                 .validateAutoRenewPeriod(A_PERIOD);
 
         final var expiryMeta = new ExpiryMeta(A_TIME, A_PERIOD, null);
-        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, false))
+        assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, HederaFunctionality.NONE))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
     @Test
     void summarizesExpiryOnlyCase() {
-        assertThatCode(() -> subject.resolveCreationAttempt(false, new ExpiryMeta(A_TIME, NA, null), false))
+        assertThatCode(() -> subject.resolveCreationAttempt(
+                        false, new ExpiryMeta(A_TIME, NA, null), HederaFunctionality.NONE))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void summarizesExpiryAndAutoRenewNumCase() {
-        assertThatCode(() -> subject.resolveCreationAttempt(false, new ExpiryMeta(A_TIME, NA, AN_AUTO_RENEW_ID), false))
+        assertThatCode(() -> subject.resolveCreationAttempt(
+                        false, new ExpiryMeta(A_TIME, NA, AN_AUTO_RENEW_ID), HederaFunctionality.NONE))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void summarizesExpiryAndValidAutoRenewPeriodCase() {
-        assertThatCode(() -> subject.resolveCreationAttempt(false, new ExpiryMeta(A_TIME, A_PERIOD, null), false))
+        assertThatCode(() -> subject.resolveCreationAttempt(
+                        false, new ExpiryMeta(A_TIME, A_PERIOD, null), HederaFunctionality.NONE))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void summarizesFullAutoRenewSpecPeriodCase() {
         assertThatCode(() -> subject.resolveCreationAttempt(
-                        false, new ExpiryMeta(NOW.getEpochSecond() + A_PERIOD, A_PERIOD, AN_AUTO_RENEW_ID), false))
+                        false,
+                        new ExpiryMeta(NOW.getEpochSecond() + A_PERIOD, A_PERIOD, AN_AUTO_RENEW_ID),
+                        HederaFunctionality.NONE))
                 .doesNotThrowAnyException();
     }
 
@@ -227,7 +234,7 @@ class ExpiryValidatorImplTest {
         final var current = new ExpiryMeta(A_TIME, NA, null);
         final var update = new ExpiryMeta(A_TIME - 1, NA, null);
 
-        assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update))
+        assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update, false))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(EXPIRATION_REDUCTION_NOT_ALLOWED));
     }
@@ -237,7 +244,7 @@ class ExpiryValidatorImplTest {
         final var current = new ExpiryMeta(A_TIME, NA, null);
         final var update = new ExpiryMeta(A_TIME - 1, NA, null);
 
-        assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update))
+        assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update, false))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(EXPIRATION_REDUCTION_NOT_ALLOWED));
     }
@@ -251,7 +258,7 @@ class ExpiryValidatorImplTest {
                 .given(attributeValidator)
                 .validateAutoRenewPeriod(0L);
 
-        assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update))
+        assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update, false))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
@@ -265,7 +272,7 @@ class ExpiryValidatorImplTest {
                 .given(attributeValidator)
                 .validateAutoRenewPeriod(B_PERIOD);
 
-        assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update))
+        assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update, false))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
@@ -279,7 +286,7 @@ class ExpiryValidatorImplTest {
                 .willThrow(new InvalidTransactionException(
                         com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT));
 
-        assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update))
+        assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update, false))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_AUTORENEW_ACCOUNT));
     }
@@ -293,7 +300,7 @@ class ExpiryValidatorImplTest {
                 .given(attributeValidator)
                 .validateExpiry(B_TIME);
 
-        assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update))
+        assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update, false))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_EXPIRATION_TIME));
     }
@@ -303,7 +310,7 @@ class ExpiryValidatorImplTest {
         final var current = new ExpiryMeta(A_TIME, 0, null);
         final var update = new ExpiryMeta(B_TIME, B_PERIOD, AN_AUTO_RENEW_ID);
 
-        assertThat(subject.resolveUpdateAttempt(current, update)).isEqualTo(update);
+        assertThat(subject.resolveUpdateAttempt(current, update, false)).isEqualTo(update);
     }
 
     @Test
@@ -314,7 +321,7 @@ class ExpiryValidatorImplTest {
                 B_PERIOD,
                 AccountID.newBuilder().shardNum(0L).realmNum(0L).accountNum(0L).build());
 
-        assertThat(subject.resolveUpdateAttempt(current, update)).isEqualTo(update);
+        assertThat(subject.resolveUpdateAttempt(current, update, false)).isEqualTo(update);
     }
 
     @Test

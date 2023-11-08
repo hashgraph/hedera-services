@@ -47,6 +47,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -289,7 +290,7 @@ public class HevmTransactionFactory {
                 true,
                 new ExpiryMeta(
                         NA, autoRenewPeriod, body.hasAutoRenewAccountId() ? body.autoRenewAccountIdOrThrow() : null),
-                false);
+                HederaFunctionality.CONTRACT_CREATE);
     }
 
     private Bytes initcodeFor(@NonNull final ContractCreateTransactionBody body) {

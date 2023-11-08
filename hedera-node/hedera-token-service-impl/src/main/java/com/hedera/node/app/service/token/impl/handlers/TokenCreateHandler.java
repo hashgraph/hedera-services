@@ -327,7 +327,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         // validate expiration and auto-renew account if present
         final var givenExpiryMeta = getExpiryMeta(op);
-        final var resolvedExpiryMeta = context.expiryValidator().resolveCreationAttempt(false, givenExpiryMeta, false);
+        final var resolvedExpiryMeta = context.expiryValidator()
+                .resolveCreationAttempt(false, givenExpiryMeta, HederaFunctionality.TOKEN_CREATE);
 
         // validate auto-renew account exists
         if (resolvedExpiryMeta.hasAutoRenewAccountId()) {

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.validation;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -31,16 +32,18 @@ public interface ExpiryValidator {
      * Validates the expiry metadata for an attempt to create an entity.
      * @param entityCanSelfFundRenewal whether the entity can self-fund its own auto-renewal
      * @param creationMetadata the expiry metadata for the attempted creation
-     * @param isForTopicCreation if the expiry metadata is for topic creation.
+     * @param functionality the HederaFunctionality that is being attempted
      *                           This is only needed until differential testing is completed to comply with
-     *                           mono-service respoinse codes.
+     *                           mono-service response codes.
      *
      * @return the expiry metadata that will result from the creation
      * @throws HandleException if the metadata is invalid
      */
     @NonNull
     ExpiryMeta resolveCreationAttempt(
-            boolean entityCanSelfFundRenewal, @NonNull ExpiryMeta creationMetadata, final boolean isForTopicCreation);
+            boolean entityCanSelfFundRenewal,
+            @NonNull final ExpiryMeta creationMetadata,
+            @NonNull final HederaFunctionality functionality);
 
     /**
      * Validates the expiry metadata for an attempt to update an entity, and returns the
@@ -49,11 +52,13 @@ public interface ExpiryValidator {
      *
      * @param currentMetadata the current expiry metadata for the entity
      * @param updateMetadata the expiry metadata for the attempted update
+     * @param isForTokenUpdate if the expiry metadata is for token update
      * @return the expiry metadata that will result from the update
      * @throws HandleException if the metadata is invalid
      */
     @NonNull
-    ExpiryMeta resolveUpdateAttempt(@NonNull ExpiryMeta currentMetadata, @NonNull ExpiryMeta updateMetadata);
+    ExpiryMeta resolveUpdateAttempt(
+            @NonNull ExpiryMeta currentMetadata, @NonNull ExpiryMeta updateMetadata, boolean isForTokenUpdate);
 
     /**
      * Gets the expiration status of an entity based on the {@link EntityType}.

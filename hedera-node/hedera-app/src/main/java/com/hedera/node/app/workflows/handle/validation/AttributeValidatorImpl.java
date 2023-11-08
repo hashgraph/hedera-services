@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.validation;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -100,10 +101,11 @@ public class AttributeValidatorImpl implements AttributeValidator {
     @Override
     public void validateAutoRenewPeriod(long autoRenewPeriod) {
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+        validateTrue(autoRenewPeriod > 0, INVALID_RENEWAL_PERIOD);
         validateTrue(
                 autoRenewPeriod >= ledgerConfig.autoRenewPeriodMinDuration()
                         && autoRenewPeriod <= ledgerConfig.autoRenewPeriodMaxDuration(),
-                INVALID_RENEWAL_PERIOD);
+                AUTORENEW_DURATION_NOT_IN_RANGE);
     }
 
     private void validateKeyAtLevel(@NonNull final Key key, final int level) {

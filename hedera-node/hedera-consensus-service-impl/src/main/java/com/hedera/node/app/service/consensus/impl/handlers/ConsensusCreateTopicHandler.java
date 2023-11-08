@@ -122,8 +122,9 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
                 impliedExpiry, op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(), op.autoRenewAccount());
 
         try {
-            final var effectiveExpiryMeta =
-                    handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta, true);
+            final var effectiveExpiryMeta = handleContext
+                    .expiryValidator()
+                    .resolveCreationAttempt(false, entityExpiryMeta, HederaFunctionality.CONSENSUS_CREATE_TOPIC);
             builder.autoRenewPeriod(effectiveExpiryMeta.autoRenewPeriod());
             builder.expirationSecond(effectiveExpiryMeta.expiry());
             builder.autoRenewAccountId(effectiveExpiryMeta.autoRenewAccountId());

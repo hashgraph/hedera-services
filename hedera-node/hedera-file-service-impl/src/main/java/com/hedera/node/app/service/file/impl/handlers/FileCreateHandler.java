@@ -112,8 +112,9 @@ public class FileCreateHandler implements TransactionHandler {
                 null);
 
         try {
-            final var effectiveExpiryMeta =
-                    handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta, false);
+            final var effectiveExpiryMeta = handleContext
+                    .expiryValidator()
+                    .resolveCreationAttempt(false, entityExpiryMeta, HederaFunctionality.FILE_CREATE);
             builder.expirationSecond(effectiveExpiryMeta.expiry());
 
             handleContext.attributeValidator().validateMemo(fileCreateTransactionBody.memo());
