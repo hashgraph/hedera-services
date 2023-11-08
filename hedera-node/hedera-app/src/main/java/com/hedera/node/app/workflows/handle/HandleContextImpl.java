@@ -30,7 +30,6 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
@@ -41,7 +40,6 @@ import com.hedera.node.app.fees.NoOpFeeAccumulator;
 import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -663,11 +661,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             dispatcher.dispatchHandle(childContext);
             childRecordBuilder.status(ResponseCodeEnum.SUCCESS);
             childStack.commitFullStack();
-
-            var output = ReturnTypes.encodedRc(ResponseCodeEnum.SUCCESS);
-            childRecordBuilder.contractCallResult(ContractFunctionResult.newBuilder()
-                    .contractCallResult(Bytes.wrap(output.array()))
-                    .build());
         } catch (HandleException e) {
             childRecordBuilder.status(e.getStatus());
             recordListBuilder.revertChildrenOf(recordBuilder);
