@@ -171,10 +171,10 @@ public class ContractUpdateHandler implements TransactionHandler {
     }
 
     private void validateSemantics(
-        Account contract,
-        HandleContext context,
-        ContractUpdateTransactionBody op,
-        ReadableAccountStore accountStore) {
+            Account contract,
+            HandleContext context,
+            ContractUpdateTransactionBody op,
+            ReadableAccountStore accountStore) {
         validateTrue(contract != null, INVALID_CONTRACT_ID);
 
         if (op.hasAdminKey()) {
@@ -206,16 +206,16 @@ public class ContractUpdateHandler implements TransactionHandler {
         context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta);
 
         context.serviceApi(TokenServiceApi.class)
-            .assertValidStakingElection(
-                context.configuration()
-                    .getConfigData(StakingConfig.class)
-                    .isEnabled(),
-                contract.declineReward(),
-                contract.stakedId().kind().name(),
-                contract.stakedAccountId(),
-                contract.stakedNodeId(),
-                accountStore,
-                context.networkInfo());
+                .assertValidStakingElectionForUpdate(
+                        context.configuration()
+                                .getConfigData(StakingConfig.class)
+                                .isEnabled(),
+                        contract.declineReward(),
+                        contract.stakedId().kind().name(),
+                        contract.stakedAccountId(),
+                        contract.stakedNodeId(),
+                        accountStore,
+                        context.networkInfo());
     }
 
     boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {

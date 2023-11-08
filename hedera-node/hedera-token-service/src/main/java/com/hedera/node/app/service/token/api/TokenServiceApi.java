@@ -61,7 +61,7 @@ public interface TokenServiceApi {
             @NonNull DeleteCapableTransactionRecordBuilder recordBuilder);
 
     /**
-     * Validates the given staking election relative to the given account store, network info, and staking config.
+     * Validates the creation of a given staking election relative to the given account store, network info, and staking config.
      *
      * @param isStakingEnabled       if staking is enabled
      * @param hasDeclineRewardChange if the transaction body has decline reward field to be updated
@@ -71,7 +71,27 @@ public interface TokenServiceApi {
      * @param accountStore           readable account store
      * @throws HandleException if the staking election is invalid
      */
-    void assertValidStakingElection(
+    void assertValidStakingElectionForCreation(
+            boolean isStakingEnabled,
+            boolean hasDeclineRewardChange,
+            @NonNull String stakedIdKind,
+            @Nullable AccountID stakedAccountIdInOp,
+            @Nullable Long stakedNodeIdInOp,
+            @NonNull ReadableAccountStore accountStore,
+            @NonNull NetworkInfo networkInfo);
+
+    /**
+     * Validates the update of a given staking election relative to the given account store, network info, and staking config.
+     *
+     * @param isStakingEnabled       if staking is enabled
+     * @param hasDeclineRewardChange if the transaction body has decline reward field to be updated
+     * @param stakedIdKind           staked id kind (account or node)
+     * @param stakedAccountIdInOp    staked account id
+     * @param stakedNodeIdInOp       staked node id
+     * @param accountStore           readable account store
+     * @throws HandleException if the staking election is invalid
+     */
+    void assertValidStakingElectionForUpdate(
             boolean isStakingEnabled,
             boolean hasDeclineRewardChange,
             @NonNull String stakedIdKind,
