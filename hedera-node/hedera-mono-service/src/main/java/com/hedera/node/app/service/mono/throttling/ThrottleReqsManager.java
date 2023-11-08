@@ -24,13 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class ThrottleReqsManager {
-
-    private static final Logger log = LogManager.getLogger(ThrottleReqsManager.class);
-
     private final boolean[] passedReq;
     private final List<Pair<DeterministicThrottle, Integer>> allReqs;
 
@@ -75,21 +70,11 @@ public class ThrottleReqsManager {
         for (int i = 0; i < passedReq.length; i++) {
             var req = allReqs.get(i);
             var opsRequired = req.getRight();
-
-            log.info("Throttle {} requires {} ops", req.getLeft().name(), opsRequired);
-
             if (scaleFactor != null) {
                 opsRequired = scaleFactor.scaling(nTransactions * opsRequired);
-
-                log.info(
-                        "Throttle {} requires {} ops after scaling",
-                        req.getLeft().name(),
-                        opsRequired);
             }
             passedReq[i] = req.getLeft().allow(opsRequired, now);
             allPassed &= passedReq[i];
-
-            log.info("Throttle {} passed? {}", req.getLeft().name(), passedReq[i]);
         }
 
         return allPassed;
