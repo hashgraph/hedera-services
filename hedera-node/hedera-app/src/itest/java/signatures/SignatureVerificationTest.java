@@ -92,7 +92,8 @@ class SignatureVerificationTest implements Scenarios {
 
         // Finally, assert that the verification results are as expected
         final var hederaConfig = CONFIGURATION.getConfigData(HederaConfig.class);
-        final var handleContextVerifier = new DefaultKeyVerifier(hederaConfig, verificationResults);
+        final var handleContextVerifier =
+                new DefaultKeyVerifier(testCase.signatureMap.size(), hederaConfig, verificationResults);
         assertThat(handleContextVerifier.verificationFor(ERIN.account().alias()))
                 .isNotNull()
                 .extracting(SignatureVerification::passed)
@@ -120,7 +121,8 @@ class SignatureVerificationTest implements Scenarios {
 
         // Finally, assert that the verification results are as expected
         final var hederaConfig = CONFIGURATION.getConfigData(HederaConfig.class);
-        final var handleContextVerifier = new DefaultKeyVerifier(hederaConfig, verificationResults);
+        final var handleContextVerifier =
+                new DefaultKeyVerifier(signatureMap.size(), hederaConfig, verificationResults);
         assertThat(handleContextVerifier.verificationFor(keyToVerify))
                 .isNotNull()
                 .extracting(SignatureVerification::passed)
