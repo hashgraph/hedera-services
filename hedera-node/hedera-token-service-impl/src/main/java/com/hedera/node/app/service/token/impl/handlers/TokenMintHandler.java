@@ -315,12 +315,12 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             final var keys =
                     key.thresholdKeyOrThrow().keysOrElse(KeyList.DEFAULT).keysOrElse(Collections.emptyList());
             for (final var k : keys) {
-                numSimpleKeys(k);
+                count.addAndGet(numSimpleKeys(k));
             }
         } else if (key.hasKeyList()) {
             final var keys = key.keyListOrElse(KeyList.DEFAULT).keysOrElse(Collections.emptyList());
             for (final var k : keys) {
-                numSimpleKeys(k);
+                count.addAndGet(numSimpleKeys(k));
             }
         } else {
             // FUTURE: We don't need to count contractId keys here, but we need this to pass differential testing

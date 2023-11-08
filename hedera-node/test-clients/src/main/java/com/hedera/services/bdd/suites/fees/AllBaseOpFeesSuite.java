@@ -43,7 +43,6 @@ import java.time.Instant;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 public class AllBaseOpFeesSuite extends HapiSuite {
@@ -150,7 +149,6 @@ public class AllBaseOpFeesSuite extends HapiSuite {
     }
 
     @HapiTest
-    @Disabled("Failing or intermittently failing HAPI Test")
     private HapiSpec NftMintsScaleLinearlyBasedOnNumberOfSignatures() {
         final var numOfSigs = 10;
         final var extraSigPrice = 0.0006016996;
