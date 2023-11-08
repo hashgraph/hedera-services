@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.appcomm;
+package com.hedera.services.bdd.spec.utilops.records;
 
 /**
- * A factory capable of creating instances of {@link AppCommunicationComponent}
+ * Enumerates the record stream sources that can be targeted with properties {@code recordStream.autoSnapshotTarget}
+ * and {@code recordStream.autoMatchTarget} when {@code recordStream.autoSnapshotManagement=true}.
  */
-public interface AppCommunicationComponentFactory {
-
+public enum AutoSnapshotRecordSource {
     /**
-     * Builds a new {@link AppCommunicationComponent} with the provided inputs.
-     *
-     * @return the newly constructed {@link AppCommunicationComponent}
-     * @throws IllegalStateException
-     * 		if any required inputs are null
+     * The record stream source is a {@link com.hedera.services.bdd.junit.HapiTest} network.
      */
-    AppCommunicationComponent build();
+    HAPI_TEST,
+    /**
+     * The record stream source is a standalone mono-service network.
+     */
+    MONO_SERVICE
 }

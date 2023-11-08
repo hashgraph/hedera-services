@@ -19,6 +19,7 @@ package com.swirlds.common.wiring.model;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.OutputWire;
+import com.swirlds.common.wiring.SolderType;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.common.wiring.schedulers.HeartbeatScheduler;
 import com.swirlds.common.wiring.utility.ModelGroup;
@@ -150,11 +151,13 @@ public class StandardWiringModel extends WiringModel {
             @NonNull final String originVertex,
             @NonNull final String destinationVertex,
             @NonNull final String label,
-            final boolean injection) {
+            @NonNull final SolderType solderType) {
+
+        final boolean blockingEdge = solderType == SolderType.PUT;
 
         final ModelVertex origin = getVertex(originVertex);
         final ModelVertex destination = getVertex(destinationVertex);
-        final boolean blocking = !injection && destination.isInsertionIsBlocking();
+        final boolean blocking = blockingEdge && destination.isInsertionIsBlocking();
 
         final ModelEdge edge = new ModelEdge(origin, destination, label, blocking);
         origin.connectToEdge(edge);
