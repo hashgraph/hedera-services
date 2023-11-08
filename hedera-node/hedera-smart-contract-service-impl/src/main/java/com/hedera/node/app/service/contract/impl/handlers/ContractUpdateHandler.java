@@ -198,7 +198,7 @@ public class ContractUpdateHandler implements TransactionHandler {
                 op.hasExpirationTime() ? op.expirationTime().seconds() : NA,
                 op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
                 null);
-        context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta);
+        context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta, false);
     }
 
     boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {

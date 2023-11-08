@@ -32,6 +32,6 @@ public final class LongConverter implements ConfigConverter<Long> {
         if (value == null) {
             throw new NullPointerException("null can not be converted");
         }
-        return Long.valueOf(value);
+        return Long.valueOf(value.replace("_", ""));
     }
 }
