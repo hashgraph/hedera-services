@@ -40,7 +40,8 @@ gradleEnterprise {
 val isCiServer = System.getenv().containsKey("CI")
 val gradleCacheUsername: String? = System.getenv("GRADLE_CACHE_USERNAME")
 val gradleCachePassword: String? = System.getenv("GRADLE_CACHE_PASSWORD")
-val gradleCacheAuthorized = (gradleCacheUsername?.isNotEmpty() ?: false) && (gradleCachePassword?.isNotEmpty() ?: false)
+val gradleCacheAuthorized =
+    (gradleCacheUsername?.isNotEmpty() ?: false) && (gradleCachePassword?.isNotEmpty() ?: false)
 
 buildCache {
     remote<HttpBuildCache> {
@@ -56,9 +57,6 @@ buildCache {
                 password = gradleCachePassword
             }
         }
-    }
-    local{
-        isEnabled = gradle.startParameter.isOffline
     }
 }
 
