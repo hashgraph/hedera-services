@@ -65,6 +65,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
         return List.of(balanceOf(), redirectToInvalidToken(), redirectToNullSelector());
     }
 
+    @HapiTest
     private HapiSpec balanceOf() {
         final var totalSupply = 50;
         return defaultHapiSpec("balanceOf")
