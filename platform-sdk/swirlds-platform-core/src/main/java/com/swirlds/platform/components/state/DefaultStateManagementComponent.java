@@ -37,8 +37,6 @@ import com.swirlds.platform.components.common.query.PrioritySystemTransactionSub
 import com.swirlds.platform.components.state.output.IssConsumer;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
-import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
-import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
@@ -136,10 +134,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param prioritySystemTransactionSubmitter submits priority system transactions
      * @param stateToDiskEventConsumer           consumer to invoke when a state is attempted to be written to disk
      * @param newLatestCompleteStateConsumer     consumer to invoke when there is a new latest complete signed state
-     * @param stateLacksSignaturesConsumer       consumer to invoke when a state is about to be ejected from memory with
-     *                                           enough signatures to be complete
-     * @param stateHasEnoughSignaturesConsumer   consumer to invoke when a state accumulates enough signatures to be
-     *                                           complete
      * @param issConsumer                        consumer to invoke when an ISS is detected
      * @param fatalErrorConsumer                 consumer to invoke when a fatal error has occurred
      * @param platformStatusGetter               gets the current platform status
@@ -157,8 +151,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
             @NonNull final StateToDiskAttemptConsumer stateToDiskEventConsumer,
             @NonNull final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer,
-            @Nullable final StateLacksSignaturesConsumer stateLacksSignaturesConsumer,
-            @Nullable final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final IssConsumer issConsumer,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
@@ -185,10 +177,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
         this.signer = signer;
         this.signatureTransmitter = new SignatureTransmitter(prioritySystemTransactionSubmitter, platformStatusGetter);
-        /**
-         * Various metrics about signed states
-         */
-        SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
+        // Various metrics about signed states
+        final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
@@ -220,32 +210,12 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 setMinimumGenerationToStore,
                 statusActionSubmitter);
 
-        final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer;
-        if (stateHasEnoughSignaturesConsumer != null) {
-            combinedStateHasEnoughSignaturesConsumer = ss -> {
-                stateHasEnoughSignatures(ss);
-                stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(ss);
-            };
-        } else {
-            combinedStateHasEnoughSignaturesConsumer = this::stateHasEnoughSignatures;
-        }
-
-        final StateLacksSignaturesConsumer combinedStateLacksSignaturesConsumer;
-        if (stateLacksSignaturesConsumer != null) {
-            combinedStateLacksSignaturesConsumer = ss -> {
-                stateLacksSignatures(ss);
-                stateLacksSignaturesConsumer.stateLacksSignatures(ss);
-            };
-        } else {
-            combinedStateLacksSignaturesConsumer = this::stateLacksSignatures;
-        }
-
         signedStateManager = new SignedStateManager(
                 platformContext.getConfiguration().getConfigData(StateConfig.class),
                 signedStateMetrics,
                 newLatestCompleteStateConsumer,
-                combinedStateHasEnoughSignaturesConsumer,
-                combinedStateLacksSignaturesConsumer);
+                this::stateHasEnoughSignatures,
+                this::stateLacksSignatures);
 
         final RunningAverageMetric avgRoundSupermajority =
                 platformContext.getMetrics().getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);

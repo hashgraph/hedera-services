@@ -84,9 +84,6 @@ class StateManagementComponentTests {
     private final TestPrioritySystemTransactionConsumer systemTransactionConsumer =
             new TestPrioritySystemTransactionConsumer();
     private final TestSignedStateWrapperConsumer newLatestCompleteStateConsumer = new TestSignedStateWrapperConsumer();
-    private final TestSignedStateWrapperConsumer stateHasEnoughSignaturesConsumer =
-            new TestSignedStateWrapperConsumer();
-    private final TestSignedStateWrapperConsumer stateLacksSignaturesConsumer = new TestSignedStateWrapperConsumer();
     private final TestIssConsumer issConsumer = new TestIssConsumer();
     private final TestStateToDiskAttemptConsumer stateToDiskAttemptConsumer = new TestStateToDiskAttemptConsumer();
 
@@ -97,16 +94,12 @@ class StateManagementComponentTests {
     protected void beforeEach() {
         systemTransactionConsumer.reset();
         newLatestCompleteStateConsumer.reset();
-        stateHasEnoughSignaturesConsumer.reset();
-        stateLacksSignaturesConsumer.reset();
         issConsumer.reset();
     }
 
     /**
      * Verify that when the component is provided a new signed state from transactions, it submits a state signature
      * system transaction.
-     * <p>
-     * Also verify that states are passed to the lacks signatures consumer, since no states are signed in this test.
      */
     @Test
     @DisplayName("New signed state from transactions produces signature system transaction")
@@ -139,7 +132,6 @@ class StateManagementComponentTests {
             if (roundNum > roundsToKeepForSigning) {
                 final int roundEjected = roundNum - roundsToKeepForSigning;
                 final SignedState stateEjected = signedStates.get(roundEjected);
-                verifyStateLacksSignaturesConsumer(stateEjected, roundEjected);
             }
         }
 
@@ -280,9 +272,6 @@ class StateManagementComponentTests {
                         },
                         Duration.ofSeconds(2),
                         "The unit test failed.");
-
-                // Check that the consumer for state has enough signatures is invoked correctly
-                verifyStateHasEnoughSignaturesConsumer(signedState, roundNum / 2);
             }
         }
 
@@ -393,30 +382,6 @@ class StateManagementComponentTests {
         assertTrue(attempt.success(), "The state saved to disk should be marked as a success.");
 
         component.stop();
-    }
-
-    private void verifyStateLacksSignaturesConsumer(final SignedState signedState, final int numInvocations) {
-        assertEquals(
-                numInvocations,
-                stateLacksSignaturesConsumer.getNumInvocations(),
-                "Incorrect number of invocations to the state lacks signatures consumer");
-        // The state should be announced as having enough signatures
-        assertEquals(
-                signedState,
-                stateLacksSignaturesConsumer.getLastSignedState(),
-                "Last state to state lacks signatures consumer is not correct.");
-    }
-
-    private void verifyStateHasEnoughSignaturesConsumer(final SignedState signedState, final int numInvocations) {
-        assertEquals(
-                numInvocations,
-                stateHasEnoughSignaturesConsumer.getNumInvocations(),
-                "Incorrect number of invocations to the state has enough signatures consumer");
-        // The state should be announced as having enough signatures
-        assertEquals(
-                signedState,
-                stateHasEnoughSignaturesConsumer.getLastSignedState(),
-                "Last state to collect enough signatures is not correct.");
     }
 
     private void allNodesSign(final SignedState signedState, final DefaultStateManagementComponent component) {
@@ -530,8 +495,6 @@ class StateManagementComponentTests {
                 systemTransactionConsumer::consume,
                 stateToDiskAttemptConsumer,
                 newLatestCompleteStateConsumer::consume,
-                stateLacksSignaturesConsumer::consume,
-                stateHasEnoughSignaturesConsumer::consume,
                 issConsumer::consume,
                 (msg) -> {},
                 (msg, t, code) -> {},
