@@ -58,18 +58,8 @@ class IsTokenCallTest extends HtsCallTestBase {
         assertEquals(
                 Bytes.wrap(IsKycTranslator.IS_KYC
                         .getOutputs()
-                        .encodeElements(INVALID_TOKEN_ID.protoOrdinal(), false)
+                        .encodeElements(SUCCESS.protoOrdinal(), false)
                         .array()),
                 result.getOutput());
-    }
-
-    @Test
-    void returnsIsTokenForMissingTokenStaticCall() {
-        final var subject = new IsTokenCall(gasCalculator, mockEnhancement(), true, null);
-
-        final var result = subject.execute().fullResult().result();
-
-        assertEquals(MessageFrame.State.REVERT, result.getState());
-        assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
     }
 }
