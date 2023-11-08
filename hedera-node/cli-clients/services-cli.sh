@@ -195,7 +195,7 @@ run () {
 }
 
 colorize () {
-  java -cp "${JVM_CLASSPATH}" com.swirlds.cli.utility.StdInOutColorize "${PROGRAM_ARGS[@]}"
+  java -cp "${JVM_CLASSPATH}" com.swirlds.cli.logging.StdInOutColorize "${PROGRAM_ARGS[@]}"
 }
 
 if [[ "$COLOR" = true ]]; then
