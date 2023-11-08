@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.wiring;
 
+import static com.swirlds.common.wiring.SolderType.INJECT;
+
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
@@ -107,11 +109,12 @@ public class PlatformWiring implements Startable, Stoppable {
                         consensusRound -> consensusRound.getGenerations().getMinGenerationNonAncient());
 
         minimumGenerationNonAncientOutput.solderTo(
-                eventDeduplicatorScheduler.getMinimumGenerationNonAncientInput(), true);
+                eventDeduplicatorScheduler.getMinimumGenerationNonAncientInput(), INJECT);
         minimumGenerationNonAncientOutput.solderTo(
-                eventSignatureValidatorScheduler.getMinimumGenerationNonAncientInput(), true);
-        minimumGenerationNonAncientOutput.solderTo(orphanBufferScheduler.getMinimumGenerationNonAncientInput(), true);
-        minimumGenerationNonAncientOutput.solderTo(inOrderLinkerScheduler.getMinimumGenerationNonAncientInput(), true);
+                eventSignatureValidatorScheduler.getMinimumGenerationNonAncientInput(), INJECT);
+        minimumGenerationNonAncientOutput.solderTo(orphanBufferScheduler.getMinimumGenerationNonAncientInput(), INJECT);
+        minimumGenerationNonAncientOutput.solderTo(
+                inOrderLinkerScheduler.getMinimumGenerationNonAncientInput(), INJECT);
 
         // FUTURE WORK: solder all the things!
     }
