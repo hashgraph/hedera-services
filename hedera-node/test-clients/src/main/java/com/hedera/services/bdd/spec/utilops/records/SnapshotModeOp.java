@@ -247,11 +247,6 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     log.info("Trying to read post-placeholder items from {}", recordLoc);
                     data = RECORD_STREAM_ACCESS.readStreamDataFrom(recordLoc, "sidecar", f -> {
                         final var fileConsTime = parseRecordFileConsensusTime(f);
-                        log.info(
-                                "Found file {} with consensus time {} (will include by time? {})",
-                                f,
-                                fileConsTime,
-                                fileConsTime.isAfter(lowerBoundConsensusStartTime));
                         return fileConsTime.isAfter(lowerBoundConsensusStartTime)
                                 && new File(f).length() > MIN_GZIP_SIZE_IN_BYTES;
                     });
