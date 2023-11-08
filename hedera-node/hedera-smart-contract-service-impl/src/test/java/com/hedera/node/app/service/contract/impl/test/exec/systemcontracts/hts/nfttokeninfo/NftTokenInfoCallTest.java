@@ -97,12 +97,11 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
     void returnsWhenTryingToFetchTokenWithInvalidSerialNumber() {
         when(config.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
         when(ledgerConfig.id()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(LEDGER_ID));
-        when(nativeOperations.getNft(FUNGIBLE_EVERYTHING_TOKEN.tokenId().tokenNum(), 2L))
-                .thenReturn(null);
+        when(nativeOperations.getNft(9876L, 0L)).thenReturn(null);
         when(nativeOperations.getAccount(1234L)).thenReturn(A_NEW_ACCOUNT);
 
         final var subject =
-                new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, 2L, config);
+                new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, 0L, config);
         final var result = subject.execute().fullResult().result();
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
     }
