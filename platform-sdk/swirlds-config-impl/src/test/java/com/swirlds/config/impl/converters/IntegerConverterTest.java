@@ -79,6 +79,8 @@ class IntegerConverterTest {
                 Arguments.of("-7", -7),
                 Arguments.of("7", 7),
                 Arguments.of("0", 0),
+                Arguments.of("10_000", 10000),
+                Arguments.of("-10_000", -10000),
                 Arguments.of(Integer.MAX_VALUE + "", Integer.MAX_VALUE),
                 Arguments.of(Integer.MIN_VALUE + "", Integer.MIN_VALUE));
     }
