@@ -59,7 +59,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      */
     private final int numBlockHashesToKeepBytes;
     /**
-     * The number of secibds of consensus time in a block period, from configuration. This is computed based on the
+     * The number of seconds of consensus time in a block period, from configuration. This is computed based on the
      * {@link BlockRecordStreamConfig#logPeriod()} setting. This setting is computed once at startup and used
      * throughout.
      */
