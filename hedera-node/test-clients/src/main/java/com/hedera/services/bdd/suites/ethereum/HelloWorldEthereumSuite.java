@@ -119,6 +119,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
         return List.of(smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate());
     }
 
+    @HapiTest
     HapiSpec badRelayClient() {
         final var adminKey = "adminKey";
         final var exploitToken = "exploitToken";
@@ -187,6 +188,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         getAliasedAccountInfo(maliciousEOA).has(accountWith().nonce(1L)));
     }
 
+    @HapiTest
     HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
         final var canonicalTxn = "canonical";
 
@@ -326,6 +328,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
+    @HapiTest
     HapiSpec createWithSelfDestructInConstructorHasSaneRecord() {
         final var txn = "txn";
         final var selfDestructingContract = "FactorySelfDestructConstructor";
@@ -493,6 +496,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     private static final String SEND_TO = "sendTo";
 
+    @HapiTest
     HapiSpec topLevelBurnToZeroAddressReverts() {
         final var ethBurnAddress = new byte[20];
         return defaultHapiSpec("topLevelBurnToZeroAddressReverts")
@@ -511,6 +515,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
     }
 
+    @HapiTest
     HapiSpec topLevelLazyCreateOfMirrorAddressReverts() {
         final var nonExistentMirrorAddress = Utils.asSolidityAddress(0, 0, 666_666);
         return defaultHapiSpec("topLevelLazyCreateOfMirrorAddressReverts")
@@ -529,6 +534,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
+    @HapiTest
     HapiSpec topLevelSendToReceiverSigRequiredAccountReverts() {
         final var receiverSigAccount = "receiverSigAccount";
         final AtomicReference<byte[]> receiverMirrorAddr = new AtomicReference<>();
@@ -557,6 +563,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .then(getAccountBalance(receiverSigAccount).hasTinyBars(changeFromSnapshot(preCallBalance, 0L)));
     }
 
+    @HapiTest
     HapiSpec internalBurnToZeroAddressReverts() {
         return defaultHapiSpec("internalBurnToZeroAddressReverts")
                 .given(
