@@ -697,7 +697,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_ALLOWANCE_OWNER_ID));
     }
 
-    @HapiTest // here
+    @HapiTest // here empty token transferlist expected
     private HapiSpec allowanceTransfersWithComplexTransfersWork() {
         return defaultHapiSpec("AllowanceTransfersWithComplexTransfersWork")
                 .given(
@@ -821,7 +821,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .has(accountWith().balance(ONE_HBAR)));
     }
 
-    @HapiTest // here
+    @HapiTest // here has different token transfer list
     private HapiSpec allowanceTransfersWorkAsExpected() {
         return defaultHapiSpec("AllowanceTransfersWorkAsExpected", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
@@ -1104,7 +1104,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .logged());
     }
 
-    @HapiTest // here Instead of 8 items 9 were generated
+    @HapiTest
     private HapiSpec nftTransfersCannotRepeatSerialNos() {
         final var aParty = "aParty";
         final var bParty = "bParty";
@@ -1148,7 +1148,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         .hasPrecheck(INVALID_ACCOUNT_AMOUNTS));
     }
 
-    @HapiTest // here
+    @HapiTest // here Instead of 5 items, 7 were generated
     private HapiSpec nftSelfTransfersRejectedBothInPrecheckAndHandle() {
         final var owningParty = OWNING_PARTY;
         final var multipurpose = MULTI_KEY;
@@ -1182,7 +1182,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         getAccountInfo(owningParty).has(accountWith().noChangesFromSnapshot(owningParty)));
     }
 
-    @HapiTest // here
+    @HapiTest
     private HapiSpec hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle() {
         final var uncheckedHbarTxn = "uncheckedHbarTxn";
         final var uncheckedFtTxn = "uncheckedFtTxn";

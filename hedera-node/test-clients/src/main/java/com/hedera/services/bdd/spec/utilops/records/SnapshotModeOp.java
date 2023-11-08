@@ -236,7 +236,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     }
 
     @Override
-    public void finishLifecycle() {
+    public void finishLifecycle(@NonNull final HapiSpec spec) {
         if (!hasWorkToDo()) {
             return;
         }
@@ -291,7 +291,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             switch (mode) {
                 case TAKE_FROM_MONO_STREAMS, TAKE_FROM_HAPI_TEST_STREAMS -> writeSnapshotOf(postPlaceholderItems);
                 case FUZZY_MATCH_AGAINST_MONO_STREAMS,
-                        FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS -> fuzzyMatchAgainstSnapshot(postPlaceholderItems);
+                        FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS -> fuzzyMatchAgainstSnapshot(postPlaceholderItems, spec);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -302,8 +302,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
      * Given a list of parsed items from the record stream, fuzzy-matches them against the snapshot.
      *
      * @param postPlaceholderItems the list of parsed items from the record stream
+     * @param spec
      */
-    private void fuzzyMatchAgainstSnapshot(@NonNull final List<ParsedItem> postPlaceholderItems) {
+    private void fuzzyMatchAgainstSnapshot(@NonNull final List<ParsedItem> postPlaceholderItems, final HapiSpec spec) {
         log.info("Now fuzzy-matching {} post-placeholder records against snapshot", postPlaceholderItems.size());
         final var itemsFromSnapshot = snapshotToMatchAgainst.parsedItems();
         final var minItems = Math.min(postPlaceholderItems.size(), itemsFromSnapshot.size());
@@ -328,8 +329,22 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                             + fromStream.itemRecord() + ")");
         }
         if (postPlaceholderItems.size() != itemsFromSnapshot.size()) {
-            Assertions.fail("Instead of " + itemsFromSnapshot.size() + " items, " + postPlaceholderItems.size()
-                    + " were generated");
+            // It is possible that some records generated are from ingestion checks, which are not in the snapshot.
+            // We need to ignore them in the comparison if the status is in spec.streamlinedIngestChecks
+            final var postPlaceholderItemsWithIngestCheckStatus = postPlaceholderItems.stream()
+                    .filter(item -> {
+                        final var streamLinedIngestChecks = spec.setup().streamlinedIngestChecks();
+                        return streamLinedIngestChecks.contains(
+                                item.itemRecord().getReceipt().getStatus());
+                    })
+                    .collect(toSet());
+            if (postPlaceholderItems.size() - postPlaceholderItemsWithIngestCheckStatus.size()
+                    != itemsFromSnapshot.size()) {
+                Assertions.fail("Instead of " + itemsFromSnapshot.size() + " items, "
+                        + (postPlaceholderItems.size() - postPlaceholderItemsWithIngestCheckStatus.size())
+                        + " were generated, excluding " + postPlaceholderItemsWithIngestCheckStatus.size()
+                        + " items with status in spec.streamlinedIngestChecks");
+            }
         }
     }
 
