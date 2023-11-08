@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOfDeferred;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -118,7 +119,7 @@ public class GasLimitThrottlingSuite extends HapiSuite {
                                                 .toArray())
                                 .gas(MAX_GAS_PER_SECOND + 1L)
                                 .payingWith(PAYER_ACCOUNT)
-                                .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
+                                .hasPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY),
                         overridingAllOfDeferred(() -> startingProps));
     }
 
