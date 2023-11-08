@@ -22,6 +22,7 @@ import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
@@ -254,6 +255,14 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
         final var nftTypes = servicesState.uniqueTokens();
         assertSignedStateComponentExists(nftTypes, "(non-fungible) unique tokens");
         return nftTypes;
+    }
+
+    /** Get all token associations (tokenrels) */
+    @NonNull
+    public TokenRelStorageAdapter getTokenAssociations() {
+        final var tokenRels = servicesState.tokenAssociations();
+        assertSignedStateComponentExists(tokenRels, "token associations (tokenrels)");
+        return tokenRels;
     }
 
     /**
