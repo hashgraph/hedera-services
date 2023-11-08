@@ -31,6 +31,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -123,14 +124,27 @@ public class SolvencyPreCheck {
             // FUTURE ('#9550')
             final boolean ingestCheck)
             throws PreCheckException {
+        checkSolvency(txInfo.txBody(), txInfo.payerID(), txInfo.functionality(), account, fees, ingestCheck);
+    }
+
+    public void checkSolvency(
+            @NonNull final TransactionBody txBody,
+            @NonNull final AccountID payerID,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final Account account,
+            @NonNull final Fees fees,
+            // This is to match mono and pass HapiTest. Should reconsider later.
+            // FUTURE ('#9550')
+            final boolean ingestCheck)
+            throws PreCheckException {
         // Skip solvency check for privileged transactions or superusers
-        if (authorizer.hasWaivedFees(txInfo.payerID(), txInfo.functionality(), txInfo.txBody())) {
+        if (authorizer.hasWaivedFees(payerID, functionality, txBody)) {
             return;
         }
 
         final var totalFee = fees.totalFee();
         final var availableBalance = account.tinybarBalance();
-        final var offeredFee = txInfo.txBody().transactionFee();
+        final var offeredFee = txBody.transactionFee();
         final ResponseCodeEnum insufficientFeeResponseCode;
         if (ingestCheck) { // throw different exception for ingest
             insufficientFeeResponseCode = INSUFFICIENT_PAYER_BALANCE;
@@ -154,9 +168,9 @@ public class SolvencyPreCheck {
 
         final long additionalCosts;
         try {
-            final var now = txInfo.txBody().transactionIDOrThrow().transactionValidStartOrThrow();
-            additionalCosts = Math.max(0, estimateAdditionalCosts(txInfo, HapiUtils.asInstant(now)));
-        } catch (NullPointerException ex) {
+            final var now = txBody.transactionIDOrThrow().transactionValidStartOrThrow();
+            additionalCosts = Math.max(0, estimateAdditionalCosts(txBody, functionality, HapiUtils.asInstant(now)));
+        } catch (final NullPointerException ex) {
             // One of the required fields was not present
             throw new InsufficientBalanceException(INVALID_TRANSACTION_BODY, totalFee);
         }
@@ -170,31 +184,34 @@ public class SolvencyPreCheck {
 
     // FUTURE: This should be provided by the TransactionHandler:
     // https://github.com/hashgraph/hedera-services/issues/8354
-    private long estimateAdditionalCosts(@NonNull final TransactionInfo txInfo, @NonNull final Instant consensusTime) {
-        return switch (txInfo.functionality()) {
-            case CRYPTO_CREATE -> txInfo.txBody().cryptoCreateAccountOrThrow().initialBalance();
+    private long estimateAdditionalCosts(
+            @NonNull final TransactionBody txBody,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final Instant consensusTime) {
+        return switch (functionality) {
+            case CRYPTO_CREATE -> txBody.cryptoCreateAccountOrThrow().initialBalance();
             case CRYPTO_TRANSFER -> {
-                if (!txInfo.txBody().cryptoTransferOrThrow().hasTransfers()) {
+                if (!txBody.cryptoTransferOrThrow().hasTransfers()) {
                     yield 0L;
                 }
-                final var payerID = txInfo.txBody().transactionIDOrThrow().accountIDOrThrow();
-                yield -txInfo.txBody().cryptoTransferOrThrow().transfersOrThrow().accountAmountsOrThrow().stream()
+                final var payerID = txBody.transactionIDOrThrow().accountIDOrThrow();
+                yield -txBody.cryptoTransferOrThrow().transfersOrThrow().accountAmountsOrThrow().stream()
                         .filter(aa -> Objects.equals(aa.accountID(), payerID))
                         .mapToLong(AccountAmount::amount)
                         .sum();
             }
             case CONTRACT_CREATE -> {
-                final var contractCreate = txInfo.txBody().contractCreateInstanceOrThrow();
+                final var contractCreate = txBody.contractCreateInstanceOrThrow();
                 yield contractCreate.initialBalance()
                         + contractCreate.gas() * estimatedGasPriceInTinybars(CONTRACT_CREATE, consensusTime);
             }
             case CONTRACT_CALL -> {
-                final var contractCall = txInfo.txBody().contractCallOrThrow();
+                final var contractCall = txBody.contractCallOrThrow();
                 yield contractCall.amount()
                         + contractCall.gas() * estimatedGasPriceInTinybars(CONTRACT_CALL, consensusTime);
             }
             case ETHEREUM_TRANSACTION -> {
-                final var ethTxn = txInfo.txBody().ethereumTransactionOrThrow();
+                final var ethTxn = txBody.ethereumTransactionOrThrow();
                 yield ethTxn.maxGasAllowance();
             }
             default -> 0L;
