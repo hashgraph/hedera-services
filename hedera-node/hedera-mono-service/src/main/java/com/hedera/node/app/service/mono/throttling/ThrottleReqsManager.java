@@ -81,15 +81,15 @@ public class ThrottleReqsManager {
             if (scaleFactor != null) {
                 opsRequired = scaleFactor.scaling(nTransactions * opsRequired);
 
-                log.info("Throttle {} requires {} ops after scaling", req.getLeft().name(), opsRequired);
-
-
+                log.info(
+                        "Throttle {} requires {} ops after scaling",
+                        req.getLeft().name(),
+                        opsRequired);
             }
             passedReq[i] = req.getLeft().allow(opsRequired, now);
             allPassed &= passedReq[i];
 
             log.info("Throttle {} passed? {}", req.getLeft().name(), passedReq[i]);
-
         }
 
         return allPassed;
