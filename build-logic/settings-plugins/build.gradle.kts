@@ -17,6 +17,6 @@
 plugins { `kotlin-dsl` }
 
 dependencies {
-    implementation("com.gradle:gradle-enterprise-gradle-plugin:3.14.1")
+    implementation("com.gradle:gradle-enterprise-gradle-plugin:3.15.1")
     implementation("me.champeau.gradle.includegit:plugin:0.1.6")
 }

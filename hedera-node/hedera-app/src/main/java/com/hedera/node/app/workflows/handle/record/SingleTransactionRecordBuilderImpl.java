@@ -50,6 +50,7 @@ import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuild
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.GasFeeRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.token.api.FeeRecordBuilder;
@@ -119,6 +120,7 @@ public class SingleTransactionRecordBuilderImpl
                 FeeRecordBuilder,
                 ContractDeleteRecordBuilder,
                 GenesisAccountRecordBuilder,
+                GasFeeRecordBuilder,
                 TokenAccountWipeRecordBuilder {
 
     // base transaction data

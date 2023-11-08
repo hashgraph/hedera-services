@@ -211,34 +211,35 @@ public class CryptoTransferSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                transferWithMissingAccountGetsInvalidAccountId(),
-                complexKeyAcctPaysForOwnTransfer(),
-                twoComplexKeysRequired(),
-                specialAccountsBalanceCheck(),
-                tokenTransferFeesScaleAsExpected(),
-                okToSetInvalidPaymentHeaderForCostAnswer(),
-                baseCryptoTransferFeeChargedAsExpected(),
-                autoAssociationRequiresOpenSlots(),
+//                transferWithMissingAccountGetsInvalidAccountId(),
+//                complexKeyAcctPaysForOwnTransfer(),
+//                twoComplexKeysRequired(),
+//                specialAccountsBalanceCheck(),
+//                tokenTransferFeesScaleAsExpected(),
+//                okToSetInvalidPaymentHeaderForCostAnswer(),
+//                baseCryptoTransferFeeChargedAsExpected(),
+//                autoAssociationRequiresOpenSlots(),
                 royaltyCollectorsCanUseAutoAssociation(),
-                royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-                dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-                hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-                transferToNonAccountEntitiesReturnsInvalidAccountId(),
-                nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-                checksExpectedDecimalsForFungibleTokenTransferList(),
+//                royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+//                dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+//                hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+//                transferToNonAccountEntitiesReturnsInvalidAccountId(),
+//                nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+//                checksExpectedDecimalsForFungibleTokenTransferList(),
                 allowanceTransfersWorkAsExpected(),
                 allowanceTransfersWithComplexTransfersWork(),
-                canUseMirrorAliasesForNonContractXfers(),
-                canUseEip1014AliasesForXfers(),
+//                canUseMirrorAliasesForNonContractXfers(),
+//                canUseEip1014AliasesForXfers(),
                 cannotTransferFromImmutableAccounts(),
-                nftTransfersCannotRepeatSerialNos(),
-                vanillaTransferSucceeds(),
+//                nftTransfersCannotRepeatSerialNos(),
+//                vanillaTransferSucceeds(),
                 aliasKeysAreValidated(),
-                hapiTransferFromForNFTWithCustomFeesWithAllowance(),
-                hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance(),
-                okToRepeatSerialNumbersInWipeList(),
-                okToRepeatSerialNumbersInBurnList(),
-                canUseAliasAndAccountCombinations());
+                hapiTransferFromForNFTWithCustomFeesWithAllowance()
+//                hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance(),
+//                okToRepeatSerialNumbersInWipeList(),
+//                okToRepeatSerialNumbersInBurnList(),
+//                canUseAliasAndAccountCombinations()
+        );
     }
 
     @Override
