@@ -92,7 +92,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
@@ -150,7 +149,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
- @HapiTestSuite
+@HapiTestSuite
 public class CryptoTransferSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(CryptoTransferSuite.class);
     private static final String OWNER = "owner";
@@ -369,7 +368,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest // here
-    private HapiSpec  aliasKeysAreValidated() {
+    private HapiSpec aliasKeysAreValidated() {
         final var validAlias = "validAlias";
         final var invalidAlias = "invalidAlias";
 
@@ -1599,9 +1598,10 @@ public class CryptoTransferSuite extends HapiSuite {
     @HapiTest
     private HapiSpec okToSetInvalidPaymentHeaderForCostAnswer() {
         return defaultHapiSpec("OkToSetInvalidPaymentHeaderForCostAnswer")
-                .given(snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
-                        .via("misc"))
+                                .via("misc"))
                 .when()
                 .then(
                         getTxnRecord("misc").useEmptyTxnAsCostPayment(),
@@ -1832,7 +1832,8 @@ public class CryptoTransferSuite extends HapiSuite {
     @HapiTest
     private HapiSpec transferWithMissingAccountGetsInvalidAccountId() {
         return defaultHapiSpec("transferWithMissingAccountGetsInvalidAccountId")
-                .given(snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true))
                 .when(cryptoTransfer(tinyBarsFromTo("1.2.3", PAYEE_SIG_REQ, 1_000L))
                         .signedBy(DEFAULT_PAYER, PAYEE_SIG_REQ)

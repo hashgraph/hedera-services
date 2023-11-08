@@ -326,21 +326,24 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl syncBodyIdFromRecordId() {
         final var newTransactionID = transactionID;
-        try{
-            final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(transaction.signedTransactionBytes().toReadableSequentialData());
-            final var existingTransactionBody = TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
+        try {
+            final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
+                    transaction.signedTransactionBytes().toReadableSequentialData());
+            final var existingTransactionBody =
+                    TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
             final var body = existingTransactionBody
                     .copyBuilder()
                     .transactionID(newTransactionID)
                     .build();
             final var newBodyBytes = TransactionBody.PROTOBUF.toBytes(body);
-            final var newSignedTransaction = SignedTransaction.newBuilder().bodyBytes(newBodyBytes).build();
+            final var newSignedTransaction =
+                    SignedTransaction.newBuilder().bodyBytes(newBodyBytes).build();
             final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(newSignedTransaction);
             this.transaction = Transaction.newBuilder()
                     .signedTransactionBytes(signedTransactionBytes)
                     .build();
             return this;
-        } catch(Exception e) {
+        } catch (Exception e) {
             return this;
         }
     }

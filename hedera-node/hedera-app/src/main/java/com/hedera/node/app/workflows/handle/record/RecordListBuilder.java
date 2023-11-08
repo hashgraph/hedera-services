@@ -347,9 +347,9 @@ public final class RecordListBuilder {
         for (int i = count - 1; i >= 0; i--) {
             final var recordBuilder = precedingTxnRecordBuilders.get(i);
             records.add(recordBuilder
-                            .transactionID(idBuilder.nonce(i + 1).build())
-                            .syncBodyIdFromRecordId()
-                            .build());
+                    .transactionID(idBuilder.nonce(i + 1).build())
+                    .syncBodyIdFromRecordId()
+                    .build());
         }
 
         records.add(userTxnRecord);

@@ -477,7 +477,7 @@ public class HandleWorkflow {
 
                 } catch (final HandleException e) {
                     rollback(e.getStatus(), stack, recordListBuilder);
-                    if(!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)){
+                    if (!authorizer.hasWaivedFees(payer, transactionInfo.functionality(), txBody)) {
                         feeAccumulator.chargeFees(payer, creator.accountId(), fees);
                     }
                 }
