@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
@@ -46,6 +47,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
@@ -154,6 +156,7 @@ public class ContractUpdateHandler implements TransactionHandler {
             final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
             final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+            final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
 
             validateFalse(
                     op.maxAutomaticTokenAssociations() > ledgerConfig.maxAutoAssociations(),
@@ -166,7 +169,10 @@ public class ContractUpdateHandler implements TransactionHandler {
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
 
             builder.maxAutoAssociations(op.maxAutomaticTokenAssociations());
+
+            validateTrue(contractsConfig.allowAutoAssociations(), NOT_SUPPORTED);
         }
+
         return builder.build();
     }
 
