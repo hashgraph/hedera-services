@@ -250,7 +250,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                         return fileConsTime.isAfter(lowerBoundConsensusStartTime)
                                 && new File(f).length() > MIN_GZIP_SIZE_IN_BYTES;
                     });
-                    log.info("Read {} record items from {}", data.records().size(), recordLoc);
+                    log.info("Read {} record files from {}", data.records().size(), recordLoc);
                 } catch (Exception ignore) {
                     // We will try the next location, if any
                 }
