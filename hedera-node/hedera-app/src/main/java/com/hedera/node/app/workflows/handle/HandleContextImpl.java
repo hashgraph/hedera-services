@@ -736,7 +736,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         }
 
         // Check if the transaction is privileged and if the payer has the required privileges
-        final var privileges = authorizer.hasPrivilegedAuthorization(payer, function, transactionBody);
+        final var privileges = authorizer.hasPrivilegedAuthorization(payer, functionality, transactionBody);
         if (privileges == SystemPrivilege.UNAUTHORIZED) {
             throw new PreCheckException(ResponseCodeEnum.AUTHORIZATION_FAILED);
         }
