@@ -48,6 +48,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
@@ -102,7 +103,7 @@ public class ContractUpdateHandler implements TransactionHandler {
 
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var toBeUpdated = accountStore.getContractById(target);
-        validateSemantics(toBeUpdated, context, op);
+        validateSemantics(toBeUpdated, context, op, accountStore);
         final var changed = update(toBeUpdated, context, op);
 
         context.serviceApi(TokenServiceApi.class).updateContract(changed);
@@ -169,7 +170,11 @@ public class ContractUpdateHandler implements TransactionHandler {
         return builder.build();
     }
 
-    private void validateSemantics(Account contract, HandleContext context, ContractUpdateTransactionBody op) {
+    private void validateSemantics(
+        Account contract,
+        HandleContext context,
+        ContractUpdateTransactionBody op,
+        ReadableAccountStore accountStore) {
         validateTrue(contract != null, INVALID_CONTRACT_ID);
 
         if (op.hasAdminKey()) {
@@ -199,6 +204,18 @@ public class ContractUpdateHandler implements TransactionHandler {
                 op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
                 null);
         context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta);
+
+        context.serviceApi(TokenServiceApi.class)
+            .assertValidStakingElection(
+                context.configuration()
+                    .getConfigData(StakingConfig.class)
+                    .isEnabled(),
+                contract.declineReward(),
+                contract.stakedId().kind().name(),
+                contract.stakedAccountId(),
+                contract.stakedNodeId(),
+                accountStore,
+                context.networkInfo());
     }
 
     boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {
