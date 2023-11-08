@@ -131,7 +131,7 @@ class ReconnectProtocolTests {
         when(activeStatusGetter.getCurrentStatus()).thenReturn(PlatformStatus.ACTIVE);
 
         reconnectController = mock(ReconnectController.class);
-        when(reconnectController.acquireLearnerPermit()).thenReturn(true);
+        when(reconnectController.blockLearnerPermit()).thenReturn(true);
     }
 
     @DisplayName("Test the conditions under which the protocol should and should not be initiated")
@@ -483,22 +483,22 @@ class ReconnectProtocolTests {
 
         assertTrue(protocol.shouldAccept());
 
-        verify(reconnectController, times(1)).acquireLearnerPermit();
+        verify(reconnectController, times(1)).blockLearnerPermit();
         verify(reconnectController, times(0)).cancelLearnerPermit();
 
         protocol.acceptFailed();
 
-        verify(reconnectController, times(1)).acquireLearnerPermit();
+        verify(reconnectController, times(1)).blockLearnerPermit();
         verify(reconnectController, times(1)).cancelLearnerPermit();
 
         assertTrue(protocol.shouldAccept());
 
-        verify(reconnectController, times(2)).acquireLearnerPermit();
+        verify(reconnectController, times(2)).blockLearnerPermit();
         verify(reconnectController, times(1)).cancelLearnerPermit();
 
         assertThrows(Exception.class, () -> protocol.runProtocol(mock(Connection.class)));
 
-        verify(reconnectController, times(2)).acquireLearnerPermit();
+        verify(reconnectController, times(2)).blockLearnerPermit();
         verify(reconnectController, times(2)).cancelLearnerPermit();
     }
 }
