@@ -165,10 +165,26 @@ public class PlatformWiring implements Startable, Stoppable {
      * Get the input method for the address book update.
      * <p>
      * Future work: this is a temporary hook to update the address book in the new intake pipeline.
+     *
      * @return the input method for the address book update
      */
     public Consumer<AddressBookUpdate> getAddressBookUpdateInput() {
         return eventSignatureValidatorScheduler.getAddressBookUpdateInput()::inject;
+    }
+
+    /**
+     * Inject a new minimum generation non-ancient on all components that need it.
+     * <p>
+     * Future work: this is a temporary hook to allow the components to get the minimum generation non-ancient
+     * during startup. This method will be removed once the components are wired together.
+     *
+     * @param minimumGenerationNonAncient the new minimum generation non-ancient
+     */
+    public void forceUpdateMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+        eventDeduplicatorScheduler.getMinimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
+        eventSignatureValidatorScheduler.getMinimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
+        orphanBufferScheduler.getMinimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
+        inOrderLinkerScheduler.getMinimumGenerationNonAncientInput().inject(minimumGenerationNonAncient);
     }
 
     /**

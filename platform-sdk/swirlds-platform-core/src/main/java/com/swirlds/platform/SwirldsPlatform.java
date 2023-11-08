@@ -776,7 +776,12 @@ public class SwirldsPlatform implements Platform {
 
             loadStateIntoConsensus(initialState);
             loadStateIntoEventCreator(initialState);
-            eventLinker.loadFromSignedState(initialState);
+
+            if (eventConfig.useLegacyIntake()) {
+                eventLinker.loadFromSignedState(initialState);
+            } else {
+                platformWiring.forceUpdateMinimumGenerationNonAncient(initialMinimumGenerationNonAncient);
+            }
 
             // We don't want to invoke these callbacks until after we are starting up.
             final long round = initialState.getRound();
