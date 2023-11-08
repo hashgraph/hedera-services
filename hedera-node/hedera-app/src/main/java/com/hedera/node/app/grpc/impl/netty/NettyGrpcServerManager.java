@@ -118,7 +118,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
 
     @Override
     public int port() {
-        return plainServer == null ? -1 : plainServer.getPort();
+        return plainServer == null || plainServer.isTerminated() ? -1 : plainServer.getPort();
     }
 
     @Override
@@ -170,17 +170,19 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
 
     @Override
     public synchronized void stop() {
-        logger.info("Shutting down gRPC servers");
-        if (plainServer != null) {
+        // Do not attempt to shut down if we have already done so
+        if (plainServer != null && !plainServer.isTerminated()) {
             logger.info("Shutting down gRPC server on port {}", plainServer.getPort());
             terminateServer(plainServer);
-            plainServer = null;
+        } else {
+            logger.info("Cannot shut down an already stopped gRPC server");
         }
 
-        if (tlsServer != null) {
+        if (tlsServer != null && !tlsServer.isTerminated()) {
             logger.info("Shutting down TLS gRPC server on port {}", tlsServer.getPort());
             terminateServer(tlsServer);
-            tlsServer = null;
+        } else {
+            logger.info("Cannot shut down an already stopped gRPC server");
         }
     }
 
@@ -242,6 +244,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         final var terminationTimeout = nettyConfig.terminationTimeout();
 
         try {
+            server.shutdownNow();
             server.awaitTermination(terminationTimeout, TimeUnit.SECONDS);
             logger.info("gRPC server stopped");
         } catch (InterruptedException ie) {

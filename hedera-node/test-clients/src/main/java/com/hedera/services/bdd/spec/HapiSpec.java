@@ -49,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static java.util.Collections.emptyList;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -58,6 +59,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.io.ByteSource;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
+import com.hedera.services.bdd.junit.HapiTestNode;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.fees.Payment;
@@ -192,7 +194,7 @@ public class HapiSpec implements Runnable {
     // needed to re-target specs against a @HapiTest or CI Docker network than vice-versa
     TargetNetworkType targetNetworkType = TargetNetworkType.STANDALONE_MONO_NETWORK;
     List<Payment> costs = new ArrayList<>();
-    List<Payment> costSnapshot = Collections.emptyList();
+    List<Payment> costSnapshot = emptyList();
     String name;
     String suitePrefix = "";
     SpecStatus status;
@@ -217,6 +219,8 @@ public class HapiSpec implements Runnable {
     BlockingQueue<HapiSpecOpFinisher> pendingOps = new PriorityBlockingQueue<>();
     EnumMap<ResponseCodeEnum, AtomicInteger> precheckStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
     EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
+    /** These nodes can be used by some ops for controlling the nodes, such as restart, reconnect, etc. */
+    List<HapiTestNode> nodes = emptyList();
 
     List<SingleAccountBalances> accountBalances = new ArrayList<>();
     private final SnapshotMatchMode[] snapshotMatchModes;
@@ -330,6 +334,14 @@ public class HapiSpec implements Runnable {
     public HapiSpec setSuitePrefix(String suitePrefix) {
         this.suitePrefix = suitePrefix;
         return this;
+    }
+
+    public void setNodes(List<HapiTestNode> nodes) {
+        if (nodes != null) this.nodes = nodes;
+    }
+
+    public List<HapiTestNode> getNodes() {
+        return nodes;
     }
 
     public static boolean ok(HapiSpec spec) {
@@ -862,7 +874,7 @@ public class HapiSpec implements Runnable {
     }
 
     public static Def.Given defaultHapiSpec(String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return internalDefaultHapiSpec(name, false, Collections.emptyList(), snapshotMatchModes);
+        return internalDefaultHapiSpec(name, false, emptyList(), snapshotMatchModes);
     }
 
     public static Def.PropertyPreserving propertyPreservingHapiSpec(final String name) {
@@ -875,7 +887,7 @@ public class HapiSpec implements Runnable {
 
     public static Def.Given onlyDefaultHapiSpec(
             final String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return internalDefaultHapiSpec(name, true, Collections.emptyList());
+        return internalDefaultHapiSpec(name, true, emptyList());
     }
 
     private static Def.Given internalDefaultHapiSpec(
@@ -944,7 +956,7 @@ public class HapiSpec implements Runnable {
             final String name,
             final Stream<T> prioritySource,
             @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return customizedHapiSpec(isOnly, name, prioritySource, Collections.emptyList(), snapshotMatchModes);
+        return customizedHapiSpec(isOnly, name, prioritySource, emptyList(), snapshotMatchModes);
     }
 
     private static <T> Def.Sourced customizedHapiSpec(

@@ -19,10 +19,10 @@ package com.hedera.services.bdd.suites.freeze;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForNodesToFreeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTest;
 import java.util.List;
@@ -53,8 +53,8 @@ public class CryptoTransferThenFreezeTest extends CryptoTransferLoadTest {
                         logIt(ignore -> settings.toString()))
                 .when(freezeOnly().startingIn(30).seconds().payingWith(GENESIS))
                 .then(
-                        // sleep for a while to wait for this freeze transaction be handled
-                        UtilVerbs.sleepFor(75_000));
+                        // wait for the nodes to freeze (fails if they don't freeze)
+                        waitForNodesToFreeze(75));
     }
 
     @Override

@@ -21,7 +21,10 @@ event.enableEventStreaming,                    false                        # di
                                           #          Metrics          #
                                           #############################
 
-prometheus.endpointEnabled,                    false                        # differs from mainnet
+metrics.csvFileName,                           MainNetStats
+metrics.csvOutputFolder,                       data/stats
+showInternalStats,                             true
+prometheus.endpointEnabled,                    true                        # differs from mainnet
 
                                           #############################
                                           #          Security         #

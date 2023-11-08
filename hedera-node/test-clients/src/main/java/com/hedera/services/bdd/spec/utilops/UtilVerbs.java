@@ -39,6 +39,8 @@ import static com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate.getU
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
+import static com.hedera.services.bdd.spec.utilops.lifecycle.selectors.NodeSelector.allNodes;
+import static com.hedera.services.bdd.spec.utilops.lifecycle.selectors.NodeSelector.byName;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
@@ -108,6 +110,9 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForActiveOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForFreezeOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForShutdownOp;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
 import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
@@ -242,6 +247,30 @@ public class UtilVerbs {
 
     public static ContextualActionOp doingContextual(Consumer<HapiSpec> action) {
         return new ContextualActionOp(action);
+    }
+
+    public static WaitForActiveOp waitForNodeToBecomeActive(String name, int waitSeconds) {
+        return new WaitForActiveOp(byName(name), waitSeconds);
+    }
+
+    public static WaitForActiveOp waitForNodesToBecomeActive(int waitSeconds) {
+        return new WaitForActiveOp(allNodes(), waitSeconds);
+    }
+
+    public static WaitForFreezeOp waitForNodeToFreeze(String name, int waitSeconds) {
+        return new WaitForFreezeOp(byName(name), waitSeconds);
+    }
+
+    public static WaitForFreezeOp waitForNodesToFreeze(int waitSeconds) {
+        return new WaitForFreezeOp(allNodes(), waitSeconds);
+    }
+
+    public static WaitForShutdownOp waitForNodeToShutDown(String name, int waitSeconds) {
+        return new WaitForShutdownOp(byName(name), waitSeconds);
+    }
+
+    public static WaitForShutdownOp waitForNodesToShutDown(int waitSeconds) {
+        return new WaitForShutdownOp(allNodes(), waitSeconds);
     }
 
     public static HapiSpecSleep sleepFor(long timeMs) {
