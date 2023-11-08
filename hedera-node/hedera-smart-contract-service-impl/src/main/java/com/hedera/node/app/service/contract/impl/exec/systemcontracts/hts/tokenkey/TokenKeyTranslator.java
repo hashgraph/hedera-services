@@ -66,6 +66,9 @@ public class TokenKeyTranslator extends AbstractHtsCallTranslator {
     }
 
     private Key getTokenKey(Token token, int keyType) throws InvalidTransactionException {
+        if (token == null) {
+            return null;
+        }
         return switch (keyType) {
             case 1 -> token.adminKey();
             case 2 -> token.kycKey();
