@@ -116,6 +116,7 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
+import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
@@ -320,6 +321,11 @@ public class SwirldsPlatform implements Platform {
 
     /** Manages emergency recovery */
     private final EmergencyRecoveryManager emergencyRecoveryManager;
+
+    /**
+     * Encapsulated wiring for the platform.
+     */
+    private final PlatformWiring platformWiring;
 
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
@@ -658,6 +664,7 @@ public class SwirldsPlatform implements Platform {
 
         if (eventConfig.useLegacyIntake()) {
             intakeHandler = eventValidator::validateEvent;
+            platformWiring = null;
         } else {
             final InternalEventValidator internalEventValidator = new InternalEventValidator(
                     platformContext, time, currentAddressBook.getSize() == 1, intakeEventCounter);
@@ -683,7 +690,7 @@ public class SwirldsPlatform implements Platform {
                     preConsensusEventHandler::preconsensusEvent,
                     intakeEventCounter);
 
-            final PlatformWiring platformWiring = new PlatformWiring(platformContext, time);
+            platformWiring = new PlatformWiring(platformContext, time);
             platformWiring.bind(
                     internalEventValidator,
                     eventDeduplicator,
@@ -1009,14 +1016,25 @@ public class SwirldsPlatform implements Platform {
             // from the ones we had before the reconnect
             intakeQueue.pause();
             try {
-                eventValidators.replaceValidator(
-                        SignatureValidator.VALIDATOR_NAME,
-                        new SignatureValidator(
-                                signedState.getState().getPlatformState().getPreviousAddressBook(),
-                                signedState.getState().getPlatformState().getAddressBook(),
-                                appVersion,
-                                CryptoStatic::verifySignature,
-                                Time.getCurrent()));
+                if (platformContext
+                        .getConfiguration()
+                        .getConfigData(EventConfig.class)
+                        .useLegacyIntake()) {
+                    eventValidators.replaceValidator(
+                            SignatureValidator.VALIDATOR_NAME,
+                            new SignatureValidator(
+                                    signedState.getState().getPlatformState().getPreviousAddressBook(),
+                                    signedState.getState().getPlatformState().getAddressBook(),
+                                    appVersion,
+                                    CryptoStatic::verifySignature,
+                                    Time.getCurrent()));
+                } else {
+                    platformWiring
+                            .getAddressBookUpdateInput()
+                            .accept(new AddressBookUpdate(
+                                    signedState.getState().getPlatformState().getPreviousAddressBook(),
+                                    signedState.getState().getPlatformState().getAddressBook()));
+                }
             } finally {
                 intakeQueue.resume();
             }

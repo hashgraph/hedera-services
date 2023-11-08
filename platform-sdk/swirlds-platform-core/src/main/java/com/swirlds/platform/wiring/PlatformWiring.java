@@ -30,9 +30,11 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Consumer;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
@@ -157,6 +159,16 @@ public class PlatformWiring implements Startable, Stoppable {
      */
     public InterruptableConsumer<GossipEvent> getEventInput() {
         return internalEventValidatorScheduler.getEventInput()::put;
+    }
+
+    /**
+     * Get the input method for the address book update.
+     * <p>
+     * Future work: this is a temporary hook to update the address book in the new intake pipeline.
+     * @return the input method for the address book update
+     */
+    public Consumer<AddressBookUpdate> getAddressBookUpdateInput() {
+        return eventSignatureValidatorScheduler.getAddressBookUpdateInput()::inject;
     }
 
     /**

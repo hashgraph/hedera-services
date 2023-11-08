@@ -3,7 +3,7 @@
 ###############################################################################################
 swirld, 123
 
- app,		HashgraphDemo.jar,	   1,0,0,0,0,0,0,0,0,0, all
+# app,		HashgraphDemo.jar,	   1,0,0,0,0,0,0,0,0,0, all
 # app,		HelloSwirldDemo.jar
 # app,		CryptocurrencyDemo.jar
 # app,		StatsDemo.jar,		   1, 3000, 0, 100, -1, 200
@@ -17,7 +17,7 @@ swirld, 123
 # app,		FCMStatsTestingTool.jar,	 signed, syncDelay, transPerEventMax, transPerSecToCreate
 # app,		FCMStatsTestingTool.jar,		 0,      0,         -1,               250
 # app,		PlatformTestingTool.jar, FCMFCQ-Basic-1k-10m.json
-# app,		MigrationTestingTool.jar, 4685095852903873060, 5000,	4
+app,		MigrationTestingTool.jar, 4685095852903873060, 5000,	4
 # app,		ISSTestingTool.jar
 # app,		AddressBookTestingTool.jar,
 # app,		ConsistencyTestingTool.jar,

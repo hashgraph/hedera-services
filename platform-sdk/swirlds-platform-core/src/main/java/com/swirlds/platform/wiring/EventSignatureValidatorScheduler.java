@@ -21,6 +21,7 @@ import com.swirlds.common.wiring.OutputWire;
 import com.swirlds.common.wiring.TaskScheduler;
 import com.swirlds.common.wiring.WiringModel;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.validation.AddressBookUpdate;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -33,6 +34,7 @@ public class EventSignatureValidatorScheduler {
 
     private final InputWire<GossipEvent, GossipEvent> eventInput;
     private final InputWire<Long, GossipEvent> minimumGenerationNonAncientInput;
+    private final InputWire<AddressBookUpdate, GossipEvent> addressBookUpdateInput;
 
     /**
      * Constructor.
@@ -50,6 +52,7 @@ public class EventSignatureValidatorScheduler {
 
         eventInput = taskScheduler.buildInputWire("events with unvalidated signatures");
         minimumGenerationNonAncientInput = taskScheduler.buildInputWire("minimum generation non ancient");
+        addressBookUpdateInput = taskScheduler.buildInputWire("address book update");
     }
 
     /**
@@ -73,6 +76,16 @@ public class EventSignatureValidatorScheduler {
     }
 
     /**
+     * Get the input of the address book update
+     *
+     * @return the address book update input wire
+     */
+    @NonNull
+    public InputWire<AddressBookUpdate, GossipEvent> getAddressBookUpdateInput() {
+        return addressBookUpdateInput;
+    }
+
+    /**
      * Get the output of the signature validator, i.e. a stream of events with valid signatures.
      *
      * @return the event output channel
@@ -90,5 +103,6 @@ public class EventSignatureValidatorScheduler {
     public void bind(@NonNull final EventSignatureValidator eventSignatureValidator) {
         eventInput.bind(eventSignatureValidator::validateSignature);
         minimumGenerationNonAncientInput.bind(eventSignatureValidator::setMinimumGenerationNonAncient);
+        addressBookUpdateInput.bind(eventSignatureValidator::updateAddressBooks);
     }
 }
