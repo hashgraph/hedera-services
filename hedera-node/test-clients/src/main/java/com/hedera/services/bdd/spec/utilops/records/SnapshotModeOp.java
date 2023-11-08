@@ -46,6 +46,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -63,6 +64,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -159,13 +161,22 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta = new SnapshotFileMeta("CryptoTransfer", "okToRepeatSerialNumbersInBurnList");
-        final var snapshot = loadSnapshotFor(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta);
+        final var snapshotFileMeta = new SnapshotFileMeta("CryptoTransfer", "CannotTransferFromImmutableAccountsBOOP");
+        final var maybeSnapshot = suiteSnapshotsFrom(resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
+                .flatMap(
+                        suiteSnapshots -> Optional.ofNullable(suiteSnapshots.getSnapshot(snapshotFileMeta.specName())));
+        if (maybeSnapshot.isEmpty()) {
+            throw new IllegalStateException("No such snapshot");
+        }
+        final var snapshot = maybeSnapshot.get();
         final var items = snapshot.parsedItems();
+        final var dumpLoc = Files.newBufferedWriter(Paths.get(snapshotFileMeta + ".txt"));
         for (int i = 0, n = items.size(); i < n; i++) {
             final var item = items.get(i);
-            System.out.println("Item #" + i + " body: " + item.itemBody());
-            System.out.println("Item #" + i + " record: " + item.itemRecord());
+            dumpLoc.write("--- Item #" + i + " ---\n");
+            dumpLoc.write(item.itemBody() + "\n\n");
+            dumpLoc.write("➡️\n\n");
+            dumpLoc.write(item.itemRecord() + "\n\n");
         }
     }
 

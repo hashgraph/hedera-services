@@ -197,7 +197,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId), ))
                 .willReturn(cryptoCreateRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any())).willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);

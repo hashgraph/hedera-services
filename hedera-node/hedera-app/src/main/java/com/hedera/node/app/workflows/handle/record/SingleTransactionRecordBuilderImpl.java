@@ -80,6 +80,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 /**
  * A custom builder for create a {@link SingleTransactionRecord}.
@@ -156,6 +157,12 @@ public class SingleTransactionRecordBuilderImpl
     // Used for some child records builders.
     private final ReversingBehavior reversingBehavior;
 
+    // If non-null, used to finish constructing the synthetic transaction right before its record
+    // stream item is built; this was added to let the contract service externalize certain dispatched
+    // CryptoCreate transactions as ContractCreate synthetic transactions
+    @Nullable
+    private final UnaryOperator<Transaction> transactionFinisher;
+
     /**
      * Possible behavior of a {@link SingleTransactionRecord} when a parent transaction fails,
      * and it is asked to be reverted
@@ -175,13 +182,13 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
-     * Creates new transaction record builder.
+     * Creates new transaction record builder where reversion will leave its record in the stream
+     * with either a failure status or {@link ResponseCodeEnum#REVERTED_SUCCESS}.
      *
      * @param consensusNow the consensus timestamp for the transaction
      */
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
-        this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        this.reversingBehavior = ReversingBehavior.REVERSIBLE;
+        this(consensusNow, ReversingBehavior.REVERSIBLE);
     }
 
     /**
@@ -192,8 +199,23 @@ public class SingleTransactionRecordBuilderImpl
      */
     public SingleTransactionRecordBuilderImpl(
             @NonNull final Instant consensusNow, final ReversingBehavior reversingBehavior) {
+        this(consensusNow, reversingBehavior, null);
+    }
+
+    /**
+     * Creates new transaction record builder with both explicit reversing behavior and
+     * transaction construction finishing.
+     *
+     * @param consensusNow the consensus timestamp for the transaction
+     * @param reversingBehavior the reversing behavior (see {@link RecordListBuilder}
+     */
+    public SingleTransactionRecordBuilderImpl(
+            @NonNull final Instant consensusNow,
+            @NonNull final ReversingBehavior reversingBehavior,
+            @Nullable final UnaryOperator<Transaction> transactionFinisher) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        this.reversingBehavior = reversingBehavior;
+        this.reversingBehavior = requireNonNull(reversingBehavior, "reversingBehavior must not be null");
+        this.transactionFinisher = transactionFinisher;
     }
 
     /**
@@ -201,7 +223,13 @@ public class SingleTransactionRecordBuilderImpl
      *
      * @return the transaction record
      */
-    public SingleTransactionRecord build() {
+    public @Nullable SingleTransactionRecord build() {
+        if (transactionFinisher != null) {
+            transaction = transactionFinisher.apply(transaction);
+            if (transaction == null) {
+                return null;
+            }
+        }
         final var transactionReceipt = transactionReceiptBuilder
                 .exchangeRate(exchangeRate)
                 .serialNumbers(serialNumbers)

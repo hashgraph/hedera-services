@@ -98,6 +98,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -836,13 +837,21 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             txBody, SingleTransactionRecordBuilder.class, (Predicate<Key>) null, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
-                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT))
+                            null,
+                            SingleTransactionRecordBuilder.class,
+                            VERIFIER_CALLBACK,
+                            AccountID.DEFAULT,
+                            UnaryOperator.identity()))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
-                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
+                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, UnaryOperator.identity()))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
-                            txBody, SingleTransactionRecordBuilder.class, (Predicate<Key>) null, AccountID.DEFAULT))
+                            txBody,
+                            SingleTransactionRecordBuilder.class,
+                            (Predicate<Key>) null,
+                            AccountID.DEFAULT,
+                            UnaryOperator.identity()))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -867,7 +876,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT)));
+                            AccountID.DEFAULT,
+                            UnaryOperator.identity())));
         }
 
         @ParameterizedTest
@@ -1057,7 +1067,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
-                            AccountID.DEFAULT))
+                            AccountID.DEFAULT,
+                            UnaryOperator.identity()))
                     .isInstanceOf(IllegalArgumentException.class);
             verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
             verify(dispatcher, never()).dispatchHandle(any());

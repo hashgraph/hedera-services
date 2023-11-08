@@ -26,6 +26,7 @@ import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.annotations.IsTopLevelCreation;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
@@ -43,6 +44,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import javax.inject.Inject;
 
 /**
@@ -50,6 +52,8 @@ import javax.inject.Inject;
  */
 @TransactionScope
 public class HandleHederaOperations implements HederaOperations {
+    private static final UnaryOperator<Transaction> TOP_LEVEL_CREATION_FINISHER = (ignore) -> null;
+    private static final UnaryOperator<Transaction> INTERNAL_CREATION_FINISHER = UnaryOperator.identity();
     public static final Bytes ZERO_ENTROPY = Bytes.fromHex(
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
@@ -58,16 +62,23 @@ public class HandleHederaOperations implements HederaOperations {
     private final ContractsConfig contractsConfig;
     private final HandleContext context;
 
+    /**
+     * Lets us track whether the next creation is for a top-level HAPI
+     */
+    private boolean nextCreationIsTopLevel;
+
     @Inject
     public HandleHederaOperations(
             @NonNull final LedgerConfig ledgerConfig,
             @NonNull final ContractsConfig contractsConfig,
             @NonNull final HandleContext context,
-            @NonNull final TinybarValues tinybarValues) {
+            @NonNull final TinybarValues tinybarValues,
+            @IsTopLevelCreation final boolean isTopLevelCreation) {
         this.ledgerConfig = requireNonNull(ledgerConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
         this.context = requireNonNull(context);
         this.tinybarValues = requireNonNull(tinybarValues);
+        nextCreationIsTopLevel = isTopLevelCreation;
     }
 
     /**
@@ -298,7 +309,9 @@ public class HandleHederaOperations implements HederaOperations {
                 TransactionBody.newBuilder().cryptoCreateAccount(body).build(),
                 ContractCreateRecordBuilder.class,
                 key -> true,
-                context.payer());
+                context.payer(),
+                nextCreationIsTopLevel ? TOP_LEVEL_CREATION_FINISHER : INTERNAL_CREATION_FINISHER);
+        nextCreationIsTopLevel = false;
 
         final var contractId = ContractID.newBuilder().contractNum(number).build();
         // add additional create record fields

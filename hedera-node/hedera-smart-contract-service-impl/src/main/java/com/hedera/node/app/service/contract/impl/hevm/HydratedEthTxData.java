@@ -43,4 +43,8 @@ public record HydratedEthTxData(@Nullable EthTxData ethTxData, @NonNull Response
     public boolean isAvailable() {
         return ethTxData != null;
     }
+
+    public boolean isCreation() {
+        return isAvailable() && !ethTxData.hasToAddress();
+    }
 }

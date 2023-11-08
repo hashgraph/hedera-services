@@ -85,6 +85,7 @@ import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -549,9 +550,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
             @NonNull final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayerId) {
+            @NonNull final AccountID syntheticPayerId,
+            @NonNull final UnaryOperator<Transaction> transactionFinisher) {
         final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
-                () -> recordListBuilder.addRemovableChild(configuration());
+                () -> recordListBuilder.addRemovableChildWithTransactionFinisher(configuration(), transactionFinisher);
         return doDispatchChildTransaction(syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
     }
 

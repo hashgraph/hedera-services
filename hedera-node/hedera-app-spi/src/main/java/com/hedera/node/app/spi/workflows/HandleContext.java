@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -39,6 +40,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 /**
  * Represents the context of a single {@code handle()}-call.
@@ -56,6 +58,7 @@ import java.util.function.Predicate;
  */
 @SuppressWarnings("UnusedReturnValue")
 public interface HandleContext {
+    UnaryOperator<Transaction> DEFAULT_TRANSACTION_FINISHER = UnaryOperator.identity();
 
     /**
      * Category of the current transaction.
@@ -548,21 +551,23 @@ public interface HandleContext {
      *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
-     * @param txBody             the {@link TransactionBody} of the child transaction to dispatch
+     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
      * @param recordBuilderClass the record builder class of the child transaction
-     * @param callback           a {@link Predicate} callback function that will observe each primitive key
-     * @param syntheticPayerId  the payer of the child transaction
+     * @param callback a {@link Predicate} callback function that will observe each primitive key
+     * @param syntheticPayerId the payer of the child transaction
+     * @param transactionFinisher a final transformation to apply before externalizing if the returned value is non-null
      * @return the record builder of the child transaction
-     * @throws NullPointerException     if any of the arguments is {@code null}
+     * @throws NullPointerException if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
-     *                                  {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
     <T> T dispatchRemovableChildTransaction(
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
             @NonNull Predicate<Key> callback,
-            @NonNull AccountID syntheticPayerId);
+            @NonNull AccountID syntheticPayerId,
+            @NonNull UnaryOperator<Transaction> transactionFinisher);
 
     /**
      * Dispatches a removable child transaction that already has a transaction ID.
@@ -582,7 +587,8 @@ public interface HandleContext {
                 txBody,
                 recordBuilderClass,
                 callback,
-                txBody.transactionIDOrThrow().accountIDOrThrow());
+                txBody.transactionIDOrThrow().accountIDOrThrow(),
+                DEFAULT_TRANSACTION_FINISHER);
     }
 
     /**
