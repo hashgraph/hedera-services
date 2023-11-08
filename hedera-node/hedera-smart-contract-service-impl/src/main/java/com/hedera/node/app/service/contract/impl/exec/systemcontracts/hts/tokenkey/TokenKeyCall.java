@@ -16,13 +16,22 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenkey;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_NOT_PROVIDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_PRECOMPILE_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.keyTupleFor;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenkey.TokenKeyTranslator.TOKEN_KEY;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
+import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Token;
@@ -30,8 +39,11 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractNonRevertibleTokenViewCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
     private final Key key;
@@ -55,7 +67,7 @@ public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
     protected @NonNull FullResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
         if (key == null) {
-            return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), Key.DEFAULT);
+            return fullResultsFor(CONTRACT_REVERT_EXECUTED, gasCalculator.viewGasRequirement(), Key.DEFAULT);
         }
         return fullResultsFor(SUCCESS, gasCalculator.viewGasRequirement(), key);
     }
@@ -74,5 +86,46 @@ public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
         }
         return successResult(
                 TOKEN_KEY.getOutputs().encodeElements(status.protoOrdinal(), keyTupleFor(key)), gasRequirement);
+    }
+
+    @Override
+    public @NonNull PricedResult execute() {
+        PricedResult result;
+        long gasRequirement;
+        Bytes output;
+        ContractID contractID = asEvmContractId(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
+        if (token == null) {
+            result = gasOnly(viewCallResultWith(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement()));
+
+            gasRequirement = result.fullResult().gasRequirement();
+            enhancement
+                    .systemOperations()
+                    .externalizeResult(
+                            contractFunctionResultFailedFor(gasRequirement, INVALID_TOKEN_ID.toString(), contractID),
+                            SystemContractUtils.ResultStatus.IS_ERROR,
+                            INVALID_TOKEN_ID);
+        } else if (key == null) {
+            result = gasOnly(viewCallResultWith(KEY_NOT_PROVIDED, gasCalculator.viewGasRequirement()));
+
+            gasRequirement = result.fullResult().gasRequirement();
+            enhancement
+                    .systemOperations()
+                    .externalizeResult(
+                            contractFunctionResultFailedFor(gasRequirement, KEY_NOT_PROVIDED.toString(), contractID),
+                            SystemContractUtils.ResultStatus.IS_ERROR,
+                            KEY_NOT_PROVIDED);
+        } else {
+            result = gasOnly(resultOfViewingToken(token));
+
+            gasRequirement = result.fullResult().gasRequirement();
+            output = result.fullResult().result().getOutput();
+            enhancement
+                    .systemOperations()
+                    .externalizeResult(
+                            contractFunctionResultSuccessFor(gasRequirement, output, contractID),
+                            SystemContractUtils.ResultStatus.IS_SUCCESS,
+                            SUCCESS);
+        }
+        return result;
     }
 }

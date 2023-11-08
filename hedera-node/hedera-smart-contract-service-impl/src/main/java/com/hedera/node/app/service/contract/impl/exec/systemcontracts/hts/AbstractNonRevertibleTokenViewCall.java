@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_PRECOMPILE_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
@@ -38,7 +39,7 @@ import org.hyperledger.besu.datatypes.Address;
  */
 public abstract class AbstractNonRevertibleTokenViewCall extends AbstractHtsCall {
     @Nullable
-    private final Token token;
+    protected final Token token;
 
     protected AbstractNonRevertibleTokenViewCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
@@ -64,7 +65,8 @@ public abstract class AbstractNonRevertibleTokenViewCall extends AbstractHtsCall
                 .systemOperations()
                 .externalizeResult(
                         contractFunctionResultSuccessFor(gasRequirement, output, contractID),
-                        SystemContractUtils.ResultStatus.IS_SUCCESS);
+                        SystemContractUtils.ResultStatus.IS_SUCCESS,
+                        SUCCESS);
 
         return result;
     }

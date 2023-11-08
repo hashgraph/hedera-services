@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
@@ -100,7 +101,8 @@ class QuerySystemContractOperationsTest {
         assertThrows(
                 UnsupportedOperationException.class, () -> subject.activeSignatureTestWith(MOCK_VERIFICATION_STRATEGY));
 
-        assertDoesNotThrow(() -> subject.externalizeResult(ContractFunctionResult.DEFAULT, ResultStatus.IS_SUCCESS));
+        assertDoesNotThrow(() -> subject.externalizeResult(
+                ContractFunctionResult.DEFAULT, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS));
     }
 
     @Test

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -104,7 +105,10 @@ public class QuerySystemContractOperations implements SystemContractOperations {
      * {@inheritDoc}
      */
     @Override
-    public void externalizeResult(@NonNull final ContractFunctionResult result, @NonNull final ResultStatus status) {
+    public void externalizeResult(
+            @NonNull final ContractFunctionResult result,
+            @NonNull final ResultStatus status,
+            @NonNull final ResponseCodeEnum responseStatus) {
         // no-op
     }
 

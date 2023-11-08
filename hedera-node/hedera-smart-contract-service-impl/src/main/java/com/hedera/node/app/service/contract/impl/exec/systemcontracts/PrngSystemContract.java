@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
@@ -107,7 +108,9 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             requireNonNull(contractID);
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
             updater.externalizeSystemContractResults(
-                    contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID), ResultStatus.IS_SUCCESS);
+                    contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID),
+                    ResultStatus.IS_SUCCESS,
+                    SUCCESS);
         }
     }
 
@@ -119,7 +122,9 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID);
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
             updater.externalizeSystemContractResults(
-                    contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID), ResultStatus.IS_ERROR);
+                    contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID),
+                    ResultStatus.IS_ERROR,
+                    FAIL_INVALID);
         }
     }
 
