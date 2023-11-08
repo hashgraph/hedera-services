@@ -204,10 +204,13 @@ public class SingleTransactionRecordBuilderImpl
      * @return the transaction record
      */
     public SingleTransactionRecord build() {
-        final var transactionReceipt = transactionReceiptBuilder
-                .exchangeRate(exchangeRate)
-                .serialNumbers(serialNumbers)
-                .build();
+        final var builder = transactionReceiptBuilder.serialNumbers(serialNumbers);
+        // FUTURE : In mono-service exchange rate is not set in preceding child records.
+        // This should be changed after differential testing
+        if (exchangeRate != null && exchangeRate.hasCurrentRate() && exchangeRate.hasNextRate()) {
+            builder.exchangeRate(exchangeRate);
+        }
+        final var transactionReceipt = builder.build();
 
         final Bytes transactionHash;
         try {
