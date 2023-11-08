@@ -18,12 +18,15 @@ package com.hedera.node.app;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.common.config.sources.SystemEnvironmentConfigSource;
+import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.PlatformBuilder;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -94,8 +97,13 @@ public class ServicesMain implements SwirldMain {
         final Hedera hedera = new Hedera(registry);
         final NodeId selfId = args != null && args.length > 0 ? new NodeId(Integer.parseInt(args[0])) : new NodeId(0);
 
+        final var config = ConfigurationBuilder.create()
+                .withSource(SystemEnvironmentConfigSource.getInstance())
+                .withSource(SystemPropertiesConfigSource.getInstance());
+
         final PlatformBuilder builder = new PlatformBuilder(
-                Hedera.APP_NAME, Hedera.SWIRLD_NAME, hedera.getSoftwareVersion(), hedera::newState, selfId);
+                        Hedera.APP_NAME, Hedera.SWIRLD_NAME, hedera.getSoftwareVersion(), hedera::newState, selfId)
+                .withConfigurationBuilder(config);
 
         final Platform platform = builder.build();
         hedera.init(platform, selfId);
