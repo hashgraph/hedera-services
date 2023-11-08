@@ -290,7 +290,7 @@ public class HandleWorkflow {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
             // transaction itself.
             stakingPeriodTimeHook.process(tokenServiceContext);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             // If anything goes wrong, we log the error and continue
             logger.error("Failed to process staking period time hook", e);
         }
@@ -372,7 +372,8 @@ public class HandleWorkflow {
                     feeManager,
                     exchangeRateManager,
                     consensusNow,
-                    authorizer);
+                    authorizer,
+                    solvencyPreCheck);
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);
@@ -410,7 +411,7 @@ public class HandleWorkflow {
                     } else {
                         feeAccumulator.chargeFees(payer, creator.accountId(), fees);
                     }
-                } catch (HandleException ex) {
+                } catch (final HandleException ex) {
                     final var identifier = validationResult.status == NODE_DUE_DILIGENCE_FAILURE
                             ? "node " + creator.nodeId()
                             : "account " + payer;
@@ -484,7 +485,7 @@ public class HandleWorkflow {
             if (payer != null && fees != null) {
                 try {
                     feeAccumulator.chargeFees(payer, creator.accountId(), fees);
-                } catch (HandleException chargeException) {
+                } catch (final HandleException chargeException) {
                     logger.error(
                             "Unable to charge account {} a penalty after an unexpected exception {}. Cause of the failed charge:",
                             payer,
@@ -616,7 +617,7 @@ public class HandleWorkflow {
             return new ValidationResult(PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE, e.responseCode());
         } catch (final InsufficientNonFeeDebitsException e) {
             return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode());
-        } catch (PreCheckException e) {
+        } catch (final PreCheckException e) {
             // Includes InsufficientNetworkFeeException
             return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
         }
@@ -722,7 +723,7 @@ public class HandleWorkflow {
 
     private boolean preHandleStillValid(
             @NonNull final VersionedConfiguration configuration, @Nullable final Object metadata) {
-        if (metadata instanceof PreHandleResult preHandleResult) {
+        if (metadata instanceof final PreHandleResult preHandleResult) {
             return preHandleResult.configVersion() == configuration.getVersion();
         }
         return false;
