@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_PRECOMPILE_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
@@ -64,7 +65,8 @@ public abstract class AbstractRevertibleTokenViewCall extends AbstractHtsCall {
                 .systemOperations()
                 .externalizeResult(
                         contractFunctionResultSuccessFor(gasRequirement, output, contractID),
-                        SystemContractUtils.ResultStatus.IS_SUCCESS);
+                        SystemContractUtils.ResultStatus.IS_SUCCESS,
+                        SUCCESS);
 
         return result;
     }

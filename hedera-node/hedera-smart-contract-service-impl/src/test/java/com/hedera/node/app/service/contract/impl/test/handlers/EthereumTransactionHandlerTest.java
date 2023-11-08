@@ -99,7 +99,8 @@ class EthereumTransactionHandlerTest {
         given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
                 .willReturn(recordBuilder);
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, baseProxyWorldUpdater);
-        final var expectedOutcome = new CallOutcome(expectedResult, SUCCESS_RESULT.finalStatus());
+        final var expectedOutcome =
+                new CallOutcome(expectedResult, SUCCESS_RESULT.finalStatus(), SUCCESS_RESULT.gasPrice());
         given(processor.call()).willReturn(expectedOutcome);
 
         given(recordBuilder.status(SUCCESS)).willReturn(recordBuilder);
@@ -120,7 +121,8 @@ class EthereumTransactionHandlerTest {
                 .willReturn(recordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(ETH_DATA_WITHOUT_TO_ADDRESS, baseProxyWorldUpdater);
-        final var expectedOutcome = new CallOutcome(expectedResult, SUCCESS_RESULT.finalStatus());
+        final var expectedOutcome =
+                new CallOutcome(expectedResult, SUCCESS_RESULT.finalStatus(), SUCCESS_RESULT.gasPrice());
         given(processor.call()).willReturn(expectedOutcome);
 
         given(recordBuilder.status(SUCCESS)).willReturn(recordBuilder);
