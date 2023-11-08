@@ -153,9 +153,6 @@ public final class IngestChecker {
             throw new PreCheckException(INVALID_NODE_ACCOUNT);
         }
 
-        // 1b. Check semantics
-        dispatcher.dispatchPureChecks(txBody);
-
         // 2. Check the time box of the transaction
         transactionChecker.checkTimeBox(txBody, consensusTime);
 

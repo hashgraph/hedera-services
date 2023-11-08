@@ -64,7 +64,7 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     @Mock
     private RootProxyWorldUpdater baseProxyWorldUpdater;
 
-    private final ContractCallHandler subject = new ContractCallHandler(() -> factory, null);
+    private final ContractCallHandler subject = new ContractCallHandler(() -> factory);
 
     @Test
     void delegatesToCreatedComponentAndExposesSuccess() {
