@@ -49,9 +49,6 @@ Global3NReconnect, MixedOps-Global-ND-3NReconnect-6k-35m, services, https://www.
 Global3NReconnect, MixedOps-Global-NI-3NReconnect-6k-35m, services, https://www.notion.so/swirldslabs/Global3NReconnect-MixedOps-Global-NI-3NReconnect-6k-35m-2f2de40abe3c40cdbd8655a7838a6cd2
 
 ISS, ISS-catastrophic-1k-5m, platform, https://www.notion.so/swirldslabs/ISS-ISS-catastrophic-1k-5m-a893e94b654b4bfea5a36cc7764c8517
-ISS, ISS-catastrophic-recovery-1k-10m, platform, https://www.notion.so/swirldslabs/ISS-ISS-catastrophic-recovery-1k-10m-d7bc7bb3a3d24d5680eee522941e8568
-ISS, ISS-catastrophic-recovery-reconnect-1k-10m, platform, https://www.notion.so/swirldslabs/ISS-ISS-catastrophic-recovery-reconnect-1k-10m-92abb262856048678693b24ea2b2eb2b
-ISS, ISS-catastrophic-recovery-rollback-1k-10m, platform, https://www.notion.so/swirldslabs/ISS-ISS-catastrophic-recovery-rollback-1k-10m-f8e8bb2936e1479b87e6ab0490176dd9
 ISS, ISS-emergency-recovery-1k-10m, platform, https://www.notion.so/swirldslabs/ISS-ISS-emergency-recovery-1k-10m-c025b8539ce64ccc8db3ef48e52dcdff
 ISS, ISS-emergency-recovery-diff-hash-1k-10m, platform, https://www.notion.so/swirldslabs/ISS-ISS-emergency-recovery-diff-hash-1k-10m-cd6e7466ac504084aab409ea63591b6e
 ISS, ISS-emergency-recovery-reconnect-1k-10m, platform, https://www.notion.so/swirldslabs/ISS-ISS-emergency-recovery-reconnect-1k-10m-75cb5dd79efa4234bd6d783704511900
@@ -92,15 +89,6 @@ NIReconnectCorrectness, TransactionHistory-NIReconnect-1-16m, services, https://
 
 NetError, FCMFCQ-NetError-1k-25m, platform, https://www.notion.so/swirldslabs/NetError-FCMFCQ-NetError-1k-25m-29a9d01acb4e4660897db647bef2a886
 NetError, Misc-Basic-14-20m, services, https://www.notion.so/swirldslabs/NetError-Misc-Basic-14-20m-96752536f01343ba815d415b48c63b2c
-
-Performance, Contract-Restart-Performance-Random-35-30m, services, https://www.notion.so/swirldslabs/Performance-Contract-Restart-Performance-Random-35-30m-62d20ba7030a485f83dbb6b7b053d3e7
-Performance, Crypto-Restart-Performance-Hotspot-10k-61m, services, https://www.notion.so/swirldslabs/Performance-Crypto-Restart-Performance-Hotspot-10k-61m-dd8fc090b1c647efba7b85b65912cf22
-Performance, Crypto-Restart-Performance-Random-10k-65m, services, https://www.notion.so/swirldslabs/Performance-Crypto-Restart-Performance-Random-10k-65m-93b7a2af5dcf46919bac17047bb885cb
-Performance, File-Restart-Performance-Size1K_4K-42-30m, services, https://www.notion.so/swirldslabs/Performance-File-Restart-Performance-Size1K_4K-42-30m-96a4a593cee049f89fcea19428db0f4e
-Performance, HCS-Restart-Performance-Hotspot-10k-61m, services, https://www.notion.so/swirldslabs/Performance-HCS-Restart-Performance-Hotspot-10k-61m-ebed9abf62bf4f009cce8687e67b5d27
-Performance, HCS-Restart-Performance-Random-10k-60m, services, https://www.notion.so/swirldslabs/Performance-HCS-Restart-Performance-Random-10k-60m-c49758d5530e45aebe1ba42a607070d6
-
-QueryPerf, Query-Restart-Performance-7N-7C-10k-30m, services, https://www.notion.so/swirldslabs/QueryPerf-Query-Restart-Performance-7N-7C-10k-30m-90abe5f0ce754f4780d6cdd7cec9389d
 
 RHEL7_Update, Crypto-Update-Jar-1.5k-25m, services, https://www.notion.so/swirldslabs/RHEL7_Update-Crypto-Update-Jar-1-5k-25m-11e8ce6b514047dba923612ba34f166b
 RHEL7_Update, Crypto-Update-Setting-1.5k-15m, services, https://www.notion.so/swirldslabs/RHEL7_Update-Crypto-Update-Setting-1-5k-15m-1b0ea7c6bc9449d5bf8d9735b8f8a601?pvs=9
