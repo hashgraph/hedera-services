@@ -173,7 +173,7 @@ public class AutoAccountCreator {
     private TransactionBody.Builder createAccount(
             @NonNull final Bytes alias, @NonNull final Key key, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
-        baseBuilder.key(key).alias(alias).memo(AUTO_MEMO).receiverSigRequired(false);
+        baseBuilder.key(key).alias(alias).receiverSigRequired(false);
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }
 }

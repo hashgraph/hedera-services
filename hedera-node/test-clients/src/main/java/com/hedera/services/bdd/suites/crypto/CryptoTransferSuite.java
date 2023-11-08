@@ -611,6 +611,7 @@ public class CryptoTransferSuite extends HapiSuite {
                 .given(
                         newKeyNamed(multiKey),
                         uploadInitCode(contract),
+                        // why is there transactionFee here ?
                         contractCreate(contract).balance(ONE_HBAR).immutable().payingWith(GENESIS))
                 .when()
                 .then(

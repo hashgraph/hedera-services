@@ -36,6 +36,8 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.ContractActions;
@@ -315,6 +317,32 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl transactionID(@NonNull final TransactionID transactionID) {
         this.transactionID = requireNonNull(transactionID, "transactionID must not be null");
         return this;
+    }
+
+    /**
+     * When we update nonce on the record, we need to update the body as well with teh same transactionID.
+     * @return the builder
+     */
+    @NonNull
+    public SingleTransactionRecordBuilderImpl syncBodyIdFromRecordId() {
+        final var newTransactionID = transactionID;
+        try{
+            final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(transaction.signedTransactionBytes().toReadableSequentialData());
+            final var existingTransactionBody = TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
+            final var body = existingTransactionBody
+                    .copyBuilder()
+                    .transactionID(newTransactionID)
+                    .build();
+            final var newBodyBytes = TransactionBody.PROTOBUF.toBytes(body);
+            final var newSignedTransaction = SignedTransaction.newBuilder().bodyBytes(newBodyBytes).build();
+            final var signedTransactionBytes = SignedTransaction.PROTOBUF.toBytes(newSignedTransaction);
+            this.transaction = Transaction.newBuilder()
+                    .signedTransactionBytes(signedTransactionBytes)
+                    .build();
+            return this;
+        } catch(Exception e) {
+            return this;
+        }
     }
 
     /**

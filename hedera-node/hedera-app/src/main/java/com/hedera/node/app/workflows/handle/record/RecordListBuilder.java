@@ -346,8 +346,10 @@ public final class RecordListBuilder {
         int count = precedingTxnRecordBuilders == null ? 0 : precedingTxnRecordBuilders.size();
         for (int i = count - 1; i >= 0; i--) {
             final var recordBuilder = precedingTxnRecordBuilders.get(i);
-            records.add(
-                    recordBuilder.transactionID(idBuilder.nonce(i + 1).build()).build());
+            records.add(recordBuilder
+                            .transactionID(idBuilder.nonce(i + 1).build())
+                            .syncBodyIdFromRecordId()
+                            .build());
         }
 
         records.add(userTxnRecord);
@@ -358,6 +360,7 @@ public final class RecordListBuilder {
             final var recordBuilder = childRecordBuilders.get(i);
             records.add(recordBuilder
                     .transactionID(idBuilder.nonce(nextNonce++).build())
+                    .syncBodyIdFromRecordId()
                     .build());
         }
 
