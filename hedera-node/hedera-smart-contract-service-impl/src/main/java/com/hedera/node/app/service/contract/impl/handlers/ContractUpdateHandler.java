@@ -35,12 +35,11 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key.KeyOneOfType;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -183,11 +182,8 @@ public class ContractUpdateHandler implements TransactionHandler {
             ReadableAccountStore accountStore) {
         validateTrue(contract != null, INVALID_CONTRACT_ID);
 
-        if (op.hasAdminKey()) {
-            boolean keyNotSentinel = !EMPTY_KEY_LIST.equals(op.adminKey());
-            boolean keyIsUnset = op.adminKey().key().kind() == KeyOneOfType.UNSET;
-            boolean keyIsNotValid = !KeyUtils.isValid(op.adminKey());
-            validateFalse(keyNotSentinel && (keyIsUnset || keyIsNotValid), INVALID_ADMIN_KEY);
+        if (op.hasAdminKey() && processAdminKey(op)) {
+            throw new HandleException(INVALID_ADMIN_KEY);
         }
 
         if (op.hasExpirationTime()) {
@@ -222,6 +218,17 @@ public class ContractUpdateHandler implements TransactionHandler {
                         contract.stakedNodeId(),
                         accountStore,
                         context.networkInfo());
+    }
+
+    private boolean processAdminKey(ContractUpdateTransactionBody op) {
+        if (EMPTY_KEY_LIST.equals(op.adminKey())) {
+            return false;
+        }
+        return keyIfAcceptable(op.adminKey());
+    }
+
+    private boolean keyIfAcceptable(Key candidate) {
+        return candidate == null || candidate.contractID() != null;
     }
 
     boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {
