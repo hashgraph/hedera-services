@@ -744,8 +744,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             throw new PreCheckException(ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE);
         }
 
-        // Skip payer verification when dispatching a child transaction
-        if (!txCategory.equals(CHILD)) {
+        // Skip payer verification when dispatching any child transaction
+        if (!(txCategory.equals(CHILD) || txCategory.equals(PRECEDING))) {
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var payerKeyVerification = keyVerifier.verificationFor(payerKey);
             if (payerKeyVerification.failed()) {
