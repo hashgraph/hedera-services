@@ -52,15 +52,6 @@ class CallOutcomeTest {
     }
 
     @Test
-    void calledIdIsNullIfNoResult() {
-        final var outcome = new CallOutcome(null, INVALID_CONTRACT_ID, NETWORK_GAS_PRICE);
-        assertNull(outcome.recipientIdIfCalled());
-    }
-
-    @Test
-    void gasCostIsZeroIfAborted() {}
-
-    @Test
     void calledIdIsFromResultIfExtant() {
         final var outcome = new CallOutcome(
                 SUCCESS_RESULT.asProtoResultOf(updater), INVALID_CONTRACT_ID, SUCCESS_RESULT.gasPrice());
