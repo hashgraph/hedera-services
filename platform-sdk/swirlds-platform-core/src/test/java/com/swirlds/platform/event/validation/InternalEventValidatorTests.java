@@ -19,6 +19,8 @@ package com.swirlds.platform.event.validation;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -36,18 +38,15 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link LinkedEventValidator}
+ * Tests for {@link InternalEventValidator}
  */
 class InternalEventValidatorTests {
-    private AtomicInteger consumedEventCount;
     private AtomicLong exitedIntakePipelineCount;
     private Random random;
     private InternalEventValidator multinodeValidator;
@@ -69,18 +68,13 @@ class InternalEventValidatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        consumedEventCount = new AtomicInteger(0);
-        final Consumer<GossipEvent> eventConsumer = event -> consumedEventCount.incrementAndGet();
-
         final Time time = new FakeTime();
 
-        multinodeValidator =
-                new InternalEventValidator(platformContext, time, false, eventConsumer, intakeEventCounter);
-        singleNodeValidator =
-                new InternalEventValidator(platformContext, time, true, eventConsumer, intakeEventCounter);
+        multinodeValidator = new InternalEventValidator(platformContext, time, false, intakeEventCounter);
+        singleNodeValidator = new InternalEventValidator(platformContext, time, true, intakeEventCounter);
     }
 
-    private GossipEvent generateEvent(
+    private static GossipEvent generateEvent(
             @Nullable final Hash selfParentHash,
             @Nullable final Hash otherParentHash,
             final long eventGeneration,
@@ -117,10 +111,9 @@ class InternalEventValidatorTests {
         final GossipEvent event = generateEvent(randomHash(random), randomHash(random), 7, 5, 6, 1111);
         when(event.getHashedData()).thenReturn(null);
 
-        multinodeValidator.handleEvent(event);
-        singleNodeValidator.handleEvent(event);
+        assertNull(multinodeValidator.validateEvent(event));
+        assertNull(singleNodeValidator.validateEvent(event));
 
-        assertEquals(0, consumedEventCount.get());
         assertEquals(2, exitedIntakePipelineCount.get());
     }
 
@@ -130,10 +123,9 @@ class InternalEventValidatorTests {
         final GossipEvent event = generateEvent(randomHash(random), randomHash(random), 7, 5, 6, 1111);
         when(event.getUnhashedData()).thenReturn(null);
 
-        multinodeValidator.handleEvent(event);
-        singleNodeValidator.handleEvent(event);
+        assertNull(multinodeValidator.validateEvent(event));
+        assertNull(singleNodeValidator.validateEvent(event));
 
-        assertEquals(0, consumedEventCount.get());
         assertEquals(2, exitedIntakePipelineCount.get());
     }
 
@@ -143,10 +135,9 @@ class InternalEventValidatorTests {
         // default max is 245_760 bytes
         final GossipEvent event = generateEvent(randomHash(random), randomHash(random), 7, 5, 6, 500_000);
 
-        multinodeValidator.handleEvent(event);
-        singleNodeValidator.handleEvent(event);
+        assertNull(multinodeValidator.validateEvent(event));
+        assertNull(singleNodeValidator.validateEvent(event));
 
-        assertEquals(0, consumedEventCount.get());
         assertEquals(2, exitedIntakePipelineCount.get());
     }
 
@@ -164,17 +155,16 @@ class InternalEventValidatorTests {
         final GossipEvent invalidOtherParentGeneration =
                 generateEvent(randomHash(random), randomHash(random), 6, 5, -1, 1111);
 
-        multinodeValidator.handleEvent(nullSelfParentHash);
-        multinodeValidator.handleEvent(invalidSelfParentGeneration);
-        multinodeValidator.handleEvent(nullOtherParentHash);
-        multinodeValidator.handleEvent(invalidOtherParentGeneration);
+        assertNull(multinodeValidator.validateEvent(nullSelfParentHash));
+        assertNull(multinodeValidator.validateEvent(invalidSelfParentGeneration));
+        assertNull(multinodeValidator.validateEvent(nullOtherParentHash));
+        assertNull(multinodeValidator.validateEvent(invalidOtherParentGeneration));
 
-        singleNodeValidator.handleEvent(nullSelfParentHash);
-        singleNodeValidator.handleEvent(invalidSelfParentGeneration);
-        singleNodeValidator.handleEvent(nullOtherParentHash);
-        singleNodeValidator.handleEvent(invalidOtherParentGeneration);
+        assertNull(singleNodeValidator.validateEvent(nullSelfParentHash));
+        assertNull(singleNodeValidator.validateEvent(invalidSelfParentGeneration));
+        assertNull(singleNodeValidator.validateEvent(nullOtherParentHash));
+        assertNull(singleNodeValidator.validateEvent(invalidOtherParentGeneration));
 
-        assertEquals(0, consumedEventCount.get());
         assertEquals(8, exitedIntakePipelineCount.get());
     }
 
@@ -184,10 +174,9 @@ class InternalEventValidatorTests {
         final Hash sharedHash = randomHash(random);
         final GossipEvent event = generateEvent(sharedHash, sharedHash, 7, 5, 6, 1111);
 
-        multinodeValidator.handleEvent(event);
-        singleNodeValidator.handleEvent(event);
+        assertNull(multinodeValidator.validateEvent(event));
+        assertNotEquals(null, singleNodeValidator.validateEvent(event));
 
-        assertEquals(1, consumedEventCount.get());
         assertEquals(1, exitedIntakePipelineCount.get());
     }
 
@@ -197,12 +186,11 @@ class InternalEventValidatorTests {
         final GossipEvent highGeneration = generateEvent(randomHash(random), randomHash(random), 8, 5, 6, 1111);
         final GossipEvent lowGeneration = generateEvent(randomHash(random), randomHash(random), 4, 5, 6, 1111);
 
-        multinodeValidator.handleEvent(highGeneration);
-        multinodeValidator.handleEvent(lowGeneration);
-        singleNodeValidator.handleEvent(highGeneration);
-        singleNodeValidator.handleEvent(lowGeneration);
+        assertNull(multinodeValidator.validateEvent(highGeneration));
+        assertNull(multinodeValidator.validateEvent(lowGeneration));
+        assertNull(singleNodeValidator.validateEvent(highGeneration));
+        assertNull(singleNodeValidator.validateEvent(lowGeneration));
 
-        assertEquals(0, consumedEventCount.get());
         assertEquals(4, exitedIntakePipelineCount.get());
     }
 
@@ -213,15 +201,14 @@ class InternalEventValidatorTests {
         final GossipEvent missingSelfParent = generateEvent(null, randomHash(random), 7, -1, 6, 1111);
         final GossipEvent missingOtherParent = generateEvent(randomHash(random), null, 6, 5, -1, 1111);
 
-        multinodeValidator.handleEvent(normalEvent);
-        multinodeValidator.handleEvent(missingSelfParent);
-        multinodeValidator.handleEvent(missingOtherParent);
+        assertNotEquals(null, multinodeValidator.validateEvent(normalEvent));
+        assertNotEquals(null, multinodeValidator.validateEvent(missingSelfParent));
+        assertNotEquals(null, multinodeValidator.validateEvent(missingOtherParent));
 
-        singleNodeValidator.handleEvent(normalEvent);
-        singleNodeValidator.handleEvent(missingSelfParent);
-        singleNodeValidator.handleEvent(missingOtherParent);
+        assertNotEquals(null, singleNodeValidator.validateEvent(normalEvent));
+        assertNotEquals(null, singleNodeValidator.validateEvent(missingSelfParent));
+        assertNotEquals(null, singleNodeValidator.validateEvent(missingOtherParent));
 
-        assertEquals(6, consumedEventCount.get());
         assertEquals(0, exitedIntakePipelineCount.get());
     }
 }
