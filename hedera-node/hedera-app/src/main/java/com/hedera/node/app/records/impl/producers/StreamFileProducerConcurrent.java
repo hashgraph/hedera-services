@@ -32,9 +32,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -64,8 +64,6 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
     private final BlockRecordFormat format;
     /** The executor service to use for background tasks */
     private final ExecutorService executorService;
-    /** The lock to protect the following state */
-    private final Lock lock = new ReentrantLock();
     /** Future for running hash results of last running hash updates task */
     private CompletableFuture<Bytes> lastRecordHashingResult = null;
     /** Future for running hash results of previous lastRecordHashingResult */
@@ -81,6 +79,10 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
     private CompletableFuture<BlockRecordWriter> currentRecordFileWriter = null;
     /** Set in {@link #switchBlocks(long, long, Instant)}, keeps track of the current block number. */
     private long currentBlockNumber;
+    /** The flag that signals the {@link BlockRecordWriter} should be closed and not to open another one. **/
+    private final AtomicBoolean close = new AtomicBoolean();
+    /** The latch that blocks until the final {@link BlockRecordWriter} has closed. **/
+    private final CountDownLatch closedLatch = new CountDownLatch(1);
 
     /**
      * Construct {@link StreamFileProducerConcurrent}
@@ -110,23 +112,18 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
     /** {@inheritDoc} */
     @Override
     public void initRunningHash(@NonNull final RunningHashes runningHashes) {
-        lock.lock(); // Block until the lock is acquired
-        try {
-            if (lastRecordHashingResult != null) {
-                throw new IllegalStateException("initRunningHash() can only be called once");
-            }
-
-            if (runningHashes.runningHash() == null) {
-                throw new IllegalArgumentException("The initial running hash cannot be null");
-            }
-
-            lastRecordHashingResult = completedFuture(runningHashes.runningHash());
-            lastRecordHashingResultNMinus1 = completedFuture(runningHashes.nMinus1RunningHash());
-            lastRecordHashingResultNMinus2 = completedFuture(runningHashes.nMinus2RunningHash());
-            lastRecordHashingResultNMinus3 = completedFuture(runningHashes.nMinus3RunningHash());
-        } finally {
-            lock.unlock(); // Always unlock.
+        if (lastRecordHashingResult != null) {
+            throw new IllegalStateException("initRunningHash() can only be called once");
         }
+
+        if (runningHashes.runningHash() == null) {
+            throw new IllegalArgumentException("The initial running hash cannot be null");
+        }
+
+        lastRecordHashingResult = completedFuture(runningHashes.runningHash());
+        lastRecordHashingResultNMinus1 = completedFuture(runningHashes.nMinus1RunningHash());
+        lastRecordHashingResultNMinus2 = completedFuture(runningHashes.nMinus2RunningHash());
+        lastRecordHashingResultNMinus3 = completedFuture(runningHashes.nMinus3RunningHash());
     }
 
     /** {@inheritDoc} */
@@ -152,40 +149,44 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
             final long lastBlockNumber,
             final long newBlockNumber,
             @NonNull final Instant newBlockFirstTransactionConsensusTime) {
-        lock.lock(); // Block until the lock is acquired
 
-        try {
-            assert lastRecordHashingResult != null : "initRunningHash() must be called before switchBlocks";
-            if (newBlockNumber != lastBlockNumber + 1) {
-                throw new IllegalArgumentException("Block numbers must be sequential, newBlockNumber=" + newBlockNumber
-                        + ", lastBlockNumber=" + lastBlockNumber);
-            }
+        assert lastRecordHashingResult != null : "initRunningHash() must be called before switchBlocks";
+        assert closedLatch.getCount() != 0 : "StreamFileProducerConcurrent has been closed";
 
-            this.currentBlockNumber = newBlockNumber;
-            requireNonNull(newBlockFirstTransactionConsensusTime);
+        if (newBlockNumber != lastBlockNumber + 1) {
+            throw new IllegalArgumentException("Block numbers must be sequential, newBlockNumber=" + newBlockNumber
+                    + ", lastBlockNumber=" + lastBlockNumber);
+        }
 
-            if (currentRecordFileWriter == null) {
-                // We are at the start of a new block and there is no old one to close or wait for. So just create a new
-                // one
-                // which creates a new file and writes initializes it in the background
-                currentRecordFileWriter = lastRecordHashingResult.thenApply(lastRunningHash -> createBlockRecordWriter(
-                        lastRunningHash, newBlockFirstTransactionConsensusTime, newBlockNumber));
-            } else {
-                // wait for all background threads to finish, then in new background task finish the current block
-                currentRecordFileWriter = currentRecordFileWriter
-                        .thenCombine(lastRecordHashingResult, TwoResults::new)
-                        .thenApplyAsync(
-                                twoResults -> {
-                                    final var writer = twoResults.a();
-                                    final var lastRunningHash = twoResults.b();
-                                    closeWriter(writer, lastRunningHash);
-                                    return createBlockRecordWriter(
-                                            lastRunningHash, newBlockFirstTransactionConsensusTime, newBlockNumber);
-                                },
-                                executorService);
-            }
-        } finally {
-            lock.unlock(); // Always unlock.
+        this.currentBlockNumber = newBlockNumber;
+        requireNonNull(newBlockFirstTransactionConsensusTime);
+
+        if (currentRecordFileWriter == null) {
+            // We are at the start of a new block and there is no old one to close or wait for. So just create a new
+            // one
+            // which creates a new file and writes initializes it in the background
+            currentRecordFileWriter = lastRecordHashingResult.thenApply(lastRunningHash ->
+                    createBlockRecordWriter(lastRunningHash, newBlockFirstTransactionConsensusTime, newBlockNumber));
+        } else {
+            // wait for all background threads to finish, then in new background task finish the current block
+            currentRecordFileWriter = currentRecordFileWriter
+                    .thenCombine(lastRecordHashingResult, TwoResults::new)
+                    .thenApplyAsync(
+                            twoResults -> {
+                                final var writer = twoResults.a();
+                                final var lastRunningHash = twoResults.b();
+                                closeWriter(writer, lastRunningHash);
+
+                                if (close.get()) {
+                                    // We do not create a new BlockRecordWriter after close() has been called.
+                                    closeProducer();
+                                    return null;
+                                }
+
+                                return createBlockRecordWriter(
+                                        lastRunningHash, newBlockFirstTransactionConsensusTime, newBlockNumber);
+                            },
+                            executorService);
         }
     }
 
@@ -197,50 +198,44 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
      */
     @Override
     public void writeRecordStreamItems(@NonNull final Stream<SingleTransactionRecord> recordStreamItems) {
-        lock.lock(); // Block until the lock is acquired
+        assert lastRecordHashingResult != null : "initRunningHash() must be called before writeRecordStreamItems";
+        assert currentRecordFileWriter != null : "switchBlocks() must be called before writeRecordStreamItems";
+        assert closedLatch.getCount() != 0 : "StreamFileProducerConcurrent has been closed";
+        requireNonNull(recordStreamItems);
 
-        try {
-            assert lastRecordHashingResult != null : "initRunningHash() must be called before writeRecordStreamItems";
-            assert currentRecordFileWriter != null : "switchBlocks() must be called before writeRecordStreamItems";
-            requireNonNull(recordStreamItems);
-
-            // serialize all the record stream items in background thread into SerializedSingleTransaction objects
-            final var futureSerializedRecords = CompletableFuture.supplyAsync(
-                    () -> recordStreamItems
-                            .map(item -> format.serialize(item, currentBlockNumber, hapiVersion))
-                            .toList(),
-                    executorService);
-            // when serialization is done and previous running hash is computed, we can compute new running hash and
-            // write
-            // serialized items to record file in parallel update running hash in a background thread
-            lastRecordHashingResultNMinus3 = lastRecordHashingResultNMinus2;
-            lastRecordHashingResultNMinus2 = lastRecordHashingResultNMinus1;
-            lastRecordHashingResultNMinus1 = lastRecordHashingResult;
-            lastRecordHashingResult = lastRecordHashingResult
-                    .thenCombine(futureSerializedRecords, TwoResults::new)
-                    .thenApplyAsync(
-                            twoResults -> format.computeNewRunningHash(twoResults.a(), twoResults.b()),
-                            executorService);
-            // write serialized items to record file in a background thread
-            currentRecordFileWriter = currentRecordFileWriter
-                    .thenCombine(futureSerializedRecords, TwoResults::new)
-                    .thenApplyAsync(
-                            twoResults -> {
-                                final var writer = twoResults.a();
-                                final var serializedItems = twoResults.b();
-                                serializedItems.forEach(item -> {
-                                    try {
-                                        writer.writeItem(item);
-                                    } catch (final Exception e) {
-                                        logger.error("Error writing record item to file", e);
-                                    }
-                                });
-                                return writer;
-                            },
-                            executorService);
-        } finally {
-            lock.unlock(); // Always unlock.
-        }
+        // serialize all the record stream items in background thread into SerializedSingleTransaction objects
+        final var futureSerializedRecords = CompletableFuture.supplyAsync(
+                () -> recordStreamItems
+                        .map(item -> format.serialize(item, currentBlockNumber, hapiVersion))
+                        .toList(),
+                executorService);
+        // when serialization is done and previous running hash is computed, we can compute new running hash and
+        // write
+        // serialized items to record file in parallel update running hash in a background thread
+        lastRecordHashingResultNMinus3 = lastRecordHashingResultNMinus2;
+        lastRecordHashingResultNMinus2 = lastRecordHashingResultNMinus1;
+        lastRecordHashingResultNMinus1 = lastRecordHashingResult;
+        lastRecordHashingResult = lastRecordHashingResult
+                .thenCombine(futureSerializedRecords, TwoResults::new)
+                .thenApplyAsync(
+                        twoResults -> format.computeNewRunningHash(twoResults.a(), twoResults.b()), executorService);
+        // write serialized items to record file in a background thread
+        currentRecordFileWriter = currentRecordFileWriter
+                .thenCombine(futureSerializedRecords, TwoResults::new)
+                .thenApplyAsync(
+                        twoResults -> {
+                            final var writer = twoResults.a();
+                            final var serializedItems = twoResults.b();
+                            serializedItems.forEach(item -> {
+                                try {
+                                    writer.writeItem(item);
+                                } catch (final Exception e) {
+                                    logger.error("Error writing record item to file", e);
+                                }
+                            });
+                            return writer;
+                        },
+                        executorService);
     }
 
     /**
@@ -249,32 +244,24 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
      * can be called outside the context of the handle thread.
      */
     @Override
-    public void close() {
-        lock.lock(); // Block until the lock is acquired
-
-        try {
-            if (currentRecordFileWriter != null) {
-                CompletableFuture.allOf(currentRecordFileWriter, lastRecordHashingResult)
-                        .thenAccept(aVoid -> {
-                            final var writer = currentRecordFileWriter.join();
-                            final var lastRunningHash = lastRecordHashingResult.join();
-                            closeWriter(writer, lastRunningHash);
-                        })
-                        .join();
-
-                lastRecordHashingResult = null;
-                lastRecordHashingResultNMinus1 = null;
-                lastRecordHashingResultNMinus2 = null;
-                lastRecordHashingResultNMinus3 = null;
-                currentRecordFileWriter = null;
-            }
-        } finally {
-            lock.unlock(); // Always unlock.
-        }
+    public void close() throws InterruptedException {
+        close.set(true);
+        closedLatch.await(); // blocks until `switchBlocks` is called on the handle thread and closes the writer.
     }
 
     // =================================================================================================================
     // private implementation
+
+    private void closeProducer() {
+        if (currentRecordFileWriter != null) {
+            lastRecordHashingResult = null;
+            lastRecordHashingResultNMinus1 = null;
+            lastRecordHashingResultNMinus2 = null;
+            lastRecordHashingResultNMinus3 = null;
+            currentRecordFileWriter = null;
+            closedLatch.countDown();
+        }
+    }
 
     private BlockRecordWriter createBlockRecordWriter(
             @NonNull Bytes lastRunningHash, @NonNull final Instant startConsensusTime, final long blockNumber) {
