@@ -24,7 +24,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumericContractId;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -91,8 +90,7 @@ public class ContractDeleteHandler implements TransactionHandler {
 
         validateTrue(obtainer != null, OBTAINER_DOES_NOT_EXIST);
         if (obtainer.deleted()) {
-            validateFalse(obtainer.smartContract(), INVALID_CONTRACT_ID);
-            throw new HandleException(OBTAINER_DOES_NOT_EXIST);
+            throw new HandleException(obtainer.smartContract() ? INVALID_CONTRACT_ID : OBTAINER_DOES_NOT_EXIST);
         }
 
         final var recordBuilder = context.recordBuilder(ContractDeleteRecordBuilder.class);
