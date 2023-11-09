@@ -25,4 +25,21 @@ import org.junit.platform.engine.support.hierarchical.EngineExecutionContext;
  * server here. But the HAPI test system stores that information statically, so we don't need to do it here. So for
  * now this class is just empty (we need it to satisfy the API, but we don't use it).
  */
-public class HapiTestEngineExecutionContext implements EngineExecutionContext {}
+public class HapiTestEngineExecutionContext implements EngineExecutionContext {
+
+    private HapiTestEnv env;
+
+    /**
+     * Set the {@link HapiTestEnv} associated with this test run.
+     */
+    public void setEnv(HapiTestEnv env) {
+        this.env = env;
+    }
+
+    /**
+     * Get the {@link HapiTestEnv} associated with this test run.
+     */
+    public HapiTestEnv getEnv() {
+        return env;
+    }
+}

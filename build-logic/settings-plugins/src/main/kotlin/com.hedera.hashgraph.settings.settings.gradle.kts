@@ -37,6 +37,29 @@ gradleEnterprise {
     }
 }
 
+val isCiServer = System.getenv().containsKey("CI")
+val gradleCacheUsername: String? = System.getenv("GRADLE_CACHE_USERNAME")
+val gradleCachePassword: String? = System.getenv("GRADLE_CACHE_PASSWORD")
+val gradleCacheAuthorized =
+    (gradleCacheUsername?.isNotEmpty() ?: false) && (gradleCachePassword?.isNotEmpty() ?: false)
+
+buildCache {
+    remote<HttpBuildCache> {
+        url = uri("https://cache.gradle.hedera.svcs.eng.swirldslabs.io/cache/")
+        isPush = isCiServer && gradleCacheAuthorized
+
+        isUseExpectContinue = true
+        isEnabled = !gradle.startParameter.isOffline
+
+        if (isCiServer && gradleCacheAuthorized) {
+            credentials {
+                username = gradleCacheUsername
+                password = gradleCachePassword
+            }
+        }
+    }
+}
+
 // Allow projects inside a build to be addressed by dependency coordinates notation.
 // https://docs.gradle.org/current/userguide/composite_builds.html#included_build_declaring_substitutions
 // Some functionality of the 'java-module-dependencies' plugin relies on this.

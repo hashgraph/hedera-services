@@ -16,7 +16,7 @@
 
 package com.swirlds.common.wiring.model;
 
-import com.swirlds.common.wiring.ModelGroup;
+import com.swirlds.common.wiring.utility.ModelGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;

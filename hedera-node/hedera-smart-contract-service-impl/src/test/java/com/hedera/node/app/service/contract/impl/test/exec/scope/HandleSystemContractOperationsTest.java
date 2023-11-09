@@ -91,11 +91,11 @@ class HandleSystemContractOperationsTest {
     @SuppressWarnings("unchecked")
     void dispatchesRespectingGivenStrategy() {
         final var captor = ArgumentCaptor.forClass(Predicate.class);
-        given(strategy.decideFor(TestHelpers.A_CONTRACT_KEY)).willReturn(Decision.VALID);
-        given(strategy.decideFor(AN_ED25519_KEY)).willReturn(Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
-        given(strategy.decideFor(TestHelpers.B_SECP256K1_KEY))
+        given(strategy.decideForPrimitive(TestHelpers.A_CONTRACT_KEY)).willReturn(Decision.VALID);
+        given(strategy.decideForPrimitive(AN_ED25519_KEY)).willReturn(Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
+        given(strategy.decideForPrimitive(TestHelpers.B_SECP256K1_KEY))
                 .willReturn(Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
-        given(strategy.decideFor(TestHelpers.A_SECP256K1_KEY)).willReturn(Decision.INVALID);
+        given(strategy.decideForPrimitive(TestHelpers.A_SECP256K1_KEY)).willReturn(Decision.INVALID);
         given(passed.passed()).willReturn(true);
         given(context.verificationFor(AN_ED25519_KEY)).willReturn(passed);
         given(context.verificationFor(TestHelpers.B_SECP256K1_KEY)).willReturn(failed);
@@ -138,7 +138,7 @@ class HandleSystemContractOperationsTest {
         given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
 
         // when
-        subject.externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS);
+        subject.externalizeResult(contractFunctionResult, ResultStatus.IS_SUCCESS, ResponseCodeEnum.SUCCESS);
 
         // then
         verify(recordBuilder).contractID(ContractID.DEFAULT);
@@ -159,7 +159,7 @@ class HandleSystemContractOperationsTest {
         given(recordBuilder.contractID(ContractID.DEFAULT)).willReturn(recordBuilder);
 
         // when
-        subject.externalizeResult(contractFunctionResult, ResultStatus.IS_ERROR);
+        subject.externalizeResult(contractFunctionResult, ResultStatus.IS_ERROR, ResponseCodeEnum.FAIL_INVALID);
 
         // then
         verify(recordBuilder).contractID(ContractID.DEFAULT);
