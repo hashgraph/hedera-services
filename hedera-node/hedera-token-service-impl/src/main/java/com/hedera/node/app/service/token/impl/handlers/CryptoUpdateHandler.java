@@ -70,6 +70,7 @@ import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -245,7 +246,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 op.hasExpirationTime() ? op.expirationTime().seconds() : NA,
                 op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
                 null);
-        context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta);
+        context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta, false);
 
         // If an account is detached and pending removal, it cannot be updated
         // It can only be updated to extend expiration time
@@ -344,10 +345,14 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      * @param account the {@link Account} to be updated
      * @return the calculated bytes
      */
-    private static long cryptoAutoRenewRb(final Account account) {
-        return CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
+    private static long cryptoAutoRenewRb(@Nullable final Account account) {
+        final var fixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr();
+        if (account == null) {
+            return fixedBytes;
+        }
+        return fixedBytes
                 + currentNonBaseBytes(account)
-                + account.numberAssociations() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
+                + (account.numberAssociations() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
     }
 
     /**
@@ -377,29 +382,35 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             final ReadableAccountStore accountStore,
             final Configuration configuration) {
         final var op = body.cryptoUpdateAccountOrThrow();
-        final var account = accountStore.getAccountById(op.accountIDToUpdateOrThrow());
-        validateTrue(account != null, INVALID_ACCOUNT_ID);
+        // When dispatching transaction body for hollow account we don't have update account set
+        final var account = accountStore.getAccountById(op.accountIDToUpdateOrElse(AccountID.DEFAULT));
         final var autoRenewconfig = configuration.getConfigData(AutoRenewConfig.class);
         final var explicitAutoAssocSlotLifetime = autoRenewconfig.expireAccounts() ? 0L : THREE_MONTHS_IN_SECONDS;
 
         final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.key())) : 0L;
         final var baseSize = baseSizeOf(op, keySize);
         final var newMemoSize = op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length;
-        final long newVariableBytes =
-                (newMemoSize != 0L ? newMemoSize : account.memo().getBytes(StandardCharsets.UTF_8).length)
-                        + (keySize == 0L ? getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT))) : keySize);
+        final var accountMemoSize = account == null ? 0L : account.memo().getBytes(StandardCharsets.UTF_8).length;
+        final long newVariableBytes = (newMemoSize != 0L
+                ? newMemoSize
+                : accountMemoSize
+                        + (keySize == 0L
+                                ? getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
+                                : keySize));
 
-        final long tokenRelBytes = account.numberAssociations() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
+        final long tokenRelBytes =
+                (account == null ? 0 : account.numberAssociations()) * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
         final long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + tokenRelBytes;
         final var effectiveNow =
                 body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
         final long newLifetime = ESTIMATOR_UTILS.relativeLifetime(
                 effectiveNow, op.expirationTimeOrElse(Timestamp.DEFAULT).seconds());
-        final long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(effectiveNow, account.expirationSecond());
+        final long oldLifetime =
+                ESTIMATOR_UTILS.relativeLifetime(effectiveNow, (account == null ? 0 : account.expirationSecond()));
         final long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
                 cryptoAutoRenewRb(account), oldLifetime, sharedFixedBytes + newVariableBytes, newLifetime);
 
-        final var oldSlotsUsage = account.maxAutoAssociations() * UPDATE_SLOT_MULTIPLIER;
+        final var oldSlotsUsage = (account == null ? 0 : account.maxAutoAssociations()) * UPDATE_SLOT_MULTIPLIER;
         final var newSlotsUsage = op.hasMaxAutomaticTokenAssociations()
                 ? op.maxAutomaticTokenAssociations().longValue() * UPDATE_SLOT_MULTIPLIER
                 : oldSlotsUsage;

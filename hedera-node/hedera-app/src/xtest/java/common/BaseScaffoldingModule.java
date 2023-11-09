@@ -55,9 +55,12 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
+import com.hedera.node.app.validation.ExpiryValidation;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -126,6 +129,10 @@ public interface BaseScaffoldingModule {
     @Binds
     @Singleton
     RecordCache bindRecordCache(RecordCacheImpl cacheImpl);
+
+    @Binds
+    @Singleton
+    HederaRecordCache bindHederaRecordCache(RecordCacheImpl cacheImpl);
 
     @Binds
     @Singleton
@@ -204,7 +211,7 @@ public interface BaseScaffoldingModule {
     static Function<TransactionBody, HandleContext> provideHandleContextCreator(
             @NonNull final Metrics metrics,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final RecordCache recordCache,
+            @NonNull final HederaRecordCache recordCache,
             @NonNull final Configuration configuration,
             @NonNull final ConfigProvider configProvider,
             @NonNull final ServiceScopeLookup scopeLookup,
@@ -222,9 +229,12 @@ public interface BaseScaffoldingModule {
             final HederaFunctionality function;
             try {
                 function = functionOf(body);
-            } catch (UnknownHederaFunctionality e) {
+            } catch (final UnknownHederaFunctionality e) {
                 throw new RuntimeException(e);
             }
+            final var expiryValidation = new ExpiryValidation(configProvider);
+            final var solvencyPreCheck =
+                    new SolvencyPreCheck(exchangeRateManager, feeManager, expiryValidation, authorizer);
             return new HandleContextImpl(
                     body,
                     function,
@@ -236,7 +246,7 @@ public interface BaseScaffoldingModule {
                     parentRecordBuilder,
                     new SavepointStackImpl(state),
                     configuration,
-                    new DefaultKeyVerifier(configuration.getConfigData(HederaConfig.class), Map.of()),
+                    new DefaultKeyVerifier(1, configuration.getConfigData(HederaConfig.class), Map.of()),
                     recordListBuilder,
                     new TransactionChecker(6192, AccountID.DEFAULT, configProvider, metrics),
                     dispatcher,
@@ -246,7 +256,8 @@ public interface BaseScaffoldingModule {
                     feeManager,
                     exchangeRateManager,
                     consensusTime,
-                    authorizer);
+                    authorizer,
+                    solvencyPreCheck);
         };
     }
 }

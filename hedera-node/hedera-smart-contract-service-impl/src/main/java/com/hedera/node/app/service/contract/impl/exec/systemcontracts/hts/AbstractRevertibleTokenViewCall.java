@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_PRECOMPILE_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
@@ -31,7 +32,6 @@ import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Implementation support for view calls that require an extant token.
@@ -50,9 +50,8 @@ public abstract class AbstractRevertibleTokenViewCall extends AbstractHtsCall {
     }
 
     @Override
-    public @NonNull PricedResult execute(final MessageFrame frame) {
+    public @NonNull PricedResult execute() {
         PricedResult result;
-
         if (token == null) {
             result = gasOnly(revertResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement()));
         } else {
@@ -66,7 +65,8 @@ public abstract class AbstractRevertibleTokenViewCall extends AbstractHtsCall {
                 .systemOperations()
                 .externalizeResult(
                         contractFunctionResultSuccessFor(gasRequirement, output, contractID),
-                        SystemContractUtils.ResultStatus.IS_SUCCESS);
+                        SystemContractUtils.ResultStatus.IS_SUCCESS,
+                        SUCCESS);
 
         return result;
     }
