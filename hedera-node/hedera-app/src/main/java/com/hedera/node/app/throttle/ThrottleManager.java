@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.throttle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNPARSEABLE_THROTTLE_DEFINITIONS;
+
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.ThrottleBucket;
@@ -24,6 +28,7 @@ import com.hedera.node.app.hapi.utils.sysfiles.validation.ExpectedCustomThrottle
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -45,10 +50,9 @@ public class ThrottleManager {
     private static final ThrottleDefinitions DEFAULT_THROTTLE_DEFINITIONS = ThrottleDefinitions.DEFAULT;
     public static final Set<HederaFunctionality> expectedOps = ExpectedCustomThrottles.ACTIVE_OPS.stream()
             .map(protoOp -> HederaFunctionality.fromProtobufOrdinal(protoOp.getNumber()))
-            .collect(Collectors.toSet());
+            .collect(Collectors.toCollection(() -> EnumSet.noneOf(HederaFunctionality.class)));
 
     private ThrottleDefinitions throttleDefinitions;
-    private com.hederahashgraph.api.proto.java.ThrottleDefinitions throttleDefinitionsProto;
     private List<ThrottleBucket> throttleBuckets;
 
     public ThrottleManager() {
@@ -62,37 +66,25 @@ public class ThrottleManager {
      *
      * @param bytes The protobuf encoded {@link ThrottleDefinitions}.
      */
-    public void update(@NonNull final Bytes bytes) {
+    public ResponseCodeEnum update(@NonNull final Bytes bytes) {
         // Parse the throttle file. If we cannot parse it, we just continue with whatever our previous rate was.
+        final ThrottleDefinitions tempThrottleDefinitions;
         try {
-            final var tempThrottleDefinitions = ThrottleDefinitions.PROTOBUF.parse(bytes.toReadableSequentialData());
-            validate(tempThrottleDefinitions);
-
-            throttleDefinitions = tempThrottleDefinitions;
-            throttleDefinitionsProto =
-                    com.hederahashgraph.api.proto.java.ThrottleDefinitions.parseFrom(bytes.toByteArray());
-        } catch (HandleException e) {
-            throw e;
-        } catch (final Exception e) {
-            // Not being able to parse the throttle file is not fatal, and may happen if the throttle file
-            // was too big for a single file update for example.
-            logger.warn("Unable to parse the throttle file", e);
+            tempThrottleDefinitions = ThrottleDefinitions.PROTOBUF.parse(bytes.toReadableSequentialData());
+        } catch (IOException e) {
+            throw new HandleException(UNPARSEABLE_THROTTLE_DEFINITIONS);
         }
+        validate(tempThrottleDefinitions);
+        throttleDefinitions = tempThrottleDefinitions;
+        throttleBuckets = throttleDefinitions.throttleBuckets();
 
-        final var rawThrottleBuckets = throttleDefinitions.throttleBuckets();
-        if (rawThrottleBuckets != null) {
-            throttleBuckets = rawThrottleBuckets;
-        } else {
-            logger.warn("Throttle definition file did not contain throttle buckets!");
-            throttleBuckets = DEFAULT_THROTTLE_DEFINITIONS.throttleBuckets();
-        }
+        return allExpectedOperations(throttleDefinitions) ? SUCCESS : SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
     }
 
     /**
      * Checks if the throttle definitions are valid.
      */
     private void validate(ThrottleDefinitions throttleDefinitions) {
-        checkForMissingExpectedOperations(throttleDefinitions);
         checkForZeroOpsPerSec(throttleDefinitions);
         checkForRepeatedOperations(throttleDefinitions);
     }
@@ -100,16 +92,14 @@ public class ThrottleManager {
     /**
      * Checks if there are missing {@link HederaFunctionality} operations from the expected ones that should be throttled.
      */
-    private void checkForMissingExpectedOperations(ThrottleDefinitions throttleDefinitions) {
-        Set<HederaFunctionality> customizedOps = new HashSet<>();
-        for (var bucket : throttleDefinitions.throttleBuckets()) {
-            for (var group : bucket.throttleGroups()) {
+    private boolean allExpectedOperations(ThrottleDefinitions throttleDefinitions) {
+        final Set<HederaFunctionality> customizedOps = EnumSet.noneOf(HederaFunctionality.class);
+        for (final var bucket : throttleDefinitions.throttleBuckets()) {
+            for (final var group : bucket.throttleGroups()) {
                 customizedOps.addAll(group.operations());
             }
         }
-        if (customizedOps.isEmpty() || !expectedOps.equals(EnumSet.copyOf(customizedOps))) {
-            throw new HandleException(ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
-        }
+        return customizedOps.containsAll(expectedOps);
     }
 
     /**
@@ -163,9 +153,5 @@ public class ThrottleManager {
     @NonNull
     public ThrottleDefinitions throttleDefinitions() {
         return throttleDefinitions;
-    }
-
-    public com.hederahashgraph.api.proto.java.ThrottleDefinitions throttleDefinitionsProto() {
-        return throttleDefinitionsProto;
     }
 }
