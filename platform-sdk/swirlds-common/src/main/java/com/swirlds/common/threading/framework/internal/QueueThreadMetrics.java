@@ -16,7 +16,8 @@
 
 package com.swirlds.common.threading.framework.internal;
 
-import com.swirlds.common.metrics.extensions.BusyTime;
+import com.swirlds.common.metrics.extensions.FractionalTimer;
+import com.swirlds.common.metrics.extensions.StandardFractionalTimer;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -25,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class QueueThreadMetrics {
     /** Tracks how busy a thread is */
-    private final BusyTime busyTime;
+    private final FractionalTimer busyTime;
 
     /**
      * Constructs a new {@link QueueThreadMetrics} instance
@@ -39,8 +40,8 @@ public class QueueThreadMetrics {
             this.busyTime = null;
             return;
         }
-        this.busyTime = new BusyTime(metricsConfig.getTime());
-        busyTime.addMetric(
+        this.busyTime = new StandardFractionalTimer(metricsConfig.getTime());
+        busyTime.registerMetric(
                 metricsConfig.getMetrics(),
                 metricsConfig.getCategory(),
                 buildBusyTimeMetricName(configuration.getThreadName()),
@@ -63,7 +64,7 @@ public class QueueThreadMetrics {
      */
     public void startingWork() {
         if (busyTime != null) {
-            busyTime.startingWork();
+            busyTime.activate();
         }
     }
 
@@ -72,7 +73,7 @@ public class QueueThreadMetrics {
      */
     public void finishedWork() {
         if (busyTime != null) {
-            busyTime.finishedWork();
+            busyTime.deactivate();
         }
     }
 }

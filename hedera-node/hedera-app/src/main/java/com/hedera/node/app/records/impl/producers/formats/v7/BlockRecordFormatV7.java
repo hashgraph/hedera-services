@@ -27,7 +27,7 @@ import com.hedera.hapi.streams.HashObject;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.records.impl.producers.BlockRecordFormat;
 import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
@@ -90,14 +90,14 @@ public final class BlockRecordFormatV7 implements BlockRecordFormat {
             RecordStreamItemV7 recordStreamItemV7 = hasFirstItemBeenSerializedYet
                     ? new RecordStreamItemV7(
                             singleTransactionRecord.transaction(),
-                            singleTransactionRecord.record(),
+                            singleTransactionRecord.transactionRecord(),
                             sidecarHash,
                             null,
                             0,
                             0)
                     : new RecordStreamItemV7(
                             singleTransactionRecord.transaction(),
-                            singleTransactionRecord.record(),
+                            singleTransactionRecord.transactionRecord(),
                             sidecarHash,
                             hapiVersion,
                             blockNumber,
@@ -181,7 +181,7 @@ public final class BlockRecordFormatV7 implements BlockRecordFormat {
     /** Temporary fake record stream item format for V7 */
     public record RecordStreamItemV7(
             @Nullable Transaction transaction,
-            @Nullable TransactionRecord record,
+            @Nullable TransactionRecord transactionRecord,
             @Nullable Bytes hashOfSidecarItems,
             @Nullable SemanticVersion hapiVersion,
             long blockNumber,
@@ -199,7 +199,9 @@ public final class BlockRecordFormatV7 implements BlockRecordFormat {
             return new RecordStreamItemV7(null, null, null, null, 0, 0);
         }
 
-        public void write(@NonNull RecordStreamItemV7 item, @NonNull WritableSequentialData output) {}
+        public void write(@NonNull RecordStreamItemV7 item, @NonNull WritableSequentialData output) {
+            // TBD
+        }
 
         public int measure(@NonNull ReadableSequentialData input) {
             return 0;

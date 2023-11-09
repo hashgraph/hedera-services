@@ -54,7 +54,7 @@ import com.hedera.hapi.node.token.CryptoGetInfoQuery;
 import com.hedera.hapi.node.token.CryptoGetInfoResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.config.VersionedConfigImpl;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
@@ -66,8 +66,6 @@ import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountInfoHandler;
-import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
-import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
@@ -75,12 +73,10 @@ import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.config.api.Configuration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -101,12 +97,9 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     private Token token1, token2;
     @Mock
     private ReadableStates readableStates1, readableStates2, readableStates3, readableStates4;
-
-    @Mock
-    private ConfigProvider configProvider;
+    private CryptoOpsUsage cryptoOpsUsage;
 
     private CryptoGetAccountInfoHandler subject;
-    private Configuration config;
 
     @Mock
     private StakingNodeInfo stakingNodeInfo;
@@ -114,10 +107,8 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        config = HederaTestConfigBuilder.create().getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
-        subject =
-                new CryptoGetAccountInfoHandler(new StakeRewardCalculatorImpl(new StakePeriodManager(configProvider)));
+        cryptoOpsUsage = new CryptoOpsUsage();
+        subject = new CryptoGetAccountInfoHandler(cryptoOpsUsage);
     }
 
     @Test
@@ -380,6 +371,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .build();
         setupTokenRelationStore(tokenRelation);
         setupStakingInfoStore();
+        setupStakingRewardsStore();
         setupConfig();
         final var query = createCryptoGetInfoQuery(accountNum);
         when(context.query()).thenReturn(query);
@@ -548,7 +540,6 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .ownedNfts(2)
                 .maxAutomaticTokenAssociations(10)
                 .ethereumNonce(0)
-                .alias(evmAddress)
                 .contractAccountID("6aeb3773ea468a814d954e6dec795bfee7d76e26")
                 .tokenRelationships(getExpectedTokenRelationship())
                 .stakingInfo(getExpectedStakingInfo())

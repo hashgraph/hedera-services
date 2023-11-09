@@ -1,0 +1,81 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.swirlds.cli.logging;
+
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
+
+/**
+ * Utility class for determining the color of node ID text
+ */
+public class NodeIdColorizer {
+    /**
+     * Hidden constructor
+     */
+    private NodeIdColorizer() {}
+
+    /**
+     * Only define 24 colors, each separated by minimum of 15 degrees on the color wheel
+     * <p>
+     * Further specification isn't very helpful, since less than 15 degrees is too close to be easily distinguished
+     */
+    public static final List<String> nodeIdColors = List.of(
+            "#6FD154", // 0°
+            "#54AED1", // 90°
+            "#B654D1", // 180°
+            "#D17854", // 270°
+            "#54D197", // 45°
+            "#5854D1", // 135°
+            "#D1548E", // 225°
+            "#CDD154", // 315°
+            "#54D158", // 15°
+            "#548ED1", // 105°
+            "#D154CD", // 195°
+            "#D19754", // 285°
+            "#54D1B6", // 60°
+            "#7754D1", // 150°
+            "#D1546F", // 240°
+            "#AED154", // 330°
+            "#54D178", // 30°
+            "#546ED1", // 120°
+            "#D154AD", // 210°
+            "#D1B754", // 300°
+            "#54CDD1", // 75°
+            "#9654D1", // 165°,
+            "#D15854", // 255°
+            "#8ED154" // 345°
+            );
+
+    /**
+     * Get the color for a node id
+     * <p>
+     * If the node ID cannot be used an index for the color list, then null is returned
+     *
+     * @param nodeId the node id
+     * @return the color, or null if no color is defined for the node id
+     */
+    @Nullable
+    public static String getNodeIdColor(@NonNull final NodeId nodeId) {
+        if (nodeId.id() < nodeIdColors.size()) {
+            return nodeIdColors.get((int) nodeId.id());
+        } else {
+            return null;
+        }
+    }
+}

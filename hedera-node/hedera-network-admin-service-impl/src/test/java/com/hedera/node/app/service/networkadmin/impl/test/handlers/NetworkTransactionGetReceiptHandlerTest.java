@@ -60,7 +60,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
 
     @Test
     void extractsHeader() {
-        final var query = createGetTransactionRecieptQuery(transactionID, false, false);
+        final var query = createGetTransactionReceiptQuery(transactionID, false, false);
         final var header = networkTransactionGetReceiptHandler.extractHeader(query);
         final var op = query.transactionGetReceiptOrThrow();
         assertEquals(op.header(), header);
@@ -82,9 +82,8 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
     @Test
     void validatesQueryWhenValidReceipt() throws Throwable {
 
-        final var query = createGetTransactionRecieptQuery(transactionID, false, false);
+        final var query = createGetTransactionReceiptQuery(transactionID, false, false);
         given(context.query()).willReturn(query);
-        given(context.recordCache()).willReturn(cache);
 
         assertThatCode(() -> networkTransactionGetReceiptHandler.validate(context))
                 .doesNotThrowAnyException();
@@ -105,7 +104,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
                 .build();
 
-        final var query = createGetTransactionRecieptQuery(transactionID, false, false);
+        final var query = createGetTransactionReceiptQuery(transactionID, false, false);
         when(context.query()).thenReturn(query);
         when(context.recordCache()).thenReturn(cache);
 
@@ -121,7 +120,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
 
-        final var query = createGetTransactionRecieptQuery(transactionIDNotInCache, false, false);
+        final var query = createGetTransactionReceiptQuery(transactionIDNotInCache, false, false);
         when(context.query()).thenReturn(query);
         when(context.recordCache()).thenReturn(cache);
 
@@ -138,7 +137,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
                 .build();
         final var expectedReceipt = getExpectedReceipt();
 
-        final var query = createGetTransactionRecieptQuery(transactionID, false, false);
+        final var query = createGetTransactionReceiptQuery(transactionID, false, false);
         when(context.query()).thenReturn(query);
         when(context.recordCache()).thenReturn(cache);
 
@@ -156,7 +155,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
         final var expectedReceipt = getExpectedReceipt();
         final List<TransactionReceipt> expectedDuplicateReceipt = getExpectedDuplicateList();
 
-        final var query = createGetTransactionRecieptQuery(transactionID, true, false);
+        final var query = createGetTransactionReceiptQuery(transactionID, true, false);
         when(context.query()).thenReturn(query);
         when(context.recordCache()).thenReturn(cache);
 
@@ -178,7 +177,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
         final var expectedReceipt = getExpectedReceipt();
         final List<TransactionReceipt> expectedChildReceiptList = getExpectedChildReceiptList();
 
-        final var query = createGetTransactionRecieptQuery(transactionID, false, true);
+        final var query = createGetTransactionReceiptQuery(transactionID, false, true);
         when(context.query()).thenReturn(query);
         when(context.recordCache()).thenReturn(cache);
 
@@ -192,45 +191,18 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
     }
 
     private TransactionReceipt getExpectedReceipt() {
-        return TransactionReceipt.newBuilder()
-                .accountID(accountId)
-                .status(ResponseCodeEnum.UNKNOWN)
-                .build();
+        return primaryRecord.receipt();
     }
 
     private List<TransactionReceipt> getExpectedDuplicateList() {
-        return List.of(
-                TransactionReceipt.newBuilder()
-                        .accountID(accountId)
-                        .status(ResponseCodeEnum.UNKNOWN)
-                        .build(),
-                TransactionReceipt.newBuilder()
-                        .accountID(accountId)
-                        .status(ResponseCodeEnum.UNKNOWN)
-                        .build(),
-                TransactionReceipt.newBuilder()
-                        .accountID(accountId)
-                        .status(ResponseCodeEnum.UNKNOWN)
-                        .build());
+        return List.of(duplicate1.receipt(), duplicate2.receipt(), duplicate3.receipt());
     }
 
     private List<TransactionReceipt> getExpectedChildReceiptList() {
-        return List.of(
-                TransactionReceipt.newBuilder()
-                        .accountID(accountId)
-                        .status(ResponseCodeEnum.UNKNOWN)
-                        .build(),
-                TransactionReceipt.newBuilder()
-                        .accountID(accountId)
-                        .status(ResponseCodeEnum.UNKNOWN)
-                        .build(),
-                TransactionReceipt.newBuilder()
-                        .accountID(accountId)
-                        .status(ResponseCodeEnum.UNKNOWN)
-                        .build());
+        return List.of(recordOne.receipt(), recordTwo.receipt(), recordThree.receipt());
     }
 
-    private Query createGetTransactionRecieptQuery(
+    private Query createGetTransactionReceiptQuery(
             final TransactionID transactionID, final boolean includeDuplicates, final boolean includeChildReceipts) {
         final var data = TransactionGetReceiptQuery.newBuilder()
                 .transactionID(transactionID)

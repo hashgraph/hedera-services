@@ -16,11 +16,9 @@
 
 package com.swirlds.common.metrics;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
 import com.swirlds.base.ArgumentUtils;
+import com.swirlds.base.utility.ToStringBuilder;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * An instance of {@code MetricConfig} contains all configuration parameters needed to create a {@link Metric}.
@@ -198,7 +196,7 @@ public abstract sealed class MetricConfig<T extends Metric, C extends MetricConf
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("category", category)
                 .append("name", name)
                 .append("description", description)

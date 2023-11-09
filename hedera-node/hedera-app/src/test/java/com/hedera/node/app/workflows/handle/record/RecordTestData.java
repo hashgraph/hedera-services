@@ -30,7 +30,7 @@ import com.hedera.hapi.streams.RecordStreamFile;
 import com.hedera.hapi.streams.SidecarFile;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
@@ -119,8 +119,16 @@ public class RecordTestData {
             testBlocks.add(realRecordStreamItems);
             // now add blocks for TEST_BLOCKS_WITH_SIDECARS types
             Instant firstTransactionConsensusTime = Instant.ofEpochSecond(
-                    realRecordStreamItems.get(0).record().consensusTimestamp().seconds(),
-                    realRecordStreamItems.get(0).record().consensusTimestamp().nanos());
+                    realRecordStreamItems
+                            .get(0)
+                            .transactionRecord()
+                            .consensusTimestamp()
+                            .seconds(),
+                    realRecordStreamItems
+                            .get(0)
+                            .transactionRecord()
+                            .consensusTimestamp()
+                            .nanos());
             for (int j = 1; j < TEST_BLOCKS_WITH_SIDECARS.length; j++) {
                 boolean generateSidecarItems = TEST_BLOCKS_WITH_SIDECARS[j];
                 final int count = 100 + RANDOM.nextInt(900);
@@ -140,13 +148,13 @@ public class RecordTestData {
             // validate that all generated blocks have valid consensus time and transactions are in correct blocks
             TEST_BLOCKS.forEach(block -> {
                 var time = Instant.ofEpochSecond(
-                        block.get(0).record().consensusTimestamp().seconds(),
-                        block.get(0).record().consensusTimestamp().nanos());
+                        block.get(0).transactionRecord().consensusTimestamp().seconds(),
+                        block.get(0).transactionRecord().consensusTimestamp().nanos());
                 var period = getPeriod(time, 2000);
                 var count = block.stream()
                         .map(item -> Instant.ofEpochSecond(
-                                item.record().consensusTimestamp().seconds(),
-                                item.record().consensusTimestamp().nanos()))
+                                item.transactionRecord().consensusTimestamp().seconds(),
+                                item.transactionRecord().consensusTimestamp().nanos()))
                         .filter(time2 -> getPeriod(time2, 2000) != period)
                         .count();
                 assert count == 0 : "Found at least one transaction in wrong block, count = " + count;
@@ -209,7 +217,7 @@ public class RecordTestData {
                 .build();
         // update transaction record consensus timestamp
         final TransactionRecord newTransactionRecord = singleTransactionRecord
-                .record()
+                .transactionRecord()
                 .copyBuilder()
                 .consensusTimestamp(consensusTimestamp)
                 .build();

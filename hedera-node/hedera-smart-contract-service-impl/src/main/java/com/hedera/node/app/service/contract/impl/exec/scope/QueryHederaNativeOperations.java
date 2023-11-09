@@ -17,14 +17,17 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
+import javax.inject.Inject;
 
 /**
  * A read-only {@link HederaNativeOperations} based on a {@link QueryContext}.
@@ -33,23 +36,46 @@ import java.util.Objects;
 public class QueryHederaNativeOperations implements HederaNativeOperations {
     private final QueryContext context;
 
+    @Override
+    public boolean checkForCustomFees(@NonNull final CryptoTransferTransactionBody op) {
+        throw new UnsupportedOperationException("Cannot dispatch child transfers in query context");
+    }
+
+    @Inject
     public QueryHederaNativeOperations(@NonNull final QueryContext context) {
         this.context = Objects.requireNonNull(context);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public @Nullable Account getAccount(final long number) {
-        throw new AssertionError("Not implemented");
+    public @NonNull ReadableNftStore readableNftStore() {
+        return context.createStore(ReadableNftStore.class);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public @Nullable Token getToken(final long number) {
-        throw new AssertionError("Not implemented");
+    public @NonNull ReadableTokenRelationStore readableTokenRelationStore() {
+        return context.createStore(ReadableTokenRelationStore.class);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public long resolveAlias(@NonNull final Bytes evmAddress) {
-        throw new AssertionError("Not implemented");
+    public @NonNull ReadableTokenStore readableTokenStore() {
+        return context.createStore(ReadableTokenStore.class);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NonNull ReadableAccountStore readableAccountStore() {
+        return context.createStore(ReadableAccountStore.class);
     }
 
     /**
@@ -84,30 +110,6 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
     @Override
     public void finalizeHollowAccountAsContract(@NonNull final Bytes evmAddress) {
         throw new UnsupportedOperationException("Cannot finalize hollow account as contract in query context");
-    }
-
-    /**
-     * Refuses to collect fees.
-     *
-     * @param payerNumber the number of the entity to collect fees from
-     * @param amount          the amount of fees to collect
-     * @throws UnsupportedOperationException always
-     */
-    @Override
-    public void collectFee(final long payerNumber, final long amount) {
-        throw new UnsupportedOperationException("Cannot collect fees in query context");
-    }
-
-    /**
-     * Refuses to refund fees.
-     *
-     * @param payerNumber the number of the entity to refund fees to
-     * @param amount          the amount of fees to collect
-     * @throws UnsupportedOperationException always
-     */
-    @Override
-    public void refundFee(final long payerNumber, final long amount) {
-        throw new UnsupportedOperationException("Cannot refund fees in query context");
     }
 
     /**

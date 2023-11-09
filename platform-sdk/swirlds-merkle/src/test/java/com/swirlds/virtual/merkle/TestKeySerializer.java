@@ -18,16 +18,19 @@ package com.swirlds.virtual.merkle;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.SelfSerializableSupplier;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.swirlds.merkledb.serialize.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class TestKeySerializer implements KeySerializer<TestKey>, SelfSerializableSupplier<TestKey> {
+public class TestKeySerializer implements KeySerializer<TestKey> {
+
+    public TestKeySerializer() {
+        // required for deserialization
+    }
 
     @Override
     public long getClassId() {
-        return 8838920;
+        return 8838921;
     }
 
     @Override
@@ -36,7 +39,7 @@ public class TestKeySerializer implements KeySerializer<TestKey>, SelfSerializab
     }
 
     @Override
-    public int getSerializedSize(long dataVersion) {
+    public int getSerializedSize() {
         return TestKey.BYTES;
     }
 
@@ -68,8 +71,8 @@ public class TestKeySerializer implements KeySerializer<TestKey>, SelfSerializab
     }
 
     @Override
-    public int serialize(final TestKey data, final SerializableDataOutputStream outputStream) throws IOException {
-        data.serialize(outputStream);
+    public int serialize(final TestKey data, final ByteBuffer buffer) {
+        data.serialize(buffer);
         return TestKey.BYTES;
     }
 
@@ -77,10 +80,5 @@ public class TestKeySerializer implements KeySerializer<TestKey>, SelfSerializab
     public boolean equals(final ByteBuffer buffer, final int dataVersion, final TestKey keyToCompare)
             throws IOException {
         return buffer.getLong() == keyToCompare.getKeyAsLong();
-    }
-
-    @Override
-    public TestKey get() {
-        return new TestKey();
     }
 }

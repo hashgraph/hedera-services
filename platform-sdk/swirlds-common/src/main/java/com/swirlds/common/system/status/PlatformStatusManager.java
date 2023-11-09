@@ -81,8 +81,9 @@ public class PlatformStatusManager implements PlatformStatusGetter, StatusAction
                 .setBatchHandledCallback(this::triggerTimeElapsed)
                 .setWaitForWorkDuration(config.waitForWorkDuration())
                 .setCapacity(config.statusActionQueueCapacity())
-                .setMetricsConfiguration(
-                        new QueueThreadMetricsConfiguration(platformContext.getMetrics()).enableBusyTimeMetric())
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(platformContext.getMetrics())
+                        .enableMaxSizeMetric()
+                        .enableBusyTimeMetric())
                 .build();
     }
 

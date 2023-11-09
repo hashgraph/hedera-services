@@ -165,10 +165,10 @@ public class WorldLedgers {
             TokenNftInfo info = infoForNft.get();
             return Optional.of(new EvmNftInfo(
                     info.getNftID().getSerialNumber(),
-                    EntityIdUtils.asTypedEvmAddress(info.getAccountID()),
+                    canonicalAddress(EntityIdUtils.asTypedEvmAddress(info.getAccountID())),
                     info.getCreationTime().getSeconds(),
                     info.getMetadata().toByteArray(),
-                    EntityIdUtils.asTypedEvmAddress(info.getSpenderId()),
+                    canonicalAddress(EntityIdUtils.asTypedEvmAddress(info.getSpenderId())),
                     ledgerId.toByteArray()));
         }
 
@@ -179,7 +179,7 @@ public class WorldLedgers {
         if (staticEntityAccess != null) {
             return staticEntityAccess.infoForNft(target);
         } else {
-            final var tokenId = EntityNum.fromTokenId(target.getTokenId());
+            final var tokenId = EntityNum.fromTokenId(target.getTokenID());
             final var targetKey = NftId.withDefaultShardRealm(tokenId.longValue(), target.getSerialNumber());
             if (!nftsLedger.contains(targetKey)) {
                 return Optional.empty();
@@ -188,7 +188,7 @@ public class WorldLedgers {
             var accountId = targetNft.getOwner().toGrpcAccountId();
 
             if (WILDCARD_OWNER.equals(accountId)) {
-                var merkleToken = tokensLedger.getImmutableRef(target.getTokenId());
+                var merkleToken = tokensLedger.getImmutableRef(target.getTokenID());
                 if (merkleToken == null) {
                     return Optional.empty();
                 }
@@ -291,7 +291,7 @@ public class WorldLedgers {
         if (staticEntityAccess == null) {
             throw new IllegalStateException("staticApprovedOf should only be used with StaticEntityAccess");
         } else {
-            return staticEntityAccess.approvedSpenderOf(nftId);
+            return canonicalAddress(staticEntityAccess.approvedSpenderOf(nftId));
         }
     }
 
@@ -313,9 +313,9 @@ public class WorldLedgers {
 
     public Address ownerOf(final NftId nftId) {
         if (!areMutable()) {
-            return staticEntityAccess.ownerOf(nftId);
+            return canonicalAddress(staticEntityAccess.ownerOf(nftId));
         }
-        return explicitOwnerOfExtant(nftId).toEvmAddress();
+        return canonicalAddress(explicitOwnerOfExtant(nftId).toEvmAddress());
     }
 
     @SuppressWarnings("unchecked")

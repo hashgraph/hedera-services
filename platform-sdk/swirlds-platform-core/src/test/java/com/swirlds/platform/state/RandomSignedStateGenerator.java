@@ -32,7 +32,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -45,6 +45,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * A utility for generating random signed states.
@@ -55,19 +57,17 @@ public class RandomSignedStateGenerator {
 
     private State state;
     private Long round;
-    private Long numEventsCons;
     private Hash hashEventsCons;
     private AddressBook addressBook;
-    private EventImpl[] events;
     private Instant consensusTimestamp;
     private Boolean freezeState = false;
-    private List<MinGenInfo> minGenInfo;
     private SoftwareVersion softwareVersion;
     private List<NodeId> signingNodeIds;
     private Map<NodeId, Signature> signatures;
     private boolean protectionEnabled = false;
     private Hash stateHash = null;
     private Integer roundsNonAncient = null;
+    private Hash epoch = null;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -113,8 +113,7 @@ public class RandomSignedStateGenerator {
             stateInstance.setSwirldState(swirldState);
             PlatformState platformState = new PlatformState();
             final PlatformData platformData = new PlatformData();
-            platformData.setEvents(new EventImpl[0]);
-            platformData.setMinGenInfo(List.of());
+            platformData.setEpochHash(epoch);
             platformState.setPlatformData(platformData);
             stateInstance.setPlatformState(platformState);
         } else {
@@ -128,25 +127,11 @@ public class RandomSignedStateGenerator {
             roundInstance = round;
         }
 
-        final long numEventsConsInstance;
-        if (numEventsCons == null) {
-            numEventsConsInstance = Math.abs(random.nextLong());
-        } else {
-            numEventsConsInstance = numEventsCons;
-        }
-
         final Hash hashEventsConsInstance;
         if (hashEventsCons == null) {
             hashEventsConsInstance = randomHash(random);
         } else {
             hashEventsConsInstance = hashEventsCons;
-        }
-
-        final EventImpl[] eventsInstance;
-        if (events == null) {
-            eventsInstance = new EventImpl[] {};
-        } else {
-            eventsInstance = events;
         }
 
         final Instant consensusTimestampInstance;
@@ -170,16 +155,6 @@ public class RandomSignedStateGenerator {
             roundsNonAncientInstance = roundsNonAncient;
         }
 
-        final List<MinGenInfo> minGenInfoInstance;
-        if (minGenInfo == null) {
-            minGenInfoInstance = new ArrayList<>();
-            for (int i = 0; i < roundsNonAncientInstance; i++) {
-                minGenInfoInstance.add(new MinGenInfo(roundInstance - i, 0L));
-            }
-        } else {
-            minGenInfoInstance = minGenInfo;
-        }
-
         final SoftwareVersion softwareVersionInstance;
         if (softwareVersion == null) {
             softwareVersionInstance = new BasicSoftwareVersion(Math.abs(random.nextLong()));
@@ -192,13 +167,18 @@ public class RandomSignedStateGenerator {
                 .getPlatformState()
                 .getPlatformData()
                 .setRound(roundInstance)
-                .setNumEventsCons(numEventsConsInstance)
                 .setHashEventsCons(hashEventsConsInstance)
-                .setEvents(eventsInstance)
                 .setConsensusTimestamp(consensusTimestampInstance)
-                .setMinGenInfo(minGenInfoInstance)
                 .setCreationSoftwareVersion(softwareVersionInstance)
-                .setRoundsNonAncient(roundsNonAncientInstance);
+                .setRoundsNonAncient(roundsNonAncientInstance)
+                .setSnapshot(new ConsensusSnapshot(
+                        roundInstance,
+                        Stream.generate(() -> randomHash(random)).limit(10).toList(),
+                        IntStream.range(0, roundsNonAncientInstance)
+                                .mapToObj(i -> new MinGenInfo(roundInstance - i, 0L))
+                                .toList(),
+                        roundInstance,
+                        consensusTimestampInstance));
 
         final SignedState signedState = new SignedState(
                 TestPlatformContextBuilder.create().build(),
@@ -294,16 +274,6 @@ public class RandomSignedStateGenerator {
     }
 
     /**
-     * Set the number of events that have been applied to this state since genesis.
-     *
-     * @return this object
-     */
-    public RandomSignedStateGenerator setNumEventsCons(final long numEventsCons) {
-        this.numEventsCons = numEventsCons;
-        return this;
-    }
-
-    /**
      * Set the running hash of all events that have been applied to this state since genesis.
      *
      * @return this object
@@ -324,16 +294,6 @@ public class RandomSignedStateGenerator {
     }
 
     /**
-     * Set the events contained within the state.
-     *
-     * @return this object
-     */
-    public RandomSignedStateGenerator setEvents(final EventImpl[] events) {
-        this.events = events;
-        return this;
-    }
-
-    /**
      * Set the timestamp associated with this state.
      *
      * @return this object
@@ -350,16 +310,6 @@ public class RandomSignedStateGenerator {
      */
     public RandomSignedStateGenerator setFreezeState(final boolean freezeState) {
         this.freezeState = freezeState;
-        return this;
-    }
-
-    /**
-     * Set minimum generation info for the state.
-     *
-     * @return this object
-     */
-    public RandomSignedStateGenerator setMinGenInfo(final List<MinGenInfo> minGenInfo) {
-        this.minGenInfo = minGenInfo;
         return this;
     }
 
@@ -428,6 +378,16 @@ public class RandomSignedStateGenerator {
      */
     public RandomSignedStateGenerator setRoundsNonAncient(final int roundsNonAncient) {
         this.roundsNonAncient = roundsNonAncient;
+        return this;
+    }
+
+    /**
+     * Set the epoch hash.
+     *
+     * @return this object
+     */
+    public RandomSignedStateGenerator setEpoch(Hash epoch) {
+        this.epoch = epoch;
         return this;
     }
 }

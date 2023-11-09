@@ -20,6 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -92,6 +94,25 @@ public class TransactionDispatcher {
     }
 
     /**
+     * Dispatch a compute fees request. It is forwarded to the correct handler, which takes care of the specific
+     * calculation and returns the resulting {@link Fees}.
+     *
+     * @param feeContext information needed to calculate the fees
+     * @return the calculated fees
+     */
+    @NonNull
+    public Fees dispatchComputeFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext, "feeContext must not be null!");
+
+        try {
+            final var handler = getHandler(feeContext.body());
+            return handler.calculateFees(feeContext);
+        } catch (UnsupportedOperationException ex) {
+            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+        }
+    }
+
+    /**
      * Dispatch a handle request. It is forwarded to the correct handler, which takes care of the specific
      * functionality
      *
@@ -107,9 +128,6 @@ public class TransactionDispatcher {
         } catch (UnsupportedOperationException ex) {
             throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
-
-        // TODO: Kick off special file handling if needed
-        // TODO: Also load new config into context if needed
     }
 
     @NonNull

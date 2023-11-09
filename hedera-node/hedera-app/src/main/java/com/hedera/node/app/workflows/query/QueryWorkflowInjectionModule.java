@@ -26,8 +26,8 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkAdminHandle
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.pbj.runtime.Codec;
-import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import dagger.Binds;
 import dagger.Module;
@@ -46,14 +46,13 @@ public interface QueryWorkflowInjectionModule {
     @Singleton
     QueryWorkflow bindQueryWorkflow(QueryWorkflowImpl queryWorkflow);
 
+    Runnable NO_OP = () -> {};
+
     @Provides
     @Singleton
-    @SuppressWarnings({"unchecked", "rawtypes"})
     static Function<ResponseType, AutoCloseableWrapper<HederaState>> provideStateAccess(
-            @NonNull final Platform platform) {
-        // Always return the latest immutable state until we support state proofs
-        return responseType ->
-                (AutoCloseableWrapper) platform.getLatestImmutableState(QueryWorkflowInjectionModule.class.getName());
+            @NonNull final WorkingStateAccessor workingStateAccessor) {
+        return responseType -> new AutoCloseableWrapper<>(workingStateAccessor.getHederaState(), NO_OP);
     }
 
     @Provides

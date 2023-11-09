@@ -14,30 +14,8 @@
 # limitations under the License.
 ##
 
-name: "Node: Deploy Release Artifact"
+name: "ZXF: Deploy Production Release"
 on:
-  workflow_dispatch:
-    inputs:
-      dry-run-enabled:
-        description: "Perform Dry Run"
-        type: boolean
-        required: false
-        default: false
-      java-version:
-        description: "Java JDK Version:"
-        type: string
-        required: false
-        default: "17.0.3"
-      java-distribution:
-        description: "Java JDK Distribution:"
-        type: string
-        required: false
-        default: "temurin"
-      gradle-version:
-        description: "Gradle Version:"
-        type: string
-        required: false
-        default: "wrapper"
   push:
     branches:
       - develop
@@ -49,26 +27,8 @@ defaults:
     shell: bash
 
 jobs:
-  release-adhoc:
-    name: Release / Adhoc
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
-    with:
-      version-policy: branch-commit
-      trigger-env-deploy: none
-      dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
-      java-version: ${{ github.event.inputs.java-version || '17.0.7' }}
-      java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
-      gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
-
-    secrets:
-      access-token: ${{ secrets.GITHUB_TOKEN }}
-      bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
-      jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
-      jenkins-preview-url: ${{ secrets.RELEASE_JENKINS_PREVIEW_URL }}
-
   prepare-tag-release:
-    name: Release / Tag / Prepare
+    name: Prepare Release [Tag]
     runs-on: [self-hosted, Linux, medium, ephemeral]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     outputs:
@@ -102,111 +62,49 @@ jobs:
           echo "prerelease=${PRERELEASE_FLAG}" >>"${GITHUB_OUTPUT}"
 
   release-tag:
-    name: Release / Tag
+    name: Release [Tag]
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
     needs:
       - prepare-tag-release
     with:
       version-policy: specified
       new-version: ${{ needs.prepare-tag-release.outputs.version }}
-      trigger-env-deploy: preview
+      trigger-env-deploy: none
+      sdk-release-profile: ${{ needs.prepare-tag-release.outputs.prerelease == 'true' && 'PrereleaseChannel' || 'MavenCentral' }}
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
+      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
+      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
+      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
+      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
+      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
+      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
+      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
+      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
       jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
-      jenkins-preview-url: ${{ secrets.RELEASE_JENKINS_PREVIEW_URL }}
 
   release-branch:
-    name: Release / Branch
+    name: Release [Branch]
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
     if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v') }}
     with:
       version-policy: branch-commit
       trigger-env-deploy: integration
+      sdk-release-profile: DevelopCommit
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
+      cdn-bucket-name: ${{ secrets.CDN_ARTIFACT_BUCKET_NAME }}
+      svcs-ossrh-username: ${{ secrets.SVCS_OSSRH_USERNAME }}
+      svcs-ossrh-password: ${{ secrets.SVCS_OSSRH_PASSWORD }}
+      svcs-gpg-key-contents: ${{ secrets.SVCS_GPG_KEY_CONTENTS }}
+      svcs-gpg-key-passphrase: ${{ secrets.SVCS_GPG_KEY_PASSPHRASE }}
+      sdk-ossrh-username: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
+      sdk-ossrh-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
+      sdk-gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
+      sdk-gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
+      slack-webhook-url: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
       jenkins-integration-url: ${{ secrets.RELEASE_JENKINS_INTEGRATION_URL }}
-      jenkins-preview-url: ${{ secrets.RELEASE_JENKINS_PREVIEW_URL }}
-
-  prepare-mc-release:
-    name: Release / MC / Prepare
-    runs-on: [self-hosted, Linux, medium, ephemeral]
-    needs:
-      - prepare-tag-release
-      - release-adhoc
-      - release-tag
-      - release-branch
-    outputs:
-      payload: ${{ steps.dispatch.outputs.payload }}
-    if: ${{ always() }}
-    steps:
-      - name: Install JSON Tools
-        run: |
-          if ! command -v jq >/dev/null 2>&1; then
-            echo "::group::Setup JQ Command"
-            sudo apt update
-            sudo apt install -y jq
-            echo "::endgroup::"
-          fi
-
-          JQ_VERSION="$(jq --version)"
-          if [[ "${JQ_VERSION}" != "jq-1.6" ]]; then
-            echo "::group::Updating JQ Version"
-            sudo apt update
-            sudo apt upgrade -y jq
-            echo "::endgroup::"
-          fi
-
-          if ! command -v tee >/dev/null 2>&1; then
-            echo "::group::Setup Tee Command"
-            sudo apt update
-            sudo apt install -y coreutils
-            echo "::endgroup::"
-          fi
-
-          echo "::group::Show JQ Version"
-          jq --version
-          echo "::endgroup::"
-
-      - name: Prepare Dispatch Payload
-        id: dispatch
-        env:
-          REQ_IS_TAG_PUSH: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
-        run: |
-          VERSION_POLICY="snapshot"
-          VERSION_NUM=""
-          if [[ -n "${REQ_IS_TAG_PUSH}" && "${REQ_IS_TAG_PUSH}" == true ]]; then
-            VERSION_POLICY="specified"
-            VERSION_NUM="${{ needs.prepare-tag-release.outputs.version }}"
-          fi
-
-          REQ_JSON="$(jq --compact-output --null-input \
-                      --arg ref "${{ github.ref }}" \
-                      --arg jdist "${{ github.event.inputs.java-distribution || 'temurin' }}" \
-                      --arg jver "${{ github.event.inputs.java-version || '17.0.7' }}" \
-                      --arg gver "${{ github.event.inputs.gradle-version || 'wrapper' }}" \
-                      --arg vpol "${VERSION_POLICY}" \
-                      --arg vnum "${VERSION_NUM}" \
-                      '{"mode": "new", "ref": $ref, "java": {"distribution": $jdist, "version": $jver}, "gradle": {"version": $gver}, "release": {"version": {"policy": $vpol, "number": $vnum}}}')"
-
-          echo "payload=${REQ_JSON}" >>"${GITHUB_OUTPUT}"
-          printf "## Dispatch Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${REQ_JSON}")" >>"${GITHUB_STEP_SUMMARY}"
-
-  dispatch-mc-release:
-    name: Release / MC / Dispatch
-    runs-on: [self-hosted, Linux, medium, ephemeral]
-    needs:
-      - prepare-mc-release
-      - release-adhoc
-      - release-tag
-      - release-branch
-    if: ${{ (needs.release-tag.result == 'success' || needs.release-branch.result == 'success' || needs.release-adhoc.result == 'success') && needs.prepare-mc-release.result == 'success' && always() }}
-    steps:
-      - name: Repository Dispatch
-        uses: peter-evans/repository-dispatch@26b39ed245ab8f31526069329e112ab2fb224588 # pin@v2
-        with:
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
-          repository: hashgraph/hedera-internal-workflows
-          event-type: hedera-svcs-mc-release
-          client-payload: ${{ needs.prepare-mc-release.outputs.payload }}

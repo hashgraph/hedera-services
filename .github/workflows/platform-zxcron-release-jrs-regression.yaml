@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Z-Platform XCron: Release JRS Regression"
+name: "ZXCron: [Platform] Release JRS Regression"
 on:
   schedule:
     - cron: '0 9 * * *'
@@ -33,7 +33,7 @@ jobs:
     runs-on: [self-hosted, Linux, small, scheduler, ephemeral]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
@@ -51,7 +51,7 @@ jobs:
             major="${BASH_REMATCH[1]}"
             minor="${BASH_REMATCH[2]}"
 
-            if [[ "${major}" -eq 0 && "${minor}" -lt 40 ]]; then
+            if [[ "${major}" -eq 0 && "${minor}" -lt 43 ]]; then
               continue
             fi
 

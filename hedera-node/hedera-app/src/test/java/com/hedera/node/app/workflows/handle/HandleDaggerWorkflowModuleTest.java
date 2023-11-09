@@ -31,7 +31,7 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.handlers.ContractSystemDeleteHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractSystemUndeleteHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
-import com.hedera.node.app.service.contract.impl.handlers.EtherumTransactionHandler;
+import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
@@ -132,7 +132,7 @@ class HandleDaggerWorkflowModuleTest {
     private ContractSystemUndeleteHandler contractSystemUndeleteHandler;
 
     @Mock
-    private EtherumTransactionHandler etherumTransactionHandler;
+    private EthereumTransactionHandler etherumTransactionHandler;
 
     @Mock
     private CryptoCreateHandler cryptoCreateHandler;
@@ -251,7 +251,7 @@ class HandleDaggerWorkflowModuleTest {
         given(contractHandlers.contractDeleteHandler()).willReturn(contractDeleteHandler);
         given(contractHandlers.contractSystemDeleteHandler()).willReturn(contractSystemDeleteHandler);
         given(contractHandlers.contractSystemUndeleteHandler()).willReturn(contractSystemUndeleteHandler);
-        given(contractHandlers.etherumTransactionHandler()).willReturn(etherumTransactionHandler);
+        given(contractHandlers.ethereumTransactionHandler()).willReturn(etherumTransactionHandler);
         given(tokenHandlers.cryptoCreateHandler()).willReturn(cryptoCreateHandler);
         given(tokenHandlers.cryptoUpdateHandler()).willReturn(cryptoUpdateHandler);
         given(tokenHandlers.cryptoTransferHandler()).willReturn(cryptoTransferHandler);

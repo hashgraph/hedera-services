@@ -48,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -265,6 +266,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
         return txnId.toBuilder().setScheduled(true).build();
     }
 
+    @HapiTest
     public HapiSpec schedulingTxnIdFieldsNotAllowed() {
         return defaultHapiSpec("SchedulingTxnIdFieldsNotAllowed")
                 .given(usableTxnIdNamed("withScheduled").settingScheduledInappropriately())
@@ -272,9 +274,11 @@ public class ScheduleRecordSpecs extends HapiSuite {
                 .then(cryptoCreate("nope").txnId("withScheduled").hasPrecheck(TRANSACTION_ID_FIELD_NOT_ALLOWED));
     }
 
+    @HapiTest
     public HapiSpec executionTimeIsAvailable() {
         return defaultHapiSpec("ExecutionTimeIsAvailable")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
                         cryptoCreate(PAYER),
                         cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L))
                 .when(
@@ -289,9 +293,11 @@ public class ScheduleRecordSpecs extends HapiSuite {
                 .then(getScheduleInfo("tb").logged().wasExecutedBy(TRIGGER));
     }
 
+    @HapiTest
     public HapiSpec deletionTimeIsAvailable() {
         return defaultHapiSpec("DeletionTimeIsAvailable")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
                         newKeyNamed(ADMIN),
                         cryptoCreate(PAYER),
                         cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L))
@@ -310,6 +316,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     public HapiSpec allRecordsAreQueryable() {
         return defaultHapiSpec("AllRecordsAreQueryable")
                 .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
                         cryptoCreate(PAYER),
                         cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L))
                 .when(

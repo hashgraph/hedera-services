@@ -20,8 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.info.NetworkInfoImpl;
@@ -42,8 +42,8 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.Counter;
@@ -66,7 +66,6 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -102,17 +101,18 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     private static final String ALIASES_KEY = "ALIASES";
     public static final String ALICE_ALIAS = "Alice Alias";
     protected MapWritableKVState<AccountID, Account> accountsState;
-    protected MapWritableKVState<Bytes, AccountID> aliasesState;
+    protected MapWritableKVState<ProtoBytes, AccountID> aliasesState;
     protected HederaState state;
 
     protected void setupStandardStates() {
-        accountsState = new MapWritableKVState<>(
-                ACCOUNTS_KEY,
-                Map.of(
-                        ALICE.accountID(), ALICE.account(),
-                        ERIN.accountID(), ERIN.account(),
-                        STAKING_REWARD_ACCOUNT.accountID(), STAKING_REWARD_ACCOUNT.account()));
-        aliasesState = new MapWritableKVState<>(ALIASES_KEY, Map.of());
+        accountsState = new MapWritableKVState<>(ACCOUNTS_KEY);
+        accountsState.put(ALICE.accountID(), ALICE.account());
+        accountsState.put(ERIN.accountID(), ERIN.account());
+        accountsState.put(STAKING_REWARD_ACCOUNT.accountID(), STAKING_REWARD_ACCOUNT.account());
+        accountsState.put(FUNDING_ACCOUNT.accountID(), FUNDING_ACCOUNT.account());
+        accountsState.put(nodeSelfAccountId, nodeSelfAccount);
+        accountsState.commit();
+        aliasesState = new MapWritableKVState<>(ALIASES_KEY);
         final var writableStates = MapWritableStates.builder()
                 .state(accountsState)
                 .state(aliasesState)
@@ -137,13 +137,26 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             SemanticVersion.newBuilder().major(1).minor(2).patch(3).build(),
             SemanticVersion.newBuilder().major(1).minor(2).patch(3).build());
     /** Represents "this node" in our tests. */
-    private final NodeId nodeSelfId = new NodeId(7);
+    protected final NodeId nodeSelfId = new NodeId(7);
     /** The AccountID of "this node" in our tests. */
     protected final AccountID nodeSelfAccountId =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build();
 
-    protected final SelfNodeInfo selfNodeInfo =
-            new SelfNodeInfoImpl(7, nodeSelfAccountId, false, "Node7", softwareVersion);
+    protected Account nodeSelfAccount = Account.newBuilder()
+            .accountId(nodeSelfAccountId)
+            .key(FAKE_ED25519_KEY_INFOS[0].publicKey())
+            .declineReward(true)
+            .build();
+
+    protected final SelfNodeInfo selfNodeInfo = new SelfNodeInfoImpl(
+            7,
+            nodeSelfAccountId,
+            10,
+            "127.0.0.1",
+            50211,
+            "0123456789012345678901234567890123456789012345678901234567890123",
+            "Node7",
+            softwareVersion);
 
     /**
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
@@ -304,30 +317,33 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
 
             final SelfNodeInfo realSelfNodeInfo;
             if (this.selfNodeInfo == null) {
-                final var nodeSelfId = new NodeId(7);
                 final var nodeSelfAccountId = AccountID.newBuilder()
                         .shardNum(0)
                         .realmNum(0)
                         .accountNum(8)
                         .build();
-                realSelfNodeInfo = new SelfNodeInfoImpl(7, nodeSelfAccountId, false, "Node7", hederaSoftwareVersion);
+                realSelfNodeInfo = new SelfNodeInfoImpl(
+                        7,
+                        nodeSelfAccountId,
+                        10,
+                        "127.0.0.1",
+                        50211,
+                        "0123456789012345678901234567890123456789012345678901234567890123",
+                        "Node7",
+                        hederaSoftwareVersion);
             } else {
                 realSelfNodeInfo = new SelfNodeInfoImpl(
                         selfNodeInfo.nodeId(),
                         selfNodeInfo.accountId(),
-                        selfNodeInfo.zeroStake(),
+                        selfNodeInfo.stake(),
+                        selfNodeInfo.externalHostName(),
+                        selfNodeInfo.externalPort(),
+                        selfNodeInfo.hexEncodedPublicKey(),
                         selfNodeInfo.memo(),
                         hederaSoftwareVersion);
             }
 
-            final var initialState = new FakeHederaState();
             final var workingStateAccessor = new WorkingStateAccessor();
-            services.forEach(svc -> {
-                final var reg = new FakeSchemaRegistry();
-                svc.registerSchemas(reg);
-                reg.migrate(svc.getServiceName(), initialState);
-            });
-            workingStateAccessor.setHederaState(initialState);
 
             final ConfigProvider configProvider = () -> new VersionedConfigImpl(configBuilder.getOrCreateConfig(), 1);
             final var addresses = nodes.stream()
@@ -339,6 +355,14 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
 
             final var platform = new FakePlatform(realSelfNodeInfo.nodeId(), new AddressBook(addresses));
             final var networkInfo = new NetworkInfoImpl(realSelfNodeInfo, platform, configProvider);
+
+            final var initialState = new FakeHederaState();
+            services.forEach(svc -> {
+                final var reg = new FakeSchemaRegistry();
+                svc.registerSchemas(reg);
+                reg.migrate(svc.getServiceName(), initialState, networkInfo);
+            });
+            workingStateAccessor.setHederaState(initialState);
 
             return new App() {
                 @NonNull
@@ -430,5 +454,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         public boolean createTransaction(@NonNull byte[] bytes) {
             return false;
         }
+
+        @Override
+        public void start() {}
     }
 }

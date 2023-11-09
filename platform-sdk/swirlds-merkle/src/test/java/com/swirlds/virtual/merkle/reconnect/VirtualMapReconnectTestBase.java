@@ -21,9 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.config.sources.SimpleConfigSource;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -32,10 +35,15 @@ import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
-import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtual.merkle.TestKey;
+import com.swirlds.virtual.merkle.TestKeySerializer;
 import com.swirlds.virtual.merkle.TestValue;
+import com.swirlds.virtual.merkle.TestValueSerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -45,12 +53,14 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
-public abstract class VirtualMapReconnectTestBase {
+public class VirtualMapReconnectTestBase {
+
     protected static final TestKey A_KEY = new TestKey('a');
     protected static final TestKey B_KEY = new TestKey('b');
     protected static final TestKey C_KEY = new TestKey('c');
@@ -75,17 +85,45 @@ public abstract class VirtualMapReconnectTestBase {
     protected static final TestValue FOX = new TestValue("FOX");
     protected static final TestValue GOOSE = new TestValue("GOOSE");
 
-    protected final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-    protected final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
+    // Custom reconnect config to make tests with timeouts faster
+    protected static ReconnectConfig reconnectConfig = ConfigurationBuilder.create()
+            .withSources(new SimpleConfigSource("reconnect.asyncStreamTimeout", "5s"))
+            .withConfigDataType(ReconnectConfig.class)
+            .build()
+            .getConfigData(ReconnectConfig.class);
+
     protected VirtualMap<TestKey, TestValue> teacherMap;
     protected VirtualMap<TestKey, TestValue> learnerMap;
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
     protected BooleanSupplier requestTeacherToStop;
 
-    protected abstract VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException;
+    VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException {
+        // The tests create maps with identical names. They would conflict with each other in the default
+        // MerkleDb instance, so let's use a new (temp) database location for every run
+        final Path defaultVirtualMapPath = TemporaryFileBuilder.buildTemporaryFile();
+        MerkleDb.setDefaultPath(defaultVirtualMapPath);
+        final MerkleDbTableConfig<TestKey, TestValue> tableConfig = new MerkleDbTableConfig<>(
+                (short) 1, DigestType.SHA_384,
+                (short) 1, new TestKeySerializer(),
+                (short) 1, new TestValueSerializer());
+        tableConfig.hashesRamToDiskThreshold(0);
+        return new MerkleDbDataSourceBuilder<>(tableConfig);
+    }
 
-    protected abstract BrokenBuilder createBrokenBuilder(VirtualDataSourceBuilder<TestKey, TestValue> delegate);
+    BrokenBuilder createBrokenBuilder(final VirtualDataSourceBuilder<TestKey, TestValue> delegate) {
+        return new BrokenBuilder(delegate);
+    }
+
+    @BeforeAll
+    public static void setup() throws Exception {
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(TestKeySerializer.class, TestKeySerializer::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(TestValueSerializer.class, TestValueSerializer::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(BrokenBuilder.class, BrokenBuilder::new));
+    }
 
     @BeforeEach
     void setupEach() throws Exception {
@@ -146,6 +184,21 @@ public abstract class VirtualMapReconnectTestBase {
      */
     protected void reconnectMultipleTimes(
             final int attempts, final Function<VirtualMap<TestKey, TestValue>, MerkleNode> brokenTeacherMapBuilder) {
+
+        // Make sure virtual map data is flushed to disk (data source), otherwise all
+        // data for reconnects would be loaded from virtual node cache
+        final VirtualRootNode<TestKey, TestValue> virtualRootNode =
+                teacherMap.asInternal().getChild(1);
+        virtualRootNode.enableFlush();
+
+        final VirtualMap<TestKey, TestValue> teacherCopy = teacherMap.copy();
+        teacherMap.release();
+        try {
+            virtualRootNode.waitUntilFlushed();
+        } catch (final InterruptedException z) {
+            throw new RuntimeException("Interrupted exception while waiting for virtual map to flush");
+        }
+        teacherMap = teacherCopy;
 
         final MerkleInternal teacherTree = createTreeForMap(teacherMap);
         final VirtualMap<TestKey, TestValue> copy = teacherMap.copy();

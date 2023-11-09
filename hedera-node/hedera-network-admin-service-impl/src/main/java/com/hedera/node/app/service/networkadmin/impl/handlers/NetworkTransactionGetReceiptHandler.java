@@ -20,24 +20,19 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
-import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
-import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -71,12 +66,9 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
         final var op = context.query().transactionGetReceiptOrThrow();
 
         // The transaction ID must be specified
-        if (!op.hasTransactionID()) throw new PreCheckException(INVALID_TRANSACTION_ID);
-
-        // The receipt must exist for that transaction ID
-        final var recordCache = context.recordCache();
-        final var receipt = recordCache.getReceipt(op.transactionIDOrThrow());
-        mustExist(receipt, INVALID_TRANSACTION_ID);
+        if (!op.hasTransactionID() || !op.transactionID().hasAccountID()) {
+            throw new PreCheckException(INVALID_TRANSACTION_ID);
+        }
     }
 
     @Override
@@ -85,50 +77,34 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
         requireNonNull(header);
         final var query = context.query();
         final var recordCache = context.recordCache();
-        final var transactionGetReceiptQuery = query.transactionGetReceiptOrThrow();
+        final var op = query.transactionGetReceiptOrThrow();
         final var responseBuilder = TransactionGetReceiptResponse.newBuilder();
-        final var transactionId = transactionGetReceiptQuery.transactionIDOrThrow();
+        final var transactionId = op.transactionIDOrThrow();
 
-        final var responseType =
-                transactionGetReceiptQuery.headerOrElse(QueryHeader.DEFAULT).responseType();
         responseBuilder.header(header);
+        final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var transactionReceiptPrimary = recordCache.getReceipt(transactionId);
-            if (transactionReceiptPrimary == null) {
+            final var history = recordCache.getHistory(transactionId);
+            if (history == null) {
+                // Unlike with records, we only return RECEIPT_NOT_FOUND if we have never heard of this transaction.
                 responseBuilder.header(header.copyBuilder()
                         .nodeTransactionPrecheckCode(RECEIPT_NOT_FOUND)
                         .build());
             } else {
-                responseBuilder.receipt(transactionReceiptPrimary);
-                if (transactionGetReceiptQuery.includeDuplicates()) {
-                    final List<TransactionReceipt> allTransactionReceipts = recordCache.getReceipts(transactionId);
-
-                    // remove the primary receipt from the list
-                    final List<TransactionReceipt> duplicateTransactionReceipts =
-                            allTransactionReceipts.subList(1, allTransactionReceipts.size());
-                    responseBuilder.duplicateTransactionReceipts(duplicateTransactionReceipts);
+                responseBuilder.receipt(history.userTransactionReceipt());
+                if (op.includeDuplicates()) {
+                    responseBuilder.duplicateTransactionReceipts(history.duplicateRecords().stream()
+                            .map(TransactionRecord::receiptOrThrow)
+                            .toList());
                 }
-                if (transactionGetReceiptQuery.includeChildReceipts()) {
-                    responseBuilder.childTransactionReceipts(transformedChildrenOf(transactionId, recordCache));
+                if (op.includeChildReceipts()) {
+                    responseBuilder.childTransactionReceipts(history.childRecords().stream()
+                            .map(TransactionRecord::receiptOrThrow)
+                            .toList());
                 }
             }
         }
 
         return Response.newBuilder().transactionGetReceipt(responseBuilder).build();
-    }
-
-    private List<TransactionReceipt> transformedChildrenOf(TransactionID transactionID, RecordCache recordCache) {
-        final List<TransactionReceipt> children = new ArrayList<>();
-        // In a transaction id if nonce is 0 it is a parent and if we have any other number it is a child
-        for (int nonce = 1; ; nonce++) {
-            var childTransactionId = transactionID.copyBuilder().nonce(nonce).build();
-            var maybeChildRecord = recordCache.getRecord(childTransactionId);
-            if (maybeChildRecord == null) {
-                break;
-            } else {
-                if (maybeChildRecord.receipt() != null) children.add(maybeChildRecord.receipt());
-            }
-        }
-        return children;
     }
 }

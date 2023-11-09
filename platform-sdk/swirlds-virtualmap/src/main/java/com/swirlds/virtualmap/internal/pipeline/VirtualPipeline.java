@@ -17,8 +17,8 @@
 package com.swirlds.virtualmap.internal.pipeline;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.VIRTUAL_MERKLE_STATS;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.VIRTUAL_MERKLE_STATS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.metrics.Metrics;
@@ -473,7 +473,6 @@ public class VirtualPipeline {
         for (PipelineListNode<VirtualRoot> node = copies.getFirst(); node != null; node = node.getNext()) {
             final VirtualRoot copy = node.getValue();
             if (!copy.isImmutable()) {
-                assert node.getNext() == null;
                 break;
             }
             final long estimatedSize = copy.estimatedSize();
@@ -562,8 +561,10 @@ public class VirtualPipeline {
                 logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Merge {}", copy.getFastCopyVersion());
                 merge(next);
                 copies.remove(next);
-                statistics.setPipelineSize(copies.getSize());
             }
+            statistics.setPipelineSize(copies.getSize());
+            final long totalSize = currentTotalSize();
+            statistics.setNodeCacheSize(totalSize);
             next = next.getNext();
         }
     }

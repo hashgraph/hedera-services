@@ -16,11 +16,11 @@
 
 package com.swirlds.common.utility;
 
-import com.swirlds.logging.LogMarker;
+import com.swirlds.base.utility.Pair;
+import com.swirlds.logging.legacy.LogMarker;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

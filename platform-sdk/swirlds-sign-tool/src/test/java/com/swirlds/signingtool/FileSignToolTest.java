@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.StreamType;
 import com.swirlds.common.stream.internal.StreamValidationResult;
@@ -54,7 +55,6 @@ import java.nio.file.Files;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -216,8 +216,8 @@ class FileSignToolTest {
     private static boolean verifyOldSignatureFile(final File sigFile, final PublicKey publicKey) throws IOException {
         // parses the file
         final Pair<byte[], byte[]> parsedPair = parseOldSigFile(sigFile);
-        final byte[] hashBytes = parsedPair.getLeft();
-        final byte[] sigBytes = parsedPair.getRight();
+        final byte[] hashBytes = parsedPair.left();
+        final byte[] sigBytes = parsedPair.right();
         // verifies signature
         return verifySignature(hashBytes, sigBytes, publicKey, sigFile.getName());
     }

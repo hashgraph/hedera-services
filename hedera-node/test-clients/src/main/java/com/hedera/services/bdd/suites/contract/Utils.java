@@ -51,6 +51,7 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -73,7 +74,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.crypto.Hash;
-import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -387,12 +387,12 @@ public class Utils {
         return (precompileTinycentPrice * 1000 / gasThousandthsOfTinycentPrice);
     }
 
-    @NotNull
+    @NonNull
     public static String getNestedContractAddress(final String outerContract, final HapiSpec spec) {
         return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(outerContract));
     }
 
-    @NotNull
+    @NonNull
     @SuppressWarnings("java:S5960")
     public static CustomSpecAssert assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(
             final String nestedTransferTxn) {

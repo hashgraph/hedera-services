@@ -28,19 +28,23 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.Random;
 
 public class GossipEventBuilder {
+    private static final Instant DEFAULT_TIMESTAMP = Instant.ofEpochMilli(1588771316678L);
     private Random random;
     private NodeId creatorId;
     private Instant timestamp;
     private int numberOfTransactions;
     private int transactionSize;
-    private GossipEvent selfParent;
-    private GossipEvent otherParent;
+    private Object selfParent;
+    private Object otherParent;
     private boolean fakeHash;
     private long fakeGeneration;
+
+    private boolean consensus;
 
     public static GossipEventBuilder builder() {
         return new GossipEventBuilder().setDefaults();
@@ -48,19 +52,25 @@ public class GossipEventBuilder {
 
     public GossipEventBuilder setDefaults() {
         random = new Random();
-        creatorId = NodeId.FIRST_NODE_ID;
-        timestamp = Instant.ofEpochMilli(1588771316678L);
+        creatorId = new NodeId(0);
+        timestamp = null;
         numberOfTransactions = 0;
         transactionSize = 4;
         selfParent = null;
         otherParent = null;
         fakeHash = true;
         fakeGeneration = Long.MIN_VALUE;
+        consensus = false;
         return this;
     }
 
     public GossipEventBuilder setRandom(final Random random) {
         this.random = random;
+        return this;
+    }
+
+    public GossipEventBuilder setCreatorId(final long creatorId) {
+        this.creatorId = new NodeId(creatorId);
         return this;
     }
 
@@ -94,6 +104,16 @@ public class GossipEventBuilder {
         return this;
     }
 
+    public GossipEventBuilder setSelfParent(final EventImpl selfParent) {
+        this.selfParent = selfParent;
+        return this;
+    }
+
+    public GossipEventBuilder setOtherParent(final EventImpl otherParent) {
+        this.otherParent = otherParent;
+        return this;
+    }
+
     public GossipEventBuilder setFakeHash(final boolean fakeHash) {
         this.fakeHash = fakeHash;
         return this;
@@ -104,7 +124,48 @@ public class GossipEventBuilder {
         return this;
     }
 
+    public GossipEventBuilder setConsensus(final boolean consensus) {
+        this.consensus = consensus;
+        return this;
+    }
+
+    private EventImpl getSelfParentImpl() {
+        return selfParent instanceof EventImpl ei ? ei : null;
+    }
+
+    private EventImpl getOtherParentImpl() {
+        return otherParent instanceof EventImpl ei ? ei : null;
+    }
+
+    private GossipEvent getSelfParentGossip() {
+        if (selfParent instanceof GossipEvent ge) {
+            return ge;
+        }
+        return selfParent instanceof EventImpl ei ? ei.getBaseEvent() : null;
+    }
+
+    private GossipEvent getOtherParentGossip() {
+        if (otherParent instanceof GossipEvent ge) {
+            return ge;
+        }
+        return otherParent instanceof EventImpl ei ? ei.getBaseEvent() : null;
+    }
+
+    private Instant getParentTime() {
+        final Instant sp = getSelfParentGossip() == null
+                ? DEFAULT_TIMESTAMP
+                : getSelfParentGossip().getHashedData().getTimeCreated();
+        final Instant op = getOtherParentGossip() == null
+                ? DEFAULT_TIMESTAMP
+                : getOtherParentGossip().getHashedData().getTimeCreated();
+        return sp.isAfter(op) ? sp : op;
+    }
+
     public GossipEvent buildEvent() {
+        return buildGossipEvent();
+    }
+
+    public GossipEvent buildGossipEvent() {
         final ConsensusTransactionImpl[] tr = new ConsensusTransactionImpl[numberOfTransactions];
         for (int i = 0; i < tr.length; ++i) {
             final byte[] bytes = new byte[] {(byte) i, (byte) i, (byte) i, (byte) i};
@@ -112,18 +173,24 @@ public class GossipEventBuilder {
         }
         final long selfParentGen = fakeGeneration >= GraphGenerations.FIRST_GENERATION
                 ? fakeGeneration - 1
-                : selfParent != null ? selfParent.getGeneration() : EventConstants.GENERATION_UNDEFINED;
+                : getSelfParentGossip() != null
+                        ? getSelfParentGossip().getGeneration()
+                        : EventConstants.GENERATION_UNDEFINED;
         final long otherParentGen = fakeGeneration >= GraphGenerations.FIRST_GENERATION
                 ? fakeGeneration - 1
-                : otherParent != null ? otherParent.getGeneration() : -1;
+                : getOtherParentGossip() != null ? getOtherParentGossip().getGeneration() : -1;
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 creatorId,
                 selfParentGen,
                 otherParentGen,
-                selfParent != null ? selfParent.getHashedData().getHash() : null,
-                otherParent != null ? otherParent.getHashedData().getHash() : null,
-                timestamp,
+                getSelfParentGossip() != null
+                        ? getSelfParentGossip().getHashedData().getHash()
+                        : null,
+                getOtherParentGossip() != null
+                        ? getOtherParentGossip().getHashedData().getHash()
+                        : null,
+                timestamp == null ? getParentTime().plusMillis(1 + creatorId.id()) : timestamp,
                 tr);
 
         if (fakeHash) {
@@ -136,10 +203,19 @@ public class GossipEventBuilder {
         random.nextBytes(sig);
 
         final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
-                otherParent != null ? otherParent.getHashedData().getCreatorId() : NodeId.UNDEFINED_NODE_ID, sig);
+                getOtherParentGossip() != null
+                        ? getOtherParentGossip().getHashedData().getCreatorId()
+                        : null,
+                sig);
         final GossipEvent gossipEvent = new GossipEvent(hashedData, unhashedData);
         gossipEvent.buildDescriptor();
         return gossipEvent;
+    }
+
+    public EventImpl buildEventImpl() {
+        final EventImpl event = new EventImpl(buildGossipEvent(), getSelfParentImpl(), getOtherParentImpl());
+        event.setConsensus(consensus);
+        return event;
     }
 
     public GossipEventBuilder reset() {

@@ -21,8 +21,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import java.util.Objects;
 
 /**
  * A smart contract has a list of key value pairs to store its data.
@@ -124,21 +123,15 @@ public final class SmartContractMapKey implements VirtualKey {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final SmartContractMapKey that = (SmartContractMapKey) o;
-
-        return new EqualsBuilder()
-                .append(contractId, that.contractId)
-                .append(keyValuePairIndex, that.keyValuePairIndex)
-                .isEquals();
+        final SmartContractMapKey that = (SmartContractMapKey) other;
+        return contractId == that.contractId && keyValuePairIndex == that.keyValuePairIndex;
     }
 
     /**
@@ -146,10 +139,7 @@ public final class SmartContractMapKey implements VirtualKey {
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(contractId)
-                .append(keyValuePairIndex)
-                .toHashCode();
+        return Objects.hash(contractId, keyValuePairIndex);
     }
 
     /**

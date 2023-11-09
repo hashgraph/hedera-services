@@ -21,9 +21,8 @@ import com.swirlds.common.merkle.exceptions.IllegalChildIndexException;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
+import java.util.Objects;
 import java.util.Random;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class MapValue extends PartialNaryMerkleInternal implements Keyed<AccountID>, MerkleInternal {
 
@@ -167,20 +166,17 @@ public class MapValue extends PartialNaryMerkleInternal implements Keyed<Account
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (!(o instanceof final MapValue mapValue)) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        return new EqualsBuilder()
-                .append(this.getInternalValue(), mapValue.getInternalValue())
-                .append(this.getMapKey(), mapValue.getMapKey())
-                .append(this.getRecords(), mapValue.getRecords())
-                .isEquals();
+        final MapValue that = (MapValue) other;
+        return Objects.equals(this.getMapKey(), that.getMapKey())
+                && Objects.equals(this.getInternalValue(), that.getInternalValue())
+                && Objects.equals(this.getRecords(), that.getRecords());
     }
 
     /**
@@ -188,11 +184,7 @@ public class MapValue extends PartialNaryMerkleInternal implements Keyed<Account
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(this.getMapKey())
-                .append(this.getInternalValue())
-                .append(this.getRecords())
-                .toHashCode();
+        return Objects.hash(this.getMapKey(), this.getInternalValue(), this.getRecords());
     }
 
     static MapValue generateRandom(final Random random, final AccountID key) {

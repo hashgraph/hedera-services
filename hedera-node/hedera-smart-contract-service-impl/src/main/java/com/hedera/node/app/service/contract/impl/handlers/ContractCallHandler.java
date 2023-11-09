@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -45,7 +47,7 @@ public class ContractCallHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         // Create the transaction-scoped component
-        final var component = provider.get().create(context);
+        final var component = provider.get().create(context, CONTRACT_CALL);
 
         // Run its in-scope transaction and get the outcome
         final var outcome = component.contextTransactionProcessor().call();
@@ -53,13 +55,12 @@ public class ContractCallHandler implements TransactionHandler {
         // Assemble the appropriate top-level record for the result
         context.recordBuilder(ContractCallRecordBuilder.class)
                 .contractCallResult(outcome.result())
-                .contractID(outcome.recipientIdIfCalled())
-                .status(outcome.status());
+                .contractID(outcome.recipientIdIfCalled());
+        throwIfUnsuccessful(outcome.status());
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) {
-        requireNonNull(context);
-        // Nothing to do
+        // No non-payer signatures to verify
     }
 }

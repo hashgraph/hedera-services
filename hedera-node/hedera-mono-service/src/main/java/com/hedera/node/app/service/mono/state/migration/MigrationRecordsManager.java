@@ -131,6 +131,10 @@ public class MigrationRecordsManager {
         // when the consensus time of the last handled txn is null...if we publish these unconditionally, then some
         // genesis reconnect scenarios risk an ISS
         if (curNetworkCtx.consensusTimeOfLastHandledTxn() == null) {
+            // If we just started from genesis, we'll have records of actually creating the system accounts. But if
+            // we're only replaying events from round one, those system accounts were already created. So call this
+            // to ensure we'll publish the same synthetic records.
+            systemAccountsCreator.ensureSynthRecordsPresentOnFirstEverTransaction();
             final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
             // Always publish records for any staking fund accounts created
             publishStakingFundAccountsCreated(

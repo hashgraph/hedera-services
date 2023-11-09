@@ -69,6 +69,12 @@ class TxnAwareHandleThrottlingTest {
     }
 
     @Test
+    void delegatesCapacityLeak() {
+        subject.leakCapacityForNOfUnscaled(2, CryptoCreate);
+        verify(delegate).leakCapacityForNOfUnscaled(2, CryptoCreate);
+    }
+
+    @Test
     void delegatesSnapshotActions() {
         final List<DeterministicThrottle.UsageSnapshot> pretend = List.of();
         given(delegate.getUsageSnapshots()).willReturn(pretend);

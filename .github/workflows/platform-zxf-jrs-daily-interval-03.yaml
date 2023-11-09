@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Z-Platform XF: JRS Daily (Interval: 3)"
+name: "ZXF: [Platform] JRS Daily (Interval: 3)"
 on:
   workflow_dispatch:
     inputs:
@@ -41,7 +41,8 @@ concurrency:
 # Panel Definition & Timings:
 #   "configs/suites/daily/8N/GCP-Daily-NetError-4N.json"                ----             8m
 #   "configs/suites/daily/10N/GCP-Daily-MultiSBReconnect-3R-10N.json"   ----            20m
-#   TOTAL RUN TIME:             28 minutes, 0.3 hours
+#   "configs/suites/daily/1N/GCP-Daily-VMerkle-1N.json"                 ----             3m
+#   TOTAL RUN TIME:             31 minutes, 0.5 hours
 jobs:
   neterror:
     name: NetError
@@ -57,6 +58,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
   multisbreconnect-3r:
     name: MultiSBReconnect-3R-10N
     uses: ./.github/workflows/zxc-jrs-regression.yaml
@@ -71,6 +74,24 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     needs:
       - neterror
     if: ${{ !cancelled() && always() }}
+  vmerkle-1n:
+    name: VMerkle-1N
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
+    with:
+      ref: ${{ github.event.inputs.ref }}
+      branch-name: ${{ github.event.inputs.branch-name }}
+      panel-config: "configs/suites/daily/1N/GCP-Daily-VMerkle-1N.json"
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}

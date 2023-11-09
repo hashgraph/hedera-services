@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
@@ -103,6 +104,7 @@ public class EmergencyReconnectProtocolTests {
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 PEER_ID,
@@ -130,6 +132,7 @@ public class EmergencyReconnectProtocolTests {
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 PEER_ID,
@@ -155,13 +158,17 @@ public class EmergencyReconnectProtocolTests {
         final EmergencyRecoveryManager emergencyRecoveryManager = mock(EmergencyRecoveryManager.class);
         when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
 
-        final ReconnectController reconnectController =
-                new ReconnectController(getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
+
+        final ReconnectController reconnectController = new ReconnectController(
+                reconnectConfig, getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
 
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 PEER_ID,
@@ -209,12 +216,14 @@ public class EmergencyReconnectProtocolTests {
                 // we don't want the time based throttle to interfere
                 .withValue("reconnect.minimumTimeBetweenReconnects", "0s")
                 .getOrCreateConfig();
-        final ReconnectThrottle teacherThrottle = new ReconnectThrottle(config.getConfigData(ReconnectConfig.class));
+        final ReconnectThrottle teacherThrottle =
+                new ReconnectThrottle(config.getConfigData(ReconnectConfig.class), Time.getCurrent());
 
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
+                Time.getCurrent(),
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 PEER_ID,

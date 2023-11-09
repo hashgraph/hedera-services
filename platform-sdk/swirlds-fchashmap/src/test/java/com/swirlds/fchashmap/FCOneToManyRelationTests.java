@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.utility.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -136,7 +136,7 @@ class FCOneToManyRelationTests {
             final int maxKey,
             final List<Pair<Map<Integer, Set<Integer>>, FCOneToManyRelation<Integer, Integer>>> copies) {
         for (final Pair<Map<Integer, Set<Integer>>, FCOneToManyRelation<Integer, Integer>> pair : copies) {
-            validate(random, maxKey, pair.getLeft(), pair.getRight());
+            validate(random, maxKey, pair.left(), pair.right());
         }
     }
 
@@ -149,9 +149,9 @@ class FCOneToManyRelationTests {
             final int value) {
 
         final Map<Integer, Set<Integer>> reference =
-                copies.get(copies.size() - 1).getLeft();
+                copies.get(copies.size() - 1).left();
         final FCOneToManyRelation<Integer, Integer> relation =
-                copies.get(copies.size() - 1).getRight();
+                copies.get(copies.size() - 1).right();
 
         if (!reference.containsKey(key)) {
             reference.put(key, new HashSet<>());
@@ -170,9 +170,9 @@ class FCOneToManyRelationTests {
             final int value) {
 
         final Map<Integer, Set<Integer>> reference =
-                copies.get(copies.size() - 1).getLeft();
+                copies.get(copies.size() - 1).left();
         final FCOneToManyRelation<Integer, Integer> relation =
-                copies.get(copies.size() - 1).getRight();
+                copies.get(copies.size() - 1).right();
 
         if (reference.containsKey(key)) {
             reference.get(key).remove(value);
@@ -213,9 +213,9 @@ class FCOneToManyRelationTests {
     private void copy(final List<Pair<Map<Integer, Set<Integer>>, FCOneToManyRelation<Integer, Integer>>> copies) {
 
         final Map<Integer, Set<Integer>> referenceCopy =
-                copyReferenceMap(copies.get(copies.size() - 1).getLeft());
+                copyReferenceMap(copies.get(copies.size() - 1).left());
         final FCOneToManyRelation<Integer, Integer> relationCopy =
-                copies.get(copies.size() - 1).getRight().copy();
+                copies.get(copies.size() - 1).right().copy();
 
         copies.add(Pair.of(referenceCopy, relationCopy));
     }
@@ -226,7 +226,7 @@ class FCOneToManyRelationTests {
     private void deleteCopy(
             final List<Pair<Map<Integer, Set<Integer>>, FCOneToManyRelation<Integer, Integer>>> copies,
             final int index) {
-        copies.get(index).getRight().release();
+        copies.get(index).right().release();
         copies.remove(index);
     }
 
@@ -390,7 +390,7 @@ class FCOneToManyRelationTests {
         // Remove all of the associations
         for (final Pair<Integer, Integer> association : associations) {
 
-            disassociate(copies, association.getKey(), association.getValue());
+            disassociate(copies, association.key(), association.value());
 
             if (associations.size() % 100 == 0) {
                 copy(copies);
@@ -403,7 +403,7 @@ class FCOneToManyRelationTests {
         }
         validate(random, maxKey, copies);
 
-        assertEquals(0, copies.get(copies.size() - 1).getRight().getKeyCount(), "no entries should remain");
+        assertEquals(0, copies.get(copies.size() - 1).right().getKeyCount(), "no entries should remain");
 
         while (copies.size() > 0) {
             deleteCopy(copies, copies.size() - 1);

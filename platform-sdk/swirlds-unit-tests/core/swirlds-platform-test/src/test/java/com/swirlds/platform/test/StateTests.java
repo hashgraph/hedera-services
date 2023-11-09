@@ -56,7 +56,7 @@ class StateTests {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         state = new State();
-        state.setPlatformState(randomPlatformState(false));
+        state.setPlatformState(randomPlatformState());
         state.setSwirldState(new DummySwirldState());
         state.setDualState(new DualStateImpl());
 

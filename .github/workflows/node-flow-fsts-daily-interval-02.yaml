@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Node: FSTS Daily (Interval: 2)"
+name: "ZXF: [Node] FSTS Daily (Interval: 2)"
 on:
   workflow_dispatch:
     inputs:
@@ -64,9 +64,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Crypto-Migration-7N-1C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -75,6 +73,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     if: ${{ !cancelled() && always() }}
 
 
@@ -85,9 +85,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Balances-Validation-6N-1C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -96,6 +94,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     needs:
       - crypto-migration-7n-1c
     if: ${{ !cancelled() && always() }}
@@ -108,9 +108,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Crypto-Invalid-Accounts-4N-4C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -119,6 +117,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     needs:
       - balances-validation-6n-1c
     if: ${{ !cancelled() && always() }}
@@ -131,9 +131,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -142,6 +140,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     if: ${{ !cancelled() && always() }}
 
 
@@ -152,9 +152,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Reconnect-6N-4C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -163,6 +161,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     needs:
       - comp-nd-reconnect-correctness-6n-1c
     if: ${{ !cancelled() && always() }}
@@ -175,9 +175,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-NetError-4N-1C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -186,6 +184,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     if: ${{ !cancelled() && always() }}
 
 
@@ -196,9 +196,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Crypto-Restart-4N-1C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -207,6 +205,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     needs:
       - comp-neterror-4n-1c
     if: ${{ !cancelled() && always() }}

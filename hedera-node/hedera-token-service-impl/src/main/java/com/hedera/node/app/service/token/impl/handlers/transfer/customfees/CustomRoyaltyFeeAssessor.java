@@ -26,13 +26,10 @@ import static com.hedera.node.app.service.token.impl.handlers.transfer.customfee
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
@@ -59,7 +56,6 @@ public class CustomRoyaltyFeeAssessor {
      * @param sender
      * @param receiver
      * @param result
-     * @param handleContext
      */
     // Suppressing the warning about using two "continue" statements and having unused variable
     @SuppressWarnings({"java:S1854", "java:S135"})
@@ -67,11 +63,7 @@ public class CustomRoyaltyFeeAssessor {
             @NonNull final CustomFeeMeta feeMeta,
             @NonNull final AccountID sender,
             @NonNull final AccountID receiver,
-            @NonNull final AssessmentResult result,
-            @NonNull final HandleContext handleContext) {
-        // FUTURE: remove the @SuppressWarnings("java:S1854") when this variable is in use
-        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-
+            @NonNull final AssessmentResult result) {
         final var tokenId = feeMeta.tokenId();
         // In a given CryptoTransfer, we only charge royalties to an account once per token type; so
         // even if 0.0.A is sending multiple NFTs of type 0.0.T in a single transfer, we only deduct
@@ -116,15 +108,14 @@ public class CustomRoyaltyFeeAssessor {
      * @param result assessment result
      */
     private void chargeRoyalty(
-            @NonNull Map<AccountID, Pair<Long, TokenID>> exchangedValues,
+            @NonNull List<AdjustmentUtils.ExchangedValue> exchangedValues,
             @NonNull final CustomFeeMeta feeMeta,
             @NonNull final CustomFee fee,
             @NonNull final AssessmentResult result) {
-        for (final var exchange : exchangedValues.entrySet()) {
-            final var account = exchange.getKey();
-            final var value = exchange.getValue();
-            final var amount = value.getLeft();
-            final var tokenId = value.getRight();
+        for (final var exchange : exchangedValues) {
+            final var account = exchange.account();
+            final var amount = exchange.amount();
+            final var denom = exchange.tokenId();
 
             final var royaltySpec = fee.royaltyFeeOrThrow();
             final var feeCollector = fee.feeCollectorAccountIdOrThrow();
@@ -135,7 +126,6 @@ public class CustomRoyaltyFeeAssessor {
                     amount);
             validateTrue(royalty <= amount, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
-            final var denom = tokenId == null ? null : tokenId;
             /* The id of the charging token is only used here to avoid recursively charging
             on fees charged in the units of their denominating token; but this is a credit,
             hence the id is irrelevant, and we can use null. */
@@ -144,10 +134,10 @@ public class CustomRoyaltyFeeAssessor {
                 adjustHbarFees(result, account, fee);
             } else {
                 // exchange is for token
-                adjustHtsFees(result, account, feeCollector, feeMeta, amount, denom);
+                adjustHtsFees(result, account, feeCollector, feeMeta, royalty, denom);
             }
             /* Note that this account has now paid all royalties for this NFT type */
-            result.addToRoyaltiesPaid(Pair.of(account, tokenId));
+            result.addToRoyaltiesPaid(Pair.of(account, denom));
 
             final var assessedCustomFeeBuilder = AssessedCustomFee.newBuilder()
                     .amount(royalty)

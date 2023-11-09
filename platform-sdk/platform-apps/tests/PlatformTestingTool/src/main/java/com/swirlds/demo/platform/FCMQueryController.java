@@ -17,8 +17,9 @@
 package com.swirlds.demo.platform;
 
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -33,7 +34,6 @@ import com.swirlds.merkle.map.test.pta.MapKey;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -99,8 +99,8 @@ class FCMQueryController {
         }
 
         final Pair<MapKey, MapValueData> pair = optionalPair.get();
-        final MapKey key = pair.getKey();
-        final MapValueData data = pair.getValue();
+        final MapKey key = pair.key();
+        final MapValueData data = pair.value();
 
         final ExpectedFCMFamily expectedFamily = state.getStateExpectedMap();
         final ExpectedValue expectedValue = expectedFamily.getExpectedMap().get(key);

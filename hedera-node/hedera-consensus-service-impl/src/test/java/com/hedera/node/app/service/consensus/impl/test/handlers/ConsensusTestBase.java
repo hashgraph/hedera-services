@@ -188,12 +188,12 @@ public class ConsensusTestBase {
 
     protected Topic createTopic() {
         return new Topic.Builder()
-                .id(topicId)
+                .topicId(topicId)
                 .adminKey(key)
                 .submitKey(key)
                 .autoRenewPeriod(autoRenewSecs)
                 .autoRenewAccountId(autoRenewId)
-                .expiry(expirationTime)
+                .expirationSecond(expirationTime)
                 .sequenceNumber(sequenceNumber)
                 .memo(memo)
                 .deleted(true)
@@ -203,10 +203,10 @@ public class ConsensusTestBase {
 
     protected Topic createTopicEmptyKeys() {
         return new Topic.Builder()
-                .id(topicId)
+                .topicId(topicId)
                 .autoRenewPeriod(autoRenewSecs)
                 .autoRenewAccountId(autoRenewId)
-                .expiry(expirationTime)
+                .expirationSecond(expirationTime)
                 .sequenceNumber(sequenceNumber)
                 .memo(memo)
                 .deleted(true)

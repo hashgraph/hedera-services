@@ -26,7 +26,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * A class used to store base event data that does not affect the hash of that event.
@@ -111,12 +110,9 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(creatorSeq)
-                .append(otherId)
-                .append(otherSeq)
-                .append(signature)
-                .toHashCode();
+        int result = Objects.hash(creatorSeq, otherId, otherSeq);
+        result = 31 * result + Arrays.hashCode(signature);
+        return result;
     }
 
     @Override

@@ -24,6 +24,7 @@ import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Delete;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Transfer;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Update;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;
@@ -59,7 +60,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -382,10 +382,10 @@ public class FCMTransactionHandler {
         }
 
         expectedFCMFamily.setLatestHandledStatusForKey(
-                fromKey, entityType, newValuePair.getLeft(), HANDLED, Transfer, timestamp, originId, false);
+                fromKey, entityType, newValuePair.left(), HANDLED, Transfer, timestamp, originId, false);
 
         expectedFCMFamily.setLatestHandledStatusForKey(
-                toKey, entityType, newValuePair.getRight(), HANDLED, Transfer, timestamp, originId, false);
+                toKey, entityType, newValuePair.right(), HANDLED, Transfer, timestamp, originId, false);
     }
 
     /**
@@ -397,8 +397,12 @@ public class FCMTransactionHandler {
             final MapKey toKey,
             final MerkleMap<MapKey, MapValueData> map,
             final ExpectedFCMFamily expectedMap) {
-        if (entityMissingFromMap(fromKey, map, expectedMap)) return null;
-        if (entityMissingFromMap(toKey, map, expectedMap)) return null;
+        if (entityMissingFromMap(fromKey, map, expectedMap)) {
+            return null;
+        }
+        if (entityMissingFromMap(toKey, map, expectedMap)) {
+            return null;
+        }
 
         final MapValueData valueFrom = map.getForModify(fromKey);
         final MapValueData valueTo = map.getForModify(toKey);

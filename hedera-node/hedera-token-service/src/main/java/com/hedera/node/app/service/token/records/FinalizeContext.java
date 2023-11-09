@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.token.records;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.function.Consumer;
 
 /**
  * Represents the context of used for finalizing a user transaction.
@@ -32,15 +32,7 @@ public interface FinalizeContext {
      * @return the current consensus time
      */
     @NonNull
-    Instant consensusNow();
-
-    /**
-     * Gets the payer {@link AccountID}.
-     *
-     * @return the {@link AccountID} of the payer in this context
-     */
-    @NonNull
-    AccountID payer();
+    Instant consensusTime();
 
     /**
      * Returns the current {@link Configuration} for the node.
@@ -86,5 +78,16 @@ public interface FinalizeContext {
      * @throws IllegalArgumentException if the record builder type is unknown to the app
      */
     @NonNull
-    <T> T recordBuilder(@NonNull Class<T> recordBuilderClass);
+    <T> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass);
+
+    /**
+     * This method can be used to iterate over all child records.
+     *
+     * @param recordBuilderClass the record type
+     * @param consumer the consumer to be called for each record
+     * @param <T> the record type
+     * @throws NullPointerException if any parameter is {@code null}
+     * @throws IllegalArgumentException if the record builder type is unknown to the app
+     */
+    <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer);
 }

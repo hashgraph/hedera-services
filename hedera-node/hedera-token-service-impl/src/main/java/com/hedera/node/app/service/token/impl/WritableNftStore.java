@@ -58,7 +58,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      */
     public void put(@NonNull final Nft nft) {
         Objects.requireNonNull(nft);
-        nftState.put(nft.id(), nft);
+        nftState.put(nft.nftId(), nft);
     }
 
     /**

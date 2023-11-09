@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.signature.impl;
 
+import static com.hedera.hapi.node.base.SignaturePair.SignatureOneOfType.ECDSA_SECP256K1;
+import static com.hedera.hapi.node.base.SignaturePair.SignatureOneOfType.ED25519;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
@@ -59,7 +61,18 @@ public final class SignatureVerifierImpl implements SignatureVerifier {
         requireNonNull(sigs);
 
         Preparer edPreparer = null;
+        final var hasEDSignature =
+                sigs.stream().anyMatch(sigPair -> sigPair.sigPair().signature().kind() == ED25519);
+        if (hasEDSignature) {
+            edPreparer = createPreparerForED(signedBytes);
+        }
+
         Preparer ecPreparer = null;
+        final var hasECSignature =
+                sigs.stream().anyMatch(sigPair -> sigPair.sigPair().signature().kind() == ECDSA_SECP256K1);
+        if (hasECSignature) {
+            ecPreparer = createPreparerForEC(signedBytes);
+        }
 
         // Gather each TransactionSignature to send to the platform and the resulting SignatureVerificationFutures
         final var platformSigs = new ArrayList<TransactionSignature>(sigs.size());
@@ -68,14 +81,15 @@ public final class SignatureVerifierImpl implements SignatureVerifier {
             final var kind = sigPair.sigPair().signature().kind();
             final var preparer =
                     switch (kind) {
-                        case ECDSA_SECP256K1 -> ecPreparer == null
-                                ? ecPreparer = createPreparerForEC(signedBytes)
-                                : ecPreparer;
-                        case ED25519 -> edPreparer == null ? edPreparer = createPreparerForED(signedBytes) : edPreparer;
+                        case ECDSA_SECP256K1 -> ecPreparer;
+                        case ED25519 -> edPreparer;
                         case CONTRACT, ECDSA_384, RSA_3072, UNSET -> throw new IllegalArgumentException(
                                 "Unsupported signature type: " + kind);
                     };
 
+            if (preparer == null) {
+                throw new RuntimeException("Preparer should not be null");
+            }
             preparer.addSignature(sigPair.signature());
             preparer.addKey(sigPair.keyBytes());
             final var txSig = preparer.prepareTransactionSignature();

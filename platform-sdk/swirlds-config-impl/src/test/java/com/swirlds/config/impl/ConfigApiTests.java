@@ -18,6 +18,7 @@ package com.swirlds.config.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -365,20 +366,14 @@ class ConfigApiTests {
                 .build();
         // then
         assertEquals(
-                8,
+                6,
                 configuration.getPropertyNames().count(),
-                "It must be possible to read config properties from the old file format");
-        assertTrue(
-                configuration.exists("maxOutgoingSyncs"),
                 "It must be possible to read config properties from the old file format");
         assertTrue(
                 configuration.exists("state.saveStatePeriod"),
                 "It must be possible to read config properties from the old file format");
         assertTrue(
                 configuration.exists("showInternalStats"),
-                "It must be possible to read config properties from the old file format");
-        assertTrue(
-                configuration.exists("doUpnp"),
                 "It must be possible to read config properties from the old file format");
         assertTrue(
                 configuration.exists("useLoopbackIp"),
@@ -394,10 +389,6 @@ class ConfigApiTests {
                 "It must be possible to read config properties from the old file format");
 
         assertEquals(
-                1,
-                configuration.getValue("maxOutgoingSyncs", Integer.class),
-                "It must be possible to read config properties from the old file format");
-        assertEquals(
                 0,
                 configuration.getValue("state.saveStatePeriod", Integer.class),
                 "It must be possible to read config properties from the old file format");
@@ -405,10 +396,8 @@ class ConfigApiTests {
                 1,
                 configuration.getValue("showInternalStats", Integer.class),
                 "It must be possible to read config properties from the old file format");
-        assertFalse(
-                configuration.getValue("doUpnp", Boolean.class),
-                "It must be possible to read config properties from the old file format");
-        assertFalse(
+        assertNotEquals(
+                Boolean.TRUE,
                 configuration.getValue("useLoopbackIp", Boolean.class),
                 "It must be possible to read config properties from the old file format");
         assertEquals(

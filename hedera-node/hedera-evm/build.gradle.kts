@@ -16,21 +16,27 @@
 
 plugins {
     id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.maven-publish")
+    id("com.hedera.hashgraph.evm-maven-publish")
 }
 
 group = "com.hedera.evm"
 
 description = "Hedera EVM - API"
 
-dependencies {
-    javaModuleDependencies {
-        annotationProcessor(gav("dagger.compiler"))
+mainModuleInfo { annotationProcessor("dagger.compiler") }
 
-        testImplementation(gav("org.hyperledger.besu.plugin.api"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.mockito"))
-        testImplementation(gav("org.mockito.junit.jupiter"))
-        testRuntimeOnly(gav("org.mockito.inline"))
+testModuleInfo {
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
+    runtimeOnly("org.mockito.inline")
+}
+
+publishing {
+    publications {
+        named<MavenPublication>("maven") {
+            groupId = "com.hedera.evm"
+            artifactId = "hedera-evm"
+        }
     }
 }

@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,6 +46,7 @@ import java.util.concurrent.Future;
  * @param txInfo Information about the transaction that is being handled. If the transaction was not parseable, then
  *               this will be null, and an appropriate error status will be set.
  * @param requiredKeys The set of cryptographic keys that are required to be present.
+ * @param hollowAccounts The set of required hollow accounts to be finalized
  * @param verificationResults A map of {@link Future<SignatureVerificationFuture>} yielding the
  *                            {@link SignatureVerificationFuture} for a given cryptographic key. Ony cryptographic keys
  *                            are used as the key of this map.
@@ -58,6 +60,7 @@ public record PreHandleResult(
         @NonNull ResponseCodeEnum responseCode,
         @Nullable TransactionInfo txInfo,
         @Nullable Set<Key> requiredKeys,
+        @Nullable Set<Account> hollowAccounts,
         @Nullable Map<Key, SignatureVerificationFuture> verificationResults,
         @Nullable PreHandleResult innerResult,
         long configVersion) {
@@ -71,8 +74,12 @@ public record PreHandleResult(
         /** When the pre-handle fails due to node due diligence failures. */
         NODE_DUE_DILIGENCE_FAILURE,
         /**
-         * When the pre-handle fails because the combination of state and transaction is invalid, such as insufficient
-         * balance, missing account, or invalid transaction body data.
+         * When the pre-handle fails because the payer was either unwilling (or unable) to pay the service fee.
+         */
+        PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE,
+        /**
+         * When the pre-handle fails for any case of the combination of state and transaction being invalid,
+         * such a missing account or invalid transaction body data.
          */
         PRE_HANDLE_FAILURE,
         /**
@@ -102,7 +109,7 @@ public record PreHandleResult(
     @NonNull
     public static PreHandleResult unknownFailure() {
         return new PreHandleResult(
-                null, null, Status.UNKNOWN_FAILURE, UNKNOWN, null, null, null, null, UNKNOWN_VERSION);
+                null, null, Status.UNKNOWN_FAILURE, UNKNOWN, null, null, null, null, null, UNKNOWN_VERSION);
     }
 
     /**
@@ -122,7 +129,16 @@ public record PreHandleResult(
             @NonNull final ResponseCodeEnum responseCode,
             @Nullable final TransactionInfo txInfo) {
         return new PreHandleResult(
-                node, null, Status.NODE_DUE_DILIGENCE_FAILURE, responseCode, txInfo, null, null, null, UNKNOWN_VERSION);
+                node,
+                null,
+                Status.NODE_DUE_DILIGENCE_FAILURE,
+                responseCode,
+                txInfo,
+                null,
+                null,
+                null,
+                null,
+                UNKNOWN_VERSION);
     }
 
     /**
@@ -143,6 +159,7 @@ public record PreHandleResult(
             @NonNull final ResponseCodeEnum responseCode,
             @NonNull final TransactionInfo txInfo,
             @Nullable Set<Key> requiredKeys,
+            @Nullable Set<Account> hollowAccounts,
             @Nullable Map<Key, SignatureVerificationFuture> verificationResults) {
         return new PreHandleResult(
                 payer,
@@ -151,6 +168,7 @@ public record PreHandleResult(
                 responseCode,
                 txInfo,
                 requiredKeys,
+                hollowAccounts,
                 verificationResults,
                 null,
                 UNKNOWN_VERSION);

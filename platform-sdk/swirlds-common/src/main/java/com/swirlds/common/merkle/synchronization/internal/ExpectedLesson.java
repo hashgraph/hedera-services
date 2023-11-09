@@ -16,9 +16,7 @@
 
 package com.swirlds.common.merkle.synchronization.internal;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
-import org.apache.commons.lang3.builder.ToStringBuilder;
+import com.swirlds.base.utility.ToStringBuilder;
 
 /**
  * This object is used to track a node for which the learner is expecting data.
@@ -98,11 +96,11 @@ public class ExpectedLesson<T> {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("already present", nodeAlreadyPresent)
                 .append("parent", parent)
                 .append("position", positionInParent)
                 .append("original", originalNode)
-                .build();
+                .toString();
     }
 }

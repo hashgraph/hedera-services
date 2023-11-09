@@ -35,7 +35,7 @@ public class AppClient extends Thread {
     byte[] submittedBytes = null;
     PayloadCfgSimple config;
     /** generate different payload bytes according to config */
-    private TransactionPool transactionPool;
+    private PttTransactionPool pttTransactionPool;
 
     private TransactionSubmitter submitter;
     private ExpectedFCMFamily expectedFCMFamily;
@@ -71,7 +71,7 @@ public class AppClient extends Thread {
             expectedFCMFamily = state.getStateExpectedMap();
         }
 
-        transactionPool = new TransactionPool(
+        pttTransactionPool = new PttTransactionPool(
                 platform,
                 platform.getSelfId().id(),
                 payloadConfig,

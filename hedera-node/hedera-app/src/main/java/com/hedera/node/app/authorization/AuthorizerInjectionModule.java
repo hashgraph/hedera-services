@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.authorization;
 
+import com.hedera.node.app.spi.authorization.Authorizer;
 import dagger.Binds;
 import dagger.Module;
 import edu.umd.cs.findbugs.annotations.NonNull;

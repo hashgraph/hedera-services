@@ -33,12 +33,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
@@ -50,6 +53,9 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicH
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -98,6 +104,12 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
     @Mock
     private PropertySource compositeProps;
 
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private FeeAccumulator feeAccumulator;
+
     private StandardizedAttributeValidator standardizedAttributeValidator;
 
     private ConsensusUpdateTopicHandler subject;
@@ -111,6 +123,11 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         standardizedAttributeValidator =
                 new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         subject = new ConsensusUpdateTopicHandler();
+
+        lenient().when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
+        lenient().when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
+        lenient().when(feeCalculator.calculate()).thenReturn(Fees.FREE);
+        lenient().when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
     }
 
     @Test
@@ -192,7 +209,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
     @Test
     @DisplayName("Delete admin key with Key.DEFAULT failed")
     void appliesDeleteAdminKeyWithDEFAULTKey() {
-        givenValidTopic(AccountID.newBuilder().accountNum(0).build(), false);
+        givenValidTopic(null, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var op = OP_BUILDER.topicID(topicId).adminKey(A_NONNULL_KEY).build();
@@ -212,7 +229,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
     @Test
     @DisplayName("Delete admin key with empty KeyList succeeded")
     void appliesDeleteAdminKeyWithEmptyKeyList() {
-        givenValidTopic(AccountID.newBuilder().accountNum(0).build(), false);
+        givenValidTopic(null, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var op = OP_BUILDER.topicID(topicId).adminKey(EMPTY_KEYLIST).build();
@@ -232,7 +249,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
     @Test
     @DisplayName("Delete admin key with empty Threshold key failed")
     void appliesDeleteEmptyAdminKeyWithThresholdKeyList() {
-        givenValidTopic(AccountID.newBuilder().accountNum(0).build(), false);
+        givenValidTopic(null, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var op = OP_BUILDER.topicID(topicId).adminKey(EMPTY_THRESHOLD_KEY).build();
@@ -331,7 +348,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         final var impliedMeta = new ExpiryMeta(123L, NA, null);
         willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME))
                 .given(expiryValidator)
-                .resolveUpdateAttempt(currentExpiryMeta, impliedMeta);
+                .resolveUpdateAttempt(currentExpiryMeta, impliedMeta, false);
 
         // expect:
         assertFailsWith(ResponseCodeEnum.INVALID_EXPIRATION_TIME, () -> subject.handle(handleContext));
@@ -349,14 +366,14 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         final var impliedMeta = new ExpiryMeta(123L, NA, null);
-        given(expiryValidator.resolveUpdateAttempt(currentExpiryMeta, impliedMeta))
+        given(expiryValidator.resolveUpdateAttempt(currentExpiryMeta, impliedMeta, false))
                 .willReturn(new ExpiryMeta(
                         123L, currentExpiryMeta.autoRenewPeriod(), currentExpiryMeta.autoRenewAccountId()));
 
         subject.handle(handleContext);
 
         final var newTopic = writableTopicState.get(topicId);
-        assertEquals(123L, newTopic.expiry());
+        assertEquals(123L, newTopic.expirationSecond());
     }
 
     @Test
@@ -374,7 +391,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         final var impliedMeta = new ExpiryMeta(NA, 123L, null);
         willThrow(new HandleException(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE))
                 .given(expiryValidator)
-                .resolveUpdateAttempt(currentExpiryMeta, impliedMeta);
+                .resolveUpdateAttempt(currentExpiryMeta, impliedMeta, false);
 
         // expect:
         assertFailsWith(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.handle(handleContext));
@@ -392,7 +409,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         final var impliedMeta = new ExpiryMeta(NA, 123L, null);
-        given(expiryValidator.resolveUpdateAttempt(currentExpiryMeta, impliedMeta))
+        given(expiryValidator.resolveUpdateAttempt(currentExpiryMeta, impliedMeta, false))
                 .willReturn(new ExpiryMeta(currentExpiryMeta.expiry(), 123L, null));
 
         subject.handle(handleContext);
@@ -414,7 +431,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         final var impliedMeta = new ExpiryMeta(NA, NA, autoRenewId);
         willThrow(new HandleException(INVALID_AUTORENEW_ACCOUNT))
                 .given(expiryValidator)
-                .resolveUpdateAttempt(currentExpiryMeta, impliedMeta);
+                .resolveUpdateAttempt(currentExpiryMeta, impliedMeta, false);
 
         // expect:
         assertFailsWith(INVALID_AUTORENEW_ACCOUNT, () -> subject.handle(handleContext));
@@ -436,7 +453,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
                 NA,
                 NA,
                 AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(666).build());
-        given(expiryValidator.resolveUpdateAttempt(currentExpiryMeta, impliedMeta))
+        given(expiryValidator.resolveUpdateAttempt(currentExpiryMeta, impliedMeta, false))
                 .willReturn(new ExpiryMeta(
                         currentExpiryMeta.expiry(),
                         currentExpiryMeta.autoRenewPeriod(),

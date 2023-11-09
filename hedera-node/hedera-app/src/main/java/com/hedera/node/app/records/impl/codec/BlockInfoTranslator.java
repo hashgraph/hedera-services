@@ -28,6 +28,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 public final class BlockInfoTranslator {
+    private BlockInfoTranslator() {
+        throw new IllegalStateException("Utility class");
+    }
 
     @NonNull
     /**

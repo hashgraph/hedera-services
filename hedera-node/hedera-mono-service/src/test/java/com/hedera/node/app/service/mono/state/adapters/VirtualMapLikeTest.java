@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.adapters;
 
+import static com.swirlds.common.io.utility.TemporaryFileBuilder.buildTemporaryDirectory;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.verify;
@@ -23,18 +24,16 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySerializer;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySupplier;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValueSupplier;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValueSerializer;
+import com.swirlds.base.utility.Pair;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
-import com.swirlds.jasperdb.files.DataFileCommon;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -89,19 +88,17 @@ class VirtualMapLikeTest {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private void setupRealAndSubject() throws IOException {
-        final var keySerializer = new EntityNumVirtualKeySerializer();
-        final var ds = new JasperDbBuilder()
-                .maxNumOfKeys(1_024)
-                .storageDir(TemporaryFileBuilder.buildTemporaryDirectory("jasperdb"))
-                .keySerializer(keySerializer)
-                .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
+        final var tableConfig = new MerkleDbTableConfig<>(
                         (short) 1,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        new EntityNumVirtualKeySupplier(),
+                        DigestType.SHA_384,
                         (short) 1,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        new ScheduleVirtualValueSupplier(),
-                        false));
+                        new EntityNumVirtualKeySerializer(),
+                        (short) 1,
+                        new ScheduleVirtualValueSerializer())
+                .maxNumberOfKeys(1_024);
+
+        final var ds = new MerkleDbDataSourceBuilder<>(buildTemporaryDirectory("merkleDbTest"), tableConfig);
+
         real = new VirtualMap<>("REAL", ds);
         subject = VirtualMapLike.from(real);
     }

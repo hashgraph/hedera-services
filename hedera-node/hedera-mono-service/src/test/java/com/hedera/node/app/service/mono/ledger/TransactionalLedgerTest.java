@@ -65,7 +65,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -765,17 +764,6 @@ class TransactionalLedgerTest {
         testLedger.commit();
 
         assertEquals(AMOUNT_EXCEEDS_ALLOWANCE, testLedger.validate(1L, scopedCheck));
-    }
-
-    @Test
-    void idSetPropagatesCallToEntities() {
-        setupTestLedger();
-
-        final Set<Long> idSet = Set.of(1L, 2L, 3L);
-        given(backingTestAccounts.idSet()).willReturn(idSet);
-
-        assertEquals(idSet, testLedger.idSet());
-        verify(backingTestAccounts).idSet();
     }
 
     @Test

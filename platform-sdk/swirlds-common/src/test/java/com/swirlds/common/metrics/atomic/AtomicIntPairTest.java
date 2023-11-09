@@ -18,7 +18,7 @@ package com.swirlds.common.metrics.atomic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.apache.commons.lang3.tuple.Pair;
+import com.swirlds.base.utility.Pair;
 import org.junit.jupiter.api.Test;
 
 class AtomicIntPairTest {

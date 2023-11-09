@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.node.app.spi.fees.Fees;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -40,4 +41,8 @@ public abstract class PaidQueryHandler implements QueryHandler {
         requireNonNull(responseType);
         return COST_ANSWER == responseType;
     }
+
+    @NonNull
+    @Override
+    public abstract Fees computeFees(@NonNull final QueryContext queryContext);
 }

@@ -34,12 +34,14 @@ import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.WindowConstants;
 import javax.swing.text.DefaultCaret;
-import org.apache.commons.lang3.SystemUtils;
 
 /**
  * Miscellaneous GUI utility methods.
  */
 public final class GuiUtils {
+
+    private static final boolean IS_WINDOWS =
+            System.getProperty("os.name").toLowerCase().contains("win");
 
     private GuiUtils() {}
 
@@ -127,8 +129,8 @@ public final class GuiUtils {
         // screen, whichever is likely to have the close button for the Browser window that lies behind the
         // Platform windows.
 
-        final int leftGap = (SystemUtils.IS_OS_WINDOWS ? 0 : 25); // extra space at left screen edge
-        final int rightGap = (SystemUtils.IS_OS_WINDOWS ? 50 : 0); // extra space at right screen edge
+        final int leftGap = (IS_WINDOWS ? 0 : 25); // extra space at left screen edge
+        final int rightGap = (IS_WINDOWS ? 50 : 0); // extra space at right screen edge
         final Rectangle screenSize =
                 GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
         final int contentWidth =

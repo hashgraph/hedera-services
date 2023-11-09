@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
@@ -64,18 +65,21 @@ public class CryptoHandlerTestBase {
     protected final Key key = A_COMPLEX_KEY;
     protected final Key otherKey = C_COMPLEX_KEY;
     protected final AccountID id = AccountID.newBuilder().accountNum(3).build();
+    protected final AccountID invalidId =
+            AccountID.newBuilder().accountNum(Long.MAX_VALUE).build();
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final Instant consensusInstant = Instant.ofEpochSecond(consensusTimestamp.seconds());
     protected final Key accountKey = A_COMPLEX_KEY;
     protected final HederaKey accountHederaKey = asHederaKey(accountKey).get();
-    protected final Long accountNum = id.accountNum();
+    protected final Long accountNum = id.accountNumOrThrow();
 
-    private static final Key aPrimitiveKey = Key.newBuilder()
+    protected static final Key aPrimitiveKey = Key.newBuilder()
             .ed25519(Bytes.wrap("01234567890123456789012345678901"))
             .build();
-    private static final Bytes edKeyAlias = Bytes.wrap(asBytes(Key.PROTOBUF, aPrimitiveKey));
-    protected final AccountID alias = AccountID.newBuilder().alias(edKeyAlias).build();
+    protected static final ProtoBytes edKeyAlias = new ProtoBytes(Bytes.wrap(asBytes(Key.PROTOBUF, aPrimitiveKey)));
+    protected final AccountID alias =
+            AccountID.newBuilder().alias(edKeyAlias.value()).build();
     protected final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e26");
     protected final ContractID contractAlias =
             ContractID.newBuilder().evmAddress(Bytes.wrap(evmAddress)).build();
@@ -109,10 +113,10 @@ public class CryptoHandlerTestBase {
             .build();
     protected static final long defaultAutoRenewPeriod = 7200000L;
     protected static final long payerBalance = 10_000L;
-    protected MapReadableKVState<Bytes, AccountID> readableAliases;
+    protected MapReadableKVState<ProtoBytes, AccountID> readableAliases;
 
     protected MapReadableKVState<AccountID, Account> readableAccounts;
-    protected MapWritableKVState<Bytes, AccountID> writableAliases;
+    protected MapWritableKVState<ProtoBytes, AccountID> writableAliases;
     protected MapWritableKVState<AccountID, Account> writableAccounts;
     protected Account account;
     protected ReadableAccountStore readableStore;
@@ -159,9 +163,9 @@ public class CryptoHandlerTestBase {
         readableAliases = emptyReadableAliasStateBuilder().build();
         writableAliases = emptyWritableAliasStateBuilder().build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        given(readableStates.<Bytes, AccountID>get(ALIASES)).willReturn(readableAliases);
+        given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        given(writableStates.<Bytes, AccountID>get(ALIASES)).willReturn(writableAliases);
+        given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         readableStore = new ReadableAccountStoreImpl(readableStates);
         writableStore = new WritableAccountStore(writableStates);
     }
@@ -172,7 +176,7 @@ public class CryptoHandlerTestBase {
         readableAliases = readableAliasState();
         writableAliases = emptyWritableAliasStateBuilder().build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        given(readableStates.<Bytes, AccountID>get(ALIASES)).willReturn(readableAliases);
+        given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         readableStore = new ReadableAccountStoreImpl(readableStates);
         writableStore = new WritableAccountStore(writableStates);
     }
@@ -183,9 +187,9 @@ public class CryptoHandlerTestBase {
         readableAliases = readableAliasState();
         writableAliases = writableAliasesStateWithOneKey();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        given(readableStates.<Bytes, AccountID>get(ALIASES)).willReturn(readableAliases);
+        given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        given(writableStates.<Bytes, AccountID>get(ALIASES)).willReturn(writableAliases);
+        given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         readableStore = new ReadableAccountStoreImpl(readableStates);
         writableStore = new WritableAccountStore(writableStates);
     }
@@ -209,18 +213,18 @@ public class CryptoHandlerTestBase {
     }
 
     @NonNull
-    protected MapWritableKVState<Bytes, AccountID> writableAliasesStateWithOneKey() {
+    protected MapWritableKVState<ProtoBytes, AccountID> writableAliasesStateWithOneKey() {
         return emptyWritableAliasStateBuilder()
-                .value(alias.alias(), asAccount(accountNum))
-                .value(contractAlias.evmAddress(), asAccount(contract.contractNum()))
+                .value(new ProtoBytes(alias.alias()), asAccount(accountNum))
+                .value(new ProtoBytes(contractAlias.evmAddress()), asAccount(contract.contractNum()))
                 .build();
     }
 
     @NonNull
-    protected MapReadableKVState<Bytes, AccountID> readableAliasState() {
+    protected MapReadableKVState<ProtoBytes, AccountID> readableAliasState() {
         return emptyReadableAliasStateBuilder()
-                .value(alias.alias(), asAccount(accountNum))
-                .value(contractAlias.evmAddress(), asAccount(contract.contractNum()))
+                .value(new ProtoBytes(alias.alias()), asAccount(accountNum))
+                .value(new ProtoBytes(contractAlias.evmAddress()), asAccount(contract.contractNum()))
                 .build();
     }
 
@@ -235,12 +239,12 @@ public class CryptoHandlerTestBase {
     }
 
     @NonNull
-    protected MapWritableKVState.Builder<Bytes, AccountID> emptyWritableAliasStateBuilder() {
+    protected MapWritableKVState.Builder<ProtoBytes, AccountID> emptyWritableAliasStateBuilder() {
         return MapWritableKVState.builder(ALIASES);
     }
 
     @NonNull
-    protected MapReadableKVState.Builder<Bytes, AccountID> emptyReadableAliasStateBuilder() {
+    protected MapReadableKVState.Builder<ProtoBytes, AccountID> emptyReadableAliasStateBuilder() {
         return MapReadableKVState.builder(ALIASES);
     }
 

@@ -42,6 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -79,6 +80,7 @@ public class CryptoDeleteSuite extends HapiSuite {
                 canQueryForRecordsWithDeletedPayers());
     }
 
+    @HapiTest
     private HapiSpec deletedAccountCannotBePayer() {
         // Account Names
         String SUBMITTING_NODE_ACCOUNT = "0.0.3";
@@ -109,6 +111,7 @@ public class CryptoDeleteSuite extends HapiSuite {
                                 .logged());
     }
 
+    @HapiTest
     private HapiSpec canQueryForRecordsWithDeletedPayers() {
         final var stillQueryableTxn = "stillQueryableTxn";
         return defaultHapiSpec("CanQueryForRecordsWithDeletedPayers")
@@ -121,6 +124,7 @@ public class CryptoDeleteSuite extends HapiSuite {
                 .then(getTxnRecord(stillQueryableTxn).hasPriority(recordWith().payer(ACCOUNT_TO_BE_DELETED)));
     }
 
+    @HapiTest
     private HapiSpec fundsTransferOnDelete() {
         long B = HapiSpecSetup.getDefaultInstance().defaultBalance();
 
@@ -139,6 +143,7 @@ public class CryptoDeleteSuite extends HapiSuite {
                                                 tinyBarsFromTo(ACCOUNT_TO_BE_DELETED, TRANSFER_ACCOUNT, B)))));
     }
 
+    @HapiTest
     private HapiSpec cannotDeleteAccountsWithNonzeroTokenBalances() {
         return defaultHapiSpec("CannotDeleteAccountsWithNonzeroTokenBalances")
                 .given(
@@ -176,6 +181,7 @@ public class CryptoDeleteSuite extends HapiSuite {
                         cryptoDelete(TOKEN_TREASURY));
     }
 
+    @HapiTest
     private HapiSpec cannotDeleteAlreadyDeletedAccount() {
         return defaultHapiSpec("CannotDeleteAlreadyDeletedAccount")
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED), cryptoCreate(TRANSFER_ACCOUNT))
@@ -187,6 +193,7 @@ public class CryptoDeleteSuite extends HapiSuite {
                         .hasKnownStatus(ACCOUNT_DELETED));
     }
 
+    @HapiTest
     private HapiSpec cannotDeleteAccountWithSameBeneficiary() {
         return defaultHapiSpec("CannotDeleteAccountWithSameBeneficiary")
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED))
@@ -196,6 +203,7 @@ public class CryptoDeleteSuite extends HapiSuite {
                         .hasPrecheck(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT));
     }
 
+    @HapiTest
     private HapiSpec cannotDeleteTreasuryAccount() {
         return defaultHapiSpec("CannotDeleteTreasuryAccount")
                 .given(cryptoCreate(TREASURY), cryptoCreate(TRANSFER_ACCOUNT))

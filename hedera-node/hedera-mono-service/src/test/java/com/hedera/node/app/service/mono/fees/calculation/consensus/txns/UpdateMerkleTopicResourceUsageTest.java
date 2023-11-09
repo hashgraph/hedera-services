@@ -17,17 +17,14 @@
 package com.hedera.node.app.service.mono.fees.calculation.consensus.txns;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.google.protobuf.StringValue;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
@@ -97,24 +94,6 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    void getFeeThrowsExceptionForBadTxBody() {
-        final var mockTxnBody = mock(TransactionBody.class);
-        given(mockTxnBody.hasConsensusUpdateTopic()).willReturn(false);
-
-        Exception exception =
-                assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
-        assertEquals("consensusUpdateTopic field not available for Fee Calculation", exception.getMessage());
-
-        exception =
-                assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(mockTxnBody, sigValueObj, view));
-        assertEquals("consensusUpdateTopic field not available for Fee Calculation", exception.getMessage());
-
-        given(mockTxnBody.hasConsensusUpdateTopic()).willReturn(true);
-        exception = assertThrows(IllegalStateException.class, () -> subject.usageGiven(mockTxnBody, sigValueObj, null));
-        assertEquals("No StateView present !!", exception.getMessage());
-    }
-
-    @Test
     void getFeeThrowsExceptionForBadKeys() throws InvalidKeyException, IllegalArgumentException {
         final var txnBody = makeTransactionBody(
                 topicId,
@@ -130,7 +109,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
         final var mockedJkey = mockStatic(JKey.class);
         mockedJkey.when(() -> JKey.mapJKey(any())).thenThrow(new InvalidKeyException());
 
-        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(txnBody, sigValueObj, view));
+        assertDoesNotThrow(() -> subject.usageGiven(txnBody, sigValueObj, view));
         assertThat(
                 logCaptor.warnLogs(),
                 Matchers.contains(Matchers.startsWith("Usage estimation unexpectedly failed for")));
@@ -138,7 +117,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    void updateToMissingTopic() throws InvalidKeyException, InvalidTxBodyException {
+    void updateToMissingTopic() throws InvalidKeyException {
         final var txBody = makeTransactionBody(
                 topicId,
                 defaultMemo,
@@ -193,7 +172,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
             @ConvertWith(RichInstantConverter.class) final RichInstant newExpirationTimestamp,
             final int expectedExtraBpt,
             final int expectedExtraServicesRbh)
-            throws InvalidTxBodyException, IllegalStateException {
+            throws IllegalStateException {
         final var merkleTopic =
                 new MerkleTopic(oldMemo, oldAdminKey, oldSubmitKey, 0, oldAutoRenewAccountId, oldExpirationTimestamp);
         final var txBody = makeTransactionBody(

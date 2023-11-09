@@ -29,7 +29,7 @@ import com.hedera.hapi.streams.SidecarMetadata;
 import com.hedera.hapi.streams.SidecarType;
 import com.hedera.hapi.streams.SignatureFile;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -278,7 +278,7 @@ public class RecordStreamV6Verifier {
             for (int i = 0; i < recordStreamItems.size(); i++) {
                 var item = recordStreamItems.get(i);
                 var expectedItem = transactionRecordList.get(i);
-                assertEquals(expectedItem.record(), item.record());
+                assertEquals(expectedItem.transactionRecord(), item.record());
                 assertEquals(expectedItem.transaction(), item.transaction());
             }
         }

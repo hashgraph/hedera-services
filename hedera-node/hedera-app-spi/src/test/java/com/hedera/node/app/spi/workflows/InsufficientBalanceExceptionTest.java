@@ -33,7 +33,7 @@ class InsufficientBalanceExceptionTest {
         // then
         assertThat(exception.responseCode()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
         assertThat(exception.getEstimatedFee()).isEqualTo(42L);
-        assertThat(exception.getMessage()).isNull();
+        assertThat(exception.getMessage()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED.protoName());
     }
 
     @SuppressWarnings({"ThrowableNotThrown", "ConstantConditions"})

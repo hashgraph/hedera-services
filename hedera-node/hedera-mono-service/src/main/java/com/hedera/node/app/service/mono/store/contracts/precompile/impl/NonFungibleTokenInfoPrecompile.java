@@ -67,7 +67,7 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
         final var nftID = NftID.newBuilder()
-                .setTokenId(tokenId)
+                .setTokenID(tokenId)
                 .setSerialNumber(serialNumber)
                 .build();
         final var nonFungibleTokenInfo =

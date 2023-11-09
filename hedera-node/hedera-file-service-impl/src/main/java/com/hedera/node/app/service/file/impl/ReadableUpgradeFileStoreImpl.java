@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.file.impl.FileServiceImpl.UPGRADE_FILE
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.hapi.node.state.primitive.ProtoBytes;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableQueueState;
@@ -44,7 +44,8 @@ import java.util.Objects;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
 public class ReadableUpgradeFileStoreImpl implements ReadableUpgradeFileStore {
-    private final FileID UPGRADE_FILE_ID = new FileID(0, 0, 150);
+
+    private static final FileID UPGRADE_FILE_ID = new FileID(0, 0, 150);
 
     /** The underlying data storage class that holds the file data. */
     private final ReadableQueueState<ProtoBytes> upgradeState;

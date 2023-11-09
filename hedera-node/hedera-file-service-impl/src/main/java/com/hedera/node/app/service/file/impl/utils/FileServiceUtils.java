@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.file.impl.utils;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_CONTENT_EMPTY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
@@ -43,6 +44,10 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /** Provides utility methods for file operations. */
 public class FileServiceUtils {
 
+    private FileServiceUtils() {
+        // Utility class
+    }
+
     /**
      * Validates the content of a file that it is not empty and not above max size 1MB.
      *
@@ -51,10 +56,6 @@ public class FileServiceUtils {
      */
     public static void validateContent(@NonNull byte[] content, @NonNull FilesConfig fileServiceConfig) {
         var contentLength = content.length;
-
-        if (contentLength <= 0) {
-            throw new HandleException(FILE_CONTENT_EMPTY);
-        }
 
         if (contentLength > fileServiceConfig.maxSizeKb() * 1024L) {
             throw new HandleException(MAX_FILE_SIZE_EXCEEDED);
@@ -66,10 +67,9 @@ public class FileServiceUtils {
      *
      * @param fileId the file id to validate and to fetch the metadata
      * @param fileStore the file store to fetch the metadata of specified file id
-     * @return the file metadata of specific file id
      * @throws PreCheckException if the file id is invalid or the file does not exist
      */
-    public static @NonNull FileMetadata preValidate(
+    public static void preValidate(
             @Nullable final FileID fileId,
             @NonNull final ReadableFileStore fileStore,
             @NonNull final PreHandleContext context,
@@ -81,16 +81,14 @@ public class FileServiceUtils {
             throw new PreCheckException(INVALID_FILE_ID);
         }
 
-        final var fileMeta = fileStore.getFileMetadata(fileId);
-        mustExist(fileMeta, INVALID_FILE_ID);
+        final var fileConfig = context.configuration().getConfigData(FilesConfig.class);
 
-        final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-        // we cannot delete system files
-        if (fileId.fileNum() <= ledgerConfig.numReservedSystemEntities() && isDelete) {
-            throw new PreCheckException(INVALID_FILE_ID);
+        // @future('8172'): check if upgrade file exist after modularization is done
+        FileMetadata fileMeta = null;
+        if (fileId.fileNum() != fileConfig.upgradeFileNumber()) {
+            fileMeta = fileStore.getFileMetadata(fileId);
+            mustExist(fileMeta, INVALID_FILE_ID);
         }
-
-        return fileMeta;
     }
 
     /**
@@ -101,9 +99,8 @@ public class FileServiceUtils {
      * @param context the prehandle context for the transaction.
      */
     public static void validateAndAddRequiredKeys(
-            @Nullable final File file,
-            @Nullable final KeyList transactionKeys,
-            @NonNull final PreHandleContext context) {
+            @Nullable final File file, @Nullable final KeyList transactionKeys, @NonNull final PreHandleContext context)
+            throws PreCheckException {
         if (file != null) {
             KeyList fileKeyList = file.keys();
 
@@ -117,6 +114,28 @@ public class FileServiceUtils {
         if (transactionKeys != null && transactionKeys.hasKeys()) {
             for (final Key key : transactionKeys.keys()) {
                 context.requireKey(key);
+            }
+        }
+    }
+
+    /**
+     * The function is unique for File delete Pre-handle validates the keys.
+     * Then it wraps the file Keylist into thresholds adds them to the context.
+     *
+     * @param file file that will be checked for required keys
+     * @param context the prehandle context for the transaction.
+     */
+    public static void validateAndAddRequiredKeysForDelete(
+            @Nullable final File file, @NonNull final PreHandleContext context) throws PreCheckException {
+        if (file != null) {
+            KeyList fileKeyList = file.keys();
+
+            if (fileKeyList != null && fileKeyList.hasKeys()) {
+                // this threshold created to solve the issue of the file delete that can be deleted using one of the
+                // keys in the keylist that's why it is wrapped in threshold key with threshold 1
+                ThresholdKey syntheticKey =
+                        ThresholdKey.newBuilder().threshold(1).keys(fileKeyList).build();
+                context.requireKey(Key.newBuilder().thresholdKey(syntheticKey).build());
             }
         }
     }
@@ -143,7 +162,7 @@ public class FileServiceUtils {
             final boolean canBeDeleted) {
 
         if (fileId.fileNum() <= ledgerConfig.numReservedSystemEntities()) {
-            throw new HandleException(INVALID_FILE_ID);
+            throw new HandleException(ENTITY_NOT_ALLOWED_TO_DELETE);
         }
 
         var optionalFile = fileStore.get(fileId);
@@ -154,7 +173,7 @@ public class FileServiceUtils {
 
         final var file = optionalFile.get();
 
-        if (!file.hasKeys() || file.keys().keys().isEmpty()) {
+        if (!file.hasKeys() || !file.keys().hasKeys() || file.keys().keys().isEmpty()) {
             // @todo('protobuf change needed') change to immutable file response code
             throw new HandleException(UNAUTHORIZED);
         }

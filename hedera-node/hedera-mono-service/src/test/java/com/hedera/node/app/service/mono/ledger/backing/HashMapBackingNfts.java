@@ -20,7 +20,6 @@ import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class HashMapBackingNfts implements BackingStore<NftId, UniqueTokenAdapter> {
     private Map<NftId, UniqueTokenAdapter> nfts = new HashMap<>();
@@ -48,11 +47,6 @@ public class HashMapBackingNfts implements BackingStore<NftId, UniqueTokenAdapte
     @Override
     public boolean contains(NftId id) {
         return nfts.containsKey(id);
-    }
-
-    @Override
-    public Set<NftId> idSet() {
-        return nfts.keySet();
     }
 
     @Override

@@ -19,7 +19,6 @@ package com.hedera.node.app.service.mono.fees.calculation.consensus.txns;
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee;
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;
@@ -53,11 +52,7 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
 
     @Override
     public FeeData usageGiven(
-            @Nullable final TransactionBody txnBody, final SigValueObj sigUsage, @Nullable final StateView view)
-            throws InvalidTxBodyException, IllegalStateException {
-        if (txnBody == null || !txnBody.hasConsensusUpdateTopic()) {
-            throw new InvalidTxBodyException("consensusUpdateTopic field not available for Fee Calculation");
-        }
+            @Nullable final TransactionBody txnBody, final SigValueObj sigUsage, @Nullable final StateView view) {
         if (view == null) {
             throw new IllegalStateException("No StateView present !!");
         }
@@ -70,8 +65,7 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
     public FeeData usageGivenExplicit(
             @NonNull final TransactionBody txnBody,
             @NonNull final SigValueObj sigUsage,
-            @Nullable final MerkleTopic merkleTopic)
-            throws InvalidTxBodyException {
+            @Nullable final MerkleTopic merkleTopic) {
         long rbsIncrease = 0;
         if (merkleTopic != null && merkleTopic.hasAdminKey()) {
             final var expiry = Timestamp.newBuilder()
@@ -86,9 +80,9 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
                         merkleTopic.hasAutoRenewAccountId(),
                         expiry,
                         txnBody.getConsensusUpdateTopic());
-            } catch (final InvalidKeyException illegal) {
-                log.warn("Usage estimation unexpectedly failed for {}!", txnBody, illegal);
-                throw new InvalidTxBodyException(illegal);
+            } catch (final InvalidKeyException ignore) {
+                // The key was validated before setting on MerkleTopic, so this should never happen
+                log.warn("Usage estimation unexpectedly failed for {}!", txnBody, ignore);
             }
         }
         return getConsensusUpdateTopicFee(txnBody, rbsIncrease, sigUsage);

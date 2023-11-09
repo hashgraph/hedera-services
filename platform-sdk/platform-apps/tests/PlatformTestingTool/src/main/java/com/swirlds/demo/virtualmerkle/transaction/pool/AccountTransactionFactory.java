@@ -18,6 +18,7 @@ package com.swirlds.demo.virtualmerkle.transaction.pool;
 
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 import com.swirlds.demo.platform.HotspotConfiguration;
 import com.swirlds.demo.platform.fs.stresstest.proto.CreateAccount;
@@ -33,7 +34,6 @@ import com.swirlds.merkle.map.test.lifecycle.TransactionType;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import java.time.Instant;
 import java.util.ArrayList;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * This class is responsible to generate all the account transactions

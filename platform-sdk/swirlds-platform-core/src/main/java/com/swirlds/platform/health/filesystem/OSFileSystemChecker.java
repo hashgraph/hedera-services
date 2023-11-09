@@ -20,9 +20,9 @@ import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 import static com.swirlds.platform.health.OSHealthCheckUtils.reportHeader;
 
 import com.swirlds.common.config.OSHealthCheckConfig;
-import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.units.UnitConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -30,15 +30,16 @@ import java.util.concurrent.TimeUnit;
  * Performs file system checks and writes the report to a {@link StringBuilder}.
  */
 public final class OSFileSystemChecker {
-    private final PathsConfig pathsConfig;
+
+    private final Path configPath;
 
     /**
      * Construct a new {@link OSFileSystemChecker} instance.
      *
-     * @param pathsConfig configuration for paths from the platform
+     * @param configPath the path to config.txt
      */
-    public OSFileSystemChecker(@NonNull PathsConfig pathsConfig) {
-        this.pathsConfig = Objects.requireNonNull(pathsConfig, "pathsConfig must not be null");
+    public OSFileSystemChecker(@NonNull final Path configPath) {
+        this.configPath = Objects.requireNonNull(configPath);
     }
 
     public boolean performFileSystemCheck(
@@ -48,7 +49,7 @@ public final class OSFileSystemChecker {
 
         try {
             final OSFileSystemCheck.Report fileSystemReport =
-                    OSFileSystemCheck.execute(pathsConfig.getConfigPath(), osHealthConfig.fileReadTimeoutMillis());
+                    OSFileSystemCheck.execute(configPath, osHealthConfig.fileReadTimeoutMillis());
             return appendReport(sb, fileSystemReport, osHealthConfig.maxFileReadMillis());
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -59,12 +60,9 @@ public final class OSFileSystemChecker {
     /**
      * Append the results of the file system check report to the string builder.
      *
-     * @param sb
-     * 		the string builder to append to
-     * @param fileSystemReport
-     * 		the file system check report
-     * @param maxFileReadMillis
-     * 		the maximum number of millis the file read may take before it is considered failed
+     * @param sb                the string builder to append to
+     * @param fileSystemReport  the file system check report
+     * @param maxFileReadMillis the maximum number of millis the file read may take before it is considered failed
      * @return {@code true} if the check passed, {@code false} otherwise
      */
     private boolean appendReport(

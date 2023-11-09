@@ -21,13 +21,17 @@ import static com.hedera.node.app.service.token.impl.test.handlers.transfer.Acco
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.FixedFee;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
@@ -35,6 +39,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessm
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
+import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +53,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CustomFeeAssessmentStepTest extends StepsBase {
     private TransferContextImpl transferContext;
     private CustomFeeAssessmentStep subject;
+    private Token fungibleWithNoKyc;
+    private Token nonFungibleWithNoKyc;
 
     @BeforeEach
     public void setUp() {
@@ -58,7 +65,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         givenTxn();
         given(handleContext.body()).willReturn(txn);
         given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
-        givenAutoCreationDispatchEffects();
+        givenAutoCreationDispatchEffects(payerId);
 
         transferContext = new TransferContextImpl(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
@@ -66,7 +73,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
 
         final var replacedOp = getReplacedOp();
-        subject = new CustomFeeAssessmentStep(replacedOp, transferContext);
+        subject = new CustomFeeAssessmentStep(replacedOp);
     }
 
     @Test
@@ -118,8 +125,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         final var tokensReceiver = asAccount(tokenReceiver);
         final var customfees = List.of(withFixedFee(htsFixedFee));
         writableTokenStore.put(
-                fungibleToken.copyBuilder().customFees(customfees).build());
-        writableTokenStore.put(nonFungibleToken
+                fungibleWithNoKyc.copyBuilder().customFees(customfees).build());
+        writableTokenStore.put(nonFungibleWithNoKyc
                 .copyBuilder()
                 .customFees(List.of(withRoyaltyFee(
                         royaltyFee.copyBuilder().fallbackFee(htsFixedFee).build())))
@@ -309,8 +316,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                         fractionalFee.copyBuilder().netOfTransfers(true).build()));
         // fractional fee with self denomination will modify given transaction
         writableTokenStore.put(
-                fungibleToken.copyBuilder().customFees(customfees).build());
-        writableTokenStore.put(nonFungibleToken
+                fungibleWithNoKyc.copyBuilder().customFees(customfees).build());
+        writableTokenStore.put(nonFungibleWithNoKyc
                 .copyBuilder()
                 .customFees(List.of(withRoyaltyFee(
                         royaltyFee.copyBuilder().fallbackFee(htsFixedFee).build())))
@@ -370,7 +377,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                 .build();
         givenDifferentTxn(body, payerId);
 
-        writableTokenStore.put(fungibleToken
+        writableTokenStore.put(fungibleWithNoKyc
                 .copyBuilder()
                 .customFees(withFractionalFee(
                         fractionalFee.copyBuilder().netOfTransfers(true).build()))
@@ -419,16 +426,16 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     private void givenDifferentTxn(final CryptoTransferTransactionBody body, final AccountID payerId) {
         givenStoresAndConfig(handleContext);
         givenTxn(body, payerId);
-        given(handleContext.body()).willReturn(txn);
-        givenAutoCreationDispatchEffects();
+        givenAutoCreationDispatchEffects(payerId);
 
         transferContext = new TransferContextImpl(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+        System.out.println("Before " + handleContext.payer());
 
         final var replacedOp = getReplacedOp();
-        subject = new CustomFeeAssessmentStep(replacedOp, transferContext);
+        subject = new CustomFeeAssessmentStep(replacedOp);
     }
 
     private void assertThatTransferListContains(
@@ -456,8 +463,57 @@ class CustomFeeAssessmentStepTest extends StepsBase {
 
     CryptoTransferTransactionBody getReplacedOp() {
         givenAutoCreationDispatchEffects();
+
+        fungibleWithNoKyc = givenValidFungibleToken(ownerId, false, false, false, false, false);
+        writableTokenStore.put(fungibleWithNoKyc);
+        nonFungibleWithNoKyc = givenValidNonFungibleToken(false);
+        writableTokenStore.put(nonFungibleWithNoKyc);
+        final var fungibleWithNoKycB = fungibleTokenB
+                .copyBuilder()
+                .kycKey((Key) null)
+                .tokenId(fungibleTokenIDB)
+                .build();
+        writableTokenStore.put(fungibleWithNoKycB);
+
         ensureAliasesStep.doIn(transferContext);
         associateTokenRecepientsStep.doIn(transferContext);
+
+        final var tokenRel = writableTokenRelStore.get(asAccount(tokenReceiver), fungibleWithNoKyc.tokenId());
+        readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(
+                tokenRel.copyBuilder().balance(1000).build(),
+                tokenRel.copyBuilder()
+                        .accountId(payerId)
+                        .tokenId(fungibleTokenIDC)
+                        .balance(1000)
+                        .build(),
+                tokenRel.copyBuilder()
+                        .accountId(payerId)
+                        .tokenId(fungibleTokenId)
+                        .balance(1000)
+                        .build(),
+                tokenRel.copyBuilder()
+                        .accountId(ownerId)
+                        .tokenId(fungibleTokenIDB)
+                        .balance(1000)
+                        .build(),
+                tokenRel.copyBuilder()
+                        .accountId(ownerId)
+                        .tokenId(fungibleTokenId)
+                        .balance(2000)
+                        .build(),
+                tokenRel.copyBuilder()
+                        .accountId(payerId)
+                        .tokenId(fungibleTokenIDB)
+                        .balance(1000)
+                        .build(),
+                tokenRel.copyBuilder()
+                        .accountId(payerId)
+                        .tokenId(fungibleTokenId)
+                        .balance(1000)
+                        .build());
+
+        when(handleContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
+
         return replaceAliasesWithIDsInOp.replaceAliasesWithIds(body, transferContext);
     }
 }

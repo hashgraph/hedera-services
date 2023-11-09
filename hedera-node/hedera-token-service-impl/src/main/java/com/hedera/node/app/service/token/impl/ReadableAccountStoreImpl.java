@@ -16,16 +16,15 @@
 
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAliasSizeGreaterThanEvmAddress;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
+import static com.hedera.node.app.service.token.AliasUtils.asKeyFromAliasOrElse;
+import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
+import static com.hedera.node.app.service.token.AliasUtils.extractIdFromAddressAlias;
+import static com.hedera.node.app.service.token.AliasUtils.isEntityNumAlias;
+import static java.util.Objects.requireNonNull;
 
-import com.google.common.primitives.Longs;
-import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
-import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -38,19 +37,39 @@ import java.util.Optional;
  * Default implementation of {@link ReadableAccountStore}
  */
 public class ReadableAccountStoreImpl implements ReadableAccountStore {
-    private static final byte[] MIRROR_PREFIX = new byte[12];
-
-    static {
-        /* A placeholder to store the 12-byte prefix (4-byte shard and 8-byte realm) that marks an EVM
-         * address as a "mirror" address that follows immediately from a <shard>.<realm>.<num> id. */
-        System.arraycopy(Longs.toByteArray(StaticProperties.getShard()), 4, MIRROR_PREFIX, 0, 4);
-        System.arraycopy(Longs.toByteArray(StaticProperties.getRealm()), 0, MIRROR_PREFIX, 4, 8);
-    }
-
     /** The underlying data storage class that holds the account data. */
     private final ReadableKVState<AccountID, Account> accountState;
-    /** The underlying data storage class that holds the aliases data built from the state. */
-    private final ReadableKVState<Bytes, AccountID> aliases;
+    /**
+     * The underlying data storage class that holds the aliases data built from the state. An alias can only be defined
+     * at the time an account (or contract account) is created, and cannot be changed (except when the contract or
+     * account is deleted, we could remove it then).
+     *
+     * <p>An alias may either be:
+     * <ul>
+     *     <li>A "long-zero" address (sometimes called a "mirror" address). This form takes the [shard].[realm].[num]
+     *     and converts it into a single 20-byte long address. It is called "long-zero" because in the default network
+     *     where shard and realm are both 0, it looks like a lot of zeros followed by a few bytes of info. Long zero
+     *     aliases are not "real", they are not stored in this map, and they are not stored on accounts. They are
+     *     computed directly from the account ID.</li>
+     *     <li>An EVM address. This is always 20 bytes long. It could be used by accounts or contracts. It can be
+     *     specified as part of hollow-account creation or as part of a normal crypto-create transaction.</li>
+     *     <li>A protobuf-encoded key. The key can either be an ECDSA SECP256K1 key, or an ED25519 key (or in the future
+     *     we may support other types of keys). If, and only if, it is an ECDSA SECP256K1 key, we can extract an EVM
+     *     address from the key. Users can refer to their account using either the protobuf-encoded key alias, or
+     *     the corresponding EVM address in this one case.</li>
+     * </ul>
+     *
+     * <p>This alias map contains no mappings from long-zero to account ID. Since we can compute the account ID from a
+     * long-zero address, we don't need to store it in this map. If we did store it in this map, we would have an entry
+     * for every account, NFT, and other entity, which seems utterly wasteful.
+     *
+     * <p>This alias map will contain a mapping from EVM address to corresponding Account ID, whether the EVM address
+     * was the alias on the account, or was derived from an ECDSA SECP256K1 protobuf encoded key alias on the account.
+     *
+     * <p>This alias map will also contain the raw protobuf-encoded key alias, regardless of what type of
+     * protobuf-encoded key was used (ED25519 or ECDSA SECP256K1).
+     */
+    private final ReadableKVState<ProtoBytes, AccountID> aliases;
 
     /**
      * Create a new {@link ReadableAccountStoreImpl} instance.
@@ -62,16 +81,14 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
         this.aliases = states.get("ALIASES");
     }
 
+    /** Get the account state. Convenience method for auto-casting to the right kind of state (readable vs. writable) */
     protected <T extends ReadableKVState<AccountID, Account>> T accountState() {
         return (T) accountState;
     }
 
-    protected <T extends ReadableKVState<Bytes, AccountID>> T aliases() {
+    /** Get the alias state. Convenience method for auto-casting to the right kind of state (readable vs. writable) */
+    protected <T extends ReadableKVState<ProtoBytes, AccountID>> T aliases() {
         return (T) aliases;
-    }
-
-    public static boolean isMirror(final Bytes bytes) {
-        return bytes.matchesPrefix(MIRROR_PREFIX);
     }
 
     /**
@@ -79,19 +96,23 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
      *
      * @param accountID the {@code AccountID} which {@code Account is requested}
      * @return an {@link Optional} with the {@code Account}, if it was found, an empty {@code
-     *     Optional} otherwise
+     * Optional} otherwise
      */
     @Override
     @Nullable
     public Account getAccountById(@NonNull final AccountID accountID) {
-        final var account = getAccountLeaf(accountID);
-        return account == null ? null : account;
+        return getAccountLeaf(accountID);
     }
 
     @Override
     @Nullable
     public AccountID getAccountIDByAlias(@NonNull final Bytes alias) {
-        return aliases.get(alias);
+        return aliases.get(new ProtoBytes(alias));
+    }
+
+    @Override
+    public boolean containsAlias(@NonNull Bytes alias) {
+        return aliases.contains(new ProtoBytes(alias));
     }
 
     /* Helper methods */
@@ -105,95 +126,53 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
      */
     @Nullable
     protected Account getAccountLeaf(@NonNull final AccountID id) {
-        // Get the account number based on the account identifier. It may be null.
-        final var accountOneOf = id.account();
-        final Long accountNum =
-                switch (accountOneOf.kind()) {
-                    case ACCOUNT_NUM -> accountOneOf.as();
-                    case ALIAS -> {
-                        final Bytes alias = accountOneOf.as();
-                        if (isOfEvmAddressSize(alias) && isMirror(alias)) {
-                            yield fromMirror(alias);
-                        } else {
-                            final var entityNum = aliases.get(alias);
-                            yield entityNum == null ? 0L : entityNum.accountNum();
-                        }
-                    }
-                    case UNSET -> 0L;
-                };
+        // The Account ID may be aliased, in which case we need to convert it to a number-based account ID first.
+        requireNonNull(id);
+        final var accountId = unaliasedAccountId(id);
+        return accountId == null ? null : accountState.get(accountId);
+    }
 
-        return accountNum == null
-                ? null
-                : accountState.get(AccountID.newBuilder().accountNum(accountNum).build());
+    @Override
+    public long getNumberOfAccounts() {
+        return accountState.size();
     }
 
     /**
-     * Returns the contract leaf for the given contract id. If the contract doesn't exist returns
-     * {@code Optional.empty()}
+     * Given some {@link AccountID}, if it is an alias, then convert it to a number-based account ID. If it is not an
+     * alias, then just return it. If the given id is bogus, containing neither an account number nor an alias, or
+     * containing an alias that we simply don't know about, then return null.
      *
-     * @param id given contract number
-     * @return merkle leaf for the given contract number
+     * @param id The account ID that possibly has an alias to convert to an Account ID without an alias.
+     * @return The result, or null if the id is invalid or there is no known alias-to-account mapping for it.
      */
     @Nullable
-    private Account getContractLeaf(@NonNull final ContractID id) {
-        // Get the contract number based on the contract identifier. It may be null.
-        final var contractOneOf = id.contract();
-        final Long contractNum =
-                switch (contractOneOf.kind()) {
-                    case CONTRACT_NUM -> contractOneOf.as();
-                    case EVM_ADDRESS -> {
-                        // If the evm address is of "long-zero" format, then parse out the contract
-                        // num from those bytes
-                        final Bytes evmAddress = contractOneOf.as();
-                        if (isMirror(evmAddress)) {
-                            yield numOfMirror(evmAddress);
-                        }
+    protected AccountID unaliasedAccountId(@NonNull final AccountID id) {
+        final var accountOneOf = id.account();
+        return switch (accountOneOf.kind()) {
+            case ACCOUNT_NUM -> id;
+            case ALIAS -> {
+                // An alias may either be long-zero (in which case it isn't in our alias map), or it may be
+                // any other form of valid alias (in which case it will be in the map). So we do a quick check
+                // first to see if it is a valid long zero, and if not, then we look it up in the map.
+                final Bytes alias = accountOneOf.as();
+                if (isEntityNumAlias(alias)) {
+                    yield id.copyBuilder()
+                            .accountNum(extractIdFromAddressAlias(alias))
+                            .build();
+                }
 
-                        // The evm address is some kind of alias.
-                        var entityNum = aliases.get(evmAddress);
-
-                        // If we didn't find an alias, we will want to auto-create this account. But
-                        // we don't want to auto-create an account if there is already another
-                        // account in the system with the same EVM address that we would have auto-created.
-                        if (isAliasSizeGreaterThanEvmAddress(evmAddress) && entityNum == null) {
-                            // if we don't find entity num for key alias we can try to derive EVM
-                            // address from it and look it up
-                            final var evmKeyAliasAddress = keyAliasToEVMAddress(evmAddress);
-                            if (evmKeyAliasAddress != null) {
-                                entityNum = aliases.get(Bytes.wrap(evmKeyAliasAddress));
-                            }
-                        }
-                        yield entityNum == null ? 0L : entityNum.accountNum();
-                    }
-                    case UNSET -> 0L;
-                };
-
-        return contractNum == null
-                ? null
-                : accountState.get(
-                        AccountID.newBuilder().accountNum(contractNum).build());
-    }
-
-    private static long numFromEvmAddress(final Bytes bytes) {
-        return bytes.getLong(12);
-    }
-
-    private static long numOfMirror(final Bytes evmAddress) {
-        return evmAddress.getLong(12);
-    }
-
-    static Long fromMirror(final Bytes evmAddress) {
-        return numFromEvmAddress(evmAddress);
-    }
-
-    @Nullable
-    private static byte[] keyAliasToEVMAddress(final Bytes alias) {
-        // NOTE: This implementation should be fixed when we (finally!) remove
-        // JKey. The old JKey class needs a Google protobuf Key, so for now we
-        // delegate to AliasManager. But this should be changed, so we don't
-        // need AliasManager anymore.
-        final var buf = new byte[Math.toIntExact(alias.length())];
-        alias.getBytes(0, buf);
-        return AliasManager.keyAliasToEVMAddress(ByteString.copyFrom(buf));
+                // Since it wasn't long-zero, we will just look up in the aliases map. It may be an EVM address alias,
+                // in which case it is in the map, or it may be a protobuf-encoded key alias, in which case it *may*
+                // also be in the map. When someone gives us a protobuf-encoded ECDSA key, we store both the alias to
+                // the ECDSA key *and* the EVM address in the alias map. But if somebody only gives us the EVM address,
+                // we cannot compute the ECDSA key from it, so we only store the EVM address in the alias map. So if we
+                // do this look up and cannot find the answer, then we have to check if the key is an ECDSA key, and
+                // if it is, we have to compute the EVM address from it, and then look up the EVM address in the map.
+                final var found = aliases.get(new ProtoBytes(alias));
+                if (found != null) yield found;
+                yield aliases.get(new ProtoBytes(extractEvmAddress(asKeyFromAliasOrElse(alias, null))));
+            }
+            case UNSET -> null;
+        };
     }
 }

@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -64,6 +65,7 @@ public class Issue305Spec extends HapiSuite {
         return repeatedSpecs;
     }
 
+    @HapiTest
     private HapiSpec createDeleteInSameRoundWorks() {
         AtomicReference<String> nextFileId = new AtomicReference<>();
         return defaultHapiSpec("CreateDeleteInSameRoundWorks")
@@ -82,8 +84,8 @@ public class Issue305Spec extends HapiSuite {
                 }))
                 .then(
                         fileCreate("tbd").key(KEY).deferStatusResolution(),
-                        fileDelete(nextFileId::get).signedBy(GENESIS, KEY).logged(),
-                        getFileInfo(nextFileId::get).logged());
+                        fileDelete(nextFileId::get).signedBy(GENESIS, KEY),
+                        getFileInfo(nextFileId::get).hasDeleted(true));
     }
 
     private HapiSpec congestionMultipliersRefreshOnPropertyUpdate() {

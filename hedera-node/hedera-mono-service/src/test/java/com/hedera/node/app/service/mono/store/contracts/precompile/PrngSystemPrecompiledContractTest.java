@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -65,6 +64,7 @@ import java.util.Optional;
 import java.util.Random;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -79,6 +79,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PrngSystemPrecompiledContractTest {
     private static final Hash WELL_KNOWN_HASH = new Hash(CommonUtils.unhex(
             "65386630386164632d356537632d343964342d623437372d62636134346538386338373133633038316162372d616300"));
+    private static final Address ADDRESS_6 = Address.fromHexString("0x6");
 
     @Mock
     private MessageFrame frame;
@@ -250,7 +251,7 @@ class PrngSystemPrecompiledContractTest {
 
         assertNotNull(childRecord);
         assertEquals(
-                EntityId.fromAddress(ALTBN128_ADD),
+                EntityId.fromAddress(ADDRESS_6),
                 childRecord.getContractCallResult().getSenderId());
         assertEquals(
                 randomNum,
@@ -261,7 +262,7 @@ class PrngSystemPrecompiledContractTest {
 
         assertNotNull(childRecord);
         assertEquals(
-                EntityId.fromAddress(ALTBN128_ADD),
+                EntityId.fromAddress(ADDRESS_6),
                 childRecord.getContractCallResult().getSenderId());
         assertEquals(
                 randomNum,
@@ -280,7 +281,7 @@ class PrngSystemPrecompiledContractTest {
 
         assertNotNull(childRecord);
         assertEquals(
-                EntityId.fromAddress(ALTBN128_ADD),
+                EntityId.fromAddress(ADDRESS_6),
                 childRecord.getContractCallResult().getSenderId());
         assertArrayEquals(
                 randomBytes.toArray(),
@@ -298,7 +299,7 @@ class PrngSystemPrecompiledContractTest {
         assertArrayEquals(new byte[0], childRecord.getPseudoRandomBytes());
         assertEquals(-1, childRecord.getPseudoRandomNumber());
         assertEquals(
-                EntityId.fromAddress(ALTBN128_ADD),
+                EntityId.fromAddress(ADDRESS_6),
                 childRecord.getContractCallResult().getSenderId());
         assertEquals(
                 0, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
@@ -337,9 +338,9 @@ class PrngSystemPrecompiledContractTest {
     }
 
     private void initialSetUp() {
-        given(frame.getSenderAddress()).willReturn(ALTBN128_ADD);
+        given(frame.getSenderAddress()).willReturn(ADDRESS_6);
         given(frame.getWorldUpdater()).willReturn(updater);
-        given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray())).willReturn(ALTBN128_ADD.toArray());
+        given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray())).willReturn(ADDRESS_6.toArray());
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
         given(livePricesSource.currentGasPriceInTinycents(consensusNow, HederaFunctionality.ContractCall))
                 .willReturn(830L);
@@ -348,9 +349,9 @@ class PrngSystemPrecompiledContractTest {
     }
 
     private void setUpForChildRecord() {
-        given(frame.getSenderAddress()).willReturn(ALTBN128_ADD);
+        given(frame.getSenderAddress()).willReturn(ADDRESS_6);
         given(frame.getWorldUpdater()).willReturn(updater);
-        given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray())).willReturn(ALTBN128_ADD.toArray());
+        given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray())).willReturn(ADDRESS_6.toArray());
         given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
         given(frame.getValue()).willReturn(Wei.of(100L));
         given(frame.getInputData()).willReturn(Bytes.EMPTY);

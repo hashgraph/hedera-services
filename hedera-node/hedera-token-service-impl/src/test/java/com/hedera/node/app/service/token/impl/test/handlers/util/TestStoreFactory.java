@@ -133,7 +133,7 @@ public final class TestStoreFactory {
     private static MapWritableKVState<NftID, Nft> newNftStateFromNfts(Nft... nfts) {
         final var backingMap = new HashMap<NftID, Nft>();
         for (final Nft nft : nfts) {
-            backingMap.put(nft.id(), nft);
+            backingMap.put(nft.nftId(), nft);
         }
 
         return new MapWritableKVState<>(TokenServiceImpl.NFTS_KEY, backingMap);

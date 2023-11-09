@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -34,18 +36,23 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -59,6 +66,7 @@ import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -71,6 +79,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FileUpdateTest extends FileTestBase {
 
+    private static final long EXPIRATION_TIMESTAMP = 3_456_789L;
     private final FileUpdateTransactionBody.Builder OP_BUILDER = FileUpdateTransactionBody.newBuilder();
 
     private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, null);
@@ -102,6 +111,15 @@ class FileUpdateTest extends FileTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected Account payerAccount;
 
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected FileOpsUsage fileOpsUsage;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected FeeCalculator feeCalculator;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private FeeAccumulator feeAccumulator;
+
     protected Configuration testConfig;
 
     private FileUpdateHandler subject;
@@ -109,10 +127,17 @@ class FileUpdateTest extends FileTestBase {
 
     @BeforeEach
     void setUp() {
-        subject = new FileUpdateHandler();
+        subject = new FileUpdateHandler(fileOpsUsage);
         testConfig = HederaTestConfigBuilder.createConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
+        when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
+        when(feeCalculator.calculate()).thenReturn(Fees.FREE);
+        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.addStorageBytesSeconds(anyLong())).thenReturn(feeCalculator);
+        when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
+        when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
+        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(-1_234_567L));
     }
 
     @Test
@@ -130,8 +155,7 @@ class FileUpdateTest extends FileTestBase {
 
         subject.preHandle(realPreContext);
 
-        assertTrue(realPreContext.requiredNonPayerKeys().size() > 0);
-        assertEquals(3, realPreContext.requiredNonPayerKeys().size());
+        assertFalse(realPreContext.requiredNonPayerKeys().size() > 0);
     }
 
     @Test
@@ -156,7 +180,6 @@ class FileUpdateTest extends FileTestBase {
 
         subject.preHandle(realPreContext);
 
-        assertTrue(realPreContext.requiredNonPayerKeys().size() == 0);
         assertEquals(0, realPreContext.requiredNonPayerKeys().size());
     }
 
@@ -222,7 +245,7 @@ class FileUpdateTest extends FileTestBase {
     @Test
     @DisplayName("Fails handle if keys doesn't exist on file to be updated")
     void failForImmutableFile() {
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
         final var op = OP_BUILDER.fileID(fileId).keys(anotherKeys).build();
@@ -258,6 +281,31 @@ class FileUpdateTest extends FileTestBase {
 
         // expect:
         assertFailsWith(ResponseCodeEnum.MEMO_TOO_LONG, () -> subject.handle(handleContext));
+    }
+
+    @Test
+    void validatesAutoRenewDurationIsInRange() {
+        givenValidFile(false);
+        refreshStoresWithCurrentFileInBothReadableAndWritable();
+
+        final var op = OP_BUILDER
+                .fileID(wellKnownId())
+                .expirationTime(Timestamp.newBuilder().seconds(-1_234_567_890L).build())
+                .build();
+        final var txBody = TransactionBody.newBuilder()
+                .fileUpdate(op)
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(100L).build())
+                        .build())
+                .build();
+        when(handleContext.body()).thenReturn(txBody);
+        given(handleContext.attributeValidator()).willReturn(attributeValidator);
+        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
+        given(signatureVerification.failed()).willReturn(false);
+
+        // expect:
+        assertFailsWith(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.handle(handleContext));
     }
 
     @Test
@@ -362,9 +410,15 @@ class FileUpdateTest extends FileTestBase {
     void appliesNewExpiryViaMeta() {
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
-        final var expiry = Timestamp.newBuilder().seconds(1_234_568L).build();
+        final var expiry = Timestamp.newBuilder().seconds(EXPIRATION_TIMESTAMP).build();
         final var op = OP_BUILDER.fileID(wellKnownId()).expirationTime(expiry).build();
-        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        final var txBody = TransactionBody.newBuilder()
+                .fileUpdate(op)
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(100L).build())
+                        .build())
+                .build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
         given(signatureVerification.failed()).willReturn(false);
@@ -372,16 +426,22 @@ class FileUpdateTest extends FileTestBase {
         subject.handle(handleContext);
 
         final var newFile = writableFileState.get(fileId);
-        assertEquals(1_234_568L, newFile.expirationTime());
+        assertEquals(EXPIRATION_TIMESTAMP, newFile.expirationSecond());
     }
 
     @Test
     void appliesNewExpiryLowerExpirationTimeViaMeta() {
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
-        final var expiry = Timestamp.newBuilder().seconds(1_234_566L).build();
+        final var expiry = Timestamp.newBuilder().seconds(EXPIRATION_TIMESTAMP).build();
         final var op = OP_BUILDER.fileID(wellKnownId()).expirationTime(expiry).build();
-        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        final var txBody = TransactionBody.newBuilder()
+                .fileUpdate(op)
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(100L).build())
+                        .build())
+                .build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
         given(signatureVerification.failed()).willReturn(false);
@@ -389,7 +449,7 @@ class FileUpdateTest extends FileTestBase {
         subject.handle(handleContext);
 
         final var newFile = writableFileState.get(fileId);
-        assertEquals(1_234_567L, newFile.expirationTime());
+        assertEquals(EXPIRATION_TIMESTAMP, newFile.expirationSecond());
     }
 
     @Test

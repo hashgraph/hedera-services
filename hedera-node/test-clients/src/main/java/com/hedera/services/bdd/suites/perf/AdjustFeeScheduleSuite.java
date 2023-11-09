@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
@@ -35,7 +34,6 @@ import org.apache.logging.log4j.Logger;
  * ConsensusSubmitMessage to avoid the potential INSUFFICIENT_PAYER_BALANCE while the test is
  * running.
  */
-@HapiTestSuite
 public class AdjustFeeScheduleSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AdjustFeeScheduleSuite.class);
 

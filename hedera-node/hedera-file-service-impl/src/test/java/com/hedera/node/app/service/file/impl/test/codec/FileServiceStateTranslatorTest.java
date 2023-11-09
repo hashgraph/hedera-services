@@ -36,7 +36,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class FileServiceStateTranslatorTest extends FileTestBase {
+class FileServiceStateTranslatorTest extends FileTestBase {
 
     @Mock
     private com.hedera.node.app.service.mono.files.HederaFs hederaFs;
@@ -204,13 +204,13 @@ public class FileServiceStateTranslatorTest extends FileTestBase {
         var keys = com.hedera.node.app.service.mono.legacy.core.jproto.JKey.convertKey(
                 Key.newBuilder().keyList(file.keys()).build(), 1);
         com.hedera.node.app.service.mono.files.HFileMeta hFileMeta =
-                new HFileMeta(file.deleted(), keys, file.expirationTime(), file.memo());
+                new HFileMeta(file.deleted(), keys, file.expirationSecond(), file.memo());
         return new FileMetadataAndContent(file.contents().toByteArray(), hFileMeta);
     }
 
     private FileMetadataAndContent getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys() {
         com.hedera.node.app.service.mono.files.HFileMeta hFileMeta =
-                new HFileMeta(file.deleted(), null, file.expirationTime(), null);
+                new HFileMeta(file.deleted(), null, file.expirationSecond(), null);
         return new FileMetadataAndContent(file.contents().toByteArray(), hFileMeta);
     }
 
@@ -218,7 +218,7 @@ public class FileServiceStateTranslatorTest extends FileTestBase {
         var keys = com.hedera.node.app.service.mono.legacy.core.jproto.JKey.convertKey(
                 Key.newBuilder().keyList(file.keys()).build(), 1);
         com.hedera.node.app.service.mono.files.HFileMeta hFileMeta =
-                new HFileMeta(file.deleted(), keys, file.expirationTime(), file.memo());
+                new HFileMeta(file.deleted(), keys, file.expirationSecond(), file.memo());
         return new FileMetadataAndContent(null, hFileMeta);
     }
 }

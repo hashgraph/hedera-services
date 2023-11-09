@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.state.merkle;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.utils.EntityNum;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.node.app.Hedera;
 import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.EmptyWritableStates;
@@ -45,6 +46,7 @@ import com.hedera.node.app.state.merkle.queue.WritableQueueStateImpl;
 import com.hedera.node.app.state.merkle.singleton.ReadableSingletonStateImpl;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.WritableSingletonStateImpl;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
@@ -56,15 +58,17 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.utility.Labeled;
-import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link SwirldState} and {@link HederaState}. The Hashgraph Platform
@@ -85,6 +89,7 @@ import java.util.Set;
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
 public class MerkleHederaState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState, HederaState {
+    private static final Logger logger = LogManager.getLogger(MerkleHederaState.class);
 
     /** Used when asked for a service's readable states that we don't have */
     private static final ReadableStates EMPTY_READABLE_STATES = new EmptyReadableStates();
@@ -92,9 +97,23 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     private static final WritableStates EMPTY_WRITABLE_STATES = new EmptyWritableStates();
 
     // For serialization
+    /**
+     * This class ID is returned IF the default constructor was used. This is a nasty workaround for
+     * {@link ConstructableRegistry}. The registry does classpath scanning, and finds this class. It then invokes
+     * the default constructor and then asks for the class ID, and then throws away the object. It sticks this
+     * mapping of class ID to class name into a map. Later (in {@link Hedera}) we define an actual mapping for the
+     * {@link ConstructableRegistry} that maps {@link #CLASS_ID} to {@link MerkleHederaState} using a lambda that will
+     * create the instancing using the non-default constructor. But the {@link ConstructableRegistry} doesn't
+     * actually register the second mapping! So we will trick it. We will return this bogus class ID if the default
+     * constructor is used, or {@link #CLASS_ID} otherwise.
+     */
+    private static final long DO_NOT_USE_IN_REAL_LIFE_CLASS_ID = 0x0000deadbeef0000L;
+
     private static final long CLASS_ID = 0x2de3ead3caf06392L;
     private static final int VERSION_1 = 1;
     private static final int CURRENT_VERSION = VERSION_1;
+
+    private long classId;
 
     /**
      * This callback is invoked whenever the consensus round happens. The Hashgraph Platform, today,
@@ -130,15 +149,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     private final Map<String, Map<String, StateMetadata<?, ?>>> services = new HashMap<>();
 
     /**
-     * A rebuilt-map of all aliases.
-     *
-     * <p>NOTE: This field is TEMPORARY. Once we have eliminated mono-service, this alias map will
-     * move to being a normal part of state using a VirtualMap, and we will no longer have it as a
-     * separate in-memory data structure.</p>
-     */
-    private final FCHashMap<ByteString, EntityNum> aliases;
-
-    /**
      * Create a new instance. This constructor must be used for all creations of this class.
      *
      * @param onPreHandle            The callback to invoke when an event is ready for pre-handle
@@ -149,10 +159,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             @NonNull final PreHandleListener onPreHandle,
             @NonNull final HandleConsensusRoundListener onHandleConsensusRound,
             @NonNull final OnStateInitialized onInit) {
-        this.onPreHandle = Objects.requireNonNull(onPreHandle);
-        this.onHandleConsensusRound = Objects.requireNonNull(onHandleConsensusRound);
-        this.onInit = Objects.requireNonNull(onInit);
-        this.aliases = new FCHashMap<>();
+        this.onPreHandle = requireNonNull(onPreHandle);
+        this.onHandleConsensusRound = requireNonNull(onHandleConsensusRound);
+        this.onInit = requireNonNull(onInit);
+        this.classId = CLASS_ID;
     }
 
     /**
@@ -166,8 +176,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @Deprecated(forRemoval = true)
     public MerkleHederaState() {
         // ConstructableRegistry requires a "working" no-arg constructor
-        aliases = null;
         onPreHandle = null;
+        this.classId = DO_NOT_USE_IN_REAL_LIFE_CLASS_ID;
     }
 
     /**
@@ -198,8 +208,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         // Copy the Merkle route from the source instance
         super(from);
 
-        // Make a copy of the aliases map
-        this.aliases = from.aliases.copy();
+        this.classId = from.classId;
 
         // Copy over the metadata
         for (final var entry : from.services.entrySet()) {
@@ -230,12 +239,37 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
 
     @Override
     public long getClassId() {
-        return CLASS_ID;
+        return classId;
     }
 
     @Override
     public int getVersion() {
         return CURRENT_VERSION;
+    }
+
+    /**
+     * To be called ONLY at node shutdown. Attempts to gracefully close any virtual maps. This method is a bit of a
+     * hack, ideally there would be something more generic at the platform level that virtual maps could hook into
+     * to get shutdown in an orderly way.
+     */
+    public void close() {
+        logger.info("Closing MerkleHederaState");
+        for (final var svc : services.values()) {
+            for (final var md : svc.values()) {
+                final var index =
+                        findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
+                if (index >= 0) {
+                    final var node = getChild(index);
+                    if (node instanceof VirtualMap<?, ?> virtualMap) {
+                        try {
+                            virtualMap.getDataSource().close();
+                        } catch (IOException e) {
+                            logger.warn("Unable to close data source for virtual map {}", md.serviceName(), e);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -298,53 +332,26 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         return this;
     }
 
-    <K, V> void putServiceStateIfAbsent(@NonNull final StateMetadata<K, V> md) {
-        throwIfImmutable();
-        Objects.requireNonNull(md);
-        final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());
-        stateMetadata.put(md.stateDefinition().stateKey(), md);
-    }
-
     /**
      * Puts the defined service state and its associated node into the merkle tree. The precondition
      * for calling this method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and
      * MUST have a correct label applied.
      *
      * @param md   The metadata associated with the state
-     * @param node The node to add. Cannot be null.
+     * @param nodeSupplier Returns the node to add. Cannot be null. Can be used to create the node on-the-fly.
      * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
      *                                  it doesn't have a label, or if the label isn't right.
      */
-    <K, V> void putServiceStateIfAbsent(@NonNull final StateMetadata<K, V> md, @NonNull final MerkleNode node) {
+    <K, V> void putServiceStateIfAbsent(
+            @NonNull final StateMetadata<K, V> md, @NonNull final Supplier<MerkleNode> nodeSupplier) {
 
         // Validate the inputs
         throwIfImmutable();
-        Objects.requireNonNull(md);
-        Objects.requireNonNull(node);
-
-        final var label = node instanceof Labeled labeled ? labeled.getLabel() : null;
-        if (label == null) {
-            throw new IllegalArgumentException("`node` must be a Labeled and have a label");
-        }
-
-        final var def = md.stateDefinition();
-        if (def.onDisk() && !(node instanceof VirtualMap<?, ?>)) {
-            throw new IllegalArgumentException(
-                    "Mismatch: state definition claims on-disk, but " + "the merkle node is not a VirtualMap");
-        }
-
-        if (label.isEmpty()) {
-            // It looks like both MerkleMap and VirtualMap do not allow for a null label.
-            // But I want to leave this check in here anyway, in case that is ever changed.
-            throw new IllegalArgumentException("A label must be specified on the node");
-        }
-
-        if (!label.equals(StateUtils.computeLabel(md.serviceName(), def.stateKey()))) {
-            throw new IllegalArgumentException(
-                    "A label must be computed based on the same " + "service name and state key in the metadata!");
-        }
+        requireNonNull(md);
+        requireNonNull(nodeSupplier);
 
         // Put this metadata into the map
+        final var def = md.stateDefinition();
         final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());
         stateMetadata.put(def.stateKey(), md);
 
@@ -353,6 +360,28 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         // because it may have been loaded from state on disk, and the node provided here in this
         // call is always for genesis. So we may just ignore it.
         if (findNodeIndex(md.serviceName(), def.stateKey()) == -1) {
+            final var node = requireNonNull(nodeSupplier.get());
+            final var label = node instanceof Labeled labeled ? labeled.getLabel() : null;
+            if (label == null) {
+                throw new IllegalArgumentException("`node` must be a Labeled and have a label");
+            }
+
+            if (def.onDisk() && !(node instanceof VirtualMap<?, ?>)) {
+                throw new IllegalArgumentException(
+                        "Mismatch: state definition claims on-disk, but " + "the merkle node is not a VirtualMap");
+            }
+
+            if (label.isEmpty()) {
+                // It looks like both MerkleMap and VirtualMap do not allow for a null label.
+                // But I want to leave this check in here anyway, in case that is ever changed.
+                throw new IllegalArgumentException("A label must be specified on the node");
+            }
+
+            if (!label.equals(StateUtils.computeLabel(md.serviceName(), def.stateKey()))) {
+                throw new IllegalArgumentException(
+                        "A label must be computed based on the same " + "service name and state key in the metadata!");
+            }
+
             setChild(getNumberOfChildren(), node);
         }
     }
@@ -365,8 +394,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     void removeServiceState(@NonNull final String serviceName, @NonNull final String stateKey) {
         throwIfImmutable();
-        Objects.requireNonNull(serviceName);
-        Objects.requireNonNull(stateKey);
+        requireNonNull(serviceName);
+        requireNonNull(stateKey);
 
         // Remove the metadata entry
         final var stateMetadata = services.get(serviceName);
@@ -417,7 +446,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
          * @param stateMetadata cannot be null
          */
         MerkleStates(@NonNull final Map<String, StateMetadata<?, ?>> stateMetadata) {
-            this.stateMetadata = Objects.requireNonNull(stateMetadata);
+            this.stateMetadata = requireNonNull(stateMetadata);
             this.stateKeys = Collections.unmodifiableSet(stateMetadata.keySet());
             this.kvInstances = new HashMap<>();
             this.singletonInstances = new HashMap<>();

@@ -21,12 +21,12 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HTS_SYS
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.v030.Version030AddressChecks;
 import java.util.Map;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,13 +37,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class Version030AddressChecksTest {
     @Mock
-    private PrecompiledContract mockHtsPrecompile;
+    private HederaSystemContract mockHtsPrecompile;
 
     @Mock
-    private PrecompiledContract mockPrngPrecompile;
+    private HederaSystemContract mockPrngPrecompile;
 
     @Mock
-    private PrecompiledContract mockRatesPrecompile;
+    private HederaSystemContract mockRatesPrecompile;
 
     @Mock
     private MessageFrame frame;

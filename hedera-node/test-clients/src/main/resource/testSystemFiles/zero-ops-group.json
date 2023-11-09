@@ -23,6 +23,7 @@
 			"ConsensusGetTopicInfo",
 			"TokenGetInfo",
 			"TokenGetNftInfo",
+			"TokenGetNftInfos",
 			"TokenGetAccountNftInfos",
 			"ScheduleDelete",
 			"ScheduleGetInfo",

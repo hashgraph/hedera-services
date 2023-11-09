@@ -16,23 +16,19 @@
 
 package com.hedera.node.app.service.token.impl.validators;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl.isMirror;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 
-import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
-import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -43,49 +39,47 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoCreateValidator {
-    private static final int EVM_ADDRESS_SIZE = 20;
-
     @Inject
     public CryptoCreateValidator() { // Exists for injection
     }
 
     /**
-     * Validates Key Alias and EVM Address combinations.
+     * Validates the key.
      *
-     * @param op    the crypto create transaction body
-     * @param attributeValidator   AttributeValidator
-     * @param config    CryptoCreateWithAliasConfig
-     * @param readableAccountStore    ReadableAccountStore
-     * @throws HandleException if the inputs are not invalid
+     * <p>If the key is dispatched internally, then it is allowed to use {@link KeyUtils#IMMUTABILITY_SENTINEL_KEY} as
+     * its key. Otherwise, this key is disallowed. Otherwise, we throw {@link HandleException} with
+     * {@link ResponseCodeEnum#BAD_ENCODING} if the key is empty or exceeds the maximum key depth. All other invalid
+     * scenarios throw {@link HandleException} with {@link ResponseCodeEnum#INVALID_ADMIN_KEY}.
+     *
+     * @param key                The key to validate
+     * @param attributeValidator AttributeValidator
+     * @param isInternalDispatch Whether this is a hollow account creation (permits empty key list)
+     * @throws HandleException If the inputs are not invalid
      */
-    public void validateKeyAliasAndEvmAddressCombinations(
-            @NonNull final CryptoCreateTransactionBody op,
+    public void validateKey(
+            @NonNull final Key key,
             @NonNull final AttributeValidator attributeValidator,
-            @NonNull final CryptoCreateWithAliasConfig config,
-            @NonNull final ReadableAccountStore readableAccountStore) {
-        if (op.hasKey() && op.alias().equals(Bytes.EMPTY)) {
-            attributeValidator.validateKey(op.keyOrThrow());
-        } else if (!op.hasKey() && !op.alias().equals(Bytes.EMPTY)) {
-            final var responseCode = config.enabled() ? INVALID_ALIAS_KEY : NOT_SUPPORTED;
-            throw new HandleException(responseCode);
-        } else if (op.hasKey() && !op.alias().equals(Bytes.EMPTY)) {
-            validateKeyAndAliasProvidedCase(op, attributeValidator, config, readableAccountStore);
-        } else {
-            // This is the case when no key and no alias are provided
-            throw new HandleException(KEY_REQUIRED);
-        }
-    }
+            final boolean isInternalDispatch) {
 
-    private void validateKeyAndAliasProvidedCase(
-            @NonNull final CryptoCreateTransactionBody op,
-            @NonNull final AttributeValidator attributeValidator,
-            @NonNull final CryptoCreateWithAliasConfig config,
-            @NonNull final ReadableAccountStore readableAccountStore) {
-        validateTrue(config.enabled(), NOT_SUPPORTED);
-        attributeValidator.validateKey(op.keyOrThrow());
-        validateTrue(op.alias().length() == EVM_ADDRESS_SIZE, INVALID_ALIAS_KEY);
-        validateFalse(isMirror(op.alias()), INVALID_ALIAS_KEY);
-        validateTrue(readableAccountStore.getAccountIDByAlias(op.alias()) == null, ALIAS_ALREADY_ASSIGNED);
+        final var isSentinel = IMMUTABILITY_SENTINEL_KEY.equals(key);
+        if (isSentinel && !isInternalDispatch) {
+            // IMMUTABILITY_SENTINEL_KEY is only allowed for internal dispatches.
+            throw new HandleException(KEY_REQUIRED);
+        } else if (!isSentinel) {
+            // If it is not the sentinel key, we need to validate the key, no matter whether internal or HAPI.
+            //
+            // This solution is not nice, but for now, it is the best we can do and maintain compatibility and some
+            // semblance of maintainability. There is a lot of duplicated work, because `isEmpty` is called by
+            // `isValid(Key)`, and `isValid(Key)` is called by `validateKey(Key)`! So `isEmpty` gets called at least
+            // three times (once in pureChecks), and `isValid` at least twice. But this is the only way to make sure the
+            // right exceptions are thrown, without breaking key validation steps down in a granular way which would be
+            // hard to maintain.
+            if (!isValid(key)) {
+                throw new HandleException(INVALID_ADMIN_KEY);
+            } else {
+                attributeValidator.validateKey(key);
+            }
+        }
     }
 
     /** check if the number of auto associations is too many

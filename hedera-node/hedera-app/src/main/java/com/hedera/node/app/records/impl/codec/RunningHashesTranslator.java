@@ -21,9 +21,11 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 
 public final class RunningHashesTranslator {
+    private RunningHashesTranslator() {
+        throw new IllegalStateException("Utility class");
+    }
 
     @NonNull
     /**
@@ -32,8 +34,7 @@ public final class RunningHashesTranslator {
      * @return the {@link RunningHashes} converted from the {@link com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf}
      */
     public static RunningHashes runningHashesFromRecordsRunningHashLeaf(
-            @NonNull final com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf recordsRunningHashLeaf)
-            throws IOException {
+            @NonNull final com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf recordsRunningHashLeaf) {
         requireNonNull(recordsRunningHashLeaf);
         return new RunningHashes.Builder()
                 .runningHash(Bytes.wrap(

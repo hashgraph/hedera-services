@@ -58,7 +58,7 @@ public class WritableTopicStore {
      * @param topic - the topic to be mapped onto a new {@link MerkleTopic} and persisted.
      */
     public void put(@NonNull final Topic topic) {
-        topicState.put(requireNonNull(topic.id()), requireNonNull(topic));
+        topicState.put(requireNonNull(topic.topicId()), requireNonNull(topic));
     }
 
     /**

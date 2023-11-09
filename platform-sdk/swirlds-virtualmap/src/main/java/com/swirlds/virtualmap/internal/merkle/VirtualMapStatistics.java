@@ -53,6 +53,8 @@ public class VirtualMapStatistics {
     /** Virtual map entities - reads / s */
     private LongAccumulator readEntities;
 
+    /** Estimated virtual node cache size, bytes*/
+    private LongGauge nodeCacheSizeB;
     /** Number of virtual root copies in the pipeline */
     private IntegerGauge pipelineSize;
     /** The number of virtual root node copies in virtual pipeline flush backlog */
@@ -133,6 +135,9 @@ public class VirtualMapStatistics {
                 "Read virtual map entities, " + label + ", per second");
 
         // Lifecycle
+        nodeCacheSizeB = metrics.getOrCreate(
+                new LongGauge.Config(STAT_CATEGORY, VMAP_PREFIX + LIFECYCLE_PREFIX + "nodeCacheSizeB_" + label)
+                        .withDescription("Virtual node cache size, " + label + ", bytes"));
         pipelineSize = metrics.getOrCreate(
                 new IntegerGauge.Config(STAT_CATEGORY, VMAP_PREFIX + LIFECYCLE_PREFIX + "pipelineSize_" + label)
                         .withDescription("Virtual pipeline size, " + label));
@@ -208,6 +213,17 @@ public class VirtualMapStatistics {
     public void countReadEntities() {
         if (readEntities != null) {
             readEntities.update(1);
+        }
+    }
+
+    /**
+     * Updates {@link #nodeCacheSizeB} stat to the given value.
+     *
+     * @param value the value to set
+     */
+    public void setNodeCacheSize(final long value) {
+        if (this.nodeCacheSizeB != null) {
+            this.nodeCacheSizeB.set(value);
         }
     }
 

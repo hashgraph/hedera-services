@@ -163,6 +163,8 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
     @Override
     public void reset() {
         eventCount = 0;
+        otherParentRequestIndex.reset();
+        otherParentProviderIndex.reset();
     }
 
     /**

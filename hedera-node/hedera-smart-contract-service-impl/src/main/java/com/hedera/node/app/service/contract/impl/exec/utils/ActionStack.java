@@ -21,7 +21,7 @@ import static com.hedera.hapi.streams.CallOperationType.OP_CREATE;
 import static com.hedera.hapi.streams.ContractActionType.CALL;
 import static com.hedera.hapi.streams.ContractActionType.CREATE;
 import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.hederaIdNumOfContractIn;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.hederaIdNumOfOriginatorIn;
@@ -240,7 +240,7 @@ public class ActionStack {
                 if (maybeHaltReason.isPresent()) {
                     final var haltReason = maybeHaltReason.get();
                     builder.error(Bytes.wrap(haltReason.name().getBytes(UTF_8)));
-                    if (CALL.equals(action.callType()) && MISSING_ADDRESS.equals(haltReason)) {
+                    if (CALL.equals(action.callType()) && haltReason == INVALID_SOLIDITY_ADDRESS) {
                         allActions.add(new ActionWrapper(helper.createSynthActionForMissingAddressIn(frame)));
                     }
                 } else {
@@ -295,7 +295,7 @@ public class ActionStack {
                 .gas(frame.getRemainingGas())
                 .input(tuweniToPbjBytes(frame.getInputData()))
                 .value(frame.getValue().toLong())
-                .callDepth(frame.getMessageStackDepth());
+                .callDepth(frame.getDepth());
         // If this call "targets" a missing address, we can't decide yet whether to use a contract id or an
         // account id for the recipient; only later when we know whether the call attempted a lazy creation
         // can we decide to either leave this address (on failure) or replace it with the created account id

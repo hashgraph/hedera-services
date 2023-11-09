@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.state.merkle.memory;
 
+import static com.hedera.node.app.state.logging.TransactionStateLogger.*;
+
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -31,6 +33,7 @@ import java.util.Objects;
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
+@SuppressWarnings("DuplicatedCode")
 public final class InMemoryReadableKVState<K, V> extends ReadableKVStateBase<K, V> {
 
     /** The underlying merkle tree data structure with the data */
@@ -52,19 +55,27 @@ public final class InMemoryReadableKVState<K, V> extends ReadableKVStateBase<K, 
     protected V readFromDataSource(@NonNull K key) {
         final var k = new InMemoryKey<>(key);
         final var leaf = merkle.get(k);
-        return leaf == null ? null : leaf.getValue();
+        final var value = leaf == null ? null : leaf.getValue();
+        // Log to transaction state log, what was read
+        logMapGet(getStateKey(), key, value);
+        return value;
     }
 
     @NonNull
     @Override
     protected Iterator<K> iterateFromDataSource() {
-        return merkle.keySet().stream().map(InMemoryKey::key).iterator();
+        final var keySet = merkle.keySet();
+        // Log to transaction state log, what was iterated
+        logMapIterate(getStateKey(), keySet);
+        return keySet.stream().map(InMemoryKey::key).iterator();
     }
 
     /** {@inheritDoc} */
-    @NonNull
     @Override
     public long size() {
-        return merkle.size();
+        final var size = merkle.size();
+        // Log to transaction state log, size of map
+        logMapGetSize(getStateKey(), size);
+        return size;
     }
 }

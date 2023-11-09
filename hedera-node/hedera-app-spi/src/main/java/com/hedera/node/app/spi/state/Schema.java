@@ -96,6 +96,18 @@ public abstract class Schema implements Comparable<Schema> {
         return Collections.emptySet();
     }
 
+    /**
+     * Called on this schema if, and only if, this schema is the most recent schema that is not newer than the
+     * version of software in use, and if the node is being restarted. Most services have nothing to do in this
+     * case, but some services may need to re-read configuration, or files on disk, or something similar. They
+     * are free to modify the state as needed in the same way that {@link #migrate(MigrationContext)} does.
+     *
+     * @param ctx {@link MigrationContext} for this schema restart operation
+     */
+    public void restart(@NonNull final MigrationContext ctx) {
+        Objects.requireNonNull(ctx);
+    }
+
     /** {@inheritDoc} */
     @Override
     public int compareTo(Schema o) {

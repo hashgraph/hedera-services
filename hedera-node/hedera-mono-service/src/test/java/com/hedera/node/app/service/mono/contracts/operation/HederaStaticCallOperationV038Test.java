@@ -104,7 +104,7 @@ class HederaStaticCallOperationV038Test {
         }
         given(evmMsgFrame.stackSize()).willReturn(20);
         given(evmMsgFrame.getRemainingGas()).willReturn(cost);
-        given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
+        given(evmMsgFrame.getDepth()).willReturn(1025);
         given(evmMsgFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.get(any())).willReturn(acc);
         given(acc.getBalance()).willReturn(Wei.of(100));

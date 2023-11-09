@@ -16,26 +16,31 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 import javax.inject.Inject;
 
 /**
- * TODO - a fully mutable {@link HederaNativeOperations} based on a {@link HandleContext}.
+ * A fully-mutable {@link HederaNativeOperations} implemented with a {@link HandleContext}.
  */
 @TransactionScope
 public class HandleHederaNativeOperations implements HederaNativeOperations {
@@ -43,36 +48,39 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
 
     @Inject
     public HandleHederaNativeOperations(@NonNull final HandleContext context) {
-        this.context = Objects.requireNonNull(context);
+        this.context = requireNonNull(context);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public @Nullable Account getAccount(final long number) {
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
-        return accountStore.getAccountById(
-                AccountID.newBuilder().accountNum(number).build());
+    public @NonNull ReadableNftStore readableNftStore() {
+        return context.readableStore(ReadableNftStore.class);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public @Nullable Token getToken(final long number) {
-        final var tokenStore = context.readableStore(ReadableTokenStore.class);
-        return tokenStore.get(TokenID.newBuilder().tokenNum(number).build());
+    public @NonNull ReadableTokenRelationStore readableTokenRelationStore() {
+        return context.readableStore(ReadableTokenRelationStore.class);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public long resolveAlias(@NonNull final Bytes evmAddress) {
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
-        final var account = accountStore.getAccountIDByAlias(evmAddress);
-        return account == null ? MISSING_ENTITY_NUMBER : account.accountNumOrThrow();
+    public @NonNull ReadableTokenStore readableTokenStore() {
+        return context.readableStore(ReadableTokenStore.class);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NonNull ReadableAccountStore readableAccountStore() {
+        return context.readableStore(ReadableAccountStore.class);
     }
 
     /**
@@ -90,7 +98,17 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public @NonNull ResponseCodeEnum createHollowAccount(@NonNull final Bytes evmAddress) {
-        throw new AssertionError("Not implemented");
+        final var synthTxn = TransactionBody.newBuilder()
+                .cryptoCreateAccount(synthHollowAccountCreation(evmAddress))
+                .build();
+        // There are no non-payer keys that will need to sign this transaction; therefore, activate no keys
+        final var childRecordBuilder = context.dispatchChildTransaction(
+                synthTxn, CryptoCreateRecordBuilder.class, key -> false, context.payer());
+        // FUTURE - switch OK to SUCCESS once some status-setting responsibilities are clarified
+        if (childRecordBuilder.status() != OK && childRecordBuilder.status() != SUCCESS) {
+            throw new AssertionError("Not implemented");
+        }
+        return OK;
     }
 
     /**
@@ -98,23 +116,13 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public void finalizeHollowAccountAsContract(@NonNull final Bytes evmAddress) {
-        throw new AssertionError("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void collectFee(final long fromEntityNumber, final long amount) {
-        throw new AssertionError("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void refundFee(final long fromEntityNumber, final long amount) {
-        throw new AssertionError("Not implemented");
+        requireNonNull(evmAddress);
+        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var hollowAccountId = requireNonNull(accountStore.getAccountIDByAlias(evmAddress));
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        tokenServiceApi.finalizeHollowAccountAsContract(hollowAccountId, INITIAL_CONTRACT_NONCE);
+        // FUTURE: For temporary backward-compatibility with mono-service, consume an entity id
+        context.newEntityNum();
     }
 
     /**
@@ -126,12 +134,16 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
             final long fromEntityNumber,
             final long toEntityNumber,
             @NonNull final VerificationStrategy strategy) {
+        final var to = requireNonNull(getAccount(toEntityNumber));
+        final var signatureTest = strategy.asSignatureTestIn(context);
+        if (to.receiverSigRequired() && !signatureTest.test(to.keyOrThrow())) {
+            return INVALID_SIGNATURE;
+        }
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         tokenServiceApi.transferFromTo(
                 AccountID.newBuilder().accountNum(fromEntityNumber).build(),
                 AccountID.newBuilder().accountNum(toEntityNumber).build(),
                 amount);
-        // TODO - enforce receiver sig requirement
         return OK;
     }
 
@@ -140,6 +152,12 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public void trackDeletion(final long deletedNumber, final long beneficiaryNumber) {
-        throw new AssertionError("Not implemented");
+        // TODO - implement after merging upstream
+    }
+
+    @Override
+    public boolean checkForCustomFees(@NonNull final CryptoTransferTransactionBody op) {
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        return tokenServiceApi.checkForCustomFees(op);
     }
 }

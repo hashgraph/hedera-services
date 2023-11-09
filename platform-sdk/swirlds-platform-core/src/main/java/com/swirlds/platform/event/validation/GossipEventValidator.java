@@ -17,6 +17,7 @@
 package com.swirlds.platform.event.validation;
 
 import com.swirlds.platform.event.GossipEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Validates a {@link GossipEvent} received from a peer
@@ -29,5 +30,12 @@ public interface GossipEventValidator {
      * 		the event to validate
      * @return true if the event is valid, false otherwise
      */
-    boolean isEventValid(GossipEvent event);
+    boolean isEventValid(@NonNull GossipEvent event);
+
+    /**
+     * @return The name of the validator
+     */
+    default @NonNull String validatorName() {
+        return this.getClass().getSimpleName();
+    }
 }

@@ -18,11 +18,14 @@ package com.hedera.node.app.service.contract.impl.test.exec.utils;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.tinybarValuesFor;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -47,6 +50,12 @@ class FrameBuilderTest {
 
     @Mock
     private BlockValues blockValues;
+
+    @Mock
+    private TinybarValues tinybarValues;
+
+    @Mock
+    private SystemContractGasCalculator systemContractGasCalculator;
 
     @Mock
     private HederaEvmBlocks blocks;
@@ -74,7 +83,7 @@ class FrameBuilderTest {
         final var frame = subject.buildInitialFrameWith(
                 transaction,
                 worldUpdater,
-                wellKnownContextWith(blocks),
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                 config,
                 EIP_1014_ADDRESS,
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
@@ -100,6 +109,7 @@ class FrameBuilderTest {
         assertEquals(transaction.evmPayload(), frame.getInputData());
         assertSame(CONTRACT_CODE, frame.getCode());
         assertNotNull(accessTrackerFor(frame));
+        assertSame(tinybarValues, tinybarValuesFor(frame));
     }
 
     @Test
@@ -118,7 +128,7 @@ class FrameBuilderTest {
         final var frame = subject.buildInitialFrameWith(
                 transaction,
                 worldUpdater,
-                wellKnownContextWith(blocks),
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                 config,
                 EIP_1014_ADDRESS,
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
@@ -144,6 +154,7 @@ class FrameBuilderTest {
         assertEquals(transaction.evmPayload(), frame.getInputData());
         assertSame(CONTRACT_CODE, frame.getCode());
         assertNull(accessTrackerFor(frame));
+        assertSame(tinybarValues, tinybarValuesFor(frame));
     }
 
     @Test
@@ -159,7 +170,7 @@ class FrameBuilderTest {
         final var frame = subject.buildInitialFrameWith(
                 transaction,
                 worldUpdater,
-                wellKnownContextWith(blocks),
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                 config,
                 EIP_1014_ADDRESS,
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
@@ -184,6 +195,7 @@ class FrameBuilderTest {
         assertEquals(NON_SYSTEM_LONG_ZERO_ADDRESS, frame.getContractAddress());
         assertEquals(transaction.evmPayload(), frame.getInputData());
         assertSame(CodeV0.EMPTY_CODE, frame.getCode());
+        assertSame(tinybarValues, tinybarValuesFor(frame));
     }
 
     @Test
@@ -200,7 +212,7 @@ class FrameBuilderTest {
         final var frame = subject.buildInitialFrameWith(
                 transaction,
                 worldUpdater,
-                wellKnownContextWith(blocks),
+                wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator),
                 config,
                 EIP_1014_ADDRESS,
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
@@ -225,5 +237,6 @@ class FrameBuilderTest {
         assertEquals(NON_SYSTEM_LONG_ZERO_ADDRESS, frame.getContractAddress());
         assertEquals(Bytes.EMPTY, frame.getInputData());
         assertEquals(expectedCode, frame.getCode());
+        assertSame(tinybarValues, tinybarValuesFor(frame));
     }
 }

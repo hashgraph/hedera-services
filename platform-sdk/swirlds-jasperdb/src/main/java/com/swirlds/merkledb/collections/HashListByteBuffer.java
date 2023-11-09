@@ -21,8 +21,8 @@ import static com.swirlds.merkledb.utilities.HashTools.byteBufferToHash;
 import static com.swirlds.merkledb.utilities.HashTools.hashToByteBuffer;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteBuffer.allocateDirect;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkledb.utilities.HashTools;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
@@ -34,7 +34,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * An implementation of {@link HashList} which makes use of an expanding, dynamic list of {@link ByteBuffer}s
@@ -55,7 +54,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * </pre>
  */
 @SuppressWarnings("unused")
-public final class HashListByteBuffer implements HashList {
+public final class HashListByteBuffer implements HashList, OffHeapUser {
     /**
      * The version number for format of current data files
      */
@@ -323,6 +322,7 @@ public final class HashListByteBuffer implements HashList {
      *
      * @return Off-heap usage in bytes, if this hash list is off-heap, or zero otherwise
      */
+    @Override
     public long getOffHeapConsumption() {
         return offHeap ? (long) data.size() * numHashesPerBuffer * HASH_SIZE_BYTES : 0;
     }
@@ -360,7 +360,7 @@ public final class HashListByteBuffer implements HashList {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("num of buffers", data.size())
                 .append("maxIndexThatCanBeStored", maxIndexThatCanBeStored)
                 .toString();

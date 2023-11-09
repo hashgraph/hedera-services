@@ -16,15 +16,18 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HALT_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -73,7 +76,8 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
 
     @Test
     void delegatesToCreatedComponentAndExposesSuccess() {
-        given(factory.create(handleContext)).willReturn(component);
+        given(factory.create(handleContext, HederaFunctionality.CONTRACT_CREATE))
+                .willReturn(component);
         given(component.contextTransactionProcessor()).willReturn(processor);
         given(handleContext.recordBuilder(ContractCreateRecordBuilder.class)).willReturn(recordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
@@ -81,11 +85,25 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         final var expectedOutcome = new CallOutcome(expectedResult, SUCCESS_RESULT.finalStatus());
         given(processor.call()).willReturn(expectedOutcome);
 
-        given(recordBuilder.status(SUCCESS)).willReturn(recordBuilder);
         given(recordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(recordBuilder);
         given(recordBuilder.contractCreateResult(expectedResult)).willReturn(recordBuilder);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
+    }
+
+    @Test
+    void delegatesToCreatedComponentAndThrowsFailure() {
+        given(factory.create(handleContext, HederaFunctionality.CONTRACT_CREATE))
+                .willReturn(component);
+        given(component.contextTransactionProcessor()).willReturn(processor);
+        given(handleContext.recordBuilder(ContractCreateRecordBuilder.class)).willReturn(recordBuilder);
+        final var expectedResult = HALT_RESULT.asProtoResultOf(baseProxyWorldUpdater);
+        final var expectedOutcome = new CallOutcome(expectedResult, HALT_RESULT.finalStatus());
+        given(processor.call()).willReturn(expectedOutcome);
+
+        given(recordBuilder.contractID(null)).willReturn(recordBuilder);
+        given(recordBuilder.contractCreateResult(expectedResult)).willReturn(recordBuilder);
+        assertFailsWith(INVALID_SIGNATURE, () -> subject.handle(handleContext));
     }
 
     @Test

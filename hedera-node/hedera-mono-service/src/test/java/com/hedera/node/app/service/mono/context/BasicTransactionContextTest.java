@@ -52,7 +52,6 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.expiry.ExpiringEntity;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -167,9 +166,6 @@ class BasicTransactionContextTest {
     private TransactionBody txn;
 
     @Mock
-    private ExpiringEntity expiringEntity;
-
-    @Mock
     private JKey payerKey;
 
     @Mock
@@ -263,11 +259,37 @@ class BasicTransactionContextTest {
     }
 
     @Test
+    void refusesToReturnUncountedImplicitCreations() {
+        assertThrows(IllegalStateException.class, subject::numImplicitCreations);
+    }
+
+    @Test
+    void returnsCountedImplicitCreationsFromAccessor() {
+        given(accessor.areImplicitCreationsCounted()).willReturn(true);
+        given(accessor.getNumImplicitCreations()).willReturn(2);
+        assertEquals(2, subject.numImplicitCreations());
+    }
+
+    @Test
     void getsExpectedNodeAccount() {
         given(nodeInfo.accountOf(memberId)).willReturn(nodeAccount);
 
         // expect:
         assertEquals(nodeAccount, subject.submittingNodeAccount());
+    }
+
+    @Test
+    void detectsSelfSubmission() {
+        given(nodeInfo.selfId()).willReturn(memberId);
+
+        assertTrue(subject.isSelfSubmitted());
+    }
+
+    @Test
+    void detectsNonSelfSubmission() {
+        given(nodeInfo.selfId()).willReturn(anotherMemberId);
+
+        assertFalse(subject.isSelfSubmitted());
     }
 
     @Test

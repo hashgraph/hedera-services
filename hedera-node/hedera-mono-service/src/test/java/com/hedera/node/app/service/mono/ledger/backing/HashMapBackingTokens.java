@@ -20,7 +20,6 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class HashMapBackingTokens implements BackingStore<TokenID, MerkleToken> {
     private Map<TokenID, MerkleToken> tokens = new HashMap<>();
@@ -43,11 +42,6 @@ public class HashMapBackingTokens implements BackingStore<TokenID, MerkleToken> 
     @Override
     public void remove(TokenID id) {
         tokens.remove(id);
-    }
-
-    @Override
-    public Set<TokenID> idSet() {
-        return tokens.keySet();
     }
 
     @Override

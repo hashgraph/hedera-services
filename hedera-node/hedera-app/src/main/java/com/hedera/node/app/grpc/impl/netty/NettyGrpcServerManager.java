@@ -99,7 +99,8 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         requireNonNull(metrics);
 
         // Convert the various RPC service definitions into transaction or query endpoints using the GrpcServiceBuilder.
-        services = servicesRegistry.services().stream()
+        services = servicesRegistry.registrations().stream()
+                .map(ServicesRegistry.Registration::service)
                 .flatMap(s -> s.rpcDefinitions().stream())
                 .map(d -> {
                     final var builder = new GrpcServiceBuilder(d.basePath(), ingestWorkflow, queryWorkflow);
@@ -117,7 +118,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
 
     @Override
     public int port() {
-        return plainServer == null ? -1 : plainServer.getPort();
+        return plainServer == null || plainServer.isTerminated() ? -1 : plainServer.getPort();
     }
 
     @Override
@@ -145,10 +146,10 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         final var port = grpcConfig.port();
 
         // Start the plain-port server
-        logger.debug("Starting gRPC server on port {}", port);
+        logger.info("Starting gRPC server on port {}", port);
         var nettyBuilder = builderFor(port, nettyConfig);
         plainServer = startServerWithRetry(nettyBuilder, startRetries, startRetryIntervalMs);
-        logger.debug("gRPC server listening on port {}", plainServer.getPort());
+        logger.info("gRPC server listening on port {}", plainServer.getPort());
 
         // Try to start the server listening on the tls port. If this doesn't start, then we just keep going. We should
         // rethink whether we want to have two ports per consensus node like this. We do expose both via the proxies,
@@ -156,11 +157,11 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         // connection or terminating it, as appropriate. But for now, we support both, with the TLS port being optional.
         try {
             final var tlsPort = grpcConfig.tlsPort();
-            logger.debug("Starting TLS gRPC server on port {}", tlsPort);
+            logger.info("Starting TLS gRPC server on port {}", tlsPort);
             nettyBuilder = builderFor(tlsPort, nettyConfig);
             configureTls(nettyBuilder, nettyConfig);
             tlsServer = startServerWithRetry(nettyBuilder, startRetries, startRetryIntervalMs);
-            logger.debug("TLS gRPC server listening on port {}", tlsServer.getPort());
+            logger.info("TLS gRPC server listening on port {}", tlsServer.getPort());
         } catch (SSLException | FileNotFoundException e) {
             tlsServer = null;
             logger.warn("Could not start TLS server, will continue without it: {}", e.getMessage());
@@ -169,17 +170,19 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
 
     @Override
     public synchronized void stop() {
-        logger.info("Shutting down gRPC servers");
-        if (plainServer != null) {
+        // Do not attempt to shut down if we have already done so
+        if (plainServer != null && !plainServer.isTerminated()) {
             logger.info("Shutting down gRPC server on port {}", plainServer.getPort());
             terminateServer(plainServer);
-            plainServer = null;
+        } else {
+            logger.info("Cannot shut down an already stopped gRPC server");
         }
 
-        if (tlsServer != null) {
+        if (tlsServer != null && !tlsServer.isTerminated()) {
             logger.info("Shutting down TLS gRPC server on port {}", tlsServer.getPort());
             terminateServer(tlsServer);
-            tlsServer = null;
+        } else {
+            logger.info("Cannot shut down an already stopped gRPC server");
         }
     }
 
@@ -210,7 +213,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                 if (remaining == 0) {
                     throw new RuntimeException("Failed to start gRPC server");
                 }
-                logger.info("Still trying to start server... {} tries remaining", remaining);
+                logger.info("Still trying to start server... {} tries remaining", remaining, e);
 
                 // Wait a bit before retrying. In the FUTURE we should consider removing this functionality, it isn't
                 // clear that it is actually helpful, and it complicates the code. But for now we will keep it so as
@@ -241,6 +244,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         final var terminationTimeout = nettyConfig.terminationTimeout();
 
         try {
+            server.shutdownNow();
             server.awaitTermination(terminationTimeout, TimeUnit.SECONDS);
             logger.info("gRPC server stopped");
         } catch (InterruptedException ie) {
@@ -253,7 +257,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
 
     /** Utility for setting up various shared configuration settings between both servers */
     private NettyServerBuilder builderFor(final int port, NettyConfig config) {
-        NettyServerBuilder builder;
+        NettyServerBuilder builder = null;
         try {
             builder = NettyServerBuilder.forPort(port)
                     .keepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
@@ -269,7 +273,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                     .bossEventLoopGroup(new EpollEventLoopGroup())
                     .workerEventLoopGroup(new EpollEventLoopGroup());
             logger.info("Using Epoll for gRPC server");
-        } catch (final Throwable ignored) {
+        } catch (final UnsatisfiedLinkError | NoClassDefFoundError ignored) {
             // If we can't use Epoll, then just use NIO
             logger.info("Epoll not available, using NIO");
             builder = NettyServerBuilder.forPort(port)
@@ -282,8 +286,9 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                     .maxConcurrentCallsPerConnection(config.prodMaxConcurrentCalls())
                     .flowControlWindow(config.prodFlowControlWindow())
                     .directExecutor();
+        } catch (final Exception unexpected) {
+            logger.info("Unexpected exception initializing Netty", unexpected);
         }
-
         return builder;
     }
 

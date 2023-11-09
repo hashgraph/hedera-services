@@ -72,7 +72,7 @@ public class NoOpPreconsensusEventWriter implements PreconsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void registerDiscontinuity() throws InterruptedException {
+    public void registerDiscontinuity(final long newOriginRound) throws InterruptedException {
         // no-op
     }
 

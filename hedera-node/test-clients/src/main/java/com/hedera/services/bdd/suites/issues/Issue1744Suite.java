@@ -47,7 +47,8 @@ public class Issue1744Suite extends HapiSuite {
         return List.of(keepsRecordOfPayerIBE());
     }
 
-    public static HapiSpec keepsRecordOfPayerIBE() {
+    //    @HapiTest This will pass after NetworkGetTransactionRecordHandler fee is implemented
+    public HapiSpec keepsRecordOfPayerIBE() {
         return defaultHapiSpec("KeepsRecordOfPayerIBE")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).via("referenceTxn"),

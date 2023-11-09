@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
@@ -35,7 +34,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -64,14 +62,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Checks transactions for internal consistency and validity.
@@ -85,7 +82,7 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 public class TransactionChecker {
-    private static final Logger logger = LoggerFactory.getLogger(TransactionChecker.class);
+    private static final Logger logger = LogManager.getLogger(TransactionChecker.class);
 
     private static final int USER_TRANSACTION_NONCE = 0;
 
@@ -311,11 +308,6 @@ public class TransactionChecker {
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     public void checkTransactionBody(@NonNull final TransactionBody txBody) throws PreCheckException {
-        // The transaction MUST have been sent to *this* node
-        if (!nodeAccount.equals(txBody.nodeAccountID())) {
-            throw new PreCheckException(INVALID_NODE_ACCOUNT);
-        }
-
         final var config = props.getConfiguration().getConfigData(HederaConfig.class);
         checkTransactionID(txBody.transactionID());
         checkMemo(txBody.memo(), config.transactionMaxMemoUtf8Bytes());
@@ -325,12 +317,49 @@ public class TransactionChecker {
             throw new PreCheckException(INSUFFICIENT_TX_FEE);
         }
 
-        checkTimeBox(
-                txBody.transactionID().transactionValidStart(),
-                txBody.transactionValidDurationOrElse(Duration.DEFAULT),
-                config.transactionMinValidDuration(),
-                config.transactionMaxValidDuration(),
-                config.transactionMinValidityBufferSecs());
+        if (!txBody.hasTransactionValidDuration()) {
+            throw new PreCheckException(INVALID_TRANSACTION_DURATION);
+        }
+    }
+
+    /**
+     * Checks whether the transaction duration is valid as per the configuration for valid durations
+     * for the network, and whether the current node wall-clock time falls between the transaction
+     * start and the transaction end (transaction start + duration).
+     *
+     * @param txBody The transaction body that needs to be checked.
+     * @param consensusTime The consensus time used for comparison (either exact or an approximation)
+     * @throws PreCheckException if the transaction duration is invalid, or if the start time is too old, or in the future.
+     */
+    public void checkTimeBox(@NonNull final TransactionBody txBody, @NonNull final Instant consensusTime)
+            throws PreCheckException {
+        requireNonNull(txBody, "txBody must not be null");
+
+        // At this stage the txBody should have been checked already. We simply throw if a mandatory field is missing.
+        final var start = txBody.transactionIDOrThrow().transactionValidStartOrThrow();
+        final var duration = txBody.transactionValidDurationOrThrow();
+
+        // Get the configured boundaries
+        final var config = props.getConfiguration().getConfigData(HederaConfig.class);
+        final var min = config.transactionMinValidDuration();
+        final var max = config.transactionMaxValidDuration();
+        final var minValidityBufferSecs = config.transactionMinValidityBufferSecs();
+
+        // The transaction duration must not be longer than the configured maximum transaction duration
+        // or less than the configured minimum transaction duration.
+        final var validForSecs = duration.seconds();
+        if (validForSecs < min || validForSecs > max) {
+            throw new PreCheckException(INVALID_TRANSACTION_DURATION);
+        }
+
+        final var validStart = toInstant(start);
+        final var validDuration = toSecondsDuration(validForSecs, validStart, minValidityBufferSecs);
+        if (validStart.plusSeconds(validDuration).isBefore(consensusTime)) {
+            throw new PreCheckException(TRANSACTION_EXPIRED);
+        }
+        if (!validStart.isBefore(consensusTime)) {
+            throw new PreCheckException(INVALID_TRANSACTION_START);
+        }
     }
 
     /**
@@ -362,6 +391,10 @@ public class TransactionChecker {
         if (txnId.scheduled() || txnId.nonce() != USER_TRANSACTION_NONCE) {
             throw new PreCheckException(TRANSACTION_ID_FIELD_NOT_ALLOWED);
         }
+
+        if (!txnId.hasTransactionValidStart()) {
+            throw new PreCheckException(INVALID_TRANSACTION_START);
+        }
     }
 
     /**
@@ -383,45 +416,6 @@ public class TransactionChecker {
             if (b == 0) {
                 throw new PreCheckException(INVALID_ZERO_BYTE_IN_STRING);
             }
-        }
-    }
-
-    /**
-     * Checks whether the transaction duration is valid as per the configuration for valid durations
-     * for the network, and whether the current node wall-clock time falls between the transaction
-     * start and the transaction end (transaction start + duration).
-     *
-     * @param start The start time of the transaction, in some notional "real" wall clock time.
-     * @param duration The duration of time for which the transaction is valid. Note that the user may
-     *                 select a duration that is <strong>shorter</strong> than the network's configuration
-     *                 for max duration, but cannot exceed it, as long as it is not shorter than the network's
-     *                 configuration for min duration.
-     * @param min The minimum duration allowed by the network configuration.
-     * @param max The maximum duration allowed by the network configuration.
-     * @throws PreCheckException if the transaction duration is invalid, or if the start time is too old, or in the future.
-     */
-    private void checkTimeBox(
-            final Timestamp start,
-            final Duration duration,
-            final long min,
-            final long max,
-            final long minValidityBufferSecs)
-            throws PreCheckException {
-        // The transaction duration must not be longer than the configured maximum transaction duration
-        // or less than the configured minimum transaction duration.
-        final var validForSecs = duration.seconds();
-        if (validForSecs < min || validForSecs > max) {
-            throw new PreCheckException(INVALID_TRANSACTION_DURATION);
-        }
-
-        final var validStart = toInstant(start);
-        final var validDuration = toSecondsDuration(validForSecs, validStart, minValidityBufferSecs);
-        final var currentTime = Instant.now(Clock.systemUTC());
-        if (validStart.plusSeconds(validDuration).isBefore(currentTime)) {
-            throw new PreCheckException(TRANSACTION_EXPIRED);
-        }
-        if (!validStart.isBefore(currentTime)) {
-            throw new PreCheckException(INVALID_TRANSACTION_START);
         }
     }
 

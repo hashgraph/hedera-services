@@ -16,8 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.jasperdb.utilities.HashTools.DEFAULT_DIGEST;
-
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
@@ -32,6 +31,12 @@ import java.util.Objects;
 
 public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue>
         implements DataItemSerializer<VirtualLeafRecord<K, V>> {
+
+    /**
+     * The digest type to use for Virtual hashes, if this is changed then serialized version need
+     * to change
+     */
+    public static final DigestType DEFAULT_DIGEST = DigestType.SHA_384;
 
     private final long currentVersion;
 

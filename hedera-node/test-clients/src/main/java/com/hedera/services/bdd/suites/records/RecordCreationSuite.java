@@ -41,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -240,6 +241,7 @@ public class RecordCreationSuite extends HapiSuite {
                                 .logged()));
     }
 
+    @HapiTest
     private HapiSpec payerRecordCreationSanityChecks() {
         return defaultHapiSpec("PayerRecordCreationSanityChecks")
                 .given(cryptoCreate(PAYER))
@@ -267,6 +269,7 @@ public class RecordCreationSuite extends HapiSuite {
                 .sum();
     }
 
+    @HapiTest
     private HapiSpec accountsGetPayerRecordsIfSoConfigured() {
         final var txn = "ofRecord";
 

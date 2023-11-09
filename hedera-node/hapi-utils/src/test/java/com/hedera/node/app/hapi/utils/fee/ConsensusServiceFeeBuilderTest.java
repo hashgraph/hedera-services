@@ -17,11 +17,9 @@
 package com.hedera.node.app.hapi.utils.fee;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
@@ -53,29 +51,7 @@ class ConsensusServiceFeeBuilderTest {
     private static final SigValueObj SIG_VALUE_OBJ = new SigValueObj(1, 1, 1);
 
     @Test
-    void builderMethodsThrowException() {
-        final var txnBody = TransactionBody.newBuilder().build();
-
-        assertThrows(
-                InvalidTxBodyException.class, () -> ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(null, null));
-        assertThrows(
-                InvalidTxBodyException.class,
-                () -> ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(txnBody, null));
-        assertThrows(
-                InvalidTxBodyException.class,
-                () -> ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee(null, 100L, null));
-        assertThrows(
-                InvalidTxBodyException.class,
-                () -> ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee(txnBody, 100L, null));
-        assertThrows(
-                InvalidTxBodyException.class, () -> ConsensusServiceFeeBuilder.getConsensusDeleteTopicFee(null, null));
-        assertThrows(
-                InvalidTxBodyException.class,
-                () -> ConsensusServiceFeeBuilder.getConsensusDeleteTopicFee(txnBody, null));
-    }
-
-    @Test
-    void getConsensusCreateTopicFeeHappyPath() throws InvalidTxBodyException {
+    void getConsensusCreateTopicFeeHappyPath() {
         final var txnBodyA = TransactionBody.newBuilder()
                 .setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder()
                         .setAdminKey(A_KEY)
@@ -104,7 +80,7 @@ class ConsensusServiceFeeBuilderTest {
     }
 
     @Test
-    void getConsensusUpdateTopicFeeHappyPath() throws InvalidTxBodyException {
+    void getConsensusUpdateTopicFeeHappyPath() {
         final var txnBodyA = TransactionBody.newBuilder()
                 .setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.newBuilder()
                         .setMemo(StringValue.of(MEMO))
@@ -162,7 +138,7 @@ class ConsensusServiceFeeBuilderTest {
     }
 
     @Test
-    void getConsensusDeleteTopicFeeHappyPath() throws InvalidTxBodyException {
+    void getConsensusDeleteTopicFeeHappyPath() {
         final var topicId = TopicID.newBuilder()
                 .setTopicNum(5L)
                 .setRealmNum(0L)

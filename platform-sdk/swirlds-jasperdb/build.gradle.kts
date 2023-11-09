@@ -15,29 +15,22 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    `java-library`
-    id("com.swirlds.platform.maven-publish")
+    id("com.hedera.hashgraph.sdk.conventions")
+    id("com.hedera.hashgraph.platform-maven-publish")
     id("com.hedera.hashgraph.benchmark-conventions")
 }
 
-dependencies {
-    // Individual Dependencies
-    implementation(project(":swirlds-base"))
-    api(project(":swirlds-virtualmap"))
-    api(project(":swirlds-config-api"))
-    compileOnly(libs.spotbugs.annotations)
+jmhModuleInfo { requires("jmh.core") }
 
-    // Bundle Dependencies
-    implementation(libs.bundles.eclipse)
-
-    // Test Dependencies
-    testImplementation(project(":swirlds-config-impl"))
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-    testImplementation(testFixtures(project(":swirlds-common")))
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testLibs.bundles.mocking)
-    testImplementation(testFixtures(project(":swirlds-config-api")))
-    testImplementation(libs.log4j.core)
+testModuleInfo {
+    requires("com.swirlds.common.testing")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.config.api.test.fixtures")
+    requires("com.swirlds.test.framework")
+    requires("org.apache.commons.lang3")
+    requires("org.apache.logging.log4j.core")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
+    runtimeOnly("org.mockito.inline")
 }

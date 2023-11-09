@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
@@ -35,7 +36,6 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
-import org.apache.commons.io.FileUtils;
 import org.assertj.core.util.Files;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,11 +53,10 @@ class MetricsDocUtilsTest {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("metrics.metricsDocFileName", METRIC_DOC_FILE_NAME)
                 .getOrCreateConfig();
-        final String docFilePath =
-                com.swirlds.common.io.utility.FileUtils.getUserDir() + File.separator + METRIC_DOC_FILE_NAME;
+        final String docFilePath = FileUtils.getUserDir() + File.separator + METRIC_DOC_FILE_NAME;
         final File oldFile = new File(docFilePath);
         if (oldFile.exists()) {
-            FileUtils.deleteQuietly(oldFile);
+            oldFile.delete();
         }
 
         assertFalse(oldFile.exists(), "The metric document file should be removed before testing: " + docFilePath);
@@ -123,7 +122,7 @@ class MetricsDocUtilsTest {
 
         // teardown
         if (docFile.exists()) {
-            FileUtils.deleteQuietly(docFile);
+            docFile.delete();
         }
     }
 }

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.initialization;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_RESOURCE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
@@ -40,8 +40,11 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HexFormat;
@@ -63,7 +66,7 @@ import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 @Singleton
 public class BlocklistAccountCreator {
     private static final Logger log = LogManager.getLogger(BlocklistAccountCreator.class);
-    private final String blocklistResourceName;
+    private final String blocklistResourcePath;
     private final Supplier<HederaAccount> accountSupplier;
     private final EntityIdSource ids;
     private final BackingStore<AccountID, HederaAccount> accounts;
@@ -73,6 +76,7 @@ public class BlocklistAccountCreator {
     private JKey genesisKey;
     private final List<HederaAccount> accountsCreated = new ArrayList<>();
     private AccountNumbers accountNumbers;
+    private static String DEFAULT_BLOCKLIST_RESOURCE = "evm-addresses-blocklist.csv";
 
     @Inject
     public BlocklistAccountCreator(
@@ -83,7 +87,7 @@ public class BlocklistAccountCreator {
             final @NonNull @CompositeProps PropertySource properties,
             final @NonNull AliasManager aliasManager,
             final @NonNull AccountNumbers accountNumbers) {
-        this.blocklistResourceName = properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE);
+        this.blocklistResourcePath = properties.getStringProperty(ACCOUNTS_BLOCKLIST_PATH);
         this.accountSupplier = Objects.requireNonNull(accountSupplier);
         this.ids = Objects.requireNonNull(ids);
         this.accounts = Objects.requireNonNull(accounts);
@@ -121,14 +125,19 @@ public class BlocklistAccountCreator {
     }
 
     private List<String> readFileLines() {
-        final List<String> fileLines;
         try {
-            fileLines = readPrivateKeyBlocklist(blocklistResourceName);
-        } catch (Exception e) {
-            log.error("Failed to read blocklist resource {}", blocklistResourceName, e);
-            return Collections.emptyList();
+            return readPrivateKeyBlocklistFromPath(blocklistResourcePath);
+        } catch (BlocklistNotFoundException e) {
+            log.error("Failed to read blocklist file {}", blocklistResourcePath, e);
         }
-        return fileLines;
+
+        try {
+            return readPrivateKeyBlocklistFromResource(DEFAULT_BLOCKLIST_RESOURCE);
+        } catch (BlocklistNotFoundException e) {
+            log.error("Failed to read blocklist resource {}", DEFAULT_BLOCKLIST_RESOURCE, e);
+        }
+
+        return Collections.emptyList();
     }
 
     private List<BlockedInfo> parseBlockList(final List<String> fileLines) {
@@ -148,10 +157,33 @@ public class BlocklistAccountCreator {
     }
 
     @NonNull
-    private List<String> readPrivateKeyBlocklist(final @NonNull String fileName) {
-        final var inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
-        final var reader = new BufferedReader(new InputStreamReader(inputStream));
-        return reader.lines().toList();
+    private List<String> readPrivateKeyBlocklistFromPath(String blocklistFilePath) throws BlocklistNotFoundException {
+        log.info("Bootstrapping blocklist from '{}'", blocklistFilePath);
+        try (var externalResourceStream = Files.newInputStream(Paths.get(blocklistFilePath));
+                var externalResourceReader = new BufferedReader(new InputStreamReader(externalResourceStream))) {
+            return externalResourceReader.lines().toList();
+        } catch (final IOException e) {
+            throw new BlocklistNotFoundException(
+                    String.format("Could not read external properties file %s", blocklistFilePath), e);
+        }
+    }
+
+    @NonNull
+    private List<String> readPrivateKeyBlocklistFromResource(String blocklistResource)
+            throws BlocklistNotFoundException {
+        log.info("Bootstrapping blocklist from resource '{}'", blocklistResource);
+        try (final var inputStream = getClass().getClassLoader().getResourceAsStream(blocklistResource)) {
+            if (inputStream != null) {
+                final var reader = new BufferedReader(new InputStreamReader(inputStream));
+                return reader.lines().toList();
+            } else {
+                log.warn("Could not find resource {}.", blocklistResource);
+                return Collections.emptyList();
+            }
+        } catch (final IOException e) {
+            throw new BlocklistNotFoundException(
+                    String.format("Could not read from resource %s", blocklistResource), e);
+        }
     }
 
     /**

@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -60,6 +61,7 @@ public class TopicDeleteSuite extends HapiSuite {
                 feeAsExpected());
     }
 
+    @HapiTest
     private HapiSpec cannotDeleteAccountAsTopic() {
         return defaultHapiSpec("CannotDeleteAccountAsTopic")
                 .given(cryptoCreate("nonTopicId"))
@@ -68,6 +70,7 @@ public class TopicDeleteSuite extends HapiSuite {
                         .hasKnownStatus(INVALID_TOPIC_ID));
     }
 
+    @HapiTest
     private HapiSpec topicIdIsValidated() {
         return defaultHapiSpec("topicIdIsValidated")
                 .given()
@@ -78,6 +81,7 @@ public class TopicDeleteSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_TOPIC_ID));
     }
 
+    @HapiTest
     private HapiSpec noAdminKeyCannotDelete() {
         return defaultHapiSpec("noAdminKeyCannotDelete")
                 .given(createTopic("testTopic"))
@@ -85,6 +89,7 @@ public class TopicDeleteSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec deleteWithAdminKey() {
         return defaultHapiSpec("deleteWithAdminKey")
                 .given(newKeyNamed("adminKey"), createTopic("testTopic").adminKeyName("adminKey"))
@@ -92,6 +97,7 @@ public class TopicDeleteSuite extends HapiSuite {
                 .then(getTopicInfo("testTopic").hasCostAnswerPrecheck(INVALID_TOPIC_ID));
     }
 
+    @HapiTest
     private HapiSpec deleteFailedWithWrongKey() {
         long PAYER_BALANCE = 1_999_999_999L;
         return defaultHapiSpec("deleteFailedWithWrongKey")
@@ -107,6 +113,7 @@ public class TopicDeleteSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(cryptoCreate("payer"), createTopic("testTopic").adminKeyName("payer"))

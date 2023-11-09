@@ -21,12 +21,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.asKeyFromAlias;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl.isOfEvmAddressSize;
-import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.spi.key.KeyUtils.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
+import static com.hedera.node.app.service.token.AliasUtils.asKeyFromAlias;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -34,11 +31,10 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
@@ -46,23 +42,18 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.UnaryOperator;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.function.Predicate;
 
 public class AutoAccountCreator {
-    private static final Logger log = LogManager.getLogger(AutoAccountCreator.class);
     private WritableAccountStore accountStore;
     private HandleContext handleContext;
     // checks tokenAliasMap if the change consists an alias that is already used in previous
     // iteration of the token transfer list. This map is used to count number of
     // maxAutoAssociations needed on auto created account
-    protected final Map<Bytes, Set<TokenID>> tokenAliasMap = new HashMap<>();
+    protected final Map<ProtoBytes, Set<TokenID>> tokenAliasMap = new HashMap<>();
     private static final CryptoUpdateTransactionBody.Builder UPDATE_TXN_BODY_BUILDER =
             CryptoUpdateTransactionBody.newBuilder()
                     .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
@@ -74,10 +65,11 @@ public class AutoAccountCreator {
 
     /**
      * Creates an account for the given alias.
-     * @param alias the alias to create the account for
-     * @param isByTokenTransfer whether the account is being created by a token transfer
+     *
+     * @param alias                  the alias to create the account for
+     * @param maxAutoAssociations   the maxAutoAssociations to set on the account
      */
-    public AccountID create(@NonNull final Bytes alias, final boolean isByTokenTransfer) {
+    public AccountID create(@NonNull final Bytes alias, int maxAutoAssociations) {
         requireNonNull(alias);
 
         final var accountsConfig = handleContext.configuration().getConfigData(AccountsConfig.class);
@@ -89,15 +81,9 @@ public class AutoAccountCreator {
         final TransactionBody.Builder syntheticCreation;
         String memo;
 
-        if (isByTokenTransfer) {
-            tokenAliasMap.putIfAbsent(alias, Collections.emptySet());
-        }
-
-        final var maxAutoAssociations =
-                tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
         final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
         if (isAliasEVMAddress) {
-            syntheticCreation = createHollowAccount(alias, 0L);
+            syntheticCreation = createHollowAccount(alias, 0L, maxAutoAssociations);
             memo = LAZY_MEMO;
         } else {
             final var key = asKeyFromAlias(alias);
@@ -105,34 +91,24 @@ public class AutoAccountCreator {
             memo = AUTO_MEMO;
         }
 
+        final Predicate<Key> verifier =
+                key -> handleContext.verificationFor(key).passed();
+        // dispatch the auto-creation record as a preceding record
+        final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
+                syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class, verifier, handleContext.payer());
+
         var fee = autoCreationFeeFor(syntheticCreation);
         if (isAliasEVMAddress) {
             fee += getLazyCreationFinalizationFee();
         }
-        // TODO : distribute autocreation fee and deduct payer balance
-        //        final var payer = handleContext.body().transactionID().accountID();
-        //        final var payerAccount = accountStore.get(payer);
-        //        final var currentBalance = payerAccount.tinybarBalance();
-        //        validateTrue(currentBalance >= fee, INSUFFICIENT_PAYER_BALANCE);
-        //        final var payerCopy = payerAccount.copyBuilder()
-        //                .tinybarBalance(currentBalance - fee)
-        //                .build();
-        //        accountStore.put(payerCopy.copyBuilder().build());
-
-        final var childRecord = handleContext.dispatchRemovableChildTransaction(
-                syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class);
-
-        if (!isAliasEVMAddress) {
-            final var key = asKeyFromAlias(alias);
-            if (key.hasEcdsaSecp256k1()) {
-                final var evmAddress = tryAddressRecovery(key, EthSigsUtils::recoverAddressFromPubKey);
-                if (evmAddress != null) {
-                    childRecord.evmAddress(Bytes.wrap(evmAddress));
-                }
-            }
-        }
         childRecord.transactionFee(fee);
 
+        // If the child transaction failed, we should fail the parent transaction as well and propagate the failure.
+        validateTrue(childRecord.status() == ResponseCodeEnum.SUCCESS, childRecord.status());
+
+        // Since we succeeded, we can now look up the account ID of the created account. This really should always
+        // work, since the child transaction succeeded. If it did not work for some reason, we have a bug in our
+        // code (rather than a bad transaction), so we will fail with FAIL_INVALID.
         final var createdAccountId = accountStore.getAccountIDByAlias(alias);
         validateTrue(createdAccountId != null, FAIL_INVALID);
         return createdAccountId;
@@ -152,24 +128,23 @@ public class AutoAccountCreator {
      * @return fee for auto creation
      */
     private long autoCreationFeeFor(@NonNull final TransactionBody.Builder syntheticCreation) {
-        final var topLevelPayer = handleContext.body().transactionIDOrThrow().accountIDOrThrow();
+        final var topLevelPayer = handleContext.payer();
         final var payerAccount = accountStore.get(topLevelPayer);
         validateTrue(payerAccount != null, PAYER_ACCOUNT_NOT_FOUND);
-        final var txn = Transaction.newBuilder().body(syntheticCreation.build()).build();
-        //        final var fees = handleContext.feeCalculator().computePayment(txn, payerAccount.key());
-        //        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
-        // TODO : need to use fee calculator
-        return 100;
+        final var fees = handleContext.dispatchComputeFees(syntheticCreation.build(), topLevelPayer);
+        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
     /**
      * Create a transaction body for new hollow-account with the given alias.
      * @param alias alias of the account
      * @param balance initial balance of the account
+     * @param maxAutoAssociations maxAutoAssociations of the account
      * @return transaction body for new hollow-account
      */
-    public TransactionBody.Builder createHollowAccount(@NonNull final Bytes alias, final long balance) {
-        final var baseBuilder = createAccountBase(balance);
+    public TransactionBody.Builder createHollowAccount(
+            @NonNull final Bytes alias, final long balance, final int maxAutoAssociations) {
+        final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
         baseBuilder.key(IMMUTABILITY_SENTINEL_KEY).alias(alias).memo(LAZY_MEMO);
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }
@@ -177,11 +152,13 @@ public class AutoAccountCreator {
     /**
      * Create a transaction body for new account with the given balance and other common fields.
      * @param balance initial balance of the account
+     * @param maxAutoAssociations maxAutoAssociations of the account
      * @return transaction body for new account
      */
-    private CryptoCreateTransactionBody.Builder createAccountBase(final long balance) {
+    private CryptoCreateTransactionBody.Builder createAccountBase(final long balance, final int maxAutoAssociations) {
         return CryptoCreateTransactionBody.newBuilder()
                 .initialBalance(balance)
+                .maxAutomaticTokenAssociations(maxAutoAssociations)
                 .autoRenewPeriod(Duration.newBuilder().seconds(THREE_MONTHS_IN_SECONDS));
     }
 
@@ -195,47 +172,8 @@ public class AutoAccountCreator {
      */
     private TransactionBody.Builder createAccount(
             @NonNull final Bytes alias, @NonNull final Key key, final long balance, final int maxAutoAssociations) {
-        final var baseBuilder = createAccountBase(balance);
-        baseBuilder.key(key).alias(alias).memo(AUTO_MEMO);
-
-        if (maxAutoAssociations > 0) {
-            baseBuilder.maxAutomaticTokenAssociations(maxAutoAssociations);
-        }
+        final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
+        baseBuilder.key(key).alias(alias).memo(AUTO_MEMO).receiverSigRequired(false);
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
-    }
-
-    /**
-     * Try to recover EVM address from the given key.
-     * @param key key to recover EVM address from
-     * @param addressRecovery function to recover EVM address from the given key
-     * @return recovered EVM address if successful, otherwise null
-     */
-    @Nullable
-    private byte[] tryAddressRecovery(@Nullable final Key key, final UnaryOperator<byte[]> addressRecovery) {
-        if (key != null && key.hasEcdsaSecp256k1()) {
-            // Only compressed keys are stored at the moment
-            final var keyBytes = key.ecdsaSecp256k1OrThrow();
-            if (keyBytes.length() == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
-                final var keyBytesArray = keyBytes.toByteArray();
-                final var evmAddress = addressRecovery.apply(keyBytesArray);
-                if (isEvmAddress(Bytes.wrap(evmAddress))) {
-                    return evmAddress;
-                } else {
-                    // Not ever expected, since above checks should imply a valid input to the
-                    // LibSecp256k1 library
-                    log.warn("Unable to recover EVM address from {}", () -> hex(keyBytesArray));
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Check if the given address is of a valid EVM address length.
-     * @param address address to check
-     * @return true if the given address is a valid EVM address length, false otherwise
-     */
-    private boolean isEvmAddress(@Nullable final Bytes address) {
-        return address != null && isOfEvmAddressSize(address);
     }
 }

@@ -19,7 +19,7 @@ package com.hedera.node.app.service.mono.context.properties;
 import static com.hedera.node.app.service.mono.context.properties.PropUtils.loadOverride;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_RESOURCE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_BLOCKLIST_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
@@ -193,14 +193,13 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_NODE_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_IS_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PER_HBAR_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_BALANCE_THRESHOLD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_START_THRESH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
@@ -237,7 +236,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UPGRADE_ARTIFACTS_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UTIL_PRNG_IS_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.WORKFLOWS_ENABLED;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Map.entry;
@@ -534,9 +532,8 @@ public final class BootstrapProperties implements PropertySource {
             STAKING_FEES_STAKING_REWARD_PERCENT,
             STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS,
             STAKING_IS_ENABLED,
-            STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR,
             STAKING_REQUIRE_MIN_STAKE_TO_REWARD,
-            STAKING_REWARD_RATE,
+            STAKING_PER_HBAR_REWARD_RATE,
             STAKING_START_THRESH,
             STAKING_MAX_STAKE_REWARDED,
             STAKING_REWARD_BALANCE_THRESHOLD,
@@ -571,7 +568,7 @@ public final class BootstrapProperties implements PropertySource {
             UTIL_PRNG_IS_ENABLED,
             TOKENS_AUTO_CREATIONS_ENABLED,
             ACCOUNTS_BLOCKLIST_ENABLED,
-            ACCOUNTS_BLOCKLIST_RESOURCE,
+            ACCOUNTS_BLOCKLIST_PATH,
             CACHE_CRYPTO_TRANSFER_WARM_THREADS);
 
     static final Set<String> NODE_PROPS = Set.of(
@@ -614,8 +611,7 @@ public final class BootstrapProperties implements PropertySource {
             STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS,
             STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS,
             STATS_RUNNING_AVG_HALF_LIFE_SECS,
-            STATS_SPEEDOMETER_HALF_LIFE_SECS,
-            VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB); // possibly network property
+            STATS_SPEEDOMETER_HALF_LIFE_SECS);
 
     public static final Set<String> BOOTSTRAP_PROP_NAMES =
             unmodifiableSet(Stream.of(BOOTSTRAP_PROPS, GLOBAL_STATIC_PROPS, GLOBAL_DYNAMIC_PROPS, NODE_PROPS)
@@ -740,7 +736,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, AS_INT),
             entry(STAKING_STARTUP_HELPER_RECOMPUTE, AS_RECOMPUTE_TYPES),
             entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, AS_BOOLEAN),
-            entry(STAKING_REWARD_RATE, AS_LONG),
+            entry(STAKING_PER_HBAR_REWARD_RATE, AS_LONG),
             entry(STAKING_START_THRESH, AS_LONG),
             entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, AS_INT),
             entry(STAKING_MAX_STAKE_REWARDED, AS_LONG),
@@ -808,7 +804,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(SCHEDULING_WHITE_LIST, AS_FUNCTIONS),
             entry(STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS, AS_NODE_STAKE_RATIOS),
             entry(STAKING_IS_ENABLED, AS_BOOLEAN),
-            entry(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR, AS_LONG),
             entry(STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS, AS_LONG),
             entry(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS, AS_LONG),
             entry(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS, AS_LONG),
@@ -828,9 +823,8 @@ public final class BootstrapProperties implements PropertySource {
             entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
             entry(WORKFLOWS_ENABLED, AS_FUNCTIONS),
-            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN),
             entry(ACCOUNTS_BLOCKLIST_ENABLED, AS_BOOLEAN),
-            entry(ACCOUNTS_BLOCKLIST_RESOURCE, AS_STRING),
+            entry(ACCOUNTS_BLOCKLIST_PATH, AS_STRING),
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, AS_INT),
             entry(CONFIG_VERSION, AS_INT));
 }

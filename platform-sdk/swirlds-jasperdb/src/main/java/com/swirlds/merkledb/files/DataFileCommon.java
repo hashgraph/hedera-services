@@ -16,11 +16,13 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
 import static com.swirlds.common.units.UnitConstants.GIBIBYTES_TO_BYTES;
 import static com.swirlds.common.units.UnitConstants.KIBIBYTES_TO_BYTES;
 import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
+import static java.util.stream.Collectors.joining;
 
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.IndexedObject;
@@ -32,7 +34,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -41,11 +42,9 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -95,46 +94,8 @@ public final class DataFileCommon {
     /** Size of metadata footer written at end of file */
     public static final int FOOTER_SIZE = PAGE_SIZE;
     /** Comparator for comparing DataFileReaders by file creation time */
-    private static final Comparator<DataFileReader> DATA_FILE_READER_CREATION_TIME_COMPARATOR =
-            Comparator.comparing(o -> o.getMetadata().getCreationDate());
-    /** Comparator for comparing DataFileReaders by file creation time reversed */
-    private static final Comparator<DataFileReader> DATA_FILE_READER_CREATION_TIME_COMPARATOR_REVERSED =
-            DATA_FILE_READER_CREATION_TIME_COMPARATOR.reversed();
-
     private DataFileCommon() {
         throw new IllegalStateException("Utility class; should not be instantiated.");
-    }
-
-    /**
-     * Create a filter to only return all new files that are smaller than given size
-     *
-     * @param sizeMB max file size to accept in MB
-     * @param maxNumberOfFilesInMerge The maximum number of files to process in a single merge
-     * @return filter to filter list of files
-     */
-    public static UnaryOperator<List<DataFileReader>> newestFilesSmallerThan(
-            final int sizeMB, final int maxNumberOfFilesInMerge) {
-        final long sizeBytes = sizeMB * (long) MEBIBYTES_TO_BYTES;
-
-        return dataFileReaders -> {
-            final List<DataFileReader> filesNewestFirst = dataFileReaders.stream()
-                    .sorted(DATA_FILE_READER_CREATION_TIME_COMPARATOR_REVERSED)
-                    .toList();
-            final ArrayList<DataFileReader> smallEnoughFiles = new ArrayList<>(filesNewestFirst.size());
-            for (final DataFileReader file : filesNewestFirst) {
-                long size = file.getSize();
-                if (size < sizeBytes) {
-                    smallEnoughFiles.add(file);
-                } else {
-                    break;
-                }
-            }
-
-            final var numFiles = smallEnoughFiles.size();
-            return numFiles > maxNumberOfFilesInMerge
-                    ? smallEnoughFiles.subList(numFiles - maxNumberOfFilesInMerge, numFiles)
-                    : smallEnoughFiles;
-        };
     }
 
     /**
@@ -153,13 +114,8 @@ public final class DataFileCommon {
                 + "_"
                 + DATE_FORMAT.format(creationInstant)
                 + "_"
-                + StringUtils.leftPad(Integer.toString(index), PRINTED_INDEX_FIELD_WIDTH, '_')
+                + ALIGNED_RIGHT.pad(Integer.toString(index), '_', PRINTED_INDEX_FIELD_WIDTH, false)
                 + FILE_EXTENSION);
-    }
-
-    /** Get the path for a lock file for a given data file path */
-    static Path getLockFilePath(final Path dataFilePath) {
-        return dataFilePath.resolveSibling(dataFilePath.getFileName().toString() + ".lock");
     }
 
     /**
@@ -223,11 +179,7 @@ public final class DataFileCommon {
             return false;
         }
         final String fileName = path.getFileName().toString();
-        final boolean validFile = fileName.startsWith(filePrefix) && fileName.endsWith(FILE_EXTENSION);
-        if (!validFile) {
-            return false;
-        }
-        return !Files.exists(getLockFilePath(path));
+        return fileName.startsWith(filePrefix) && fileName.endsWith(FILE_EXTENSION);
     }
 
     /**
@@ -253,7 +205,10 @@ public final class DataFileCommon {
         final ConcurrentMap<Integer, Long> missingFileCounts = LongStream.range(
                         validKeyRange.getMinValidKey(), validKeyRange.getMaxValidKey() + 1)
                 .parallel()
-                .map(key -> index.get(key, -1))
+                .map(key -> index.get(key, NON_EXISTENT_DATA_LOCATION))
+                // the index could've been modified while we were iterating over it, so non-existent data locations
+                // possible
+                .filter(location -> location != NON_EXISTENT_DATA_LOCATION)
                 .filter(location -> {
                     final int fileIndex = DataFileCommon.fileIndexFromDataLocation(location);
                     return !(validFileIds.contains(fileIndex)
@@ -306,9 +261,9 @@ public final class DataFileCommon {
      * @param filePaths collection of paths to files
      * @return total number of bytes take for all the files in filePaths
      */
-    public static <D> long getSizeOfFiles(final Iterable<DataFileReader<D>> filePaths) {
+    public static long getSizeOfFiles(final Iterable<? extends DataFileReader<?>> filePaths) {
         long totalSize = 0;
-        for (final DataFileReader<D> dataFileReader : filePaths) {
+        for (final DataFileReader<?> dataFileReader : filePaths) {
             totalSize += dataFileReader.getSize();
         }
         return totalSize;
@@ -351,37 +306,58 @@ public final class DataFileCommon {
         return (double) Math.round(d * ROUNDING_SCALE_FACTOR) / ROUNDING_SCALE_FACTOR;
     }
 
-    public static <D> void logMergeStats(
+    public static void logCompactStats(
             final String storeName,
-            final double tookSeconds,
-            final Collection<DataFileReader<D>> filesToMerge,
+            final double tookMillis,
+            final Collection<? extends DataFileReader<?>> filesToMerge,
             final long filesToMergeSize,
             final List<Path> mergedFiles,
-            final DataFileCollection<D> fileCollection)
+            int targetCompactionLevel,
+            final DataFileCollection<?> fileCollection)
             throws IOException {
         final long mergedFilesCount = mergedFiles.size();
         final long mergedFilesSize = getSizeOfFilesByPath(mergedFiles);
+        final double tookSeconds = tookMillis / 1000;
+        String levelsCompacted = filesToMerge.stream()
+                .map(v -> v.getMetadata().getCompactionLevel())
+                .distinct()
+                .map(v -> Integer.toString(v))
+                .sorted()
+                .collect(joining(","));
+
+        Object[] fileToMergeIndexes = filesToMerge.stream()
+                .map(reader -> reader.getMetadata().getIndex())
+                .toArray();
+        Object[] allFileIndexes = fileCollection.getAllCompletedFiles().stream()
+                .map(reader -> reader.getMetadata().getIndex())
+                .toArray();
         logger.info(
                 MERKLE_DB.getMarker(),
+                // Note that speed of read and write doesn't exactly map to the real read/write speed
+                // because we consult in-memory index and skip some entries. Effective read/write speed
+                // in this context means how much data files were covered by the compaction.
                 """
-                        [{}] Merged {} file(s) / {} into {} file(s) / {} in {} second(s)
-                                read at {} written at {}
-                                filesToMerge = {}
-                                allFilesAfter = {}""",
+                        [{}] Compacted {} file(s) / {} at level {} into {} file(s) of level {} / {} in {} second(s)
+                                effectively read at {} effectively written at {},
+                                compactedFiles[{}] = {},
+                                filesToMerge[{}] = {}
+                                allFilesAfter[{}] = {}""",
                 storeName,
                 filesToMerge.size(),
                 formatSizeBytes(filesToMergeSize),
+                levelsCompacted,
                 mergedFilesCount,
+                targetCompactionLevel,
                 formatSizeBytes(mergedFilesSize),
                 tookSeconds,
                 formatSizeBytes((long) (filesToMergeSize / tookSeconds)) + "/sec",
                 formatSizeBytes((long) (mergedFilesSize / tookSeconds)) + "/sec",
-                Arrays.toString(filesToMerge.stream()
-                        .map(reader -> reader.getMetadata().getIndex())
-                        .toArray()),
-                Arrays.toString(fileCollection.getAllCompletedFiles().stream()
-                        .map(reader -> reader.getMetadata().getIndex())
-                        .toArray()));
+                mergedFilesCount,
+                Arrays.toString(mergedFiles.stream().map(Path::getFileName).toArray()),
+                fileToMergeIndexes.length,
+                Arrays.toString(fileToMergeIndexes),
+                allFileIndexes.length,
+                Arrays.toString(allFileIndexes));
     }
 
     /**

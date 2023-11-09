@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
@@ -29,7 +30,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -48,24 +48,24 @@ class RandomAccessSetTest {
      * Add to both sets in the pair.
      */
     private void add(Pair<Set<Integer>, RandomAccessSet<Integer>> pair, final int value) {
-        pair.getLeft().add(value);
-        pair.getRight().add(value);
+        pair.left().add(value);
+        pair.right().add(value);
     }
 
     /**
      * Remove from both sets in the pair.
      */
     private void remove(Pair<Set<Integer>, RandomAccessSet<Integer>> pair, final int value) {
-        pair.getLeft().remove(value);
-        pair.getRight().remove(value);
+        pair.left().remove(value);
+        pair.right().remove(value);
     }
 
     /**
      * Assert that the set and reference set contain the same elements.
      */
     private void validate(Pair<Set<Integer>, RandomAccessSet<Integer>> pair) {
-        final Set<Integer> reference = pair.getLeft();
-        final RandomAccessSet<Integer> randomAccessSet = pair.getRight();
+        final Set<Integer> reference = pair.left();
+        final RandomAccessSet<Integer> randomAccessSet = pair.right();
 
         assertEquals(reference.size(), randomAccessSet.size(), "sets should be the same size");
         assertEquals(reference, randomAccessSet, "sets should contain the same elements");

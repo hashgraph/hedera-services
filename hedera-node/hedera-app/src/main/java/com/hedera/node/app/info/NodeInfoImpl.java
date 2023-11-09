@@ -17,17 +17,32 @@
 package com.hedera.node.app.info;
 
 import static com.hedera.node.app.spi.HapiUtils.parseAccount;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.swirlds.common.system.address.Address;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public record NodeInfoImpl(long nodeId, @NonNull AccountID accountId, boolean zeroStake, @NonNull String memo)
+public record NodeInfoImpl(
+        long nodeId,
+        @NonNull AccountID accountId,
+        long stake,
+        @NonNull String externalHostName,
+        int externalPort,
+        @NonNull String hexEncodedPublicKey,
+        @NonNull String memo)
         implements NodeInfo {
     @NonNull
     static NodeInfo fromAddress(@NonNull final Address address) {
         return new NodeInfoImpl(
-                address.getNodeId().id(), parseAccount(address.getMemo()), address.getWeight() <= 0, address.getMemo());
+                address.getNodeId().id(),
+                parseAccount(address.getMemo()),
+                address.getWeight(),
+                requireNonNull(address.getHostnameExternal()),
+                address.getPortExternal(),
+                CommonUtils.hex(requireNonNull(address.getSigPublicKey()).getEncoded()),
+                address.getMemo());
     }
 }

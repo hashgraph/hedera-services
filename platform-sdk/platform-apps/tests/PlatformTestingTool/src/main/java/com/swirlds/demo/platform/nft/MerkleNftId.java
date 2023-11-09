@@ -16,16 +16,14 @@
 
 package com.swirlds.demo.platform.nft;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.exceptions.InvalidVersionException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import java.io.IOException;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
+import java.util.Objects;
 
 /**
  * A unique identifier for an {@link Nft}.
@@ -141,21 +139,15 @@ public class MerkleNftId extends PartialMerkleLeaf implements MerkleLeaf {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (!(o instanceof MerkleNftId)) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final MerkleNftId tokenId = (MerkleNftId) o;
-        return new EqualsBuilder()
-                .append(shardNum, tokenId.shardNum)
-                .append(realmNum, tokenId.realmNum)
-                .append(tokenNum, tokenId.tokenNum)
-                .isEquals();
+        final MerkleNftId that = (MerkleNftId) other;
+        return shardNum == that.shardNum && realmNum == that.realmNum && tokenNum == that.tokenNum;
     }
 
     /**
@@ -179,18 +171,14 @@ public class MerkleNftId extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(shardNum)
-                .append(realmNum)
-                .append(tokenNum)
-                .hashCode();
+        return Objects.hash(shardNum, realmNum, tokenNum);
     }
 
     /**
      * {@inheritDoc}
      */
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("ShardNum", shardNum)
                 .append("RealmNum", realmNum)
                 .append("TokenNum", tokenNum)

@@ -80,7 +80,8 @@ public abstract class HapiSpecOperation {
     protected static final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
     protected static final ConsensusOpsUsage consensusOpsUsage = new ConsensusOpsUsage();
 
-    private final Random r = new Random();
+    @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
+    private final Random r = new Random(688679L);
 
     /* Note that an op may _be_ a txn; or just a query that submits a txn as payment. */
     protected String txnName = UUID.randomUUID().toString().substring(0, 8);
@@ -115,7 +116,7 @@ public abstract class HapiSpecOperation {
     protected boolean useRandomNode = false;
     protected boolean unavailableNode = false;
     protected Set<HederaFunctionality> skipIfAutoScheduling = Collections.emptySet();
-    protected Optional<String> expectedLedgerId = Optional.empty();
+    protected Optional<ByteString> expectedLedgerId = Optional.empty();
     protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
     protected Optional<SigMapGenerator> sigMapGen = Optional.empty();
     protected Optional<List<Function<HapiSpec, Key>>> signers = Optional.empty();

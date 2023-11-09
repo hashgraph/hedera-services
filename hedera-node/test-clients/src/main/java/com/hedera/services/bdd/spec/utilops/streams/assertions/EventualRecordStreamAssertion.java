@@ -19,8 +19,10 @@ package com.hedera.services.bdd.spec.utilops.streams.assertions;
 import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
 
 import com.hedera.services.bdd.junit.RecordStreamAccess;
+import com.hedera.services.bdd.junit.StreamDataListener;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.stream.proto.RecordStreamItem;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Objects;
@@ -59,6 +61,17 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
         this.assertionFactory = assertionFactory;
     }
 
+    private EventualRecordStreamAssertion(
+            final Function<HapiSpec, RecordStreamAssertion> assertionFactory, final boolean hasPassedIfNothingFailed) {
+        super(hasPassedIfNothingFailed);
+        this.assertionFactory = assertionFactory;
+    }
+
+    public static EventualRecordStreamAssertion eventuallyAssertingNoFailures(
+            final Function<HapiSpec, RecordStreamAssertion> assertionFactory) {
+        return new EventualRecordStreamAssertion(assertionFactory, true);
+    }
+
     public EventualRecordStreamAssertion(
             final Function<HapiSpec, RecordStreamAssertion> assertionFactory, final Duration timeout) {
         super(timeout);
@@ -72,14 +85,30 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
                 : spec.setup().defaultRecordLoc();
         final var validatingListener = RECORD_STREAM_ACCESS.getValidatingListener(locToUse);
         assertion = Objects.requireNonNull(assertionFactory.apply(spec));
-        unsubscribe = validatingListener.subscribe(item -> {
-            if (assertion.isApplicableTo(item)) {
-                try {
-                    if (assertion.test(item)) {
-                        result.pass();
+        unsubscribe = validatingListener.subscribe(new StreamDataListener() {
+            @Override
+            public void onNewItem(RecordStreamItem item) {
+                if (assertion.isApplicableTo(item)) {
+                    try {
+                        if (assertion.test(item)) {
+                            result.pass();
+                        }
+                    } catch (final AssertionError e) {
+                        result.fail(e.getMessage());
                     }
-                } catch (final AssertionError e) {
-                    result.fail(e.getMessage());
+                }
+            }
+
+            @Override
+            public void onNewSidecar(TransactionSidecarRecord sidecar) {
+                if (assertion.isApplicableToSidecar(sidecar)) {
+                    try {
+                        if (assertion.testSidecar(sidecar)) {
+                            result.pass();
+                        }
+                    } catch (final AssertionError e) {
+                        result.fail(e.getMessage());
+                    }
                 }
             }
         });
@@ -98,6 +127,12 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             Assertions.fail("Interrupted while waiting for " + assertion + " to pass");
+        }
+    }
+
+    public void unsubscribe() {
+        if (unsubscribe != null) {
+            unsubscribe.run();
         }
     }
 

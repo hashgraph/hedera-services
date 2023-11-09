@@ -22,6 +22,7 @@ import com.esaulpaugh.headlong.rlp.RLPItem;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
@@ -94,6 +95,48 @@ public record EthTxData(
                 s);
     }
 
+    @VisibleForTesting
+    EthTxData replaceOfferedGasPrice(@NonNull final BigInteger replacementGasPrice) {
+        return new EthTxData(
+                null,
+                type,
+                chainId,
+                nonce,
+                replacementGasPrice.toByteArray(),
+                maxPriorityGas,
+                maxGas,
+                gasLimit,
+                to,
+                value,
+                callData,
+                accessList,
+                recId,
+                v,
+                r,
+                s);
+    }
+
+    @VisibleForTesting
+    EthTxData replaceValue(@NonNull final BigInteger replacementValue) {
+        return new EthTxData(
+                null,
+                type,
+                chainId,
+                nonce,
+                gasPrice,
+                maxPriorityGas,
+                maxGas,
+                gasLimit,
+                to,
+                replacementValue,
+                callData,
+                accessList,
+                recId,
+                v,
+                r,
+                s);
+    }
+
     public byte[] encodeTx() {
         if (accessList != null && accessList.length > 0) {
             throw new IllegalStateException("Re-encoding access list is unsupported");
@@ -150,6 +193,36 @@ public record EthTxData(
             case LEGACY_ETHEREUM, EIP2930 -> new BigInteger(1, gasPrice);
             case EIP1559 -> new BigInteger(1, maxGas);
         };
+    }
+
+    /**
+     * Returns the effective offered gas price for this transaction, defined as the minimum of the
+     * nominal offered gas price in tinybars and {@code (Long.MAX_VALUE / gasLimit)}.
+     *
+     * <p>Clearly the latter value would always be un-payable, since the transaction would cost more
+     * than the entire hbar supply. We just do this to avoid integral overflow.
+     *
+     * @return the effective offered gas price
+     */
+    public long effectiveOfferedGasPriceInTinybars() {
+        return BigInteger.valueOf(Long.MAX_VALUE / gasLimit)
+                .min(getMaxGasAsBigInteger().divide(WEIBARS_TO_TINYBARS))
+                .longValueExact();
+    }
+
+    /**
+     * Returns the effective tinybar value of this transaction, defined as the minimum of the nominal
+     * value in tinybars and {@code Long.MAX_VALUE}.
+     *
+     * <p>Clearly the latter value would always be un-payable, since the transaction would send more
+     * than the entire hbar supply. We just do this to avoid integral overflow.
+     *
+     * @return the effective tinybar value
+     */
+    public long effectiveTinybarValue() {
+        return BigInteger.valueOf(Long.MAX_VALUE)
+                .min(value.divide(WEIBARS_TO_TINYBARS))
+                .longValueExact();
     }
 
     public byte[] getEthereumHash() {
@@ -243,7 +316,7 @@ public record EthTxData(
     }
 
     @VisibleForTesting
-    EthTxData replaceTo(byte[] to) {
+    public EthTxData replaceTo(byte[] to) {
         return new EthTxData(
                 null,
                 type,

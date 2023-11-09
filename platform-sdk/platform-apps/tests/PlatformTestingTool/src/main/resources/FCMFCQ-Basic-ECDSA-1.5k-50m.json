@@ -3,7 +3,7 @@
 	"appendSig": true,
 	"insertSeq": true,
 	"variedSize": false,
-	"invalidSigRatio": 0.1,
+	"invalidSigRatio": 0.0,
 	"_comment": "payload type TYPE_RANDOM_BYTES for random bytes",
 	"type": "TYPE_RANDOM_BYTES",
 	"payloadByteSize": 100,

@@ -48,7 +48,6 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
@@ -63,9 +62,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -121,35 +118,6 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
     @Override
     public void createNodeDetailsIfMissing() {
         writeFromBookIfMissing(fileNumbers.nodeDetails(), this::platformAddressBookToGrpc);
-    }
-
-    @Override
-    public void updateStakeDetails() {
-        final var book = bookSupplier.get();
-        final Map<Long, Long> stakes = new HashMap<>();
-        for (int i = 0, n = book.getSize(); i < n; i++) {
-            final var nodeId = book.getNodeId(i);
-            final var address = book.getAddress(nodeId);
-            stakes.put(nodeId.id(), address.getWeight());
-        }
-
-        final var detailsFid = fileNumbers.toFid(fileNumbers.nodeDetails());
-        final var extant = hfs.getData().get(detailsFid);
-        try {
-            final var oldBook = NodeAddressBook.parseFrom(extant);
-            final var newBuilder = oldBook.toBuilder();
-            for (int i = 0, n = oldBook.getNodeAddressCount(); i < n; i++) {
-                final var entry = oldBook.getNodeAddress(i);
-                final var nodeId = entry.getNodeId();
-                final var stake = stakes.getOrDefault(nodeId, 0L);
-                newBuilder.setNodeAddress(i, entry.toBuilder().setStake(stake).build());
-                log.info("Updated node{} stake to {}", nodeId, stake);
-            }
-            final var replacement = newBuilder.build();
-            hfs.getData().put(detailsFid, replacement.toByteArray());
-        } catch (final Exception e) {
-            log.error("Existing address book was missing or corrupt", e);
-        }
     }
 
     @Override

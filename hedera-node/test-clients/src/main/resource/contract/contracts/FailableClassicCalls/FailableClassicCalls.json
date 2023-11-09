@@ -1,0 +1,1 @@
+[{"inputs":[{"internalType":"bytes","name":"data","type":"bytes"}],"name":"makeClassicCall","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"nonpayable","type":"function"}]

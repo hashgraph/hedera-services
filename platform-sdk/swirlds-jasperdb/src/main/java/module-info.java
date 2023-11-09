@@ -19,13 +19,7 @@
  * A disk-based VirtualDataSource implementation; complete module documentation to be assembled over time as the full
  * implementation is transplanted here.
  */
-open module com.swirlds.jasperdb {
-    exports com.swirlds.jasperdb.collections;
-    exports com.swirlds.jasperdb.utilities;
-    exports com.swirlds.jasperdb.files;
-    exports com.swirlds.jasperdb.files.hashmap;
-    exports com.swirlds.jasperdb;
-    exports com.swirlds.jasperdb.config;
+open module com.swirlds.merkledb {
     exports com.swirlds.merkledb;
     exports com.swirlds.merkledb.collections;
     exports com.swirlds.merkledb.config;
@@ -34,17 +28,16 @@ open module com.swirlds.jasperdb {
     exports com.swirlds.merkledb.serialize;
     exports com.swirlds.merkledb.utilities;
 
+    requires transitive com.swirlds.common;
+    requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.virtualmap;
     requires com.swirlds.base;
-    requires com.swirlds.common;
     requires com.swirlds.logging;
-    requires com.swirlds.virtualmap;
-    requires org.apache.commons.lang3;
-    requires org.eclipse.collections.impl;
-    requires org.eclipse.collections.api;
-    requires org.apache.logging.log4j;
     requires java.management;
     requires jdk.management;
     requires jdk.unsupported;
-    requires com.swirlds.config;
+    requires org.apache.logging.log4j;
+    requires org.eclipse.collections.api;
+    requires org.eclipse.collections.impl;
     requires static com.github.spotbugs.annotations;
 }

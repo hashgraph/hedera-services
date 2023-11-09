@@ -22,17 +22,20 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody.DataOneOfType;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.schedule.impl.WritableScheduleStoreImpl;
+import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -65,14 +68,6 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         }
     }
 
-    private void checkLongTermSchedulable(final ScheduleCreateTransactionBody scheduleCreate) throws PreCheckException {
-        // @todo('long term schedule') HIP needed?, before enabling long term schedule, add a response code for
-        //       INVALID_LONG_TERM_SCHEDULE and fix this exception.
-        if (scheduleCreate.waitForExpiry() && !scheduleCreate.hasExpirationTime()) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION /*INVALID_LONG_TERM_SCHEDULE*/);
-        }
-    }
-
     /**
      * Pre-handles a {@link HederaFunctionality#SCHEDULE_CREATE} transaction, returning the metadata
      * required to, at minimum, validate the signatures of all required and optional signing keys.
@@ -83,12 +78,24 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
         final TransactionBody currentTransaction = context.body();
-        final LedgerConfig config = context.configuration().getConfigData(LedgerConfig.class);
-        final long maxExpiryConfig = config.scheduleTxExpiryTimeSecs();
+        final LedgerConfig ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+        final HederaConfig hederaConfig = context.configuration().getConfigData(HederaConfig.class);
+        final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
+        final long maxExpireConfig = schedulingConfig.longTermEnabled()
+                ? schedulingConfig.maxExpirationFutureSeconds()
+                : ledgerConfig.scheduleTxExpiryTimeSecs();
         final ScheduleCreateTransactionBody scheduleBody = getValidScheduleCreateBody(currentTransaction);
+        if (scheduleBody.memo() != null && scheduleBody.memo().length() > hederaConfig.transactionMaxMemoUtf8Bytes())
+            throw new PreCheckException(ResponseCodeEnum.MEMO_TOO_LONG);
+        // @todo('future') add whitelist check here; mono checks very late, so we cannot check that here yet.
         // validate the schedulable transaction
         getSchedulableTransaction(currentTransaction);
+        // @todo('future') This key/account validation should move to handle once we finish and validate
+        //                 modularization; mono does this check too early, and may reject transactions
+        //                 that should succeed.
+        validatePayerAndScheduler(context, scheduleBody);
         // If we have an explicit payer account for the scheduled child transaction,
         //   add it to optional keys (it might not have signed yet).
         final Key payerKey = getKeyForPayerAccount(scheduleBody, context);
@@ -97,10 +104,11 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
             // If an admin key is present, it must sign the create transaction.
             context.requireKey(scheduleBody.adminKeyOrThrow());
         }
+        checkSchedulableWhitelist(scheduleBody, schedulingConfig);
         final TransactionID transactionId = currentTransaction.transactionID();
         if (transactionId != null) {
             final Schedule provisionalSchedule =
-                    ScheduleUtility.createProvisionalSchedule(currentTransaction, Instant.now(), maxExpiryConfig);
+                    HandlerUtility.createProvisionalSchedule(currentTransaction, Instant.now(), maxExpireConfig);
             final Set<Key> allRequiredKeys = allKeysForTransaction(provisionalSchedule, context);
             context.optionalKeys(allRequiredKeys);
         } else {
@@ -116,8 +124,9 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
      */
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
+        Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
         final Instant currentConsensusTime = context.consensusNow();
-        final WritableScheduleStoreImpl scheduleStore = context.writableStore(WritableScheduleStoreImpl.class);
+        final WritableScheduleStore scheduleStore = context.writableStore(WritableScheduleStore.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
         // Note: We must store the original ScheduleCreate transaction body in the Schedule so that we can compare
@@ -125,22 +134,27 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         //       transactions.  SchedulesByEquality is the virtual map for that task
         final TransactionBody currentTransaction = context.body();
         if (currentTransaction.hasScheduleCreate()) {
-            final Schedule provisionalSchedule = ScheduleUtility.createProvisionalSchedule(
+            final Schedule provisionalSchedule = HandlerUtility.createProvisionalSchedule(
                     currentTransaction, currentConsensusTime, schedulingConfig.maxExpirationFutureSeconds());
+            checkSchedulableWhitelistHandle(provisionalSchedule, schedulingConfig);
             context.attributeValidator().validateMemo(provisionalSchedule.memo());
             final ResponseCodeEnum validationResult =
                     validate(provisionalSchedule, currentConsensusTime, isLongTermEnabled);
             if (validationOk(validationResult)) {
                 final List<Schedule> possibleDuplicates = scheduleStore.getByEquality(provisionalSchedule);
-                if (isPresentIn(possibleDuplicates, provisionalSchedule)) {
-                    throw new HandleException(ResponseCodeEnum.DUPLICATE_TRANSACTION);
+                if (isPresentIn(context, possibleDuplicates, provisionalSchedule)) {
+                    throw new HandleException(ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED);
+                }
+                if (scheduleStore.numSchedulesInState() + 1 > schedulingConfig.maxNumber()) {
+                    throw new HandleException(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
                 }
                 // Need to process the child transaction again, to get the *primitive* keys possibly required
                 final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(provisionalSchedule, context);
                 final Set<Key> allRequiredKeys = requiredKeysResult.remainingRequiredKeys();
                 final Set<Key> updatedSignatories = requiredKeysResult.updatedSignatories();
-                Schedule finalSchedule = ScheduleUtility.completeProvisionalSchedule(
-                        provisionalSchedule, context.newEntityNum(), updatedSignatories);
+                final long nextId = getNextId(context);
+                Schedule finalSchedule =
+                        HandlerUtility.completeProvisionalSchedule(provisionalSchedule, nextId, updatedSignatories);
                 if (tryToExecuteSchedule(
                         context,
                         finalSchedule,
@@ -148,9 +162,11 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                         updatedSignatories,
                         validationResult,
                         isLongTermEnabled)) {
-                    finalSchedule = ScheduleUtility.markExecuted(finalSchedule, currentConsensusTime);
+                    finalSchedule = HandlerUtility.markExecuted(finalSchedule, currentConsensusTime);
                 }
                 scheduleStore.put(finalSchedule);
+                final ScheduleRecordBuilder scheduleRecords = context.recordBuilder(ScheduleRecordBuilder.class);
+                scheduleRecords.scheduleID(finalSchedule.scheduleId());
             } else {
                 throw new HandleException(validationResult);
             }
@@ -159,23 +175,44 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         }
     }
 
+    /*
+     Note: This method should not be needed, but HapiTests don't work properly in this regard
+      (genesis doesn't fill in the next entity state).  This ensures the next entity is not a system entity before
+      returning the value.
+      This is temporary until we can fix the genesis state handling for newEntityNum...
+    */
+    private long getNextId(final HandleContext context) {
+        final LedgerConfig config = context.configuration().getConfigData(LedgerConfig.class);
+        long minEntity = config.numReservedSystemEntities();
+        long nextId;
+        do {
+            nextId = context.newEntityNum();
+        } while (nextId <= minEntity);
+        return nextId;
+    }
+
     private boolean isPresentIn(
-            final @Nullable List<Schedule> possibleDuplicates, final @NonNull Schedule provisionalSchedule) {
-        if (possibleDuplicates != null) {
+            @NonNull final HandleContext context,
+            @Nullable final List<Schedule> possibleDuplicates,
+            @NonNull final Schedule provisionalSchedule) {
+        if (possibleDuplicates != null)
             for (final Schedule candidate : possibleDuplicates) {
-                if (compareForDuplicates(candidate, provisionalSchedule)) return true;
+                if (compareForDuplicates(candidate, provisionalSchedule)) {
+                    // Do not forget to set the ID of the existing duplicate in the receipt...
+                    context.recordBuilder(ScheduleRecordBuilder.class).scheduleID(candidate.scheduleId());
+                    return true;
+                }
             }
-        }
         return false;
     }
 
-    @SuppressWarnings("DataFlowIssue")
-    private boolean compareForDuplicates(final @NonNull Schedule candidate, final @NonNull Schedule requested) {
+    private boolean compareForDuplicates(@NonNull final Schedule candidate, @NonNull final Schedule requested) {
         return candidate.waitForExpiry() == requested.waitForExpiry()
-                && Objects.equals(candidate.expirationTimeProvided(), requested.expirationTimeProvided())
+                && candidate.providedExpirationSecond() == requested.providedExpirationSecond()
                 && Objects.equals(candidate.memo(), requested.memo())
                 && Objects.equals(candidate.adminKey(), requested.adminKey())
-                && candidate.scheduledTransaction().equals(requested.scheduledTransaction());
+                // @note We should check scheduler here, but mono doesn't, so we cannot either, yet.
+                && Objects.equals(candidate.scheduledTransaction(), requested.scheduledTransaction());
     }
 
     @NonNull
@@ -205,12 +242,70 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
             throws PreCheckException {
         if (scheduleBody.hasPayerAccountID()) {
             final AccountID payerForSchedule = scheduleBody.payerAccountIDOrThrow();
-            final ReadableAccountStore accountStore = context.createStore(ReadableAccountStore.class);
-            final Account accountData = accountStore.getAccountById(payerForSchedule);
-            if (accountData != null && accountData.key() != null) return accountData.key();
-            else throw new PreCheckException(ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID);
+            return getKeyForAccount(context, payerForSchedule);
         } else {
             return null;
+        }
+    }
+
+    @NonNull
+    private static Key getKeyForAccount(@NonNull final PreHandleContext context, final AccountID accountToQuery)
+            throws PreCheckException {
+        final ReadableAccountStore accountStore = context.createStore(ReadableAccountStore.class);
+        final Account accountData = accountStore.getAccountById(accountToQuery);
+        if (accountData != null && accountData.key() != null) return accountData.key();
+        else throw new PreCheckException(ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID);
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    private void checkSchedulableWhitelistHandle(final Schedule provisionalSchedule, final SchedulingConfig config)
+            throws HandleException {
+        final Set<HederaFunctionality> whitelist = config.whitelist().functionalitySet();
+        final SchedulableTransactionBody scheduled =
+                provisionalSchedule.originalCreateTransaction().scheduleCreate().scheduledTransactionBody();
+        final DataOneOfType transactionType = scheduled.data().kind();
+        final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
+        if (!whitelist.contains(functionType)) {
+            throw new HandleException(ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        }
+    }
+
+    private void validatePayerAndScheduler(
+            final PreHandleContext context, final ScheduleCreateTransactionBody scheduleBody) throws PreCheckException {
+        final ReadableAccountStore accountStore = context.createStore(ReadableAccountStore.class);
+        final AccountID payerForSchedule = scheduleBody.payerAccountID();
+        if (payerForSchedule != null) {
+            final Account payer = accountStore.getAccountById(payerForSchedule);
+            if (payer == null) {
+                throw new PreCheckException(ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST);
+            }
+        }
+        final AccountID schedulerId = context.payer();
+        if (schedulerId != null) {
+            final Account scheduler = accountStore.getAccountById(schedulerId);
+            if (scheduler == null) {
+                throw new PreCheckException(ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST);
+            }
+        }
+    }
+
+    private void checkSchedulableWhitelist(
+            @NonNull final ScheduleCreateTransactionBody scheduleCreate, @NonNull final SchedulingConfig config)
+            throws PreCheckException {
+        final Set<HederaFunctionality> whitelist = config.whitelist().functionalitySet();
+        final DataOneOfType transactionType =
+                scheduleCreate.scheduledTransactionBody().data().kind();
+        final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
+        if (!whitelist.contains(functionType)) {
+            throw new PreCheckException(ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        }
+    }
+
+    private void checkLongTermSchedulable(final ScheduleCreateTransactionBody scheduleCreate) throws PreCheckException {
+        // @todo('long term schedule') HIP needed?, before enabling long term schedules, add a response code for
+        //       INVALID_LONG_TERM_SCHEDULE and fix this exception.
+        if (scheduleCreate.waitForExpiry() && !scheduleCreate.hasExpirationTime()) {
+            throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION /*INVALID_LONG_TERM_SCHEDULE*/);
         }
     }
 

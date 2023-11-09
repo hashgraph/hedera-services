@@ -259,6 +259,7 @@ class MigrationRecordsManagerTest {
 
         subject.publishMigrationRecords(now);
 
+        verify(systemAccountsCreator).ensureSynthRecordsPresentOnFirstEverTransaction();
         verify(sigImpactHistorian).markEntityChanged(2L);
         verify(recordsHistorian, times(3))
                 .trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(record));

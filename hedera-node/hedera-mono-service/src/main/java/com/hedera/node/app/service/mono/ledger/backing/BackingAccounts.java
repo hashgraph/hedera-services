@@ -76,11 +76,6 @@ public class BackingAccounts implements BackingStore<AccountID, HederaAccount> {
     }
 
     @Override
-    public Set<AccountID> idSet() {
-        return existingAccounts;
-    }
-
-    @Override
     public long size() {
         return delegate.get().size();
     }

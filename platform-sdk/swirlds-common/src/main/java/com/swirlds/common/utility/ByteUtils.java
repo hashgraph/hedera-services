@@ -20,6 +20,8 @@ import static com.swirlds.common.units.UnitConstants.BYTES_PER_INT;
 import static com.swirlds.common.units.UnitConstants.BYTES_PER_LONG;
 import static com.swirlds.common.units.UnitConstants.BYTES_PER_SHORT;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * Utility class for byte operations
  */
@@ -225,5 +227,20 @@ public final class ByteUtils {
      */
     public static long combineInts(final int left, final int right) {
         return (((long) left) << INT_BITS) | (right & 0xffffffffL);
+    }
+
+    /**
+     * Reverse the order of a byte array. The first element becomes the last, the last becomes the first, and so on.
+     *
+     * @param data the byte array to reverse, this array is modified in place
+     * @return the reversed array, is the same array as passed in. Returned for convenience.
+     */
+    public static byte[] reverseByteArray(@NonNull final byte[] data) {
+        for (int i = 0; i < data.length / 2; i++) {
+            final byte temp = data[i];
+            data[i] = data[data.length - i - 1];
+            data[data.length - i - 1] = temp;
+        }
+        return data;
     }
 }

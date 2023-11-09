@@ -38,7 +38,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({LogCaptureExtension.class, MockitoExtension.class})
-public class UnzipUtilityTest {
+class UnzipUtilityTest {
+
     @LoggingTarget
     private LogCaptor logCaptor;
 

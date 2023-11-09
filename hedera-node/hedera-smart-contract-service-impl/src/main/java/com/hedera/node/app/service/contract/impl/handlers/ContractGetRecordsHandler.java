@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.contract.ContractGetRecordsResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -48,6 +49,8 @@ public class ContractGetRecordsHandler extends PaidQueryHandler {
     }
 
     @Override
+    // Suppress the warning that we are using deprecated class(ContractGetRecordsResponse)
+    @SuppressWarnings("java:S1874")
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
         requireNonNull(header);
         final var response = ContractGetRecordsResponse.newBuilder().header(header);
@@ -65,5 +68,11 @@ public class ContractGetRecordsHandler extends PaidQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext context) {
+        return context.feeCalculator().calculate();
     }
 }

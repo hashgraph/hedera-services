@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.expiry;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -24,8 +25,11 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.records.TxnIdRecentHistory;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
@@ -41,6 +45,7 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcqueue.FCQueue;
@@ -54,6 +59,7 @@ import java.util.Map;
 import java.util.Queue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
@@ -62,9 +68,12 @@ class ExpiryManagerTest {
     private final long start = now - 180L;
     private final long firstThen = now - 1;
     private final long secondThen = now + 1;
-    private final AccountID aGrpcId = IdUtils.asAccount("0.0.2");
-    private final AccountID bGrpcId = IdUtils.asAccount("0.0.4");
+    private static final long nodeId = 4L;
+    private final AccountID nodeAccountId = IdUtils.asAccount("0.0.7");
+    private final AccountID aGrpcId = IdUtils.asAccount("0.0.1234");
+    private final AccountID bGrpcId = IdUtils.asAccount("0.0.4567");
     private final EntityNum aKey = EntityNum.fromAccountId(aGrpcId);
+    private final EntityNum nodeKey = EntityNum.fromAccountId(nodeAccountId);
     private final MerkleAccount anAccount = new MerkleAccount();
 
     private final MerkleMap<EntityNum, MerkleAccount> liveAccounts = new MerkleMap<>();
@@ -72,6 +81,9 @@ class ExpiryManagerTest {
 
     private final FCQueue<ExpirableTxnRecord> liveRecords = new FCQueue<>();
     private final Map<EntityNum, Queue<ExpirableTxnRecord>> liveQueryableRecords = new HashMap<>();
+
+    @Mock
+    private NodeInfo nodeInfo;
 
     @LoggingTarget
     private LogCaptor logCaptor;
@@ -82,7 +94,7 @@ class ExpiryManagerTest {
     @Test
     void rebuildsExpectedRecordsFromStateWithoutConsolidatedFcq() {
         subject = new ExpiryManager(
-                liveTxnHistories, () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)));
+                liveTxnHistories, () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)), nodeInfo);
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         final var leftoverTxnId = recordWith(bGrpcId, now).getTxnId().toGrpc();
         liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
@@ -103,7 +115,9 @@ class ExpiryManagerTest {
     @Test
     void rebuildsExpectedRecordsFromStateWithConsolidatedFcq() {
         subject = new ExpiryManager(
-                liveTxnHistories, () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords));
+                liveTxnHistories,
+                () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords),
+                nodeInfo);
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         final var leftoverTxnId = recordWith(bGrpcId, now).getTxnId().toGrpc();
         liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
@@ -125,9 +139,48 @@ class ExpiryManagerTest {
     }
 
     @Test
+    void rebuildsExpectedDueDiligenceFailureQueryableRecordsFromStateWithConsolidatedFcq() {
+        subject = new ExpiryManager(
+                liveTxnHistories,
+                () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords),
+                nodeInfo);
+        final var priorityRecord = recordWith(aGrpcId, start);
+        final var diligenceFailureRecord = recordWith(aGrpcId, start, INVALID_PAYER_SIGNATURE);
+        final var priorityExpiring = expiring(priorityRecord, firstThen);
+        final var diligenceFailureExpiring = expiring(diligenceFailureRecord, secondThen);
+        liveRecords.offer(priorityExpiring);
+        liveRecords.offer(diligenceFailureExpiring);
+        given(nodeInfo.accountKeyOf(nodeId)).willReturn(nodeKey);
+
+        subject.reviewExistingPayerRecords();
+
+        assertEquals(new LinkedList<>(List.of(priorityExpiring)), liveQueryableRecords.get(aKey));
+        assertEquals(new LinkedList<>(List.of(diligenceFailureExpiring)), liveQueryableRecords.get(nodeKey));
+    }
+
+    @Test
+    void doesntThrowIfSubmittingMemberSomehowMissingWithConsolidatedFcq() {
+        subject = new ExpiryManager(
+                liveTxnHistories,
+                () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords),
+                nodeInfo);
+        final var priorityRecord = recordWith(aGrpcId, start);
+        final var diligenceFailureRecord = recordWith(aGrpcId, start, INVALID_PAYER_SIGNATURE);
+        final var priorityExpiring = expiring(priorityRecord, firstThen);
+        final var diligenceFailureExpiring = expiring(diligenceFailureRecord, secondThen);
+        liveRecords.offer(priorityExpiring);
+        liveRecords.offer(diligenceFailureExpiring);
+        given(nodeInfo.accountKeyOf(nodeId)).willThrow(IllegalArgumentException.class);
+
+        assertDoesNotThrow(subject::reviewExistingPayerRecords);
+        assertEquals(new LinkedList<>(List.of(priorityExpiring)), liveQueryableRecords.get(aKey));
+        assertFalse(liveQueryableRecords.containsKey(nodeKey));
+    }
+
+    @Test
     void expiresRecordsAsExpectedWithoutConsolidatedFcq() {
         subject = new ExpiryManager(
-                liveTxnHistories, () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)));
+                liveTxnHistories, () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)), nodeInfo);
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         liveAccounts.put(aKey, anAccount);
 
@@ -154,7 +207,9 @@ class ExpiryManagerTest {
     @Test
     void expiresRecordsAsExpectedWithConsolidatedFcq() {
         subject = new ExpiryManager(
-                liveTxnHistories, () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords));
+                liveTxnHistories,
+                () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords),
+                nodeInfo);
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
 
         final var firstRecord = expiring(recordWith(aGrpcId, start), firstThen);
@@ -179,9 +234,53 @@ class ExpiryManagerTest {
     }
 
     @Test
+    void expiresDiligenceFailureRecordsAsExpectedWithConsolidatedFcq() {
+        subject = new ExpiryManager(
+                liveTxnHistories,
+                () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords),
+                nodeInfo);
+        final var diligenceFailureRecord = recordWith(aGrpcId, start, INVALID_PAYER_SIGNATURE);
+        final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
+        addConsolidatedLiveRecord(expiring(diligenceFailureRecord, firstThen), nodeKey);
+        liveTxnHistories
+                .computeIfAbsent(newTxnId, ignore -> new TxnIdRecentHistory())
+                .observe(diligenceFailureRecord, INVALID_PAYER_SIGNATURE);
+        subject.trackRecordInState(aGrpcId, firstThen);
+        given(nodeInfo.accountKeyOf(nodeId)).willReturn(nodeKey);
+
+        subject.purge(now);
+
+        assertTrue(liveRecords.isEmpty());
+        assertNull(liveQueryableRecords.get(nodeKey));
+    }
+
+    @Test
+    void justLogsErrorWhenDiligenceFailureHasMissingMemberIdWithConsolidatedFcq() {
+        subject = new ExpiryManager(
+                liveTxnHistories,
+                () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords),
+                nodeInfo);
+        final var diligenceFailureRecord = recordWith(aGrpcId, start, INVALID_PAYER_SIGNATURE);
+        final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
+        addConsolidatedLiveRecord(expiring(diligenceFailureRecord, firstThen), nodeKey);
+        liveTxnHistories
+                .computeIfAbsent(newTxnId, ignore -> new TxnIdRecentHistory())
+                .observe(diligenceFailureRecord, INVALID_PAYER_SIGNATURE);
+        subject.trackRecordInState(aGrpcId, firstThen);
+        given(nodeInfo.accountKeyOf(nodeId)).willThrow(IllegalArgumentException.class);
+
+        assertDoesNotThrow(() -> subject.purge(now));
+
+        assertTrue(liveRecords.isEmpty());
+        assertThat(logCaptor.warnLogs(), contains(startsWith("Address book does not have member id 4 ")));
+    }
+
+    @Test
     void managesPayerRecordsAsExpectedWithConsolidatedFcq() {
         subject = new ExpiryManager(
-                liveTxnHistories, () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords));
+                liveTxnHistories,
+                () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords),
+                nodeInfo);
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
 
         final var firstRecord = expiring(recordWith(aGrpcId, start), firstThen);
@@ -200,7 +299,9 @@ class ExpiryManagerTest {
     @Test
     void justLogsGivenMissingQueryableRecords() {
         subject = new ExpiryManager(
-                liveTxnHistories, () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords));
+                liveTxnHistories,
+                () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords),
+                nodeInfo);
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
 
         final var firstRecord = expiring(recordWith(aGrpcId, start), firstThen);
@@ -213,13 +314,16 @@ class ExpiryManagerTest {
         assertDoesNotThrow(() -> subject.purge(now));
 
         assertThat(
-                logCaptor.errorLogs(), contains(startsWith("No queryable records found for payer EntityNum{value=2}")));
+                logCaptor.errorLogs(),
+                contains(startsWith("No queryable records found for payer EntityNum{value=1234}")));
     }
 
     @Test
     void justLogsGivenMismatchedQueryableRecords() {
         subject = new ExpiryManager(
-                liveTxnHistories, () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords));
+                liveTxnHistories,
+                () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords),
+                nodeInfo);
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
 
         final var firstRecord = expiring(recordWith(aGrpcId, start), firstThen);
@@ -240,7 +344,7 @@ class ExpiryManagerTest {
     @Test
     void expiresLoneRecordAsExpected() {
         subject = new ExpiryManager(
-                liveTxnHistories, () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)));
+                liveTxnHistories, () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)), nodeInfo);
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         liveAccounts.put(aKey, anAccount);
 
@@ -264,28 +368,37 @@ class ExpiryManagerTest {
     }
 
     private void addConsolidatedLiveRecord(@NonNull final ExpirableTxnRecord expirableTxnRecord) {
+        addConsolidatedLiveRecord(
+                expirableTxnRecord,
+                expirableTxnRecord.getTxnId().getPayerAccount().asNum());
+    }
+
+    private void addConsolidatedLiveRecord(
+            @NonNull final ExpirableTxnRecord expirableTxnRecord, @NonNull final EntityNum key) {
         liveRecords.add(expirableTxnRecord);
-        final var payerNum = expirableTxnRecord.getTxnId().getPayerAccount().asNum();
-        liveQueryableRecords
-                .computeIfAbsent(payerNum, ignore -> new LinkedList<>())
-                .add(expirableTxnRecord);
+        liveQueryableRecords.computeIfAbsent(key, ignore -> new LinkedList<>()).add(expirableTxnRecord);
     }
 
     private ExpirableTxnRecord expiring(final ExpirableTxnRecord expirableTxnRecord, final long at) {
-        final var ans = expirableTxnRecord;
-        ans.setExpiry(at);
-        ans.setSubmittingMember(0L);
-        return ans;
+        expirableTxnRecord.setExpiry(at);
+        return expirableTxnRecord;
     }
 
     private static ExpirableTxnRecord recordWith(final AccountID payer, final long validStartSecs) {
-        return ExpirableTxnRecord.newBuilder()
+        return recordWith(payer, validStartSecs, SUCCESS);
+    }
+
+    private static ExpirableTxnRecord recordWith(
+            final AccountID payer, final long validStartSecs, final ResponseCodeEnum status) {
+        final var synthRecord = ExpirableTxnRecord.newBuilder()
                 .setTxnId(TxnId.fromGrpc(TransactionID.newBuilder()
                         .setAccountID(payer)
                         .setTransactionValidStart(Timestamp.newBuilder().setSeconds(validStartSecs))
                         .build()))
                 .setConsensusTime(RichInstant.fromJava(Instant.now()))
-                .setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build())
+                .setReceipt(TxnReceipt.newBuilder().setStatus(status.name()).build())
                 .build();
+        synthRecord.setSubmittingMember(nodeId);
+        return synthRecord;
     }
 }

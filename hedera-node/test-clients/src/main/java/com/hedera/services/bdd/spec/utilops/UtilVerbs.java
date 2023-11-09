@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -38,7 +39,10 @@ import static com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate.getU
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
+import static com.hedera.services.bdd.spec.utilops.lifecycle.selectors.NodeSelector.allNodes;
+import static com.hedera.services.bdd.spec.utilops.lifecycle.selectors.NodeSelector.byName;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
+import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
@@ -104,9 +108,15 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForActiveOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForFreezeOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForShutdownOp;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
 import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
+import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.RecordFileChecker;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
@@ -116,6 +126,7 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualAssertion
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -139,6 +150,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -226,6 +238,38 @@ public class UtilVerbs {
         return new SourcedOp(source);
     }
 
+    public static ContextualSourcedOp sourcingContextual(Function<HapiSpec, HapiSpecOperation> source) {
+        return new ContextualSourcedOp(source);
+    }
+
+    public static ContextualActionOp doingContextual(Consumer<HapiSpec> action) {
+        return new ContextualActionOp(action);
+    }
+
+    public static WaitForActiveOp waitForNodeToBecomeActive(String name, int waitSeconds) {
+        return new WaitForActiveOp(byName(name), waitSeconds);
+    }
+
+    public static WaitForActiveOp waitForNodesToBecomeActive(int waitSeconds) {
+        return new WaitForActiveOp(allNodes(), waitSeconds);
+    }
+
+    public static WaitForFreezeOp waitForNodeToFreeze(String name, int waitSeconds) {
+        return new WaitForFreezeOp(byName(name), waitSeconds);
+    }
+
+    public static WaitForFreezeOp waitForNodesToFreeze(int waitSeconds) {
+        return new WaitForFreezeOp(allNodes(), waitSeconds);
+    }
+
+    public static WaitForShutdownOp waitForNodeToShutDown(String name, int waitSeconds) {
+        return new WaitForShutdownOp(byName(name), waitSeconds);
+    }
+
+    public static WaitForShutdownOp waitForNodesToShutDown(int waitSeconds) {
+        return new WaitForShutdownOp(allNodes(), waitSeconds);
+    }
+
     public static HapiSpecSleep sleepFor(long timeMs) {
         return new HapiSpecSleep(timeMs);
     }
@@ -236,6 +280,22 @@ public class UtilVerbs {
 
     public static HapiSpecWaitUntil waitUntilStartOfNextStakingPeriod(final long stakePeriodMins) {
         return untilStartOfNextStakingPeriod(stakePeriodMins);
+    }
+
+    /**
+     * Returns a {@link HapiSpecOperation} that sleeps until the beginning of the next period
+     * of the given length since the UTC epoch in clock time.
+     *
+     * <p>This is not the same thing as sleeping until the next <i>consensus</i> period, of
+     * course; but since consensus time will track clock time very closely in practice, this
+     * operation can let us be almost certain we have e.g. moved into a new staking period
+     * or a new block period by the time the sleep ends.
+     *
+     * @param periodMs the length of the period in milliseconds
+     * @return the operation that sleeps until the beginning of the next period
+     */
+    public static HapiSpecWaitUntil waitUntilStartOfNextAdhocPeriod(final long periodMs) {
+        return untilStartOfNextAdhocPeriod(periodMs);
     }
 
     public static HapiSpecWaitUntil waitUntilJustBeforeNextStakingPeriod(
@@ -305,6 +365,49 @@ public class UtilVerbs {
 
     public static CustomSpecAssert withOpContext(CustomSpecAssert.ThrowingConsumer custom) {
         return new CustomSpecAssert(custom);
+    }
+
+    private static final ByteString MAINNET_LEDGER_ID = ByteString.copyFrom(new byte[] {0x00});
+    private static final ByteString TESTNET_LEDGER_ID = ByteString.copyFrom(new byte[] {0x01});
+    private static final ByteString PREVIEWNET_LEDGER_ID = ByteString.copyFrom(new byte[] {0x02});
+    private static final ByteString DEVNET_LEDGER_ID = ByteString.copyFrom(new byte[] {0x03});
+
+    private static final Set<ByteString> RECOGNIZED_LEDGER_IDS =
+            Set.of(MAINNET_LEDGER_ID, TESTNET_LEDGER_ID, PREVIEWNET_LEDGER_ID, DEVNET_LEDGER_ID);
+
+    /**
+     * Returns an operation that uses a {@link com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo} query
+     * against the {@code 0.0.2} account to look up the ledger id of the target network; and then passes the ledger
+     * id to the given callback.
+     *
+     * @param ledgerIdConsumer the callback to pass the ledger id to
+     * @return the operation exposing the ledger id to the callback
+     */
+    public static HapiSpecOperation exposeTargetLedgerIdTo(@NonNull final Consumer<ByteString> ledgerIdConsumer) {
+        return getAccountInfo(GENESIS).payingWith(GENESIS).exposingLedgerIdTo(ledgerId -> {
+            if (!RECOGNIZED_LEDGER_IDS.contains(ledgerId)) {
+                Assertions.fail(
+                        "Target network is claiming unrecognized ledger id " + CommonUtils.hex(ledgerId.toByteArray()));
+            }
+            ledgerIdConsumer.accept(ledgerId);
+        });
+    }
+
+    /**
+     * A convenience operation that accepts a factory mapping the target ledger id into a {@link HapiSpecOperation}
+     * (for example, a query that asserts something about the ledger id); and then,
+     * <ol>
+     *     <Li>Looks up the ledger id via {@link UtilVerbs#exposeTargetLedgerIdTo(Consumer)}; and,</Li>
+     *     <Li>Calls the given factory with this id, and runs the resulting {@link HapiSpecOperation}.</Li>
+     * </ol>
+     *
+     * @param opFn the factory mapping the ledger id into a {@link HapiSpecOperation}
+     * @return the operation that looks up the ledger id and runs the resulting {@link HapiSpecOperation}
+     */
+    public static HapiSpecOperation withTargetLedgerId(@NonNull final Function<ByteString, HapiSpecOperation> opFn) {
+        final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
+        return blockingOrder(
+                exposeTargetLedgerIdTo(targetLedgerId::set), sourcing(() -> opFn.apply(targetLedgerId.get())));
     }
 
     public static BalanceSnapshot balanceSnapshot(String name, String forAccount) {
@@ -473,6 +576,11 @@ public class UtilVerbs {
         return new EventualRecordStreamAssertion(assertion);
     }
 
+    public static EventualAssertion streamMustIncludeNoFailuresFrom(
+            final Function<HapiSpec, RecordStreamAssertion> assertion) {
+        return EventualRecordStreamAssertion.eventuallyAssertingNoFailures(assertion);
+    }
+
     public static Function<HapiSpec, RecordStreamAssertion> recordedCryptoCreate(final String name) {
         return recordedCryptoCreate(name, assertion -> {});
     }
@@ -484,6 +592,10 @@ public class UtilVerbs {
             config.accept(assertion);
             return assertion;
         };
+    }
+
+    public static Function<HapiSpec, RecordStreamAssertion> sidecarIdValidator() {
+        return spec -> new ValidContractIdsAssertion();
     }
 
     public static Function<HapiSpec, RecordStreamAssertion> recordedChildBodyWithId(
@@ -941,6 +1053,21 @@ public class UtilVerbs {
             burstLatch.await();
             burstNo.getAndIncrement();
         }
+    }
+
+    /**
+     * Returns a {@link SnapshotModeOp} that either takes or fuzzy-matches a snapshot of generated records
+     * from the current spec.
+     *
+     * <p><b>IMPORTANT:</b> If multiple {@link SnapshotModeOp} operations are used in a single spec, all
+     * but the last will be a no-op.
+     *
+     * @param mode the snapshot mode to use
+     * @return a {@link SnapshotModeOp} that either takes or fuzzy-matches a snapshot of generated records
+     */
+    public static SnapshotModeOp snapshotMode(
+            @NonNull final SnapshotMode mode, @NonNull final SnapshotMatchMode... matchModes) {
+        return new SnapshotModeOp(mode, matchModes);
     }
 
     public static HapiSpecOperation updateLargeFile(

@@ -139,6 +139,10 @@ public class QueryVerbs {
         return new HapiContractCallLocal(abi, contract, params);
     }
 
+    public static HapiContractCallLocal explicitContractCallLocal(final String contract, final byte[] encodedParams) {
+        return new HapiContractCallLocal(contract, encodedParams);
+    }
+
     /**
      * This method provides for the proper execution of specs, which execute contract local calls
      * with a function ABI instead of function name

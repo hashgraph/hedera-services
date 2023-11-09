@@ -17,17 +17,16 @@
 package com.hedera.node.app.service.contract.impl.test.state;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
-import static com.hedera.node.app.service.contract.impl.test.state.ProxyWorldUpdaterTest.NEXT_NUMBER;
-import static com.hedera.node.app.service.contract.impl.test.state.ProxyWorldUpdaterTest.SOME_EVM_ADDRESS;
-import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.service.contract.impl.infra.IterableStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
@@ -38,13 +37,15 @@ import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
+import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -81,42 +82,32 @@ class RootProxyWorldUpdaterTest {
     private HederaOperations hederaOperations;
 
     @Mock
-    private ContractStateStore store;
+    private HederaNativeOperations hederaNativeOperations;
 
     @Mock
-    private EvmAccount mutableAccount;
+    private SystemContractOperations systemContractOperations;
 
+    @Mock
+    private ContractStateStore store;
+
+    private Enhancement enhancement;
     private RootProxyWorldUpdater subject;
+
+    @BeforeEach
+    void setup() {
+        enhancement =
+                new HederaWorldUpdater.Enhancement(hederaOperations, hederaNativeOperations, systemContractOperations);
+        givenSubjectWith(HederaTestConfigBuilder.create().getOrCreateConfig(), enhancement);
+    }
 
     @Test
     void refusesToReturnCommittedChangesWithoutSuccessfulCommit() {
-        givenSubjectWith(HederaTestConfigBuilder.create().getOrCreateConfig());
         assertThrows(IllegalStateException.class, subject::getUpdatedContractNonces);
         assertThrows(IllegalStateException.class, subject::getCreatedContractIds);
     }
 
     @Test
-    void handsOffPendingCreationToChild() {
-        givenSubjectWith(DEFAULT_CONFIG);
-        given(hederaOperations.begin()).willReturn(hederaOperations);
-        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
-        given(evmFrameState.getIdNumber(ALTBN128_ADD))
-                .willReturn(ALTBN128_ADD.toBigInteger().longValueExact());
-
-        subject.setupInternalAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
-        final var pendingCreation = subject.getPendingCreation();
-        final var updater = subject.updater();
-
-        assertSame(pendingCreation, updater.getPendingCreation());
-        assertNull(subject.getPendingCreation());
-    }
-
-    @Test
     void performsAdditionalCommitActionsInOrder() {
-        givenSubjectWith(HederaTestConfigBuilder.create()
-                .withValue("contracts.nonces.externalization.enabled", false)
-                .getOrCreateConfig());
-
         InOrder inOrder = BDDMockito.inOrder(storageSizeValidator, storageManager, rentCalculator, hederaOperations);
 
         final var aExpiry = 1_234_567;
@@ -134,28 +125,27 @@ class RootProxyWorldUpdaterTest {
         given(rentCalculator.computeFor(sizeExcludingPendingRemovals, 2, aSlotsUsedBeforeCommit, aExpiry))
                 .willReturn(rentInTinycents);
         given(hederaOperations.valueInTinybars(rentInTinycents)).willReturn(rentInTinybars);
-
         given(hederaOperations.getStore()).willReturn(store);
-        final var createdIds = List.of(CALLED_CONTRACT_ID);
-        final var updatedNonces = List.of(new ContractNonceInfo(CALLED_CONTRACT_ID, 1L));
-        given(hederaOperations.createdContractIds()).willReturn(createdIds);
-        given(hederaOperations.updatedContractNonces()).willReturn(updatedNonces);
+        final var createdIds = new ArrayList<>(List.of(CALLED_CONTRACT_ID));
+        final var updatedNonces = new ArrayList<>(List.of(new ContractNonceInfo(CALLED_CONTRACT_ID, 1L)));
+        given(hederaOperations.summarizeContractChanges())
+                .willReturn(new ContractChangeSummary(createdIds, updatedNonces));
 
         subject.commit();
 
         inOrder.verify(storageSizeValidator)
                 .assertValid(sizeExcludingPendingRemovals, hederaOperations, expectedSizeChanges());
         inOrder.verify(hederaOperations).chargeStorageRent(A_NUM, rentInTinybars, true);
-        inOrder.verify(storageManager).persistChanges(hederaOperations, pendingChanges(), expectedSizeChanges(), store);
+        inOrder.verify(storageManager).persistChanges(enhancement, pendingChanges(), expectedSizeChanges(), store);
         inOrder.verify(hederaOperations).commit();
 
         assertSame(createdIds, subject.getCreatedContractIds());
         assertSame(updatedNonces, subject.getUpdatedContractNonces());
     }
 
-    private void givenSubjectWith(@NonNull final Configuration configuration) {
+    private void givenSubjectWith(@NonNull final Configuration configuration, @NonNull final Enhancement enhancement) {
         subject = new RootProxyWorldUpdater(
-                hederaOperations,
+                enhancement,
                 configuration.getConfigData(ContractsConfig.class),
                 () -> evmFrameState,
                 rentCalculator,

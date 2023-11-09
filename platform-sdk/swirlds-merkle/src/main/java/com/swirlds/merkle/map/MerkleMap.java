@@ -31,6 +31,7 @@ import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
+import com.swirlds.common.utility.StopWatch;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.fchashmap.ModifiableValue;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
@@ -54,7 +55,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.StampedLock;
-import org.apache.commons.lang3.time.StopWatch;
 
 /**
  * <p>

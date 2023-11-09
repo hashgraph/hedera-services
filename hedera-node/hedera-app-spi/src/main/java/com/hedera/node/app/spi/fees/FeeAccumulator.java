@@ -25,12 +25,23 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface FeeAccumulator {
     /**
-     * Charges the given fees to the given payer account.
+     * Charges the given fees to the given payer account, distributing the network and service fees among the
+     * appropriate collection accounts; and the node fee (if any) to the given node account.
      *
-     * @param payer The account to charge the fees to.
-     * @param fees The fees to charge.
+     * @param payer The account to charge the fees to
+     * @param nodeAccount The node account to receive the node fee
+     * @param fees The fees to charge
      */
-    void charge(@NonNull AccountID payer, @NonNull Fees fees);
+    void chargeFees(@NonNull AccountID payer, @NonNull AccountID nodeAccount, @NonNull Fees fees);
+
+    /**
+     * Charges the given network fee to the given payer account.
+     *
+     * @param payer The account to charge the fees to
+     * @param networkFee The network fee to charge
+     * @return true if the full fee was charged
+     */
+    boolean chargeNetworkFee(@NonNull AccountID payer, long networkFee);
 
     /**
      * Refunds the given fees to the receiver account.

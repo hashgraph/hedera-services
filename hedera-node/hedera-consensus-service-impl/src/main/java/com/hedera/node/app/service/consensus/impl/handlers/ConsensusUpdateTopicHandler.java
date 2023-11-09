@@ -16,26 +16,38 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator.pbjToState;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.UpdateTopicResourceUsage;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -48,6 +60,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ConsensusUpdateTopicHandler implements TransactionHandler {
+
     @Inject
     public ConsensusUpdateTopicHandler() {
         // Exists for injection
@@ -81,7 +94,9 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         // have signed the transaction
         if (op.hasAutoRenewAccount()) {
             final var autoRenewAccountID = op.autoRenewAccountOrThrow();
-            context.requireKeyOrThrow(autoRenewAccountID, INVALID_AUTORENEW_ACCOUNT);
+            if (!designatesAccountRemoval(autoRenewAccountID)) {
+                context.requireKeyOrThrow(autoRenewAccountID, INVALID_AUTORENEW_ACCOUNT);
+            }
         }
     }
 
@@ -113,18 +128,37 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
         // First validate this topic is mutable; and the pending mutations are allowed
         validateFalse(topic.adminKey() == null && wantsToMutateNonExpiryField(topicUpdate), UNAUTHORIZED);
+        if (!(topicUpdate.hasAutoRenewAccount() && designatesAccountRemoval(topicUpdate.autoRenewAccount()))
+                && topic.hasAutoRenewAccountId()) {
+            validateFalse(
+                    !topic.hasAdminKey() || (topicUpdate.hasAdminKey() && isEmpty(topicUpdate.adminKey())),
+                    AUTORENEW_ACCOUNT_NOT_ALLOWED);
+        }
         validateMaybeNewAttributes(handleContext, topicUpdate, topic);
 
         // Now we apply the mutations to a builder
         final var builder = new Topic.Builder();
         // But first copy over the immutable topic attributes to the builder
-        builder.id(topic.id());
+        builder.topicId(topic.topicId());
         builder.sequenceNumber(topic.sequenceNumber());
         builder.runningHash(topic.runningHash());
         builder.deleted(topic.deleted());
         // And then resolve mutable attributes, and put the new topic back
         resolveMutableBuilderAttributes(handleContext, topicUpdate, builder, topic);
         topicStore.put(builder.build());
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+        final var topicUpdate = op.consensusUpdateTopicOrThrow();
+        final var topicId = topicUpdate.topicIDOrElse(TopicID.DEFAULT);
+        final var topic = feeContext.readableStore(ReadableTopicStore.class).getTopic(topicId);
+
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new UpdateTopicResourceUsage()
+                .usageGivenExplicit(fromPbj(op), sigValueObj, topic != null ? pbjToState(topic) : null));
     }
 
     private void resolveMutableBuilderAttributes(
@@ -154,9 +188,13 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             builder.memo(topic.memo());
         }
         final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
-        builder.expiry(resolvedExpiryMeta.expiry());
+        builder.expirationSecond(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
-        builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewAccountId());
+        if (op.hasAutoRenewAccount() && designatesAccountRemoval(op.autoRenewAccount())) {
+            builder.autoRenewAccountId((AccountID) null);
+        } else {
+            builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewAccountId());
+        }
     }
 
     private void validateMaybeNewAttributes(
@@ -180,10 +218,21 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic topic) {
-        final var currentMeta = new ExpiryMeta(topic.expiry(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
+        final var currentMeta =
+                new ExpiryMeta(topic.expirationSecond(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
         if (updatesExpiryMeta(op)) {
             final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), op.autoRenewAccount());
-            return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);
+            try {
+                return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta, false);
+            } catch (final HandleException e) {
+                if (e.getStatus() == INVALID_RENEWAL_PERIOD) {
+                    // Tokens throw INVALID_EXPIRATION_TIME, but for topic it's expected currently to throw
+                    // AUTORENEW_DURATION_NOT_IN_RANGE
+                    // future('8906')
+                    throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE);
+                }
+                throw e;
+            }
         } else {
             return currentMeta;
         }
@@ -232,5 +281,13 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                 || op.hasSubmitKey()
                 || op.hasAutoRenewPeriod()
                 || op.hasAutoRenewAccount();
+    }
+
+    private boolean designatesAccountRemoval(AccountID id) {
+        return id.shardNum() == 0
+                && id.realmNum() == 0
+                && id.hasAccountNum()
+                && id.accountNum() == 0
+                && id.alias() == null;
     }
 }

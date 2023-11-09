@@ -110,7 +110,7 @@ class ActionsHelperTest {
     @Test
     void representsCallToMissingAddressAsExpected() {
         given(frame.getRemainingGas()).willReturn(REMAINING_GAS);
-        given(frame.getMessageStackDepth()).willReturn(STACK_DEPTH);
+        given(frame.getDepth()).willReturn(STACK_DEPTH);
         givenResolvableEvmAddress();
         given(frame.getStackItem(1)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(operation.getOpcode()).willReturn(0xF1);

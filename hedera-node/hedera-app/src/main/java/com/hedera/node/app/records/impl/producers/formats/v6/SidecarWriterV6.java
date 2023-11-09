@@ -114,6 +114,7 @@ final class SidecarWriterV6 implements AutoCloseable {
             case ACTIONS -> sidecarTypes.add(SidecarType.CONTRACT_ACTION);
             case BYTECODE -> sidecarTypes.add(SidecarType.CONTRACT_BYTECODE);
             case STATE_CHANGES -> sidecarTypes.add(SidecarType.CONTRACT_STATE_CHANGE);
+            default -> throw new IllegalStateException("Unexpected value: " + sidecarType);
         }
         // update bytes written counter
         bytesWritten += transactionSidecarRecord.length();

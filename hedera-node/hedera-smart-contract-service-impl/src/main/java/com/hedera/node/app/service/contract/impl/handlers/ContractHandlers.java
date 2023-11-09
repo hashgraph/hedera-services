@@ -47,7 +47,7 @@ public class ContractHandlers {
 
     private final ContractUpdateHandler contractUpdateHandler;
 
-    private final EtherumTransactionHandler etherumTransactionHandler;
+    private final EthereumTransactionHandler ethereumTransactionHandler;
 
     @Inject
     public ContractHandlers(
@@ -62,7 +62,7 @@ public class ContractHandlers {
             @NonNull final ContractSystemDeleteHandler contractSystemDeleteHandler,
             @NonNull final ContractSystemUndeleteHandler contractSystemUndeleteHandler,
             @NonNull final ContractUpdateHandler contractUpdateHandler,
-            @NonNull final EtherumTransactionHandler etherumTransactionHandler) {
+            @NonNull final EthereumTransactionHandler ethereumTransactionHandler) {
         this.contractCallHandler = requireNonNull(contractCallHandler, "contractCallHandler must not be null");
         this.contractCallLocalHandler =
                 requireNonNull(contractCallLocalHandler, "contractCallLocalHandler must not be null");
@@ -80,8 +80,8 @@ public class ContractHandlers {
         this.contractSystemUndeleteHandler =
                 requireNonNull(contractSystemUndeleteHandler, "contractSystemUndeleteHandler must not be null");
         this.contractUpdateHandler = requireNonNull(contractUpdateHandler, "contractUpdateHandler must not be null");
-        this.etherumTransactionHandler =
-                requireNonNull(etherumTransactionHandler, "etherumTransactionHandler must not be null");
+        this.ethereumTransactionHandler =
+                requireNonNull(ethereumTransactionHandler, "ethereumTransactionHandler must not be null");
     }
 
     public ContractCallHandler contractCallHandler() {
@@ -128,7 +128,7 @@ public class ContractHandlers {
         return contractUpdateHandler;
     }
 
-    public EtherumTransactionHandler etherumTransactionHandler() {
-        return etherumTransactionHandler;
+    public EthereumTransactionHandler ethereumTransactionHandler() {
+        return ethereumTransactionHandler;
     }
 }

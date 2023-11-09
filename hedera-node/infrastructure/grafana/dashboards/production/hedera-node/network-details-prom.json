@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 36,
+  "id": 66,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -51,20 +51,40 @@
                   "index": 1,
                   "text": "ACTIVE"
                 },
-                "3": {
-                  "color": "orange",
-                  "index": 2,
-                  "text": "DISCONNECTED"
-                },
                 "4": {
                   "color": "yellow",
-                  "index": 3,
+                  "index": 2,
                   "text": "BEHIND"
                 },
                 "5": {
                   "color": "purple",
+                  "index": 3,
+                  "text": "FREEZING"
+                },
+                "6": {
+                  "color": "dark-purple",
                   "index": 4,
-                  "text": "MAINTENANCE"
+                  "text": "FREEZE COMPLETE"
+                },
+                "7": {
+                  "color": "blue",
+                  "index": 5,
+                  "text": "OBSERVING"
+                },
+                "9": {
+                  "color": "dark-blue",
+                  "index": 6,
+                  "text": "CHECKING"
+                },
+                "10": {
+                  "color": "dark-green",
+                  "index": 7,
+                  "text": "RECONNECT COMPLETE"
+                },
+                "11": {
+                  "color": "dark-red",
+                  "index": 8,
+                  "text": "CATASTROPHIC FAILURE"
                 }
               },
               "type": "value"
@@ -73,8 +93,8 @@
               "options": {
                 "match": "null+nan",
                 "result": {
-                  "color": "yellow",
-                  "index": 5,
+                  "color": "orange",
+                  "index": 9,
                   "text": "UNKNOWN"
                 }
               },
@@ -84,8 +104,8 @@
               "options": {
                 "match": "empty",
                 "result": {
-                  "color": "dark-yellow",
-                  "index": 6,
+                  "color": "dark-orange",
+                  "index": 10,
                   "text": "EMPTY"
                 }
               },
@@ -125,7 +145,7 @@
         },
         "textMode": "value_and_name"
       },
-      "pluginVersion": "10.0.0-cloud.3.b04cc88b",
+      "pluginVersion": "10.2.0-59542pre",
       "targets": [
         {
           "datasource": {
@@ -214,7 +234,7 @@
         },
         "textMode": "value_and_name"
       },
-      "pluginVersion": "10.0.0-cloud.3.b04cc88b",
+      "pluginVersion": "10.2.0-59542pre",
       "targets": [
         {
           "datasource": {
@@ -712,7 +732,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "9.3.2-67a213dc85",
+      "pluginVersion": "10.2.0-59542pre",
       "targets": [
         {
           "datasource": {
@@ -776,7 +796,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "9.3.2-67a213dc85",
+      "pluginVersion": "10.2.0-59542pre",
       "targets": [
         {
           "datasource": {
@@ -840,7 +860,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "9.3.2-67a213dc85",
+      "pluginVersion": "10.2.0-59542pre",
       "targets": [
         {
           "datasource": {
@@ -901,7 +921,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "9.3.2-67a213dc85",
+      "pluginVersion": "10.2.0-59542pre",
       "targets": [
         {
           "datasource": {
@@ -965,7 +985,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "9.3.2-67a213dc85",
+      "pluginVersion": "10.2.0-59542pre",
       "targets": [
         {
           "datasource": {
@@ -1640,8 +1660,8 @@
       "type": "timeseries"
     }
   ],
-  "refresh": false,
-  "schemaVersion": 37,
+  "refresh": "",
+  "schemaVersion": 38,
   "style": "dark",
   "tags": [],
   "templating": {

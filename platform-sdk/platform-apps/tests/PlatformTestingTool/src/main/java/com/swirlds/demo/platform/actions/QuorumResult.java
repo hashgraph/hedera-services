@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * QuorumResult is a child of PTT State to track how many control messages have been collected so far
@@ -168,12 +167,18 @@ public class QuorumResult<S extends SelfSerializable> extends PartialMerkleLeaf 
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         QuorumResult<?> that = (QuorumResult<?>) o;
 
-        if (!Objects.equals(quorum.get(), that.quorum.get())) return false;
+        if (!Objects.equals(quorum.get(), that.quorum.get())) {
+            return false;
+        }
         if (quorumState != null && that.quorumState != null) {
             if (quorumState.get().equals(that.quorumState.get())) {
                 return true;
@@ -194,10 +199,6 @@ public class QuorumResult<S extends SelfSerializable> extends PartialMerkleLeaf 
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(quorum)
-                .append(quorumState)
-                .append(lastResultValues)
-                .build();
+        return Objects.hash(quorum, quorumState, lastResultValues);
     }
 }

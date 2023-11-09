@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.sync;
 
-import org.apache.commons.lang3.builder.ToStringBuilder;
+import com.swirlds.base.utility.ToStringBuilder;
 
 /**
  * Data holder for parameters needed for every sync unit test.

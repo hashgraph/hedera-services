@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.hapi.utils.fee;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -44,14 +43,8 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @param txBody transaction body
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
-    public FeeData getCryptoCreateTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasCryptoCreateAccount()) {
-            throw new InvalidTxBodyException("CryptoCreate Tx Body not available for Fee Calculation");
-        }
-
+    public static FeeData getCryptoCreateTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj) {
         final var txBodySize = getCommonTransactionBodyBytes(txBody);
         final var cryptoCreate = txBody.getCryptoCreateAccount();
         final var cryptoCreateSize = getCryptoCreateAccountBodyTxSize(cryptoCreate);
@@ -81,14 +74,8 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @param txBody transaction body
      * @param sigValObj signature value object
      * @return fee data
-     * @throws InvalidTxBodyException when transaction body is invalid
      */
-    public FeeData getCryptoDeleteTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasCryptoDelete()) {
-            throw new InvalidTxBodyException("CryptoDelete Tx Body not available for Fee Calculation");
-        }
-
+    public FeeData getCryptoDeleteTxFeeMatrices(final TransactionBody txBody, final SigValueObj sigValObj) {
         final long bpr = INT_SIZE;
         final var txBodySize = getCommonTransactionBodyBytes(txBody);
         final var bpt = txBodySize + 2 * BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
@@ -118,7 +105,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @param crCreateSize the size of the crypto create transaction body
      * @return the total RAM Bytes for the given crypto create transaction body
      */
-    private long getCryptoRBS(final CryptoCreateTransactionBody cryptoCreate, final int crCreateSize) {
+    private static long getCryptoRBS(final CryptoCreateTransactionBody cryptoCreate, final int crCreateSize) {
         final var seconds = cryptoCreate.hasAutoRenewPeriod()
                 ? cryptoCreate.getAutoRenewPeriod().getSeconds()
                 : 0L;
@@ -131,7 +118,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      * @param cryptoCreate the crypto create transaction body
      * @return the total bytes in the given crypto create transaction body
      */
-    private int getCryptoCreateAccountBodyTxSize(final CryptoCreateTransactionBody cryptoCreate) {
+    private static int getCryptoCreateAccountBodyTxSize(final CryptoCreateTransactionBody cryptoCreate) {
         final var keySize = getAccountKeyStorageSize(cryptoCreate.getKey());
         final var newRealmAdminKeySize =
                 cryptoCreate.hasNewRealmAdminKey() ? getAccountKeyStorageSize(cryptoCreate.getNewRealmAdminKey()) : 0;
@@ -145,7 +132,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      *
      * @return fee data
      */
-    public FeeData getCostTransactionRecordQueryFeeMatrices() {
+    public static FeeData getCostTransactionRecordQueryFeeMatrices() {
         return FeeData.getDefaultInstance();
     }
 
@@ -218,7 +205,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      *
      * @return fee data
      */
-    public FeeData getCostCryptoAccountRecordsQueryFeeMatrices() {
+    public static FeeData getCostCryptoAccountRecordsQueryFeeMatrices() {
         return getCostForQueryByIDOnly();
     }
 
@@ -227,11 +214,11 @@ public final class CryptoFeeBuilder extends FeeBuilder {
      *
      * @return fee data
      */
-    public FeeData getCostCryptoAccountInfoQueryFeeMatrices() {
+    public static FeeData getCostCryptoAccountInfoQueryFeeMatrices() {
         return getCostForQueryByIDOnly();
     }
 
-    private int getAccountTransactionRecordSize(final TransactionRecord transRecord) {
+    private static int getAccountTransactionRecordSize(final TransactionRecord transRecord) {
         final var memoBytesSize = transRecord.getMemoBytes().size();
 
         final var accountAmountSize = transRecord.hasTransferList()

@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.service.file.impl.test.handlers;
 
-import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -39,12 +40,11 @@ import com.hedera.hapi.node.file.FileGetContentsResponse;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,11 +59,14 @@ class FileGetContentsTest extends FileTestBase {
     @Mock
     private QueryContext context;
 
+    @Mock
+    private FileFeeBuilder usageEstimator;
+
     private FileGetContentsHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new FileGetContentsHandler();
+        subject = new FileGetContentsHandler(usageEstimator);
     }
 
     @Test
@@ -108,29 +111,20 @@ class FileGetContentsTest extends FileTestBase {
 
         final var query = createGetFileContentQuery(fileId.fileNum());
         given(context.query()).willReturn(query);
-        given(context.createStore(ReadableFileStore.class)).willReturn(readableStore);
 
         assertThatCode(() -> subject.validate(context)).doesNotThrowAnyException();
     }
 
     @Test
     void validatesQueryIfInvalidFile() throws Throwable {
-        readableFileState.reset();
-        final var state = MapReadableKVState.<Long, File>builder("FILES").build();
-        given(readableStates.<Long, File>get(FILES)).willReturn(state);
-        final var store = new ReadableFileStoreImpl(readableStates);
-
-        final var query = createGetFileContentQuery(fileId.fileNum());
+        final var query = createGetFileContentQuery();
         when(context.query()).thenReturn(query);
-        when(context.createStore(ReadableFileStore.class)).thenReturn(store);
 
-        assertThatThrownBy(() -> subject.validate(context))
-                .isInstanceOf(PreCheckException.class)
-                .has(responseCode(ResponseCodeEnum.INVALID_FILE_ID));
+        assertThrowsPreCheck(() -> subject.validate(context), INVALID_FILE_ID);
     }
 
     @Test
-    void validatesQueryIfDeletedFile() throws Throwable {
+    void validatesQueryEvenWhenFileDeletedInState() throws Throwable {
         givenValidFile(true);
         readableFileState = readableFileState();
         given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
@@ -138,11 +132,8 @@ class FileGetContentsTest extends FileTestBase {
 
         final var query = createGetFileContentQuery(fileId.fileNum());
         when(context.query()).thenReturn(query);
-        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
-        assertThatThrownBy(() -> subject.validate(context))
-                .isInstanceOf(PreCheckException.class)
-                .has(responseCode(ResponseCodeEnum.FILE_DELETED));
+        assertDoesNotThrow(() -> subject.validate(context));
     }
 
     @Test
@@ -179,6 +170,23 @@ class FileGetContentsTest extends FileTestBase {
         assertEquals(expectedContent, fileContentResponse.fileContents());
     }
 
+    @Test
+    void getsResponseIfInvalidFileID() {
+        givenValidFile();
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
+
+        final var query = createGetFileContentQuery(fileIdNotExist.fileNum());
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
+
+        final var response = subject.findResponse(context, responseHeader);
+        final var fileContentResponse = response.fileGetContentsOrThrow();
+        assertEquals(
+                ResponseCodeEnum.INVALID_FILE_ID, fileContentResponse.header().nodeTransactionPrecheckCode());
+    }
+
     private FileContents getExpectedContent() {
         return FileContents.newBuilder()
                 .contents(Bytes.wrap(contents))
@@ -191,6 +199,16 @@ class FileGetContentsTest extends FileTestBase {
                 payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = FileGetContentsQuery.newBuilder()
                 .fileID(FileID.newBuilder().fileNum(fileId).build())
+                .header(QueryHeader.newBuilder().payment(payment).build())
+                .build();
+
+        return Query.newBuilder().fileGetContents(data).build();
+    }
+
+    private Query createGetFileContentQuery() {
+        final var payment =
+                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
+        final var data = FileGetContentsQuery.newBuilder()
                 .header(QueryHeader.newBuilder().payment(payment).build())
                 .build();
 

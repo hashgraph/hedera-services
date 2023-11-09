@@ -16,23 +16,29 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.isSerializedProtoKey;
+import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenAssociation;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * The context of a token transfer. This This is used to pass information between the steps of the transfer.
+ * The context of a token transfer. This is used to pass information between the steps of the transfer.
  */
 public class TransferContextImpl implements TransferContext {
     private final WritableAccountStore accountStore;
@@ -44,6 +50,8 @@ public class TransferContextImpl implements TransferContext {
     private final AutoCreationConfig autoCreationConfig;
     private final LazyCreationConfig lazyCreationConfig;
     private final TokensConfig tokensConfig;
+    private final List<TokenAssociation> automaticAssociations = new ArrayList<>();
+    private final List<AssessedCustomFee> assessedCustomFees = new ArrayList<>();
 
     public TransferContextImpl(final HandleContext context) {
         this.context = context;
@@ -67,22 +75,25 @@ public class TransferContextImpl implements TransferContext {
     }
 
     @Override
-    public void createFromAlias(final Bytes alias, final boolean isFromTokenTransfer) {
+    public void createFromAlias(final Bytes alias, final int reqMaxAutoAssociations) {
         // if it is a serialized proto key, auto-create account
-        if (isSerializedProtoKey(alias)) {
-            validateTrue(autoCreationConfig.enabled(), NOT_SUPPORTED);
-            numAutoCreations++;
-        } else if (isOfEvmAddressSize(alias)) {
+        if (isOfEvmAddressSize(alias)) {
             // if it is an evm address create a hollow account
             validateTrue(lazyCreationConfig.enabled(), NOT_SUPPORTED);
             numLazyCreations++;
+        } else if (isSerializedProtoKey(alias)) {
+            validateTrue(autoCreationConfig.enabled(), NOT_SUPPORTED);
+            numAutoCreations++;
+        } else {
+            // Only EVM addresses and key aliases are supported when creating a new account.
+            throw new HandleException(INVALID_ALIAS_KEY);
         }
         // if this auto creation is from a token transfer, check if auto creation from tokens is enabled
-        if (isFromTokenTransfer) {
+        if (reqMaxAutoAssociations > 0) {
             validateTrue(tokensConfig.autoCreationsIsEnabled(), NOT_SUPPORTED);
         }
         // Keep the created account in the resolutions map
-        final var createdAccount = autoAccountCreator.create(alias, isFromTokenTransfer);
+        final var createdAccount = autoAccountCreator.create(alias, reqMaxAutoAssociations);
         resolutions.put(alias, createdAccount);
     }
 
@@ -112,5 +123,22 @@ public class TransferContextImpl implements TransferContext {
 
     public static boolean isOfEvmAddressSize(final Bytes alias) {
         return alias.length() == EVM_ADDRESS_SIZE;
+    }
+
+    /* ------------------- Needed for building records ------------------- */
+    public void addToAutomaticAssociations(TokenAssociation newAssociation) {
+        automaticAssociations.add(newAssociation);
+    }
+
+    public List<TokenAssociation> getAutomaticAssociations() {
+        return automaticAssociations;
+    }
+
+    public void addToAssessedCustomFee(AssessedCustomFee assessedCustomFee) {
+        assessedCustomFees.add(assessedCustomFee);
+    }
+
+    public List<AssessedCustomFee> getAssessedCustomFees() {
+        return assessedCustomFees;
     }
 }

@@ -19,8 +19,8 @@ package com.hedera.node.app.service.mono.ledger;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STORE_ON_DISK;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PER_HBAR_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.mocks.MockDynamicProperties.mockPropertiesWith;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -92,7 +92,7 @@ public interface StakingActivityModule {
     @Provides
     @Singleton
     static GlobalDynamicProperties provideGlobalDynamicProperties() {
-        return mockPropertiesWith(500_000_000, 163_840);
+        return mockPropertiesWith(500_000_000, 16_384_000);
     }
 
     @Provides
@@ -143,7 +143,7 @@ public interface StakingActivityModule {
         final Map<String, Supplier<Object>> source = new HashMap<>();
         source.put(STAKING_PERIOD_MINS, () -> 1440L);
         source.put(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, () -> 365);
-        source.put(STAKING_REWARD_RATE, () -> 273972602739726L);
+        source.put(STAKING_PER_HBAR_REWARD_RATE, () -> 6_849L);
         source.put(ACCOUNTS_STAKING_REWARD_ACCOUNT, () -> 800L);
         return new SupplierMapPropertySource(source);
     }

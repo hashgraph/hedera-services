@@ -24,7 +24,7 @@ import com.hedera.hapi.streams.HashAlgorithm;
 import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -91,7 +91,10 @@ public final class StreamFileProducerSingleThreaded implements BlockRecordStream
             final long newBlockNumber,
             @NonNull final Instant newBlockFirstTransactionConsensusTime) {
 
-        assert newBlockNumber == lastBlockNumber + 1 : "block numbers must be sequential";
+        if (newBlockNumber != lastBlockNumber + 1) {
+            throw new IllegalArgumentException("Block numbers must be sequential, newBlockNumber=" + newBlockNumber
+                    + ", lastBlockNumber=" + lastBlockNumber);
+        }
         requireNonNull(newBlockFirstTransactionConsensusTime);
         this.currentBlockNumber = newBlockNumber;
         final var lastRunningHash = asHashObject(getRunningHash());
@@ -168,13 +171,13 @@ public final class StreamFileProducerSingleThreaded implements BlockRecordStream
         serializedItems.forEach(item -> {
             try {
                 writer.writeItem(item);
-            } catch (final Throwable th) {
+            } catch (final Exception e) {
                 // This **may** prove fatal. The node should be able to carry on, but then fail when it comes to
                 // actually producing a valid record stream file. We need to have some way of letting all nodes know
                 // that this node has a problem, so we can make sure at least a minimal threshold of nodes is
                 // successfully producing a blockchain.
                 logger.error(
-                        "Error writing record stream item to block record writer for block {}", currentBlockNumber, th);
+                        "Error writing record stream item to block record writer for block {}", currentBlockNumber, e);
             }
         });
     }
@@ -196,8 +199,8 @@ public final class StreamFileProducerSingleThreaded implements BlockRecordStream
             // node, or maybe retry a number of times before giving up.
             try {
                 writer.close(lastRunningHash);
-            } catch (final Throwable th) {
-                logger.error("Error closing block record writer for block {}", lastBlockNumber, th);
+            } catch (final Exception e) {
+                logger.error("Error closing block record writer for block {}", lastBlockNumber, e);
             }
         }
     }
@@ -209,13 +212,13 @@ public final class StreamFileProducerSingleThreaded implements BlockRecordStream
         try {
             writer = writerFactory.create();
             writer.init(hapiVersion, lastRunningHash, newBlockFirstTransactionConsensusTime, currentBlockNumber);
-        } catch (final Throwable th) {
+        } catch (final Exception e) {
             // This represents an almost certainly fatal error. In the FUTURE we should look at dealing with this in a
             // more comprehensive and consistent way. Maybe we retry a bunch of times before giving up, then restart
             // the node. Or maybe we block forever. Or maybe we disable event intake while we keep trying to get this
             // to work. Or maybe we just shut down the node.
-            logger.error("Error creating or initializing a block record writer for block {}", newBlockNumber, th);
-            throw th;
+            logger.error("Error creating or initializing a block record writer for block {}", newBlockNumber, e);
+            throw e;
         }
     }
 }

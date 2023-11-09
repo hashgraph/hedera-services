@@ -32,7 +32,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.hapi.node.state.primitive.ProtoBytes;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.ReadableUpgradeFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
@@ -84,6 +84,7 @@ public class FileTestBase {
     protected final FileID WELL_KNOWN_SYSTEM_FILE_ID =
             FileID.newBuilder().fileNum(122L).shardNum(0L).realmNum(0L).build();
     protected final FileID fileId = WELL_KNOWN_FILE_ID;
+    protected final FileID fileIdNotExist = FileID.newBuilder().fileNum(6_789L).build();
     protected final FileID fileSystemFileId = WELL_KNOWN_SYSTEM_FILE_ID;
     protected final FileID fileUpgradeFileId = WELL_KNOWN_UPGRADE_FILE_ID;
     protected final com.hederahashgraph.api.proto.java.FileID monoFileID =
@@ -97,7 +98,7 @@ public class FileTestBase {
 
     protected final String beneficiaryIdStr = "0.0.3";
     protected final long paymentAmount = 1_234L;
-    protected final Bytes ledgerId = Bytes.wrap(new byte[] {3});
+    protected final Bytes ledgerId = Bytes.wrap(new byte[] {0});
     protected final String memo = "test memo";
     protected final long expirationTime = 1_234_567L;
     protected final long sequenceNumber = 1L;
@@ -278,22 +279,22 @@ public class FileTestBase {
     }
 
     protected void givenValidFile(boolean deleted, boolean withKeys) {
-        file = new File(fileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
-        fileWithNoKeysAndMemo = new File(fileId, expirationTime, null, Bytes.wrap(contents), null, deleted);
-        fileWithNoContent = new File(fileId, expirationTime, withKeys ? keys : null, null, memo, deleted);
-        fileSystem =
-                new File(fileSystemFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
+        file = new File(fileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted, 0L);
+        fileWithNoKeysAndMemo = new File(fileId, expirationTime, null, Bytes.wrap(contents), null, deleted, 0L);
+        fileWithNoContent = new File(fileId, expirationTime, withKeys ? keys : null, null, memo, deleted, 0L);
+        fileSystem = new File(
+                fileSystemFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted, 0L);
     }
 
     protected void givenValidUpgradeFile(boolean deleted, boolean withKeys) {
         upgradeFile = new File(
-                fileUpgradeFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
+                fileUpgradeFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted, 0L);
     }
 
     protected File createFile() {
         return new File.Builder()
                 .fileId(fileId)
-                .expirationTime(expirationTime)
+                .expirationSecond(expirationTime)
                 .keys(keys)
                 .contents(Bytes.wrap(contents))
                 .memo(memo)
@@ -304,7 +305,7 @@ public class FileTestBase {
     protected File createUpgradeFile() {
         return new File.Builder()
                 .fileId(fileUpgradeFileId)
-                .expirationTime(expirationTime)
+                .expirationSecond(expirationTime)
                 .keys(keys)
                 .contents(Bytes.wrap(contents))
                 .memo(memo)
@@ -315,7 +316,7 @@ public class FileTestBase {
     protected File createFileEmptyMemoAndKeys() {
         return new File.Builder()
                 .fileId(fileId)
-                .expirationTime(expirationTime)
+                .expirationSecond(expirationTime)
                 .contents(Bytes.wrap(contents))
                 .deleted(true)
                 .build();
@@ -324,7 +325,7 @@ public class FileTestBase {
     protected File createFileWithoutContent() {
         return new File.Builder()
                 .fileId(fileId)
-                .expirationTime(expirationTime)
+                .expirationSecond(expirationTime)
                 .keys(keys)
                 .memo(memo)
                 .deleted(true)

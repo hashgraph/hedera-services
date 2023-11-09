@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.state.merkle.singleton;
 
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logSingletonRead;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logSingletonWrite;
+
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.StateUtils;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -34,7 +37,9 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
     private static final long CLASS_ID = 0x3832CC837AB77BFL;
     public static final int CLASS_VERSION = 1;
 
-    // Only exists for constructable registry as it works today. Remove ASAP!
+    /**
+     * @deprecated Only exists for constructable registry as it works today. Remove ASAP!
+     */
     @Deprecated(forRemoval = true)
     public SingletonNode() {
         setLeft(new StringLeaf());
@@ -75,11 +80,15 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
 
     public T getValue() {
         final ValueLeaf<T> right = getRight();
+        // Log to transaction state log, what was read
+        logSingletonRead(getLabel(), right);
         return right.getValue();
     }
 
     public void setValue(T value) {
         ValueLeaf<T> right = getRight();
         right.setValue(value);
+        // Log to transaction state log, what was written
+        logSingletonWrite(getLabel(), value);
     }
 }

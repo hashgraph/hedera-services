@@ -24,9 +24,9 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pb
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
@@ -36,6 +36,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
+import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -76,7 +77,12 @@ public class TransactionProcessor {
      * @param receiverAddress the address of the account receiving the top-level call
      */
     private record InvolvedParties(
-            @NonNull HederaEvmAccount sender, @Nullable HederaEvmAccount relayer, @NonNull Address receiverAddress) {}
+            @NonNull HederaEvmAccount sender, @Nullable HederaEvmAccount relayer, @NonNull Address receiverAddress) {
+        @NonNull
+        AccountID senderId() {
+            return sender.hederaId();
+        }
+    }
 
     /**
      * Process the given transaction, returning the result of running it to completion
@@ -114,7 +120,7 @@ public class TransactionProcessor {
         final HederaEvmTransactionResult result;
         try {
             result = frameRunner.runToCompletion(
-                    transaction.gasLimit(), initialFrame, tracer, messageCall, contractCreation);
+                    transaction.gasLimit(), parties.senderId(), initialFrame, tracer, messageCall, contractCreation);
         } catch (ResourceExhaustedException e) {
             return commitResourceExhaustion(transaction, feesOnlyUpdater.get(), context, e.getStatus(), config);
         }
@@ -143,6 +149,10 @@ public class TransactionProcessor {
         try {
             updater.commit();
         } catch (ResourceExhaustedException e) {
+            // Behind the scenes there is only one savepoint stack; so we need to revert the root updater
+            // before creating a new fees-only updater (even though from a Besu perspective, these two
+            // updaters appear independent, they are not)
+            updater.revert();
             return commitResourceExhaustion(transaction, feesOnlyUpdater.get(), context, e.getStatus(), config);
         }
         return result;
@@ -158,7 +168,7 @@ public class TransactionProcessor {
         final var parties = computeInvolvedParties(transaction, updater, config);
         gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
         updater.commit();
-        return resourceExhaustionFrom(transaction.gasLimit(), context.gasPrice(), reason);
+        return resourceExhaustionFrom(parties.senderId(), transaction.gasLimit(), context.gasPrice(), reason);
     }
 
     /**
@@ -209,6 +219,7 @@ public class TransactionProcessor {
                 final var alias = transaction.contractIdOrThrow().evmAddressOrThrow();
                 validateTrue(isEvmAddress(alias), INVALID_CONTRACT_ID);
                 parties = new InvolvedParties(sender, relayer, pbjToBesuAddress(alias));
+                updater.setupTopLevelLazyCreate(parties.receiverAddress);
             } else {
                 validateTrue(to != null, INVALID_CONTRACT_ID);
                 parties =

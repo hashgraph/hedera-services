@@ -19,6 +19,7 @@ package com.swirlds.platform.test.sync;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -40,7 +41,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * This class executes a single sync between two {@link SyncNode} instances. It defines the high level structure and
@@ -162,8 +162,8 @@ public class SyncTestExecutor {
 
         final Pair<Connection, Connection> connections =
                 connectionFactory.createConnections(caller.getNodeId(), listener.getNodeId());
-        caller.setSyncConnection(connections.getLeft());
-        listener.setSyncConnection(connections.getRight());
+        caller.setSyncConnection(connections.left());
+        listener.setSyncConnection(connections.right());
 
         customInitialization.accept(caller, listener);
     }
@@ -183,7 +183,9 @@ public class SyncTestExecutor {
     private void createGraphs() {
         initialGraphCreation.accept(caller, listener);
         graphCustomization.accept(caller, listener);
+        caller.getEmitter().setCheckpoint(params.getNumCallerEvents());
         caller.generateAndAdd(params.getNumCallerEvents(), callerAddToGraphTest);
+        listener.getEmitter().setCheckpoint(params.getNumListenerEvents());
         listener.generateAndAdd(params.getNumListenerEvents(), listenerAddToGraphTest);
         generationDefinitions.accept(caller, listener);
     }

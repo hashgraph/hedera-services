@@ -14,15 +14,10 @@
 # limitations under the License.
 ##
 
-name: "Z-Node XC: Compile"
+name: "ZXC: [Node] Compile Application Code"
 on:
   workflow_call:
     inputs:
-      enable-javadoc:
-        description: "Javadoc Enabled"
-        type: boolean
-        required: false
-        default: true
       enable-unit-tests:
         description: "Unit Testing Enabled"
         type: boolean
@@ -35,6 +30,11 @@ on:
         default: false
       enable-integration-tests:
         description: "Integration Testing Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-hapi-tests:
+        description: "HAPI Testing Enabled"
         type: boolean
         required: false
         default: false
@@ -52,7 +52,7 @@ on:
         description: "Dependency Scope Check Enabled"
         type: boolean
         required: false
-        default: false
+        default: true
       enable-snyk-scan:
         description: "Snyk Scan Enabled"
         type: boolean
@@ -73,11 +73,6 @@ on:
         type: string
         required: false
         default: "17.0.3"
-      gradle-version:
-        description: "Gradle Version:"
-        type: string
-        required: false
-        default: "wrapper"
       node-version:
         description: "NodeJS Version:"
         type: string
@@ -92,6 +87,12 @@ on:
     secrets:
       access-token:
         description: "The Github access token used to checkout the repository, submodules, and make GitHub API calls."
+        required: true
+      gradle-cache-username:
+        description: "The username used to authenticate with the Gradle Build Cache Node."
+        required: true
+      gradle-cache-password:
+        description: "The password used to authenticate with the Gradle Build Cache Node."
         required: true
       sonar-token:
         description: "The SonarCloud access token used by the SonarQube agent to report an analysis."
@@ -111,157 +112,147 @@ permissions:
   checks: write
   contents: read
 
+env:
+  GRADLE_CACHE_USERNAME: ${{ secrets.gradle-cache-username }}
+  GRADLE_CACHE_PASSWORD: ${{ secrets.gradle-cache-password }}
+
 jobs:
   compile:
     name: ${{ inputs.custom-job-label || 'Compiles' }}
     runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # pin@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Expand Shallow Clone for SonarQube and Spotless
         if: ${{ (inputs.enable-sonar-analysis || inputs.enable-unit-tests || inputs.enable-spotless-check) && !cancelled() }}
-        run: |
-          git fetch --unshallow --no-recurse-submodules
+        run: git fetch --unshallow --no-recurse-submodules
 
       - name: Setup Java
-        uses: actions/setup-java@1df8dbefe2a8cbc99770194893dd902763bee34b # pin@v3
+        uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
 
       - name: Setup NodeJS
-        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # pin@v3
+        uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4.0.0
         with:
           node-version: ${{ inputs.node-version }}
 
       - name: Compile
         id: gradle-build
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan
-
-      - name: Javadoc
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
-        if: ${{ inputs.enable-javadoc && !cancelled() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: javadoc --scan
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew assemble --scan --no-daemon
 
       - name: Spotless Check
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-spotless-check && !cancelled() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: spotlessCheck --scan
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew spotlessCheck --scan --no-daemon
 
       - name: Gradle Dependency Scopes Check
-        uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-dependency-check && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        with:
-          build-root-directory: ${{ github.workspace }}/platform-sdk
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: checkAllModuleInfo --scan --continue
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew checkAllModuleInfo --scan --continue --no-daemon
 
       - name: Unit Testing
         id: gradle-test
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: check --continue --scan
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew check --continue --scan --no-daemon
 
       - name: Publish Unit Test Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: Unit Test Results'
-          check_run_disabled: true
+          check_run_disabled: false
           json_thousands_separator: ','
           junit_files: "**/build/test-results/test/TEST-*.xml"
 
       - name: Setup Docker BuildX
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
         if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        uses: docker/setup-buildx-action@v2
         with:
           version: v0.11.0
 
       - name: Build Docker Image # build the image for hedera-node
         if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: createDockerImage
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew createDockerImage --scan --no-daemon
 
       - name: Integration Testing
         id: gradle-itest
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: itest --scan
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew itest --scan --no-daemon
 
       - name: Publish Integration Test Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: Integration Test Results'
-          check_run_disabled: true
+          check_run_disabled: false
           json_thousands_separator: ','
           junit_files: "**/build/test-results/itest/TEST-*.xml"
 
       - name: Publish Integration Test Network Logs
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # pin@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         if: ${{ inputs.enable-integration-tests && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: Integration Test Network Logs
           path: |
             hedera-node/test-clients/build/network/itest/output/**
 
+      - name: HAPI Testing
+        id: gradle-hapiTest
+        if: ${{ inputs.enable-hapi-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        env:
+          LC_ALL: en.UTF-8
+          LANG: en_US.UTF-8
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew hapiTest -Dfile.encoding=UTF-8 --scan --no-daemon
+
+      - name: Publish HAPI Test Report
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        if: ${{ inputs.enable-hapi-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          check_name: 'Node: HAPI Test Results'
+          check_run_disabled: false
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/hapiTest/TEST-*.xml"
+
+      - name: Publish HAPI Test Network Logs
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        if: ${{ inputs.enable-hapi-tests && inputs.enable-network-log-capture && !cancelled() }}
+        with:
+          name: HAPI Test Network Logs
+          path: |
+            hedera-node/test-clients/build/hapi-test/**/output/**
+
       - name: E2E Testing
         id: gradle-eet
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: eet --scan
+        run: ionice -c 2 -n 2 nice -n 19 ./gradlew eet --scan --no-daemon
 
       - name: Publish E2E Test Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: 'Node: E2E Test Results'
-          check_run_disabled: true
+          check_run_disabled: false
           json_thousands_separator: ','
           junit_files: "**/build/test-results/eet/TEST-*.xml"
 
       - name: Publish E2E Test Network Logs
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # pin@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         if: ${{ inputs.enable-e2e-tests && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: E2E Test Network Logs
           path: |
             hedera-node/test-clients/build/network/eet/output/**
 
-      - name: Jacoco Coverage Report
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
-        if: ${{ inputs.enable-unit-tests && !cancelled() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: jacocoTestReport --scan
-
       - name: Publish To Codecov
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
-        uses: codecov/codecov-action@d9f34f8cd5cb3b3eb79b3e4b5dae3a16df499a70 # pin@v3
+        uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
 
       - name: Publish Test Reports
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # pin@v3
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           name: Test Reports
@@ -291,7 +282,7 @@ jobs:
           echo "options=${SONAR_OPTS}" >> "${GITHUB_OUTPUT}"
 
       - name: SonarCloud Scan
-        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        uses: gradle/gradle-build-action@842c587ad8aa4c68eeba24c396e15af4c2e9f30a # v2.9.0
         env:
           GITHUB_TOKEN: ${{ secrets.access-token }}
           SONAR_TOKEN: ${{ secrets.sonar-token }}
@@ -309,7 +300,7 @@ jobs:
           }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: sonarqube --info --scan ${{ steps.sonar-cloud.outputs.options }}
+          arguments: sonar --info --scan --no-parallel ${{ steps.sonar-cloud.outputs.options }}
 
       - name: Setup Snyk
         env:
@@ -342,7 +333,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: snyk test --all-sub-projects --severity-threshold=high --json-file-output=snyk-test.json
+        run: ionice -c 2 -n 2 nice -n 19 snyk test --all-sub-projects --severity-threshold=high --json-file-output=snyk-test.json
 
       - name: Snyk Code
         id: snyk-code
@@ -359,7 +350,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: snyk code test --severity-threshold=high --json-file-output=snyk-code.json
+        run: ionice -c 2 -n 2 nice -n 19 snyk code test --severity-threshold=high --json-file-output=snyk-code.json
 
       - name: Publish Snyk Results
         if: >-

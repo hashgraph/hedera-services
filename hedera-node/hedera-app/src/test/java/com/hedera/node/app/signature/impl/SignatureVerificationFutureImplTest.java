@@ -254,6 +254,7 @@ final class SignatureVerificationFutureImplTest implements Scenarios {
 
         @Test
         @DisplayName("Get method blocks until TransactionSignature future is available")
+        @SuppressWarnings("java:S2925") // suppressing the warning about Thread.sleep usage in tests
         void getBlocksUntilResultsAreAvailable() throws InterruptedException {
             // Given an instance with this sig that is NOT YET submitted to the crypto engine
             // When we block on the get method

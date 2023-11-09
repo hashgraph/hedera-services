@@ -29,14 +29,15 @@ public record StakingConfig(
         // Set<StakeStartupHelper.RecomputeType> startupHelperRecompute
         @ConfigProperty(value = "fees.nodeRewardPercentage", defaultValue = "0") @NetworkProperty
                 int feesNodeRewardPercentage,
-        @ConfigProperty(value = "fees.stakingRewardPercentage", defaultValue = "0") @NetworkProperty
+        @ConfigProperty(value = "fees.stakingRewardPercentage", defaultValue = "10") @NetworkProperty
                 int feesStakingRewardPercentage,
         // @ConfigProperty(defaultValue = "") Map<Long, Long> nodeMaxToMinStakeRatios,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean isEnabled,
-        @ConfigProperty(defaultValue = "17808") @NetworkProperty long maxDailyStakeRewardThPerH,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean requireMinStakeToReward,
-        @ConfigProperty(defaultValue = "0") @NetworkProperty long rewardRate,
+        // Can be renamed to just "rewardRate" when the "staking.rewardRate" property is removed
+        // from all production 0.0.121 system files
+        @ConfigProperty(defaultValue = "6849") @NetworkProperty long perHbarRewardRate,
         @ConfigProperty(defaultValue = "25000000000000000") @NetworkProperty long startThreshold,
         @ConfigProperty(defaultValue = "500") @NetworkProperty int sumOfConsensusWeights,
-        @ConfigProperty(defaultValue = "0") @NetworkProperty long rewardBalanceThreshold,
-        @ConfigProperty(defaultValue = "5000000000000000000") @NetworkProperty long maxStakeRewarded) {}
+        @ConfigProperty(defaultValue = "8500000000000000") @NetworkProperty long rewardBalanceThreshold,
+        @ConfigProperty(defaultValue = "650000000000000000") @NetworkProperty long maxStakeRewarded) {}

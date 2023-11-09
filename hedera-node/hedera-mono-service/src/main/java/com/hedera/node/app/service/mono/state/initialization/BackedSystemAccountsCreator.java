@@ -32,11 +32,13 @@ import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -81,13 +83,30 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
     @Override
     public void ensureSystemAccounts(
             final BackingStore<AccountID, HederaAccount> accounts, final AddressBook addressBook) {
+        internalEnsureSystemAccounts(accounts);
+    }
+
+    @Override
+    public void ensureSynthRecordsPresentOnFirstEverTransaction() {
+        // Called during the first-ever handleTransaction(); if we don't have a record of creating
+        // system accounts, then we're doing a event replay from a saved round one state, and need
+        // to ensure we have pending synthetic records ready to export
+        if (systemAccountsCreated.isEmpty()) {
+            // Pass null here so we don't actually create any accounts, but just ensure we have
+            // "prepared" synthetic records of all creations that happen during genesis init
+            internalEnsureSystemAccounts(null);
+        }
+    }
+
+    private void internalEnsureSystemAccounts(final @Nullable BackingStore<AccountID, HederaAccount> accounts) {
         final long systemAccounts = properties.getIntProperty(LEDGER_NUM_SYSTEM_ACCOUNTS);
         final long expiry = properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY);
         final long tinyBarFloat = properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT);
+        final var shouldSkipExtantAndCreateMissing = accounts != null;
 
         for (long num = 1; num <= systemAccounts; num++) {
             final var id = STATIC_PROPERTIES.scopedAccountWith(num);
-            if (accounts.contains(id)) {
+            if (shouldSkipExtantAndCreateMissing && accounts.contains(id)) {
                 continue;
             }
             final HederaAccount account;
@@ -96,7 +115,11 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
             } else {
                 account = accountWith(ZERO_BALANCE, expiry);
             }
-            accounts.put(id, account);
+            if (shouldSkipExtantAndCreateMissing) {
+                accounts.put(id, account);
+            } else {
+                account.setEntityNum(EntityNum.fromLong(num));
+            }
             systemAccountsCreated.add(account);
         }
 
@@ -106,30 +129,33 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         final var nodeRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(nodeRewardAccountNum);
         final var stakingFundAccounts = List.of(stakingRewardAccountId, nodeRewardAccountId);
         for (final var id : stakingFundAccounts) {
-            if (!accounts.contains(id)) {
-                final var stakingFundAccount = accountSupplier.get();
-                customizeAsStakingFund(stakingFundAccount);
-                accounts.put(id, stakingFundAccount);
+            final var stakingFundAccount = accountSupplier.get();
+            customizeAsStakingFund(stakingFundAccount);
+            if (shouldSkipExtantAndCreateMissing) {
+                if (!accounts.contains(id)) {
+                    accounts.put(id, stakingFundAccount);
+                    stakingFundAccountsCreated.add(stakingFundAccount);
+                }
+            } else {
+                stakingFundAccount.setEntityNum(EntityNum.fromLong(id.getAccountNum()));
                 stakingFundAccountsCreated.add(stakingFundAccount);
             }
         }
         for (long num = 900; num <= 1000; num++) {
             final var id = STATIC_PROPERTIES.scopedAccountWith(num);
-            if (!accounts.contains(id)) {
-                final var account = accountWith(ZERO_BALANCE, expiry);
-                accounts.put(id, account);
+            final var account = accountWith(ZERO_BALANCE, expiry);
+            if (shouldSkipExtantAndCreateMissing) {
+                if (!accounts.contains(id)) {
+                    accounts.put(id, account);
+                    systemAccountsCreated.add(account);
+                }
+            } else {
+                account.setEntityNum(EntityNum.fromLong(num));
                 systemAccountsCreated.add(account);
             }
         }
 
-        treasuryCloner.ensureTreasuryClonesExist();
-
-        var ledgerFloat = 0L;
-        final var allIds = accounts.idSet();
-        for (final var id : allIds) {
-            ledgerFloat += accounts.getImmutableRef(id).getBalance();
-        }
-        log.info("Ledger float is {} tinyBars in {} accounts.", ledgerFloat, allIds.size());
+        treasuryCloner.ensureTreasuryClonesExist(shouldSkipExtantAndCreateMissing);
     }
 
     public static void customizeAsStakingFund(final HederaAccount account) {

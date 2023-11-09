@@ -29,11 +29,9 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -45,7 +43,6 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.files.HFileMeta;
@@ -63,7 +60,6 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.SerdeUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -91,11 +87,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 
 @ExtendWith(LogCaptureExtension.class)
 class HfsSystemFilesManagerTest {
@@ -235,38 +229,6 @@ class HfsSystemFilesManagerTest {
 
         subject =
                 new HfsSystemFilesManager(() -> currentBook, fileNumbers, properties, hfs, () -> masterKey, callbacks);
-    }
-
-    @Test
-    void warnsIfForSomeReasonExtantBookIsUnobtainable() {
-        subject.updateStakeDetails();
-
-        assertThat(
-                logCaptor.errorLogs(), contains(Matchers.startsWith("Existing address book was missing or corrupt")));
-    }
-
-    @Test
-    void canUpdateStake() throws InvalidProtocolBufferException {
-        final ArgumentCaptor<byte[]> updateCaptor = ArgumentCaptor.forClass(byte[].class);
-        given(addressA.getMemo()).willReturn("0.0.4");
-        final var book = legacyBookConstruction(currentBook);
-        given(data.get(detailsId)).willReturn(book.toByteArray());
-
-        given(addressA.getWeight()).willReturn(123L);
-        given(addressB.getWeight()).willReturn(456L);
-
-        subject.updateStakeDetails();
-
-        verify(data).put(eq(detailsId), updateCaptor.capture());
-        final var updatedBook = NodeAddressBook.parseFrom(updateCaptor.getValue());
-        // then:
-        final var updatedA = updatedBook.getNodeAddress(0);
-        assertEquals(AccountID.newBuilder().setAccountNum(4L).build(), updatedA.getNodeAccountId());
-        assertEquals(123L, updatedA.getStake());
-        // and:
-        final var updatedB = updatedBook.getNodeAddress(1);
-        assertEquals(AccountID.newBuilder().setAccountNum(3L).build(), updatedB.getNodeAccountId());
-        assertEquals(456L, updatedB.getStake());
     }
 
     @Test

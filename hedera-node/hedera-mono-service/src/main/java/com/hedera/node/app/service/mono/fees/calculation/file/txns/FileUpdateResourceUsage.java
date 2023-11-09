@@ -25,6 +25,7 @@ import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.File;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;
@@ -56,6 +57,23 @@ public class FileUpdateResourceUsage implements TxnResourceUsageEstimator {
                     .setCurrentWacl(details.getKeys())
                     .setCurrentMemo(details.getMemo())
                     .setCurrentExpiry(details.getExpirationTime().getSeconds())
+                    .build();
+            return fileOpsUsage.fileUpdateUsage(txn, sigUsage, ctx);
+        } else {
+            final long now = txn.getTransactionID().getTransactionValidStart().getSeconds();
+            return fileOpsUsage.fileUpdateUsage(txn, sigUsage, missingCtx(now));
+        }
+    }
+
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final File file) {
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+        if (file != null) {
+            final var contents = file.getContents();
+            final var ctx = ExtantFileContext.newBuilder()
+                    .setCurrentSize(contents == null ? 0 : contents.size())
+                    .setCurrentWacl(file.getKeys())
+                    .setCurrentMemo(file.getMemo())
+                    .setCurrentExpiry(file.getExpirationSecond())
                     .build();
             return fileOpsUsage.fileUpdateUsage(txn, sigUsage, ctx);
         } else {

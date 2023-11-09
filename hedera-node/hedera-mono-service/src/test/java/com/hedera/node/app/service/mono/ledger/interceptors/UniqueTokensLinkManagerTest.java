@@ -93,7 +93,7 @@ class UniqueTokensLinkManagerTest extends ResponsibleVMapUser {
     @AfterEach
     void shutDown() {
         // Use a different data source for each test. Assume MerkleDb is used by default for tests
-        MerkleDb.setDefaultPath(null);
+        MerkleDb.resetDefaultInstancePath();
     }
 
     @Test
