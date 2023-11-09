@@ -46,7 +46,6 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -64,7 +63,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -161,8 +159,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta = new SnapshotFileMeta("CryptoTransfer", "CannotTransferFromImmutableAccountsBOOP");
-        final var maybeSnapshot = suiteSnapshotsFrom(resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
+        final var snapshotFileMeta = new SnapshotFileMeta("ContractCall", "MultipleSelfDestructsAreSafe");
+        final var maybeSnapshot = suiteSnapshotsFrom(
+                        resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
                         suiteSnapshots -> Optional.ofNullable(suiteSnapshots.getSnapshot(snapshotFileMeta.specName())));
         if (maybeSnapshot.isEmpty()) {

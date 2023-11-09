@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -25,7 +23,6 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.annotations.ChildTransactionResourcePrices;
 import com.hedera.node.app.service.contract.impl.annotations.InitialState;
-import com.hedera.node.app.service.contract.impl.annotations.IsTopLevelCreation;
 import com.hedera.node.app.service.contract.impl.annotations.TopLevelResourcePrices;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.gas.CanonicalDispatchPrices;
@@ -125,14 +122,6 @@ public interface TransactionModule {
                 ? hydration.tryToHydrate(body.ethereumTransactionOrThrow(), fileStore, hederaConfig.firstUserEntity())
                 : null;
     }
-
-    @Provides
-    @TransactionScope
-    @IsTopLevelCreation
-    static boolean provideIsTopLevelCreation(@NonNull final HederaFunctionality function) {
-        return function == CONTRACT_CREATE;
-    }
-
 
     @Provides
     @TransactionScope

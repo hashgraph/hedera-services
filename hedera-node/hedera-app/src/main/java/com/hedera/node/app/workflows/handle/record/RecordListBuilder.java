@@ -383,7 +383,9 @@ public final class RecordListBuilder {
         count = childRecordBuilders == null ? 0 : childRecordBuilders.size();
         for (int i = 0; i < count; i++) {
             final var recordBuilder = childRecordBuilders.get(i);
-            final var maybeRecord = recordBuilder.transactionID(idBuilder.nonce(nextNonce++).build()).build();
+            final var maybeRecord = recordBuilder
+                    .transactionID(idBuilder.nonce(nextNonce++).build())
+                    .build();
             if (maybeRecord == null) {
                 // Reclaim this nonce, as the child wasn't actually meant to be externalized
                 nextNonce--;
