@@ -59,8 +59,8 @@ public class HederaCallEvmTxProcessorV045 extends CallEvmTxProcessor {
                 codeCache,
                 dynamicProperties,
                 gasCalculator,
-                mcps,
-                ccps,
+                mcps.get(dynamicProperties.evmVersion()),
+                ccps.get(dynamicProperties.evmVersion()),
                 aliasManager,
                 blockMetaSource);
         this.codeCache = codeCache;

@@ -82,7 +82,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
             final EntityAccess entityAccess,
             final GlobalDynamicProperties dynamicProperties,
             final NodeLocalProperties nodeProperties,
-            final Supplier<CallLocalEvmTxProcessor> evmTxProcessorProvider,
+            final Map<String, Supplier<CallLocalEvmTxProcessor>> evmTxProcessorProvider,
             final StaticBlockMetaProvider blockMetaProvider) {
         super(
                 ContractCallLocal,
@@ -111,7 +111,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
         this.accountStore = accountStore;
         this.dynamicProperties = dynamicProperties;
         this.nodeProperties = nodeProperties;
-        this.evmTxProcessorProvider = evmTxProcessorProvider;
+        this.evmTxProcessorProvider = evmTxProcessorProvider.get(dynamicProperties.evmVersion());
         this.blockMetaProvider = blockMetaProvider;
     }
 

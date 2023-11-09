@@ -49,8 +49,8 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             final CodeCache codeCache,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Provider<MessageCallProcessor> mcps,
+            final Provider<ContractCreationProcessor> ccps,
             final AliasManager aliasManager,
             final InHandleBlockMetaSource blockMetaSource) {
         super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);

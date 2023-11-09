@@ -24,6 +24,7 @@ import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_30;
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalExecutor;
 import com.hedera.node.app.service.mono.contracts.execution.StaticBlockMetaProvider;
@@ -70,17 +71,17 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
             final GlobalDynamicProperties properties,
             final NodeLocalProperties nodeProperties,
             final AccountStore accountStore,
-            final Supplier<CallLocalEvmTxProcessor> evmTxProcessorProvider,
+            final Map<String, Supplier<CallLocalEvmTxProcessor>> evmTxProcessorProvider,
             final EntityIdSource ids,
             final OptionValidator validator,
             final AliasManager aliasManager,
             final StaticBlockMetaProvider blockMetaProvider) {
         this.accountStore = accountStore;
-        this.evmTxProcessorProvider = evmTxProcessorProvider;
         this.aliasManager = aliasManager;
         this.ids = ids;
         this.validator = validator;
         this.properties = properties;
+        this.evmTxProcessorProvider = evmTxProcessorProvider.get(properties.evmVersion());
         this.nodeProperties = nodeProperties;
         this.usageEstimator = usageEstimator;
         this.blockMetaProvider = blockMetaProvider;

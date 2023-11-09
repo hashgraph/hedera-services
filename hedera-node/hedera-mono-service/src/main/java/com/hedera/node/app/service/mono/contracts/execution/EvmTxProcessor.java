@@ -64,8 +64,8 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             final LivePricesSource livePricesSource,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps) {
+            final Provider<MessageCallProcessor> mcps,
+            final Provider<ContractCreationProcessor> ccps) {
         this(null, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, null);
     }
 
@@ -74,8 +74,8 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             final LivePricesSource livePricesSource,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Provider<MessageCallProcessor> mcps,
+            final Provider<ContractCreationProcessor> ccps,
             final BlockMetaSource blockMetaSource) {
         super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
     }

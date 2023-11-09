@@ -50,10 +50,12 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 public interface ContractsTestComponent {
 
     @Singleton
-    Map<String, Provider<MessageCallProcessor>> messageCallProcessors();
+    @V_0_30
+    Provider<MessageCallProcessor> messageCallProcessor();
 
     @Singleton
-    Map<String, Provider<ContractCreationProcessor>> contractCreateProcessors();
+    @V_0_30
+    Provider<ContractCreationProcessor> contractCreateProcessor();
 
     @Singleton
     @V_0_30

@@ -42,8 +42,8 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
             final LivePricesSource livePricesSource,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Provider<MessageCallProcessor> mcps,
+            final Provider<ContractCreationProcessor> ccps,
             final AliasManager aliasManager) {
         super(livePricesSource, dynamicProperties, gasCalculator, mcps, ccps);
         this.codeCache = codeCache;
