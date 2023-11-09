@@ -125,6 +125,8 @@ public class PropertyNames {
     public static final String CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED =
             "contracts.precompile.hrcFacade.associate.enabled";
     public static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
+    public static final String CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS =
+            "contracts.evm.allowCallsToNonContractAccounts";
     public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
     public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
     public static final String FILES_MAX_NUM = "files.maxNumber";

@@ -142,6 +142,9 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                 && !properties.evmVersion().equals(EVM_VERSION_0_30)
                 && properties.isAutoCreationEnabled()
                 && properties.isLazyCreationEnabled()) {
+            if (!properties.allowCallsToNonContractAccounts() && targetAddressIsMissing) {
+                validateTrue(op.getAmount() > 0, INVALID_CONTRACT_ID);
+            }
             final var evmAddress = op.getContractID().getEvmAddress();
             validateTrue(isOfEvmAddressSize(evmAddress), INVALID_CONTRACT_ID);
             receiver = new Account(evmAddress);
@@ -152,6 +155,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                 if (accountStore.isContractUsable(targetId)) {
                     receiver = accountStore.loadContract(targetId);
                 } else {
+                    validateTrue(properties.allowCallsToNonContractAccounts(), INVALID_CONTRACT_ID);
                     receiver = new Account(targetId);
                 }
             }

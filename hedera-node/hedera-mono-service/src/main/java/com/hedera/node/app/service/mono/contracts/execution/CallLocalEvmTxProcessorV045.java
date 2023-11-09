@@ -16,10 +16,12 @@
 
 package com.hedera.node.app.service.mono.contracts.execution;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.models.Account;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Map;
 import javax.inject.Provider;
@@ -89,6 +91,9 @@ public class CallLocalEvmTxProcessorV045 extends EvmTxProcessor {
          * it doesn't mean a system invariant has been violated (FAIL_INVALID); instead it means
          * the target contract is not yet in a valid state to be queried (INVALID_CONTRACT_ID). */
         //                validateTrue(code != null, INVALID_CONTRACT_ID);
+        if (!dynamicProperties.allowCallsToNonContractAccounts() && code == null) {
+            throw new HandleException(ResponseCodeEnum.INVALID_CONTRACT_ID);
+        }
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)

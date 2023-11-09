@@ -25,10 +25,14 @@ import static org.hyperledger.besu.evm.internal.EvmConfiguration.WorldUpdaterMod
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
+import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessorV045;
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
+import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessorV045;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessorV038;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessorV045;
+import com.hedera.node.app.service.mono.contracts.execution.InHandleBlockMetaSource;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCreateOperationExternalizer;
@@ -267,9 +271,42 @@ public interface ContractsModule {
         return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
     }
 
+    //    @Provides
+    //    @Singleton
+    //    static Supplier<CallLocalEvmTxProcessor> provideCallLocalEvmTxProcessorFactory(
+    //            final CodeCache codeCache,
+    //            final LivePricesSource livePricesSource,
+    //            final GlobalDynamicProperties dynamicProperties,
+    //            final GasCalculator gasCalculator,
+    //            final Map<String, Provider<MessageCallProcessor>> mcps,
+    //            final Map<String, Provider<ContractCreationProcessor>> ccps,
+    //            final AliasManager aliasManager) {
+    //        return () -> new CallLocalEvmTxProcessor(
+    //                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
+    //    }
+
+    //    @Provides
+    //    @Singleton
+    //    static Supplier<CallEvmTxProcessor> provideCallEvmTxProcessorFactory(
+    //            final HederaMutableWorldState worldState,
+    //            final LivePricesSource livePricesSource,
+    //            final CodeCache codeCache,
+    //            final GlobalDynamicProperties dynamicProperties,
+    //            final GasCalculator gasCalculator,
+    //            final Map<String, Provider<MessageCallProcessor>> mcps,
+    //            final Map<String, Provider<ContractCreationProcessor>> ccps,
+    //            final AliasManager aliasManager,
+    //            final InHandleBlockMetaSource blockMetaSource) {
+    //        return () -> new CallEvmTxProcessor(worldState, livePricesSource, codeCache,
+    //                dynamicProperties, gasCalculator, mcps,
+    //                ccps, aliasManager, blockMetaSource);
+    //    }
+
     @Provides
     @Singleton
-    static Supplier<CallLocalEvmTxProcessor> provideCallLocalEvmTxProcessorFactory(
+    @IntoMap
+    @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
+    static Supplier<CallLocalEvmTxProcessor> provideV_0_30CallLocalEvmTxProcessor(
             final CodeCache codeCache,
             final LivePricesSource livePricesSource,
             final GlobalDynamicProperties dynamicProperties,
@@ -279,6 +316,158 @@ public interface ContractsModule {
             final AliasManager aliasManager) {
         return () -> new CallLocalEvmTxProcessor(
                 codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
+    }
+
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey(ContractsV_0_34Module.EVM_VERSION_0_34)
+    static Supplier<CallLocalEvmTxProcessor> provideV_0_34CallLocalEvmTxProcessor(
+            final CodeCache codeCache,
+            final LivePricesSource livePricesSource,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Map<String, Provider<MessageCallProcessor>> mcps,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final AliasManager aliasManager) {
+        return () -> new CallLocalEvmTxProcessor(
+                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
+    }
+
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey(ContractsV_0_38Module.EVM_VERSION_0_38)
+    static Supplier<CallLocalEvmTxProcessor> provideV_0_38CallLocalEvmTxProcessor(
+            final CodeCache codeCache,
+            final LivePricesSource livePricesSource,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Map<String, Provider<MessageCallProcessor>> mcps,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final AliasManager aliasManager) {
+        return () -> new CallLocalEvmTxProcessor(
+                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
+    }
+
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey(ContractsV_0_45Module.EVM_VERSION_0_45)
+    static Supplier<CallLocalEvmTxProcessorV045> provideV_0_45CallLocalEvmTxProcessor(
+            final CodeCache codeCache,
+            final LivePricesSource livePricesSource,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Map<String, Provider<MessageCallProcessor>> mcps,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final AliasManager aliasManager) {
+        return () -> new CallLocalEvmTxProcessorV045(
+                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
+    }
+
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
+    static Supplier<CallEvmTxProcessor> provideV_0_30CallEvmTxProcessor(
+            final HederaMutableWorldState worldState,
+            final LivePricesSource livePricesSource,
+            final CodeCache codeCache,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Map<String, Provider<MessageCallProcessor>> mcps,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final AliasManager aliasManager,
+            final InHandleBlockMetaSource blockMetaSource) {
+        return () -> new CallEvmTxProcessor(
+                worldState,
+                livePricesSource,
+                codeCache,
+                dynamicProperties,
+                gasCalculator,
+                mcps,
+                ccps,
+                aliasManager,
+                blockMetaSource);
+    }
+
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey(ContractsV_0_34Module.EVM_VERSION_0_34)
+    static Supplier<CallEvmTxProcessor> provideV_0_34CallEvmTxProcessor(
+            final HederaMutableWorldState worldState,
+            final LivePricesSource livePricesSource,
+            final CodeCache codeCache,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Map<String, Provider<MessageCallProcessor>> mcps,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final AliasManager aliasManager,
+            final InHandleBlockMetaSource blockMetaSource) {
+        return () -> new CallEvmTxProcessor(
+                worldState,
+                livePricesSource,
+                codeCache,
+                dynamicProperties,
+                gasCalculator,
+                mcps,
+                ccps,
+                aliasManager,
+                blockMetaSource);
+    }
+
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey(ContractsV_0_38Module.EVM_VERSION_0_38)
+    static Supplier<CallEvmTxProcessor> provideV_0_38CallEvmTxProcessor(
+            final HederaMutableWorldState worldState,
+            final LivePricesSource livePricesSource,
+            final CodeCache codeCache,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Map<String, Provider<MessageCallProcessor>> mcps,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final AliasManager aliasManager,
+            final InHandleBlockMetaSource blockMetaSource) {
+        return () -> new CallEvmTxProcessor(
+                worldState,
+                livePricesSource,
+                codeCache,
+                dynamicProperties,
+                gasCalculator,
+                mcps,
+                ccps,
+                aliasManager,
+                blockMetaSource);
+    }
+
+    @Provides
+    @Singleton
+    @IntoMap
+    @StringKey(ContractsV_0_45Module.EVM_VERSION_0_45)
+    static Supplier<CallEvmTxProcessorV045> provideV_0_45CallEvmTxProcessor(
+            final HederaMutableWorldState worldState,
+            final LivePricesSource livePricesSource,
+            final CodeCache codeCache,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Map<String, Provider<MessageCallProcessor>> mcps,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final AliasManager aliasManager,
+            final InHandleBlockMetaSource blockMetaSource) {
+        return () -> new CallEvmTxProcessorV045(
+                worldState,
+                livePricesSource,
+                codeCache,
+                dynamicProperties,
+                gasCalculator,
+                mcps,
+                ccps,
+                aliasManager,
+                blockMetaSource);
     }
 
     @Provides

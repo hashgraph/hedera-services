@@ -38,8 +38,7 @@ public interface EvmProperties {
 
     boolean isLazyCreationEnabled();
 
-    /**
-     * Enables or disables Create2 operation.
-     */
     boolean isCreate2Enabled();
+
+    boolean allowCallsToNonContractAccounts();
 }

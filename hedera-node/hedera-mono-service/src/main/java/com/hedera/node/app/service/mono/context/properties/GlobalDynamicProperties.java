@@ -42,6 +42,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ITEMIZE_STORAGE_FEES;
@@ -208,6 +209,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private byte[] chainIdBytes;
     private Bytes32 chainIdBytes32;
     private long defaultContractLifetime;
+    private boolean allowCallsToNonContractAccounts;
     private String evmVersion;
     private boolean dynamicEvmVersion;
     private int feesTokenTransferUsageMultiplier;
@@ -352,6 +354,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         chainIdBytes = Integers.toBytes(chainId);
         chainIdBytes32 = Bytes32.leftPad(Bytes.of(chainIdBytes));
         defaultContractLifetime = properties.getLongProperty(CONTRACTS_DEFAULT_LIFETIME);
+        allowCallsToNonContractAccounts =
+                properties.getBooleanProperty(CONTRACTS_EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS);
         dynamicEvmVersion = properties.getBooleanProperty(CONTRACTS_DYNAMIC_EVM_VERSION);
         evmVersion = properties.getStringProperty(CONTRACTS_EVM_VERSION);
         feesTokenTransferUsageMultiplier = properties.getIntProperty(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER);
@@ -596,6 +600,10 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public long defaultContractLifetime() {
         return defaultContractLifetime;
+    }
+
+    public boolean allowCallsToNonContractAccounts() {
+        return allowCallsToNonContractAccounts;
     }
 
     public String evmVersion() {
