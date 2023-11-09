@@ -301,6 +301,7 @@ public interface DoubleAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
+        @NonNull
         public DoubleAccumulator create(final MetricsFactory factory) {
             return factory.createDoubleAccumulator(this);
         }
