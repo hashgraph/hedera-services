@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit;
 
+import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.nio.file.Files;
@@ -24,6 +25,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 public class HapiTestEnv {
     private static final String[] NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
@@ -33,9 +35,11 @@ public class HapiTestEnv {
     private static final int CAPTIVE_NODE_STARTUP_TIME_LIMIT = 300;
     private final List<HapiTestNode> nodes = new ArrayList<>();
     private final List<String> nodeHosts = new ArrayList<>();
+    private boolean started = false;
+    public static final int CLUSTER_SIZE = 4;
 
-    public HapiTestEnv(@NonNull final String testName, final boolean cluster) {
-        final var numNodes = cluster ? 4 : 1;
+    public HapiTestEnv(@NonNull final String testName, final boolean cluster, final boolean useInProcessAlice) {
+        final var numNodes = cluster ? CLUSTER_SIZE : 1;
         try {
             final var sb = new StringBuilder();
             sb.append("swirld, ")
@@ -66,34 +70,70 @@ public class HapiTestEnv {
             final var configText = sb.toString();
 
             for (int nodeId = 0; nodeId < numNodes; nodeId++) {
-                final var workingDir = Path.of("./build/hapi-test/" + testName + "/node" + nodeId)
-                        .normalize();
+                final var workingDir =
+                        Path.of("./build/hapi-test/node" + nodeId).normalize();
                 setupWorkingDirectory(workingDir, configText);
-                nodes.add(new SubProcessHapiTestNode(workingDir, nodeId, FIRST_GRPC_PORT + (nodeId * 2)));
+                final var nodeName = NODE_NAMES[nodeId];
+                final var acct = AccountID.newBuilder().accountNum(3L + nodeId).build();
+                if (useInProcessAlice && nodeId == 0) {
+                    nodes.add(new InProcessHapiTestNode(nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT));
+                } else {
+                    nodes.add(new SubProcessHapiTestNode(
+                            nodeName, nodeId, acct, workingDir, FIRST_GRPC_PORT + (nodeId * 2)));
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
+    /**
+     * Starts all nodes in the environment.
+     */
     public void start() {
+        started = true;
         for (final var node : nodes) {
             node.start();
         }
 
         for (final var node : nodes) {
-            node.waitForActive(CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+            try {
+                node.waitForActive(CAPTIVE_NODE_STARTUP_TIME_LIMIT);
+            } catch (TimeoutException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
+    /**
+     * Forcibly terminates all nodes in the environment. Once terminated, an environment can be started again.
+     */
     public void terminate() {
         for (final var node : nodes) {
             node.terminate();
         }
+        started = false;
     }
 
-    public String getNodes() {
+    /**
+     * Gets whether this environment has been started and not terminated.
+     */
+    public boolean started() {
+        return started;
+    }
+
+    /**
+     * Gets node info suitable for the HAPI test system's configuration
+     */
+    public String getNodeInfo() {
         return String.join(",", nodeHosts);
+    }
+
+    /**
+     * Gets the list of nodes that make up this test environment.
+     */
+    public List<HapiTestNode> getNodes() {
+        return nodes;
     }
 
     private void setupWorkingDirectory(@NonNull final Path workingDir, @NonNull final String configText) {

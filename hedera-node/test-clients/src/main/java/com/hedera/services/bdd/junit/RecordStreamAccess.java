@@ -59,7 +59,9 @@ public enum RecordStreamAccess {
     /** A bit of infrastructure that runs the polling loop for all the listeners. */
     private final FileAlterationMonitor monitor = new FileAlterationMonitor(MONITOR_INTERVAL_MS);
 
-    public record Data(List<RecordWithSidecars> records, List<RecordStreamFile> files) {}
+    public record Data(List<RecordWithSidecars> records, List<RecordStreamFile> files) {
+        public static Data EMPTY_DATA = new Data(List.of(), List.of());
+    }
 
     /**
      * Stops the polling loop for record stream access if there are no listeners for any location.
