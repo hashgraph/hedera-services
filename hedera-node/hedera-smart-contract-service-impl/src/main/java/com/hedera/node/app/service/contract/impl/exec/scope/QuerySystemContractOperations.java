@@ -107,7 +107,6 @@ public class QuerySystemContractOperations implements SystemContractOperations {
     @Override
     public void externalizeResult(
             @NonNull final ContractFunctionResult result,
-            @NonNull final ResultStatus status,
             @NonNull final ResponseCodeEnum responseStatus) {
         // no-op
     }

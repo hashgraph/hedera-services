@@ -269,11 +269,9 @@ public interface HederaWorldUpdater extends WorldUpdater {
     /**
      * Externalizes the results of a system contract call into a record
      * @param result    The result of the system contract call
-     * @param status    Whether the result is an error
      */
     void externalizeSystemContractResults(
             @NonNull final ContractFunctionResult result,
-            ResultStatus status,
             @NonNull ResponseCodeEnum responseStatus);
 
     /**

@@ -109,7 +109,6 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
             updater.externalizeSystemContractResults(
                     contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID),
-                    ResultStatus.IS_SUCCESS,
                     SUCCESS);
         }
     }
@@ -123,7 +122,6 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
             updater.externalizeSystemContractResults(
                     contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID),
-                    ResultStatus.IS_ERROR,
                     FAIL_INVALID);
         }
     }

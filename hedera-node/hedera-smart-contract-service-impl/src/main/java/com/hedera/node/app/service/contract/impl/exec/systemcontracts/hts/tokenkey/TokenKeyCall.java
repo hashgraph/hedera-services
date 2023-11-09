@@ -90,42 +90,12 @@ public class TokenKeyCall extends AbstractNonRevertibleTokenViewCall {
 
     @Override
     public @NonNull PricedResult execute() {
-        PricedResult result;
-        long gasRequirement;
-        Bytes output;
-        ContractID contractID = asEvmContractId(Address.fromHexString(HTS_PRECOMPILE_ADDRESS));
         if (token == null) {
-            result = gasOnly(viewCallResultWith(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement()));
-
-            gasRequirement = result.fullResult().gasRequirement();
-            enhancement
-                    .systemOperations()
-                    .externalizeResult(
-                            contractFunctionResultFailedFor(gasRequirement, INVALID_TOKEN_ID.toString(), contractID),
-                            SystemContractUtils.ResultStatus.IS_ERROR,
-                            INVALID_TOKEN_ID);
+            return externalizeUnsuccessfulResult(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement());
         } else if (key == null) {
-            result = gasOnly(viewCallResultWith(KEY_NOT_PROVIDED, gasCalculator.viewGasRequirement()));
-
-            gasRequirement = result.fullResult().gasRequirement();
-            enhancement
-                    .systemOperations()
-                    .externalizeResult(
-                            contractFunctionResultFailedFor(gasRequirement, KEY_NOT_PROVIDED.toString(), contractID),
-                            SystemContractUtils.ResultStatus.IS_ERROR,
-                            KEY_NOT_PROVIDED);
+            return externalizeUnsuccessfulResult(KEY_NOT_PROVIDED, gasCalculator.viewGasRequirement());
         } else {
-            result = gasOnly(resultOfViewingToken(token));
-
-            gasRequirement = result.fullResult().gasRequirement();
-            output = result.fullResult().result().getOutput();
-            enhancement
-                    .systemOperations()
-                    .externalizeResult(
-                            contractFunctionResultSuccessFor(gasRequirement, output, contractID),
-                            SystemContractUtils.ResultStatus.IS_SUCCESS,
-                            SUCCESS);
+            return externalizeSuccessfulResult(gasCalculator.viewGasRequirement());
         }
-        return result;
     }
 }

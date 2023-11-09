@@ -116,13 +116,12 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     @Override
     public void externalizeResult(
             @NonNull final ContractFunctionResult result,
-            @NonNull final ResultStatus status,
             @NonNull final ResponseCodeEnum responseStatus) {
         final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
         childRecordBuilder
                 .transaction(Transaction.DEFAULT)
                 .contractID(result.contractID())
-                .status(status == ResultStatus.IS_ERROR ? responseStatus : SUCCESS)
+                .status(responseStatus)
                 .contractCallResult(result);
     }
 

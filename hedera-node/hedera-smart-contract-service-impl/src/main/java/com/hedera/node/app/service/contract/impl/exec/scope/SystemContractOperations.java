@@ -109,11 +109,9 @@ public interface SystemContractOperations {
      * Attempts to create a child record of the current record, with the given {@code result}
      *
      * @param result    contract function result
-     * @param status    whether the result is success or an error
      */
     void externalizeResult(
             @NonNull final ContractFunctionResult result,
-            @NonNull final ResultStatus status,
             @NonNull final ResponseCodeEnum responseStatus);
 
     /**

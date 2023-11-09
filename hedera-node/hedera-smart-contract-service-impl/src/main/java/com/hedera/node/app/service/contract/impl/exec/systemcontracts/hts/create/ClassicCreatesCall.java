@@ -148,7 +148,6 @@ public class ClassicCreatesCall extends AbstractHtsCall {
                 .systemOperations()
                 .externalizeResult(
                         contractFunctionResultFailedFor(MINIMUM_TINYBAR_PRICE, responseCode.toString(), contractID),
-                        ResultStatus.IS_ERROR,
                         responseCode);
         return result;
     }
