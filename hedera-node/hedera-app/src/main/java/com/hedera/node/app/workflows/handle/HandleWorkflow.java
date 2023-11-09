@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
@@ -289,7 +290,7 @@ public class HandleWorkflow {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
             // transaction itself.
             stakingPeriodTimeHook.process(tokenServiceContext);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             // If anything goes wrong, we log the error and continue
             logger.error("Failed to process staking period time hook", e);
         }
@@ -343,7 +344,10 @@ public class HandleWorkflow {
 
             // Set up the verifier
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
-            final var verifier = new DefaultKeyVerifier(hederaConfig, preHandleResult.verificationResults());
+            final var legacyFeeCalcNetworkVpt =
+                    transactionInfo.signatureMap().sigPairOrElse(emptyList()).size();
+            final var verifier = new DefaultKeyVerifier(
+                    legacyFeeCalcNetworkVpt, hederaConfig, preHandleResult.verificationResults());
             final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(transactionInfo.signatureMap());
 
             // Setup context
@@ -368,7 +372,8 @@ public class HandleWorkflow {
                     feeManager,
                     exchangeRateManager,
                     consensusNow,
-                    authorizer);
+                    authorizer,
+                    solvencyPreCheck);
 
             // Calculate the fee
             fees = dispatcher.dispatchComputeFees(context);
@@ -406,7 +411,7 @@ public class HandleWorkflow {
                     } else {
                         feeAccumulator.chargeFees(payer, creator.accountId(), fees);
                     }
-                } catch (HandleException ex) {
+                } catch (final HandleException ex) {
                     final var identifier = validationResult.status == NODE_DUE_DILIGENCE_FAILURE
                             ? "node " + creator.nodeId()
                             : "account " + payer;
@@ -438,6 +443,17 @@ public class HandleWorkflow {
 
                     // Dispatch the transaction to the handler
                     dispatcher.dispatchHandle(context);
+                    // Possibly charge assessed fees for preceding child transactions
+                    if (!recordListBuilder.precedingRecordBuilders().isEmpty()) {
+                        // We intentionally charge fees even if the transaction failed (may need to update
+                        // mono-service to this behavior?)
+                        final var childFees = recordListBuilder.precedingRecordBuilders().stream()
+                                .mapToLong(SingleTransactionRecordBuilderImpl::transactionFee)
+                                .sum();
+                        if (!feeAccumulator.chargeNetworkFee(payer, childFees)) {
+                            throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
+                        }
+                    }
                     recordBuilder.status(SUCCESS);
 
                     // After transaction is successfully handled update the gas throttle by leaking the unused gas
@@ -469,7 +485,7 @@ public class HandleWorkflow {
             if (payer != null && fees != null) {
                 try {
                     feeAccumulator.chargeFees(payer, creator.accountId(), fees);
-                } catch (HandleException chargeException) {
+                } catch (final HandleException chargeException) {
                     logger.error(
                             "Unable to charge account {} a penalty after an unexpected exception {}. Cause of the failed charge:",
                             payer,
@@ -601,7 +617,7 @@ public class HandleWorkflow {
             return new ValidationResult(PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE, e.responseCode());
         } catch (final InsufficientNonFeeDebitsException e) {
             return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode());
-        } catch (PreCheckException e) {
+        } catch (final PreCheckException e) {
             // Includes InsufficientNetworkFeeException
             return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode());
         }
@@ -707,7 +723,7 @@ public class HandleWorkflow {
 
     private boolean preHandleStillValid(
             @NonNull final VersionedConfiguration configuration, @Nullable final Object metadata) {
-        if (metadata instanceof PreHandleResult preHandleResult) {
+        if (metadata instanceof final PreHandleResult preHandleResult) {
             return preHandleResult.configVersion() == configuration.getVersion();
         }
         return false;

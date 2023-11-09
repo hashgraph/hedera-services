@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.appcomm;
+package com.hedera.services.bdd.spec.utilops;
 
 /**
- * A factory capable of creating instances of {@link AppCommunicationComponent}
+ * Enumerates non-default matching modes in which {@link SnapshotModeOp} fuzzy-matching can be run.
  */
-public interface AppCommunicationComponentFactory {
-
+public enum SnapshotMatchMode {
     /**
-     * Builds a new {@link AppCommunicationComponent} with the provided inputs.
-     *
-     * @return the newly constructed {@link AppCommunicationComponent}
-     * @throws IllegalStateException
-     * 		if any required inputs are null
+     * Allows for non-deterministic contract call results.
      */
-    AppCommunicationComponent build();
+    NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+    /**
+     * Allows for non-deterministic function parameters.
+     */
+    NONDETERMINISTIC_FUNCTION_PARAMETERS
 }
