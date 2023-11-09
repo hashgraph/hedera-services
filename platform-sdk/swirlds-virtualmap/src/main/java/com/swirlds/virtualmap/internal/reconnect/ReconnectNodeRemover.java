@@ -235,7 +235,7 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
         }
 
         if (handledPath.get() < requiredPath) {
-            throw new RuntimeException("VirtualMap reconnect node removal is closed on reconnect abort");
+            throw new RuntimeException("VirtualMap reconnect node removal is closed");
         }
 
         workQueue.pause();
