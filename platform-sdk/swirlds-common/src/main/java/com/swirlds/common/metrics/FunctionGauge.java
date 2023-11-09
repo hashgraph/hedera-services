@@ -176,6 +176,7 @@ public interface FunctionGauge<T> extends Metric {
          * {@inheritDoc}
          */
         @Override
+        @NonNull
         public FunctionGauge<T> create(final PlatformMetricsFactory factory) {
             return factory.createFunctionGauge(this);
         }
