@@ -176,6 +176,7 @@ public abstract class MetricConfig<T extends Metric, C extends MetricConfig<T, C
      * 		the {@code MetricFactory}
      * @return the new {@code Metric}-instance
      */
+    @NonNull
     public abstract T create(final MetricsFactory factory);
 
     /**
