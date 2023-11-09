@@ -70,6 +70,7 @@ public final class ConfigDataAnnotationProcessor extends AbstractProcessor {
         log("Config Data Annotation Processor started...");
         try {
             annotations.stream()
+                    .map(annotation -> (TypeElement) annotation)
                     .flatMap(annotation -> roundEnv.getElementsAnnotatedWith(annotation).stream())
                     .filter(element -> element.getKind() == ElementKind.RECORD)
                     .filter(element -> element instanceof TypeElement)

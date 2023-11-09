@@ -109,5 +109,7 @@ moduleInfo {
     version("uk.org.webcompere.systemstubs.jupiter", systemStubsVersion)
     version("jakarta.inject", "2.0.1")
     version("com.google.auto.service", "1.1.1")
+    version("com.google.auto.service.processor", "1.1.1")
+    version("com.google.common", "31.1-jre")
     version("com.squareup.javapoet", "1.13.0")
 }

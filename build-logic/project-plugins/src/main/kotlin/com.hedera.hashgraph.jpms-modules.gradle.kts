@@ -95,7 +95,8 @@ extraJavaModuleInfo {
     }
     module("com.google.guava:guava", "com.google.common") {
         exportAllPackages()
-        requireAllDefinedDependencies()
+        //requireAllDefinedDependencies()
+        requires("com.google.guava.failureaccess")
         requires("java.logging")
     }
     module("com.google.guava:failureaccess", "com.google.guava.failureaccess") {
@@ -340,6 +341,8 @@ extraJavaModuleInfo {
     automaticModule("com.squareup:javapoet", "com.squareup.javapoet")
     automaticModule("net.ltgt.gradle.incap:incap", "net.ltgt.gradle.incap")
     automaticModule("org.jetbrains.kotlinx:kotlinx-metadata-jvm", "kotlinx.metadata.jvm")
+    automaticModule("com.google.auto.service:auto-service", "com.google.auto.service.processor")
+    automaticModule("com.google.auto:auto-common", "com.google.auto.common")
 
     // Testing only
     automaticModule("com.google.jimfs:jimfs", "com.google.jimfs")

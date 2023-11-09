@@ -19,3 +19,7 @@ plugins {
     id("com.hedera.hashgraph.platform-maven-publish")
     // antlr
 }
+
+mainModuleInfo {
+    annotationProcessor("com.google.auto.service.processor")
+}

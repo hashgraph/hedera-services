@@ -195,7 +195,12 @@ public final class AntlrUtils {
         return annotationContext.elementValuePairs().elementValuePair().stream()
                 .filter(p -> Objects.equals(p.identifier().getText(), identifier))
                 .map(p -> p.elementValue().getText())
-                .findAny();
+                .map(text -> {
+                    if (text.startsWith("\"") && text.endsWith("\"")) {
+                        return text.substring(1, text.length() - 1);
+                    }
+                    return text;
+                }).findAny();
     }
 
     public static boolean isJavaDocNode(@NonNull final ParseTree node) {

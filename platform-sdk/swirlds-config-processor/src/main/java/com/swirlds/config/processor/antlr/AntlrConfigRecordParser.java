@@ -75,7 +75,6 @@ public final class AntlrConfigRecordParser {
             @NonNull final List<String> imports) {
         return getConfigPropertyAnnotation(ctx, packageName, imports)
                 .flatMap(annotationContext -> AntlrUtils.getAnnotationValue(annotationContext, "defaultValue"))
-                .map(text -> text.substring(1, text.length() - 1)) // remove quotes
                 .orElse(ConfigProperty.UNDEFINED_DEFAULT_VALUE);
     }
 
