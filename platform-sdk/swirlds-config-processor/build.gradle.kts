@@ -15,20 +15,7 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
-    id("com.swirlds.platform.maven-publish")
+    id("com.hedera.hashgraph.sdk.conventions")
+    id("com.hedera.hashgraph.platform-maven-publish")
     // antlr
-}
-
-dependencies {
-    // antlr(libs.antlr4.tool)
-    annotationProcessor(libs.auto.service.processor)
-
-    implementation(project(":swirlds-config-api"))
-    implementation(libs.roaster.api)
-    implementation(libs.javapoet)
-    implementation(libs.antlr4.runtime)
-    compileOnly(libs.auto.service.annotations)
-    compileOnly(libs.spotbugs.annotations)
 }

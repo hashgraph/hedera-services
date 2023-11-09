@@ -20,8 +20,6 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.processor.ConfigDataPropertyDefinition;
 import com.swirlds.config.processor.ConfigDataRecordDefinition;
-import com.swirlds.config.processor.antlr.generated.JavaLexer;
-import com.swirlds.config.processor.antlr.generated.JavaParser;
 import com.swirlds.config.processor.antlr.generated.JavaParser.AnnotationContext;
 import com.swirlds.config.processor.antlr.generated.JavaParser.CompilationUnitContext;
 import com.swirlds.config.processor.antlr.generated.JavaParser.RecordComponentContext;
@@ -33,26 +31,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Lexer;
-import org.antlr.v4.runtime.TokenStream;
 
 /**
  * Creates a {@link ConfigDataRecordDefinition} from a given Java source file.
  */
 public class AntlrConfigRecordParser {
-
-    public static List<ConfigDataRecordDefinition> parse(@NonNull final String fileContent) throws IOException {
-        Lexer lexer = new JavaLexer(CharStreams.fromString(fileContent));
-        TokenStream tokens = new CommonTokenStream(lexer);
-        JavaParser parser = new JavaParser(tokens);
-        CompilationUnitContext context = parser.compilationUnit();
-        Optional.ofNullable(context.exception).ifPresent(e -> {
-            throw new IllegalStateException("Error in ANTLR parsing", e);
-        });
-        return createDefinitions(context);
-    }
 
     private static boolean isAnnotatedWithConfigData(
             final RecordDeclarationContext ctx, String packageName, List<String> imports) {
@@ -136,6 +119,7 @@ public class AntlrConfigRecordParser {
         return type;
     }
 
+
     private static List<ConfigDataRecordDefinition> createDefinitions(CompilationUnitContext unitContext) {
         final String packageName = AntlrUtils.getPackage(unitContext);
         final List<String> imports = AntlrUtils.getImports(unitContext);
@@ -167,5 +151,10 @@ public class AntlrConfigRecordParser {
                                 javadocParams))
                         .collect(Collectors.toSet());
         return new ConfigDataRecordDefinition(packageName, recordName, configPropertyNamePrefix, propertyDefinitions);
+    }
+
+    public static List<ConfigDataRecordDefinition> parse(@NonNull final String fileContent) throws IOException {
+        final CompilationUnitContext parsedContext = AntlrUtils.parse(fileContent);
+        return createDefinitions(parsedContext);
     }
 }

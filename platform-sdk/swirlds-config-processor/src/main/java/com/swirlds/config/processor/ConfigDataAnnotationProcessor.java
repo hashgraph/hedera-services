@@ -20,6 +20,7 @@ import static com.swirlds.config.processor.ConfigProcessorConstants.CONSTANTS_CL
 
 import com.google.auto.service.AutoService;
 import com.swirlds.config.processor.antlr.AntlrConfigRecordParser;
+import com.swirlds.config.processor.antlr.AntlrUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;

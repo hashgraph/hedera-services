@@ -16,6 +16,8 @@
 
 package com.swirlds.config.processor.antlr;
 
+import com.swirlds.config.processor.ConfigDataRecordDefinition;
+import com.swirlds.config.processor.antlr.generated.JavaLexer;
 import com.swirlds.config.processor.antlr.generated.JavaParser;
 import com.swirlds.config.processor.antlr.generated.JavaParser.AnnotationContext;
 import com.swirlds.config.processor.antlr.generated.JavaParser.ClassOrInterfaceModifierContext;
@@ -32,6 +34,7 @@ import com.swirlds.config.processor.antlr.generated.JavadocParser.DocumentationC
 import com.swirlds.config.processor.antlr.generated.JavadocParser.DocumentationContext;
 import com.swirlds.config.processor.antlr.generated.JavadocParser.TagSectionContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.HashMap;
@@ -274,5 +277,25 @@ public class AntlrUtils {
                     });
                 });
         return params;
+    }
+
+    /**
+     * Parse the given file content and return a {@link ConfigDataRecordDefinition} object. The file must be a valid
+     * Java file.
+     *
+     * @param fileContent the file content to parse
+     * @return the {@link ConfigDataRecordDefinition} object
+     * @throws IOException if an I/O error occurs
+     */
+    public static CompilationUnitContext parse(@NonNull final String fileContent) throws IOException {
+        Lexer lexer = new JavaLexer(CharStreams.fromString(fileContent));
+        TokenStream tokens = new CommonTokenStream(lexer);
+        JavaParser parser = new JavaParser(
+                tokens);
+        CompilationUnitContext context = parser.compilationUnit();
+        Optional.ofNullable(context.exception).ifPresent(e -> {
+            throw new IllegalStateException("Error in ANTLR parsing", e);
+        });
+        return context;
     }
 }

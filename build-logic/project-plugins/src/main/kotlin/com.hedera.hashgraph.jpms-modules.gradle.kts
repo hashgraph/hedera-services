@@ -323,6 +323,9 @@ extraJavaModuleInfo {
     knownModule("org.jetbrains.kotlin:kotlin-stdlib-jdk8", "kotlin.stdlib.jdk8")
     knownModule("org.slf4j:slf4j-api", "org.slf4j")
     knownModule("jakarta.inject:jakarta.inject-api", "jakarta.inject")
+    knownModule("com.squareup:javapoet", "com.squareup.javapoet")
+    knownModule("com.google.auto.service:auto-service-annotations", "com.google.auto.service")
+
 
     // Annotation processing only
     automaticModule("com.google.dagger:dagger-compiler", "dagger.compiler")
