@@ -69,8 +69,8 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableSingletonState;
@@ -81,7 +81,10 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
@@ -113,6 +116,7 @@ import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -150,7 +154,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private BlockRecordInfo blockRecordInfo;
 
     @Mock
-    private RecordCache recordCache;
+    private HederaRecordCache recordCache;
 
     @Mock
     private FeeManager feeManager;
@@ -160,6 +164,15 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
     @Mock
     private Authorizer authorizer;
+
+    @Mock
+    private SignatureVerification verification;
+
+    @Mock
+    private SolvencyPreCheck solvencyPreCheck;
+
+    @Mock
+    private SelfNodeInfo selfNodeInfo;
 
     @BeforeEach
     void setup() {
@@ -173,11 +186,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 .build();
     }
 
-    private HandleContextImpl createContext(TransactionBody txBody) {
-        HederaFunctionality function;
+    private HandleContextImpl createContext(final TransactionBody txBody) {
+        final HederaFunctionality function;
         try {
             function = functionOf(txBody);
-        } catch (UnknownHederaFunctionality e) {
+        } catch (final UnknownHederaFunctionality e) {
             throw new RuntimeException(e);
         }
 
@@ -202,7 +215,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 feeManager,
                 exchangeRateManager,
                 DEFAULT_CONSENSUS_NOW,
-                authorizer);
+                authorizer,
+                solvencyPreCheck);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -229,7 +243,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             feeManager,
             exchangeRateManager,
             DEFAULT_CONSENSUS_NOW,
-            authorizer
+            authorizer,
+            solvencyPreCheck
         };
 
         final var constructor = HandleContextImpl.class.getConstructors()[0];
@@ -293,7 +308,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     feeManager,
                     exchangeRateManager,
                     DEFAULT_CONSENSUS_NOW,
-                    authorizer);
+                    authorizer,
+                    solvencyPreCheck);
         }
 
         @Test
@@ -401,7 +417,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testCreateReadableStore(@Mock ReadableStates readableStates) {
+        void testCreateReadableStore(@Mock final ReadableStates readableStates) {
             // given
             when(stack.createReadableStates(TokenService.NAME)).thenReturn(readableStates);
             final var context = createContext(defaultTransactionBody());
@@ -414,7 +430,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testCreateWritableStore(@Mock WritableStates writableStates) {
+        void testCreateWritableStore(@Mock final WritableStates writableStates) {
             // given
             when(stack.createWritableStates(TokenService.NAME)).thenReturn(writableStates);
             final var context = createContext(defaultTransactionBody());
@@ -464,7 +480,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testVerificationForKey(@Mock SignatureVerification verification) {
+        void testVerificationForKey() {
             // given
             when(verifier.verificationFor(Key.DEFAULT)).thenReturn(verification);
             final var context = createContext(defaultTransactionBody());
@@ -477,7 +493,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testVerificationForAlias(@Mock SignatureVerification verification) {
+        void testVerificationForAlias() {
             // given
             when(verifier.verificationFor(ERIN.account().alias())).thenReturn(verification);
             final var context = createContext(defaultTransactionBody());
@@ -694,7 +710,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testAddChildRecordBuilder(@Mock SingleTransactionRecordBuilderImpl childRecordBuilder) {
+        void testAddChildRecordBuilder(@Mock final SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
             when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
             final var context = createContext(defaultTransactionBody());
@@ -707,7 +723,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testAddRemovableChildRecordBuilder(@Mock SingleTransactionRecordBuilderImpl childRecordBuilder) {
+        void testAddRemovableChildRecordBuilder(@Mock final SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
             final var context = createContext(defaultTransactionBody());
@@ -778,11 +794,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             stack = new SavepointStackImpl(baseState);
         }
 
-        private HandleContextImpl createContext(TransactionBody txBody, TransactionCategory category) {
-            HederaFunctionality function;
+        private HandleContextImpl createContext(final TransactionBody txBody, final TransactionCategory category) {
+            final HederaFunctionality function;
             try {
                 function = functionOf(txBody);
-            } catch (UnknownHederaFunctionality e) {
+            } catch (final UnknownHederaFunctionality e) {
                 throw new RuntimeException(e);
             }
 
@@ -807,7 +823,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     feeManager,
                     exchangeRateManager,
                     DEFAULT_CONSENSUS_NOW,
-                    authorizer);
+                    authorizer,
+                    solvencyPreCheck);
         }
 
         @SuppressWarnings("ConstantConditions")
@@ -882,8 +899,13 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @ParameterizedTest
         @MethodSource("createContextDispatchers")
-        void testDispatchSucceeds(Consumer<HandleContext> contextDispatcher) throws PreCheckException {
+        void testDispatchSucceeds(final Consumer<HandleContext> contextDispatcher) throws PreCheckException {
             // given
+            when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
+            when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
+            when(selfNodeInfo.nodeId()).thenReturn(0L);
+            when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
+            Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
                     .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
@@ -905,7 +927,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @ParameterizedTest
         @MethodSource("createContextDispatchers")
-        void testDispatchPreHandleFails(Consumer<HandleContext> contextDispatcher) throws PreCheckException {
+        void testDispatchPreHandleFails(final Consumer<HandleContext> contextDispatcher) throws PreCheckException {
             // given
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
@@ -931,8 +953,13 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @ParameterizedTest
         @MethodSource("createContextDispatchers")
-        void testDispatchHandleFails(Consumer<HandleContext> contextDispatcher) {
+        void testDispatchHandleFails(final Consumer<HandleContext> contextDispatcher) {
             // given
+            when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
+            when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
+            when(selfNodeInfo.nodeId()).thenReturn(0L);
+            when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
+            Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
                     .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
@@ -956,7 +983,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
 
         @ParameterizedTest
         @EnumSource(TransactionCategory.class)
-        void testDispatchPrecedingWithNonUserTxnFails(TransactionCategory category) {
+        void testDispatchPrecedingWithNonUserTxnFails(final TransactionCategory category) {
             if (category != TransactionCategory.USER) {
                 // given
                 final var context = createContext(defaultTransactionBody(), category);
@@ -1015,7 +1042,11 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             // given
             final var context = createContext(defaultTransactionBody(), TransactionCategory.USER);
             stack.peek().createWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).put(B_KEY, BLUEBERRY);
-
+            when(networkInfo.selfNodeInfo()).thenReturn(selfNodeInfo);
+            when(selfNodeInfo.nodeId()).thenReturn(0L);
+            when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
+            Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
+            when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
             // then
             assertThatNoException()
                     .isThrownBy(() -> context.dispatchPrecedingTransaction(
@@ -1090,13 +1121,18 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     })
                     .when(dispatcher)
                     .dispatchHandle(any());
+            given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
+            given(selfNodeInfo.nodeId()).willReturn(0L);
+            when(recordCache.hasDuplicate(any(), any(Long.class))).thenReturn(DuplicateCheckResult.NO_DUPLICATE);
+            when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
+            Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
 
             // when
             context.dispatchReversiblePrecedingTransaction(
                     defaultTransactionBody(),
                     SingleTransactionRecordBuilder.class,
                     VERIFIER_CALLBACK,
-                    AccountID.DEFAULT);
+                    ALICE.accountID());
 
             // then
             assertThat(stack.depth()).isEqualTo(1);
