@@ -40,6 +40,7 @@ import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -228,7 +229,8 @@ public class ContractUpdateHandler implements TransactionHandler {
     }
 
     private boolean keyIfAcceptable(Key candidate) {
-        return candidate == null || candidate.contractID() != null;
+        boolean keyIsNotValid = !KeyUtils.isValid(candidate);
+        return keyIsNotValid || candidate.contractID() != null;
     }
 
     boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {
