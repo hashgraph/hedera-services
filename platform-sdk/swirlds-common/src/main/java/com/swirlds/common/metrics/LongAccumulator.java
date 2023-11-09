@@ -301,6 +301,7 @@ public interface LongAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
+        @NonNull
         public LongAccumulator create(final MetricsFactory factory) {
             return factory.createLongAccumulator(this);
         }
