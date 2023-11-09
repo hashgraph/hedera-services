@@ -235,6 +235,7 @@ public interface SpeedometerMetric extends Metric {
          * {@inheritDoc}
          */
         @Override
+        @NonNull
         public SpeedometerMetric create(final PlatformMetricsFactory factory) {
             return factory.createSpeedometerMetric(this);
         }
