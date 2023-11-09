@@ -22,6 +22,7 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
@@ -29,11 +30,13 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.UnaryOperator;
 
 /**
  * This class manages all record builders that are used while a single user transaction is running.
@@ -195,7 +198,7 @@ public final class RecordListBuilder {
      */
     public SingleTransactionRecordBuilderImpl addChild(@NonNull final Configuration configuration) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddChild(configuration, ReversingBehavior.REVERSIBLE);
+        return doAddChild(configuration, ReversingBehavior.REVERSIBLE, null);
     }
 
     /**
@@ -208,15 +211,37 @@ public final class RecordListBuilder {
      * @param configuration the current configuration
      * @return the record builder for the child transaction
      * @throws NullPointerException if {@code consensusConfig} is {@code null}
-     * @throws HandleException      if no more child slots are available
+     * @throws HandleException if no more child slots are available
      */
     public SingleTransactionRecordBuilderImpl addRemovableChild(@NonNull final Configuration configuration) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddChild(configuration, ReversingBehavior.REMOVABLE);
+        return doAddChild(configuration, ReversingBehavior.REMOVABLE, null);
+    }
+
+    /**
+     * Adds a record builder for a child transaction that is removed when reverted, and performs a custom
+     * "finishing" operation on the transaction before externalizing it to the record stream.
+     *
+     * <p>We need this variant to let the contract service externalize some of its dispatched
+     * {@code CryptoCreate} transactions as {@code ContractCreate} transactions.
+     *
+     * @param configuration the current configuration
+     * @param transactionFinisher the custom finishing operation
+     * @return the record builder for the child transaction
+     * @throws NullPointerException if {@code consensusConfig} is {@code null}
+     * @throws HandleException if no more child slots are available
+     */
+    public SingleTransactionRecordBuilderImpl addRemovableChildWithTransactionFinisher(
+            @NonNull final Configuration configuration, @NonNull final UnaryOperator<Transaction> transactionFinisher) {
+        requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
+        requireNonNull(transactionFinisher, "transactionFinisher must not be null");
+        return doAddChild(configuration, ReversingBehavior.REMOVABLE, transactionFinisher);
     }
 
     private SingleTransactionRecordBuilderImpl doAddChild(
-            @NonNull final Configuration configuration, final ReversingBehavior reversingBehavior) {
+            @NonNull final Configuration configuration,
+            final ReversingBehavior reversingBehavior,
+            @Nullable final UnaryOperator<Transaction> transactionFinisher) {
         // FUTURE: We should reuse the RecordListBuilder between handle calls, and we should reuse these lists, in
         // which case we will no longer have to create them lazily.
         if (childRecordBuilders == null) {
@@ -236,7 +261,8 @@ public final class RecordListBuilder {
                 ? userTxnRecordBuilder.consensusNow()
                 : childRecordBuilders.get(childRecordBuilders.size() - 1).consensusNow();
         final var consensusNow = prevConsensusNow.plusNanos(1L);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior)
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(
+                        consensusNow, reversingBehavior, transactionFinisher)
                 .parentConsensus(parentConsensusTimestamp)
                 .exchangeRate(userTxnRecordBuilder.exchangeRate());
         childRecordBuilders.add(recordBuilder);
@@ -255,8 +281,9 @@ public final class RecordListBuilder {
      * actually be removed from the list.
      *
      * <p>If the given builder is the 5th of these 10, then each builder from the 6th to the 10th will be removed from
-     * the list if they were added by {@link #addRemovableChild(Configuration)}, otherwise they will have their status
-     * set to {@link ResponseCodeEnum#REVERTED_SUCCESS} (unless it had another failure mode already).
+     * the list if they were added by {@link #addRemovableChild(Configuration)} or
+     * {@link #addRemovableChildWithTransactionFinisher(Configuration, UnaryOperator)}, otherwise they will have their
+     * status set to {@link ResponseCodeEnum#REVERTED_SUCCESS} (unless it had another failure mode already).
      *
      * @param recordBuilder the record builder which children need to be reverted
      */
@@ -358,10 +385,16 @@ public final class RecordListBuilder {
         count = childRecordBuilders == null ? 0 : childRecordBuilders.size();
         for (int i = 0; i < count; i++) {
             final var recordBuilder = childRecordBuilders.get(i);
-            records.add(recordBuilder
+            final var maybeRecord = recordBuilder
                     .transactionID(idBuilder.nonce(nextNonce++).build())
                     .syncBodyIdFromRecordId()
-                    .build());
+                    .build();
+            if (maybeRecord == null) {
+                // Reclaim this nonce, as the child wasn't actually meant to be externalized
+                nextNonce--;
+            } else {
+                records.add(maybeRecord);
+            }
         }
 
         return new Result(userTxnRecord, unmodifiableList(records));

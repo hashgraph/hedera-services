@@ -211,35 +211,35 @@ public class CryptoTransferSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-//                transferWithMissingAccountGetsInvalidAccountId(),
-//                complexKeyAcctPaysForOwnTransfer(),
-//                twoComplexKeysRequired(),
-//                specialAccountsBalanceCheck(),
-//                tokenTransferFeesScaleAsExpected(),
-//                okToSetInvalidPaymentHeaderForCostAnswer(),
-//                baseCryptoTransferFeeChargedAsExpected(),
-//                autoAssociationRequiresOpenSlots(),
+                //                transferWithMissingAccountGetsInvalidAccountId(),
+                //                complexKeyAcctPaysForOwnTransfer(),
+                //                twoComplexKeysRequired(),
+                //                specialAccountsBalanceCheck(),
+                //                tokenTransferFeesScaleAsExpected(),
+                //                okToSetInvalidPaymentHeaderForCostAnswer(),
+                //                baseCryptoTransferFeeChargedAsExpected(),
+                //                autoAssociationRequiresOpenSlots(),
                 royaltyCollectorsCanUseAutoAssociation(),
-//                royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-//                dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-//                hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-//                transferToNonAccountEntitiesReturnsInvalidAccountId(),
-//                nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-//                checksExpectedDecimalsForFungibleTokenTransferList(),
+                //                royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+                //                dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+                //                hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+                //                transferToNonAccountEntitiesReturnsInvalidAccountId(),
+                //                nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+                //                checksExpectedDecimalsForFungibleTokenTransferList(),
                 allowanceTransfersWorkAsExpected(),
                 allowanceTransfersWithComplexTransfersWork(),
-//                canUseMirrorAliasesForNonContractXfers(),
-//                canUseEip1014AliasesForXfers(),
+                //                canUseMirrorAliasesForNonContractXfers(),
+                //                canUseEip1014AliasesForXfers(),
                 cannotTransferFromImmutableAccounts(),
-//                nftTransfersCannotRepeatSerialNos(),
-//                vanillaTransferSucceeds(),
+                //                nftTransfersCannotRepeatSerialNos(),
+                //                vanillaTransferSucceeds(),
                 aliasKeysAreValidated(),
                 hapiTransferFromForNFTWithCustomFeesWithAllowance()
-//                hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance(),
-//                okToRepeatSerialNumbersInWipeList(),
-//                okToRepeatSerialNumbersInBurnList(),
-//                canUseAliasAndAccountCombinations()
-        );
+                //                hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance(),
+                //                okToRepeatSerialNumbersInWipeList(),
+                //                okToRepeatSerialNumbersInBurnList(),
+                //                canUseAliasAndAccountCombinations()
+                );
     }
 
     @Override
@@ -602,7 +602,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                                 .between(partyLiteral.get(), counterLiteral.get()))))));
     }
 
-    @HapiTest // here
+    @HapiTest
     private HapiSpec cannotTransferFromImmutableAccounts() {
         final var contract = "PayableConstructor";
         final var multiKey = "swiss";

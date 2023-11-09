@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.DEFAULT_TRANSACTION_FINISHER;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
@@ -120,6 +121,10 @@ class HandleContextTest {
         subject.dispatchRemovableChildTransaction(WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest);
         verify(subject)
                 .dispatchRemovableChildTransaction(
-                        WITH_PAYER_ID, SingleTransactionRecordBuilder.class, signatureTest, PAYER_ID);
+                        WITH_PAYER_ID,
+                        SingleTransactionRecordBuilder.class,
+                        signatureTest,
+                        PAYER_ID,
+                        DEFAULT_TRANSACTION_FINISHER);
     }
 }

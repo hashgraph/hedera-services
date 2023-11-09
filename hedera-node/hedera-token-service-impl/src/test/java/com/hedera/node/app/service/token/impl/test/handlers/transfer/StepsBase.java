@@ -64,6 +64,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -197,7 +198,11 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
+                        any(),
+                        eq(CryptoCreateRecordBuilder.class),
+                        any(Predicate.class),
+                        eq(payerId),
+                        any(UnaryOperator.class)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any())).willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);
