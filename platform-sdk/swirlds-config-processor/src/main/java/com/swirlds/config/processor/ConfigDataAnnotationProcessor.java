@@ -20,7 +20,6 @@ import static com.swirlds.config.processor.ConfigProcessorConstants.CONSTANTS_CL
 
 import com.google.auto.service.AutoService;
 import com.swirlds.config.processor.antlr.AntlrConfigRecordParser;
-import com.swirlds.config.processor.antlr.AntlrUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -42,10 +41,13 @@ import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 
+/**
+ * An annotation processor that creates documentation and constants for config data records.
+ */
 @SupportedAnnotationTypes(ConfigProcessorConstants.CONFIG_DATA_ANNOTATION)
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 @AutoService(Processor.class)
-public class ConfigDataAnnotationProcessor extends AbstractProcessor {
+public final class ConfigDataAnnotationProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(

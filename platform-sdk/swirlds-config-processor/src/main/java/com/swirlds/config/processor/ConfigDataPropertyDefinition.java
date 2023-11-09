@@ -20,11 +20,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * @param fieldName
+ * Metadata for a config property definition.
+ * @param fieldName   the field name like "maxSize"
  * @param name         the full name like "com.swirlds.config.foo.bar"
- * @param type
- * @param defaultValue
- * @param description
+ * @param type        the type like "int"
+ * @param defaultValue the default value like "100"
+ * @param description the description like "the maximum size"
  */
 public record ConfigDataPropertyDefinition(
         @NonNull String fieldName,

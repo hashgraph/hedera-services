@@ -55,7 +55,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 /**
  * Utils for antlr4 parsing of Java source code
  */
-public class AntlrUtils {
+public final class AntlrUtils {
 
     public static final String JAVADOC_PARAM = "param";
 
@@ -276,7 +276,7 @@ public class AntlrUtils {
                                 .filter(t -> !t.isBlank())
                                         .reduce((a, b) -> a.trim() + " " + b.trim())
                                 .orElse("");
-                        params.put(paramName, description);
+                        params.put(paramName.trim(), description.trim());
                     });
                 });
         return params;

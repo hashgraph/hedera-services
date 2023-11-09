@@ -16,15 +16,28 @@
 
 package com.swirlds.config.processor;
 
-public class ConfigProcessorConstants {
+/**
+ * Constants used by the config processor.
+ */
+public final class ConfigProcessorConstants {
 
+    /**
+     * The extension for java files.
+     */
     public static final String JAVA_FILE_EXTENSION = ".java";
-    public static final String JAVADOC_PARAM = "@param";
-    public static final String VALUE_FIELD_NAME = "value";
-    public static final String DEFAULT_VALUE_FIELD_NAME = "defaultValue";
-    public static final String JAVA_LANG_STRING = "java.lang.String";
+
+    /**
+     * Suffix for the generated classes
+     */
     public static final String CONSTANTS_CLASS_SUFFIX = "_";
+
+    /**
+     * Class name of the ConfigData annotation.
+     */
     public static final String CONFIG_DATA_ANNOTATION = "com.swirlds.config.api.ConfigData";
 
+    /**
+     * private constructor for utility class.
+     */
     private ConfigProcessorConstants() {}
 }

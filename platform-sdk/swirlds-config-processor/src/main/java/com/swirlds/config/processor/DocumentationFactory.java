@@ -16,6 +16,9 @@
 
 package com.swirlds.config.processor;
 
+import static com.swirlds.config.processor.MarkdownSyntax.NEWLINE;
+import static com.swirlds.config.processor.MarkdownSyntax.asCode;
+
 import com.swirlds.config.api.ConfigProperty;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileWriter;
@@ -30,6 +33,9 @@ import java.util.Optional;
  */
 public class DocumentationFactory {
 
+    /**
+     * Prevents instantiation.
+     */
     private DocumentationFactory() {}
 
     /**
@@ -55,21 +61,22 @@ public class DocumentationFactory {
         try (final FileWriter writer = new FileWriter(configDocumentationFile.toString(), true)) {
             configDataRecordDefinition.propertyDefinitions().forEach(propertyDefinition -> {
                 try {
-                    writer.write("## " + propertyDefinition.name() + "\n\n");
+                    writer.write(MarkdownSyntax.H2_PREFIX + propertyDefinition.name() + NEWLINE);
                     final String fullRecordName = Optional.ofNullable(configDataRecordDefinition.packageName())
                             .map(packageName -> packageName + "." + configDataRecordDefinition.simpleClassName())
                             .orElse(configDataRecordDefinition.simpleClassName());
-                    writer.write("**record:** `" + fullRecordName + "`\n\n");
-                    writer.write("**type:** `" + propertyDefinition.type() + "`\n\n");
+                    writer.write(MarkdownSyntax.RECORD + asCode(fullRecordName) + NEWLINE);
+                    writer.write(MarkdownSyntax.TYPE + asCode(propertyDefinition.type()) + NEWLINE);
                     if (Objects.equals(propertyDefinition.defaultValue(), ConfigProperty.UNDEFINED_DEFAULT_VALUE)) {
-                        writer.write("**no default value**\n\n");
+                        writer.write(MarkdownSyntax.NO_DEFAULT_VALUE + NEWLINE);
                     } else if (Objects.equals(propertyDefinition.defaultValue(),
                             ConfigProperty.NULL_DEFAULT_VALUE)) {
-                        writer.write("**default value is `null`**\n\n");
+                        writer.write(MarkdownSyntax.DEFAULT_VALUE_IS_NULL + NEWLINE);
                     } else {
-                        writer.write("**default value:** `" + propertyDefinition.defaultValue() + "`\n\n");
+                        writer.write(MarkdownSyntax.DEFAULT_VALUE + asCode(propertyDefinition.defaultValue())
+                                + NEWLINE);
                     }
-                    writer.write("**description:** " + propertyDefinition.description() + "\n\n");
+                    writer.write(MarkdownSyntax.DESCRIPTION + propertyDefinition.description() + NEWLINE);
                     writer.write("\n");
                 } catch (IOException e) {
                     throw new RuntimeException("Error while writing doc", e);

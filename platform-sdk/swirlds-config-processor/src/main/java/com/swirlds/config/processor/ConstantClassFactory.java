@@ -34,6 +34,9 @@ import javax.tools.JavaFileObject;
  */
 public class ConstantClassFactory {
 
+    /**
+     * private constructor to prevent instantiation
+     */
     private ConstantClassFactory() {}
 
     /**
