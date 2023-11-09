@@ -29,12 +29,15 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_F
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.StateSavedToDiskPayload;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,9 +45,14 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -135,27 +143,138 @@ public final class SignedStateFileWriter {
     /**
      * Write all files that belong in the signed state directory into a directory.
      *
-     * @param selfId        the id of the platform
-     * @param directory     the directory where all files should be placed
-     * @param signedState   the signed state being written to disk
-     * @param configuration the configuration used
+     * @param platformContext the platform context
+     * @param selfId          the id of the platform
+     * @param directory       the directory where all files should be placed
+     * @param signedState     the signed state being written to disk
      */
     public static void writeSignedStateFilesToDirectory(
+            @Nullable final PlatformContext platformContext,
             @Nullable NodeId selfId,
             @NonNull final Path directory,
-            @NonNull final SignedState signedState,
-            @NonNull final Configuration configuration)
+            @NonNull final SignedState signedState)
             throws IOException {
-        Objects.requireNonNull(directory, "directory must not be null");
-        Objects.requireNonNull(signedState, "signedState must not be null");
-        Objects.requireNonNull(configuration, "configuration must not be null");
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(directory);
+        Objects.requireNonNull(signedState);
 
         writeStateFile(directory, signedState);
         writeHashInfoFile(directory, signedState.getState());
         writeMetadataFile(selfId, directory, signedState);
         writeEmergencyRecoveryFile(directory, signedState);
         writeStateAddressBookFile(directory, signedState.getAddressBook());
-        writeSettingsUsed(directory, configuration);
+        writeSettingsUsed(directory, platformContext.getConfiguration());
+        copyPreconsensusEventStreamFiles(
+                platformContext,
+                selfId,
+                directory,
+                signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
+    }
+
+    /**
+     * Copy preconsensus event files into the signed state directory. These files are necessary for the platform to use
+     * the state file as a starting point. Note that starting with this only the PCES files in the state file does not
+     * guarantee that there is no data loss (i.e. there may be transactions that reach consensus after the state
+     * snapshot that are not replayed), but it does allow a node to start up and participate in gossip.
+     *
+     * <p>
+     * This general strategy is not very elegant is very much a hack. But it will allow us to do migration testing using
+     * real production states and streams, in the short term. In the longer term we should consider alternate and
+     * cleaner strategies.
+     *
+     * @param platformContext             the platform context
+     * @param destinationDirectory        the directory where the state is being written
+     * @param minimumGenerationNonAncient the minimum generation of events that are not ancient, with respect to the
+     *                                    state that is being written
+     */
+    private static void copyPreconsensusEventStreamFiles(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final NodeId selfId,
+            @NonNull final Path destinationDirectory,
+            final long minimumGenerationNonAncient)
+            throws IOException {
+
+        final boolean copyPreconsensusStream = platformContext
+                .getConfiguration()
+                .getConfigData(PreconsensusEventStreamConfig.class)
+                .copyRecentStreamToStateSnapshots();
+        if (!copyPreconsensusStream) {
+            // PCES copying is disabled
+            return;
+        }
+
+        // The PCES files will be copied into this directory
+        final Path pcesDestination =
+                destinationDirectory.resolve("preconsensus-events").resolve(Long.toString(selfId.id()));
+        Files.createDirectories(pcesDestination);
+
+        // Gather all PCES files currently on disk.
+        final List<PreconsensusEventFile> allFiles = new ArrayList<>();
+        final Path preconsensusEventStreamDirectory =
+                PreconsensusEventFileManager.getDatabaseDirectory(platformContext, selfId);
+        try (final Stream<Path> stream = Files.walk(preconsensusEventStreamDirectory)) {
+            stream.filter(Files::isRegularFile).forEach(path -> {
+                try {
+                    allFiles.add(PreconsensusEventFile.of(path));
+                } catch (final IOException e) {
+                    // Ignore, this will get thrown for each file that is not a PCES file
+                }
+            });
+        }
+
+        if (allFiles.isEmpty()) {
+            logger.warn(STATE_TO_DISK.getMarker(), "No preconsensus event files found to copy");
+            return;
+        }
+
+        // Sort by sequence number
+        Collections.sort(allFiles);
+
+        // Discard all files that either have an incorrect origin or that do not contain non-ancient events
+        final List<PreconsensusEventFile> filesToCopy = new ArrayList<>();
+        final PreconsensusEventFile lastFile = allFiles.get(allFiles.size() - 1);
+        for (final PreconsensusEventFile file : allFiles) {
+            if (file.getOrigin() == lastFile.getOrigin()
+                    && file.getMaximumGeneration() <= minimumGenerationNonAncient) {
+                filesToCopy.add(file);
+            }
+        }
+
+        if (filesToCopy.isEmpty()) {
+            logger.warn(
+                    STATE_TO_DISK.getMarker(), "No preconsensus event files meeting specified criteria found to copy");
+            return;
+        }
+
+        logger.info(
+                STATE_TO_DISK.getMarker(),
+                "Copying {} preconsensus event files to state snapshot directory",
+                filesToCopy.size());
+
+        // Although the last file may be currently in the process of being written, all previous files will
+        // be closed and immutable and so it's safe to hard link them.
+        for (int index = 0; index < filesToCopy.size() - 1; index++) {
+            final PreconsensusEventFile file = filesToCopy.get(index);
+            final Path destination = pcesDestination.resolve(file.getFileName());
+            try {
+                Files.createLink(destination, file.getPath());
+            } catch (final IOException e) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Exception when hard linking preconsensus event file {} to {}",
+                        file.getPath(),
+                        destination,
+                        e);
+            }
+        }
+
+        // The last file might be in the process of being written, so we need to do a deep copy of it.
+        Files.copy(lastFile.getPath(), pcesDestination.resolve(lastFile.getFileName()));
+
+        logger.info(
+                STATE_TO_DISK.getMarker(),
+                "Finished copying {} preconsensus event files to state snapshot directory",
+                filesToCopy.size());
     }
 
     /**
@@ -177,23 +296,23 @@ public final class SignedStateFileWriter {
      * Writes a SignedState to a file. Also writes auxiliary files such as "settingsUsed.txt". This is the top level
      * method called by the platform when it is ready to write a state.
      *
+     * @param platformContext     the platform context
      * @param selfId              the id of the platform
      * @param savedStateDirectory the directory where the state will be stored
      * @param signedState         the object to be written
      * @param stateToDiskReason   the reason the state is being written to disk
-     * @param configuration       the configuration for the platform
      */
     public static void writeSignedStateToDisk(
+            @NonNull final PlatformContext platformContext,
             @Nullable final NodeId selfId,
             @NonNull final Path savedStateDirectory,
             @NonNull final SignedState signedState,
-            @Nullable final StateToDiskReason stateToDiskReason,
-            @NonNull final Configuration configuration)
+            @Nullable final StateToDiskReason stateToDiskReason)
             throws IOException {
 
+        Objects.requireNonNull(platformContext);
         Objects.requireNonNull(savedStateDirectory);
         Objects.requireNonNull(signedState);
-        Objects.requireNonNull(configuration);
 
         try {
             logger.info(
@@ -205,7 +324,7 @@ public final class SignedStateFileWriter {
 
             executeAndRename(
                     savedStateDirectory,
-                    directory -> writeSignedStateFilesToDirectory(selfId, directory, signedState, configuration));
+                    directory -> writeSignedStateFilesToDirectory(platformContext, selfId, directory, signedState));
 
             logger.info(STATE_TO_DISK.getMarker(), () -> new StateSavedToDiskPayload(
                             signedState.getRound(),
