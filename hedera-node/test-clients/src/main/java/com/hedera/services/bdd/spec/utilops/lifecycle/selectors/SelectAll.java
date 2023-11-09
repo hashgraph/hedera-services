@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.appcomm;
+package com.hedera.services.bdd.spec.utilops.lifecycle.selectors;
+
+import com.hedera.services.bdd.junit.HapiTestNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A factory capable of creating instances of {@link AppCommunicationComponent}
+ * Selects all nodes.
  */
-public interface AppCommunicationComponentFactory {
+public class SelectAll implements NodeSelector {
+    @Override
+    public boolean test(@NonNull final HapiTestNode hapiTestNode) {
+        return true;
+    }
 
-    /**
-     * Builds a new {@link AppCommunicationComponent} with the provided inputs.
-     *
-     * @return the newly constructed {@link AppCommunicationComponent}
-     * @throws IllegalStateException
-     * 		if any required inputs are null
-     */
-    AppCommunicationComponent build();
+    @Override
+    public String toString() {
+        return "including all nodes";
+    }
 }

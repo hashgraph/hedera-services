@@ -32,6 +32,6 @@ public final class IntegerConverter implements ConfigConverter<Integer> {
         if (value == null) {
             throw new NullPointerException("null can not be converted");
         }
-        return Integer.valueOf(value);
+        return Integer.valueOf(value.replace("_", ""));
     }
 }

@@ -34,6 +34,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
@@ -43,6 +45,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class PrngSeedOperationSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(PrngSeedOperationSuite.class);
@@ -55,7 +58,8 @@ public class PrngSeedOperationSuite extends HapiSuite {
     public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
     public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
 
-    public static final String EVM_VERSION_0_31 = "v0.31";
+    public static final String EVM_VERSION_0_34 = "v0.34";
+    public static final String EVM_VERSION_0_30 = "v0.30";
 
     public static void main(String... args) {
         new PrngSeedOperationSuite().runSuiteSync();
@@ -80,6 +84,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
                 prngPrecompileHappyPathWorks(), multipleCallsHaveIndependentResults(), prngPrecompileDisabledInV030());
     }
 
+    @HapiTest
     private HapiSpec multipleCallsHaveIndependentResults() {
         final var prng = THE_PRNG_CONTRACT;
         final var gasToOffer = 400_000;
@@ -90,7 +95,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
                         uploadInitCode(prng),
                         contractCreate(prng),
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
-                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31))
+                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_34))
                 .when(withOpContext((spec, opLog) -> {
                     for (int i = 0; i < numCalls; i++) {
                         final var txn = "call" + i;
@@ -128,13 +133,14 @@ public class PrngSeedOperationSuite extends HapiSuite {
                         contractCallLocal(prng, GET_SEED).gas(gasToOffer));
     }
 
+    @HapiTest
     private HapiSpec prngPrecompileHappyPathWorks() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
                 .given(
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
-                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31),
+                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_34),
                         cryptoCreate(BOB),
                         uploadInitCode(prng),
                         contractCreate(prng))
@@ -151,13 +157,14 @@ public class PrngSeedOperationSuite extends HapiSuite {
                         .logged());
     }
 
+    @HapiTest
     private HapiSpec prngPrecompileDisabledInV030() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileDisabledInV_0_30")
                 .given(
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
-                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31),
+                        overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_30),
                         cryptoCreate(BOB),
                         uploadInitCode(prng),
                         contractCreate(prng))
