@@ -44,7 +44,6 @@ module com.swirlds.common {
     exports com.swirlds.common.merkle.synchronization.views;
     exports com.swirlds.common.merkle.utility;
     exports com.swirlds.common.metrics;
-    exports com.swirlds.common.metrics.atomic;
     exports com.swirlds.common.metrics.config;
     exports com.swirlds.common.metrics.noop;
     exports com.swirlds.common.metrics.platform;
