@@ -186,6 +186,7 @@ public interface DoubleGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
+        @NonNull
         public DoubleGauge create(final MetricsFactory factory) {
             return factory.createDoubleGauge(this);
         }
