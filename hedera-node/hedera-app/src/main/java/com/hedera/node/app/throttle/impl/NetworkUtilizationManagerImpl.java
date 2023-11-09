@@ -120,7 +120,7 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
         try {
             final var gasThrottleUsageSnapshot = fromPbj(throttleSnapshots.gasThrottle());
             activeGasThrottle.resetUsageTo(gasThrottleUsageSnapshot);
-            log.info("Reset {} with saved gas throttle usage snapshot", gasThrottleUsageSnapshot);
+            log.debug("Reset {} with saved gas throttle usage snapshot", gasThrottleUsageSnapshot);
         } catch (final IllegalArgumentException e) {
             log.warn(String.format(
                     "Saved gas throttle usage snapshot was not compatible with the"

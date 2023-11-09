@@ -153,6 +153,9 @@ public interface HederaInjectionComponent {
         Builder exchangeRateManager(ExchangeRateManager exchangeRateManager);
 
         @BindsInstance
+        Builder feeManager(FeeManager feeManager);
+
+        @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);
 
         @BindsInstance

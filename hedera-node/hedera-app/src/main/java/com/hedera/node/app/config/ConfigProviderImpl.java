@@ -135,16 +135,19 @@ public class ConfigProviderImpl extends ConfigProviderBase {
     }
 
     /**
-     * This method must be called if a property has changed. It will update the configuration and increase the version.
+     * This method must be called when the network properties or permissions are overridden.
+     * It will update the configuration and increase the version.
      *
-     * @param propertyFileContent the new property file content
+     * @param networkProperties the network properties file content
+     * @param permissions the permissions file content
      */
-    public void update(@NonNull final Bytes propertyFileContent) {
-        logger.info("Updating configuration based on new property file content.");
+    public void update(@NonNull final Bytes networkProperties, @NonNull final Bytes permissions) {
+        logger.info("Updating configuration caused by properties or permissions override.");
         try (final var ignoredLock = updateLock.lock()) {
             final var builder = createConfigurationBuilder();
             addFileSources(builder, false);
-            addByteSource(builder, propertyFileContent);
+            addByteSource(builder, networkProperties);
+            addByteSource(builder, permissions);
             final Configuration config = builder.build();
             configuration.set(
                     new VersionedConfigImpl(config, this.configuration.get().getVersion() + 1));

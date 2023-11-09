@@ -37,8 +37,12 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @HapiTestSuite
+@TestMethodOrder(OrderAnnotation.class)
 public class ThrottleDefValidationSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(ThrottleDefValidationSuite.class);
@@ -75,6 +79,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
     }
 
     @HapiTest
+    @Order(100) // this needs to be executed after all other tests
     private HapiSpec ensureDefaultsRestored() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 

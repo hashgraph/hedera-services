@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +34,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.file.FileService;
@@ -45,6 +47,7 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -56,7 +59,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,10 +76,14 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
     private SystemFileUpdateFacility subject;
 
+    @Mock
     private ThrottleManager throttleManager;
 
     @Mock
     private ExchangeRateManager exchangeRateManager;
+
+    @Mock
+    private FeeManager feeManager;
 
     @Mock
     private CongestionMultipliers congestionMultipliers;
@@ -97,15 +103,16 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .withConverter(new BytesConverter())
                 .withConverter(new LongPairConverter())
                 .withConfigDataType(FilesConfig.class)
+                .withConfigDataType(HederaConfig.class)
                 .withConfigDataType(LedgerConfig.class)
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1L));
 
-        throttleManager = new ThrottleManager();
         subject = new SystemFileUpdateFacility(
                 configProvider,
                 throttleManager,
                 exchangeRateManager,
+                feeManager,
                 congestionMultipliers,
                 throttleAccumulator,
                 synchronizedThrottleAccumulator);
@@ -123,6 +130,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         null,
                         throttleManager,
                         exchangeRateManager,
+                        feeManager,
                         congestionMultipliers,
                         throttleAccumulator,
                         synchronizedThrottleAccumulator))
@@ -131,6 +139,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         configProvider,
                         null,
                         exchangeRateManager,
+                        feeManager,
                         congestionMultipliers,
                         throttleAccumulator,
                         synchronizedThrottleAccumulator))
@@ -139,6 +148,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         configProvider,
                         throttleManager,
                         null,
+                        feeManager,
                         congestionMultipliers,
                         throttleAccumulator,
                         synchronizedThrottleAccumulator))
@@ -148,6 +158,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         throttleManager,
                         exchangeRateManager,
                         null,
+                        congestionMultipliers,
                         throttleAccumulator,
                         synchronizedThrottleAccumulator))
                 .isInstanceOf(NullPointerException.class);
@@ -155,6 +166,16 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         configProvider,
                         throttleManager,
                         exchangeRateManager,
+                        feeManager,
+                        null,
+                        throttleAccumulator,
+                        synchronizedThrottleAccumulator))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new SystemFileUpdateFacility(
+                        configProvider,
+                        throttleManager,
+                        exchangeRateManager,
+                        feeManager,
                         congestionMultipliers,
                         null,
                         synchronizedThrottleAccumulator))
@@ -163,6 +184,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                         configProvider,
                         throttleManager,
                         exchangeRateManager,
+                        feeManager,
                         congestionMultipliers,
                         throttleAccumulator,
                         null))
@@ -186,39 +208,107 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
     }
 
     @Test
-    void testUpdateConfigFile() {
+    void testUpdateNetworkPropertiesFile() {
         // given
-        final var fileID = FileID.newBuilder().fileNum(121L).build();
+        final var configuration = configProvider.getConfiguration();
+        final var config = configuration.getConfigData(FilesConfig.class);
+        final var fileID =
+                FileID.newBuilder().fileNum(config.networkProperties()).build();
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(50L).build())
                         .build())
                 .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
+        final var permissionFileID =
+                FileID.newBuilder().fileNum(config.hapiPermissions()).build();
+        final var permissionContent = Bytes.wrap("Good-bye World");
+        files.put(
+                permissionFileID, File.newBuilder().contents(permissionContent).build());
 
         // when
         subject.handleTxBody(state, txBody.build());
 
         // then
-        verify(configProvider).update(FILE_BYTES);
+        verify(configProvider).update(eq(FILE_BYTES), eq(permissionContent));
     }
 
     @Test
-    void testAppendConfigFile() {
+    void testAppendNetworkPropertiesFile() {
         // given
-        final var fileID = FileID.newBuilder().fileNum(121L).build();
+        final var configuration = configProvider.getConfiguration();
+        final var config = configuration.getConfigData(FilesConfig.class);
+        final var fileID =
+                FileID.newBuilder().fileNum(config.networkProperties()).build();
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(50L).build())
                         .build())
                 .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
+        final var permissionFileID =
+                FileID.newBuilder().fileNum(config.hapiPermissions()).build();
+        final var permissionContent = Bytes.wrap("Good-bye World");
+        files.put(
+                permissionFileID, File.newBuilder().contents(permissionContent).build());
 
         // when
         subject.handleTxBody(state, txBody.build());
 
         // then
-        verify(configProvider).update(FILE_BYTES);
+        verify(configProvider).update(eq(FILE_BYTES), eq(permissionContent));
+    }
+
+    @Test
+    void testUpdatePermissionsFile() {
+        // given
+        final var configuration = configProvider.getConfiguration();
+        final var config = configuration.getConfigData(FilesConfig.class);
+        final var fileID = FileID.newBuilder().fileNum(config.hapiPermissions()).build();
+        final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .build())
+                .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
+        files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
+        final var networkPropertiesFileID =
+                FileID.newBuilder().fileNum(config.networkProperties()).build();
+        final var networkPropertiesContent = Bytes.wrap("Good-bye World");
+        files.put(
+                networkPropertiesFileID,
+                File.newBuilder().contents(networkPropertiesContent).build());
+
+        // when
+        subject.handleTxBody(state, txBody.build());
+
+        // then
+        verify(configProvider).update(eq(networkPropertiesContent), eq(FILE_BYTES));
+    }
+
+    @Test
+    void testAppendPermissionsFile() {
+        // given
+        final var configuration = configProvider.getConfiguration();
+        final var config = configuration.getConfigData(FilesConfig.class);
+        final var fileID = FileID.newBuilder().fileNum(config.hapiPermissions()).build();
+        final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .build())
+                .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
+        files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
+        final var networkPropertiesFileID =
+                FileID.newBuilder().fileNum(config.networkProperties()).build();
+        final var networkPropertiesContent = Bytes.wrap("Good-bye World");
+        files.put(
+                networkPropertiesFileID,
+                File.newBuilder().contents(networkPropertiesContent).build());
+
+        // when
+        subject.handleTxBody(state, txBody.build());
+
+        // then
+        verify(configProvider).update(eq(networkPropertiesContent), eq(FILE_BYTES));
     }
 
     @Test
@@ -233,17 +323,8 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .transactionID(TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(50L).build())
                         .build())
-                .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
+                .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
-
-        throttleManager = Mockito.mock(ThrottleManager.class);
-        subject = new SystemFileUpdateFacility(
-                configProvider,
-                throttleManager,
-                exchangeRateManager,
-                congestionMultipliers,
-                throttleAccumulator,
-                synchronizedThrottleAccumulator);
 
         // when
         subject.handleTxBody(state, txBody.build());
@@ -264,7 +345,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .transactionID(TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(50L).build())
                         .build())
-                .fileAppend(FileAppendTransactionBody.newBuilder().fileID(fileID));
+                .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
         files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
 
         // when
@@ -275,5 +356,27 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .update(
                         FileUtilities.getFileContent(state, fileID),
                         AccountID.newBuilder().accountNum(50L).build());
+    }
+
+    @Test
+    void feeManagerUpdatedOnFileUpdate() {
+        // given
+        final var configuration = configProvider.getConfiguration();
+        final var config = configuration.getConfigData(FilesConfig.class);
+
+        final var fileNum = config.feeSchedules();
+        final var fileID = FileID.newBuilder().fileNum(fileNum).build();
+        final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(AccountID.newBuilder().accountNum(50L).build())
+                        .build())
+                .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(fileID));
+        files.put(fileID, File.newBuilder().contents(FILE_BYTES).build());
+
+        // when
+        subject.handleTxBody(state, txBody.build());
+
+        // then
+        verify(feeManager, times(1)).update(FileUtilities.getFileContent(state, fileID));
     }
 }
