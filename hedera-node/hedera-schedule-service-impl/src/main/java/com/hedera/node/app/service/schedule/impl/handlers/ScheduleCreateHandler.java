@@ -138,6 +138,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                     currentTransaction, currentConsensusTime, schedulingConfig.maxExpirationFutureSeconds());
             checkSchedulableWhitelistHandle(provisionalSchedule, schedulingConfig);
             context.attributeValidator().validateMemo(provisionalSchedule.memo());
+            context.attributeValidator().validateMemo(provisionalSchedule.scheduledTransaction().memo());
             if(provisionalSchedule.hasAdminKey()){
                 try{
                     context.attributeValidator().validateKey(provisionalSchedule.adminKeyOrThrow());
