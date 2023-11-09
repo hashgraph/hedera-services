@@ -22,9 +22,7 @@ import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
     private final Supplier<MerkleMapLike<EntityNum, MerkleToken>> delegate;
@@ -55,11 +53,6 @@ public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
     @Override
     public void remove(TokenID id) {
         delegate.get().remove(fromTokenId(id));
-    }
-
-    @Override
-    public Set<TokenID> idSet() {
-        return delegate.get().keySet().stream().map(EntityNum::toGrpcTokenId).collect(Collectors.toSet());
     }
 
     @Override

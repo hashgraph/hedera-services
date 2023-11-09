@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.infra;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
-import static com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException.validateResource;
+import static com.hedera.node.app.spi.workflows.ResourceExhaustedException.validateResource;
 
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;

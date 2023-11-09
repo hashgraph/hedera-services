@@ -51,8 +51,21 @@ class EthTxDataTest {
     //  s: '0x249a72e1479b61e00d4f20308577bb63167d71b26138ee5229ca1cb3c49a2e53',
     //  v: 28, accessList: []
     // }
-    static final String RAW_TX_TYPE_1 =
-            "01f87382012a82160c85a54f4c3c00832dc6c094000000000000000000000000000000000000052d8502540be40083123456c001a0abb9e9c510716df2988cf626734ee50dcd9f41d30d638220712b5fe33fe4c816a0249a72e1479b61e00d4f20308577bb63167d71b26138ee5229ca1cb3c49a2e53";
+    static final String RAW_TX_TYPE_1 = "01" // type
+                    + "f873" // total length
+                    + "82012a" // chain id => 82 - 80 = 2 (hex) = 2 (dec) bytes length
+                    + "82160c" // nonce  => same length
+                    + "85a54f4c3c00" // gas price => 5 bytes
+                    + "832dc6c0" // gas limit => 3 bytes
+                    + "94000000000000000000000000000000000000052d" // to => 94 - 80 = 14 (hex) = 20 (dec) bytes
+                    + "8502540be400" // value => 5 bytes
+                    + "83123456" // calldata => 3 bytes
+                    + "c0" // empty access list => by the RLP definitions, an empty list is encoded with c0
+                    + "01" // v
+                    + "a0abb9e9c510716df2988cf626734ee50dcd9f41d30d638220712b5fe33fe4c816" // r => a0 - 80 = 80 (hex) =
+                    // 128 (dec) bytes
+                    + "a0249a72e1479b61e00d4f20308577bb63167d71b26138ee5229ca1cb3c49a2e53" // same
+            ;
     static final String RAW_TX_TYPE_2 =
             "02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
 
@@ -79,6 +92,30 @@ class EthTxDataTest {
         assertFalse(subjectWithEmptyTo.hasToAddress());
         final var subjectWithNullTo = subject.replaceTo(null);
         assertFalse(subjectWithNullTo.hasToAddress());
+    }
+
+    @Test
+    void effectiveValueIsNominalWhenReasonable() {
+        final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
+        final var nominal = subject.value().divide(WEIBARS_TO_TINYBARS).longValueExact();
+        assertEquals(nominal, subject.effectiveTinybarValue());
+    }
+
+    @Test
+    void effectiveOfferedGasPriceIsNominalWhenReasonable() {
+        final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
+        final var nominal =
+                subject.getMaxGasAsBigInteger().divide(WEIBARS_TO_TINYBARS).longValueExact();
+        assertEquals(nominal, subject.effectiveOfferedGasPriceInTinybars());
+    }
+
+    @Test
+    void effectiveOfferedGasPriceAvoidsOverflow() {
+        final var subject = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0))
+                .replaceValue(
+                        BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE).multiply(WEIBARS_TO_TINYBARS));
+        final var expected = Long.MAX_VALUE;
+        assertEquals(expected, subject.effectiveTinybarValue());
     }
 
     @Test

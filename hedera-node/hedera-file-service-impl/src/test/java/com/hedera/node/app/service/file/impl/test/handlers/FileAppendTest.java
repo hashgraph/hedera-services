@@ -22,17 +22,21 @@ import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.ReadableFileStore;
@@ -41,6 +45,9 @@ import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -79,6 +86,12 @@ class FileAppendTest extends FileTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected Account payerAccount;
 
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    FeeCalculator feeCalculator;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private FeeAccumulator feeAccumulator;
+
     protected Configuration testConfig;
 
     private FileAppendHandler subject;
@@ -87,8 +100,14 @@ class FileAppendTest extends FileTestBase {
     void setUp() {
         subject = new FileAppendHandler();
         testConfig = HederaTestConfigBuilder.createConfig();
-        lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
-        lenient().when(handleContext.configuration()).thenReturn(testConfig);
+        when(preHandleContext.configuration()).thenReturn(testConfig);
+        when(handleContext.configuration()).thenReturn(testConfig);
+        when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
+        when(feeCalculator.calculate()).thenReturn(Fees.FREE);
+        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.addStorageBytesSeconds(anyLong())).thenReturn(feeCalculator);
+        when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
+        when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
     }
 
     @Test
@@ -157,6 +176,10 @@ class FileAppendTest extends FileTestBase {
 
         final var txBody = TransactionBody.newBuilder()
                 .fileAppend(OP_BUILDER.fileID(wellKnownId()))
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(111111).build())
+                        .build())
                 .build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
@@ -173,6 +196,10 @@ class FileAppendTest extends FileTestBase {
 
         final var txBody = TransactionBody.newBuilder()
                 .fileAppend(OP_BUILDER.fileID(wellKnownId()).contents(Bytes.wrap(new byte[1048577])))
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(111111).build())
+                        .build())
                 .build();
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
@@ -189,6 +216,10 @@ class FileAppendTest extends FileTestBase {
 
         final var txBody = TransactionBody.newBuilder()
                 .fileAppend(OP_BUILDER.fileID(wellKnownId()).contents(Bytes.wrap(new byte[0])))
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(111111).build())
+                        .build())
                 .build();
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
@@ -213,6 +244,10 @@ class FileAppendTest extends FileTestBase {
         var bytesNewContentExpected = Bytes.wrap(newContent);
         final var txBody = TransactionBody.newBuilder()
                 .fileAppend(OP_BUILDER.fileID(wellKnownId()).contents(bytesNewContent))
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(111111).build())
+                        .build())
                 .build();
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
@@ -232,6 +267,10 @@ class FileAppendTest extends FileTestBase {
         // No-op
         final var txBody = TransactionBody.newBuilder()
                 .fileAppend(OP_BUILDER.fileID(wellKnownId()))
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(111111).build())
+                        .build())
                 .build();
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
@@ -256,7 +295,7 @@ class FileAppendTest extends FileTestBase {
         givenValidUpgradeFile(false, true);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
-        var bytesNewContentExpected = Bytes.wrap(additionalContent);
+        var bytesNewContentExpected = new ProtoBytes(Bytes.wrap(additionalContent));
         final var txBody = TransactionBody.newBuilder()
                 .fileAppend(OP_BUILDER.fileID(wellKnowUpgradeId()).contents(bytesNewContent))
                 .build();
@@ -265,7 +304,7 @@ class FileAppendTest extends FileTestBase {
 
         subject.handle(handleContext);
         final var iterator = writableUpgradeStates.iterator();
-        Bytes file = null;
+        ProtoBytes file = null;
 
         while (iterator.hasNext()) {
             file = iterator.next();
@@ -278,9 +317,13 @@ class FileAppendTest extends FileTestBase {
     void failsForImmutableFile() {
         final var txBody = TransactionBody.newBuilder()
                 .fileAppend(OP_BUILDER.fileID(wellKnownId()))
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(111111).build())
+                        .build())
                 .build();
 
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
 
         given(handleContext.body()).willReturn(txBody);
         writableFileState = writableFileStateWithOneKey();

@@ -16,24 +16,21 @@
 
 package com.swirlds.platform.network;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.portforwarding.PortMapping;
-import com.swirlds.platform.portforwarding.PortMappingListener;
-import com.swirlds.platform.portforwarding.portmapper.PortMapperPortForwarder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,13 +44,11 @@ public class Network {
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(Network.class);
 
+    private static final String LOCALHOST = "127.0.0.1";
+
     private static Collection<InetAddress> ownAddresses;
-    private static String[] addresses;
-    // port forwarder object
-    private static PortMapperPortForwarder portForwarder;
-    // thread executing the portforwarder
-    private static Thread portForwarderThread;
-    private static boolean noForwardingDeviceFound = false;
+    private static String ownAddress = null;
+    private static ExternalIpAddress externalAddress = null;
 
     /**
      * All the utility methods are static, so the constructor is private, to prevent users from
@@ -69,31 +64,30 @@ public class Network {
      * @param addr
      * 		an IP address
      * @return true if addr is an address of this local computer
-     * @throws SocketException
-     * 		if there are any errors getting the addreses
      */
-    public static boolean isOwn(InetAddress addr) throws SocketException {
+    public static boolean isOwn(InetAddress addr) {
         return getOwnAddresses().contains(addr) || addr.isLoopbackAddress();
     }
 
     /**
-     * Return the external IP address (IPv4) of this computer. If none has been found yet, return the empty
+     * Return the external IP address of this computer. If none has been found yet, return the empty
      * string. If the router doesn't have uPNP or NAT-PMP enabled, return a string asking the user to enable
      * it.
      *
-     * @return the address, or empty string, or warning message
+     * @return the address, or empty string
      */
+    @NonNull
     public static ExternalIpAddress getExternalIpAddress() {
-        String ip = portForwarder == null ? null : portForwarder.getExternalIPAddress();
-        if (noForwardingDeviceFound) {
-            return ExternalIpAddress.UPNP_DISABLED;
-        } else {
-            if (ip == null) {
-                return ExternalIpAddress.NO_IP;
-            }
-
-            return new ExternalIpAddress(ip);
+        if (externalAddress == null) {
+            final String ip = getOwnAddresses().stream()
+                    .filter(Objects::nonNull)
+                    .filter(address -> !isPrivateIP(address))
+                    .map(InetAddress::getHostAddress)
+                    .findFirst()
+                    .orElse(null);
+            externalAddress = ip == null ? ExternalIpAddress.NO_IP : new ExternalIpAddress(ip);
         }
+        return externalAddress;
     }
 
     /**
@@ -103,56 +97,17 @@ public class Network {
      *
      * @return the IP address of this machine, as a string such as "111.222.33.44"
      */
+    @Nullable
     public static String getInternalIPAddress() {
-        return getOwnAddresses2()[0];
-    }
-
-    /**
-     * Forwards the ports for every platform so they can be accessed externally
-     *
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param portsToBeMapped
-     * 		a list of ports that require mapping
-     */
-    public static void doPortForwarding(final ThreadManager threadManager, List<PortMapping> portsToBeMapped) {
-        PortMappingListener listener = new PortMappingListener() {
-            public void noForwardingDeviceFound() {
-                noForwardingDeviceFound = true;
-                CommonUtils.tellUserConsole(
-                        "No port forwarding device found." + " Please enable uPNP or NAT-PMP on the router.");
-            }
-
-            public void mappingFailed(PortMapping mapping, Exception e) {}
-
-            public void mappingAdded(PortMapping mapping) {}
-
-            public void foundExternalIp(String ip) {
-                CommonUtils.tellUserConsole("This computer has an external IP address:  " + ip);
-            }
-        };
-
-        // open a port for incoming connections
-        portForwarder = new PortMapperPortForwarder(threadManager);
-        portForwarder.addListener(listener);
-        portForwarder.setPortMappings(portsToBeMapped);
-
-        // execute tries to open the ports specified above
-        portForwarderThread = new ThreadConfiguration(threadManager)
-                .setComponent("network")
-                .setThreadName("PortForwarder")
-                .setRunnable(portForwarder)
-                .build(true /*start*/);
-    }
-
-    /**
-     * Unmaps all the ports that were previously mapped and stops the service
-     */
-    public static void stopPortForwarding() {
-        if (portForwarderThread != null) {
-            portForwarderThread.interrupt();
-            portForwarder.closeService();
+        if (ownAddress == null) {
+            ownAddress = getOwnAddresses().stream()
+                    .filter(a -> !LOCALHOST.equals(a.getHostAddress()))
+                    .max(Comparator.comparing(Inet4Address.class::isInstance))
+                    .map(InetAddress::getHostAddress)
+                    .orElse(null);
         }
+
+        return ownAddress;
     }
 
     /**
@@ -166,52 +121,85 @@ public class Network {
      *
      * @return an array of all local addresses, sorted by IP version (4 or 6), then alphabetically.
      */
-    public static String[] getOwnAddresses2() {
+    public static Collection<InetAddress> getOwnAddresses() {
         if (ownAddresses == null) {
-            try {
-                ownAddresses = computeOwnAddresses();
-            } catch (SocketException e) {
-                logger.error(EXCEPTION.getMarker(), "", e);
-            }
+            ownAddresses = computeOwnAddresses();
         }
 
-        return addresses;
-    }
-
-    static Collection<InetAddress> getOwnAddresses() throws SocketException {
-        return ownAddresses == null ? ownAddresses = computeOwnAddresses() : ownAddresses;
+        return ownAddresses;
     }
 
     /**
      * Recompute the set of IP addresses for this computer, and their string representations.
      *
      * @return the set of addresses
-     * @throws SocketException
-     * 		for errors while retrieving the addresses
      */
-    private static Collection<InetAddress> computeOwnAddresses() throws SocketException {
+    private static Collection<InetAddress> computeOwnAddresses() {
         final Set<InetAddress> result = new HashSet<>();
-        final List<String> ip4 = new ArrayList<>();
-        final List<String> ip6 = new ArrayList<>();
 
-        for (Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-                interfaces != null && interfaces.hasMoreElements(); ) {
-            for (Enumeration<InetAddress> addresses = interfaces.nextElement().getInetAddresses();
-                    addresses != null && addresses.hasMoreElements(); ) {
-                InetAddress addr = addresses.nextElement();
-                result.add(addr);
-                String ip = addr.getHostAddress();
-                if (ip != null && !ip.equals("127.0.0.1")) {
-                    ((addr instanceof Inet4Address) ? ip4 : ip6).add(ip);
+        try {
+            for (final Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+                    interfaces.hasMoreElements(); ) {
+                for (final Enumeration<InetAddress> addresses =
+                                interfaces.nextElement().getInetAddresses();
+                        addresses.hasMoreElements(); ) {
+                    InetAddress addr = addresses.nextElement();
+                    result.add(addr);
                 }
             }
+            return result;
+        } catch (SocketException e) {
+            logger.error(EXCEPTION.getMarker(), "Error getting own addresses", e);
+            return Collections.emptySet();
+        }
+    }
+
+    /**
+     * Determine whether a given IP address is a private address, as defined by RFC 1918.
+     * This works for both IPv4 and IPv6.
+     *
+     * @param addr the IP address to check
+     *
+     * @return true if addr is a private address
+     */
+    public static boolean isPrivateIP(@NonNull InetAddress addr) {
+        Objects.requireNonNull(addr);
+        final byte[] ip = addr.getAddress();
+
+        // IPv4
+        if (addr instanceof Inet4Address) {
+            final int firstBlock = ip[0] & 0xFF;
+            final int secondBlock = ip[1] & 0xFF;
+
+            // @formatter:off
+            return
+            // Check for 10.x.x.x
+            firstBlock == 10
+                    ||
+                    // Check for 172.16.x.x - 172.31.x.x
+                    (firstBlock == 172 && secondBlock >= 16 && secondBlock <= 31)
+                    ||
+                    // Check for 192.168.x.x
+                    (firstBlock == 192 && secondBlock == 168)
+                    ||
+                    // Check for localhost (starts with 127)
+                    (firstBlock == 127);
+            // @formatter:on
         }
 
-        Collections.sort(ip4);
-        Collections.sort(ip6);
-        ip4.add("127.0.0.1");
-        ip4.addAll(ip6);
-        addresses = ip4.toArray(new String[0]);
-        return result;
+        // IPv6
+        else if (addr instanceof Inet6Address) {
+            // @formatter:off
+            return
+            // Check for link-local (starts with fe80::)
+            ((ip[0] & 0xFF) == 0xfe && (ip[1] & 0xC0) == 0x80)
+                    ||
+                    // Check for unique local (starts with fd00::)
+                    (ip[0] & 0xFF) == 0xfd
+                    // Loobback (starts with 0:0)
+                    || ((ip[0] & 0xFF) == 0x00 && (ip[1] & 0xC0) == 0x00);
+            // @formatter:on
+        }
+        return false;
     }
 }

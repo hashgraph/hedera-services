@@ -19,6 +19,9 @@ package com.hedera.node.app.service.token.impl.test.validators;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 
@@ -32,6 +35,7 @@ import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -46,10 +50,15 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
+    @Mock(strictness = LENIENT)
+    private ExpiryValidator expiryValidator;
+
     @BeforeEach
     public void setUp() {
         super.setUp();
         givenStoresAndConfig(handleContext);
+        givenExpiryValidator(handleContext, expiryValidator);
+
         subject = new ApproveAllowanceValidator();
     }
 
@@ -133,40 +142,6 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void validateNegativeAmounts() {
-        givenApproveAllowanceTxn(
-                payerId,
-                false,
-                List.of(CryptoAllowance.newBuilder()
-                        .amount(-1L)
-                        .owner(ownerId)
-                        .spender(spenderId)
-                        .build()),
-                List.of(tokenAllowance),
-                List.of(nftAllowance));
-
-        assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(NEGATIVE_ALLOWANCE_AMOUNT));
-
-        givenApproveAllowanceTxn(
-                payerId,
-                false,
-                List.of(cryptoAllowance),
-                List.of(TokenAllowance.newBuilder()
-                        .amount(-1L)
-                        .owner(ownerId)
-                        .spender(spenderId)
-                        .tokenId(fungibleTokenId)
-                        .build()),
-                List.of(nftAllowance));
-
-        assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(NEGATIVE_ALLOWANCE_AMOUNT));
-    }
-
-    @Test
     void failsWhenExceedsMaxTokenSupply() {
         givenApproveAllowanceTxn(
                 payerId,
@@ -226,13 +201,11 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void canGrantNftSerialAllowanceIfDelegatingSpenderHasNoApproveForAllAllowance() {
-        assertThat(ownerAccount
-                        .approveForAllNftAllowances()
-                        .contains(AccountApprovalForAllAllowance.newBuilder()
-                                .spenderId(spenderId)
-                                .tokenId(nonFungibleTokenId)
-                                .build()))
-                .isTrue();
+        assertThat(ownerAccount.approveForAllNftAllowances())
+                .contains(AccountApprovalForAllAllowance.newBuilder()
+                        .spenderId(spenderId)
+                        .tokenId(nonFungibleTokenId)
+                        .build());
 
         givenApproveAllowanceTxn(
                 payerId,
@@ -244,7 +217,9 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                         .delegatingSpender(delegatingSpenderId)
                         .build()));
 
-        assertThatNoException().isThrownBy(() -> subject.validate(handleContext, account, readableAccountStore));
+        assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL));
     }
 
     @Test
@@ -260,14 +235,11 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                         .delegatingSpender(transferAccountId)
                         .build()));
 
-        assertThat(readableAccountStore
-                        .getAccountById(ownerId)
-                        .approveForAllNftAllowances()
-                        .contains(AccountApprovalForAllAllowance.newBuilder()
-                                .spenderId(payerId)
-                                .tokenId(nonFungibleTokenId)
-                                .build()))
-                .isFalse();
+        assertThat(readableAccountStore.getAccountById(ownerId).approveForAllNftAllowances())
+                .doesNotContain(AccountApprovalForAllAllowance.newBuilder()
+                        .spenderId(payerId)
+                        .tokenId(nonFungibleTokenId)
+                        .build());
 
         assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
@@ -476,5 +448,10 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .build();
         given(handleContext.body()).willReturn(txn);
         return txn;
+    }
+
+    private void givenExpiryValidator(final HandleContext handleContext, final ExpiryValidator expiryValidator) {
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
     }
 }

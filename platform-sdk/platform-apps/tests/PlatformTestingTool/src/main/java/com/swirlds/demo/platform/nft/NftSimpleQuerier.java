@@ -17,11 +17,12 @@
 package com.swirlds.demo.platform.nft;
 
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.utility.StopWatch;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.demo.platform.nft.config.NftQueryConfig;
 import com.swirlds.merkle.map.test.pta.MapKey;
@@ -30,7 +31,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

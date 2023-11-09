@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.file.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjResponseType;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -29,13 +31,15 @@ import com.hedera.hapi.node.file.FileGetContentsQuery;
 import com.hedera.hapi.node.file.FileGetContentsResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.base.FileQueryBase;
+import com.hedera.node.app.service.mono.fees.calculation.file.queries.GetFileContentsResourceUsage;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -44,9 +48,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FileGetContentsHandler extends FileQueryBase {
+    private final FileFeeBuilder usageEstimator;
 
     @Inject
-    public FileGetContentsHandler() {}
+    public FileGetContentsHandler(final FileFeeBuilder usageEstimator) {
+        this.usageEstimator = usageEstimator;
+    }
 
     @Override
     public @NonNull QueryHeader extractHeader(@NonNull final Query query) {
@@ -65,9 +72,23 @@ public class FileGetContentsHandler extends FileQueryBase {
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         final var query = context.query();
         final FileGetContentsQuery op = query.fileGetContentsOrThrow();
-        if (op.hasFileID()) {
-            validateFileExistence(op.fileID(), context);
+        if (!op.hasFileID()) {
+            throw new PreCheckException(INVALID_FILE_ID);
         }
+    }
+
+    @Override
+    public @NonNull Fees computeFees(@NonNull QueryContext queryContext) {
+        final var query = queryContext.query();
+        final var fileStore = queryContext.createStore(ReadableFileStore.class);
+        final var op = query.fileGetContentsOrThrow();
+        final var fileId = op.fileIDOrThrow();
+        final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
+        final FileContents fileContents = contentFile(fileId, fileStore);
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> {
+            return new GetFileContentsResourceUsage(usageEstimator)
+                    .usageGivenType(fileContents, fromPbjResponseType(responseType));
+        });
     }
 
     @Override
@@ -77,13 +98,20 @@ public class FileGetContentsHandler extends FileQueryBase {
         final var fileStore = context.createStore(ReadableFileStore.class);
         final var op = query.fileGetContentsOrThrow();
         final var responseBuilder = FileGetContentsResponse.newBuilder();
-        final var file = op.fileIDOrElse(FileID.DEFAULT);
+        final var file = op.fileIDOrThrow();
 
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         responseBuilder.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var optionalInfo = contentFile(file, fileStore);
-            optionalInfo.ifPresent(responseBuilder::fileContents);
+            final var content = contentFile(file, fileStore);
+
+            if (content == null) {
+                responseBuilder.header(header.copyBuilder()
+                        .nodeTransactionPrecheckCode(INVALID_FILE_ID)
+                        .build());
+            } else {
+                responseBuilder.fileContents(content);
+            }
         }
 
         return Response.newBuilder().fileGetContents(responseBuilder).build();
@@ -95,16 +123,16 @@ public class FileGetContentsHandler extends FileQueryBase {
      * @param fileStore the file store
      * @return the content about the file
      */
-    private @Nullable Optional<FileContents> contentFile(
+    private @Nullable FileContents contentFile(
             @NonNull final FileID fileID, @NonNull final ReadableFileStore fileStore) {
         final var meta = fileStore.getFileMetadata(fileID);
         if (meta == null) {
-            return Optional.empty();
+            return null;
         } else {
             final var info = FileContents.newBuilder();
             info.fileID(fileID);
             info.contents(meta.contents());
-            return Optional.of(info.build());
+            return info.build();
         }
     }
 }

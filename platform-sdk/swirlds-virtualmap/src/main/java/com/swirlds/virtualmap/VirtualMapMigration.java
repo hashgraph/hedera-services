@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -27,7 +28,6 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * A utility for migrating data within a virtual map from one format to another.

@@ -51,7 +51,10 @@ import org.apache.logging.log4j.Logger;
 
 public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
     private static final Logger log = LogManager.getLogger(CryptoTransferLoadTestWithAutoAccounts.class);
-    private Random r = new Random();
+
+    @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
+    private Random r = new Random(396330L);
+
     private static final int AUTO_ACCOUNTS = 20;
 
     public static void main(String... args) {

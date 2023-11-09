@@ -18,13 +18,12 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
 import static com.swirlds.common.system.UptimeData.NO_ROUND;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesBaseDirectory;
-import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FIRST_ROUND_AFTER_GENESIS;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FREEZE_STATE;
 import static com.swirlds.platform.state.signed.StateToDiskReason.PERIODIC_SNAPSHOT;
@@ -42,6 +41,7 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.logging.legacy.payload.InsufficientSignaturesPayload;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.config.ThreadConfig;
@@ -50,6 +50,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -179,15 +180,12 @@ public class SignedStateFileManager implements Startable {
                 .setHandler(Runnable::run)
                 .build();
 
-        final SavedStateInfo[] savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
-        if (savedStates.length > 0) {
-            final Long generationNonAncient =
-                    savedStates[savedStates.length - 1].getMetadata().minimumGenerationNonAncient();
-            if (generationNonAncient != null) {
-                minimumGenerationNonAncientForOldestState = generationNonAncient;
-                minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(
-                        minimumGenerationNonAncientForOldestState);
-            }
+        final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
+        if (!savedStates.isEmpty()) {
+            minimumGenerationNonAncientForOldestState =
+                    savedStates.get(savedStates.size() - 1).metadata().minimumGenerationNonAncient();
+            minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(
+                    minimumGenerationNonAncientForOldestState);
         }
     }
 
@@ -217,21 +215,131 @@ public class SignedStateFileManager implements Startable {
     }
 
     /**
+     * Method to be called when a state has been successfully written to disk in-band. An "in-band" write is part of
+     * normal platform operations, whereas an out-of-band write is triggered due to a fault, or for debug purposes.
      * <p>
-     * Notifies the platform that the signed state is complete, the platform will then write it to a file.
-     * </p>
+     * This method shouldn't be called if the state was written out-of-band.
      *
+     * @param reservedState the state that was written to disk
+     * @param directory     the directory where the state was written
+     * @param start         the nano start time of the state writing process
+     */
+    private void stateWrittenToDiskInBand(
+            @NonNull final SignedState reservedState, @NonNull final Path directory, final long start) {
+
+        final long round = reservedState.getRound();
+        if (round > latestSavedStateRound.get()) {
+            latestSavedStateRound.set(round);
+        }
+
+        metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
+        statusActionSubmitter.submitStatusAction(new StateWrittenToDiskAction(round));
+        stateToDiskAttemptConsumer.stateToDiskAttempt(reservedState, directory, true);
+
+        reservedState.stateSavedToDisk();
+    }
+
+    /**
+     * Method to be called when a state is being written to disk in-band, but it lacks signatures.
      * <p>
-     * This method will take a reservation on the signed state before returning, and will eventually release that
-     * reservation when the state has been fully written to disk (or if state saving fails).
-     * </p>
+     * This method shouldn't be called if the state was written out-of-band.
      *
-     * @param signedState      the signed state to be written
-     * @param directory        the directory where the signed state will be written
-     * @param reason           the reason this state is being written to disk
-     * @param finishedCallback a function that is called after state writing is complete. Is passed true if writing
-     *                         succeeded, else is passed false.
-     * @param configuration    the configuration of the platform
+     * @param reservedState the state being written to disk
+     */
+    private void stateLacksSignatures(@NonNull final SignedState reservedState) {
+        metrics.getTotalUnsignedDiskStatesMetric().increment();
+        final long newCount = metrics.getTotalUnsignedDiskStatesMetric().get();
+
+        logger.error(
+                EXCEPTION.getMarker(),
+                new InsufficientSignaturesPayload(("State written to disk for round %d did not have enough signatures. "
+                                + "Collected signatures representing %d/%d weight. "
+                                + "Total unsigned disk states so far: %d.")
+                        .formatted(
+                                reservedState.getRound(),
+                                reservedState.getSigningWeight(),
+                                reservedState.getAddressBook().getTotalWeight(),
+                                newCount)));
+    }
+
+    /**
+     * A save state task to be offered to the {@link #taskQueue}
+     *
+     * @param reservedSignedState  the reserved signed state to be written to disk
+     * @param directory            the directory where the signed state will be written
+     * @param reason               the reason this state is being written to disk
+     * @param finishedCallback     a function that is called after state writing is complete
+     * @param outOfBand            whether this state has been requested to be written out-of-band
+     * @param stateLacksSignatures whether the state being written lacks signatures
+     */
+    private void saveStateTask(
+            @NonNull final ReservedSignedState reservedSignedState,
+            @NonNull final Path directory,
+            @Nullable final StateToDiskReason reason,
+            @Nullable final Consumer<Boolean> finishedCallback,
+            final boolean outOfBand,
+            final boolean stateLacksSignatures) {
+
+        final long start = time.nanoTime();
+        boolean success = false;
+
+        try (reservedSignedState) {
+            try {
+                if (outOfBand) {
+                    // states requested to be written out-of-band are always written to disk
+                    SignedStateFileWriter.writeSignedStateToDisk(
+                            selfId, directory, reservedSignedState.get(), reason, configuration);
+
+                    success = true;
+                } else {
+                    if (reservedSignedState.get().hasStateBeenSavedToDisk()) {
+                        logger.info(
+                                STATE_TO_DISK.getMarker(),
+                                "Not saving signed state for round {} to disk because it has already been saved.",
+                                reservedSignedState.get().getRound());
+                    } else {
+                        if (stateLacksSignatures) {
+                            stateLacksSignatures(reservedSignedState.get());
+                        }
+
+                        SignedStateFileWriter.writeSignedStateToDisk(
+                                selfId, directory, reservedSignedState.get(), reason, configuration);
+                        stateWrittenToDiskInBand(reservedSignedState.get(), directory, start);
+
+                        success = true;
+                    }
+                }
+            } catch (final Throwable e) {
+                stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, false);
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Unable to write signed state to disk for round {} to {}.",
+                        reservedSignedState.get().getRound(),
+                        directory,
+                        e);
+            } finally {
+                if (finishedCallback != null) {
+                    finishedCallback.accept(success);
+                }
+                metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
+            }
+        }
+    }
+
+    /**
+     * Adds a state save task to a task queue, so that the state will eventually be written to disk.
+     * <p>
+     * This method will take a reservation on the signed state, and will eventually release that reservation when the
+     * state has been fully written to disk (or if state saving fails).
+     *
+     * @param signedState          the signed state to be written
+     * @param directory            the directory where the signed state will be written
+     * @param reason               the reason this state is being written to disk
+     * @param finishedCallback     a function that is called after state writing is complete. Is passed true if writing
+     *                             succeeded, else is passed false.
+     * @param outOfBand            true if this state is being written out-of-band, false otherwise
+     * @param stateLacksSignatures true if the state lacks signatures, false otherwise
+     * @param configuration        the configuration of the platform
      * @return true if it will be written to disk, false otherwise
      */
     private boolean saveSignedStateToDisk(
@@ -239,6 +347,8 @@ public class SignedStateFileManager implements Startable {
             @NonNull final Path directory,
             @Nullable final StateToDiskReason reason,
             @Nullable final Consumer<Boolean> finishedCallback,
+            final boolean outOfBand,
+            final boolean stateLacksSignatures,
             @NonNull final Configuration configuration) {
 
         Objects.requireNonNull(directory);
@@ -247,60 +357,39 @@ public class SignedStateFileManager implements Startable {
         final ReservedSignedState reservedSignedState =
                 signedState.reserve("SignedStateFileManager.saveSignedStateToDisk()");
 
-        final boolean accepted = taskQueue.offer(() -> {
-            final long start = time.nanoTime();
-            boolean success = false;
-            final long round = reservedSignedState.get().getRound();
-            try (reservedSignedState) {
-                try {
-                    writeSignedStateToDisk(selfId, directory, reservedSignedState.get(), reason, configuration);
-                    if (round > latestSavedStateRound.get()) {
-                        latestSavedStateRound.set(round);
-                    }
-                    metrics.getWriteStateToDiskTimeMetric()
-                            .update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
-
-                    statusActionSubmitter.submitStatusAction(new StateWrittenToDiskAction(round));
-                    stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, true);
-
-                    success = true;
-                } catch (final Throwable e) {
-                    stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, false);
-                    logger.error(
-                            EXCEPTION.getMarker(),
-                            "Unable to write signed state to disk for round {} to {}.",
-                            round,
-                            directory,
-                            e);
-                } finally {
-                    if (finishedCallback != null) {
-                        finishedCallback.accept(success);
-                    }
-                    metrics.getStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
-                }
-            }
-        });
+        final boolean accepted = taskQueue.offer(() -> saveStateTask(
+                reservedSignedState, directory, reason, finishedCallback, outOfBand, stateLacksSignatures));
 
         if (!accepted) {
             if (finishedCallback != null) {
                 finishedCallback.accept(false);
             }
+
             logger.error(
                     STATE_TO_DISK.getMarker(),
                     "Unable to save signed state to disk for round {} due to backlog of "
                             + "operations in the SignedStateManager task queue.",
                     reservedSignedState.get().getRound());
+
             reservedSignedState.close();
         }
+
         return accepted;
     }
 
     /**
-     * Save a signed state to disk. This method will be called periodically under standard operations.
+     * Save a signed state to disk.
+     * <p>
+     * This method will be called periodically under standard operations, and should not be used to write arbitrary
+     * states to disk. To write arbitrary states to disk out-of-band, use {@link #dumpState}
      *
-     * @param signedState the signed state to be written to disk.
+     * @param signedState          the signed state to be written to disk.
+     * @param stateLacksSignatures true if the state lacks signatures, false otherwise
+     * @return true if the state will be written to disk, false otherwise
      */
-    public boolean saveSignedStateToDisk(final SignedState signedState) {
+    public boolean saveSignedStateToDisk(@NonNull final SignedState signedState, final boolean stateLacksSignatures) {
+        Objects.requireNonNull(signedState);
+
         return saveSignedStateToDisk(
                 signedState,
                 getSignedStateDir(signedState.getRound()),
@@ -310,17 +399,23 @@ public class SignedStateFileManager implements Startable {
                         deleteOldStates();
                     }
                 },
+                false,
+                stateLacksSignatures,
                 configuration);
     }
 
     /**
-     * Dump a state to disk out of band.
+     * Dump a state to disk out-of-band.
      * <p>
-     * The state will be saved in a subdirectory of the signed states base directory, with the subdirectory being named
-     * after the reason the state is being written out of band.
+     * Writing a state "out-of-band" means the state is being written for the sake of a human, whether for debug
+     * purposes, or because of a fault. States written out-of-band will not be read automatically by the platform,
+     * and will not be used as an initial state at boot time.
+     * <p>
+     * A dumped state will be saved in a subdirectory of the signed states base directory, with the subdirectory being
+     * named after the reason the state is being written out-of-band.
      *
      * @param signedState the signed state to write to disk
-     * @param reason      the reason why the state is being written out of band
+     * @param reason      the reason why the state is being written out-of-band
      * @param blocking    if true then block until the state has been fully written to disk
      */
     public void dumpState(
@@ -338,6 +433,9 @@ public class SignedStateFileManager implements Startable {
                         .resolve(String.format("node%d_round%d", selfId.id(), signedState.getRound())),
                 reason,
                 success -> latch.countDown(),
+                true,
+                // this value will be ignored, since this is an out-of-band write
+                false,
                 configuration);
 
         if (blocking) {
@@ -451,16 +549,16 @@ public class SignedStateFileManager implements Startable {
      * Purge old states on the disk.
      */
     private synchronized void deleteOldStates() {
-        final SavedStateInfo[] savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
+        final List<SavedStateInfo> savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
 
         // States are returned newest to oldest. So delete from the end of the list to delete the oldest states.
-        int index = savedStates.length - 1;
+        int index = savedStates.size() - 1;
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         for (; index >= stateConfig.signedStateDisk(); index--) {
 
-            final SavedStateInfo savedStateInfo = savedStates[index];
+            final SavedStateInfo savedStateInfo = savedStates.get(index);
             try {
-                deleteDirectoryAndLog(savedStateInfo.getDir());
+                deleteDirectoryAndLog(savedStateInfo.getDirectory());
             } catch (final IOException e) {
                 // Intentionally ignored, deleteDirectoryAndLog will log any exceptions that happen
             }
@@ -468,12 +566,9 @@ public class SignedStateFileManager implements Startable {
 
         // Keep the minimum generation non-ancient for the oldest state up to date
         if (index >= 0) {
-            final SavedStateMetadata oldestStateMetadata = savedStates[index].getMetadata();
-
-            final long oldestStateMinimumGeneration = oldestStateMetadata.minimumGenerationNonAncient() == null
-                    ? -1L
-                    : oldestStateMetadata.minimumGenerationNonAncient();
-
+            final SavedStateMetadata oldestStateMetadata =
+                    savedStates.get(index).metadata();
+            final long oldestStateMinimumGeneration = oldestStateMetadata.minimumGenerationNonAncient();
             if (minimumGenerationNonAncientForOldestState < oldestStateMinimumGeneration) {
                 minimumGenerationNonAncientForOldestState = oldestStateMinimumGeneration;
                 minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(oldestStateMinimumGeneration);

@@ -16,7 +16,8 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.common.system.SystemExitCode.FATAL_ERROR;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -30,7 +31,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Hashes signed states after all modifications for a round have been compoleted.
+ * Hashes signed states after all modifications for a round have been completed.
  */
 public class SignedStateHasher {
     /**
@@ -91,7 +92,7 @@ public class SignedStateHasher {
             stateHashedTrigger.dispatch(signedState.getRound(), hash);
 
         } catch (final ExecutionException e) {
-            fatalErrorConsumer.fatalError("Exception occurred during SignedState hashing", e, null);
+            fatalErrorConsumer.fatalError("Exception occurred during SignedState hashing", e, FATAL_ERROR);
         } catch (final InterruptedException e) {
             logger.error(EXCEPTION.getMarker(), "Interrupted while hashing state. Expect buggy behavior.");
             Thread.currentThread().interrupt();

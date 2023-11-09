@@ -17,8 +17,8 @@
 package com.swirlds.common.config.export;
 
 import com.swirlds.common.config.reflection.ConfigReflectionUtils;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.RecordComponent;
@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -38,13 +39,18 @@ import java.util.stream.Stream;
  */
 public final class ConfigExport {
 
+    private static final String ERROR_CONFIGURATION_IS_NULL = "configuration should not be null";
+    private static final String ERROR_PRINT_STREAM_IS_NULL = "printStream should not be null";
+    private static final String ERROR_BUILDER_IS_NULL = "builder should not be null";
+    private static final String ERROR_LINE_CONSUMER_IS_NULL = "lineConsumer should not be null";
+
     private ConfigExport() {}
 
     /**
      * Provides information about the config with 1 line per config property to the consumer. The format of one line
      * looks like this:
      * <p>
-     * <code>name   -> value    [(NOT )USED IN RECORD]</code>
+     * <code>name, value</code>
      * </p>
      *
      * @param configuration
@@ -52,9 +58,10 @@ public final class ConfigExport {
      * @param lineConsumer
      * 		the line consumer
      */
-    public static void printConfig(final Configuration configuration, final Consumer<String> lineConsumer) {
-        CommonUtils.throwArgNull(configuration, "configuration");
-        CommonUtils.throwArgNull(lineConsumer, "lineConsumer");
+    public static void printConfig(
+            @NonNull final Configuration configuration, @NonNull final Consumer<String> lineConsumer) {
+        Objects.requireNonNull(configuration, ERROR_CONFIGURATION_IS_NULL);
+        Objects.requireNonNull(lineConsumer, ERROR_LINE_CONSUMER_IS_NULL);
 
         // Properties defined in record configs, including values overridden by configured sources
         final Map<String, Object> recordProperties = getPropertiesForConfigDataRecords(configuration);
@@ -66,23 +73,20 @@ public final class ConfigExport {
                 .filter(name -> !recordProperties.containsKey(name))
                 .forEach(name -> nonRecordProperties.put(name, configuration.getValue(name)));
 
-        final Set<String> allConfigNames = combine(recordProperties.keySet(), nonRecordProperties.keySet());
         final Set<Object> allConfigValues = combine(recordProperties.values(), nonRecordProperties.values());
-
-        final int maxNameLength = getMaxPropertyLength(allConfigNames);
         final int maxValueLength = getMaxPropertyLength(allConfigValues);
 
         // Write all record defined values first, in alphabetical order
         recordProperties.keySet().stream().sorted().forEach(name -> {
             final Object value = recordProperties.get(name);
-            final String line = buildLine(name, value, maxNameLength, maxValueLength, "  [USED IN RECORD]");
+            final String line = buildLine(name, value, maxValueLength, "");
             lineConsumer.accept(line);
         });
 
         // Write all values not defined in records next, in alphabetical order
         nonRecordProperties.keySet().stream().sorted().forEach(name -> {
             final Object value = nonRecordProperties.get(name);
-            final String line = buildLine(name, value, maxNameLength, maxValueLength, "  [NOT USED IN RECORD]");
+            final String line = buildLine(name, value, maxValueLength, "  [NOT USED IN RECORD]");
             lineConsumer.accept(line);
         });
     }
@@ -92,23 +96,15 @@ public final class ConfigExport {
     }
 
     private static String buildLine(
-            final String name,
-            final Object value,
-            final int maxNameLength,
-            final int maxValueLength,
-            final String suffix) {
-        return name + createSpaces(name, maxNameLength)
-                + " -> "
-                + value
-                + createSpaces(value.toString(), maxValueLength)
-                + suffix;
+            final String name, final Object value, final int maxValueLength, final String suffix) {
+        return name + ", " + value + createSpaces(value.toString(), maxValueLength) + suffix;
     }
 
     /**
      * Writes information about the config with 1 line per config property to the given stream. The format of one line
      * looks like this:
      * <p>
-     * <code>name   -> value    [(NOT )USED IN RECORD]</code>
+     * <code>name,value    ([NOT USED IN RECORD])</code>
      * </p>
      *
      * @param configuration
@@ -118,18 +114,19 @@ public final class ConfigExport {
      * @throws IOException
      * 		if writing to the stream fails
      */
-    public static void printConfig(final Configuration configuration, final OutputStream printStream)
+    public static void printConfig(@NonNull final Configuration configuration, @NonNull final OutputStream printStream)
             throws IOException {
-        CommonUtils.throwArgNull(configuration, "configuration");
-        CommonUtils.throwArgNull(printStream, "printStream");
+        Objects.requireNonNull(configuration, ERROR_CONFIGURATION_IS_NULL);
+        Objects.requireNonNull(printStream, ERROR_PRINT_STREAM_IS_NULL);
         final StringBuilder builder = new StringBuilder();
         printConfig(configuration, line -> builder.append(line).append(System.lineSeparator()));
         printStream.write(builder.toString().getBytes(StandardCharsets.UTF_8));
     }
 
-    public static void addConfigContents(final Configuration configuration, final StringBuilder builder) {
-        CommonUtils.throwArgNull(configuration, "configuration");
-        CommonUtils.throwArgNull(builder, "builder");
+    public static void addConfigContents(
+            @NonNull final Configuration configuration, @NonNull final StringBuilder builder) {
+        Objects.requireNonNull(configuration, ERROR_CONFIGURATION_IS_NULL);
+        Objects.requireNonNull(builder, ERROR_BUILDER_IS_NULL);
         printConfig(configuration, line -> builder.append(line).append(System.lineSeparator()));
     }
 

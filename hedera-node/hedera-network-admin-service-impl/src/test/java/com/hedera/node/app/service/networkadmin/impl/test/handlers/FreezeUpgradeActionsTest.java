@@ -25,12 +25,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
-import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -40,8 +41,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +55,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class FreezeUpgradeActionsTest {
-    private static final Instant then = Instant.ofEpochSecond(1_234_567L, 890);
+    private static final Timestamp then =
+            Timestamp.newBuilder().seconds(1_234_567L).nanos(890).build();
     private Path noiseFileLoc;
     private Path noiseSubFileLoc;
     private Path zipArchivePath; // path to valid.zip test zip file (in zipSourceDir directory)
@@ -81,7 +84,9 @@ class FreezeUpgradeActionsTest {
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 
-        subject = new FreezeUpgradeActions(adminServiceConfig, freezeStore);
+        final Executor freezeExectuor = new ForkJoinPool(
+                1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
+        subject = new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExectuor);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");
@@ -144,6 +149,7 @@ class FreezeUpgradeActionsTest {
         rmIfPresent(NOW_FROZEN_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(freezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
 
         subject.externalizeFreezeIfUpgradePending();
 
@@ -224,11 +230,11 @@ class FreezeUpgradeActionsTest {
         }
     }
 
-    private void assertMarkerCreated(final String file, final @Nullable Instant when) throws IOException {
+    private void assertMarkerCreated(final String file, final @Nullable Timestamp when) throws IOException {
         assertMarkerCreated(file, when, zipOutputDir.toPath());
     }
 
-    private void assertMarkerCreated(final String file, final @Nullable Instant when, final Path baseDir)
+    private void assertMarkerCreated(final String file, final @Nullable Timestamp when, final Path baseDir)
             throws IOException {
         final Path filePath = baseDir.resolve(file);
         assertThat(filePath.toFile()).exists();
@@ -256,7 +262,7 @@ class FreezeUpgradeActionsTest {
         }
         if (when != null) {
             final var writtenEpochSecond = Long.parseLong(contents);
-            assertThat(when.getEpochSecond()).isEqualTo(writtenEpochSecond);
+            assertThat(when.seconds()).isEqualTo(writtenEpochSecond);
         } else {
             assertThat(contents).isEqualTo(FreezeUpgradeActions.MARK);
         }

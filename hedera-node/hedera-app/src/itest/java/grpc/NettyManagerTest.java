@@ -19,9 +19,9 @@ package grpc;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.grpc.impl.netty.NettyGrpcServerManager;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
+import com.hedera.node.config.VersionedConfigImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -191,6 +191,7 @@ final class NettyManagerTest extends GrpcTestBase {
     @Test
     @Timeout(value = 15)
     @DisplayName("Starting a server with a port already in use but is then released")
+    @SuppressWarnings("java:S2925") // suppressing the warning about TimeUnit.MILLISECONDS.sleep usage in tests
     void portBecomesFreeEventually() throws Exception {
         // Given a server with a configuration that will start
         final var testConfig = new TestSource()

@@ -17,10 +17,8 @@
 package com.hedera.node.app.service.mono.fees.calculation.consensus.txns;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -46,15 +44,7 @@ class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    void getFeeThrowsExceptionForBadTxBody() {
-        final var nonDeleteTopicTx = TransactionBody.getDefaultInstance();
-
-        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
-        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(nonDeleteTopicTx, sigValueObj, view));
-    }
-
-    @Test
-    void feeDataAsExpected() throws InvalidTxBodyException {
+    void feeDataAsExpected() {
         final var txBody = makeTransactionBody(topicId);
 
         final var feeData = subject.usageGiven(txBody, sigValueObj, view);

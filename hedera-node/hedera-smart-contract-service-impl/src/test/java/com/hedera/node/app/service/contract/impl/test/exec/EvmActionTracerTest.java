@@ -27,6 +27,7 @@ import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import java.util.Deque;
 import java.util.Optional;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
@@ -46,10 +47,15 @@ class EvmActionTracerTest {
     @Mock
     private MessageFrame frame;
 
+    @Mock
+    private Deque<MessageFrame> stack;
+
     private EvmActionTracer subject;
 
     @BeforeEach
     void setUp() {
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
         subject = new EvmActionTracer(actionStack);
     }
 

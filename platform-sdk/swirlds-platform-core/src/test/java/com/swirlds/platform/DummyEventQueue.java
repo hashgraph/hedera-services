@@ -16,13 +16,13 @@
 
 package com.swirlds.platform;
 
-import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-public class DummyEventQueue implements BlockingQueue<EventIntakeTask> {
+public class DummyEventQueue implements BlockingQueue<GossipEvent> {
     private DummyHashgraph hashgraph;
 
     public DummyEventQueue(DummyHashgraph hashgraph) {
@@ -30,51 +30,50 @@ public class DummyEventQueue implements BlockingQueue<EventIntakeTask> {
     }
 
     @Override
-    public boolean add(final EventIntakeTask eventIntakeTask) {
+    public boolean add(final GossipEvent event) {
         return false;
     }
 
     @Override
-    public boolean offer(final EventIntakeTask eventIntakeTask) {
+    public boolean offer(final GossipEvent event) {
         return false;
     }
 
     @Override
-    public EventIntakeTask remove() {
+    public GossipEvent remove() {
         return null;
     }
 
     @Override
-    public EventIntakeTask poll() {
+    public GossipEvent poll() {
         return null;
     }
 
     @Override
-    public EventIntakeTask element() {
+    public GossipEvent element() {
         return null;
     }
 
     @Override
-    public EventIntakeTask peek() {
+    public GossipEvent peek() {
         return null;
     }
 
     @Override
-    public void put(final EventIntakeTask eventIntakeTask) throws InterruptedException {}
+    public void put(final GossipEvent event) throws InterruptedException {}
 
     @Override
-    public boolean offer(final EventIntakeTask eventIntakeTask, final long timeout, final TimeUnit unit)
-            throws InterruptedException {
+    public boolean offer(final GossipEvent event, final long timeout, final TimeUnit unit) throws InterruptedException {
         return false;
     }
 
     @Override
-    public EventIntakeTask take() throws InterruptedException {
+    public GossipEvent take() throws InterruptedException {
         return null;
     }
 
     @Override
-    public EventIntakeTask poll(final long timeout, final TimeUnit unit) throws InterruptedException {
+    public GossipEvent poll(final long timeout, final TimeUnit unit) throws InterruptedException {
         return null;
     }
 
@@ -94,7 +93,7 @@ public class DummyEventQueue implements BlockingQueue<EventIntakeTask> {
     }
 
     @Override
-    public boolean addAll(final Collection<? extends EventIntakeTask> c) {
+    public boolean addAll(final Collection<? extends GossipEvent> c) {
         return false;
     }
 
@@ -127,7 +126,7 @@ public class DummyEventQueue implements BlockingQueue<EventIntakeTask> {
     }
 
     @Override
-    public Iterator<EventIntakeTask> iterator() {
+    public Iterator<GossipEvent> iterator() {
         return null;
     }
 
@@ -142,12 +141,12 @@ public class DummyEventQueue implements BlockingQueue<EventIntakeTask> {
     }
 
     @Override
-    public int drainTo(final Collection<? super EventIntakeTask> c) {
+    public int drainTo(final Collection<? super GossipEvent> c) {
         return 0;
     }
 
     @Override
-    public int drainTo(final Collection<? super EventIntakeTask> c, final int maxElements) {
+    public int drainTo(final Collection<? super GossipEvent> c, final int maxElements) {
         return 0;
     }
 }

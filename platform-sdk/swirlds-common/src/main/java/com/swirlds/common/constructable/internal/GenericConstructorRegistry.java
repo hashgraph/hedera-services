@@ -23,7 +23,8 @@ import com.swirlds.common.constructable.ConstructorRegistry;
 import com.swirlds.common.constructable.NoArgsConstructor;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.constructable.URLClassLoaderWithLookup;
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.common.exceptions.NotImplementedException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
@@ -32,11 +33,11 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * A {@link ConstructorRegistry} which has the constructor type as a generic
@@ -57,8 +58,8 @@ public class GenericConstructorRegistry<T> implements ConstructorRegistry<T> {
      * @param constructorType
      * 		the type of constructor for this registry to use
      */
-    public GenericConstructorRegistry(final Class<T> constructorType) {
-        CommonUtils.throwArgNull(constructorType, "constructorType");
+    public GenericConstructorRegistry(@NonNull final Class<T> constructorType) {
+        Objects.requireNonNull(constructorType, "constructorType must not be null");
         this.constructorType = constructorType;
 
         if (!constructorType.isInterface()) {

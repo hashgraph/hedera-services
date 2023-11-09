@@ -59,6 +59,7 @@ public class StateEditor {
      *
      * @param statePath the path where the signed state can be found
      */
+    @SuppressWarnings("java:S106")
     public StateEditor(final Path statePath) throws IOException {
 
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
@@ -77,6 +78,7 @@ public class StateEditor {
                         .digestTreeAsync(reservedSignedState.get().getState())
                         .get();
             } catch (final InterruptedException | ExecutionException e) {
+                Thread.currentThread().interrupt();
                 throw new RuntimeException("problem encountered while hashing state", e);
             }
             System.out.println("Hash = " + reservedSignedState.get().getState().getHash());
@@ -108,11 +110,12 @@ public class StateEditor {
     /**
      * Start the editor.
      */
+    @SuppressWarnings("java:S106")
     public void start() {
         Scanner reader = new Scanner(System.in);
 
         CommandLine commandLine = buildCommandLine();
-        System.out.println("");
+        System.out.println();
         commandLine.usage(System.out, commandLine.getColorScheme());
 
         while (alive) {

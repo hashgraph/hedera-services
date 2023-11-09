@@ -33,7 +33,7 @@ import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
@@ -350,7 +350,7 @@ final class BlockRecordWriterV6Test extends AppTestBase {
                 final var singleTransactionRecord = singleTransactionRecords.get(i);
                 final var recordStreamItem = readRecordStreamItems.get(i);
                 assertThat(recordStreamItem.transaction()).isEqualTo(singleTransactionRecord.transaction());
-                assertThat(recordStreamItem.record()).isEqualTo(singleTransactionRecord.record());
+                assertThat(recordStreamItem.record()).isEqualTo(singleTransactionRecord.transactionRecord());
             }
             assertThat(readRecordStreamFile.endObjectRunningHash()).isEqualTo(endRunningHash);
             BlockRecordReaderV6.validateHashes(readRecordStreamFile);

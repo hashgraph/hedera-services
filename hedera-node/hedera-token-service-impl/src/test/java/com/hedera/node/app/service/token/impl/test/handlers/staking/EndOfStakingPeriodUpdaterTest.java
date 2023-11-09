@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
@@ -34,14 +35,16 @@ import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
+import com.hedera.node.app.service.token.impl.test.fixtures.FakeNodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
+import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -60,6 +63,7 @@ class EndOfStakingPeriodUpdaterTest {
     private ReadableAccountStore accountStore;
 
     private EndOfStakingPeriodUpdater subject;
+    private NodeStakeUpdateRecordBuilder nodeStakeUpdateRecordBuilder;
 
     @BeforeEach
     void setup() {
@@ -68,6 +72,7 @@ class EndOfStakingPeriodUpdaterTest {
                 .tinybarBalance(100_000_000_000L)
                 .build());
         subject = new EndOfStakingPeriodUpdater(new FakeHederaNumbers(), new StakingRewardsHelper());
+        this.nodeStakeUpdateRecordBuilder = new FakeNodeStakeUpdateRecordBuilder().create();
     }
 
     @Test
@@ -75,7 +80,7 @@ class EndOfStakingPeriodUpdaterTest {
         final var consensusTime = Instant.now();
 
         // Set up the staking config
-        final var context = mock(HandleContext.class);
+        final var context = mock(TokenContext.class);
         given(context.configuration())
                 .willReturn(
                         newStakingConfig().withValue("staking.isEnabled", false).getOrCreateConfig());
@@ -83,7 +88,7 @@ class EndOfStakingPeriodUpdaterTest {
         final var stakingInfoStore = mock(WritableStakingInfoStore.class);
         final var stakingRewardsStore = mock(WritableNetworkStakingRewardsStore.class);
 
-        subject.updateNodes(consensusTime, context);
+        subject.updateNodes(context);
 
         verifyNoInteractions(stakingInfoStore, stakingRewardsStore);
     }
@@ -166,8 +171,8 @@ class EndOfStakingPeriodUpdaterTest {
 
     @Test
     void calculatesNewTotalStakesAsExpected() {
-        final var consensusTime = Instant.now();
-        final var context = mock(HandleContext.class);
+        final var context = mock(TokenContext.class);
+        given(context.consensusTime()).willReturn(Instant.now());
 
         // Create staking config
         final var stakingConfig = newStakingConfig().getOrCreateConfig();
@@ -177,7 +182,7 @@ class EndOfStakingPeriodUpdaterTest {
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 
         // Create staking info store (with data)
-        final var stakingInfosState = new MapWritableKVState.Builder<Long, StakingNodeInfo>(STAKING_INFO_KEY)
+        final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
                 .value(NODE_NUM_1, STAKING_INFO_1)
                 .value(NODE_NUM_2, STAKING_INFO_2)
                 .value(NODE_NUM_3, STAKING_INFO_3)
@@ -195,29 +200,31 @@ class EndOfStakingPeriodUpdaterTest {
                 .willReturn((WritableSingletonState) stakingRewardsState);
         final var stakingRewardsStore = new WritableNetworkStakingRewardsStore(states);
         given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(stakingRewardsStore);
+        given(context.addUncheckedPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class))
+                .willReturn(nodeStakeUpdateRecordBuilder);
 
         // Assert preconditions
         Assertions.assertThat(STAKING_INFO_1.weight()).isZero();
         Assertions.assertThat(STAKING_INFO_2.weight()).isZero();
         Assertions.assertThat(STAKING_INFO_3.weight()).isZero();
 
-        subject.updateNodes(consensusTime, context);
+        subject.updateNodes(context);
 
         Assertions.assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
         Assertions.assertThat(stakingRewardsStore.totalStakedStart()).isEqualTo(1300L);
-        final var resultStakingInfo1 = stakingInfoStore.get(NODE_NUM_1);
-        final var resultStakingInfo2 = stakingInfoStore.get(NODE_NUM_2);
-        final var resultStakingInfo3 = stakingInfoStore.get(NODE_NUM_3);
+        final var resultStakingInfo1 = stakingInfoStore.get(NODE_NUM_1.number());
+        final var resultStakingInfo2 = stakingInfoStore.get(NODE_NUM_2.number());
+        final var resultStakingInfo3 = stakingInfoStore.get(NODE_NUM_3.number());
         Assertions.assertThat(resultStakingInfo1.stake()).isEqualTo(800L);
         Assertions.assertThat(resultStakingInfo2.stake()).isEqualTo(500L);
         Assertions.assertThat(resultStakingInfo3.stake()).isZero();
         Assertions.assertThat(resultStakingInfo1.unclaimedStakeRewardStart()).isZero();
         Assertions.assertThat(resultStakingInfo2.unclaimedStakeRewardStart()).isZero();
         Assertions.assertThat(resultStakingInfo3.unclaimedStakeRewardStart()).isZero();
-        Assertions.assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(14L, 6L, 5L));
-        Assertions.assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(11L, 1L, 1L));
-        Assertions.assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(3L, 3L, 1L));
+        Assertions.assertThat(resultStakingInfo1.rewardSumHistory()).isEqualTo(List.of(86L, 6L, 5L));
+        Assertions.assertThat(resultStakingInfo2.rewardSumHistory()).isEqualTo(List.of(101L, 1L, 1L));
+        Assertions.assertThat(resultStakingInfo3.rewardSumHistory()).isEqualTo(List.of(11L, 3L, 1L));
         Assertions.assertThat(resultStakingInfo1.weight()).isEqualTo(307);
         Assertions.assertThat(resultStakingInfo2.weight()).isEqualTo(192);
         Assertions.assertThat(resultStakingInfo3.weight()).isZero();
@@ -259,11 +266,14 @@ class EndOfStakingPeriodUpdaterTest {
     private static final List<Long> REWARD_SUM_HISTORY_1 = List.of(8L, 7L, 2L);
     private static final List<Long> REWARD_SUM_HISTORY_2 = List.of(5L, 5L, 4L);
     private static final List<Long> REWARD_SUM_HISTORY_3 = List.of(4L, 2L, 1L);
-    private static final long NODE_NUM_1 = 1;
-    private static final long NODE_NUM_2 = 2;
-    private static final long NODE_NUM_3 = 3;
+    private static final EntityNumber NODE_NUM_1 =
+            EntityNumber.newBuilder().number(1).build();
+    private static final EntityNumber NODE_NUM_2 =
+            EntityNumber.newBuilder().number(2).build();
+    private static final EntityNumber NODE_NUM_3 =
+            EntityNumber.newBuilder().number(3).build();
     private static final StakingNodeInfo STAKING_INFO_1 = StakingNodeInfo.newBuilder()
-            .nodeNumber(NODE_NUM_1)
+            .nodeNumber(NODE_NUM_1.number())
             .minStake(MIN_STAKE)
             .maxStake(MAX_STAKE)
             .stakeToReward(STAKE_TO_REWARD_1)
@@ -275,7 +285,7 @@ class EndOfStakingPeriodUpdaterTest {
             .weight(0)
             .build();
     private static final StakingNodeInfo STAKING_INFO_2 = StakingNodeInfo.newBuilder()
-            .nodeNumber(NODE_NUM_2)
+            .nodeNumber(NODE_NUM_2.number())
             .minStake(MIN_STAKE)
             .maxStake(MAX_STAKE)
             .stakeToReward(STAKE_TO_REWARD_2)
@@ -287,7 +297,7 @@ class EndOfStakingPeriodUpdaterTest {
             .weight(0)
             .build();
     private static final StakingNodeInfo STAKING_INFO_3 = StakingNodeInfo.newBuilder()
-            .nodeNumber(NODE_NUM_3)
+            .nodeNumber(NODE_NUM_3.number())
             .minStake(MIN_STAKE)
             .maxStake(MAX_STAKE)
             .stakeToReward(STAKE_TO_REWARD_3)
@@ -303,9 +313,10 @@ class EndOfStakingPeriodUpdaterTest {
         return HederaTestConfigBuilder.create()
                 .withConfigDataType(StakingConfig.class)
                 .withValue("staking.isEnabled", true)
+                .withValue("staking.rewardRate", 100L)
                 .withValue("staking.sumOfConsensusWeights", SUM_OF_CONSENSUS_WEIGHTS)
-                .withValue("staking.maxDailyStakeRewardThPerH", Long.MAX_VALUE)
                 .withValue("staking.maxStakeRewarded", Long.MAX_VALUE)
-                .withValue("staking.rewardRate", 100L);
+                .withValue("staking.perHbarRewardRate", 100L)
+                .withValue("staking.rewardBalanceThreshold", 0);
     }
 }

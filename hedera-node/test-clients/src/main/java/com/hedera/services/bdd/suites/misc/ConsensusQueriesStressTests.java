@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -59,6 +60,7 @@ public class ConsensusQueriesStressTests extends HapiSuite {
         });
     }
 
+    @HapiTest
     private HapiSpec getTopicInfoStress() {
         return defaultHapiSpec("GetTopicInfoStress")
                 .given()

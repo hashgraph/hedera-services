@@ -16,21 +16,13 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactionsState;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySerializer;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKeySerializer;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValue;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
-import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKeySerializer;
+import com.hedera.hapi.node.state.primitives.ProtoLong;
+import com.hedera.hapi.node.state.primitives.ProtoString;
+import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.service.schedule.impl.serdes.MonoSchedulingStateAdapterCodec;
-import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -41,66 +33,42 @@ import java.util.Set;
  * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
  */
 public final class ScheduleServiceImpl implements ScheduleService {
-    private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().minor(34).build();
-
-    public static final String SCHEDULING_STATE_KEY = "SCHEDULING_STATE";
     public static final String SCHEDULES_BY_ID_KEY = "SCHEDULES_BY_ID";
     public static final String SCHEDULES_BY_EXPIRY_SEC_KEY = "SCHEDULES_BY_EXPIRY_SEC";
     public static final String SCHEDULES_BY_EQUALITY_KEY = "SCHEDULES_BY_EQUALITY";
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(scheduleSchema());
     }
 
     private Schema scheduleSchema() {
         // Everything in memory for now
-        return new Schema(CURRENT_VERSION) {
-            @NonNull
-            @Override
-            public Set<StateDefinition> statesToCreate() {
-                return Set.of(
-                        StateDefinition.singleton(SCHEDULING_STATE_KEY, new MonoSchedulingStateAdapterCodec()),
-                        schedulesByIdDef(),
-                        schedulesByExpirySec(),
-                        schedulesByEquality());
-            }
-
-            @Override
-            public void migrate(@NonNull MigrationContext ctx) {
-                // Prepopulate the ScheduleServices state with default values for genesis
-                final var s = ctx.newStates().getSingleton(SCHEDULING_STATE_KEY);
-                s.put(new MerkleScheduledTransactionsState()); // never scheduled
-            }
-        };
+        return new ScheduleServiceSchema();
     }
 
-    private StateDefinition<EntityNumVirtualKey, ScheduleVirtualValue> schedulesByIdDef() {
-        final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
-                EntityNumVirtualKey.CURRENT_VERSION, EntityNumVirtualKey::new, new EntityNumVirtualKeySerializer());
-        final var valueSerdes = MonoMapCodecAdapter.codecForSelfSerializable(
-                ScheduleVirtualValue.CURRENT_VERSION, ScheduleVirtualValue::new);
-        return StateDefinition.inMemory(SCHEDULES_BY_ID_KEY, keySerdes, valueSerdes);
-    }
+    private static final class ScheduleServiceSchema extends Schema {
+        public ScheduleServiceSchema() {
+            super(SemanticVersion.DEFAULT);
+        }
 
-    private StateDefinition<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> schedulesByExpirySec() {
-        final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
-                SecondSinceEpocVirtualKey.CURRENT_VERSION,
-                SecondSinceEpocVirtualKey::new,
-                new SecondSinceEpocVirtualKeySerializer());
-        final var valueSerdes = MonoMapCodecAdapter.codecForSelfSerializable(
-                ScheduleVirtualValue.CURRENT_VERSION, ScheduleSecondVirtualValue::new);
-        return StateDefinition.inMemory(SCHEDULES_BY_EXPIRY_SEC_KEY, keySerdes, valueSerdes);
-    }
+        @SuppressWarnings("rawtypes")
+        @NonNull
+        @Override
+        public Set<StateDefinition> statesToCreate() {
+            return Set.of(schedulesByIdDef(), schedulesByExpirySec(), schedulesByEquality());
+        }
 
-    private StateDefinition<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> schedulesByEquality() {
-        final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
-                ScheduleEqualityVirtualKey.CURRENT_VERSION,
-                ScheduleEqualityVirtualKey::new,
-                new ScheduleEqualityVirtualKeySerializer());
-        final var valueSerdes = MonoMapCodecAdapter.codecForSelfSerializable(
-                ScheduleEqualityVirtualValue.CURRENT_VERSION, ScheduleEqualityVirtualValue::new);
-        return StateDefinition.inMemory(SCHEDULES_BY_EQUALITY_KEY, keySerdes, valueSerdes);
+        private static StateDefinition<ScheduleID, Schedule> schedulesByIdDef() {
+            return StateDefinition.inMemory(SCHEDULES_BY_ID_KEY, ScheduleID.PROTOBUF, Schedule.PROTOBUF);
+        }
+
+        private static StateDefinition<ProtoLong, ScheduleList> schedulesByExpirySec() {
+            return StateDefinition.inMemory(SCHEDULES_BY_EXPIRY_SEC_KEY, ProtoLong.PROTOBUF, ScheduleList.PROTOBUF);
+        }
+
+        private static StateDefinition<ProtoString, ScheduleList> schedulesByEquality() {
+            return StateDefinition.inMemory(SCHEDULES_BY_EQUALITY_KEY, ProtoString.PROTOBUF, ScheduleList.PROTOBUF);
+        }
     }
 }

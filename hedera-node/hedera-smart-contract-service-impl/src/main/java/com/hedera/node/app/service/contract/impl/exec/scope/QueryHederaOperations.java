@@ -16,12 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
+import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,6 +31,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import javax.inject.Inject;
 
 /**
@@ -69,6 +72,11 @@ public class QueryHederaOperations implements HederaOperations {
         // No-op
     }
 
+    @Override
+    public void revertChildRecords() {
+        // No-op
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -97,12 +105,18 @@ public class QueryHederaOperations implements HederaOperations {
         throw new UnsupportedOperationException("Queries cannot use entity numbers");
     }
 
+    @Override
+    public long contractCreationLimit() {
+        throw new UnsupportedOperationException("Queries should not be considering creations");
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public @NonNull Bytes entropy() {
-        throw new AssertionError("Not implemented");
+        return Optional.ofNullable(context.blockRecordInfo().getNMinus3RunningHash())
+                .orElse(ZERO_ENTROPY);
     }
 
     /**
@@ -120,7 +134,8 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public long gasPriceInTinybars() {
-        throw new AssertionError("Not implemented");
+        // TODO - implement correctly
+        return 1L;
     }
 
     /**
@@ -128,7 +143,8 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public long valueInTinybars(final long tinycents) {
-        throw new AssertionError("Not implemented");
+        // TODO - implement correctly
+        return 1L;
     }
 
     /**
@@ -178,8 +194,7 @@ public class QueryHederaOperations implements HederaOperations {
      * @throws UnsupportedOperationException always
      */
     @Override
-    public void createContract(
-            final long number, final long parentNumber, final long nonce, final @Nullable Bytes evmAddress) {
+    public void createContract(final long number, final long parentNumber, final @Nullable Bytes evmAddress) {
         throw new UnsupportedOperationException("Queries cannot create a contract");
     }
 
@@ -190,7 +205,7 @@ public class QueryHederaOperations implements HederaOperations {
      */
     @Override
     public void createContract(
-            long number, @NonNull final ContractCreateTransactionBody op, long nonce, @Nullable Bytes evmAddress) {
+            long number, @NonNull final ContractCreateTransactionBody op, @Nullable Bytes evmAddress) {
         throw new UnsupportedOperationException("Queries cannot create a contract");
     }
 
@@ -222,20 +237,9 @@ public class QueryHederaOperations implements HederaOperations {
         return Collections.emptyList();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public List<ContractID> createdContractIds() {
-        return Collections.emptyList();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<ContractNonceInfo> updatedContractNonces() {
-        return Collections.emptyList();
+    public ContractChangeSummary summarizeContractChanges() {
+        throw new UnsupportedOperationException("Queries cannot summarize contract changes");
     }
 
     /**
@@ -244,7 +248,11 @@ public class QueryHederaOperations implements HederaOperations {
      * @throws UnsupportedOperationException always
      */
     @Override
-    public int getOriginalSlotsUsed(final long contractNumber) {
+    public long getOriginalSlotsUsed(final long contractNumber) {
         throw new UnsupportedOperationException("Queries cannot get original slot usage");
+    }
+
+    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
+        throw new UnsupportedOperationException("Queries cannot create accounts");
     }
 }

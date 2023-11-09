@@ -28,7 +28,7 @@ import javax.inject.Singleton;
 /** FUTURE: This class will be moved to hedera-app-spi module in future PRs */
 @Singleton
 public class HederaNumbers {
-
+    public static final long FIRST_USER_ENTITY = 1001L;
     public static final long NUM_RESERVED_SYSTEM_ENTITIES = 750L;
     public static final long FIRST_POST_SYSTEM_FILE_ENTITY = 200L;
     public static final long FIRST_RESERVED_SYSTEM_CONTRACT = 350L;

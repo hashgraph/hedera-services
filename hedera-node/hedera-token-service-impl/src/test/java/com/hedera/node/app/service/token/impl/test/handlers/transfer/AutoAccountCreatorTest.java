@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AutoAccountCreator;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
@@ -32,6 +33,7 @@ import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,7 +45,11 @@ class AutoAccountCreatorTest extends StepsBase {
 
     @BeforeEach
     public void setUp() {
-        super.setUp();
+        accountCreatorInternalSetup(true);
+    }
+
+    private void accountCreatorInternalSetup(final boolean prepopulateReceiverIds) {
+        super.baseInternalSetUp(prepopulateReceiverIds);
         givenTxn();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
@@ -59,7 +65,8 @@ class AutoAccountCreatorTest extends StepsBase {
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);
         transferContext = new TransferContextImpl(handleContext);
-        assertThatThrownBy(() -> subject.create(alias.alias(), false))
+        final var aliasBytes = alias.alias();
+        assertThatThrownBy(() -> subject.create(aliasBytes, 0))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
     }
@@ -67,7 +74,9 @@ class AutoAccountCreatorTest extends StepsBase {
     @Test
     // TODO: In end to end tests need to validate other fields set correctly on auto created accounts
     void happyPathECKeyAliasWorks() {
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+        accountCreatorInternalSetup(false);
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -83,7 +92,7 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
         assertThat(writableAliases.get(ecKeyAlias)).isNull();
 
-        subject.create(ecKeyAlias, false);
+        subject.create(ecKeyAlias.value(), 0);
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(1);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);
@@ -95,7 +104,9 @@ class AutoAccountCreatorTest extends StepsBase {
     @Test
     // TODO: In end to end tests need to validate other fields set correctly on auto created accounts
     void happyPathEDKeyAliasWorks() {
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+        accountCreatorInternalSetup(false);
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -111,7 +122,7 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
         assertThat(writableAliases.get(edKeyAlias)).isNull();
 
-        subject.create(edKeyAlias, false);
+        subject.create(edKeyAlias.value(), 0);
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(1);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);
@@ -123,8 +134,10 @@ class AutoAccountCreatorTest extends StepsBase {
     @Test
     // TODO: In end to end tests need to validate other fields set on auto created accounts
     void happyPathWithHollowAccountAliasInHbarTransfersWorks() {
-        final var address = Bytes.wrap(evmAddress);
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+        accountCreatorInternalSetup(false);
+        final var address = new ProtoBytes(Bytes.wrap(evmAddress));
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(CryptoCreateRecordBuilder.class), any(Predicate.class), eq(payerId)))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
@@ -140,7 +153,7 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
         assertThat(writableAliases.get(address)).isNull();
 
-        subject.create(address, false);
+        subject.create(address.value(), 0);
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(1);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);

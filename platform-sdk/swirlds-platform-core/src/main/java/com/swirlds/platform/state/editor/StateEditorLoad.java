@@ -29,12 +29,15 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -43,6 +46,7 @@ import picocli.CommandLine;
         description = "load a subtree from file and put it into the state")
 @SubcommandOf(StateEditorRoot.class)
 public class StateEditorLoad extends StateEditorOperation {
+    private static final Logger logger = LogManager.getLogger(StateEditorLoad.class);
 
     private String destinationPath = "";
     private Path fileName;
@@ -67,7 +71,9 @@ public class StateEditorLoad extends StateEditorOperation {
         final MerkleInternal parent = parentInfo.parent();
         final int indexInParent = parentInfo.indexInParent();
 
-        System.out.println("Loading subtree from " + formatFile(fileName));
+        if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
+            logger.info(LogMarker.CLI.getMarker(), "Loading subtree from {}", formatFile(fileName));
+        }
 
         final MerkleNode subtree;
         try (final MerkleDataInputStream in =
@@ -78,8 +84,14 @@ public class StateEditorLoad extends StateEditorOperation {
             throw new UncheckedIOException(e);
         }
 
-        System.out.println("Loaded " + formatNodeType(subtree) + " subtree into " + formatRoute(destinationRoute)
-                + ", new parent is " + formatParent(parent, indexInParent));
+        if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
+            logger.info(
+                    LogMarker.CLI.getMarker(),
+                    "Loaded {} subtree into {}, new parent is {}",
+                    formatNodeType(subtree),
+                    formatRoute(destinationRoute),
+                    formatParent(parent, indexInParent));
+        }
 
         parent.asInternal().setChild(indexInParent, subtree);
 

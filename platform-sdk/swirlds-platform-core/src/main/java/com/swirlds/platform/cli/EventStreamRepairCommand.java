@@ -22,6 +22,7 @@ import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistr
 import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileRepairer;
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +30,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -37,6 +40,8 @@ import picocli.CommandLine;
         description = "Repair an event stream if it has been truncated.")
 @SubcommandOf(EventStreamCommand.class)
 public class EventStreamRepairCommand extends AbstractCommand {
+    private static final Logger logger = LogManager.getLogger(EventStreamRepairCommand.class);
+
     private File eventStreamFile;
 
     @CommandLine.Parameters(
@@ -50,8 +55,11 @@ public class EventStreamRepairCommand extends AbstractCommand {
                         .orElseThrow();
                 this.eventStreamFile = fileMustExist(pathToLastFile);
             } catch (final IOException | NoSuchElementException e) {
-                System.err.println("Failed to find event stream from Path: " + eventStreamFileOrDirectory);
-                e.printStackTrace(System.err);
+                logger.error(
+                        LogMarker.EXCEPTION.getMarker(),
+                        "Failed to find event stream from Path: {}",
+                        eventStreamFileOrDirectory,
+                        e);
             }
         } else {
             this.eventStreamFile = fileMustExist(eventStreamFileOrDirectory);
@@ -63,14 +71,20 @@ public class EventStreamRepairCommand extends AbstractCommand {
         setupConstructableRegistry();
         final EventStreamSingleFileRepairer repairer = new EventStreamSingleFileRepairer(eventStreamFile);
         if (repairer.repair()) {
-            System.out.println("Event Stream Repaired.");
-            System.out.println("Damaged file: " + eventStreamFile.getAbsolutePath() + DAMAGED_SUFFIX);
-            System.out.println("Repaired file: " + eventStreamFile.getAbsolutePath());
+            logger.info(
+                    LogMarker.CLI.getMarker(),
+                    "Event Stream Repaired.\nDamaged file: {}{}\nRepaired file: {}",
+                    eventStreamFile.getAbsolutePath(),
+                    DAMAGED_SUFFIX,
+                    eventStreamFile.getAbsolutePath());
         } else {
-            System.out.println("Event Stream Did Not Need Repair.");
-            System.out.println("Evaluated file: " + eventStreamFile.getAbsolutePath() + DAMAGED_SUFFIX);
+            logger.info(
+                    LogMarker.CLI.getMarker(),
+                    "Event Stream Did Not Need Repair.\nEvaluated file: {}{}",
+                    eventStreamFile.getAbsolutePath(),
+                    DAMAGED_SUFFIX);
         }
-        System.out.println("File event count: " + repairer.getEventCount());
+        logger.info("File event count: {}", repairer.getEventCount());
         return 0;
     }
 }

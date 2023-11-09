@@ -16,16 +16,14 @@
 
 package com.swirlds.platform.reconnect;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.logging.payloads.ReconnectFinishPayload;
-import com.swirlds.logging.payloads.ReconnectLoadFailurePayload;
-import com.swirlds.logging.payloads.ReconnectStartPayload;
+import com.swirlds.logging.legacy.payload.ReconnectFinishPayload;
+import com.swirlds.logging.legacy.payload.ReconnectLoadFailurePayload;
+import com.swirlds.logging.legacy.payload.ReconnectStartPayload;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.State;
@@ -63,6 +61,8 @@ public class ReconnectHelper {
     private final Consumer<SignedState> loadSignedState;
     /** Creates instances of {@link ReconnectLearner} to execute the second phase, receiving a signed state */
     private final ReconnectLearnerFactory reconnectLearnerFactory;
+    /** configuration for the state from the platform */
+    private final StateConfig stateConfig;
 
     public ReconnectHelper(
             final Runnable pauseGossip,
@@ -71,7 +71,8 @@ public class ReconnectHelper {
             final LongSupplier lastCompleteRoundSupplier,
             final ReconnectLearnerThrottle reconnectLearnerThrottle,
             final Consumer<SignedState> loadSignedState,
-            final ReconnectLearnerFactory reconnectLearnerFactory) {
+            final ReconnectLearnerFactory reconnectLearnerFactory,
+            StateConfig stateConfig) {
         this.pauseGossip = pauseGossip;
         this.clearAll = clearAll;
         this.workingStateSupplier = workingStateSupplier;
@@ -79,6 +80,7 @@ public class ReconnectHelper {
         this.reconnectLearnerThrottle = reconnectLearnerThrottle;
         this.loadSignedState = loadSignedState;
         this.reconnectLearnerFactory = reconnectLearnerFactory;
+        this.stateConfig = stateConfig;
     }
 
     /**
@@ -141,14 +143,12 @@ public class ReconnectHelper {
                         lastRoundReceived)
                 .toString());
 
-        final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
         logger.info(
                 RECONNECT.getMarker(),
-                "Information for state received during reconnect:\n{}\n{}",
-                () -> reservedState.get().getState().getPlatformState().getInfoString(),
-                () -> new MerkleTreeVisualizer(reservedState.get().getState())
-                        .setDepth(stateConfig.debugHashDepth())
-                        .render());
+                """
+                Information for state received during reconnect:
+                {}""",
+                () -> reservedState.get().getState().getInfoString(stateConfig.debugHashDepth()));
 
         logger.info(
                 RECONNECT.getMarker(),

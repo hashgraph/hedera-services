@@ -20,23 +20,36 @@ import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 import static com.swirlds.platform.health.OSHealthCheckUtils.reportHeader;
 
 import com.swirlds.common.config.OSHealthCheckConfig;
-import com.swirlds.common.config.PathsConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.units.UnitConstants;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Utility class that performs file system checks and writes the report to a {@link StringBuilder}.
+ * Performs file system checks and writes the report to a {@link StringBuilder}.
  */
 public final class OSFileSystemChecker {
 
-    private OSFileSystemChecker() {}
+    private final Path configPath;
 
-    public static boolean performFileSystemCheck(final StringBuilder sb, final OSHealthCheckConfig osHealthConfig) {
+    /**
+     * Construct a new {@link OSFileSystemChecker} instance.
+     *
+     * @param configPath the path to config.txt
+     */
+    public OSFileSystemChecker(@NonNull final Path configPath) {
+        this.configPath = Objects.requireNonNull(configPath);
+    }
+
+    public boolean performFileSystemCheck(
+            @NonNull final StringBuilder sb, @NonNull final OSHealthCheckConfig osHealthConfig) {
+        Objects.requireNonNull(sb, "sb must not be null");
+        Objects.requireNonNull(osHealthConfig, "osHealthConfig must not be null");
+
         try {
-            final OSFileSystemCheck.Report fileSystemReport = OSFileSystemCheck.execute(
-                    ConfigurationHolder.getConfigData(PathsConfig.class).getConfigPath(),
-                    osHealthConfig.fileReadTimeoutMillis());
+            final OSFileSystemCheck.Report fileSystemReport =
+                    OSFileSystemCheck.execute(configPath, osHealthConfig.fileReadTimeoutMillis());
             return appendReport(sb, fileSystemReport, osHealthConfig.maxFileReadMillis());
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -47,15 +60,12 @@ public final class OSFileSystemChecker {
     /**
      * Append the results of the file system check report to the string builder.
      *
-     * @param sb
-     * 		the string builder to append to
-     * @param fileSystemReport
-     * 		the file system check report
-     * @param maxFileReadMillis
-     * 		the maximum number of millis the file read may take before it is considered failed
+     * @param sb                the string builder to append to
+     * @param fileSystemReport  the file system check report
+     * @param maxFileReadMillis the maximum number of millis the file read may take before it is considered failed
      * @return {@code true} if the check passed, {@code false} otherwise
      */
-    private static boolean appendReport(
+    private boolean appendReport(
             final StringBuilder sb, final OSFileSystemCheck.Report fileSystemReport, final long maxFileReadMillis) {
         if (fileSystemReport.code() == OSFileSystemCheck.TestResultCode.SUCCESS) {
             final double readMillis = fileSystemReport.readNanos() * UnitConstants.NANOSECONDS_TO_MILLISECONDS;

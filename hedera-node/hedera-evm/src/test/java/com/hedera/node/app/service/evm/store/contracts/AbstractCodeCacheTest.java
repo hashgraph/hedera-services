@@ -29,6 +29,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.code.CodeV0;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,6 +83,28 @@ class AbstractCodeCacheTest {
 
         assertEquals(code, codeResult);
         verifyNoInteractions(entityAccess);
+    }
+
+    @Test
+    void conditionalInvalidateNoopUntilMismatchedCode() {
+        final var unrelatedAddress = Address.fromHexString("0x0123");
+        final var finalizedAddress = Address.fromHexString("0xabcd");
+        final var expectedBytecode = Bytes.fromHexString("0xef");
+        final var unexpectedBytecode = Bytes.fromHexString("0xaa");
+        final var expectedCode = CodeFactory.createCode(expectedBytecode, 0, false);
+        final var unexpectedCode = CodeFactory.createCode(unexpectedBytecode, 0, false);
+
+        codeCache.cacheValue(new BytesKey(unrelatedAddress.toArray()), CodeV0.EMPTY_CODE);
+        codeCache.invalidateIfPresentAndNot(finalizedAddress, expectedBytecode);
+        assertEquals(1, codeCache.size());
+
+        codeCache.cacheValue(new BytesKey(finalizedAddress.toArray()), expectedCode);
+        codeCache.invalidateIfPresentAndNot(finalizedAddress, expectedBytecode);
+        assertEquals(2, codeCache.size());
+
+        codeCache.cacheValue(new BytesKey(finalizedAddress.toArray()), unexpectedCode);
+        codeCache.invalidateIfPresentAndNot(finalizedAddress, expectedBytecode);
+        assertEquals(1, codeCache.size());
     }
 
     @Test

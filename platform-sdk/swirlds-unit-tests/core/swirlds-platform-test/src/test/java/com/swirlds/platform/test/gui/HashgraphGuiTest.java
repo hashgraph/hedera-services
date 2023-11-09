@@ -16,40 +16,19 @@
 
 package com.swirlds.platform.test.gui;
 
-import com.swirlds.gui.hashgraph.HashgraphGuiSource;
-import com.swirlds.platform.gui.hashgraph.internal.FinalShadowgraphGuiSource;
-import com.swirlds.platform.test.consensus.TestIntake;
-import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
-import com.swirlds.platform.test.fixtures.event.source.EventSource;
-import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
-import java.util.List;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class HashgraphGuiTest {
     @Test
-    @Disabled("this test is useful for making changes to the GUI and inspecting them manually")
-    void runGuiWithGeneratedEvents() {
-        final long seed = 0;
-        final int numNodes = 6;
-        final int numEvents = 100;
+    @Disabled("this test is useful for debugging consensus")
+    void runGuiWithControls() {
+        final long seed = 1;
+        final int numNodes = 4;
+        final int initialEvents = 0;
 
-        Thread.setDefaultUncaughtExceptionHandler((t, e) -> e.printStackTrace());
-
-        final List<? extends EventSource<?>> eventSources = Stream.generate(StandardEventSource::new)
-                .map(es -> (EventSource<?>) es)
-                .limit(numNodes)
-                .toList();
-        final StandardGraphGenerator graphGenerator =
-                new StandardGraphGenerator(seed, (List<EventSource<?>>) eventSources);
-
-        final TestIntake intake = new TestIntake(graphGenerator.getAddressBook());
-        intake.addEvents(graphGenerator.generateEvents(numEvents));
-
-        final HashgraphGuiSource guiSource =
-                new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
-
-        HashgraphGuiRunner.runHashgraphGui(guiSource);
+        final TestGuiSource guiSource = new TestGuiSource(seed, numNodes);
+        guiSource.generateEvents(initialEvents);
+        guiSource.runGui();
     }
 }

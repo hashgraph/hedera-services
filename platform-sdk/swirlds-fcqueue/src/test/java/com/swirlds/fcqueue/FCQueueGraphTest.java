@@ -16,6 +16,7 @@
 
 package com.swirlds.fcqueue;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import com.swirlds.fcqueue.internal.FCQueueNode;
 import java.util.ArrayList;
@@ -24,7 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -99,7 +99,7 @@ class FCQueueGraphTest {
         Pair<String, AccessibleFCQueue<FCInt>> queuePair = Pair.of("FCQ0", queue);
         copies.add(queuePair);
         for (int index = 0; index < limit; index++) {
-            queuePair.getValue().add(new FCInt(index));
+            queuePair.value().add(new FCInt(index));
             printMermaidGraph(String.format("After adding N%d", index), limit, String.valueOf(index), copies, links);
             queue = queue.copy();
             queuePair = Pair.of(String.format("FCQ%d", index + 1), queue);
@@ -114,7 +114,7 @@ class FCQueueGraphTest {
 
         System.out.println("end");
 
-        copies.forEach(p -> p.getValue().release());
+        copies.forEach(p -> p.value().release());
 
         queue.release();
     }
@@ -130,7 +130,7 @@ class FCQueueGraphTest {
         Pair<String, AccessibleFCQueue<FCInt>> queuePair = Pair.of("FCQ0", queue);
         copies.add(queuePair);
         for (int index = 0; index < limit; index++) {
-            queuePair.getValue().add(new FCInt(index));
+            queuePair.value().add(new FCInt(index));
             queue = queue.copy();
             queuePair = Pair.of(String.format("FCQ%d", index + 1), queue);
             copies.add(queuePair);
@@ -145,7 +145,7 @@ class FCQueueGraphTest {
 
         for (int index = 0; index < limit; index++) {
             final Pair<String, AccessibleFCQueue<FCInt>> copy = copies.remove(0);
-            copy.getValue().release();
+            copy.value().release();
 
             printMermaidGraph(
                     String.format("After releasing FCQ%d", index), limit, String.format("re%d", index), copies, links);
@@ -167,7 +167,7 @@ class FCQueueGraphTest {
         Pair<String, AccessibleFCQueue<FCInt>> queuePair = Pair.of("FCQ0", queue);
         copies.add(queuePair);
         for (int index = 0; index < limit; index++) {
-            queuePair.getValue().add(new FCInt(index));
+            queuePair.value().add(new FCInt(index));
             queue = queue.copy();
             queuePair = Pair.of(String.format("FCQ%d", index + 1), queue);
             copies.add(queuePair);
@@ -182,7 +182,7 @@ class FCQueueGraphTest {
 
         final int mutableIndex = copies.size() - 1;
         final Pair<String, AccessibleFCQueue<FCInt>> mutableQueuePair = copies.get(mutableIndex);
-        final AccessibleFCQueue<FCInt> mutableQueue = mutableQueuePair.getValue();
+        final AccessibleFCQueue<FCInt> mutableQueue = mutableQueuePair.value();
 
         for (int index = 0; index < limit - 1; index++) {
             mutableQueue.remove();
@@ -196,7 +196,7 @@ class FCQueueGraphTest {
 
         for (int index = 0; index < limit - 1; index++) {
             final Pair<String, AccessibleFCQueue<FCInt>> copy = copies.remove(0);
-            copy.getValue().release();
+            copy.value().release();
 
             printMermaidGraph(
                     String.format("After releasing FCQ%d", index), limit, String.format("re%d", index), copies, links);
@@ -217,7 +217,7 @@ class FCQueueGraphTest {
         Pair<String, AccessibleFCQueue<FCInt>> queuePair = Pair.of("FCQ0", queue);
         copies.add(queuePair);
         for (int index = 0; index < limit; index++) {
-            queuePair.getValue().add(new FCInt(index));
+            queuePair.value().add(new FCInt(index));
         }
 
         printMermaidGraph(
@@ -285,15 +285,15 @@ class FCQueueGraphTest {
             final Map<FCQueueNode<FCInt>, Set<FCQueueNode<FCInt>>> links) {
         final String headId = String.format("H%s%d", prefixId, queueIndex);
         final String tailId = String.format("T%s%d", prefixId, queueIndex);
-        final String queueName = queuePair.getKey();
-        final AccessibleFCQueue<FCInt> queue = queuePair.getValue();
+        final String queueName = queuePair.key();
+        final AccessibleFCQueue<FCInt> queue = queuePair.value();
         if (queue.isEmpty()) {
             System.out.printf("\t\tFCQ%s%d[%s]\n", prefixId, queueIndex, queueName);
             return;
         }
 
-        System.out.printf("\t\tFCQ%s%d[%s] --> %s(head)\n", prefixId, queueIndex, queuePair.getKey(), headId);
-        System.out.printf("\t\tFCQ%s%d[%s] --> %s(tail)\n", prefixId, queueIndex, queuePair.getKey(), tailId);
+        System.out.printf("\t\tFCQ%s%d[%s] --> %s(head)\n", prefixId, queueIndex, queuePair.key(), headId);
+        System.out.printf("\t\tFCQ%s%d[%s] --> %s(tail)\n", prefixId, queueIndex, queuePair.key(), tailId);
 
         final FCQueueNode<FCInt> head = queue.getHead();
         final FCQueueNode<FCInt> tail = queue.getTail();

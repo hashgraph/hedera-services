@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +51,7 @@ class WritableUpgradeFileStoreTest extends FileTestBase {
         file = createUpgradeFile();
         assertFalse(writableUpgradeStates.iterator().hasNext());
 
-        writableUpgradeStates.add(file.contents());
+        writableUpgradeStates.add(new ProtoBytes(file.contents()));
         writableUpgradeFileStates.put(file.fileId(), file);
 
         assertEquals(
@@ -58,18 +59,18 @@ class WritableUpgradeFileStoreTest extends FileTestBase {
                 writableUpgradeFileStates.get(fileUpgradeFileId).fileId());
         final var writtenFile = writableUpgradeFileStates.get(fileUpgradeFileId);
         assertEquals(file, writtenFile);
-        assertEquals(file.contents(), writableUpgradeStates.peek());
+        assertEquals(new ProtoBytes(file.contents()), writableUpgradeStates.peek());
     }
 
     @Test
     void getReturnsUpgradeFile() {
         file = createUpgradeFile();
-        writableUpgradeStates.add(file.contents());
+        writableUpgradeStates.add(new ProtoBytes(file.contents()));
         writableUpgradeFileStates.put(file.fileId(), file);
 
         final var readFile = writableUpgradeStates.peek();
 
-        assertEquals(file.contents(), readFile);
+        assertEquals(new ProtoBytes(file.contents()), readFile);
         assertEquals(file, writableUpgradeFileStates.get(fileUpgradeFileId));
     }
 }

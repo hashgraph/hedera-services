@@ -16,8 +16,8 @@
 
 package com.swirlds.common.utility;
 
+import com.swirlds.base.utility.Pair;
 import java.util.List;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -45,8 +45,8 @@ public class LoggingClearables implements Clearable {
     @Override
     public void clear() {
         for (final Pair<Clearable, String> pair : list) {
-            logger.info(logMarker, "about to clear {}", pair::getRight);
-            pair.getLeft().clear();
+            logger.info(logMarker, "about to clear {}", pair::right);
+            pair.left().clear();
         }
     }
 }

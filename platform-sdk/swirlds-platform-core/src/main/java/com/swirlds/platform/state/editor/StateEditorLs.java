@@ -54,6 +54,7 @@ public class StateEditorLs extends StateEditorOperation {
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("java:S106")
     @Override
     public void run() {
         final MerkleNode node = getStateEditor().getRelativeNode(path);

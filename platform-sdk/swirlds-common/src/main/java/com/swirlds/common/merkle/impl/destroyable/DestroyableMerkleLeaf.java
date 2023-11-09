@@ -18,7 +18,8 @@ package com.swirlds.common.merkle.impl.destroyable;
 
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.impl.internal.AbstractMerkleNode;
-import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * A variant of {@link PartialMerkleLeaf} that stores a callback that is invoked when
@@ -34,8 +35,8 @@ public class DestroyableMerkleLeaf extends PartialMerkleLeaf {
      * @param onDestroy
      * 		called when this node is destroyed
      */
-    public DestroyableMerkleLeaf(final Runnable onDestroy) {
-        this.onDestroy = CommonUtils.throwArgNull(onDestroy, "onDestroy");
+    public DestroyableMerkleLeaf(@NonNull final Runnable onDestroy) {
+        this.onDestroy = Objects.requireNonNull(onDestroy, "onDestroy must not be null");
     }
 
     /**

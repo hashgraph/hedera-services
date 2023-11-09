@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -35,7 +34,7 @@ import org.hyperledger.besu.evm.operation.Operation;
 /**
  * Customization of {@link ExtCodeCopyOperation} that treats every long-zero address for an account
  * below {@code 0.0.1001} as having zero code; and otherwise requires the account to be present or
- * halts the frame with {@link CustomExceptionalHaltReason#MISSING_ADDRESS}.
+ * halts the frame with {@link CustomExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS}.
  */
 public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =
@@ -63,7 +62,8 @@ public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
             }
             // Otherwise the address must be present
             if (!addressChecks.isPresent(address, frame)) {
-                return new OperationResult(cost(frame, memOffset, numBytes, true), MISSING_ADDRESS);
+                return new OperationResult(
+                        cost(frame, memOffset, numBytes, true), CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
             return super.execute(frame, evm);
         } catch (FixedStack.UnderflowException ignore) {

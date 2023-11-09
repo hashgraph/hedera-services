@@ -27,8 +27,7 @@ import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.merkle.map.test.pta.MapValue;
 import java.io.IOException;
 import java.io.Serializable;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import java.util.Objects;
 
 public class MapValueData extends PartialMerkleLeaf implements Keyed<MapKey>, MapValue, Serializable, MerkleLeaf {
 
@@ -137,34 +136,24 @@ public class MapValueData extends PartialMerkleLeaf implements Keyed<MapKey>, Ma
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final MapValueData mapValue = (MapValueData) o;
-        return new EqualsBuilder()
-                .append(balance, mapValue.balance)
-                .append(sendThresholdValue, mapValue.sendThresholdValue)
-                .append(receiveThresholdValue, mapValue.receiveThresholdValue)
-                .append(receiverSignatureRequired, mapValue.receiverSignatureRequired)
-                .append(uid, mapValue.uid)
-                .build();
+        final MapValueData that = (MapValueData) other;
+        return balance == that.balance
+                && sendThresholdValue == that.sendThresholdValue
+                && receiveThresholdValue == that.receiveThresholdValue
+                && receiverSignatureRequired == that.receiverSignatureRequired
+                && uid == that.uid;
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(balance)
-                .append(sendThresholdValue)
-                .append(receiveThresholdValue)
-                .append(receiverSignatureRequired)
-                .append(uid)
-                .build();
+        return Objects.hash(balance, sendThresholdValue, receiveThresholdValue, receiverSignatureRequired, uid);
     }
 
     public String toString() {

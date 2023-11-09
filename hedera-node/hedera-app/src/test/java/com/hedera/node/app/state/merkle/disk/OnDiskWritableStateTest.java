@@ -41,7 +41,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
             setupFruitVirtualMap();
 
             final var state = new OnDiskWritableKVState<>(fruitVirtualMetadata, fruitVirtualMap);
-            assertThat(state.size()).isEqualTo(0);
+            assertThat(state.size()).isZero();
 
             add(fruitVirtualMap, fruitVirtualMetadata, A_KEY, APPLE);
             add(fruitVirtualMap, fruitVirtualMetadata, B_KEY, BANANA);

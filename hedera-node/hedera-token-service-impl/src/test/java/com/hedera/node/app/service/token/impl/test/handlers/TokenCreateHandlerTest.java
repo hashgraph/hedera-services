@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KYC_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
@@ -39,8 +39,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
-import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,7 +62,6 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
@@ -82,6 +81,7 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -135,6 +135,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void handleWorksForFungibleCreate() {
         setUpTxnContext();
 
@@ -150,7 +152,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.tokenId()).isEqualTo(newTokenId);
         assertThat(token.totalSupply()).isEqualTo(1000L);
         assertThat(token.tokenType()).isEqualTo(TokenType.FUNGIBLE_COMMON);
-        assertThat(token.expiry())
+        assertThat(token.expirationSecond())
                 .isEqualTo(consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond());
         assertThat(token.freezeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.kycKey()).isEqualTo(A_COMPLEX_KEY);
@@ -158,7 +160,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.wipeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.supplyKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
-        assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
+        assertThat(token.autoRenewSeconds()).isEqualTo(autoRenewSecs);
         assertThat(token.autoRenewAccountId()).isEqualTo(autoRenewAccountId);
         assertThat(token.decimals()).isZero();
         assertThat(token.name()).isEqualTo("TestToken");
@@ -173,7 +175,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
-        assertThat(tokenRel.kycGranted()).isFalse();
+        assertThat(tokenRel.kycGranted()).isTrue();
         assertThat(tokenRel.automaticAssociation()).isFalse();
         assertThat(tokenRel.frozen()).isFalse();
         assertThat(tokenRel.nextToken()).isNull();
@@ -181,14 +183,14 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void handleWorksForFungibleCreateWithSelfDenominatedToken() {
         setUpTxnContext();
-        final var customFees = List.of(
-                withFixedFee(hbarFixedFee
-                        .copyBuilder()
-                        .denominatingTokenId(TokenID.newBuilder().tokenNum(0L).build())
-                        .build()),
-                withFractionalFee(fractionalFee));
+        final var customFees = List.of(withFixedFee(hbarFixedFee
+                .copyBuilder()
+                .denominatingTokenId(TokenID.newBuilder().tokenNum(0L).build())
+                .build()));
         txn = new TokenCreateBuilder().withCustomFees(customFees).build();
         given(handleContext.body()).willReturn(txn);
 
@@ -200,12 +202,14 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(writableTokenStore.get(newTokenId)).isNotNull();
         final var token = writableTokenStore.get(newTokenId);
+        final var expectedCustomFees = List.of(withFixedFee(
+                hbarFixedFee.copyBuilder().denominatingTokenId(newTokenId).build()));
 
         assertThat(token.treasuryAccountId()).isEqualTo(treasuryId);
         assertThat(token.tokenId()).isEqualTo(newTokenId);
         assertThat(token.totalSupply()).isEqualTo(1000L);
         assertThat(token.tokenType()).isEqualTo(TokenType.FUNGIBLE_COMMON);
-        assertThat(token.expiry())
+        assertThat(token.expirationSecond())
                 .isEqualTo(consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond());
         assertThat(token.freezeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.kycKey()).isEqualTo(A_COMPLEX_KEY);
@@ -213,13 +217,13 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.wipeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.supplyKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
-        assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
+        assertThat(token.autoRenewSeconds()).isEqualTo(autoRenewSecs);
         assertThat(token.autoRenewAccountId()).isEqualTo(autoRenewAccountId);
         assertThat(token.decimals()).isZero();
         assertThat(token.name()).isEqualTo("TestToken");
         assertThat(token.symbol()).isEqualTo("TT");
         assertThat(token.memo()).isEqualTo("test token");
-        assertThat(token.customFees()).isEqualTo(customFees);
+        assertThat(token.customFees()).isEqualTo(expectedCustomFees);
 
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNotNull();
         final var tokenRel = writableTokenRelStore.get(treasuryId, newTokenId);
@@ -228,7 +232,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
-        assertThat(tokenRel.kycGranted()).isFalse();
+        assertThat(tokenRel.kycGranted()).isTrue();
         assertThat(tokenRel.automaticAssociation()).isFalse();
         assertThat(tokenRel.frozen()).isFalse();
         assertThat(tokenRel.nextToken()).isNull();
@@ -273,7 +277,6 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
                 .withValue("tokens.maxPerAccount", "10")
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);
-
         assertThat(writableTokenStore.get(newTokenId)).isNull();
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
 
@@ -318,7 +321,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void failsIfAssociationAlreadyExistsWhileAssociatingCollector() {
+    void doesntCreateAssociationIfItAlreadyExistsWhileAssociatingCollector() {
         setUpTxnContext();
         final var customFees = List.of(
                 withFixedFee(hbarFixedFee
@@ -339,16 +342,22 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
 
         // Just to simulate existing token association , add to store. Only for testing
-        writableTokenRelStore.put(TokenRelation.newBuilder()
+        final var prebuiltTokenRel = TokenRelation.newBuilder()
                 .tokenId(newTokenId)
                 .accountId(feeCollectorId)
                 .balance(1000L)
-                .build());
+                .build();
+        writableTokenRelStore.put(prebuiltTokenRel);
         assertThat(writableTokenRelStore.get(feeCollectorId, newTokenId)).isNotNull();
 
-        assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
+        subject.handle(handleContext);
+
+        final var relAfterHandle = writableTokenRelStore.get(feeCollectorId, newTokenId);
+
+        assertThat(relAfterHandle).isNotNull();
+        assertThat(relAfterHandle.tokenId()).isEqualTo(prebuiltTokenRel.tokenId());
+        assertThat(relAfterHandle.accountId()).isEqualTo(prebuiltTokenRel.accountId());
+        assertThat(relAfterHandle.balance()).isEqualTo(prebuiltTokenRel.balance());
     }
 
     @Test
@@ -367,6 +376,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void uniqueSupportedIfNftsEnabled() {
         setUpTxnContext();
         configuration = HederaTestConfigBuilder.create()
@@ -391,7 +402,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.tokenId()).isEqualTo(newTokenId);
         assertThat(token.totalSupply()).isZero();
         assertThat(token.tokenType()).isEqualTo(TokenType.NON_FUNGIBLE_UNIQUE);
-        assertThat(token.expiry())
+        assertThat(token.expirationSecond())
                 .isEqualTo(consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond());
         assertThat(token.freezeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.kycKey()).isEqualTo(A_COMPLEX_KEY);
@@ -399,7 +410,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.wipeKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.supplyKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
-        assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
+        assertThat(token.autoRenewSeconds()).isEqualTo(autoRenewSecs);
         assertThat(token.autoRenewAccountId()).isEqualTo(autoRenewAccountId);
         assertThat(token.decimals()).isZero();
         assertThat(token.name()).isEqualTo("TestToken");
@@ -414,7 +425,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenId()).isEqualTo(newTokenId);
         assertThat(tokenRel.accountId()).isEqualTo(treasuryId);
-        assertThat(tokenRel.kycGranted()).isFalse();
+        assertThat(tokenRel.kycGranted()).isTrue();
         assertThat(tokenRel.automaticAssociation()).isFalse();
         assertThat(tokenRel.frozen()).isFalse();
         assertThat(tokenRel.nextToken()).isNull();
@@ -695,13 +706,13 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(AUTORENEW_DURATION_NOT_IN_RANGE));
+                .has(responseCode(INVALID_RENEWAL_PERIOD));
 
         txn = new TokenCreateBuilder().withAutoRenewPeriod(100).build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(AUTORENEW_DURATION_NOT_IN_RANGE));
+                .has(responseCode(INVALID_RENEWAL_PERIOD));
     }
 
     @Test

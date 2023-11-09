@@ -122,8 +122,6 @@ public class DumpContractStoresSubcommand {
 
             long reportSizeEstimate = (nDistinctContractIds * 20)
                     + (nContractStateValues * 2 /*K/V*/ * (32 /*bytes*/ * 2 /*hexits/byte*/ + 3 /*whitespace+slop*/));
-            if (verbosity == Verbosity.VERBOSE)
-                System.out.printf("=== Estimating %d byte report%n", reportSizeEstimate);
             final var sb = new StringBuilder((int) reportSizeEstimate);
 
             if (verbosity == Verbosity.VERBOSE)
@@ -131,8 +129,8 @@ public class DumpContractStoresSubcommand {
                         "=== %d contract stores found, %d k/v pairs%n", nDistinctContractIds, nContractStateValues);
 
             if (emitSummary == EmitSummary.YES)
-                sb.append("*** %d contract stores found, %d k/v pairs%n"
-                        .formatted(nDistinctContractIds, nContractStateValues));
+                sb.append(
+                        "*** %d contract stores, %d k/v pairs%n".formatted(nDistinctContractIds, nContractStateValues));
 
             // This list is generated in contract id order so that it is deterministic; also all the slot#/value pairs
             // are sorted by slot# for the same reason
@@ -156,7 +154,8 @@ public class DumpContractStoresSubcommand {
             if (withSlots == WithSlots.YES)
                 for (final var aContractState : contractStates) appendSerializedContractStore(sb, aContractState);
 
-            if (verbosity == Verbosity.VERBOSE) System.out.printf("=== Accual report size %d bytes%n", sb.length());
+            if (verbosity == Verbosity.VERBOSE)
+                System.out.printf("=== Contract store report is %d bytes%n", sb.length());
 
             writeReportToFile(sb.toString());
         } else {
@@ -177,8 +176,8 @@ public class DumpContractStoresSubcommand {
             contractStorageVMap.extractVirtualMapData(
                     getStaticThreadManager(),
                     entry -> {
-                        final var contractKey = entry.getKey();
-                        final var iterableContractValue = entry.getValue();
+                        final var contractKey = entry.left();
+                        final var iterableContractValue = entry.right();
                         visitor.accept(contractKey, iterableContractValue);
                     },
                     THREAD_COUNT);

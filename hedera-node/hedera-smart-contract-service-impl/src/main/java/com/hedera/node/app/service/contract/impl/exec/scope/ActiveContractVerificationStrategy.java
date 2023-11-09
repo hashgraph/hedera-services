@@ -30,10 +30,20 @@ public class ActiveContractVerificationStrategy implements VerificationStrategy 
     private final long activeNumber;
     private final Bytes activeAddress;
     private final boolean requiresDelegatePermission;
+    private final UseTopLevelSigs useTopLevelSigs;
+
+    public enum UseTopLevelSigs {
+        YES,
+        NO
+    }
 
     public ActiveContractVerificationStrategy(
-            final long activeNumber, @NonNull final Bytes activeAddress, final boolean requiresDelegatePermission) {
+            final long activeNumber,
+            @NonNull final Bytes activeAddress,
+            final boolean requiresDelegatePermission,
+            @NonNull final UseTopLevelSigs useTopLevelSigs) {
         this.activeNumber = activeNumber;
+        this.useTopLevelSigs = Objects.requireNonNull(useTopLevelSigs);
         this.activeAddress = Objects.requireNonNull(activeAddress);
         this.requiresDelegatePermission = requiresDelegatePermission;
     }
@@ -42,7 +52,7 @@ public class ActiveContractVerificationStrategy implements VerificationStrategy 
      * {@inheritDoc}
      */
     @Override
-    public Decision maybeVerifySignature(@NonNull final Key key, @NonNull final KeyRole keyRole) {
+    public Decision decideForPrimitive(@NonNull final Key key) {
         final var keyKind = key.key().kind();
         if (keyKind == Key.KeyOneOfType.CONTRACT_ID) {
             if (requiresDelegatePermission) {
@@ -53,7 +63,9 @@ public class ActiveContractVerificationStrategy implements VerificationStrategy 
         } else if (keyKind == Key.KeyOneOfType.DELEGATABLE_CONTRACT_ID) {
             return decisionFor(key.delegatableContractIdOrThrow());
         } else {
-            return Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION;
+            return useTopLevelSigs == UseTopLevelSigs.YES
+                    ? Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION
+                    : Decision.INVALID;
         }
     }
 

@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.cli;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
@@ -25,6 +27,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateComparison;
@@ -36,6 +39,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -45,6 +50,7 @@ import picocli.CommandLine.Command;
         description = "Compare two signed states for differences. Useful for debugging ISS incidents.")
 @SubcommandOf(StateCommand.class)
 public final class CompareStatesCommand extends AbstractCommand {
+    private static final Logger logger = LogManager.getLogger(CompareStatesCommand.class);
 
     /**
      * The path to the first state being compared.
@@ -129,11 +135,11 @@ public final class CompareStatesCommand extends AbstractCommand {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(statePath);
 
-        System.out.println("Loading state from " + statePath);
+        logger.info(LogMarker.CLI.getMarker(), "Loading state from {}", statePath);
 
         final ReservedSignedState signedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath).reservedSignedState();
-        System.out.println("Hashing state");
+        logger.info(LogMarker.CLI.getMarker(), "Hashing state");
         try {
             MerkleCryptoFactory.getInstance()
                     .digestTreeAsync(signedState.get().getState())
@@ -154,7 +160,8 @@ public final class CompareStatesCommand extends AbstractCommand {
     public Integer call() throws IOException {
         BootstrapUtils.setupConstructableRegistry();
 
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(configurationPaths);
+        final Configuration configuration =
+                DefaultConfiguration.buildBasicConfiguration(getAbsolutePath("settings.txt"), configurationPaths);
         final PlatformContext platformContext =
                 new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
 

@@ -35,13 +35,11 @@ import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForRecon
 import static com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect.reconnectingNode;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiSuite;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +55,6 @@ import org.junit.jupiter.api.Assertions;
  * disconnected from the network. Once the node is reconnected validate that the congestion pricing is in affect on
  * reconnected node
  */
-@HapiTestSuite
 public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidateCongestionPricingAfterReconnect.class);
     private static final String FEES_PERCENT_CONGESTION_MULTIPLIERS = "fees.percentCongestionMultipliers";
@@ -91,7 +88,6 @@ public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
         return customHapiSpec("ValidateCongestionPricing")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(
-                        sleepFor(Duration.ofSeconds(25).toMillis()),
                         cryptoCreate(civilianAccount).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
                         uploadInitCode(oneContract),
                         contractCreate(oneContract).payingWith(GENESIS).logging(),
@@ -142,7 +138,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
                         // then we can send more transactions. Otherwise, transactions may be
                         // pending for too long
                         // and we will get UNKNOWN status
-                        sleepFor(30000),
+                        sleepFor(80000),
                         blockingOrder(IntStream.range(0, 110)
                                 .mapToObj(i -> new HapiSpecOperation[] {
                                     usableTxnIdNamed("uncheckedTxn2" + i).payerId(civilianAccount),

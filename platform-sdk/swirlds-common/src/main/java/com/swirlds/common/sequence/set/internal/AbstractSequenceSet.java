@@ -16,8 +16,6 @@
 
 package com.swirlds.common.sequence.set.internal;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.set.SequenceSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -87,8 +85,8 @@ public abstract class AbstractSequenceSet<T> implements SequenceSet<T> {
      * {@inheritDoc}
      */
     @Override
-    public boolean add(final T element) {
-        throwArgNull(element, "element");
+    public boolean add(@NonNull final T element) {
+        Objects.requireNonNull(element, "element must not be null");
         return map.putIfAbsent(element, true);
     }
 
@@ -96,8 +94,8 @@ public abstract class AbstractSequenceSet<T> implements SequenceSet<T> {
      * {@inheritDoc}
      */
     @Override
-    public boolean remove(final T element) {
-        throwArgNull(element, "element");
+    public boolean remove(@NonNull final T element) {
+        Objects.requireNonNull(element, "element must not be null");
         return map.remove(element) != null;
     }
 

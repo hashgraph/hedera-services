@@ -84,6 +84,25 @@ public interface TransactionContext {
      */
     AccountID activePayer();
 
+    /**
+     * Returns whether the current transaction being processed was submitted by this node.
+     *
+     * @return true if the current transaction was submitted by this node
+     */
+    boolean isSelfSubmitted();
+
+    /**
+     * Returns the number of auto-creation attempts that are implied by this transaction.
+     *
+     * @return the number of auto-creation attempts
+     */
+    default int numImplicitCreations() {
+        if (!accessor().areImplicitCreationsCounted()) {
+            throw new IllegalStateException("Implicit creations requested before being counted");
+        }
+        return accessor().getNumImplicitCreations();
+    }
+
     default AccountID effectivePayer() {
         return isPayerSigKnownActive() ? activePayer() : submittingNodeAccount();
     }

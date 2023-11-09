@@ -19,6 +19,8 @@ package com.hedera.node.app.service.mono.pbj;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.transaction.CustomFee.FeeOneOfType;
@@ -26,6 +28,7 @@ import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
+import com.hederahashgraph.api.proto.java.SubType;
 import org.junit.jupiter.api.Test;
 
 class PbjConverterTest {
@@ -50,5 +53,29 @@ class PbjConverterTest {
         assertEquals(2, value.exchangeValueFraction().denominator());
         assertEquals(1, value.fallbackFee().amount());
         assertNull(value.fallbackFee().denominatingTokenId());
+    }
+
+    @Test
+    void convertsSubtypes() {
+        assertThrows(IllegalArgumentException.class, () -> PbjConverter.toPbj(SubType.UNRECOGNIZED));
+        assertSame(com.hedera.hapi.node.base.SubType.DEFAULT, PbjConverter.toPbj(SubType.DEFAULT));
+        assertSame(
+                com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON,
+                PbjConverter.toPbj(SubType.TOKEN_FUNGIBLE_COMMON));
+        assertSame(
+                com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE,
+                PbjConverter.toPbj(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
+        assertSame(
+                com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
+                PbjConverter.toPbj(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
+        assertSame(
+                com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
+                PbjConverter.toPbj(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
+        assertSame(
+                com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES,
+                PbjConverter.toPbj(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
+        assertSame(
+                com.hedera.hapi.node.base.SubType.SCHEDULE_CREATE_CONTRACT_CALL,
+                PbjConverter.toPbj(SubType.SCHEDULE_CREATE_CONTRACT_CALL));
     }
 }

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.BlockingQueueInserter;
@@ -85,10 +85,11 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
 
     /**
      * This class is used as a flag to indicate that there is a discontinuity in the stream.
+     *
+     * @param originRound the origin round following the discontinuity. For discontinuities caused by reconnects, the
+     *                    origin round is the round of the state received from the teacher.
      */
-    private static class Discontinuity {}
-
-    private static final Discontinuity DISCONTINUITY = new Discontinuity();
+    private record Discontinuity(long originRound) {}
 
     /**
      * Used to push the Discontinuity flag onto the handle queue.
@@ -134,8 +135,9 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
                 .addHandler(FlushRequested.class, this::flushRequestedHandler)
                 .addHandler(Discontinuity.class, this::discontinuityHandler)
                 .addHandler(MinimumGenerationToStore.class, this::minimumGenerationToStoreHandler)
-                .setMetricsConfiguration(
-                        new QueueThreadMetricsConfiguration(platformContext.getMetrics()).enableBusyTimeMetric())
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(platformContext.getMetrics())
+                        .enableMaxSizeMetric()
+                        .enableBusyTimeMetric())
                 .build();
 
         minimumGenerationNonAncientInserter = handleThread.getInserter(Long.class);
@@ -204,8 +206,8 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void registerDiscontinuity() throws InterruptedException {
-        discontinuityInserter.put(DISCONTINUITY);
+    public void registerDiscontinuity(final long newOriginRound) throws InterruptedException {
+        discontinuityInserter.put(new Discontinuity(newOriginRound));
     }
 
     /**
@@ -306,7 +308,7 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
      */
     private void discontinuityHandler(@NonNull final Discontinuity discontinuity) {
         try {
-            writer.registerDiscontinuity();
+            writer.registerDiscontinuity(discontinuity.originRound);
         } catch (final InterruptedException e) {
             // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
             // this should never throw an InterruptedException.

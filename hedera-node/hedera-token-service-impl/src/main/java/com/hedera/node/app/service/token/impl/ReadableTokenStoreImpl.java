@@ -65,6 +65,8 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
         return getTokenLeaf(id).orElse(null);
     }
 
+    // Suppressing the warning that we are passing null values when building TokenMetadata(*OrElse methods)
+    @SuppressWarnings("java:S2637")
     private TokenMetadata tokenMetaFrom(final Token token) {
         boolean hasRoyaltyWithFallback = false;
         final var customFees = token.customFees();

@@ -16,11 +16,11 @@
 
 package com.swirlds.common.threading.framework.internal;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.Metrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -51,10 +51,10 @@ class MeasuredBlockingQueue<T> extends AbstractBlockingQueue<T> {
      * @throws IllegalStateException
      *         if no metrics are enabled in the configuration
      */
-    public MeasuredBlockingQueue(final BlockingQueue<T> queue, final Config config) {
+    public MeasuredBlockingQueue(@NonNull final BlockingQueue<T> queue, @NonNull final Config config) {
         super(queue);
-        throwArgNull(queue, "queue");
-        throwArgNull(config, "config");
+        Objects.requireNonNull(queue, "queue must not be null");
+        Objects.requireNonNull(config, "config must not be null");
 
         if (!config.isMetricEnabled()) {
             throw new IllegalStateException("No metrics have been enabled for the queue '" + config.queueName + "'");
@@ -286,14 +286,14 @@ class MeasuredBlockingQueue<T> extends AbstractBlockingQueue<T> {
         }
 
         private Config(
-                final Metrics metrics,
-                final String category,
-                final String queueName,
+                @NonNull final Metrics metrics,
+                @NonNull final String category,
+                @NonNull final String queueName,
                 final boolean maxSizeMetricEnabled,
                 final boolean minSizeMetricEnabled) {
-            throwArgNull(metrics, "metrics");
-            throwArgNull(category, "category");
-            throwArgNull(queueName, "queueName");
+            Objects.requireNonNull(metrics, "metrics must not be null");
+            Objects.requireNonNull(category, "category must not be null");
+            Objects.requireNonNull(queueName, "queueName must not be null");
             this.metrics = metrics;
             this.category = category;
             this.queueName = queueName;

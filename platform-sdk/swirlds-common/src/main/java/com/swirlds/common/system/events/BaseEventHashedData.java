@@ -17,8 +17,8 @@
 package com.swirlds.common.system.events;
 
 import static com.swirlds.common.io.streams.SerializableDataOutputStream.getSerializedLength;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
@@ -28,7 +28,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,8 +36,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A class used to store base event data that is used to create the hash of that event.
@@ -91,9 +88,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     /** the payload: an array of transactions */
     private ConsensusTransactionImpl[] transactions;
 
-    /** are any of the transactions user transactions */
-    private boolean hasUserTransactions;
-
     public BaseEventHashedData() {}
 
     /**
@@ -133,7 +127,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         this.otherParentHash = otherParentHash;
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
         this.transactions = transactions;
-        checkUserTransactions();
     }
 
     /**
@@ -238,25 +231,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         timeCreated = in.readInstant();
         in.readInt(); // read serialized length
         transactions = in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true);
-        checkUserTransactions();
-    }
-
-    /**
-     * Check if array of transactions has any user created transaction inside
-     */
-    private void checkUserTransactions() {
-        if (transactions != null) {
-            for (final ConsensusTransaction t : getTransactions()) {
-                if (!t.isSystem()) {
-                    hasUserTransactions = true;
-                    break;
-                }
-            }
-        }
-    }
-
-    public boolean hasUserTransactions() {
-        return hasUserTransactions;
     }
 
     @Override
@@ -283,21 +257,21 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(softwareVersion)
-                .append(creatorId)
-                .append(selfParentGen)
-                .append(otherParentGen)
-                .append(selfParentHash)
-                .append(otherParentHash)
-                .append(timeCreated)
-                .append(transactions)
-                .toHashCode();
+        int result = Objects.hash(
+                softwareVersion,
+                creatorId,
+                selfParentGen,
+                otherParentGen,
+                selfParentHash,
+                otherParentHash,
+                timeCreated);
+        result = 31 * result + Arrays.hashCode(transactions);
+        return result;
     }
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("softwareVersion", softwareVersion)
                 .append("creatorId", creatorId)
                 .append("selfParentGen", selfParentGen)
@@ -366,14 +340,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     public boolean hasOtherParent() {
         return otherParentHash != null;
-    }
-
-    public byte[] getSelfParentHashValue() {
-        return selfParentHash == null ? null : selfParentHash.getValue();
-    }
-
-    public byte[] getOtherParentHashValue() {
-        return otherParentHash == null ? null : otherParentHash.getValue();
     }
 
     public Instant getTimeCreated() {

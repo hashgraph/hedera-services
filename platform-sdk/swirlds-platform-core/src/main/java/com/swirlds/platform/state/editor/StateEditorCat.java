@@ -37,6 +37,7 @@ public class StateEditorCat extends StateEditorOperation {
      * {@inheritDoc}
      */
     @Override
+    @SuppressWarnings("java:S106")
     public void run() {
         System.out.println(getStateEditor().getRelativeNode(path));
     }

@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.google.common.truth.Truth.assertThat;
 import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetricKey;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.IntegerGauge;

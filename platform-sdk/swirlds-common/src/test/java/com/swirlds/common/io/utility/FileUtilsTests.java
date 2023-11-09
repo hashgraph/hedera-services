@@ -567,4 +567,23 @@ class FileUtilsTests {
             assertEquals("foobarbaz", in.readNormalisedString(1000), "invalid data in file");
         }
     }
+
+    @Test
+    @DisplayName("findFiles() Test")
+    void findFilesTest() throws IOException {
+        final Path dir = testDirectory.resolve("findfiles");
+        final Path subdir = dir.resolve("subdir");
+        Files.createDirectories(subdir);
+        final Path first = dir.resolve("first.foo");
+        final Path second = dir.resolve("second.bar");
+        final Path third = subdir.resolve("third.foo");
+        Files.createFile(first);
+        Files.createFile(second);
+        Files.createFile(third);
+
+        final List<Path> files = FileUtils.findFiles(dir, ".foo");
+        assertEquals(2, files.size(), "incorrect number of files found");
+        assertTrue(files.contains(first), "first.foo not found");
+        assertTrue(files.contains(third), "third.foo not found");
+    }
 }

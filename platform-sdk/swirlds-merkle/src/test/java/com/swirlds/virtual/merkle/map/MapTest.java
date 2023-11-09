@@ -21,8 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtual.merkle.TestKey;
+import com.swirlds.virtual.merkle.TestKeySerializer;
 import com.swirlds.virtual.merkle.TestValue;
+import com.swirlds.virtual.merkle.TestValueSerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import org.junit.jupiter.api.DisplayName;
@@ -30,11 +35,17 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 
-abstract class MapTest {
+final class MapTest {
 
-    protected abstract VirtualDataSourceBuilder<TestKey, TestValue> createBuilder();
+    VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() {
+        final MerkleDbTableConfig<TestKey, TestValue> tableConfig = new MerkleDbTableConfig<>(
+                (short) 1, DigestType.SHA_384,
+                (short) 1, new TestKeySerializer(),
+                (short) 1, new TestValueSerializer());
+        return new MerkleDbDataSourceBuilder<>(tableConfig);
+    }
 
-    protected VirtualMap<TestKey, TestValue> createMap(String label) {
+    VirtualMap<TestKey, TestValue> createMap(String label) {
         return new VirtualMap<>(label, createBuilder());
     }
 

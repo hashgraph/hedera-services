@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.ethereum;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -67,6 +68,7 @@ import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_K
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -80,6 +82,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -101,8 +104,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 
 @HapiTestSuite
 @SuppressWarnings("java:S5960")
@@ -121,6 +126,8 @@ public class EthereumSuite extends HapiSuite {
     private static final String TOKEN = "token";
     private static final String MINT_TXN = "mintTxn";
     private static final String PAY_TXN = "payTxn";
+    private static final String TOTAL_SUPPLY_TX = "totalSupplyTx";
+    private static final String ERC20_ABI = "ERC20ABI";
 
     public static void main(String... args) {
         new EthereumSuite().runSuiteAsync();
@@ -147,10 +154,16 @@ public class EthereumSuite extends HapiSuite {
                                 etx031InvalidNonceEthereumTxFailsAndChargesRelayer(),
                                 etxSvc003ContractGetBytecodeQueryReturnsDeployedCode(),
                                 sendingLargerBalanceThanAvailableFailsGracefully(),
-                                directTransferWorksForERC20()))
+                                directTransferWorksForERC20(),
+                                transferHbarsViaEip2930TxSuccessfully(),
+                                callToTokenAddressViaEip2930TxSuccessfully(),
+                                transferTokensViaEip2930TxSuccessfully(),
+                                callToNonExistingContractFailsGracefully()))
                 .toList();
     }
 
+    @HapiTest
+    @Disabled("Failing or intermittently failing HAPI Test")
     HapiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
 
@@ -194,6 +207,7 @@ public class EthereumSuite extends HapiSuite {
                 }));
     }
 
+    @HapiTest
     HapiSpec etx010TransferToCryptoAccountSucceeds() {
         String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";
@@ -521,11 +535,11 @@ public class EthereumSuite extends HapiSuite {
                         ethereumCallWithFunctionAbi(
                                         true,
                                         FUNGIBLE_TOKEN,
-                                        getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", "ERC20ABI"))
+                                        getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
-                                .via("totalSupplyTxn")
+                                .via(TOTAL_SUPPLY_TX)
                                 .nonce(0)
                                 .gasPrice(50L)
                                 .maxGasAllowance(FIVE_HBARS)
@@ -533,7 +547,7 @@ public class EthereumSuite extends HapiSuite {
                                 .gasLimit(1_000_000L)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
                 .then(childRecordsCheck(
-                        "totalSupplyTxn",
+                        TOTAL_SUPPLY_TX,
                         SUCCESS,
                         recordWith()
                                 .status(SUCCESS)
@@ -544,6 +558,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     // ETX-011 and ETX-030
+    @HapiTest
     HapiSpec originAndSenderAreEthereumSigner() {
         return defaultHapiSpec("originAndSenderAreEthereumSigner")
                 .given(
@@ -587,7 +602,8 @@ public class EthereumSuite extends HapiSuite {
                                 .has(accountWith().nonce(1L)));
     }
 
-    private HapiSpec etx008ContractCreateExecutesWithExpectedRecord() {
+    @HapiTest
+    HapiSpec etx008ContractCreateExecutesWithExpectedRecord() {
         final var txn = "creation";
         final var contract = "Fuse";
 
@@ -663,7 +679,8 @@ public class EthereumSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec etxSvc003ContractGetBytecodeQueryReturnsDeployedCode() {
+    @HapiTest
+    HapiSpec etxSvc003ContractGetBytecodeQueryReturnsDeployedCode() {
         final var txn = "creation";
         final var contract = "EmptyConstructor";
         return HapiSpec.defaultHapiSpec("etxSvc003ContractGetBytecodeQueryReturnsDeployedCode")
@@ -691,7 +708,7 @@ public class EthereumSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec directTransferWorksForERC20() {
+    HapiSpec directTransferWorksForERC20() {
         final var tokenSymbol = "FDFGF";
         final var tokenTotalSupply = 5;
         final var tokenTransferAmount = 3;
@@ -718,7 +735,7 @@ public class EthereumSuite extends HapiSuite {
                         ethereumCallWithFunctionAbi(
                                         true,
                                         FUNGIBLE_TOKEN,
-                                        getABIFor(Utils.FunctionType.FUNCTION, "transfer", "ERC20ABI"),
+                                        getABIFor(Utils.FunctionType.FUNCTION, "transfer", ERC20_ABI),
                                         asHeadlongAddress(asHexedSolidityAddress(
                                                 spec.registry().getAccountID(ACCOUNT))),
                                         BigInteger.valueOf(tokenTransferAmount))
@@ -742,6 +759,190 @@ public class EthereumSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.ERC_TRANSFER)
                                                         .withErcFungibleTransferStatus(true)))))));
+    }
+
+    @HapiTest
+    HapiSpec transferHbarsViaEip2930TxSuccessfully() {
+        final String RECEIVER = "RECEIVER";
+        final String aliasBalanceSnapshot = "aliasBalance";
+        return defaultHapiSpec("transferHbarsViaEip2930TxSuccessfully")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RECEIVER).balance(0L),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords())
+                .when(
+                        balanceSnapshot(aliasBalanceSnapshot, SECP_256K1_SOURCE_KEY)
+                                .accountIsAlias(),
+                        ethereumCryptoTransfer(RECEIVER, FIVE_HBARS)
+                                .type(EthTxData.EthTransactionType.EIP2930)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(0)
+                                .gasPrice(0L)
+                                .gasLimit(2_000_000L)
+                                .via(PAY_TXN)
+                                .hasKnownStatus(SUCCESS))
+                .then(
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                getTxnRecord(PAY_TXN)
+                                        .logged()
+                                        .hasPriority(recordWith()
+                                                .status(SUCCESS)
+                                                .contractCallResult(resultWith()
+                                                        .logs(inOrder())
+                                                        .senderId(spec.registry()
+                                                                .getAccountID(spec.registry()
+                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .getAlias()
+                                                                        .toStringUtf8())))
+                                                .ethereumHash(ByteString.copyFrom(
+                                                        spec.registry().getBytes(ETH_HASH_KEY)))))),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getAccountBalance(RECEIVER).hasTinyBars(FIVE_HBARS),
+                        getAutoCreatedAccountBalance(SECP_256K1_SOURCE_KEY)
+                                .hasTinyBars(changeFromSnapshot(aliasBalanceSnapshot, -FIVE_HBARS)));
+    }
+
+    HapiSpec callToTokenAddressViaEip2930TxSuccessfully() {
+        final AtomicReference<String> tokenNum = new AtomicReference<>();
+        final var totalSupply = 50;
+
+        return defaultHapiSpec("callToTokenAddressViaEip2930TxSuccessfully")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(totalSupply)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(SECP_256K1_SOURCE_KEY)
+                                .supplyKey(SECP_256K1_SOURCE_KEY)
+                                .exposingCreatedIdTo(tokenNum::set),
+                        uploadInitCode(ERC20_CONTRACT),
+                        contractCreate(ERC20_CONTRACT).adminKey(THRESHOLD))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        ethereumCallWithFunctionAbi(
+                                        true,
+                                        FUNGIBLE_TOKEN,
+                                        getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .via(TOTAL_SUPPLY_TX)
+                                .nonce(0)
+                                .gasPrice(0L)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
+                .then(childRecordsCheck(
+                        TOTAL_SUPPLY_TX,
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .forFunction(FunctionType.ERC_TOTAL_SUPPLY)
+                                                .withTotalSupply(totalSupply)))));
+    }
+
+    HapiSpec transferTokensViaEip2930TxSuccessfully() {
+        final var tokenSymbol = "FDFGF";
+        final var tokenTotalSupply = 5;
+        final var tokenTransferAmount = 3;
+        final var transferTxn = "decimalsTxn";
+        return defaultHapiSpec("transferTokensViaEip2930TxSuccessfully")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(tokenTotalSupply)
+                                .name(TOKEN_NAME)
+                                .symbol(tokenSymbol)
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(moving(tokenTransferAmount, FUNGIBLE_TOKEN)
+                                        .between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME))
+                .when(withOpContext((spec, ignore) -> allRunFor(
+                        spec,
+                        ethereumCallWithFunctionAbi(
+                                        true,
+                                        FUNGIBLE_TOKEN,
+                                        getABIFor(Utils.FunctionType.FUNCTION, "transfer", ERC20_ABI),
+                                        asHeadlongAddress(asHexedSolidityAddress(
+                                                spec.registry().getAccountID(ACCOUNT))),
+                                        BigInteger.valueOf(tokenTransferAmount))
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .nonce(0)
+                                .gasPrice(0L)
+                                .via(transferTxn)
+                                .gasLimit(1_000_000)
+                                .type(EthTransactionType.EIP2930)
+                                .payingWith(RELAYER))))
+                .then(withOpContext((spec, ignore) -> allRunFor(
+                        spec,
+                        childRecordsCheck(
+                                transferTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.ERC_TRANSFER)
+                                                        .withErcFungibleTransferStatus(true)))))));
+    }
+
+    HapiSpec callToNonExistingContractFailsGracefully() {
+
+        return defaultHapiSpec("callToNonExistingContractFailsGracefully")
+                .given(
+                        withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        ethereumCallWithFunctionAbi(
+                                        false,
+                                        "invalid",
+                                        getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .via("invalidContractCallTxn")
+                                .nonce(0)
+                                .gasPrice(0L)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatusFrom(INVALID_CONTRACT_ID))))
+                .then(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        getTxnRecord("invalidContractCallTxn")
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .error(Bytes.of(INVALID_CONTRACT_ID
+                                                                .name()
+                                                                .getBytes())
+                                                        .toHexString())
+                                                .senderId(spec.registry()
+                                                        .getAccountID(spec.registry()
+                                                                .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                .getAlias()
+                                                                .toStringUtf8())))))));
     }
 
     @Override

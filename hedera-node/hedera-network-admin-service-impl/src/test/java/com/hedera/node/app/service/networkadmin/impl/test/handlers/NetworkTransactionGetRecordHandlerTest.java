@@ -37,7 +37,6 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionGetRecordQuery;
 import com.hedera.hapi.node.transaction.TransactionGetRecordResponse;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetRecordHandler;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -104,7 +103,6 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
 
         final var query = createGetTransactionRecordQuery(transactionID, false, false);
         given(context.query()).willReturn(query);
-        given(context.recordCache()).willReturn(cache);
 
         assertThatCode(() -> networkTransactionGetRecordHandler.validate(context))
                 .doesNotThrowAnyException();
@@ -220,26 +218,15 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
     }
 
     private TransactionRecord getExpectedRecord(TransactionID transactionID) {
-        final var receipt = TransactionReceipt.newBuilder()
-                .accountID(accountId)
-                .status(ResponseCodeEnum.UNKNOWN)
-                .build();
-        return TransactionRecord.newBuilder()
-                .transactionID(transactionID)
-                .receipt(receipt)
-                .build();
+        return primaryRecord;
     }
 
     private List<TransactionRecord> getExpectedDuplicateList() {
-        return List.of(
-                getExpectedRecord(transactionID), getExpectedRecord(transactionID), getExpectedRecord(transactionID));
+        return List.of(duplicate1, duplicate2, duplicate3);
     }
 
     private List<TransactionRecord> getExpectedChildRecordList() {
-        return List.of(
-                getExpectedRecord(otherNonceOneTransactionID),
-                getExpectedRecord(otherNonceTwoTransactionID),
-                getExpectedRecord(otherNonceThreeTransactionID));
+        return List.of(recordOne, recordTwo, recordThree);
     }
 
     private Query createGetTransactionRecordQuery(

@@ -18,35 +18,19 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Smart Contract Service Implementation"
 
-dependencies {
-    javaModuleDependencies {
-        annotationProcessor(gav("dagger.compiler"))
-        testImplementation(testFixtures(project(":app-spi")))
-        testImplementation(testFixtures(project(":config")))
-        testImplementation(testFixtures(project(":app-service-mono")))
+mainModuleInfo { annotationProcessor("dagger.compiler") }
 
-        testImplementation(gav("org.assertj.core"))
-        testImplementation(gav("org.hamcrest"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.mockito"))
-        testImplementation(gav("org.mockito.junit.jupiter"))
-        testImplementation(gav("com.swirlds.merkle"))
-        testCompileOnly(gav("com.github.spotbugs.annotations"))
-        testRuntimeOnly(gav("org.mockito.inline"))
-    }
-}
-
-val generatedSources = file("build/generated/sources/annotationProcessor/java/main")
-
-java.sourceSets["main"].java.srcDir(generatedSources)
-
-// TODO module-info.java in 'test'
-// https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/issues/900
-dependencyAnalysis.issues {
-    onUnusedDependencies {
-        exclude(":config")
-        exclude(":app-service-mono")
-        exclude(":app-service-token")
-        exclude("org.apache.tuweni:tuweni-units")
-    }
+testModuleInfo {
+    requires("com.hedera.node.app.service.mono.test.fixtures")
+    requires("com.hedera.node.app.spi.test.fixtures")
+    requires("com.hedera.node.config.test.fixtures")
+    requires("com.google.protobuf")
+    requires("com.swirlds.test.framework")
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
+    requiresStatic("com.github.spotbugs.annotations")
+    runtimeOnly("org.mockito.inline")
 }

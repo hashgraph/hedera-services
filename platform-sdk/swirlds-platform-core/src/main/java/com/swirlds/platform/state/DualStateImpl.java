@@ -16,25 +16,23 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.logging.LogMarker.FREEZE;
+import static com.swirlds.logging.legacy.LogMarker.FREEZE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.UptimeData;
-import com.swirlds.logging.payloads.SetFreezeTimePayload;
-import com.swirlds.logging.payloads.SetLastFrozenTimePayload;
+import com.swirlds.logging.legacy.payload.SetFreezeTimePayload;
+import com.swirlds.logging.legacy.payload.SetLastFrozenTimePayload;
 import com.swirlds.platform.uptime.MutableUptimeData;
 import com.swirlds.platform.uptime.UptimeDataImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -183,21 +181,16 @@ public class DualStateImpl extends PartialMerkleLeaf implements PlatformDualStat
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        DualStateImpl that = (DualStateImpl) o;
-
-        return new EqualsBuilder()
-                .append(freezeTime, that.freezeTime)
-                .append(lastFrozenTime, that.lastFrozenTime)
-                .isEquals();
+        final DualStateImpl dualState = (DualStateImpl) other;
+        return Objects.equals(freezeTime, dualState.freezeTime)
+                && Objects.equals(lastFrozenTime, dualState.lastFrozenTime);
     }
 
     /**
@@ -205,10 +198,7 @@ public class DualStateImpl extends PartialMerkleLeaf implements PlatformDualStat
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(freezeTime)
-                .append(lastFrozenTime)
-                .toHashCode();
+        return Objects.hash(freezeTime, lastFrozenTime);
     }
 
     /**
@@ -216,7 +206,7 @@ public class DualStateImpl extends PartialMerkleLeaf implements PlatformDualStat
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
+        return new ToStringBuilder(this)
                 .append("freezeTime", freezeTime)
                 .append("lastFrozenTime", lastFrozenTime)
                 .toString();

@@ -24,14 +24,18 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "exec", mixinStandardHelpOptions = true, description = "Run a function on a node.")
 @SubcommandOf(StateEditorRoot.class)
 public class StateEditorExec extends StateEditorOperation {
+    private static final Logger logger = LogManager.getLogger(StateEditorExec.class);
 
     private String function = "";
     private String path = "";
@@ -66,12 +70,21 @@ public class StateEditorExec extends StateEditorOperation {
             final Class<?> clazz = classLoader.loadClass(className);
             final Method method = clazz.getMethod(methodName, MerkleNode.class);
 
-            System.out.println("Applying " + BRIGHT_CYAN.apply(function) + " to " + formatNode(node));
+            if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
+                logger.info(
+                        LogMarker.CLI.getMarker(), "Applying {} to {}", BRIGHT_CYAN.apply(function), formatNode(node));
+            }
             final MerkleNode result = (MerkleNode) method.invoke(null, node);
 
             if (result != node) {
-                System.out.println("Replacing " + formatNode(node) + " with node " + formatNodeType(result)
-                        + " returned by " + methodName + "()");
+                if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
+                    logger.info(
+                            LogMarker.CLI.getMarker(),
+                            "Replacing {} with node {} returned by {}()",
+                            formatNode(node),
+                            formatNodeType(result),
+                            methodName);
+                }
 
                 final StateEditor.ParentInfo parentInfo = getStateEditor().getParentInfo(path);
                 parentInfo.parent().setChild(parentInfo.indexInParent(), result);

@@ -84,17 +84,15 @@ public class BehindStatusLogic implements PlatformStatusLogic {
     /**
      * {@inheritDoc}
      * <p>
-     * Receiving an {@link EmergencyReconnectStartedAction} while in {@link PlatformStatus#BEHIND} throws an exception,
-     * since an emergency reconnect should never be started when the platform is already behind.
+     * Receiving an {@link EmergencyReconnectStartedAction} while in {@link PlatformStatus#BEHIND} doesn't affect
+     * the state machine, since the emergency reconnect may be attempted multiple times before succeeding
      */
     @NonNull
     @Override
     public PlatformStatusLogic processEmergencyReconnectStartedAction(
             @NonNull final EmergencyReconnectStartedAction action) {
 
-        Objects.requireNonNull(action);
-
-        throw new IllegalPlatformStatusException(action, getStatus());
+        return this;
     }
 
     /**

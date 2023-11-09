@@ -60,7 +60,6 @@ class ConfigExportTest {
         Assertions.assertTrue(lines.size() > 10);
 
         // Verify properties in file are listed
-        assertContains(regexForLine("verifyEventSigs", "false", true), lines);
         assertContains(regexForLine("showInternalStats", "true", true), lines);
         assertContains(regexForLine("state.saveStatePeriod", "0", true), lines);
         assertContains(regexForLine("loadKeysFromPfxFiles", "false", true), lines);
@@ -69,12 +68,12 @@ class ConfigExportTest {
 
         // Verify properties not in file are listed (spot check only)
         assertContains(regexForLine("state.signedStateDisk", "5", true), lines);
-        assertContains(regexForLine("numConnections", "40", true), lines);
+        assertContains(regexForLine("numConnections", "1000", true), lines);
         assertContains(regexForLine("verboseStatistics", "false", true), lines);
     }
 
     private String regexForLine(final String paramName, final String value, final boolean inRecord) {
-        return "^" + paramName + "\\s*-> " + value + "\\s*\\[" + (inRecord ? "" : "NOT ") + "USED IN RECORD\\]$";
+        return "^" + paramName + ", " + value + "\\s*" + (inRecord ? "" : "\\[NOT USED IN RECORD\\]") + "$";
     }
 
     private static void assertContains(final String regex, final List<String> list) {

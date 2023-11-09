@@ -16,9 +16,9 @@
 
 package com.swirlds.common.utility;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -31,8 +31,8 @@ public class UnmodifiableIterator<T> implements Iterator<T> {
 
     private final Iterator<T> baseIterator;
 
-    public UnmodifiableIterator(final Iterator<T> baseIterator) {
-        throwArgNull(baseIterator, "baseIterator");
+    public UnmodifiableIterator(@NonNull final Iterator<T> baseIterator) {
+        Objects.requireNonNull(baseIterator, "baseIterator must not be null");
         this.baseIterator = baseIterator;
     }
 

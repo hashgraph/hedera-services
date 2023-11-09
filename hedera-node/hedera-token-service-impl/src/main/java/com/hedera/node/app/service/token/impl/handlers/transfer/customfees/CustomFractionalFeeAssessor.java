@@ -65,6 +65,8 @@ public class CustomFractionalFeeAssessor {
      * @param sender the sender, who might be payer for the fee if netOfTransfers is true
      * @param result the result
      */
+    // Suppressing the warning about using two "continue" statements
+    @SuppressWarnings("java:S135")
     public void assessFractionalFees(
             @NonNull final CustomFeeMeta feeMeta,
             @NonNull final AccountID sender,
@@ -97,6 +99,7 @@ public class CustomFractionalFeeAssessor {
             if (filteredCredits.isEmpty()) {
                 continue;
             }
+
             // calculate amount that should be paid for fractional custom fee
             var assessedAmount = amountOwed(unitsLeft, fractionalFee);
 
@@ -106,6 +109,12 @@ public class CustomFractionalFeeAssessor {
                         asFixedFee(assessedAmount, denom, fee.feeCollectorAccountId(), fee.allCollectorsAreExempt());
                 fixedFeeAssessor.assessFixedFee(feeMeta, sender, addedFee, result);
             } else {
+                boolean cont = false;
+                for (final var acc : effectivePayerAccounts) {
+                    if (isPayerExempt(feeMeta, fee, acc)) cont = true;
+                }
+                if (cont) continue;
+
                 // amount that should be deducted from the credits to token
                 // Inside this reclaim there will be debits to the input transaction
                 final long exemptAmount = reclaim(assessedAmount, filteredCredits);

@@ -14,15 +14,12 @@ state.signedStateFreq, 3
 event.maxEventQueueForCons, 600
 transaction.throttleTransactionQueueSize, 200000
 numConnections, 50
-sync.maxOutgoingSyncs, 3
-sync.maxIncomingSyncsInc, 2
 socket.bufferSize, 7000
 socket.socketIpTos, 1
 metrics.halfLife, 5
 consensus.coinFreq, 20
 logStack, false
 socket.useTLS, false
-socket.doUpnp, false
 socket.useLoopbackIp, false
 socket.tcpNoDelay, false
 socket.timeoutSyncClientSocket, 1000
@@ -31,7 +28,6 @@ socket.timeoutServerAcceptConnect, 1000
 socket.deadlockCheckPeriod, 2000
 sleepHeartbeat, 1000
 sync.callerSkipsBeforeSleep, 50
-sync.sleepCallerSkips, 100
 statsSkipSeconds, 70
 thread.threadPrioritySync, 10
 transaction.transactionMaxBytes, 7000
@@ -46,7 +42,6 @@ benchmark.csvWriteFrequency, 4000
 benchmark.csvAppend, true
 event.eventIntakeQueueThrottleSize, 2000
 event.eventIntakeQueueSize, 15000
-state.checkSignedStateFromDisk, true
 event.randomEventProbability, 1
 event.staleEventPreventionThreshold, 10
 event.rescueChildlessInverseProbability, 15

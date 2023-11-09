@@ -34,6 +34,7 @@ public class StateEditorPwd extends StateEditorOperation {
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("java:S106")
     @Override
     public void run() {
         System.out.println(

@@ -48,7 +48,13 @@ public class CustomCreateOperation extends AbstractCustomCreateOperation {
     @Override
     protected @NonNull Address setupPendingCreation(@NonNull final MessageFrame frame) {
         final var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
-        final var address = updater.setupInternalCreate(frame.getRecipientAddress());
+
+        final var origin = frame.getRecipientAddress();
+        final var originNonce = updater.getAccount(origin).getNonce();
+        // Decrement nonce by 1 to normalize the effect of transaction execution
+        final var address = Address.contractAddress(origin, originNonce - 1);
+
+        updater.setupInternalAliasedCreate(origin, address);
         frame.warmUpAddress(address);
         return address;
     }

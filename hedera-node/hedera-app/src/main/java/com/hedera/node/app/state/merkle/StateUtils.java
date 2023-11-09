@@ -73,7 +73,7 @@ public final class StateUtils {
             throws IOException {
         final var stream = new ReadableStreamingData(in);
         final var size = stream.readInt();
-        stream.limit(size + Integer.BYTES); // +4 for the size
+        stream.limit((long) size + Integer.BYTES); // +4 for the size
         return codec.parse(stream);
     }
 

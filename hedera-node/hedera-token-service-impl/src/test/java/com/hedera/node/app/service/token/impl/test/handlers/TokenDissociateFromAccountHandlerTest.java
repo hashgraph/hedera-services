@@ -331,10 +331,10 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
                     .has(responseCode(ACCOUNT_STILL_OWNS_NFTS));
         }
 
-        @Test
-        void rejectsAccountThatStillOwnsUnexpiredFungibleUnits() {
-            // @future('6864'): implement when token expiry is implemented
-        }
+        //        @Test
+        //        void rejectsAccountThatStillOwnsUnexpiredFungibleUnits() {
+        //            // @future('6864'): implement when token expiry is implemented
+        //        }
 
         @Test
         void tokenRelForDeletedTokenIsRemoved() {

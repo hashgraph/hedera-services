@@ -16,11 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.handlers;
 
-import static java.util.Objects.requireNonNull;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,6 +32,9 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SYSTEM_DELETE}.
+ * <p>
+ * This transaction type has been deprecated. Because protobufs promise backwards compatibility,
+ * we cannot remove it. However, it should not be used.
  */
 @Singleton
 public class ContractSystemDeleteHandler implements TransactionHandler {
@@ -38,13 +44,20 @@ public class ContractSystemDeleteHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) {
-        requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        throw new PreCheckException(NOT_SUPPORTED);
     }
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
-        throw new UnsupportedOperationException("Not implemented");
+        // this will never actually get called
+        // because preHandle will always throw
+        throw new HandleException(NOT_SUPPORTED);
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(final FeeContext feeContext) {
+        return Fees.FREE;
     }
 }

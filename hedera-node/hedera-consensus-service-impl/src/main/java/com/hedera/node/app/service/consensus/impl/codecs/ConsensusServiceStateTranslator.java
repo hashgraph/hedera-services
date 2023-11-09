@@ -31,9 +31,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiConsumer;
 
 /**
- * Provides a static method to migrate the state of the consensus service from the merkle state to the pbj state and vise versa.
+ * Provides a static method to migrate the state of the consensus service from the merkle state to the pbj state
+ * and vice versa.
  */
 public class ConsensusServiceStateTranslator {
+
+    private ConsensusServiceStateTranslator() {
+        // Utility class
+    }
 
     @NonNull
     /**
@@ -62,11 +67,11 @@ public class ConsensusServiceStateTranslator {
         topicBuilder.autoRenewPeriod(monoTopic.getAutoRenewDurationSeconds());
         final var autoRenewAccountId = monoTopic.getAutoRenewAccountId();
         topicBuilder.autoRenewAccountId(autoRenewAccountId.toPbjAccountId());
-        topicBuilder.expiry(monoTopic.getExpirationTimestamp().getSeconds());
+        topicBuilder.expirationSecond(monoTopic.getExpirationTimestamp().getSeconds());
         topicBuilder.runningHash(Bytes.wrap(monoTopic.getRunningHash()));
         topicBuilder.sequenceNumber(monoTopic.getSequenceNumber());
         topicBuilder.deleted(monoTopic.isDeleted());
-        topicBuilder.id(TopicID.newBuilder()
+        topicBuilder.topicId(TopicID.newBuilder()
                 .topicNum(monoTopic.getAutoRenewAccountId().num())
                 .build());
 
@@ -103,7 +108,7 @@ public class ConsensusServiceStateTranslator {
                         topic.autoRenewPeriod(),
                         com.hedera.node.app.service.mono.state.submerkle.EntityId.fromPbjAccountId(
                                 topic.autoRenewAccountId()),
-                        new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expiry(), 0));
+                        new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expirationSecond(), 0));
         monoTopic.setRunningHash(PbjConverter.asBytes(topic.runningHash()));
         monoTopic.setSequenceNumber(topic.sequenceNumber());
         monoTopic.setDeleted(topic.deleted());
@@ -121,7 +126,7 @@ public class ConsensusServiceStateTranslator {
         @Override
         public void accept(EntityNum entityNum, com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic) {
             final var pbjTopic = stateToPbj(merkleTopic);
-            appTopics.put(pbjTopic.id(), pbjTopic);
+            appTopics.put(pbjTopic.topicId(), pbjTopic);
         }
     }
 }

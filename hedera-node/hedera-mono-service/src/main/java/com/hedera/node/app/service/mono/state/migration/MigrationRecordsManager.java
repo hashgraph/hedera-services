@@ -131,11 +131,14 @@ public class MigrationRecordsManager {
         // when the consensus time of the last handled txn is null...if we publish these unconditionally, then some
         // genesis reconnect scenarios risk an ISS
         if (curNetworkCtx.consensusTimeOfLastHandledTxn() == null) {
+            // If we just started from genesis, we'll have records of actually creating the system accounts. But if
+            // we're only replaying events from round one, those system accounts were already created. So call this
+            // to ensure we'll publish the same synthetic records.
+            systemAccountsCreator.ensureSynthRecordsPresentOnFirstEverTransaction();
             final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
-            final var stakingFundAccounts = List.of(
-                    EntityNum.fromLong(accountNumbers.stakingRewardAccount()),
-                    EntityNum.fromLong(accountNumbers.nodeRewardAccount()));
-            stakingFundAccounts.forEach(num -> publishSyntheticCreationForStakingFund(num, implicitAutoRenewPeriod));
+            // Always publish records for any staking fund accounts created
+            publishStakingFundAccountsCreated(
+                    systemAccountsCreator.getStakingFundAccountsCreated(), implicitAutoRenewPeriod);
             // Always publish records for any treasury clones that needed to be created
             publishAccountsCreated(
                     systemAccountsCreator.getTreasuryClonesCreated(), now, TREASURY_CLONE_MEMO, "treasury clone");
@@ -157,6 +160,12 @@ public class MigrationRecordsManager {
         curNetworkCtx.markMigrationRecordsStreamed();
         systemAccountsCreator.forgetCreations();
         blocklistAccountCreator.forgetCreatedBlockedAccounts();
+    }
+
+    private void publishStakingFundAccountsCreated(
+            final List<HederaAccount> stakingFundAccountsCreated, final long implicitAutoRenewPeriod) {
+        stakingFundAccountsCreated.forEach(account ->
+                publishSyntheticCreationForStakingFund(EntityNum.fromLong(account.number()), implicitAutoRenewPeriod));
     }
 
     private void publishAccountsCreated(

@@ -18,32 +18,36 @@ package com.hedera.node.app.service.util.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PRNG_RANGE;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static org.assertj.core.api.AssertionsForClassTypes.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
-import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fixtures.TestBase;
+import com.hedera.node.app.spi.fixtures.fees.FakeFeeAccumulator;
+import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -55,11 +59,9 @@ class UtilPrngHandlerTest {
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
-    @Mock
-    private ReadableRunningHashLeafStore readableRunningHashLeafStore;
-
-    @Mock
-    private PrngRecordBuilder recordBuilder;
+    private FakePrngRecordBuilder recordBuilder;
+    private FeeCalculator feeCalculator;
+    private FeeAccumulator feeAccumulator;
 
     @Mock
     private BlockRecordInfo blockRecordInfo;
@@ -72,6 +74,9 @@ class UtilPrngHandlerTest {
 
     @BeforeEach
     void setUp() {
+        recordBuilder = new FakePrngRecordBuilder();
+        feeCalculator = new FakeFeeCalculator();
+        feeAccumulator = new FakeFeeAccumulator();
         final var config = HederaTestConfigBuilder.create()
                 .withValue("utilPrng.isEnabled", true)
                 .getOrCreateConfig();
@@ -125,57 +130,118 @@ class UtilPrngHandlerTest {
     }
 
     @Test
-    void returnsIfNotEnabled() {
-        givenTxnWithoutRange();
-        final var config = HederaTestConfigBuilder.create()
-                .withValue("utilPrng.isEnabled", false)
-                .getOrCreateConfig();
-        given(handleContext.configuration()).willReturn(config);
-
-        subject.handle(handleContext);
-
-        verify(recordBuilder, never()).entropyNumber(anyInt());
-        verify(recordBuilder, never()).entropyBytes(any());
-    }
-
-    @Test
     void followsHappyPathWithNoRange() {
         givenTxnWithoutRange();
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
+        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
+        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
         given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
 
-        verify(recordBuilder, never()).entropyNumber(anyInt());
-        verify(recordBuilder).entropyBytes(hash);
+        assertThat(recordBuilder.entropyNumber).isZero();
+        assertThat(recordBuilder.entropyBytes).isEqualTo(hash);
     }
 
-    @Test
-    void followsHappyPathWithRange() {
+    @ParameterizedTest
+    @ValueSource(
+            ints = {
+                Integer.MIN_VALUE,
+                -33,
+                -32,
+                -20,
+                -10,
+                -3,
+                -2,
+                -1,
+                0,
+                1,
+                2,
+                3,
+                10,
+                20,
+                32,
+                33,
+                100,
+                Integer.MAX_VALUE
+            })
+    void followsHappyPathWithRange(final int randomNumber) {
         givenTxnWithRange(20);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
+        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
+        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
 
+        // Make sure the random number given to the test ends up as the first 4 bytes of the hash
+        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(hashWithIntAtStart(randomNumber));
+
+        // When we handle the transaction
         subject.handle(handleContext);
 
-        final var argCaptor = ArgumentCaptor.forClass(Integer.class);
-        verify(recordBuilder).entropyNumber(argCaptor.capture());
-        assertThat(argCaptor.getValue()).isBetween(0, 20);
-        verify(recordBuilder, never()).entropyBytes(any());
+        // Then we find that the random number is in the range, and isn't negative!
+        assertThat(recordBuilder.entropyNumber).isBetween(0, 19);
+        assertThat(recordBuilder.entropyBytes).isNull();
+    }
+
+    /**
+     * This test is used to verify that we handle negative numbers correctly. {@link #followsHappyPathWithRange(int)}
+     * shows that we fall within the expected range, but this test shows that we get exactly the number we expect,
+     * even when the random number itself was negative. The values used in this test come from the
+     * {@code com.google.common.math.IntMath#mod(int, int)} method's documentation, which we used to use, and is used to
+     * verify that we get the expected results even on our own implementation (which no longer requires that 3rd party
+     * dependency). We also add some of our own test values to go through all possible permutations.
+     *
+     * @param rand
+     * @param range
+     * @param expected
+     */
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+            7, 4, 3
+            -7, 4, 1
+            -1, 4, 3
+            -8, 4, 0
+            8, 4, 0
+            0, 4, 0
+            1, 4, 1
+            2, 4, 2
+            3, 4, 3
+            4, 4, 0
+            5, 4, 1
+            6, 4, 2
+            7, 4, 3
+            8, 4, 0
+            """)
+    void negativeRandomNumbersReturnPositiveWhenInRange(int rand, int range, int expected) {
+        givenTxnWithRange(range);
+        given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
+        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
+        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
+
+        // Make sure the random number given to the test ends up as the first 4 bytes of the hash
+        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(hashWithIntAtStart(rand));
+
+        // When we handle the transaction
+        subject.handle(handleContext);
+
+        // Then we find that the random number is in the range, and isn't negative!
+        assertThat(recordBuilder.entropyNumber).isEqualTo(expected);
+        assertThat(recordBuilder.entropyBytes).isNull();
     }
 
     @Test
     void followsHappyPathWithMaxIntegerRange() {
         givenTxnWithRange(Integer.MAX_VALUE);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
+        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
+        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
         given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
 
-        final var argCaptor = ArgumentCaptor.forClass(Integer.class);
-        verify(recordBuilder).entropyNumber(argCaptor.capture());
-        assertThat(argCaptor.getValue()).isBetween(0, Integer.MAX_VALUE);
-        verify(recordBuilder, never()).entropyBytes(any());
+        assertThat(recordBuilder.entropyNumber).isBetween(0, Integer.MAX_VALUE);
+        assertThat(recordBuilder.entropyBytes).isNull();
     }
 
     @Test
@@ -193,50 +259,53 @@ class UtilPrngHandlerTest {
     void givenRangeZeroGivesBitString() {
         givenTxnWithRange(0);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
+        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
+        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
         given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
 
-        verify(recordBuilder, never()).entropyNumber(anyInt());
-        verify(recordBuilder).entropyBytes(hash);
+        assertThat(recordBuilder.entropyNumber).isZero();
+        assertThat(recordBuilder.entropyBytes).isEqualTo(hash);
     }
 
     @Test
     void nullBlockRecordInfoThrows() {
         givenTxnWithRange(0);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
         given(handleContext.blockRecordInfo()).willReturn(null);
 
         assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(NullPointerException.class);
 
-        verify(recordBuilder, never()).entropyNumber(anyInt());
-        verify(recordBuilder, never()).entropyBytes(any());
+        assertThat(recordBuilder.entropyNumber).isZero();
+        assertThat(recordBuilder.entropyBytes).isNull();
     }
 
     @Test
-    void nullHashFromRunningHashDoesntReturnAnyValue() throws ExecutionException, InterruptedException {
+    void nullHashFromRunningHashReturnsAllZeros() {
         givenTxnWithRange(0);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
+        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
+        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
         given(blockRecordInfo.getNMinus3RunningHash()).willReturn(null);
 
         subject.handle(handleContext);
 
-        verify(recordBuilder, never()).entropyNumber(anyInt());
-        verify(recordBuilder, never()).entropyBytes(any());
+        assertThat(recordBuilder.entropyNumber).isZero();
+        assertThat(recordBuilder.entropyBytes).isEqualTo(Bytes.wrap(new byte[48]));
     }
 
     @Test
-    void emptyHashFromRunningHashDoesntReturnAnyValue() {
+    void emptyHashFromRunningHashReturnsAllZeros() {
         givenTxnWithRange(0);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
+        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
+        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
         given(blockRecordInfo.getNMinus3RunningHash()).willReturn(Bytes.EMPTY);
 
         subject.handle(handleContext);
 
-        verify(recordBuilder, never()).entropyNumber(anyInt());
-        verify(recordBuilder, never()).entropyBytes(any());
+        assertThat(recordBuilder.entropyNumber).isZero();
+        assertThat(recordBuilder.entropyBytes).isEqualTo(Bytes.wrap(new byte[48]));
     }
 
     private void givenTxnWithRange(int range) {
@@ -249,5 +318,11 @@ class UtilPrngHandlerTest {
         txn = UtilPrngTransactionBody.newBuilder().build();
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().utilPrng(txn).build());
+    }
+
+    private Bytes hashWithIntAtStart(final int randomNumber) {
+        final var builder = BufferedData.wrap(TestBase.randomBytes(random, 48));
+        builder.writeInt(randomNumber);
+        return builder.getBytes(0, 48);
     }
 }

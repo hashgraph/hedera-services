@@ -24,10 +24,10 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.fcqueue.FCQueueStatistics;
-import com.swirlds.logging.payloads.ApplicationFinishedPayload;
+import com.swirlds.gui.model.GuiModel;
+import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
 import java.security.SignatureException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,7 +59,7 @@ public class MigrationTestingToolMain implements SwirldMain {
     private double toCreate = 0;
     private long lastEventTime = System.nanoTime();
 
-    public static final long SOFTWARE_VERSION = 2L;
+    public static final long SOFTWARE_VERSION = 3L;
     public static final BasicSoftwareVersion PREVIOUS_SOFTWARE_VERSION = new BasicSoftwareVersion(SOFTWARE_VERSION - 1);
     private final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(SOFTWARE_VERSION);
 
@@ -76,7 +76,7 @@ public class MigrationTestingToolMain implements SwirldMain {
         maximumTransactionsPerNode = Integer.parseInt(parameters[1]);
 
         generator = new TransactionGenerator(seed);
-        GuiPlatformAccessor.getInstance().setAbout(platform.getSelfId(), "MigrationTestingApp");
+        GuiModel.getInstance().setAbout(platform.getSelfId(), "MigrationTestingApp");
 
         // Initialize application statistics
         initAppStats();

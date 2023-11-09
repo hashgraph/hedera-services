@@ -23,12 +23,16 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "swap", mixinStandardHelpOptions = true, description = "Swap two nodes.")
 @SubcommandOf(StateEditorRoot.class)
 public class StateEditorSwap extends StateEditorOperation {
+    private static final Logger logger = LogManager.getLogger(StateEditorSwap.class);
 
     private String pathA;
     private String pathB = "";
@@ -52,7 +56,9 @@ public class StateEditorSwap extends StateEditorOperation {
             final MerkleNode nodeA = reservedSignedState.get().getState().getNodeAtRoute(parentInfoA.target());
             final MerkleNode nodeB = reservedSignedState.get().getState().getNodeAtRoute(parentInfoB.target());
 
-            System.out.println("Swapping " + formatNode(nodeA) + " and " + formatNode(nodeB));
+            if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
+                logger.info(LogMarker.CLI.getMarker(), "Swapping {} and {}", formatNode(nodeA), formatNode(nodeB));
+            }
 
             // Take a reservation on B so it doesn't get prematurely deleted
             if (nodeB != null) {

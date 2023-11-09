@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -29,6 +30,7 @@ import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.IntStream;
@@ -41,6 +43,8 @@ public class EmergencySignedStateValidatorTests {
     private static final long WEIGHT_PER_NODE = 100L;
     private static final int NUM_NODES = 4;
     private static final long EMERGENCY_ROUND = 20L;
+    private static final StateConfig STATE_CONFIG =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
     private AddressBook addressBook;
     private EmergencySignedStateValidator validator;
 
@@ -65,8 +69,10 @@ public class EmergencySignedStateValidatorTests {
                 .setRound(EMERGENCY_ROUND - 1)
                 .build();
 
-        validator = new EmergencySignedStateValidator(new EmergencyRecoveryFile(
-                EMERGENCY_ROUND, RandomUtils.randomHash(random), RandomUtils.randomInstant(random)));
+        validator = new EmergencySignedStateValidator(
+                STATE_CONFIG,
+                new EmergencyRecoveryFile(
+                        EMERGENCY_ROUND, RandomUtils.randomHash(random), RandomUtils.randomInstant(random)));
 
         assertThrows(
                 SignedStateInvalidException.class,
@@ -88,8 +94,10 @@ public class EmergencySignedStateValidatorTests {
                 .build();
         stateWithWrongHash.getState().setHash(RandomUtils.randomHash(random));
 
-        validator = new EmergencySignedStateValidator(new EmergencyRecoveryFile(
-                EMERGENCY_ROUND, RandomUtils.randomHash(), RandomUtils.randomInstant(random)));
+        validator = new EmergencySignedStateValidator(
+                STATE_CONFIG,
+                new EmergencyRecoveryFile(
+                        EMERGENCY_ROUND, RandomUtils.randomHash(), RandomUtils.randomInstant(random)));
 
         assertThrows(
                 SignedStateInvalidException.class,
@@ -113,7 +121,7 @@ public class EmergencySignedStateValidatorTests {
         matchingState.getState().setHash(hash);
 
         validator = new EmergencySignedStateValidator(
-                new EmergencyRecoveryFile(EMERGENCY_ROUND, hash, RandomUtils.randomInstant(random)));
+                STATE_CONFIG, new EmergencyRecoveryFile(EMERGENCY_ROUND, hash, RandomUtils.randomInstant(random)));
 
         assertDoesNotThrow(
                 () -> validator.validate(matchingState, addressBook, null),
@@ -149,6 +157,7 @@ public class EmergencySignedStateValidatorTests {
         laterState.getState().getPlatformState().getPlatformData().setEpochHash(emergencyHash);
 
         validator = new EmergencySignedStateValidator(
+                STATE_CONFIG,
                 new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, RandomUtils.randomInstant(random)));
 
         assertDoesNotThrow(
@@ -178,6 +187,7 @@ public class EmergencySignedStateValidatorTests {
         laterState.getState().getPlatformState().getPlatformData().setNextEpochHash(badEpochHash);
 
         validator = new EmergencySignedStateValidator(
+                STATE_CONFIG,
                 new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, RandomUtils.randomInstant(random)));
 
         assertThrows(
@@ -208,6 +218,7 @@ public class EmergencySignedStateValidatorTests {
         laterState.getState().getPlatformState().getPlatformData().setEpochHash(emergencyHash);
 
         validator = new EmergencySignedStateValidator(
+                STATE_CONFIG,
                 new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, RandomUtils.randomInstant(random)));
 
         assertThrows(

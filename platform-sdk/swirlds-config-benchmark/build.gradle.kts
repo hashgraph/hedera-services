@@ -15,15 +15,14 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.library")
-  id("com.swirlds.platform.benchmark-conventions")
+    id("com.hedera.hashgraph.sdk.conventions")
+    id("com.hedera.hashgraph.benchmark-conventions")
 }
 
-dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-config-impl"))
-  compileOnly(libs.spotbugs.annotations)
+jmhModuleInfo {
+    requires("com.swirlds.common")
+    requires("com.swirlds.config.api")
+    requires("jmh.core")
 }
 
-tasks.withType<Javadoc>() { enabled = false }
+tasks.withType<Javadoc>().configureEach { enabled = false }

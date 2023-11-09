@@ -19,11 +19,11 @@ package com.hedera.node.app.service.mono.fees.calculation.token.txns;
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenAssociateUsage;
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;
@@ -49,8 +49,7 @@ public final class TokenAssociateResourceUsage extends AbstractTokenResourceUsag
     }
 
     @Override
-    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final StateView view)
-            throws InvalidTxBodyException {
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final StateView view) {
         final var op = txn.getTokenAssociate();
         final var account = view.accounts().get(fromAccountId(op.getAccount()));
         if (account == null) {
@@ -60,6 +59,25 @@ public final class TokenAssociateResourceUsage extends AbstractTokenResourceUsag
                     new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
             final var estimate = factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
             return estimate.givenCurrentExpiry(account.getExpiry()).get();
+        }
+    }
+
+    /**
+     * This method is used to calculate the fee for token associate transaction
+     * only in modular code. This will be modified once fees is modularized.
+     * @param txn transaction body
+     * @param svo signature value object
+     * @param account account object
+     * @return fee data
+     */
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final Account account) {
+        if (account == null) {
+            return FeeData.getDefaultInstance();
+        } else {
+            final var sigUsage =
+                    new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+            final var estimate = factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
+            return estimate.givenCurrentExpiry(account.expirationSecond()).get();
         }
     }
 }

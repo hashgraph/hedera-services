@@ -15,30 +15,30 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.library")
-  id("com.swirlds.platform.benchmark-conventions")
+    id("com.hedera.hashgraph.sdk.conventions")
+    id("com.hedera.hashgraph.benchmark-conventions")
 }
 
-dependencies {
-  // JMH Dependencies
-  jmhImplementation(project(":swirlds-platform-core"))
-  jmhImplementation(project(":swirlds-config-api"))
-  jmhImplementation(project(":swirlds-config-impl"))
-}
-
-fun getListProperty(arg: String): ListProperty<String> {
-  return project.objects.listProperty(String::class).value(listOf(arg))
+jmhModuleInfo {
+    requires("com.swirlds.base")
+    requires("com.swirlds.common")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.fchashmap")
+    requires("com.swirlds.merkledb")
+    requires("com.swirlds.virtualmap")
+    requires("jmh.core")
+    requires("org.apache.logging.log4j")
+    runtimeOnly("com.swirlds.config.impl")
 }
 
 jmh {
-  jvmArgs.set(listOf("-Xmx8g"))
-  includes.set(listOf("transfer"))
-  warmupIterations.set(0)
-  iterations.set(1)
-  benchmarkParameters.set(
-      mapOf(
-          "numFiles" to getListProperty("10"),
-          "keySize" to getListProperty("16"),
-          "recordSize" to getListProperty("128")))
+    jvmArgs.set(listOf("-Xmx8g"))
+    includes.set(listOf("transfer"))
+    warmupIterations.set(0)
+    iterations.set(1)
+    benchmarkParameters.put("numFiles", listProperty("10"))
+    benchmarkParameters.put("keySize", listProperty("16"))
+    benchmarkParameters.put("recordSize", listProperty("128"))
 }
+
+fun listProperty(value: String) = objects.listProperty<String>().value(listOf(value))

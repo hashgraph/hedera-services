@@ -16,13 +16,18 @@
 
 package com.swirlds.platform.reconnect.emergency;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectException;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,29 +41,43 @@ public class EmergencyReconnectLearner {
     private final EmergencySignedStateValidator validator;
 
     /**
-     * @param emergencyRecoveryFile
-     * 		the emergency recovery file used for this reconnect
-     * @param reconnectController
-     * 		controls reconnecting as a learner
+     * Used to submit status actions
+     */
+    private final StatusActionSubmitter statusActionSubmitter;
+
+    /**
+     * @param stateConfig           the state configuration from the platform
+     * @param emergencyRecoveryFile the emergency recovery file used for this reconnect
+     * @param reconnectController   controls reconnecting as a learner
+     * @param statusActionSubmitter used to submit status actions
      */
     public EmergencyReconnectLearner(
-            final EmergencyRecoveryFile emergencyRecoveryFile, final ReconnectController reconnectController) {
-        this.emergencyRecoveryFile = emergencyRecoveryFile;
-        this.reconnectController = reconnectController;
-        validator = new EmergencySignedStateValidator(emergencyRecoveryFile);
+            @NonNull final StateConfig stateConfig,
+            @NonNull final EmergencyRecoveryFile emergencyRecoveryFile,
+            @NonNull final ReconnectController reconnectController,
+            @NonNull final StatusActionSubmitter statusActionSubmitter) {
+
+        Objects.requireNonNull(stateConfig);
+
+        this.emergencyRecoveryFile = Objects.requireNonNull(emergencyRecoveryFile);
+        this.reconnectController = Objects.requireNonNull(reconnectController);
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
+
+        validator = new EmergencySignedStateValidator(stateConfig, emergencyRecoveryFile);
     }
 
     /**
      * Performs emergency reconnect in the role of the learner using the given connection.
      *
-     * @param connection
-     * 		the connection to perform the reconnect on
+     * @param connection the connection to perform the reconnect on
      * @return {@code true} if the peer has a compatible state to send, {@code false} otherwise
      */
     public boolean execute(final Connection connection) {
         try {
             final boolean teacherHasState = teacherHasState(connection);
             if (teacherHasState) {
+                statusActionSubmitter.submitStatusAction(new EmergencyReconnectStartedAction());
+
                 logger.info(
                         RECONNECT.getMarker(),
                         "Peer {} has a compatible state. Continuing with emergency reconnect.",

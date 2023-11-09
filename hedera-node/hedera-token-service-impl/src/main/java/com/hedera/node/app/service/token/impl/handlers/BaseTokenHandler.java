@@ -43,18 +43,19 @@ import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class BaseTokenHandler {
-    private static final Logger log = LoggerFactory.getLogger(BaseTokenHandler.class);
+    private static final Logger log = LogManager.getLogger(BaseTokenHandler.class);
     /**
      * Mints fungible tokens. This method is called in both token create and mint.
      * @param token the new or existing token to mint
@@ -65,7 +66,7 @@ public class BaseTokenHandler {
      * @param tokenStore the token store
      * @param tokenRelationStore the token relation store
      */
-    protected void mintFungible(
+    protected long mintFungible(
             @NonNull final Token token,
             @NonNull final TokenRelation treasuryRel,
             final long amount,
@@ -75,15 +76,13 @@ public class BaseTokenHandler {
             @NonNull final WritableTokenRelationStore tokenRelationStore) {
         requireNonNull(token);
         requireNonNull(treasuryRel);
-
-        validateTrue(amount >= 0, INVALID_TOKEN_MINT_AMOUNT);
         // validate token supply key exists for mint or burn.
         // But this flag is not set when mint is called on token creation with initial supply.
         // We don't need to check the supply key ONLY in that case
         if (!isMintOnTokenCreation) {
             validateTrue(token.supplyKey() != null, TOKEN_HAS_NO_SUPPLY_KEY);
         }
-        changeSupply(
+        return changeSupply(
                 token, treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT, accountStore, tokenStore, tokenRelationStore);
     }
 
@@ -102,7 +101,7 @@ public class BaseTokenHandler {
      * @param tokenStore the token store
      * @param tokenRelationStore the token relation store
      */
-    protected void changeSupply(
+    protected long changeSupply(
             @NonNull final Token token,
             @NonNull final TokenRelation treasuryRel,
             final long amount,
@@ -160,6 +159,8 @@ public class BaseTokenHandler {
         accountStore.put(copyTreasuryAccount.build());
         tokenStore.put(copyToken.build());
         tokenRelationStore.put(copyTreasuryRel.build());
+
+        return newTotalSupply;
     }
 
     /**
@@ -279,8 +280,9 @@ public class BaseTokenHandler {
             }
 
             // Create the new token relation
-            final var isFrozen = token.hasFreezeKey() && token.accountsFrozenByDefault();
-            final var kycGranted = !token.hasKycKey();
+            boolean isTreasuryAccount = Objects.equals(token.treasuryAccountId(), account.accountId());
+            final var isFrozen = token.hasFreezeKey() && token.accountsFrozenByDefault() && !isTreasuryAccount;
+            final var kycGranted = !token.hasKycKey() || isTreasuryAccount;
             final var newTokenRel = new TokenRelation(
                     token.tokenId(),
                     account.accountId(),
@@ -303,7 +305,7 @@ public class BaseTokenHandler {
      * @param token the token to link to the account
      * @param accountStore the account store
      * @param tokenRelStore the token relation store
-     * @param context the handle context
+     * @param config the configuration
      * @return the new token relation added
      */
     protected TokenRelation autoAssociate(
@@ -311,9 +313,9 @@ public class BaseTokenHandler {
             @NonNull final Token token,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            @NonNull final HandleContext context) {
-        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
+            @NonNull final Configuration config) {
+        final var tokensConfig = config.getConfigData(TokensConfig.class);
+        final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
 
         final var accountId = account.accountId();
         final var tokenId = token.tokenId();

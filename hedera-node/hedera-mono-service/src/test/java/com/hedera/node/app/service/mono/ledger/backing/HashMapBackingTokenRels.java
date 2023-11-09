@@ -21,7 +21,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class HashMapBackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> {
@@ -45,11 +44,6 @@ public class HashMapBackingTokenRels implements BackingStore<Pair<AccountID, Tok
     @Override
     public void remove(Pair<AccountID, TokenID> id) {
         rels.remove(id);
-    }
-
-    @Override
-    public Set<Pair<AccountID, TokenID>> idSet() {
-        return rels.keySet();
     }
 
     @Override

@@ -18,22 +18,21 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera File Service Implementation"
 
-dependencies {
-    javaModuleDependencies {
-        annotationProcessor(gav("dagger.compiler"))
+mainModuleInfo { annotationProcessor("dagger.compiler") }
 
-        testImplementation(project(":app-service-token"))
-        testImplementation(project(":app"))
-        testImplementation(testFixtures(project(":app-service-mono")))
-        testImplementation(testFixtures(project(":config")))
-        testImplementation(testFixtures(project(":app-spi")))
-        testImplementation(gav("org.assertj.core"))
-        testImplementation(gav("org.junit.jupiter.api"))
-        testImplementation(gav("org.mockito"))
-        testImplementation(gav("org.mockito.junit.jupiter"))
-        testImplementation(gav("com.google.protobuf"))
-        testImplementation(gav("com.swirlds.common"))
-        testCompileOnly(gav("com.github.spotbugs.annotations"))
-        testRuntimeOnly(gav("org.mockito.inline"))
-    }
+testModuleInfo {
+    requires("com.hedera.node.app")
+    requires("com.hedera.node.app.service.file.impl")
+    requires("com.hedera.node.app.service.mono.test.fixtures")
+    requires("com.hedera.node.app.service.token")
+    requires("com.hedera.node.app.spi.test.fixtures")
+    requires("com.hedera.node.config.test.fixtures")
+    requires("com.google.protobuf")
+    requires("com.swirlds.test.framework")
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
+    requiresStatic("com.github.spotbugs.annotations")
+    runtimeOnly("org.mockito.inline")
 }

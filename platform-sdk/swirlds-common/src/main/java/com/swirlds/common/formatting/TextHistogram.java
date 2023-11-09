@@ -20,12 +20,13 @@ import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparated
 import static com.swirlds.common.formatting.TextEffect.BRIGHT_RED;
 import static com.swirlds.common.formatting.TextEffect.BRIGHT_YELLOW;
 import static com.swirlds.common.formatting.TextEffect.GRAY;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.units.DataUnit;
 import com.swirlds.common.units.Unit;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -54,9 +55,9 @@ public class TextHistogram<T> {
      * @param data
      * 		the data to plot
      */
-    public TextHistogram(final List<T> data, final Function<T, Long> valueExtractor) {
-        throwArgNull(data, "data");
-        throwArgNull(valueExtractor, "valueExtractor");
+    public TextHistogram(@NonNull final List<T> data, @NonNull final Function<T, Long> valueExtractor) {
+        Objects.requireNonNull(data, "data must not be null");
+        Objects.requireNonNull(valueExtractor, "valueExtractor must not be null");
         this.data = data;
         this.valueExtractor = valueExtractor;
     }

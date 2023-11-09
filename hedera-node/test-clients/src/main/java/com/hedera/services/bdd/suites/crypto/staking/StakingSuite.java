@@ -76,7 +76,7 @@ public class StakingSuite extends HapiSuite {
     private static final String CAROL = "carol";
     private static final long INTER_PERIOD_SLEEP_MS = ONE_STAKING_PERIOD + BUFFER;
     public static final String STAKING_START_THRESHOLD = "staking.startThreshold";
-    public static final String STAKING_REWARD_RATE = "staking.rewardRate";
+    public static final String STAKING_REWARD_RATE = "staking.perHbarRewardRate";
     public static final String FIRST_TRANSFER = "firstTransfer";
     public static final String FIRST_TXN = "firstTxn";
     public static final String STANDARD_STAKING_RATE = "273972602739726";

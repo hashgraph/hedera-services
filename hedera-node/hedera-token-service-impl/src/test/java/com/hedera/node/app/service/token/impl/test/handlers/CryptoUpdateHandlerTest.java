@@ -54,7 +54,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
@@ -75,6 +74,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import java.util.List;
@@ -432,11 +432,11 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withExpiration(1234600L).build();
         givenTxnWith(txn);
         // initially account has 1234567L expiration
-        assertEquals(1234567L, writableStore.get(updateAccountId).expiry());
+        assertEquals(1234567L, writableStore.get(updateAccountId).expirationSecond());
 
         // change it to given number
         subject.handle(handleContext);
-        assertEquals(1234600L, writableStore.get(updateAccountId).expiry());
+        assertEquals(1234600L, writableStore.get(updateAccountId).expirationSecond());
     }
 
     @Test
@@ -520,10 +520,10 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = new CryptoUpdateBuilder().withAutoRenewPeriod(2000000L).build();
         givenTxnWith(txn);
-        assertEquals(72000L, writableStore.get(updateAccountId).autoRenewSecs());
+        assertEquals(72000L, writableStore.get(updateAccountId).autoRenewSeconds());
 
         subject.handle(handleContext);
-        assertEquals(2000000L, writableStore.get(updateAccountId).autoRenewSecs());
+        assertEquals(2000000L, writableStore.get(updateAccountId).autoRenewSeconds());
     }
 
     @Test
@@ -587,7 +587,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withAutoRenewPeriod(10L).build();
         givenTxnWith(txn);
 
-        assertEquals(72000L, writableStore.get(updateAccountId).autoRenewSecs());
+        assertEquals(72000L, writableStore.get(updateAccountId).autoRenewSeconds());
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -602,7 +602,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
                         .copyBuilder()
                         .expiredAndPendingRemoval(true)
                         .tinybarBalance(0)
-                        .expiry(0)
+                        .expirationSecond(0)
                         .build(),
                 accountNum,
                 account));
@@ -643,17 +643,17 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = new CryptoUpdateBuilder().withExpiration(1234600L).build();
         givenTxnWith(txn);
-        assertEquals(1234567L, writableStore.get(updateAccountId).expiry());
+        assertEquals(1234567L, writableStore.get(updateAccountId).expirationSecond());
 
         subject.handle(handleContext);
-        assertEquals(1234600L, writableStore.get(updateAccountId).expiry());
+        assertEquals(1234600L, writableStore.get(updateAccountId).expirationSecond());
     }
 
     @Test
     void rejectsExpiryReduction() {
         final var txn = new CryptoUpdateBuilder().withExpiration(10L).build();
         givenTxnWith(txn);
-        assertEquals(1234567L, writableStore.get(updateAccountId).expiry());
+        assertEquals(1234567L, writableStore.get(updateAccountId).expirationSecond());
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)

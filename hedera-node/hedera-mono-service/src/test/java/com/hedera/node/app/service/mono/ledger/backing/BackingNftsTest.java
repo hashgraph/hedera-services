@@ -20,23 +20,19 @@ import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.MISSING_INSTANT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.test.utils.ResponsibleVMapUser;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,17 +73,7 @@ class BackingNftsTest extends ResponsibleVMapUser {
         subject = new BackingNfts(() -> UniqueTokenMapAdapter.wrap(delegate));
 
         // expect:
-        assertNotNull(subject.idSet());
         assertEquals(2, subject.size());
-    }
-
-    @Test
-    void virtualMapDoesNotSupportIdSet() {
-        subject = new BackingNfts(() -> UniqueTokenMapAdapter.wrap(
-                VirtualMapLike.from(this.<UniqueTokenKey, UniqueTokenValue>trackedMap(new VirtualMap<>()))));
-
-        // expect:
-        assertThrows(UnsupportedOperationException.class, subject::idSet);
     }
 
     @Test

@@ -37,7 +37,7 @@ final class BlockRecordFormatV6Test {
                 final var parsedRecordStreamItem = RecordStreamItem.PROTOBUF.parse(
                         serializedRec.protobufSerializedRecordStreamItem().toReadableSequentialData());
                 assertThat(rec.transaction()).isEqualTo(parsedRecordStreamItem.transaction());
-                assertThat(rec.record()).isEqualTo(parsedRecordStreamItem.record());
+                assertThat(rec.transactionRecord()).isEqualTo(parsedRecordStreamItem.record());
                 assertThat(rec.transactionSidecarRecords()).hasSameSizeAs(serializedRec.sideCarItems());
                 assertThat(rec.transactionSidecarRecords()).hasSameSizeAs(serializedRec.sideCarItemsBytes());
                 for (int i = 0; i < rec.transactionSidecarRecords().size(); i++) {

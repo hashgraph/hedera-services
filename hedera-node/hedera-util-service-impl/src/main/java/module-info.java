@@ -6,14 +6,10 @@ module com.hedera.node.app.service.util.impl {
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive javax.inject;
-    requires com.hedera.node.app.service.network.admin;
-    requires com.hedera.node.config;
     requires com.hedera.node.hapi;
-    requires com.google.common;
-    requires com.swirlds.common;
-    requires com.swirlds.config;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
+    requires static java.compiler; // javax.annotation.processing.Generated
 
     provides com.hedera.node.app.service.util.UtilService with
             UtilServiceImpl;

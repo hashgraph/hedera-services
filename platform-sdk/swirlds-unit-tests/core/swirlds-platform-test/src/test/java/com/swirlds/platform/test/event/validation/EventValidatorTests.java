@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.event.validation;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.description;
 import static org.mockito.Mockito.mock;
@@ -24,6 +25,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
@@ -38,6 +40,7 @@ import com.swirlds.platform.event.validation.GossipEventValidator;
 import com.swirlds.platform.event.validation.GossipEventValidators;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.test.event.GossipEventBuilder;
@@ -87,10 +90,30 @@ class EventValidatorTests {
     }
 
     @Test
+    void replaceByName() {
+        final GossipEventValidator valid1 = new TestGossipEventValidator(true, "1");
+        final GossipEventValidator invalid1 = new TestGossipEventValidator(false, "1");
+        final GossipEventValidator valid2 = new TestGossipEventValidator(true, "2");
+        final GossipEventValidator invalid2 = new TestGossipEventValidator(false, "2");
+
+        final GossipEvent event = GossipEventBuilder.builder().buildEvent();
+        final GossipEventValidators validators = new GossipEventValidators(List.of(invalid1, invalid2));
+
+        assertFalse(validators.isEventValid(event));
+        validators.replaceValidator("1", valid1);
+        assertFalse(validators.isEventValid(event));
+        validators.replaceValidator("2", valid2);
+        assertTrue(validators.isEventValid(event));
+
+        assertThrows(IllegalArgumentException.class, () -> validators.replaceValidator("3", valid1));
+    }
+
+    @Test
     void eventValidator() {
         final Set<GossipEvent> intakeEvents = new HashSet<>();
         final AtomicBoolean isValid = new AtomicBoolean(true);
-        final EventValidator eventValidator = new EventValidator((e) -> isValid.get(), intakeEvents::add);
+        final EventValidator eventValidator = new EventValidator(
+                (e) -> isValid.get(), intakeEvents::add, mock(PhaseTimer.class), mock(IntakeEventCounter.class));
 
         final GossipEvent validEvent = GossipEventBuilder.builder().buildEvent();
         eventValidator.validateEvent(validEvent);

@@ -18,8 +18,8 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.io.utility.FileUtils.executeAndRename;
 import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.writeSettingsUsed;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.FILE_VERSION;
@@ -34,7 +34,7 @@ import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.logging.payloads.StateSavedToDiskPayload;
+import com.swirlds.logging.legacy.payload.StateSavedToDiskPayload;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -67,15 +67,20 @@ public final class SignedStateFileWriter {
      */
     public static void writeHashInfoFile(final Path directory, final State state) throws IOException {
         final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
-        final String platformInfo = state.getPlatformState().getInfoString();
-        final String hashInfo = new MerkleTreeVisualizer(state)
-                .setDepth(stateConfig.debugHashDepth())
-                .render();
+        final String platformInfo = state.getInfoString(stateConfig.debugHashDepth());
+
         logger.info(
-                STATE_TO_DISK.getMarker(), "Information for state written to disk:\n{}\n{}", platformInfo, hashInfo);
+                STATE_TO_DISK.getMarker(),
+                """
+                        Information for state written to disk:
+                        {}""",
+                platformInfo);
 
         final Path hashInfoFile = directory.resolve(HASH_INFO_FILE_NAME);
 
+        final String hashInfo = new MerkleTreeVisualizer(state)
+                .setDepth(stateConfig.debugHashDepth())
+                .render();
         try (final BufferedWriter writer = new BufferedWriter(new FileWriter(hashInfoFile.toFile()))) {
             writer.write(hashInfo);
         }
@@ -84,9 +89,9 @@ public final class SignedStateFileWriter {
     /**
      * Write the signed state metadata file
      *
-     * @param selfId        the id of the platform
-     * @param directory     the directory to write to
-     * @param signedState   the signed state being written
+     * @param selfId      the id of the platform
+     * @param directory   the directory to write to
+     * @param signedState the signed state being written
      */
     public static void writeMetadataFile(
             @Nullable final NodeId selfId, @NonNull final Path directory, @NonNull final SignedState signedState)
@@ -202,9 +207,12 @@ public final class SignedStateFileWriter {
                     savedStateDirectory,
                     directory -> writeSignedStateFilesToDirectory(selfId, directory, signedState, configuration));
 
-            logger.info(
-                    STATE_TO_DISK.getMarker(),
-                    () -> new StateSavedToDiskPayload(signedState.getRound(), signedState.isFreezeState()).toString());
+            logger.info(STATE_TO_DISK.getMarker(), () -> new StateSavedToDiskPayload(
+                            signedState.getRound(),
+                            signedState.isFreezeState(),
+                            stateToDiskReason == null ? "UNKNOWN" : stateToDiskReason.toString(),
+                            savedStateDirectory)
+                    .toString());
         } catch (final Throwable e) {
             logger.error(
                     EXCEPTION.getMarker(),

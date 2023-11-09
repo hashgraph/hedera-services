@@ -16,8 +16,12 @@
 
 package com.hedera.node.app.service.token.impl.validators;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
@@ -32,18 +36,21 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashSet;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class DeleteAllowanceValidator extends AllowanceValidator {
+
     @Inject
-    public DeleteAllowanceValidator() {}
+    public DeleteAllowanceValidator() {
+        // Dagger
+    }
 
     /**
      * Validates all allowances provided in {@link CryptoDeleteAllowanceTransactionBody}
@@ -67,7 +74,14 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
 
         validateAllowancesCount(nftAllowances, hederaConfig);
 
-        validateNftDeleteAllowances(nftAllowances, payerAccount, accountStore, tokenStore, tokenRelStore, nftStore);
+        validateNftDeleteAllowances(
+                nftAllowances,
+                payerAccount,
+                accountStore,
+                tokenStore,
+                tokenRelStore,
+                nftStore,
+                handleContext.expiryValidator());
     }
 
     /**
@@ -85,7 +99,8 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
             final ReadableAccountStore accountStore,
             final ReadableTokenStore tokenStore,
             final ReadableTokenRelationStore tokenRelStore,
-            final ReadableNftStore nftStore) {
+            final ReadableNftStore nftStore,
+            @NonNull final ExpiryValidator expiryValidator) {
         if (nftAllowances.isEmpty()) {
             return;
         }
@@ -94,10 +109,13 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
             final var tokenId = allowance.tokenIdOrElse(TokenID.DEFAULT);
             final var serialNums = allowance.serialNumbers();
 
-            final Token token = getIfUsable(allowance.tokenIdOrElse(TokenID.DEFAULT), tokenStore);
+            // Paused tokens are OK here, so we only check for existence and deletion
+            final Token token = tokenStore.get(allowance.tokenIdOrElse(TokenID.DEFAULT));
+            validateTrue(token != null, INVALID_TOKEN_ID);
+            validateTrue(!token.deleted(), TOKEN_WAS_DELETED);
             validateFalse(token.tokenType().equals(TokenType.FUNGIBLE_COMMON), FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES);
 
-            final var effectiveOwner = getEffectiveOwner(ownerId, payerAccount, accountStore);
+            final var effectiveOwner = getEffectiveOwner(ownerId, payerAccount, accountStore, expiryValidator);
 
             final var relation = tokenRelStore.get(effectiveOwner.accountId(), token.tokenId());
             validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
@@ -129,11 +147,8 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
      */
     public static int aggregateNftDeleteAllowances(final List<NftRemoveAllowance> nftAllowances) {
         var count = 0;
-        final var serialsSet = new HashSet<Long>();
         for (final var allowance : nftAllowances) {
-            serialsSet.addAll(allowance.serialNumbers());
-            count += serialsSet.size();
-            serialsSet.clear();
+            count += allowance.serialNumbers().size();
         }
         return count;
     }

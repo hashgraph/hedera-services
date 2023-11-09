@@ -20,6 +20,7 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.CommonUtils;
@@ -32,7 +33,6 @@ import com.swirlds.platform.stats.cycle.CycleDefinition;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Provides access to statistics relevant to {@link ConsensusRoundHandler}

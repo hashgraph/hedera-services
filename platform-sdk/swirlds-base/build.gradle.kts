@@ -15,18 +15,9 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
-    id("com.swirlds.platform.maven-publish")
-    id("org.gradle.java-test-fixtures")
+    id("com.hedera.hashgraph.sdk.conventions")
+    id("com.hedera.hashgraph.platform-maven-publish")
+    id("java-test-fixtures")
 }
 
-dependencies {
-    compileOnly(libs.spotbugs.annotations)
-
-    // Test Dependencies
-    testImplementation(testLibs.bundles.junit)
-
-    // Should be removed in future
-    testFixturesImplementation(project(":swirlds-common"))
-}
+testModuleInfo { requires("org.junit.jupiter.api") }

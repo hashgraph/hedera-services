@@ -29,12 +29,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
@@ -44,6 +47,9 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -68,6 +74,12 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
     @Mock
     private HandleContext handleContext;
 
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private FeeAccumulator feeAccumulator;
+
     private ConsensusDeleteTopicHandler subject;
 
     @BeforeEach
@@ -77,6 +89,11 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         writableTopicState = writableTopicStateWithOneKey();
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         writableStore = new WritableTopicStore(writableStates);
+
+        lenient().when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
+        lenient().when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
+        lenient().when(feeCalculator.calculate()).thenReturn(Fees.FREE);
+        lenient().when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
     }
 
     @Test

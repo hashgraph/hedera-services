@@ -2,47 +2,11 @@
                                           #    Gossip / Networking    #
                                           #############################
 
-numConnections,                                1000
-socket.doUpnp,                                 false
-socket.useLoopbackIp,                          false
-sync.maxOutgoingSyncs,                         4                            # differs from mainnet
-sync.syncAsProtocolEnabled,                    true
 sync.syncProtocolPermitCount,                  4                            # differs from mainnet
 
                                           #############################
                                           #           State           #
                                           #############################
 
-jasperDb.iteratorInputBufferBytes,             16777216
-merkleDb.iteratorInputBufferBytes,             16777216
-merkleDb.hashesRamToDiskThreshold,             8388608
-state.checkSignedStateFromDisk,                true
-state.saveStatePeriod,                         900
-state.signedStateDisk,                         5
 state.mainClassNameOverride,                   com.hedera.services.ServicesMain
-virtualMap.preferredFlushQueueSize,            10000
 
-                                          #############################
-                                          #          Events           #
-                                          #############################
-
-event.enableEventStreaming,                    true
-event.eventsLogDir,                            /opt/hgcapp/eventsStreams
-event.eventsLogPeriod,                         5
-event.maxEventQueueForCons,                    1000
-
-                                          #############################
-                                          #         Reconnect         #
-                                          #############################
-
-reconnect.active,                              true
-reconnect.asyncStreamTimeoutMilliseconds,      60000
-
-                                          #############################
-                                          #          Metrics          #
-                                          #############################
-
-metrics.csvFileName,                           MainNetStats
-metrics.csvOutputFolder,                       data/stats
-showInternalStats,                             true
-prometheus.endpointEnabled,                    true

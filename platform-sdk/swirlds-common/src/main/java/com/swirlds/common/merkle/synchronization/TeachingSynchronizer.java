@@ -16,8 +16,9 @@
 
 package com.swirlds.common.merkle.synchronization;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -36,6 +37,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.net.SocketException;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
@@ -92,6 +94,8 @@ public class TeachingSynchronizer {
     @Nullable
     private final BooleanSupplier requestToStopTeaching;
 
+    private final Time time;
+
     /**
      * Create a new teaching synchronizer.
      *
@@ -115,6 +119,7 @@ public class TeachingSynchronizer {
      *      reconnect configuration from platform
      */
     public TeachingSynchronizer(
+            @NonNull final Time time,
             @NonNull final ThreadManager threadManager,
             @NonNull final MerkleDataInputStream in,
             @NonNull final MerkleDataOutputStream out,
@@ -123,6 +128,7 @@ public class TeachingSynchronizer {
             @Nullable final BooleanSupplier requestToStopTeaching,
             @NonNull final ReconnectConfig reconnectConfig) {
 
+        this.time = Objects.requireNonNull(time);
         this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
         inputStream = Objects.requireNonNull(in, "in must not be null");
         outputStream = Objects.requireNonNull(out, "out must not be null");
@@ -165,7 +171,27 @@ public class TeachingSynchronizer {
                 root == null ? "[]" : root.getRoute());
 
         // A future improvement might be to reuse threads between subtrees.
-        final StandardWorkGroup workGroup = new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection);
+        final StandardWorkGroup workGroup =
+                new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection, ex -> {
+                    Throwable cause = ex;
+                    while (cause != null) {
+                        if (cause instanceof SocketException socketEx) {
+                            if (socketEx.getMessage().equalsIgnoreCase("Connection reset by peer")) {
+                                // Connection issues during reconnects are expected and recoverable, just
+                                // log them as info. All other exceptions should be treated as real errors
+                                logger.info(
+                                        RECONNECT.getMarker(),
+                                        "Connection reset while sending tree at {} with route {}. Aborting",
+                                        root == null ? null : root.getClass().getName(),
+                                        root == null ? "[]" : root.getRoute());
+                                return true;
+                            }
+                        }
+                        cause = cause.getCause();
+                    }
+                    // Let StandardWorkGroup log it as an error using the EXCEPTION marker
+                    return false;
+                });
 
         final AsyncInputStream<QueryResponse> in =
                 new AsyncInputStream<>(inputStream, workGroup, QueryResponse::new, reconnectConfig);
@@ -176,7 +202,16 @@ public class TeachingSynchronizer {
 
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
-        new TeacherSendingThread<T>(workGroup, in, out, subtrees, view, requestToStopTeaching, senderIsFinished)
+        new TeacherSendingThread<T>(
+                        time,
+                        reconnectConfig,
+                        workGroup,
+                        in,
+                        out,
+                        subtrees,
+                        view,
+                        requestToStopTeaching,
+                        senderIsFinished)
                 .start();
         new TeacherReceivingThread<>(workGroup, in, view, senderIsFinished).start();
 

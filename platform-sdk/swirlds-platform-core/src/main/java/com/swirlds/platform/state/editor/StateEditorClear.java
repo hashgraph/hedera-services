@@ -30,6 +30,7 @@ public class StateEditorClear extends StateEditorOperation {
      * {@inheritDoc}
      */
     @Override
+    @SuppressWarnings("java:S106")
     public void run() {
         System.out.print("\033[H\033[2J");
         System.out.flush();

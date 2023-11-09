@@ -1,7 +1,7 @@
 /**
  * The Swirlds public API module used by platform applications.
  */
-module com.swirlds.platform {
+module com.swirlds.platform.core {
 
     /* Public Package Exports. This list should remain alphabetized. */
     exports com.swirlds.platform;
@@ -43,7 +43,6 @@ module com.swirlds.platform {
     exports com.swirlds.platform.network.communication;
     exports com.swirlds.platform.network.protocol;
     exports com.swirlds.platform.network.topology;
-    exports com.swirlds.platform.network.unidirectional;
     exports com.swirlds.platform.recovery;
     exports com.swirlds.platform.state;
     exports com.swirlds.platform.stats;
@@ -61,24 +60,21 @@ module com.swirlds.platform {
     /* Targeted Exports to External Libraries */
     exports com.swirlds.platform.internal to
             com.swirlds.platform.test,
-            com.swirlds.platform.test.fixtures,
+            com.swirlds.platform.core.test.fixtures,
             com.fasterxml.jackson.core,
             com.fasterxml.jackson.databind;
-    exports com.swirlds.platform.event.creation to
-            com.swirlds.platform.test;
     exports com.swirlds.platform.swirldapp to
             com.swirlds.platform.test;
     exports com.swirlds.platform.observers to
             com.swirlds.platform.test;
     exports com.swirlds.platform.consensus to
             com.swirlds.platform.test,
-            com.swirlds.platform.test.fixtures;
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.crypto to
-            com.swirlds.platform.test;
+            com.swirlds.platform.test,
+            com.hedera.node.test.clients;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
-            com.swirlds.platform.test;
-    exports com.swirlds.platform.event.intake to
             com.swirlds.platform.test;
     exports com.swirlds.platform.state.notifications to
             com.swirlds.platform.test;
@@ -90,11 +86,13 @@ module com.swirlds.platform {
     exports com.swirlds.platform.dispatch to
             com.swirlds.platform.test,
             com.swirlds.config.impl,
-            com.swirlds.common;
+            com.swirlds.common,
+            com.hedera.node.test.clients;
     exports com.swirlds.platform.dispatch.types to
             com.swirlds.platform.test;
     exports com.swirlds.platform.dispatch.triggers.control to
-            com.swirlds.platform.test;
+            com.swirlds.platform.test,
+            com.hedera.node.test.clients;
     exports com.swirlds.platform.dispatch.triggers.error to
             com.swirlds.platform.test;
     exports com.swirlds.platform.dispatch.triggers.flow to
@@ -106,11 +104,13 @@ module com.swirlds.platform {
     exports com.swirlds.platform.recovery.internal to
             com.swirlds.platform.test;
     exports com.swirlds.platform.uptime to
-            com.swirlds.config.impl;
+            com.swirlds.config.impl,
+            com.swirlds.common,
+            com.hedera.node.test.clients;
     exports com.swirlds.platform.gossip.sync.config to
-            com.swirlds.config.impl;
-    exports com.swirlds.platform.event.tipset to
-            com.swirlds.config.impl;
+            com.swirlds.config.impl,
+            com.swirlds.common,
+            com.hedera.node.test.clients;
 
     opens com.swirlds.platform.cli to
             info.picocli;
@@ -124,50 +124,32 @@ module com.swirlds.platform {
     exports com.swirlds.platform.gossip.shadowgraph;
     exports com.swirlds.platform.recovery.emergencyfile;
     exports com.swirlds.platform.event;
+    exports com.swirlds.platform.event.creation.tipset to
+            com.hedera.node.test.clients,
+            com.swirlds.common,
+            com.swirlds.config.impl;
 
-    /* Swirlds Libraries */
-    requires com.swirlds.base;
+    requires transitive com.fasterxml.jackson.annotation;
+    requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.swirlds.base;
+    requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;
-    requires com.swirlds.common.test;
-    requires com.swirlds.test.framework;
+    requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.platform.gui;
+    requires transitive info.picocli;
+    requires transitive org.apache.logging.log4j;
+    requires com.fasterxml.jackson.core;
+    requires com.fasterxml.jackson.dataformat.yaml;
+    requires com.swirlds.fchashmap;
     requires com.swirlds.logging;
-    requires com.swirlds.cli;
-    requires transitive com.swirlds.gui;
-
-    /* JDK Libraries */
+    requires com.swirlds.merkledb;
+    requires com.swirlds.virtualmap;
     requires java.management;
     requires java.scripting;
     requires java.sql;
     requires jdk.management;
     requires jdk.net;
-
-    /* JavaFX Libraries */
-    requires javafx.base;
-
-    /* Apache Commons */
-    requires org.apache.commons.lang3;
-
-    /* Networking Libraries */
-    requires portmapper;
-
-    /* Logging Libraries */
-    requires org.apache.logging.log4j;
-    requires org.apache.logging.log4j.core;
-
-    /* Cryptographic Libraries */
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
-
-    /* Database Libraries */
-    requires com.swirlds.fchashmap;
-    requires com.swirlds.jasperdb;
-    requires com.swirlds.virtualmap;
-    requires com.swirlds.fcqueue;
-    requires com.swirlds.config;
-
-    /* Command Line Utilities */
-    requires info.picocli;
-    requires com.fasterxml.jackson.databind;
-    requires com.fasterxml.jackson.dataformat.yaml;
     requires static com.github.spotbugs.annotations;
 }

@@ -17,10 +17,12 @@
 package com.swirlds.platform.recovery;
 
 import static com.swirlds.common.system.SystemExitCode.EMERGENCY_RECOVERY_ERROR;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
@@ -31,30 +33,26 @@ import org.apache.logging.log4j.Logger;
  */
 public class EmergencyRecoveryManager {
     private static final Logger logger = LogManager.getLogger(EmergencyRecoveryManager.class);
+
     private final ShutdownRequestedTrigger shutdownRequestedTrigger;
     private final EmergencyRecoveryFile emergencyRecoveryFile;
+    private final StateConfig stateConfig;
     private volatile boolean emergencyStateRequired;
 
     /**
-     * @param shutdownRequestedTrigger
-     * 		a trigger that requests the platform to shut down
-     * @param emergencyRecoveryDir
-     * 		the directory to look for an emergency recovery file in
+     * @param stateConfig              the state configuration from the platform
+     * @param shutdownRequestedTrigger a trigger that requests the platform to shut down
+     * @param emergencyRecoveryDir     the directory to look for an emergency recovery file in
      */
     public EmergencyRecoveryManager(
-            final ShutdownRequestedTrigger shutdownRequestedTrigger, final Path emergencyRecoveryDir) {
+            @NonNull final StateConfig stateConfig,
+            @NonNull final ShutdownRequestedTrigger shutdownRequestedTrigger,
+            @NonNull final Path emergencyRecoveryDir) {
+
+        this.stateConfig = stateConfig;
         this.shutdownRequestedTrigger = shutdownRequestedTrigger;
         this.emergencyRecoveryFile = readEmergencyRecoveryFile(emergencyRecoveryDir);
         emergencyStateRequired = emergencyRecoveryFile != null;
-    }
-
-    /**
-     * Returns whether an emergency recovery file was present at node boot time.
-     *
-     * @return {@code true} if an emergency recovery file was present, {@code false} otherwise
-     */
-    public boolean isEmergencyRecoveryFilePresent() {
-        return emergencyRecoveryFile != null;
     }
 
     /**
@@ -85,7 +83,7 @@ public class EmergencyRecoveryManager {
 
     private EmergencyRecoveryFile readEmergencyRecoveryFile(final Path dir) {
         try {
-            return EmergencyRecoveryFile.read(dir);
+            return EmergencyRecoveryFile.read(stateConfig, dir);
         } catch (final IOException e) {
             logger.error(
                     EXCEPTION.getMarker(),

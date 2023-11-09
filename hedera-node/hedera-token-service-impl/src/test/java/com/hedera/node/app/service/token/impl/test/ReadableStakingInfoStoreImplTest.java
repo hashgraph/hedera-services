@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
@@ -34,7 +35,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ReadableStakingInfoStoreImplTest {
-    private static final long NODE_ID_10 = 10L, NODE_ID_20 = 20L;
+    private static final EntityNumber
+            NODE_ID_10 = EntityNumber.newBuilder().number(10L).build(),
+            NODE_ID_20 = EntityNumber.newBuilder().number(20L).build();
 
     @Mock
     private ReadableStates states;
@@ -46,10 +49,10 @@ class ReadableStakingInfoStoreImplTest {
 
     @BeforeEach
     void setUp() {
-        final var readableStakingNodes = MapReadableKVState.<Long, StakingNodeInfo>builder(STAKING_INFO_KEY)
+        final var readableStakingNodes = MapReadableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
                 .value(NODE_ID_10, stakingNodeInfo)
                 .build();
-        given(states.<Long, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
+        given(states.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
 
         subject = new ReadableStakingInfoStoreImpl(states);
     }
@@ -62,34 +65,34 @@ class ReadableStakingInfoStoreImplTest {
 
     @Test
     void testGet() {
-        final var result = subject.get(NODE_ID_10);
+        final var result = subject.get(NODE_ID_10.number());
         Assertions.assertThat(result).isEqualTo(stakingNodeInfo);
     }
 
     @Test
     void testGetEmpty() {
-        final var result = subject.get(NODE_ID_20);
+        final var result = subject.get(NODE_ID_20.number());
         Assertions.assertThat(result).isNull();
     }
 
     @Test
     void getAllReturnsAllKeys() {
-        final var readableStakingNodes = MapReadableKVState.<Long, StakingNodeInfo>builder(STAKING_INFO_KEY)
+        final var readableStakingNodes = MapReadableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
                 .value(NODE_ID_10, stakingNodeInfo)
                 .value(NODE_ID_20, mock(StakingNodeInfo.class))
                 .build();
-        given(states.<Long, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
+        given(states.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
         subject = new ReadableStakingInfoStoreImpl(states);
 
         final var result = subject.getAll();
-        Assertions.assertThat(result).containsExactlyInAnyOrder(NODE_ID_10, NODE_ID_20);
+        Assertions.assertThat(result).containsExactlyInAnyOrder(NODE_ID_10.number(), NODE_ID_20.number());
     }
 
     @Test
     void getAllReturnsEmptyKeys() {
-        final var readableStakingNodes = MapReadableKVState.<Long, StakingNodeInfo>builder(STAKING_INFO_KEY)
+        final var readableStakingNodes = MapReadableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
                 .build(); // Intentionally empty
-        given(states.<Long, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
+        given(states.<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
         subject = new ReadableStakingInfoStoreImpl(states);
 
         final var result = subject.getAll();

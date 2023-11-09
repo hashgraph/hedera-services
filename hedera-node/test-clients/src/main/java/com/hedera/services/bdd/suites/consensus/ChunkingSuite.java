@@ -26,6 +26,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -53,6 +54,7 @@ public class ChunkingSuite extends HapiSuite {
         return List.of(chunkNumberIsValidated(), chunkTransactionIDIsValidated(), longMessageIsFragmentedIntoChunks());
     }
 
+    @HapiTest
     private HapiSpec chunkNumberIsValidated() {
         return defaultHapiSpec("chunkNumberIsValidated")
                 .given(createTopic("testTopic"))
@@ -75,6 +77,7 @@ public class ChunkingSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
+    @HapiTest
     private HapiSpec chunkTransactionIDIsValidated() {
         return defaultHapiSpec("chunkTransactionIDIsValidated")
                 .given(cryptoCreate("initialTransactionPayer"), createTopic("testTopic"))
@@ -115,6 +118,7 @@ public class ChunkingSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
+    @HapiTest
     private HapiSpec longMessageIsFragmentedIntoChunks() {
         String fileForLongMessage = "src/main/resource/RandomLargeBinary.bin";
         return defaultHapiSpec("longMessageIsFragmentedIntoChunks")

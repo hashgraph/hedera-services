@@ -19,7 +19,6 @@ package com.swirlds.platform.recovery;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomPositiveLong;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -33,6 +32,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.system.Round;
@@ -42,17 +42,12 @@ import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.state.MinGenInfo;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
@@ -64,130 +59,8 @@ class EventRecoveryWorkflowTests {
     @TempDir
     Path tmpDir;
 
-    @Test
-    @DisplayName("getMinGenInfo() Test")
-    void getMinGenInfoTest() {
-
-        // FUTURE WORK: recovery currently does not rebuild minimum generations the way we want to (due to lack
-        //  of data in the event stream). This test validates current behavior, not the behavior we eventually
-        //  want. Once we have all the data in the event stream and minimum generation behavior in recovery is
-        //  fixed, we should throw this test away and write a new test that validates the new behavior.
-
-        final int roundsToSimulate = 50;
-        final int roundsNonAncient = 26;
-
-        final Map<Long /* round */, Long /* min gen */> minGenForRound = new HashMap<>();
-        List<MinGenInfo> minGenInfos = new ArrayList<>();
-
-        long roundNumber = 1;
-
-        // Generate some initial rounds
-        for (long i = 0; i < roundsNonAncient; i++) {
-            minGenForRound.put(roundNumber, roundNumber);
-            minGenInfos.add(new MinGenInfo(roundNumber, roundNumber));
-            roundNumber++;
-        }
-
-        // Simulate further rounds.
-        for (long i = 0; i < roundsToSimulate; i++) {
-            final long minimumGeneration = i * 2;
-            final long nextMinimumGeneration = (i + 1) * 2;
-            minGenForRound.put(roundNumber, minimumGeneration);
-
-            // Create mock events for the round
-            final List<ConsensusEvent> events = new ArrayList<>();
-            for (long generation = minimumGeneration; generation < nextMinimumGeneration; generation++) {
-                final EventImpl event = mock(EventImpl.class);
-                when(event.getGeneration()).thenReturn(generation);
-                events.add(event);
-            }
-            Collections.shuffle(events);
-
-            // Create a mock round
-            final Round round = mock(Round.class);
-            when(round.isEmpty()).thenReturn(false);
-            when(round.getRoundNum()).thenReturn(roundNumber);
-            when(round.iterator()).thenReturn(events.iterator());
-
-            minGenInfos = EventRecoveryWorkflow.getMinGenInfo(roundsNonAncient, minGenInfos, round);
-
-            assertEquals(roundsNonAncient + 1, minGenInfos.size(), "unexpected number of min gen infos");
-
-            long expectedRound = roundNumber - roundsNonAncient;
-            for (final MinGenInfo minGenInfo : minGenInfos) {
-                assertEquals(expectedRound, minGenInfo.round(), "unexpected round");
-                assertEquals(minGenForRound.get(expectedRound), minGenInfo.minimumGeneration(), "unexpected round");
-                expectedRound++;
-            }
-
-            roundNumber++;
-        }
-    }
-
-    @Test
-    @DisplayName("Collect Events For Round Test")
-    void collectEventsForRoundTest() {
-
-        // FUTURE WORK: this test can be removed once events are removed from the state.
-
-        final int roundsToSimulate = 50;
-        final int roundsNonAncient = 26;
-        final int eventsPerRound = 10;
-
-        final List<EventImpl> expectedEvents = new LinkedList<>();
-
-        long roundNumber = 1;
-
-        // Generate some initial rounds
-        for (long i = 0; i < roundsNonAncient + 1; i++) {
-            for (int eventIndex = 0; eventIndex < eventsPerRound; eventIndex++) {
-                final EventImpl event = mock(EventImpl.class);
-                when(event.getRoundReceived()).thenReturn(roundNumber);
-                expectedEvents.add(event);
-            }
-            roundNumber++;
-        }
-
-        // Simulate further rounds.
-        for (long i = 0; i < roundsToSimulate; i++) {
-
-            final EventImpl[] previousEvents = new EventImpl[expectedEvents.size()];
-            for (int index = 0; index < expectedEvents.size(); index++) {
-                previousEvents[index] = expectedEvents.get(index);
-            }
-
-            // Generate new events
-            final List<ConsensusEvent> newEvents = new ArrayList<>();
-            for (int eventIndex = 0; eventIndex < eventsPerRound; eventIndex++) {
-                final EventImpl event = mock(EventImpl.class);
-                when(event.getRoundReceived()).thenReturn(roundNumber);
-                newEvents.add(event);
-                expectedEvents.add(event);
-            }
-
-            // Remove old events
-            final long roundToRemove = expectedEvents.get(0).getRoundReceived();
-            final Iterator<EventImpl> iterator = expectedEvents.iterator();
-            while (iterator.hasNext()) {
-                if (iterator.next().getRoundReceived() == roundToRemove) {
-                    iterator.remove();
-                } else {
-                    break;
-                }
-            }
-
-            final Round round = mock(Round.class);
-            when(round.getRoundNum()).thenReturn(roundNumber);
-            when(round.iterator()).thenReturn(newEvents.iterator());
-
-            final EventImpl[] eventsForState =
-                    EventRecoveryWorkflow.collectEventsForRound(roundsNonAncient, previousEvents, round);
-
-            assertArrayEquals(expectedEvents.toArray(), eventsForState, "unexpected events");
-
-            roundNumber++;
-        }
-    }
+    private final StateConfig stateConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
 
     @Test
     @DisplayName("isFreezeState() Test")
@@ -398,10 +271,10 @@ class EventRecoveryWorkflowTests {
 
         final Instant bootstrapTime = Instant.ofEpochMilli(randomPositiveLong(random));
 
-        EventRecoveryWorkflow.updateEmergencyRecoveryFile(tmpDir, bootstrapTime);
+        EventRecoveryWorkflow.updateEmergencyRecoveryFile(stateConfig, tmpDir, bootstrapTime);
 
         // Verify the contents of the updated recovery file
-        final EmergencyRecoveryFile updatedRecoveryFile = EmergencyRecoveryFile.read(tmpDir);
+        final EmergencyRecoveryFile updatedRecoveryFile = EmergencyRecoveryFile.read(stateConfig, tmpDir);
         assertNotNull(updatedRecoveryFile, "Updated recovery file should not be null");
         assertEquals(round, updatedRecoveryFile.round(), "round does not match");
         assertEquals(hash, updatedRecoveryFile.hash(), "hash does not match");
@@ -413,7 +286,7 @@ class EventRecoveryWorkflowTests {
                 "bootstrap timestamp does not match");
 
         // Verify the contents of the backup recovery file (copy of the original)
-        final EmergencyRecoveryFile backupFile = EmergencyRecoveryFile.read(tmpDir.resolve("backup"));
+        final EmergencyRecoveryFile backupFile = EmergencyRecoveryFile.read(stateConfig, tmpDir.resolve("backup"));
         assertNotNull(backupFile, "Updated recovery file should not be null");
         assertEquals(round, backupFile.round(), "round does not match");
         assertEquals(hash, backupFile.hash(), "hash does not match");

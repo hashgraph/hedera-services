@@ -25,7 +25,7 @@ import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.transaction.GetByKeyResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.spi.workflows.PaidQueryHandler;
+import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,7 +39,7 @@ import javax.inject.Singleton;
  * we cannot remove it. However, it should not be used.
  */
 @Singleton
-public class NetworkGetByKeyHandler extends PaidQueryHandler {
+public class NetworkGetByKeyHandler extends FreeQueryHandler {
     @Inject
     public NetworkGetByKeyHandler() {
         // Exists for injection

@@ -21,17 +21,22 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
+import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileCreateResourceUsage;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -48,9 +53,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FileCreateHandler implements TransactionHandler {
+    private final FileOpsUsage fileOpsUsage;
+
     @Inject
-    public FileCreateHandler() {
-        // Exists for injection
+    public FileCreateHandler(final FileOpsUsage fileOpsUsage) {
+        this.fileOpsUsage = fileOpsUsage;
     }
 
     /**
@@ -102,12 +109,13 @@ public class FileCreateHandler implements TransactionHandler {
                 expiry,
                 NA,
                 // Shard and realm will be ignored if num is NA
-                AccountID.newBuilder().shardNum(NA).realmNum(NA).accountNum(NA).build());
+                null);
 
         try {
-            final var effectiveExpiryMeta =
-                    handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta);
-            builder.expirationTime(effectiveExpiryMeta.expiry());
+            final var effectiveExpiryMeta = handleContext
+                    .expiryValidator()
+                    .resolveCreationAttempt(false, entityExpiryMeta, HederaFunctionality.FILE_CREATE);
+            builder.expirationSecond(effectiveExpiryMeta.expiry());
 
             handleContext.attributeValidator().validateMemo(fileCreateTransactionBody.memo());
             builder.memo(fileCreateTransactionBody.memo());
@@ -134,5 +142,14 @@ public class FileCreateHandler implements TransactionHandler {
             }
             throw e;
         }
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull FeeContext feeContext) {
+        final var op = feeContext.body();
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            return new FileCreateResourceUsage(fileOpsUsage).usageGiven(fromPbj(op), sigValueObj);
+        });
     }
 }

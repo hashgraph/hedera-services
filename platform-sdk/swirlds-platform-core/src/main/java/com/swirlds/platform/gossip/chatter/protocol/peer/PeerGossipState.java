@@ -19,17 +19,16 @@ package com.swirlds.platform.gossip.chatter.protocol.peer;
 import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.common.system.events.EventDescriptor;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
-import org.apache.commons.lang3.ObjectUtils;
 
 /**
  * Keeps track of the state of chatter communication with a peer, including events we are sure the peer knows
  */
 public class PeerGossipState implements Shiftable {
     /** non-ancient events we know the peer knows */
-    private final SequenceMap<EventDescriptor, ObjectUtils.Null> events;
+    private final SequenceMap<EventDescriptor, Void> events;
     /** the maximum generation of all event descriptors received */
     private long maxReceivedDescriptorGeneration;
 
@@ -51,7 +50,7 @@ public class PeerGossipState implements Shiftable {
      * @param event the descriptor of the event the peer knows
      */
     public synchronized void setPeerKnows(final EventDescriptor event) {
-        events.put(event, ObjectUtils.NULL);
+        events.put(event, null);
     }
 
     /**
@@ -61,7 +60,7 @@ public class PeerGossipState implements Shiftable {
      * @return true if the peer knows this event, false otherwise
      */
     public synchronized boolean getPeerKnows(final EventDescriptor event) {
-        return events.get(event) != null;
+        return events.containsKey(event);
     }
 
     /**

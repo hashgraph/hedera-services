@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.NodeId;
@@ -34,6 +35,7 @@ import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -239,7 +241,10 @@ class DefaultSignedStateValidatorTests {
                 .setCustomWeightGenerator(nodeWeights::get)
                 .build();
 
-        validator = new DefaultSignedStateValidator();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        validator = new DefaultSignedStateValidator(platformContext);
 
         final SignedState signedState = stateSignedByNodes(signingNodes);
         final SignedStateValidationData originalData = new SignedStateValidationData(

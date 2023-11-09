@@ -61,9 +61,9 @@ final class HederaSoftwareVersionTest {
         final var versionB = new HederaSoftwareVersion(semver(b), semver(b));
 
         switch (expected) {
-            case "<" -> assertThat(versionA.compareTo(versionB)).isLessThan(0);
-            case "=" -> assertThat(versionA.compareTo(versionB)).isEqualTo(0);
-            case ">" -> assertThat(versionA.compareTo(versionB)).isGreaterThan(0);
+            case "<" -> assertThat(versionA).isLessThan(versionB);
+            case "=" -> assertThat(versionA).isEqualByComparingTo(versionB);
+            case ">" -> assertThat(versionA).isGreaterThan(versionB);
             default -> throw new IllegalArgumentException("Unknown expected value: " + expected);
         }
     }

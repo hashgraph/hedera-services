@@ -17,14 +17,14 @@
 package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.common.system.SystemExitUtils.exitSystem;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.utility.PlatformVersion;
-import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
+import com.swirlds.gui.components.ScrollableJPanel;
+import com.swirlds.gui.model.GuiModel;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -102,7 +102,7 @@ public class SwirldMenu extends JPanel {
      * @param size
      * 		the height and width of the icon, in pixels
      */
-    public static void addTo(SwirldsPlatform platform, JFrame window, int size) {
+    public static void addTo(Platform platform, JFrame window, int size) {
         addTo(platform, window, size, Color.BLUE, true);
     }
 
@@ -292,9 +292,7 @@ public class SwirldMenu extends JPanel {
                 case "About":
                     int choice = JOptionPane.showOptionDialog(
                             null, // parentCompoinent
-                            (platform == null
-                                            ? ""
-                                            : GuiPlatformAccessor.getInstance().getAbout(platform.getSelfId()))
+                            (platform == null ? "" : GuiModel.getInstance().getAbout(platform.getSelfId()))
                                     + "\n\n"
                                     + PlatformVersion.locateOrDefault().license(), // message
                             "About this app", // title
@@ -314,7 +312,7 @@ public class SwirldMenu extends JPanel {
                     }
                     break;
                 case "Browser":
-                    showBrowserWindow();
+                    showBrowserWindow(null);
                     break;
                 case "Call":
                     showBrowserWindow(WinBrowser.tabCalls);
@@ -329,6 +327,10 @@ public class SwirldMenu extends JPanel {
                     break;
             }
         }
+    }
+
+    private void showBrowserWindow(@Nullable final ScrollableJPanel comp) {
+        BrowserWindowManager.showBrowserWindow(null);
     }
 
     /**

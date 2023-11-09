@@ -52,7 +52,7 @@ public class TestUtils {
                 new NodeId(DEFAULT_NODE_ID),
                 new MetricKeyRegistry(),
                 Executors.newSingleThreadScheduledExecutor(),
-                new DefaultMetricsFactory(),
+                new DefaultMetricsFactory(metricsConfig),
                 metricsConfig);
     }
 }

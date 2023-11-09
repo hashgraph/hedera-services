@@ -43,10 +43,15 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
@@ -66,9 +71,19 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         super(contract, abi, args);
     }
 
+    public HapiContractCreate(
+            @NonNull final String contract,
+            @NonNull final BiConsumer<HapiSpec, ContractCreateTransactionBody.Builder> spec) {
+        super(contract);
+        this.spec = spec;
+    }
+
     private Optional<String> autoRenewAccount = Optional.empty();
     private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
     private Optional<ByteString> inlineInitcode = Optional.empty();
+
+    @Nullable
+    private BiConsumer<HapiSpec, ContractCreateTransactionBody.Builder> spec;
 
     public HapiContractCreate exposingNumTo(LongConsumer obs) {
         newNumObserver = Optional.of(obs);
@@ -265,6 +280,15 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
+        if (this.spec != null) {
+            return b -> {
+                try {
+                    b.setContractCreateInstance(explicitContractCreate(spec));
+                } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            };
+        }
         if (!omitAdminKey && !useDeprecatedAdminKey) {
             generateAdminKey(spec);
         }
@@ -316,6 +340,14 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
                             b.setDeclineReward(isDeclinedReward);
                         });
         return b -> b.setContractCreateInstance(opBody);
+    }
+
+    private ContractCreateTransactionBody explicitContractCreate(HapiSpec spec)
+            throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        return spec.txns()
+                .<ContractCreateTransactionBody, ContractCreateTransactionBody.Builder>body(
+                        ContractCreateTransactionBody.class,
+                        b -> Objects.requireNonNull(this.spec).accept(spec, b));
     }
 
     @Override

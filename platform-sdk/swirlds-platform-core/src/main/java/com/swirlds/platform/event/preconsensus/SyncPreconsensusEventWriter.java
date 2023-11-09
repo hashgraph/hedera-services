@@ -18,8 +18,7 @@ package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
@@ -30,7 +29,6 @@ import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.time.Duration;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -198,26 +196,12 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public void registerDiscontinuity() {
-        logger.warn(
-                STARTUP.getMarker(),
-                "The preconsensus event stream has experienced a discontinuity. "
-                        + "All events written to the preconsensus event stream after this discontinuity "
-                        + "will be unrecoverable until a state snapshot that provides a valid starting "
-                        + "point is written to disk.");
-
+    public void registerDiscontinuity(final long newOriginRound) {
         if (currentMutableFile != null) {
             closeFile();
         }
 
-        final PreconsensusEventFile file = fileManager.getNextFileDescriptor(0, 0, true);
-
-        try {
-            Files.createDirectories(file.getPath().getParent());
-            Files.createFile(file.getPath());
-        } catch (final IOException e) {
-            throw new UncheckedIOException("unable to create file to mark discontinuity", e);
-        }
+        fileManager.registerDiscontinuity(newOriginRound);
     }
 
     /**
@@ -295,6 +279,13 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
      * Delete old files from the disk.
      */
     private void pruneOldFiles() {
+        if (!streamingNewEvents) {
+            // Don't attempt to prune files until we are done replaying the event stream (at start up).
+            // Files are being iterated on a different thread, and it isn't thread safe to prune files
+            // while they are being iterated.
+            return;
+        }
+
         try {
             fileManager.pruneOldFiles(minimumGenerationToStore);
         } catch (final IOException e) {

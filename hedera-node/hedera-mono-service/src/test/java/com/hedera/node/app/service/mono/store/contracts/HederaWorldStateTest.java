@@ -44,6 +44,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
+import com.hedera.node.app.service.evm.store.contracts.utils.BytesKey;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
@@ -80,6 +81,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -138,6 +140,7 @@ class HederaWorldStateTest {
 
     @BeforeEach
     void setUp() {
+        given(properties.prefetchCodeCacheTtlSecs()).willReturn(1);
         codeCache = new CodeCache(properties, entityAccess);
         subject = new HederaWorldState(
                 usageLimits,
@@ -684,9 +687,9 @@ class HederaWorldStateTest {
         final var storageValue = UInt256.valueOf(9_876);
         final var secondStorageKey = UInt256.valueOf(2);
         final var secondStorageValue = UInt256.ZERO;
-        evmAccount.getMutable().setStorageValue(storageKey, storageValue);
-        evmAccount.getMutable().setStorageValue(secondStorageKey, secondStorageValue);
-        evmAccount.getMutable().setCode(code);
+        evmAccount.setStorageValue(storageKey, storageValue);
+        evmAccount.setStorageValue(secondStorageKey, secondStorageValue);
+        evmAccount.setCode(code);
         // and:
         final var accountID =
                 EntityIdUtils.accountIdFromEvmAddress(contract.asEvmAddress().toArray());
@@ -731,7 +734,7 @@ class HederaWorldStateTest {
         final var slot = 1L;
         final var oldSlotValue = 4L;
         final var newSlotValue = 255L;
-        final var updatedAccount = mock(UpdateTrackingAccount.class);
+        final UpdateTrackingAccount<Account> updatedAccount = mock(UpdateTrackingAccount.class);
         given(updatedAccount.getAddress()).willReturn(Address.fromHexString(contractAddress));
         given(updatedAccount.getOriginalStorageValue(UInt256.valueOf(slot))).willReturn(UInt256.valueOf(oldSlotValue));
         given(updatedAccount.getUpdatedStorage())
@@ -839,8 +842,12 @@ class HederaWorldStateTest {
         actualSubject.createAccount(newAddress, 1, Wei.of(balance));
         // NEWLY CREATED CONTRACT NONCES
         given(entityAccess.isExtant(contract.asEvmAddress())).willReturn(false);
+        final var backingCache = codeCache.getCache();
+        final var cacheKey = new BytesKey(newAddress.toArray());
+        backingCache.put(cacheKey, CodeFactory.createCode(Bytes.fromHexString("0xabcd"), 0, false));
 
         actualSubject.commit();
+        assertNull(backingCache.getIfPresent(cacheKey));
         final var result = subject.getContractNonces();
 
         verify(entityAccess, atLeast(2)).isExtant(contract.asEvmAddress());

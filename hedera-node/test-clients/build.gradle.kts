@@ -23,7 +23,48 @@ plugins {
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
-tasks.jar { manifest { attributes("Automatic-Module-Name" to "com.hedera.node.app.testclient") } }
+mainModuleInfo { runtimeOnly("org.junit.platform.launcher") }
+
+itestModuleInfo {
+    requires("com.hedera.node.test.clients")
+    requires("com.hedera.node.hapi")
+    requires("org.apache.commons.lang3")
+    requires("org.junit.jupiter.api")
+    requires("org.testcontainers")
+    requires("org.testcontainers.junit.jupiter")
+    requires("org.apache.commons.lang3")
+}
+
+eetModuleInfo {
+    requires("com.hedera.node.test.clients")
+    requires("org.junit.jupiter.api")
+    requires("org.testcontainers")
+    requires("org.testcontainers.junit.jupiter")
+}
+
+sourceSets {
+    // Needed because "resource" directory is misnamed. See
+    // https://github.com/hashgraph/hedera-services/issues/3361
+    main { resources { srcDir("src/main/resource") } }
+}
+
+// IntelliJ uses adhoc-created JavaExec tasks when running a 'main()' method.
+tasks.withType<JavaExec> {
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+// This task runs the 'HapiTestEngine' tests (residing in src/main/java).
+// IntelliJ picks up this task when running tests through in the IDE.
+tasks.register<Test>("hapiTest") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform()
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
 
 tasks.test {
     // Disable these EET tests from being executed as part of the gradle "test" task.
@@ -33,97 +74,20 @@ tasks.test {
     exclude("**/*")
 }
 
-tasks.itest { systemProperty("itests", System.getProperty("itests")) }
-
-configurations { evaluationDependsOn(":app-hapi-fees") }
-
-sourceSets {
-    // Needed because "resource" directory is misnamed. See
-    // https://github.com/hashgraph/hedera-services/issues/3361
-    main { resources { srcDir("src/main/resource") } }
-}
-
-dependencies {
-    javaModuleDependencies {
-        api(project(":app-hapi-fees"))
-        api(project(":app-hapi-utils"))
-        api(gav("com.fasterxml.jackson.annotation"))
-        api(gav("com.google.common"))
-        api(gav("com.google.protobuf"))
-        api(project(":hapi"))
-        api(gav("com.swirlds.common"))
-        api(gav("headlong"))
-        api(gav("info.picocli"))
-        api(gav("java.annotation"))
-        api(gav("net.i2p.crypto.eddsa"))
-        api(gav("org.apache.commons.io"))
-        api(gav("org.apache.logging.log4j"))
-        api(gav("org.checkerframework.checker.qual"))
-        api(gav("org.junit.jupiter.api"))
-        api(gav("org.testcontainers"))
-        api(gav("org.yaml.snakeyaml"))
-        api(gav("tuweni.bytes"))
-        api(gav("org.junit.platform.engine"))
-
-        implementation(project(":app-service-evm"))
-        implementation(gav("com.fasterxml.jackson.core"))
-        implementation(gav("com.fasterxml.jackson.databind"))
-        implementation(gav("com.github.docker.java.api"))
-        implementation(gav("com.github.spotbugs.annotations"))
-        implementation(gav("grpc.netty"))
-        implementation(gav("io.grpc"))
-        implementation(gav("io.netty.handler"))
-        implementation(gav("org.apache.commons.lang3"))
-        implementation(gav("org.apache.logging.log4j.core"))
-        implementation(gav("org.bouncycastle.provider"))
-        implementation(gav("org.hyperledger.besu.crypto"))
-        implementation(gav("org.hyperledger.besu.datatypes"))
-        implementation(gav("org.hyperledger.besu.evm"))
-        implementation(gav("org.json"))
-        implementation(gav("org.opentest4j"))
-        implementation(gav("tuweni.units"))
-        implementation(gav("com.swirlds.platform.core"))
-        implementation(project(":app"))
-
-        itestImplementation(project(path))
-        itestImplementation(project(":hapi"))
-        itestImplementation(project(":config"))
-        itestImplementation(gav("org.junit.jupiter.api"))
-        itestImplementation(gav("org.testcontainers"))
-        itestImplementation(gav("org.testcontainers.junit.jupiter"))
-        itestImplementation(gav("org.apache.commons.lang3"))
-        itestImplementation(gav("org.apache.logging.log4j.core"))
-        itestImplementation(gav("org.apache.logging.log4j.jul"))
-        itestImplementation(gav("com.github.spotbugs.annotations"))
-
-        eetImplementation(project(path))
-        eetImplementation(gav("org.junit.jupiter.api"))
-        eetImplementation(gav("org.testcontainers"))
-        eetImplementation(gav("org.testcontainers.junit.jupiter"))
-    }
-}
-
 tasks.itest {
+    systemProperty("itests", System.getProperty("itests"))
     systemProperty("junit.jupiter.execution.parallel.enabled", false)
     systemProperty("TAG", "services-node:" + project.version)
-    systemProperty("networkWorkspaceDir", File(project.buildDir, "network/itest"))
+    systemProperty("networkWorkspaceDir", layout.buildDirectory.dir("network/itest").get().asFile)
 }
 
 tasks.eet {
     systemProperty("TAG", "services-node:" + project.version)
-    systemProperty("networkWorkspaceDir", File(project.buildDir, "network/eet"))
+    systemProperty("networkWorkspaceDir", layout.buildDirectory.dir("network/itest").get().asFile)
 }
 
 tasks.shadowJar {
-    dependsOn(project(":app-hapi-fees").tasks.jar)
-
-    mergeServiceFiles()
-
     archiveFileName.set("SuiteRunner.jar")
-    isReproducibleFileOrder = true
-    isPreserveFileTimestamps = false
-    fileMode = 664
-    dirMode = 775
 
     manifest {
         attributes(
@@ -135,20 +99,9 @@ tasks.shadowJar {
 
 val yahCliJar =
     tasks.register<ShadowJar>("yahCliJar") {
-        dependsOn(project(":app-hapi-fees").tasks.jar)
-
-        group = "shadow"
-        from(sourceSets.main.get().output)
-        configurations = listOf(project.configurations["runtimeClasspath"])
-        mergeServiceFiles()
-
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
 
         archiveClassifier.set("yahcli")
-        isReproducibleFileOrder = true
-        isPreserveFileTimestamps = false
-        fileMode = 664
-        dirMode = 775
 
         manifest {
             attributes(
@@ -160,20 +113,9 @@ val yahCliJar =
 
 val validationJar =
     tasks.register<ShadowJar>("validationJar") {
-        dependsOn(project(":app-hapi-fees").tasks.jar)
-
-        group = "shadow"
-        from(sourceSets.main.get().output)
-        configurations = listOf(project.configurations["runtimeClasspath"])
-        mergeServiceFiles()
-
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
 
         archiveFileName.set("ValidationScenarios.jar")
-        isReproducibleFileOrder = true
-        isPreserveFileTimestamps = false
-        fileMode = 664
-        dirMode = 775
 
         manifest {
             attributes(

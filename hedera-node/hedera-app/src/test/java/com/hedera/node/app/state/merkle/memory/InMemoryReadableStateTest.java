@@ -62,7 +62,7 @@ class InMemoryReadableStateTest extends MerkleTestBase {
         @DisplayName("The size of the state is the size of the merkle map")
         void sizeWorks() {
             final var state = new InMemoryReadableKVState<>(fruitMetadata, fruitMerkleMap);
-            assertThat(state.size()).isEqualTo(0);
+            assertThat(state.size()).isZero();
 
             add(fruitMerkleMap, fruitMetadata, A_KEY, APPLE);
             add(fruitMerkleMap, fruitMetadata, B_KEY, BANANA);

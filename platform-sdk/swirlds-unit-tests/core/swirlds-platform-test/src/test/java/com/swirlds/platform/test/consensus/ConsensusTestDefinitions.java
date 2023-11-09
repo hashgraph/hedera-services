@@ -16,48 +16,33 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.initRandom;
-import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
-import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
-import static com.swirlds.platform.test.consensus.ConsensusUtils.applyEventsToConsensus;
-import static com.swirlds.platform.test.consensus.ConsensusUtils.buildSimpleConsensus;
-import static com.swirlds.platform.test.consensus.ConsensusUtils.isRestartConsensusEquivalent;
-import static com.swirlds.platform.test.consensus.ConsensusUtils.testConsensus;
-import static com.swirlds.platform.test.event.source.EventSourceFactory.newStandardEventSources;
-import static com.swirlds.platform.test.fixtures.event.EventUtils.createSignedState;
-import static com.swirlds.platform.test.fixtures.event.EventUtils.getEventMap;
-import static com.swirlds.platform.test.fixtures.event.EventUtils.getLastGenerationInState;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createBalancedOtherParentMatrix;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createCliqueOtherParentMatrix;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createPartitionedOtherParentAffinityMatrix;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShunnedNodeOtherParentAffinityMatrix;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
-import com.swirlds.common.test.fixtures.WeightGenerator;
-import com.swirlds.common.test.fixtures.WeightGenerators;
-import com.swirlds.common.threading.utility.AtomicDouble;
-import com.swirlds.platform.Consensus;
-import com.swirlds.platform.eventhandling.SignedStateEventsAndGenerations;
-import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.common.utility.Threshold;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.test.SimpleEventGenerator;
-import com.swirlds.platform.test.event.TestSequence;
+import com.swirlds.platform.state.signed.SignedStateFileReader;
+import com.swirlds.platform.test.consensus.framework.ConsensusTestNode;
+import com.swirlds.platform.test.consensus.framework.ConsensusTestOrchestrator;
+import com.swirlds.platform.test.consensus.framework.ConsensusTestUtils;
+import com.swirlds.platform.test.consensus.framework.OrchestratorBuilder;
+import com.swirlds.platform.test.consensus.framework.TestInput;
+import com.swirlds.platform.test.consensus.framework.validation.EventRatioValidation;
+import com.swirlds.platform.test.consensus.framework.validation.Validations;
 import com.swirlds.platform.test.event.emitter.PriorityEventEmitter;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
-import com.swirlds.platform.test.event.source.EventSourceFactory;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.EventUtils;
@@ -65,135 +50,85 @@ import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
+import com.swirlds.test.framework.ResourceLoader;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.time.Instant;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 public final class ConsensusTestDefinitions {
 
     private ConsensusTestDefinitions() {}
 
     /**
-     * Send an ancient event to consensus and check if it is marked stale.
+     * Changing the order of events (without breaking topological order) should result in the same
+     * consensus events.
      */
-    public static void ancientEventTest(
-            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long[] seeds) {
+    public static void orderInvarianceTests(@NonNull final TestInput input) {
+        OrchestratorBuilder.builder()
+                .setTestInput(input)
+                .build()
+                .generateAllEvents()
+                .validateAndClear(Validations.standard()
+                        .ratios(EventRatioValidation.standard()
+                                .setMinimumConsensusRatio(0.9 - (0.05 * input.numberOfNodes()))));
+    }
 
-        final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Ancient Event Tests", numberOfNodes, weightGenerator, 10_000);
-
-        final int ancientEventIndex = 100;
-        testDefinition.setGraphGeneratorProvider(
-                nodeWeights -> createAncientEventGenerator(numberOfNodes, nodeWeights, ancientEventIndex));
-
+    /** Send an ancient event to consensus and check if it is marked stale. */
+    public static void ancient(@NonNull final TestInput input) {
+        // Setup: we use a priority emitter so that the dying node's events are added last, when
+        // they are already ancient
         final List<Integer> nodePriorities =
-                IntStream.range(0, numberOfNodes).boxed().toList();
-        testDefinition.setNode1EventEmitterGenerator(
-                (graphGenerator, seed) -> new PriorityEventEmitter(graphGenerator, nodePriorities));
-        testDefinition.setNode2EventEmitterGenerator(
-                (graphGenerator, seed) -> new StandardEventEmitter(graphGenerator));
+                IntStream.range(0, input.numberOfNodes()).boxed().toList();
+        final ConsensusTestOrchestrator orchestrator = OrchestratorBuilder.builder()
+                .setTestInput(input)
+                .setNode1EventEmitterGenerator(
+                        (graphGenerator, seed) -> new PriorityEventEmitter(graphGenerator, nodePriorities))
+                .setNode2EventEmitterGenerator((graphGenerator, seed) -> new StandardEventEmitter(graphGenerator))
+                .build();
+        final int dyingNode = input.numberOfNodes() - 1;
 
-        testDefinition.setTestSequenceGenerator(td -> List.of(new TestSequence(td.getEventsPerPhase())));
+        // Phase 1: all nodes are working normally
+        orchestrator.generateEvents(0.10);
 
-        testConsensus(testDefinition, iterations, seeds);
+        // Phase 2: one node shunned and is not used as an other-parent. it creates some more events
+        // and this ensures
+        // that it will have events without any descendants. this means that the priority emitter
+        // can add them at the
+        // end, after all other events
+        orchestrator.setOtherParentAffinity(
+                createShunnedNodeOtherParentAffinityMatrix(input.numberOfNodes(), dyingNode));
+        orchestrator.generateEvents(0.10);
+
+        // Phase 3: the shunned node creates stops creating events
+        orchestrator.setNewEventWeight(dyingNode, 0d);
+        orchestrator.generateEvents(0.70);
+
+        orchestrator.validateAndClear(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
     }
 
-    private static StandardGraphGenerator createAncientEventGenerator(
-            final int numberOfNodes, final List<Long> nodeWeights, final int ancientEventIndex) {
-
-        final List<EventSource<?>> eventSources = EventSourceFactory.newStandardEventSources(nodeWeights);
-        final StandardGraphGenerator standardGenerator = new StandardGraphGenerator(0L, eventSources);
-
-        // All nodes are awake, connected, and created events with each other as parents
-        final List<List<Double>> allNodesAwake = createBalancedOtherParentMatrix(numberOfNodes);
-
-        // The lowest priority node is shunned. Nodes do not use its events as other parents.
-        final List<List<Double>> shunLastNode =
-                createShunnedNodeOtherParentAffinityMatrix(numberOfNodes, numberOfNodes - 1);
-
-        // All nodes are awake and connected for a while, then, starting at some event X, the last node is
-        // shunned so its events will not be parents to other node events.
-        standardGenerator.setOtherParentAffinity((Random r, long eventIndex, List<List<Double>> previousValue) -> {
-            if (eventIndex < ancientEventIndex) {
-                return allNodesAwake;
-            } else {
-                return shunLastNode;
-            }
-        });
-
-        // Set up the event sources such that the lowest priority node creates event X and then never creates
-        // events again. Event X will not have any children, because the node is shunned after event X is
-        // created.
-        for (int i = 0; i < standardGenerator.getNumberOfSources(); i++) {
-            final NodeId nodeId = standardGenerator.getAddressBook().getNodeId(i);
-            final EventSource<?> source = standardGenerator.getSource(nodeId);
-
-            // This is the last source. Force it to stop creating events (go to sleep) after the event X
-            if (i == standardGenerator.getNumberOfSources() - 1) {
-                source.setNewEventWeight((Random random, long eventIndex, Double previousValue) -> {
-                    if (eventIndex <= ancientEventIndex) {
-                        return 1.0;
-                    } else {
-                        return 0.0;
-                    }
-                });
-            } else {
-                source.setNewEventWeight((Random random, long eventIndex, Double previousValue) -> {
-                    if (eventIndex < ancientEventIndex) {
-                        return 1.0;
-                    } else if (eventIndex == ancientEventIndex) {
-                        return 0.0;
-                    } else {
-                        return 1.0;
-                    }
-                });
-            }
-        }
-        return standardGenerator;
-    }
-
-    /**
-     * Changing the order of events (without breaking topological order) should result in the same consensus events.
-     */
-    public static void orderInvarianceTests(
-            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
-
-        final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Order Invariance Tests", numberOfNodes, weightGenerator, 10_000);
-
-        testDefinition.setTestSequenceGenerator(
-                td -> List.of(new TestSequence(10_000).setMinimumConsensusRatio(0.9 - 0.05 * numberOfNodes)));
-
-        testConsensus(testDefinition, iterations, seeds);
-    }
-
-    /**
-     * Test consensus in the presence of forks.
-     */
-    public static void forkingTests(
-            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
-        final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Order Invariance Tests", numberOfNodes, weightGenerator, 10_000);
-
-        // Set a custom event source generator that creates forking event sources
-        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
+    /** Test consensus in the presence of forks. */
+    public static void forkingTests(@NonNull final TestInput input) {
+        // Use a custom event source generator that creates forking event sources
+        final Function<List<Long>, List<EventSource<?>>> eventSourceBuilder = nodeWeights -> {
             final double forkProbability = 0.1;
             final int numberOfForkedBranches = 10;
             final long totalWeight = nodeWeights.stream().reduce(0L, Long::sum);
 
-            // Determine a single forking event source that has less than a strong minority of weight
+            // Determine a single forking event source that has less than a strong minority
+            // of weigh
             int forkingNodeId = -1;
             for (int i = 0; i < nodeWeights.size(); i++) {
                 final long weight = nodeWeights.get(i);
-                if (!STRONG_MINORITY.isSatisfiedBy(weight, totalWeight)) {
+                if (!Threshold.STRONG_MINORITY.isSatisfiedBy(weight, totalWeight)) {
                     forkingNodeId = i;
                     break;
                 }
@@ -210,384 +145,168 @@ public final class ConsensusTestDefinitions {
                     eventSources.add(new StandardEventSource(weight));
                 }
             }
-            return new StandardGraphGenerator(0, eventSources);
-        });
+            return eventSources;
+        };
 
-        testDefinition.setTestSequenceGenerator(td -> List.of(new TestSequence(10_000).setMaximumStaleRatio(0.1)));
-
-        testConsensus(testDefinition, iterations, seeds);
+        OrchestratorBuilder.builder()
+                .setTestInput(input)
+                .setEventSourceBuilder(eventSourceBuilder)
+                .build()
+                .generateEvents(1.0)
+                .validateAndClear(Validations.standard()
+                        .ratios(EventRatioValidation.standard().setMaximumStaleRatio(0.1)));
     }
 
     /**
-     * Test consensus in the presence of forks.
-     */
-    public static void forkingTestsOldVersion(final int numberOfNodes, final int iterations, final long... seeds) {
-        final ConsensusTestDefinition testDefinition = new ConsensusTestDefinition(
-                "Order Invariance Tests",
-                numberOfNodes,
-                (l, i) -> WeightGenerators.balancedNodeWeights(numberOfNodes),
-                10_000);
-
-        // Set a custom event source generator that creates forking event sources
-        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
-            final double forkProbability = 0.1;
-            final int numberOfForkedBranches = 10;
-            final int numForkingNodes = 1;
-
-            // make the last node the forking node
-            final List<EventSource<?>> eventSources = new ArrayList<>(numberOfNodes);
-            for (int i = 0; i < numberOfNodes - numForkingNodes; i++) {
-                eventSources.add(new StandardEventSource());
-            }
-            for (int i = 0; i < numForkingNodes; i++) {
-                eventSources.add(new ForkingEventSource()
-                        .setForkProbability(forkProbability)
-                        .setMaximumBranchCount(numberOfForkedBranches));
-            }
-            return new StandardGraphGenerator(0, eventSources);
-        });
-
-        testDefinition.setTestSequenceGenerator(td -> List.of(new TestSequence(10_000).setMaximumStaleRatio(0.05)));
-
-        testConsensus(testDefinition, iterations, seeds);
-    }
-
-    /**
-     * Consensus should handle a partition gracefully.
-     */
-    public static void partitionTests(
-            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
-
-        final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Partition Tests", numberOfNodes, weightGenerator, 3_000);
-
-        testDefinition.setTestSequenceGenerator(td -> {
-            // Return a simple test sequence for debugging when seeds are provided
-            if (seeds != null) {
-                return List.of(new TestSequence(10_000));
-            }
-
-            return strongMinorityPartitionTestSequences(td);
-        });
-
-        testConsensus(testDefinition, iterations, seeds);
-    }
-
-    /**
-     * Creates three test sequences:
+     * Consensus should handle a partition gracefully. Creates three test phases:
      *
      * <ol>
-     *     <li>fully connected network</li>
-     *     <li>partitioned network such that one of the partitions has a strong minority</li>
-     *     <li>fully connected network</li>
+     *   <li>fully connected network
+     *   <li>partitioned network such that one of the partitions has a strong minority
+     *   <li>fully connected network
      * </ol>
      */
-    public static List<TestSequence> strongMinorityPartitionTestSequences(
-            final ConsensusTestDefinition testDefinition) {
-        final int eventsPerPhase = testDefinition.getEventsPerPhase();
-        final List<Long> nodeWeights = testDefinition.getNodeWeights();
-        final int numberOfNodes = testDefinition.getNumberOfNodes();
+    public static void partitionTests(@NonNull final TestInput input) {
+        // Test setup
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        final List<List<Double>> fullyConnected = createBalancedOtherParentMatrix(input.numberOfNodes());
+        final List<List<Double>> partitioned = createPartitionedOtherParentAffinityMatrix(
+                input.numberOfNodes(), ConsensusTestUtils.getStrongMinorityNodes(orchestrator.getWeights()));
 
-        final Set<Integer> partitionedNodes = getStrongMinorityNodes(nodeWeights);
+        //
+        // Phase 1
+        //
+        // setup: All nodes talk to each other with equal probability
+        orchestrator.setOtherParentAffinity(fullyConnected);
+        // execution: generate a third of the total events
+        orchestrator.generateEvents(0.33);
+        // validation: we expect normal consensus
+        orchestrator.validateAndClear(Validations.standard());
 
-        final List<EventSource<?>> eventSources = EventSourceFactory.newStandardEventSources(nodeWeights);
+        //
+        // Phase 2
+        //
+        // setup: >= 1/3 of nodes are partitioned from the rest of the network
+        orchestrator.setOtherParentAffinity(partitioned);
+        // execution: generate a third of the total events
+        orchestrator.generateEvents(0.33);
+        // validation: almost no events will reach consensus
+        //   (it's possible a few tail events may reach consensus right at the beginning of the
+        // phase)
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.standard()
+                        .setMinimumConsensusRatio(0.0)
+                        .setMaximumConsensusRatio(0.5)));
 
-        final StandardGraphGenerator generator = new StandardGraphGenerator(0, eventSources);
-
-        // All nodes talk to each other with equal probability
-        final List<List<Double>> fullyConnected = createBalancedOtherParentMatrix(numberOfNodes);
-
-        // >= 1/3 of nodes are partitioned from the rest of the network
-        final List<List<Double>> partitioned =
-                createPartitionedOtherParentAffinityMatrix(numberOfNodes, partitionedNodes);
-
-        // Network is connected for a while, then is partitioned, then is connected for a while again.
-        generator.setOtherParentAffinity((Random r, long eventIndex, List<List<Double>> previousValue) -> {
-            if (eventIndex < eventsPerPhase) {
-                // phase 1
-                return fullyConnected;
-            } else if (eventIndex < 2L * eventsPerPhase) {
-                // phase 2
-                return partitioned;
-            } else {
-                // phase 3
-                return fullyConnected;
-            }
-        });
-
-        // In phase 1 we expect normal consensus
-        // There are fewer events that normal (10_000 is standard) so it is possible that fewer events will
-        // reach consensus than expected by the default minimum ratio.
-        final TestSequence phase1 = new TestSequence(eventsPerPhase).setMinimumConsensusRatio(0.8);
-
-        // In phase 2, almost no events will reach consensus
-        //   (it's possible a few tail events may reach consensus right at the beginning of the phase)
-        final TestSequence phase2 =
-                new TestSequence(eventsPerPhase).setMinimumConsensusRatio(0.0).setMaximumConsensusRatio(0.5);
-
-        // In phase 3 we expect for phase 2 and phase 3 events to reach consensus
-        final TestSequence phase3 = new TestSequence(eventsPerPhase).setMinimumConsensusRatio(0.8);
-
-        return List.of(phase1, phase2, phase3);
+        //
+        // Phase 3
+        //
+        // setup: All nodes talk to each other again
+        orchestrator.setOtherParentAffinity(fullyConnected);
+        // execution: generate a third of the total events
+        orchestrator.generateEvents(0.34);
+        // validation: we expect for phase 2 and phase 3 events to reach consensus
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.standard()
+                        .setMinimumConsensusRatio(0.8)
+                        .setMaximumConsensusRatio(2.0)));
     }
 
     /**
      * Simulates a partition where one partition has a quorum.
-     */
-    public static void subQuorumPartitionTests(
-            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
-
-        final int eventsPerPhase = 3_000;
-        final AtomicInteger numPartitionedNodes = new AtomicInteger();
-
-        final ConsensusTestDefinition testDefinition = new ConsensusTestDefinition(
-                "Sub Quorum Partition Tests", numberOfNodes, weightGenerator, eventsPerPhase);
-
-        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
-            for (final long weight : nodeWeights) {
-                eventSources.add(new StandardEventSource(weight));
-            }
-            final StandardGraphGenerator graphGenerator = new StandardGraphGenerator(0, eventSources);
-
-            final Set<Integer> partitionedNodes = getSubStrongMinorityNodes(nodeWeights);
-            numPartitionedNodes.set(partitionedNodes.size());
-
-            // All nodes talk to each other with equal probability
-            final List<List<Double>> fullyConnected = createBalancedOtherParentMatrix(numberOfNodes);
-
-            // Less than a strong minority of nodes' weight are partitioned from the network
-            final List<List<Double>> partitioned =
-                    createPartitionedOtherParentAffinityMatrix(numberOfNodes, partitionedNodes);
-
-            // Network is connected for a while, then is partitioned, then is connected for a while again.
-            graphGenerator.setOtherParentAffinity((Random r, long eventIndex, List<List<Double>> previousValue) -> {
-                if (eventIndex < eventsPerPhase) {
-                    // phase 1
-                    return fullyConnected;
-                } else if (eventIndex < 2L * eventsPerPhase) {
-                    // phase 2
-                    return partitioned;
-                } else {
-                    // phase 3
-                    return fullyConnected;
-                }
-            });
-
-            return graphGenerator;
-        });
-
-        testDefinition.setTestSequenceGenerator(td -> {
-
-            // In phase 1 we expect normal consensus
-            final TestSequence phase1 = new TestSequence(eventsPerPhase).setMinimumConsensusRatio(0.8);
-
-            final int numNonConsPartitionNodes = numPartitionedNodes.get();
-            final int numConsPartitionNodes = numberOfNodes - numNonConsPartitionNodes;
-            final double consNodeRatio = (double) numConsPartitionNodes / numberOfNodes;
-            final double nonConsNodeRatio = (double) numNonConsPartitionNodes / numberOfNodes;
-
-            // In phase 2, events created by the sub-quorum partition nodes should not reach consensus, so we set
-            // the min and max consensus ratio relative to the number of nodes in the quorum partition.
-            final TestSequence phase2 = new TestSequence(eventsPerPhase);
-            phase2.setMinimumConsensusRatio(consNodeRatio * 0.8);
-            // Some seeds cause the nodes in the quorum partition to create more than it's fair share of events,
-            // so we allow a little more than the exact ratio of nodes in that partition
-            phase2.setMaximumConsensusRatio(consNodeRatio * 1.1);
-            // Many events in the sub-quorum partition will become stale. 0.15 is somewhat arbitrary.
-            phase2.setMinimumStaleRatio(nonConsNodeRatio * 0.15);
-            phase2.setMaximumStaleRatio(nonConsNodeRatio);
-
-            // In phase 3 consensus should return to normal.
-            final TestSequence phase3 = new TestSequence(eventsPerPhase).setMinimumConsensusRatio(0.8);
-
-            return List.of(phase1, phase2, phase3);
-        });
-
-        testConsensus(testDefinition, iterations, seeds);
-    }
-
-    /**
-     * Creates three test sequences:
      *
      * <ol>
-     *     <li>fully connected network</li>
-     *     <li>partitioned network such that one of the partitions cannot reach consensus</li>
-     *     <li>fully connected network</li>
+     *   <li>fully connected network
+     *   <li>partitioned network such that one of the partitions cannot reach consensus
+     *   <li>fully connected network
      * </ol>
      */
-    public static List<TestSequence> subQuorumPartitionTestSequences(final ConsensusTestDefinition testDefinition) {
-        final int eventsPerPhase = testDefinition.getEventsPerPhase();
-        final int numberOfNodes = testDefinition.getNumberOfNodes();
-
-        final Set<Integer> partitionedNodes = getSubStrongMinorityNodes(testDefinition.getNodeWeights());
-
-        // All nodes talk to each other with equal probability
-        final List<List<Double>> fullyConnected = createBalancedOtherParentMatrix(numberOfNodes);
-
-        // Less than a strong minority of nodes' weight are partitioned from the network
+    public static void subQuorumPartitionTests(@NonNull final TestInput input) {
+        // Network is connected for a while, then is partitioned, then is connected for a while
+        // again.
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        final List<List<Double>> fullyConnected = createBalancedOtherParentMatrix(input.numberOfNodes());
+        final Set<Integer> partitionedNodes = ConsensusTestUtils.getSubStrongMinorityNodes(orchestrator.getWeights());
+        final int numPartitionedNodes = partitionedNodes.size();
+        // Less than a strong minority of nodes' weigh are partitioned from the network
         final List<List<Double>> partitioned =
-                createPartitionedOtherParentAffinityMatrix(numberOfNodes, partitionedNodes);
-
-        // Network is connected for a while, then is partitioned, then is connected for a while again.
-        testDefinition
-                .getNode1EventEmitter()
-                .getGraphGenerator()
-                .setOtherParentAffinity((Random r, long eventIndex, List<List<Double>> previousValue) -> {
-                    if (eventIndex < eventsPerPhase) {
-                        // phase 1
-                        return fullyConnected;
-                    } else if (eventIndex < 2L * eventsPerPhase) {
-                        // phase 2
-                        return partitioned;
-                    } else {
-                        // phase 3
-                        return fullyConnected;
-                    }
-                });
+                createPartitionedOtherParentAffinityMatrix(input.numberOfNodes(), partitionedNodes);
+        final int numConsPartitionNodes = input.numberOfNodes() - numPartitionedNodes;
+        final double consNodeRatio = (double) numConsPartitionNodes / input.numberOfNodes();
+        final double nonConsNodeRatio = (double) numPartitionedNodes / input.numberOfNodes();
 
         // In phase 1 we expect normal consensus
-        final TestSequence phase1 = new TestSequence(eventsPerPhase).setMinimumConsensusRatio(0.8);
+        orchestrator.setOtherParentAffinity(fullyConnected);
+        orchestrator.generateEvents(0.33);
+        orchestrator.validateAndClear(Validations.standard());
 
-        final int numNonConsPartitionNodes = partitionedNodes.size();
-        final int numConsPartitionNodes = numberOfNodes - numNonConsPartitionNodes;
-        final double consNodeRatio = (double) numConsPartitionNodes / numberOfNodes;
-        final double nonConsNodeRatio = (double) numNonConsPartitionNodes / numberOfNodes;
-
-        // In phase 2, events created by the sub-quorum partition nodes should not reach consensus, so we set
+        // In phase 2, events created by the sub-quorum partition nodes should not reach consensus,
+        // so we set
         // the min and max consensus ratio relative to the number of nodes in the quorum partition.
-        final TestSequence phase2 = new TestSequence(eventsPerPhase);
-        phase2.setMinimumConsensusRatio(consNodeRatio * 0.8);
-        // Some seeds cause the nodes in the quorum partition to create more than it's fair share of events,
-        // so we allow a little more than the exact ratio of nodes in that partition
-        phase2.setMaximumConsensusRatio(consNodeRatio * 1.1);
-        // Many events in the sub-quorum partition will become stale. 0.15 is somewhat arbitrary.
-        phase2.setMinimumStaleRatio(nonConsNodeRatio * 0.15);
-        phase2.setMaximumStaleRatio(nonConsNodeRatio);
+        orchestrator.setOtherParentAffinity(partitioned);
+        orchestrator.generateEvents(0.33);
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.standard()
+                        .setMinimumConsensusRatio(consNodeRatio * 0.8)
+                        // Some seeds cause the nodes in the quorum partition to
+                        // create more than it's fair
+                        // share of events, so we allow a little more than the exact
+                        // ratio of nodes in that
+                        // partition
+                        .setMaximumConsensusRatio(consNodeRatio * 1.2)
+                        // Many events in the sub-quorum partition will become
+                        // stale. 0.15 is somewhat
+                        // arbitrary.
+                        .setMinimumStaleRatio(nonConsNodeRatio * 0.15)
+                        .setMaximumStaleRatio(nonConsNodeRatio)));
 
         // In phase 3 consensus should return to normal.
-        final TestSequence phase3 = new TestSequence(eventsPerPhase).setMinimumConsensusRatio(0.8);
-
-        return List.of(phase1, phase2, phase3);
+        orchestrator.setOtherParentAffinity(fullyConnected);
+        orchestrator.generateEvents(0.34);
+        orchestrator.validateAndClear(Validations.standard());
     }
 
-    /**
-     * Get a set of node ids such that their weight is at least a strong minority but not a super majority. Each group
-     * of nodes (the partitioned node and non-partitions nodes) has a strong minority.
-     *
-     * @param nodeWeights the weights of each node in the network
-     * @return the list of node ids
-     */
-    private static Set<Integer> getStrongMinorityNodes(final List<Long> nodeWeights) {
-        final Set<Integer> partitionedNodes = new HashSet<>();
-        final long totalWeight = nodeWeights.stream().reduce(0L, Long::sum);
-        long partitionedWeight = 0L;
-        for (int i = 0; i < nodeWeights.size(); i++) {
-            // If we have enough partitioned nodes to make a strong minority, stop and return
-            if (STRONG_MINORITY.isSatisfiedBy(partitionedWeight, totalWeight)) {
-                break;
-            }
-            // If adding this node to the partition would give the partition a super majority, skip this node because
-            // the remaining group of nodes would not have a strong minority
-            if (SUPER_MAJORITY.isSatisfiedBy(partitionedWeight + nodeWeights.get(i), totalWeight)) {
-                continue;
-            }
-            partitionedNodes.add(i);
-            partitionedWeight += nodeWeights.get(i);
+    public static void cliqueTests(@NonNull final TestInput input) {
+        final int numberOfNodes = input.numberOfNodes();
+        // If the number of nodes is not divisible by 3 then the last clique will be slightly larger
+        final int cliqueSize = numberOfNodes / 3;
+
+        // A node to clique mapping
+        final Map<Integer, Integer> cliques = new HashMap<>();
+        for (int i = 0; i < cliqueSize; i++) {
+            cliques.put(i, 0);
         }
-        System.out.println("Partitioned nodes: " + partitionedNodes);
-        System.out.printf(
-                "\nPartition has %s (%s%%) of %s total weight.%n",
-                partitionedWeight, (((double) partitionedWeight) / totalWeight) * 100, totalWeight);
-        return partitionedNodes;
-    }
-
-    /**
-     * Get a set of node ids such that their weight is less than a strong minority. Nodes not in the returned set will
-     * have a super majority and can continue to reach consensus.
-     *
-     * @param nodeWeights the weights of each node in the network
-     * @return the list of node ids
-     */
-    private static Set<Integer> getSubStrongMinorityNodes(final List<Long> nodeWeights) {
-        final Set<Integer> partitionedNodes = new HashSet<>();
-        final long totalWeight = nodeWeights.stream().reduce(0L, Long::sum);
-        long partitionedWeight = 0L;
-        for (int i = 0; i < nodeWeights.size(); i++) {
-            // Leave at least two nodes not in the partition set so that gossip can continue in both
-            // the partitioned nodes and non-partitioned nodes
-            if (partitionedNodes.size() + 2 == nodeWeights.size()) {
-                break;
-            }
-            // If adding this node to the partition would give the partition a strong minority, skip this node because
-            // the remaining group of nodes would not have a super majority
-            if (STRONG_MINORITY.isSatisfiedBy(partitionedWeight + nodeWeights.get(i), totalWeight)) {
-                continue;
-            }
-            partitionedNodes.add(i);
-            partitionedWeight += nodeWeights.get(i);
+        for (int i = cliqueSize; i < 2 * cliqueSize; i++) {
+            cliques.put(i, 1);
         }
-        System.out.println("Partitioned nodes: " + partitionedNodes);
-        System.out.printf(
-                "\nPartition has %s (%s%%) of %s total weight.%n",
-                partitionedWeight, (((double) partitionedWeight) / totalWeight) * 100, totalWeight);
-        return partitionedNodes;
+        for (int i = 2 * cliqueSize; i < numberOfNodes; i++) {
+            cliques.put(i, 1);
+        }
+        // There are 3 cliques
+        // Each clique syncs within itself frequently, but with outsiders it syncs rarely
+        final List<List<Double>> affinity = createCliqueOtherParentMatrix(numberOfNodes, cliques);
+
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        orchestrator.setOtherParentAffinity(affinity);
+
+        orchestrator.generateAllEvents();
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.standard()
+                        // We expect for events to eventually reach consensus, but
+                        // there may be a long lag
+                        // between event creation and consensus. This means that the
+                        // minimum consensus ratio
+                        // needs to be lower than usual.
+                        .setMinimumConsensusRatio(0.7)
+                        .setMaximumStaleRatio(0.05)));
     }
 
-    public static void cliqueTests(
-            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
-        final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Clique Tests", numberOfNodes, weightGenerator, 10_000);
-
-        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
-            for (final Long nodeWeight : nodeWeights) {
-                eventSources.add(new StandardEventSource(nodeWeight));
-            }
-            final StandardGraphGenerator generator = new StandardGraphGenerator(0, eventSources);
-
-            // If the number of nodes is not divisible by 3 then the last clique will be slightly larger
-            final int cliqueSize = numberOfNodes / 3;
-
-            // A node to clique mapping
-            final Map<Integer, Integer> cliques = new HashMap<>();
-            for (int i = 0; i < cliqueSize; i++) {
-                cliques.put(i, 0);
-            }
-            for (int i = cliqueSize; i < 2 * cliqueSize; i++) {
-                cliques.put(i, 1);
-            }
-            for (int i = 2 * cliqueSize; i < numberOfNodes; i++) {
-                cliques.put(i, 1);
-            }
-
-            // There are 3 cliques
-            // Each clique syncs within itself frequently, but with outsiders it syncs rarely
-            final List<List<Double>> affinity = createCliqueOtherParentMatrix(numberOfNodes, cliques);
-
-            generator.setOtherParentAffinity(affinity);
-            return generator;
-        });
-
-        testDefinition.setTestSequenceGenerator(td -> {
-            // We expect for events to eventually reach consensus, but there may be a long lag between event
-            // creation and consensus. This means that the minimum consensus ratio needs to be lower than usual.
-            return List.of(new TestSequence(td.getEventsPerPhase())
-                    .setMinimumConsensusRatio(0.7)
-                    .setMaximumStaleRatio(0.05));
-        });
-
-        testConsensus(testDefinition, iterations, seeds);
-    }
-
-    public static void variableRateTests(
-            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
-
-        final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Variable Rate Tests", numberOfNodes, weightGenerator, 10_000);
-
+    public static void variableRateTests(@NonNull final TestInput input) {
         // Set the event source generator to create variable rate event sources
-        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
+        final Consumer<EventSource<?>> configureVariable = es -> {
             final DynamicValue<Double> variableEventWeight = (Random r, long eventIndex, Double previousValue) -> {
                 if (previousValue == null) {
                     return 1.0;
@@ -603,610 +322,332 @@ public final class ConsensusTestDefinitions {
                     return value;
                 }
             };
+            es.setNewEventWeight(variableEventWeight);
+        };
 
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
-            for (final long weight : nodeWeights) {
-                eventSources.add(new StandardEventSource(weight).setNewEventWeight(variableEventWeight));
-            }
-
-            return new StandardGraphGenerator(0, eventSources);
-        });
-
-        testConsensus(testDefinition, iterations, seeds);
+        OrchestratorBuilder.builder()
+                .setTestInput(input)
+                .setEventSourceConfigurator(configureVariable)
+                .build()
+                .generateAllEvents()
+                .validateAndClear(Validations.standard());
     }
 
-    /**
-     * One node has a tendency to use stale other parents.
-     */
-    public static void nodeUsesStaleOtherParents(
-            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
-
-        final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Node Uses Stale Other Parents", numberOfNodes, weightGenerator, 10_000);
-
-        final int staleNodeProvider = numberOfNodes - 1;
-        final AtomicDouble minConsensusRatio = new AtomicDouble();
-
-        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
-            for (final Long nodeWeight : nodeWeights) {
-                eventSources.add(new StandardEventSource(nodeWeight));
-            }
-            final StandardGraphGenerator generator = new StandardGraphGenerator(0, eventSources);
-
-            generator
-                    .getSourceByIndex(staleNodeProvider)
+    /** One node has a tendency to use stale other parents. */
+    public static void usesStaleOtherParents(@NonNull final TestInput input) {
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        orchestrator.configGenerators(g -> {
+            // Setup: pick one node to use stale other-parents
+            final NodeId staleNodeProvider = g.getAddressBook().getNodeId(0);
+            g.getSource(staleNodeProvider)
                     .setRecentEventRetentionSize(5000)
                     .setRequestedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300));
-
-            // set low to avoid false failures
-            minConsensusRatio.set(0.3);
-
-            return generator;
         });
+        orchestrator.generateAllEvents();
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.standard()
+                        .setMinimumConsensusRatio(0.3)
+                        .setMaximumStaleRatio(0.2)));
+    }
 
-        testDefinition.setTestSequenceGenerator(td -> List.of(new TestSequence(td.getEventsPerPhase())
-                .setMinimumConsensusRatio(minConsensusRatio.get())
-                .setMaximumStaleRatio(0.2)));
-
-        testConsensus(testDefinition, iterations, seeds);
+    /** One node has a tendency to provide stale other parents (when they are requested). */
+    public static void providesStaleOtherParents(@NonNull final TestInput input) {
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        // Setup: pick one node to provide stale other-parents
+        // The node's weight should be less than a strong minority so that we can reach consensus
+        final NodeId staleParentProvider = StreamSupport.stream(
+                        Spliterators.spliteratorUnknownSize(
+                                orchestrator.getAddressBook().iterator(), 0),
+                        false)
+                .filter(a -> !Threshold.STRONG_MINORITY.isSatisfiedBy(
+                        a.getWeight(), orchestrator.getAddressBook().getTotalWeight()))
+                .findFirst()
+                .orElseThrow()
+                .getNodeId();
+        Objects.requireNonNull(staleParentProvider, "Could not find a node with less than a strong minority of weight");
+        orchestrator.configGenerators(g -> g.getSource(staleParentProvider)
+                .setRecentEventRetentionSize(5000)
+                .setProvidedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300)));
+        orchestrator.generateAllEvents();
+        /* If the node providing old events as other parents has a strong minority of weigh, rounds become very
+        large because many more events are required to strongly see witnesses. Larger rounds means fewer stale
+        events. Possibly no stale events at all if there are not enough events to create enough rounds so that
+        generations are considered ancient. */
+        orchestrator.validateAndClear(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.2)));
     }
 
     /**
-     * One node has a tendency to provide stale other parents (when they are requested).
+     * A quorum of nodes stop producing events, thus preventing consensus and round created
+     * advancement
      */
-    public static void nodeProvidesStaleOtherParents(
-            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
+    public static void quorumOfNodesGoDown(@NonNull final TestInput input) {
+        // Test setup
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        final Set<Integer> quorumNodeIds = ConsensusTestUtils.getStrongMinorityNodes(orchestrator.getWeights());
 
-        final ConsensusTestDefinition testDefinition = new ConsensusTestDefinition(
-                "Node Provides Stale Other Parents", numberOfNodes, weightGenerator, 10_000);
+        //
+        // Phase 1
+        //
+        // execution: generate a third of the total events
+        orchestrator.generateEvents(0.33);
+        // validation: we expect normal consensus
+        orchestrator.validateAndClear(Validations.standard());
 
-        final int staleNodeProvider = numberOfNodes - 1;
-        final AtomicDouble minConsensusRatio = new AtomicDouble();
-        final AtomicDouble minStaleRatio = new AtomicDouble();
-
-        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
-            for (final Long nodeWeight : nodeWeights) {
-                eventSources.add(new StandardEventSource(nodeWeight));
-            }
-            final StandardGraphGenerator generator = new StandardGraphGenerator(0, eventSources);
-
-            generator
-                    .getSourceByIndex(staleNodeProvider)
-                    .setRecentEventRetentionSize(5000)
-                    .setProvidedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300));
-
-            /*
-            If the node providing old events as other parents has a strong minority of weight, rounds become very
-            large because many more events are required to strongly see witnesses. Larger rounds means fewer stale
-            events. Possibly no stale events at all if there are not enough events to create enough rounds so that
-            generations are considered ancient.
-            */
-            minConsensusRatio.set(0.2);
-            minStaleRatio.set(0.0);
-
-            return generator;
-        });
-
-        testDefinition.setTestSequenceGenerator(td -> List.of(new TestSequence(td.getEventsPerPhase())
-                .setMinimumStaleRatio(minStaleRatio.get())
-                .setMaximumStaleRatio(0.3)
-                .setMinimumConsensusRatio(minConsensusRatio.get())
-                .setMaximumConsensusRatio(0.95)));
-
-        testConsensus(testDefinition, iterations, seeds);
-    }
-
-    /**
-     * This test simulates a large number of nodes.
-     */
-    public static void manyNodeTests(final WeightGenerator weightGenerator, final int iterations) {
-        final int numberOfNodes = 50;
-
-        final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Many Node Tests", numberOfNodes, weightGenerator, 10_000);
-
-        // It takes a lot longer for 50 nodes to reach consensus, so don't expect the usual high ratio
-        // If the number of events is significantly increased then this ratio is expected to approach 1.0.
-        testDefinition.setTestSequenceGenerator(
-                td -> List.of(new TestSequence(td.getEventsPerPhase()).setMinimumConsensusRatio(0.6)));
-
-        testConsensus(testDefinition, iterations);
-    }
-
-    /**
-     * This test simulates a small number of nodes.
-     */
-    public static void fewNodesTests(final WeightGenerator weightGenerator, final int iterations) {
-        final int numberOfNodes = 2;
-
-        final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Few Nodes Tests", numberOfNodes, weightGenerator, 10_000);
-
-        testConsensus(testDefinition, iterations);
-    }
-
-    /**
-     * A quorum of nodes stop producing events, thus preventing consensus and round created advancement
-     */
-    public static void quorumOfNodesGoDownTests(
-            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
-
-        final int eventsPerPhase = 3_000;
-
-        final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Quorum Goes Down Tests", numberOfNodes, weightGenerator, eventsPerPhase);
-
-        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
-            final DynamicValue<Double> disconnectingNodeWeight =
-                    (Random random, long eventIndex, Double previousValue) -> {
-                        if (eventIndex < eventsPerPhase) {
-                            return 1.0;
-                        } else if (eventIndex < 2 * eventsPerPhase) {
-                            return 0.0;
-                        } else {
-                            return 1.0;
-                        }
-                    };
-
-            final Set<Integer> quorumNodeIds = getStrongMinorityNodes(nodeWeights);
-
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
-            for (int i = 0; i < nodeWeights.size(); i++) {
-                final StandardEventSource source = new StandardEventSource(nodeWeights.get(i));
-                if (quorumNodeIds.contains(i)) {
-                    source.setNewEventWeight(disconnectingNodeWeight);
-                }
-                eventSources.add(source);
-            }
-
-            return new StandardGraphGenerator(0, eventSources);
-        });
-
-        testDefinition.setTestSequenceGenerator(td -> {
-
-            // In phase 1 we expect normal consensus
-            // There are fewer events that normal (10_000 is standard) so it is possible that fewer events will reach
-            // consensus than expected by the default minimum ratio.
-            final TestSequence phase1 = new TestSequence(eventsPerPhase).setMinimumConsensusRatio(0.8);
-
-            // In phase 2, no events should reach consensus and should have a created round no higher than the max
-            // of its parents' created rounds
-            final TestSequence phase2 = new TestSequence(eventsPerPhase)
-                    .setMinimumConsensusRatio(0.0)
-                    .setMaximumConsensusRatio(0.0);
-            phase2.setCustomValidator(ConsensusTestDefinitions::createdRoundDoesNotAdvance);
-
-            // In phase 3 we expect normal consensus.
-            final TestSequence phase3 = new TestSequence(eventsPerPhase).setMinimumConsensusRatio(0.8);
-
-            return List.of(phase1, phase2, phase3);
-        });
-
-        testConsensus(testDefinition, iterations, seeds);
-    }
-
-    /**
-     * Verifies that the created round of new events does not advance when a quorum of nodes is down.
-     *
-     * @param consensusEvents events that reached consensus in the test sequence
-     * @param allEvents       all events created in the test sequence
-     */
-    private static void createdRoundDoesNotAdvance(
-            final List<IndexedEvent> consensusEvents, final List<IndexedEvent> allEvents) {
-        final long firstRoundInSequence = allEvents.get(0).getRoundCreated();
-        final long secondRoundInSequence = firstRoundInSequence + 1;
-        final long thirdRoundInSequence = secondRoundInSequence + 1;
-
-        for (final IndexedEvent e : allEvents) {
-            final long roundCreated = e.getRoundCreated();
-
-            // Ignore the first three rounds of events in the sequence.
-            // The first round may have events from the prior sequence which has a quorum
-            // The second round's events could still be strongly seen by witnesses in the previous round
-
-            // It is possible for a third round to be created if the nodes that went down created events
-            // in secondRoundInSequence in the previous sequence. I.e. the nodes that were still running
-            // in this sequence created some events that had a created round of one less than the last events
-            // created by the crashed nodes.
-            if (roundCreated == firstRoundInSequence
-                    || roundCreated == secondRoundInSequence
-                    || roundCreated == thirdRoundInSequence) {
-                continue;
-            }
-
-            final long spRound =
-                    e.getSelfParent() == null ? -1 : e.getSelfParent().getRoundCreated();
-            final long opRound =
-                    e.getOtherParent() == null ? -1 : e.getOtherParent().getRoundCreated();
-            assertEquals(
-                    Math.max(spRound, opRound),
-                    roundCreated,
-                    String.format(
-                            "Created round of event %s should not advance when a quorum of nodes are down.\n"
-                                    + "created round: %s, sp created round: %s, op created round: %s",
-                            e, roundCreated, spRound, opRound));
+        //
+        // Phase 2
+        //
+        // setup: >= 1/3 of nodes stop creating events
+        for (final Integer quorumNodeId : quorumNodeIds) {
+            orchestrator.setNewEventWeight(quorumNodeId, 0d);
         }
+        // execution: generate a third of the total events
+        orchestrator.generateEvents(0.33);
+        // validation: almost no events will reach consensus
+        //   (it's possible a few tail events may reach consensus right at the beginning of the phase)
+        orchestrator.validateAndClear(Validations.standard()
+                // in this test, only 1 node could end up creating events, which means they have to be added in the same
+                // order, so we disable this validation for this test
+                .remove(Validations.ValidationType.DIFFERENT_ORDER)
+                .ratios(EventRatioValidation.standard()
+                        .setMinimumConsensusRatio(0.0)
+                        .setMaximumConsensusRatio(0.2)));
+
+        //
+        // Phase 3
+        //
+        // setup: All nodes start creating events again
+        for (final Integer quorumNodeId : quorumNodeIds) {
+            orchestrator.setNewEventWeight(quorumNodeId, 1d);
+        }
+        // execution: generate a third of the total events
+        orchestrator.generateEvents(0.34);
+        // validation: we expect normal consensus
+        orchestrator.validateAndClear(Validations.standard());
+    }
+
+    /** less than a quorum stop producing events, consensus proceeds as normal */
+    public static void subQuorumOfNodesGoDown(@NonNull final TestInput input) {
+        // Test setup
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        final Set<Integer> subQuorumNodesIds = ConsensusTestUtils.getSubStrongMinorityNodes(orchestrator.getWeights());
+
+        //
+        // Phase 1
+        //
+        // execution: generate a third of the total events
+        orchestrator.generateEvents(0.33);
+        // validation: we expect normal consensus
+        orchestrator.validateAndClear(Validations.standard());
+
+        //
+        // Phase 2
+        //
+        // setup: < 1/3 of nodes stop creating events
+        for (final Integer id : subQuorumNodesIds) {
+            orchestrator.setNewEventWeight(id, 0d);
+        }
+        // execution: generate a third of the total events
+        orchestrator.generateEvents(0.33);
+        // validation: Consensus continues without the nodes that shut down
+        orchestrator.validateAndClear(Validations.standard());
+
+        //
+        // Phase 3
+        //
+        // setup: All nodes start creating events again
+        for (final Integer id : subQuorumNodesIds) {
+            orchestrator.setNewEventWeight(id, 1d);
+        }
+        // execution: generate a third of the total events
+        orchestrator.generateEvents(0.34);
+        // validation: we expect normal consensus
+        orchestrator.validateAndClear(Validations.standard());
     }
 
     /**
-     * less than a quorum stop producing events, consensus proceeds as normal
+     * There should be no problems when the probability of events landing on the same timestamp is
+     * higher than usual.
      */
-    public static void subQuorumOfNodesGoDownTests(
-            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
+    public static void repeatedTimestampTest(@NonNull final TestInput input) {
+        OrchestratorBuilder.builder()
+                .setTestInput(input)
+                .build()
+                .configGenerators(g -> ((StandardGraphGenerator) g).setSimultaneousEventFraction(0.5))
+                .generateAllEvents()
+                .validateAndClear(Validations.standard()
+                        .ratios(EventRatioValidation.standard().setMinimumConsensusRatio(0.3)));
+    }
 
-        final int eventsPerPhase = 3_000;
+    public static void stale(@NonNull final TestInput input) {
+        // setup
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
 
-        final ConsensusTestDefinition testDefinition = new ConsensusTestDefinition(
-                "Sub Quorum of Nodes Go Down Tests", numberOfNodes, weightGenerator, eventsPerPhase);
+        // Phase 1: all nodes are used as other parents
+        orchestrator.generateEvents(0.1);
 
-        testDefinition.setGraphGeneratorProvider(nodeWeights -> {
-            final DynamicValue<Double> disconnectingNodeWeight =
-                    (Random random, long eventIndex, Double previousValue) -> {
-                        if (eventIndex < eventsPerPhase) {
-                            return 1.0;
-                        } else if (eventIndex < 2 * eventsPerPhase) {
-                            return 0.0;
-                        } else {
-                            return 1.0;
-                        }
-                    };
+        // Phase 2: node 0 is never used as an other-parent
+        orchestrator.setOtherParentAffinity(createShunnedNodeOtherParentAffinityMatrix(input.numberOfNodes(), 0));
+        orchestrator.generateEvents(0.8);
 
-            final Set<Integer> subQuorumNodesIds = getSubStrongMinorityNodes(nodeWeights);
-
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
-            for (int i = 0; i < nodeWeights.size(); i++) {
-                final StandardEventSource source = new StandardEventSource(nodeWeights.get(i));
-                if (subQuorumNodesIds.contains(i)) {
-                    source.setNewEventWeight(disconnectingNodeWeight);
-                }
-                eventSources.add(new StandardEventSource());
-            }
-
-            return new StandardGraphGenerator(0, eventSources);
-        });
-
-        testDefinition.setTestSequenceGenerator(td -> {
-            // In phase 1 consensus happens as normal
-            final TestSequence phase1 = new TestSequence(eventsPerPhase).setMinimumConsensusRatio(0.8);
-
-            // Consensus continues without the nodes that shut down
-            final TestSequence phase2 = new TestSequence(eventsPerPhase).setMinimumConsensusRatio(0.8);
-
-            // Consensus continues as normal
-            final TestSequence phase3 = new TestSequence(eventsPerPhase).setMinimumConsensusRatio(0.8);
-
-            return List.of(phase1, phase2, phase3);
-        });
-
-        testConsensus(testDefinition, iterations, seeds);
+        // Phase 3: all nodes are used as other-parents, again
+        orchestrator.setOtherParentAffinity(createBalancedOtherParentMatrix(input.numberOfNodes()));
+        orchestrator.generateEvents(0.1);
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.blank()
+                        // if the shunned node has a lot of weigh, not many events
+                        // will reach consensus
+                        .setMinimumConsensusRatio(0.1)
+                        .setMinimumStaleRatio(0.1)));
     }
 
     /**
-     * There should be no problems when the probability of events landing on the same timestamp is higher than usual.
+     * Simulates a consensus restart. The number of nodes and number of events is chosen randomly
+     * between the supplied bounds
      */
-    public static void repeatedTimestampTest(
-            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
-        final int eventsPerPhase = 10_000;
+    public static void restart(@NonNull final TestInput input) {
 
-        final ConsensusTestDefinition testDefinition =
-                new ConsensusTestDefinition("Repeated Timestamp Test", numberOfNodes, weightGenerator, eventsPerPhase);
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
 
-        testDefinition.setTestSequenceGenerator(
-                td -> List.of(new TestSequence(eventsPerPhase).setMinimumConsensusRatio(0.3)));
-
-        testDefinition.setGraphGeneratorProvider(weights -> {
-            final List<EventSource<?>> eventSources = newStandardEventSources(weights);
-            final StandardGraphGenerator generator = new StandardGraphGenerator(0, eventSources);
-            generator.setSimultaneousEventFraction(0.5);
-            return generator;
-        });
-
-        testConsensus(testDefinition, iterations, seeds);
+        orchestrator.generateEvents(0.5);
+        orchestrator.validate(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
+        orchestrator.restartAllNodes();
+        orchestrator.clearOutput();
+        orchestrator.generateEvents(0.5);
+        orchestrator.validateAndClear(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
     }
 
-    /**
-     * Simulates a consensus restart. The number of nodes and number of events is chosen randomly between the supplied
-     * bounds
-     *
-     * @param seed      a seed to use for a random generator
-     * @param stateDir  the directory where saved states can be written (this method uses merkle serialization)
-     * @param minNodes  minimum number of nodes
-     * @param maxNodes  maximum number of nodes
-     * @param minPerSeq minimum number of events to generate
-     * @param maxPerSeq maximum number of events to generate
-     */
-    public static void restart(
-            final Long seed,
-            final Path stateDir,
-            final WeightGenerator weightGenerator,
-            final int minNodes,
-            final int maxNodes,
-            final int minPerSeq,
-            final int maxPerSeq)
-            throws ConstructableRegistryException, IOException {
+    /** Simulates a reconnect */
+    public static void reconnect(@NonNull final TestInput input) {
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
 
-        System.out.println("Consensus Restart Test");
-        final Random random = initRandom(seed);
+        orchestrator.generateEvents(0.5);
+        orchestrator.validate(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
+        orchestrator.addReconnectNode();
 
-        final int numberOfNodes =
-                random.ints(minNodes, maxNodes + 1).findFirst().orElseThrow();
-        final int eventsPerSequence =
-                random.ints(minPerSeq, maxPerSeq + 1).findFirst().orElseThrow();
-        final long generatorSeed = random.nextLong();
-
-        System.out.printf("Nodes:%d events:%d\n", numberOfNodes, eventsPerSequence);
-
-        final List<Long> nodeWeights = weightGenerator.getWeights(seed, numberOfNodes);
-        final List<EventSource<?>> eventSources = newStandardEventSources(nodeWeights);
-        final StandardGraphGenerator generator = new StandardGraphGenerator(generatorSeed, eventSources);
-
-        final TestSequence sequence = new TestSequence(eventsPerSequence);
-        sequence.setMinimumConsensusRatio(0);
-        final ConsensusTestContext context = new ConsensusTestContext(
-                generatorSeed, new StandardEventEmitter(generator), new StandardEventEmitter(generator));
-
-        context.runSequence(sequence);
-        context.restartAllNodes(stateDir);
-        context.runSequence(sequence);
+        orchestrator.clearOutput();
+        orchestrator.generateEvents(0.5);
+        orchestrator.validateAndClear(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
     }
 
-    public static void areAllEventsReturned(final int numberOfNodes, final WeightGenerator weightGenerator) {
-        areAllEventsReturned(numberOfNodes, weightGenerator, new Random().nextLong());
+    public static void migrationTest(@NonNull final TestInput input)
+            throws URISyntaxException, ConstructableRegistryException, IOException {
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        final Path ssPath = ResourceLoader.getFile("modified-mainnet-state.swh.bin");
+        final SignedState state = SignedStateFileReader.readSignedStateOnly(
+                TestPlatformContextBuilder.create().build(), ssPath);
+        EventUtils.convertEvents(state);
+
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        orchestrator.loadSignedState(state);
+
+        orchestrator.generateEvents(1);
+        orchestrator.validateAndClear(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
     }
 
-    // FUTURE WORK convert to new framework
-    public static void areAllEventsReturned(
-            final int numberOfNodes, final WeightGenerator weightGenerator, final long seed) {
-        final int numEventsBeforeExclude = 50000;
-        final int numEventsAfterExclude = 50000;
-        final int totalEvents = numEventsAfterExclude + numEventsBeforeExclude;
+    public static void removeNode(@NonNull final TestInput input) {
+        final ConsensusTestOrchestrator orchestrator1 =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        orchestrator1.generateEvents(0.5);
+        orchestrator1.validate(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
 
-        final Map<Hash, EventImpl> eventsNotReturned = new HashMap<>();
-        final Map<Hash, EventImpl> consEvents = new HashMap<>();
-        final Map<Hash, EventImpl> staleEvents = new HashMap<>();
-
-        System.out.println("areAllEventsReturned seed: " + seed);
-        final Random random = new Random(seed);
-
-        final List<Long> nodeWeights = weightGenerator.getWeights(seed, numberOfNodes);
-        final AtomicInteger index = new AtomicInteger(0);
-        final AddressBook ab = new RandomAddressBookGenerator(random)
-                .setSize(numberOfNodes)
-                .setCustomWeightGenerator(id -> nodeWeights.get(index.getAndIncrement()))
-                .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
+        final ConsensusTestOrchestrator orchestrator2 = OrchestratorBuilder.builder()
+                .setTestInput(input.setNumberOfNodes(input.numberOfNodes() - 1))
                 .build();
-
-        // create an empty intake object
-        final TestIntake intake = new TestIntake(ab);
-
-        final SimpleEventGenerator gen = new SimpleEventGenerator(ab, random);
-
-        final AtomicInteger numReturned = new AtomicInteger();
-
-        addAndUpdate(numEventsBeforeExclude, gen, intake, eventsNotReturned, consEvents, staleEvents, numReturned);
-
-        gen.excludeOtherParent(new NodeId(0));
-
-        addAndUpdate(numEventsAfterExclude, gen, intake, eventsNotReturned, consEvents, staleEvents, numReturned);
-
-        long numNotReachedCons = 0;
-
-        final EventImpl[] allEvents = intake.getShadowGraph().getAllEvents();
-        for (final EventImpl event : allEvents) {
-            if (!event.isConsensus() && !event.isStale()) {
-                numNotReachedCons++;
-                eventsNotReturned.remove(event.getBaseHash());
-            }
+        for (int i = 0; i < 2; i++) {
+            orchestrator2
+                    .getNodes()
+                    .get(i)
+                    .getIntake()
+                    .loadSnapshot(orchestrator1
+                            .getNodes()
+                            .get(i)
+                            .getIntake()
+                            .getLatestRound()
+                            .getSnapshot());
+            final int fi = i;
+            orchestrator1.getNodes().get(i).getOutput().getAddedEvents().forEach(e -> {
+                // since the same events are reused, the metadata needs to be cleared
+                e.clearMetadata();
+                e.setRoundCreated(ConsensusConstants.ROUND_UNDEFINED);
+                orchestrator2.getNodes().get(fi).getIntake().addLinkedEvent(e);
+            });
+            ConsensusUtils.loadEventsIntoGenerator(
+                    orchestrator1.getNodes().get(i).getOutput().getAddedEvents().toArray(EventImpl[]::new),
+                    orchestrator2.getNodes().get(i).getEventEmitter().getGraphGenerator(),
+                    orchestrator2.getNodes().get(i).getRandom());
         }
 
-        assertEquals(totalEvents, numReturned.get() + numNotReachedCons, "total number of events is incorrect");
+        orchestrator2.generateEvents(0.5);
+        orchestrator2.validate(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
     }
 
-    private static void addAndUpdate(
-            final int numEvents,
-            final SimpleEventGenerator gen,
-            final TestIntake intake,
-            final Map<Hash, EventImpl> eventsNotReturned,
-            final Map<Hash, EventImpl> consEvents,
-            final Map<Hash, EventImpl> staleEvents,
-            final AtomicInteger numReturned) {
-        for (int i = 0; i < numEvents; i++) {
-            final EventImpl event = gen.nextEvent();
-            intake.addEvent(event);
-            eventsNotReturned.put(event.getBaseHash(), event);
-            assertTrue(
-                    intake.getConsensus().getMinGenerationNonAncient() <= event.getGeneration(),
-                    intake.getConsensus().getMinGenerationNonAncient() + " > " + event.getGeneration());
-            while (!intake.getConsensusRounds().isEmpty()) {
-                final ConsensusRound consensusRound =
-                        intake.getConsensusRounds().poll();
-                numReturned.addAndGet(consensusRound.getConsensusEvents().size());
-                consensusRound.getConsensusEvents().forEach(e -> checkEventAdd(e, consEvents, staleEvents, true));
-                consensusRound.getConsensusEvents().forEach(e -> eventsNotReturned.remove(e.getBaseHash()));
-            }
-            intake.getStaleEvents().forEach(e -> checkEventAdd(e, consEvents, staleEvents, false));
-            intake.getStaleEvents().forEach(e -> eventsNotReturned.remove(e.getBaseHash()));
-            numReturned.addAndGet(intake.getStaleEvents().size());
-            intake.getStaleEvents().clear();
-        }
+    public static void syntheticSnapshot(@NonNull final TestInput input) {
+        final long round = 100;
+        final long lastConsensusOrder = 4000;
+
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        final Instant snapshotTimestamp = Instant.now();
+        orchestrator.getNodes().forEach(n -> {
+            final int numEvents = orchestrator.getEventFraction(0.5);
+            n.getEventEmitter().setCheckpoint(numEvents);
+            final List<IndexedEvent> events = n.getEventEmitter().emitEvents(numEvents);
+            n.getEventEmitter().reset();
+            final Optional<IndexedEvent> maxGenEvent = events.stream()
+                    .max(Comparator.comparingLong(EventImpl::getGeneration).thenComparing(EventImpl::getCreatorId));
+            final ConsensusSnapshot syntheticSnapshot = SyntheticSnapshot.generateSyntheticSnapshot(
+                    round,
+                    lastConsensusOrder,
+                    snapshotTimestamp,
+                    ConfigurationBuilder.create()
+                            .withConfigDataType(ConsensusConfig.class)
+                            .build()
+                            .getConfigData(ConsensusConfig.class),
+                    maxGenEvent.orElseThrow().getBaseEvent());
+            n.getIntake().loadSnapshot(syntheticSnapshot);
+        });
+
+        orchestrator.generateEvents(0.5);
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.blank().setMaximumConsensusRatio(0))
+                // only 1 event will actually be added, that is the judge, so there can be no variation in the order
+                .remove(Validations.ValidationType.DIFFERENT_ORDER));
+
+        orchestrator.generateEvents(0.5);
+        orchestrator.validate(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.8)));
     }
 
-    private static void checkEventAdd(
-            final EventImpl e,
-            final Map<Hash, EventImpl> consEvents,
-            final Map<Hash, EventImpl> staleEvents,
-            final boolean consensus) {
-        final boolean inCons = consEvents.containsKey(e.getBaseHash());
-        final boolean inStale = staleEvents.containsKey(e.getBaseHash());
-
-        if (inCons || inStale) {
-            fail(String.format(
-                    "%s event %s already returned as %s",
-                    consensus ? "Consensus" : "Stale", e.toMediumString(), inCons ? "consensus" : "stale"));
-        }
-        if (consensus) {
-            consEvents.put(e.getBaseHash(), e);
-        } else {
-            staleEvents.put(e.getBaseHash(), e);
-        }
-    }
-
-    // FUTURE WORK Finish and convert to new framework. As it is, this does not verify anything.
-    public static void staleEvent(
-            final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
-        if (seeds != null) {
-            for (final long seed : seeds) {
-                System.out.println("Stale Event Tests, " + numberOfNodes + " nodes" + ": seed = " + seed + "L");
-                doStaleEvent(numberOfNodes, weightGenerator, seed);
-            }
+    /**
+     * Tests loading a genesis snapshot and continuing consensus from there
+     */
+    public static void genesisSnapshotTest(@NonNull final TestInput input) {
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        for (final ConsensusTestNode node : orchestrator.getNodes()) {
+            node.getIntake().loadSnapshot(SyntheticSnapshot.getGenesisSnapshot());
         }
 
-        for (int j = 0; j < iterations; ++j) {
-            System.out.println("Stale Event Tests");
-            doStaleEvent(numberOfNodes, weightGenerator, 0);
-        }
-    }
-
-    private static void doStaleEvent(final int numberOfNodes, final WeightGenerator weightGenerator, final long seed) {
-        final int numEventsBeforeExclude = 1000;
-        final int numEventsAfterExclude = 10000;
-        final int numEventsAfterInclude = 1000;
-
-        final long seedToUse = seed == 0 ? new Random().nextLong() : seed;
-        final Random random = initRandom(seedToUse);
-
-        final List<Long> nodeWeights = weightGenerator.getWeights(seedToUse, numberOfNodes);
-        final AtomicInteger index = new AtomicInteger(0);
-        final AddressBook ab = new RandomAddressBookGenerator(random)
-                .setSize(numberOfNodes)
-                .setCustomWeightGenerator(id -> nodeWeights.get(index.getAndIncrement()))
-                .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
-                .build();
-
-        // create an empty consensus object
-        final Consensus cons = buildSimpleConsensus(ab);
-
-        final SimpleEventGenerator gen = new SimpleEventGenerator(ab, random);
-
-        for (int i = 0; i < numEventsBeforeExclude; i++) {
-            cons.addEvent(gen.nextEvent(), ab);
-        }
-
-        gen.excludeOtherParent(new NodeId(0));
-
-        for (int i = 0; i < numEventsAfterExclude; i++) {
-            cons.addEvent(gen.nextEvent(), ab);
-        }
-
-        gen.includeOtherParent(new NodeId(0));
-
-        for (int i = 0; i < numEventsAfterInclude; i++) {
-            cons.addEvent(gen.nextEvent(), ab);
-        }
-    }
-
-    // FUTURE WORK convert to new framework
-    public static void reconnectSimulation(
-            final Path stateDir,
-            final int numberOfNodes,
-            final WeightGenerator weightGenerator,
-            final int iterations,
-            final long... seeds) {
-
-        if (seeds != null) {
-            for (final long seed : seeds) {
-                System.out.println("Reconnect Tests, " + numberOfNodes + " nodes" + ": seed = " + seed + "L");
-                try {
-                    doReconnectSimulation(numberOfNodes, stateDir, weightGenerator, seed);
-                } catch (final IOException | ConstructableRegistryException | SignedStateLoadingException e) {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-
-        for (int i = 0; i < iterations; ++i) {
-            System.out.println("Reconnect Tests");
-            try {
-                doReconnectSimulation(numberOfNodes, stateDir, weightGenerator, 0);
-            } catch (final IOException | ConstructableRegistryException | SignedStateLoadingException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    private static void doReconnectSimulation(
-            final int numberOfNodes, final Path stateDir, final WeightGenerator weightGenerator, final long seed)
-            throws IOException, ConstructableRegistryException, SignedStateLoadingException {
-        final int numEventsBeforeRestart = 10000;
-        final int numEventsAfterRestart = 10000;
-
-        final long seedToUse = seed == 0 ? new Random().nextLong() : seed;
-        final Random random = initRandom(seedToUse);
-
-        final List<Long> nodeWeights = weightGenerator.getWeights(seedToUse, numberOfNodes);
-        final List<EventSource<?>> eventSources = EventSourceFactory.newStandardEventSources(nodeWeights);
-        final StandardGraphGenerator generator = new StandardGraphGenerator(random.nextInt(), eventSources);
-        final StandardEventEmitter emitter = new StandardEventEmitter(generator);
-
-        final SignedStateEventsAndGenerations eventsAndGenerations =
-                new SignedStateEventsAndGenerations(ConfigurationHolder.getConfigData(ConsensusConfig.class));
-        // create an empty consensus object
-        final Consensus origCons =
-                new ConsensusWithShadowGraph(generator.getAddressBook(), eventsAndGenerations::addRoundGeneration);
-
-        // feed some events into it and keep the last [roundsKeep] rounds of consensus events
-        final List<IndexedEvent> lastRounds = applyEventsToConsensus(emitter, origCons, numEventsBeforeRestart);
-        // We create a copy of the signed state like in a restart or reconnect to closely mimic reconnect
-        final SignedState signedState = EventUtils.serializeDeserialize(
-                stateDir, createSignedState(lastRounds, eventsAndGenerations, generator.getAddressBook()));
-
-        // create a new consensus object with the consensus events the last one has saved
-        final ConsensusWithShadowGraph restartCons =
-                new ConsensusWithShadowGraph(generator.getAddressBook(), signedState);
-
-        // now the restartCons object needs to get the events the original has that have not yet reached consensus
-        // a second generator is used because the second consensus object needs the same events, but they must be
-        // different objects in memory
-        final Map<Hash, EventImpl> copiesMap = getEventMap(signedState.getEvents());
-        // --------------- NOTE --------------
-        // This will not work if there are any forks in the state events
-        // -----------------------------------
-        final Map<NodeId, Long> lastGenInState = getLastGenerationInState(signedState.getEvents(), numberOfNodes);
-        final StandardEventEmitter restartEmitter = emitter.cleanCopy();
-        for (int i = 0; i < numEventsBeforeRestart; i++) {
-            final EventImpl event = restartEmitter.emitEvent();
-            if (lastGenInState.get(event.getCreatorId()) >= event.getGeneration()) {
-                // we dont add events that are already in the state or older
-                continue;
-            }
-            // these generated events are linked to parents that are not in the consensus object, we need to link them
-            // to the appropriate objects
-            final EventImpl sp = copiesMap.get(event.getSelfParentHash());
-            if (sp != null) {
-                event.setSelfParent(sp);
-            }
-            final EventImpl op = copiesMap.get(event.getOtherParentHash());
-            if (op != null) {
-                event.setOtherParent(op);
-            }
-
-            final List<EventImpl> events = restartCons.addEvent(event, generator.getAddressBook());
-            assertNull(events, "we should not have reached consensus yet");
-        }
-
-        // now both consensus objects should be in the same state
-        ConsensusUtils.checkGenerations(origCons, restartCons, true);
-        // we will feed them the same events and expect the same output
-        final List<SingleConsensusChecker> checkers = ConsensusUtils.getSingleConsensusCheckers();
-        for (int i = 0; i < numEventsAfterRestart; i++) {
-
-            assertTrue(
-                    isRestartConsensusEquivalent(emitter, restartEmitter, origCons, restartCons, 1, checkers),
-                    "expected restart consensus to be equivalent");
-        }
+        orchestrator
+                .generateAllEvents()
+                .validateAndClear(Validations.standard()
+                        .ratios(EventRatioValidation.standard()
+                                .setMinimumConsensusRatio(0.9 - (0.05 * input.numberOfNodes()))));
     }
 }

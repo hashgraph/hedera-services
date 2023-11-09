@@ -26,7 +26,7 @@ import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.annotations.CommonExecutor;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -145,7 +145,10 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
             @NonNull final Instant newBlockFirstTransactionConsensusTime) {
 
         assert lastRecordHashingResult != null : "initRunningHash() must be called before switchBlocks";
-        assert newBlockNumber == lastBlockNumber + 1 : "block numbers must be sequential";
+        if (newBlockNumber != lastBlockNumber + 1) {
+            throw new IllegalArgumentException("Block numbers must be sequential, newBlockNumber=" + newBlockNumber
+                    + ", lastBlockNumber=" + lastBlockNumber);
+        }
 
         this.currentBlockNumber = newBlockNumber;
         requireNonNull(newBlockFirstTransactionConsensusTime);
@@ -208,8 +211,8 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
                             serializedItems.forEach(item -> {
                                 try {
                                     writer.writeItem(item);
-                                } catch (final Throwable th) {
-                                    logger.error("Error writing record item to file", th);
+                                } catch (final Exception e) {
+                                    logger.error("Error writing record item to file", e);
                                 }
                             });
                             return writer;
@@ -251,9 +254,9 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
             final var startRunningHash = asHashObject(lastRunningHash);
             writer.init(hapiVersion, startRunningHash, startConsensusTime, blockNumber);
             return writer;
-        } catch (final Throwable th) {
-            logger.error("Error creating record file writer", th);
-            throw th;
+        } catch (final Exception e) {
+            logger.error("Error creating record file writer", e);
+            throw e;
         }
     }
 
@@ -262,8 +265,8 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
         // move forward with the next block.
         try {
             writer.close(asHashObject(lastRunningHash));
-        } catch (final Throwable th) {
-            logger.error("Error closing record file writer", th);
+        } catch (final Exception e) {
+            logger.error("Error closing record file writer", e);
         }
     }
 

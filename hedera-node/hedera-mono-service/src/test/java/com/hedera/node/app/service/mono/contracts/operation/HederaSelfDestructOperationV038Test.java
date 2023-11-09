@@ -33,7 +33,7 @@ import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -65,7 +65,7 @@ class HederaSelfDestructOperationV038Test {
     private EVM evm;
 
     @Mock
-    private Account account;
+    private MutableAccount account;
 
     @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
@@ -96,6 +96,7 @@ class HederaSelfDestructOperationV038Test {
         given(frame.popStackItem()).willReturn(beneficiaryMirror);
         given(frame.getRecipientAddress()).willReturn(eip1014Address);
         given(worldUpdater.get(any())).willReturn(account);
+        given(worldUpdater.getAccount(any())).willReturn(account);
         given(account.getBalance()).willReturn(Wei.ONE);
         given(frame.isStatic()).willReturn(true);
         given(gasCalculator.getColdAccountAccessCost()).willReturn(1L);

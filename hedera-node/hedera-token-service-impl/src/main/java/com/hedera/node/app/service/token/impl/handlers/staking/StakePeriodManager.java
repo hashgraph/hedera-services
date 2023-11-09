@@ -16,21 +16,16 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
-import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_MILLISECONDS;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
-import static com.swirlds.common.units.UnitConstants.MINUTES_TO_SECONDS;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
+import com.hedera.node.app.service.token.api.StakingRewardsApi;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -64,11 +59,7 @@ public class StakePeriodManager {
      * @return the epoch second at the start of the given stake period
      */
     public long epochSecondAtStartOfPeriod(final long stakePeriod) {
-        if (stakingPeriodMins == DEFAULT_STAKING_PERIOD_MINS) {
-            return LocalDate.ofEpochDay(stakePeriod).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
-        } else {
-            return stakePeriod * stakingPeriodMins * MINUTES_TO_SECONDS;
-        }
+        return StakingRewardsApi.epochSecondAtStartOfPeriod(stakePeriod, stakingPeriodMins);
     }
 
     /**
@@ -81,11 +72,7 @@ public class StakePeriodManager {
     public long currentStakePeriod(@NonNull final Instant consensusNow) {
         final var currentConsensusSecs = consensusNow.getEpochSecond();
         if (prevConsensusSecs != currentConsensusSecs) {
-            if (stakingPeriodMins == DEFAULT_STAKING_PERIOD_MINS) {
-                currentStakePeriod = LocalDate.ofInstant(consensusNow, ZONE_UTC).toEpochDay();
-            } else {
-                currentStakePeriod = getPeriod(consensusNow, stakingPeriodMins * MINUTES_TO_MILLISECONDS);
-            }
+            currentStakePeriod = StakingRewardsApi.stakePeriodAt(consensusNow, stakingPeriodMins);
             prevConsensusSecs = currentConsensusSecs;
         }
         return currentStakePeriod;
@@ -119,8 +106,8 @@ public class StakePeriodManager {
         // The earliest period by which an account can have started staking, _without_ becoming
         // eligible for a reward; if staking is not active, this will return Long.MIN_VALUE so
         // no account can ever be eligible.
-        // Remember that accounts are only rewarded for _full_ periods;
-        // so if Alice started staking in the previous period (current - 1), she will not have
+        // Remember that accounts are only rewarded for _full_ periods.
+        // So if Alice started staking in the previous period (current - 1), she will not have
         // completed a full period until current has ended
         return rewardsStore.isStakingRewardsActivated() ? currentStakePeriod(consensusNow) - 1 : Long.MIN_VALUE;
     }
@@ -132,10 +119,7 @@ public class StakePeriodManager {
      * @return the effective stake period start
      */
     public long effectivePeriod(final long stakePeriodStart) {
-        if (stakePeriodStart > -1 && stakePeriodStart < currentStakePeriod - numStoredPeriods) {
-            return currentStakePeriod - numStoredPeriods;
-        }
-        return stakePeriodStart;
+        return StakingRewardsApi.clampedStakePeriodStart(stakePeriodStart, currentStakePeriod, numStoredPeriods);
     }
 
     /* ----------------------- estimated stake periods ----------------------- */
@@ -151,12 +135,7 @@ public class StakePeriodManager {
      * @return the estimated current stake period
      */
     public long estimatedCurrentStakePeriod() {
-        final var now = Instant.now();
-        if (stakingPeriodMins == DEFAULT_STAKING_PERIOD_MINS) {
-            return LocalDate.ofInstant(now, ZONE_UTC).toEpochDay();
-        } else {
-            return getPeriod(now, stakingPeriodMins * MINUTES_TO_MILLISECONDS);
-        }
+        return StakingRewardsApi.estimatedCurrentStakePeriod(stakingPeriodMins);
     }
 
     /**
@@ -177,7 +156,8 @@ public class StakePeriodManager {
      */
     public boolean isEstimatedRewardable(
             final long stakePeriodStart, @NonNull final ReadableNetworkStakingRewardsStore networkRewards) {
-        return stakePeriodStart > -1 && stakePeriodStart < estimatedFirstNonRewardableStakePeriod(networkRewards);
+        return StakingRewardsApi.isEstimatedRewardable(
+                stakingPeriodMins, stakePeriodStart, networkRewards.isStakingRewardsActivated());
     }
 
     /**

@@ -21,13 +21,18 @@ import static com.swirlds.platform.state.signed.StateToDiskReason.ISS;
 import static com.swirlds.platform.test.DispatchBuilderUtils.getDefaultDispatchConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.IssConsumer;
@@ -35,7 +40,9 @@ import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.state.iss.IssHandler;
+import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.StateToDiskReason;
+import com.swirlds.platform.test.fixtures.SimpleScratchpad;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
@@ -70,14 +77,17 @@ class IssHandlerTests {
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
+        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                simpleScratchpad);
 
         dispatchBuilder.start();
 
@@ -86,6 +96,7 @@ class IssHandlerTests {
         assertEquals(0, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
+        assertNull(simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND));
     }
 
     @Test
@@ -117,14 +128,17 @@ class IssHandlerTests {
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
+        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                simpleScratchpad);
 
         dispatchBuilder.start();
 
@@ -140,6 +154,9 @@ class IssHandlerTests {
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
+
+        // Another node ISSed, we will not record that on the scratchpad.
+        assertNull(simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND));
     }
 
     @Test
@@ -170,14 +187,17 @@ class IssHandlerTests {
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
+        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                simpleScratchpad);
 
         dispatchBuilder.start();
 
@@ -193,6 +213,9 @@ class IssHandlerTests {
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
+
+        // Another node ISSed, we will not record that on the scratchpad.
+        assertNull(simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND));
     }
 
     @Test
@@ -220,14 +243,17 @@ class IssHandlerTests {
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
+        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                simpleScratchpad);
 
         dispatchBuilder.start();
 
@@ -236,6 +262,8 @@ class IssHandlerTests {
         assertEquals(0, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
+
+        assertNull(simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND));
     }
 
     @Test
@@ -266,14 +294,17 @@ class IssHandlerTests {
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
+        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                simpleScratchpad);
 
         dispatchBuilder.start();
 
@@ -289,6 +320,9 @@ class IssHandlerTests {
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
+
+        // Another node ISSed, we will not record that on the scratchpad.
+        assertNull(simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND));
     }
 
     @Test
@@ -320,14 +354,17 @@ class IssHandlerTests {
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
+        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                simpleScratchpad);
 
         dispatchBuilder.start();
 
@@ -336,6 +373,10 @@ class IssHandlerTests {
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(1, shutdownCount.get(), "unexpected shutdown count");
+
+        final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
+        assertNotNull(issRound);
+        assertEquals(issRound.getValue(), 1234L);
     }
 
     @Test
@@ -364,14 +405,17 @@ class IssHandlerTests {
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
+        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                simpleScratchpad);
 
         dispatchBuilder.start();
 
@@ -380,6 +424,10 @@ class IssHandlerTests {
         assertEquals(0, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
+
+        final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
+        assertNotNull(issRound);
+        assertEquals(issRound.getValue(), 1234L);
     }
 
     @Test
@@ -411,14 +459,17 @@ class IssHandlerTests {
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
+        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                simpleScratchpad);
 
         dispatchBuilder.start();
 
@@ -434,6 +485,10 @@ class IssHandlerTests {
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
+
+        final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
+        assertNotNull(issRound);
+        assertEquals(issRound.getValue(), 1234L);
     }
 
     @Test
@@ -465,14 +520,17 @@ class IssHandlerTests {
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
+        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                simpleScratchpad);
 
         dispatchBuilder.start();
 
@@ -488,6 +546,10 @@ class IssHandlerTests {
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
+
+        final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
+        assertNotNull(issRound);
+        assertEquals(issRound.getValue(), 1234L);
     }
 
     @Test
@@ -516,14 +578,17 @@ class IssHandlerTests {
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
+        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                simpleScratchpad);
 
         dispatchBuilder.start();
 
@@ -532,6 +597,10 @@ class IssHandlerTests {
         assertEquals(0, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
+
+        final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
+        assertNotNull(issRound);
+        assertEquals(issRound.getValue(), 1234L);
     }
 
     @Test
@@ -563,14 +632,17 @@ class IssHandlerTests {
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
+        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                simpleScratchpad);
 
         dispatchBuilder.start();
 
@@ -586,6 +658,10 @@ class IssHandlerTests {
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
+
+        final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
+        assertNotNull(issRound);
+        assertEquals(issRound.getValue(), 1234L);
     }
 
     @Test
@@ -617,14 +693,17 @@ class IssHandlerTests {
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
+        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                simpleScratchpad);
 
         dispatchBuilder.start();
 
@@ -640,6 +719,10 @@ class IssHandlerTests {
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
+
+        final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
+        assertNotNull(issRound);
+        assertEquals(issRound.getValue(), 1234L);
     }
 
     @Test
@@ -671,14 +754,17 @@ class IssHandlerTests {
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
+        final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler = new IssHandler(
                 Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
+                mock(StatusActionSubmitter.class),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {},
+                simpleScratchpad);
 
         dispatchBuilder.start();
 
@@ -694,6 +780,10 @@ class IssHandlerTests {
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
+
+        final SerializableLong issRound = simpleScratchpad.get(IssScratchpad.LAST_ISS_ROUND);
+        assertNotNull(issRound);
+        assertEquals(issRound.getValue(), 1234L);
     }
 
     @Test
@@ -718,9 +808,11 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(0L),
+                mock(StatusActionSubmitter.class),
                 (reason) -> {},
                 (msg, t, code) -> {},
-                issConsumer);
+                issConsumer,
+                new SimpleScratchpad<>());
 
         assertEquals(0, selfIssCount.get(), "incorrect self ISS count");
         assertEquals(0, otherIssCount.get(), "incorrect other ISS count");

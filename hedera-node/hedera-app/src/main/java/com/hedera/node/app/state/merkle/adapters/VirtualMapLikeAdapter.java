@@ -23,6 +23,7 @@ import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
@@ -32,7 +33,6 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Adapts a {@link VirtualMap} constructed by {@code MerkleHederaState#MerkleStates} by "unwrapping" its
@@ -77,7 +77,7 @@ public final class VirtualMapLikeAdapter {
                     @Override
                     public void accept(final Pair<OnDiskKey<K>, OnDiskValue<V>> pair) throws InterruptedException {
                         handler.accept(
-                                Pair.of(pair.getKey().getKey(), pair.getValue().getValue()));
+                                Pair.of(pair.left().getKey(), pair.right().getValue()));
                     }
                 };
                 VirtualMapMigration.extractVirtualMapData(threadManager, real, unwrappingHandler, threadCount);
@@ -93,7 +93,7 @@ public final class VirtualMapLikeAdapter {
                         threadManager,
                         real,
                         pair -> handler.accept(
-                                Pair.of(pair.getKey().getKey(), pair.getValue().getValue())),
+                                Pair.of(pair.left().getKey(), pair.right().getValue())),
                         threadCount);
             }
 

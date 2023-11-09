@@ -16,12 +16,21 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -41,6 +50,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHan
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -58,14 +68,21 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = Strictness.LENIENT)
     private HandleContext handleContext;
 
+    @Mock(strictness = Strictness.LENIENT)
+    private ExpiryValidator expiryValidator;
+
     private CryptoApproveAllowanceHandler subject;
 
+    @Override
     @BeforeEach
     public void setUp() {
         super.setUp();
         refreshWritableStores();
         final var validator = new ApproveAllowanceValidator();
         givenStoresAndConfig(handleContext);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(handleContext.payer()).willReturn(payerId);
 
         subject = new CryptoApproveAllowanceHandler(validator);
     }
@@ -186,6 +203,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void happyPathForUpdatingAllowances() {
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
@@ -358,8 +377,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(existingOwner.tokenAllowances()).hasSize(1);
         assertThat(existingOwner.approveForAllNftAllowances()).hasSize(1);
 
-        final var preHandleContext = new FakePreHandleContext(readableAccountStore, txn);
-        assertThatThrownBy(() -> subject.preHandle(preHandleContext))
+        assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(EMPTY_ALLOWANCES));
 
@@ -403,6 +421,40 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedOwner.cryptoAllowances()).isEmpty();
         assertThat(modifiedOwner.tokenAllowances()).isEmpty();
         assertThat(existingOwner.approveForAllNftAllowances()).isEmpty();
+    }
+
+    @Test
+    void validateNegativeAmounts() {
+        final var txn = cryptoApproveAllowanceTransaction(
+                payerId,
+                false,
+                List.of(CryptoAllowance.newBuilder()
+                        .amount(-1L)
+                        .owner(ownerId)
+                        .spender(spenderId)
+                        .build()),
+                List.of(tokenAllowance),
+                List.of(nftAllowance));
+
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(NEGATIVE_ALLOWANCE_AMOUNT));
+
+        cryptoApproveAllowanceTransaction(
+                payerId,
+                false,
+                List.of(cryptoAllowance),
+                List.of(TokenAllowance.newBuilder()
+                        .amount(-1L)
+                        .owner(ownerId)
+                        .spender(spenderId)
+                        .tokenId(fungibleTokenId)
+                        .build()),
+                List.of(nftAllowance));
+
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(NEGATIVE_ALLOWANCE_AMOUNT));
     }
 
     @Test

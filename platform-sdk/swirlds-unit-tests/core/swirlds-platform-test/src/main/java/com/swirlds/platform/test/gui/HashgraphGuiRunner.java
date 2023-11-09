@@ -18,30 +18,32 @@ package com.swirlds.platform.test.gui;
 
 import com.swirlds.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.HashgraphGui;
-import java.awt.GridLayout;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.awt.BorderLayout;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 
-/**
- * Helper class to open a {@link HashgraphGui} window
- */
+/** Helper class to open a {@link HashgraphGui} window */
 public final class HashgraphGuiRunner {
     private HashgraphGuiRunner() {}
 
     /**
      * Open a {@link HashgraphGui} window that draws data from the source provided
      *
-     * @param guiSource
-     * 		the source for the GUI
+     * @param guiSource the source for the GUI
+     * @param additionalControls additional controls that will be added to the bottom of the screen
      */
-    public static void runHashgraphGui(final HashgraphGuiSource guiSource) {
+    public static void runHashgraphGui(
+            @NonNull final HashgraphGuiSource guiSource, @Nullable final JComponent additionalControls) {
         final JFrame frame = new JFrame();
         final CloseDetector closeDetector = new CloseDetector();
         frame.addWindowListener(closeDetector);
         frame.setExtendedState(frame.getExtendedState() | JFrame.MAXIMIZED_BOTH);
-        frame.setLayout(new GridLayout());
+        frame.setLayout(new BorderLayout());
         frame.setFocusable(true);
         frame.requestFocusInWindow();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -49,7 +51,11 @@ public final class HashgraphGuiRunner {
         final HashgraphGui hashgraphGui = new HashgraphGui(guiSource);
         hashgraphGui.reloadSource();
 
-        frame.add(hashgraphGui);
+        frame.add(hashgraphGui, BorderLayout.NORTH);
+        if (additionalControls != null) {
+            frame.add(additionalControls, BorderLayout.SOUTH);
+        }
+
         frame.setVisible(true);
 
         while (!closeDetector.isClosed()) {

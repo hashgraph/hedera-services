@@ -135,7 +135,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                                             TEST_BLOCKS
                                                             .get(0)
                                                             .get(0)
-                                                            .record()
+                                                            .transactionRecord()
                                                             .consensusTimestamp()
                                                             .seconds()
                                                     - 2,
@@ -165,7 +165,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                 final var block = STARTING_BLOCK + i;
                 for (var record : blockData) {
                     blockRecordManager.startUserTransaction(
-                            fromTimestamp(record.record().consensusTimestamp()), hederaState);
+                            fromTimestamp(record.transactionRecord().consensusTimestamp()), hederaState);
                     // check start hash if first transaction
                     if (transactionCount == 0) {
                         // check starting hash, we need to be using the correct starting hash for the tests to work
@@ -220,7 +220,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                                         TEST_BLOCKS
                                                         .get(0)
                                                         .get(0)
-                                                        .record()
+                                                        .transactionRecord()
                                                         .consensusTimestamp()
                                                         .seconds()
                                                 - 2,
@@ -255,7 +255,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                     final var userTransactions = blockData.subList(j, j + batchSize);
                     for (var record : userTransactions) {
                         blockRecordManager.startUserTransaction(
-                                fromTimestamp(record.record().consensusTimestamp()), hederaState);
+                                fromTimestamp(record.transactionRecord().consensusTimestamp()), hederaState);
                         blockRecordManager.endUserTransaction(Stream.of(record), hederaState);
                         transactionCount++;
                         // collect hashes
@@ -291,7 +291,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                             .isEqualTo(blockRecordManager.firstConsTimeOfLastBlock());
                 }
                 lastBlockFirstTransactionTimestamp =
-                        fromTimestamp(blockData.get(0).record().consensusTimestamp());
+                        fromTimestamp(blockData.get(0).transactionRecord().consensusTimestamp());
                 // check block hashes we have in history
                 if (endOfBlockHashes.size() > 0) {
                     // trim endOfBlockHashes to NUM_BLOCK_HASHES_TO_KEEP

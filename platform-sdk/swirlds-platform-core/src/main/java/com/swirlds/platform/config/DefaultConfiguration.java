@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.config;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
@@ -23,6 +25,7 @@ import com.swirlds.common.config.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -30,6 +33,8 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A utility class for building a basic configuration with the default configuration sources and paths.
@@ -37,34 +42,50 @@ import java.util.Set;
  * Can be used in cli tools to build a basic configuration.
  */
 public class DefaultConfiguration {
+    private static final Logger logger = LogManager.getLogger(DefaultConfiguration.class);
+
     private DefaultConfiguration() {
         // Avoid instantiation for utility class
     }
 
     /**
-     * Build a basic configuration with the default configuration sources and paths.
-     * And register the configuration to the {@link ConfigurationHolder}.
+     * Build a basic configuration with the default configuration sources and paths. Reads configuration form
+     * "settings.txt". Registers the configuration to the {@link ConfigurationHolder}.
      *
      * @return the configuration object
      * @throws IOException if there is an error reading the configuration files
      */
     @NonNull
     public static Configuration buildBasicConfiguration() throws IOException {
-        return buildBasicConfiguration(Collections.emptyList());
+        return buildBasicConfiguration(getAbsolutePath("settings.txt"), Collections.emptyList());
     }
 
     /**
-     * Build a basic configuration with the default configuration sources.
-     * And register the configuration to the {@link ConfigurationHolder}.
+     * Build a basic configuration with the default configuration sources and paths. Registers the configuration to the
+     * {@link ConfigurationHolder}.
      *
+     * @param settingsPath the path to the settings.txt file
+     * @return the configuration object
+     * @throws IOException if there is an error reading the configuration files
+     */
+    @NonNull
+    public static Configuration buildBasicConfiguration(@NonNull final Path settingsPath) throws IOException {
+        return buildBasicConfiguration(settingsPath, Collections.emptyList());
+    }
+
+    /**
+     * Build a basic configuration with the default configuration sources. Registers the configuration to the
+     * {@link ConfigurationHolder}.
+     *
+     * @param settingsPath       the path to the settings.txt file
      * @param configurationPaths additional paths to configuration files
      * @return the configuration object
      * @throws IOException if there is an error reading the configuration files
      */
     @NonNull
-    public static Configuration buildBasicConfiguration(@NonNull final List<Path> configurationPaths)
-            throws IOException {
-        final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
+    public static Configuration buildBasicConfiguration(
+            @NonNull final Path settingsPath, @NonNull final List<Path> configurationPaths) throws IOException {
+        final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile(settingsPath);
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
         final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
 
@@ -74,7 +95,7 @@ public class DefaultConfiguration {
         ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
 
         for (final Path configurationPath : configurationPaths) {
-            System.out.printf("Loading configuration from %s%n", configurationPath);
+            logger.info(LogMarker.CONFIG.getMarker(), "Loading configuration from {}", configurationPath);
             configurationBuilder.withSource(new LegacyFileConfigSource(configurationPath));
         }
 

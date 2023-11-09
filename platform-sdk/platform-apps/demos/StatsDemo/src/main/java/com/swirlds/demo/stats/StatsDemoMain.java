@@ -41,9 +41,9 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
+import com.swirlds.gui.model.GuiModel;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -222,10 +222,10 @@ public class StatsDemoMain implements SwirldMain {
             transPerEventMax = 1024;
         }
         if (!headless) { // create the window, make it visible
-            final int winNum = GuiPlatformAccessor.getInstance().getInstanceNumber(selfId);
+            final int winNum = GuiModel.getInstance().getInstanceNumber(selfId);
             console = createConsole(platform, winNum, true);
         }
-        GuiPlatformAccessor.getInstance()
+        GuiModel.getInstance()
                 .setAbout(
                         platform.getSelfId(),
                         "Stats Demo v. 1.2\nThis writes statistics to a log file,"

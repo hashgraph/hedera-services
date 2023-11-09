@@ -33,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
@@ -45,7 +46,10 @@ import org.apache.logging.log4j.Logger;
 
 public class CryptoTransferLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(CryptoTransferLoadTest.class);
-    private Random r = new Random();
+
+    @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
+    private Random r = new Random(528352L);
+
     private static final long TEST_ACCOUNT_STARTS_FROM = 1001L;
 
     public static void main(String... args) {
@@ -60,6 +64,7 @@ public class CryptoTransferLoadTest extends LoadTest {
         return List.of(runCryptoTransfers());
     }
 
+    @HapiTest
     protected HapiSpec runCryptoTransfers() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
@@ -95,7 +100,7 @@ public class CryptoTransferLoadTest extends LoadTest {
             };
         };
 
-        return defaultHapiSpec("RunCryptoTransfers")
+        return defaultHapiSpec("RunCryptoTransfers-LoadTest")
                 .given(
                         withOpContext(
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),

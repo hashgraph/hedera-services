@@ -111,7 +111,7 @@ public interface StateModule {
     interface ConsoleCreator {
 
         @Nullable
-        Console createConsole(Platform platform, boolean visible);
+        Console createConsole(Platform platform, int winNum, boolean visible);
     }
 
     @Binds
@@ -225,7 +225,9 @@ public interface StateModule {
     @Provides
     @Singleton
     static Optional<PrintStream> providePrintStream(final ConsoleCreator consoleCreator, final Platform platform) {
-        return Optional.ofNullable(consoleCreator.createConsole(platform, true)).map(c -> c.out);
+        return Optional.ofNullable(consoleCreator.createConsole(
+                        platform, (int) platform.getSelfId().id(), true))
+                .map(c -> c.out);
     }
 
     @Provides

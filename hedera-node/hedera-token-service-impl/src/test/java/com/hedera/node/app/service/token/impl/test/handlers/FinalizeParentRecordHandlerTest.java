@@ -21,8 +21,10 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -37,10 +39,12 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -49,11 +53,14 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHan
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,9 +87,12 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
             .tinybarBalance(10000)
             .build();
     private static final TokenID TOKEN_321 = asToken(321);
+    private Token TOKEN_321_FUNGIBLE =
+            givenValidFungibleToken().copyBuilder().tokenId(TOKEN_321).build();
+    private static final List<TransactionRecord> EMPTY_TRANSACTION_RECORD_LIST = Collections.emptyList();
 
     @Mock(strictness = LENIENT)
-    private HandleContext context;
+    private FinalizeContext context;
 
     @Mock
     private CryptoTransferRecordBuilder recordBuilder;
@@ -105,7 +115,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void handleNullArg() {
-        assertThatThrownBy(() -> subject.finalizeParentRecord(context, List.of()))
+        assertThatThrownBy(() -> subject.finalizeParentRecord(ACCOUNT_1212_ID, context))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -120,7 +130,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        assertThatThrownBy(() -> subject.finalizeParentRecord(context, List.of()))
+        assertThatThrownBy(() -> subject.finalizeParentRecord(ACCOUNT_1212_ID, context))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }
@@ -142,7 +152,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        assertThatThrownBy(() -> subject.finalizeParentRecord(context, List.of()))
+        assertThatThrownBy(() -> subject.finalizeParentRecord(ACCOUNT_1212_ID, context))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }
@@ -161,7 +171,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
 
         given(context.configuration()).willReturn(configuration);
-        subject.finalizeParentRecord(context, List.of());
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 
         BDDMockito.verifyNoInteractions(recordBuilder);
     }
@@ -187,7 +197,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(context, List.of());
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 
         BDDMockito.verify(recordBuilder)
                 .transferList(TransferList.newBuilder()
@@ -228,7 +238,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        final var childRecord = mock(TransactionRecord.class);
+        final var childRecord = mock(SingleTransactionRecordBuilderImpl.class);
         // child record has  1212 (-) -> 3434(+) transfer
         given(childRecord.transferList())
                 .willReturn(TransferList.newBuilder()
@@ -242,7 +252,15 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                         .amount(childRecordTransfer)
                                         .build())
                         .build());
-        subject.finalizeParentRecord(context, List.of(childRecord));
+        doAnswer(invocation -> {
+                    final var consumer = invocation.getArgument(1, Consumer.class);
+                    consumer.accept(childRecord);
+                    return null;
+                })
+                .when(context)
+                .forEachChildRecord(any(), any());
+
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 
         final var transferAmount1212 = -amountToTransfer + childRecordTransfer;
         final var transferAmount3434 = amountToTransfer - childRecordTransfer;
@@ -293,6 +311,8 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .accountId(ACCOUNT_3434_ID)
                 .balance(fungibleAmountToTransfer)
                 .build());
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
+        readableTokenStore = TestStoreFactory.newReadableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
@@ -316,7 +336,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                         .build())
                         .build()));
 
-        subject.finalizeParentRecord(context, List.of(childRecord));
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -359,10 +379,12 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         // Simulate the receiver's token relation being dissociated, when token is deleted.
         // This shows as a single debit in transfer list, instead of a debit and a credit.
         writableTokenRelStore.remove(senderTokenRel);
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
+        readableTokenStore = TestStoreFactory.newReadableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(context, List.of());
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -399,7 +421,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(context, List.of());
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -435,7 +457,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(context, List.of());
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 
         BDDMockito.verify(recordBuilder)
                 .transferList(TransferList.newBuilder()
@@ -464,7 +486,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        assertThatThrownBy(() -> subject.finalizeParentRecord(context, List.of()))
+        assertThatThrownBy(() -> subject.finalizeParentRecord(ACCOUNT_1212_ID, context))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }
@@ -484,7 +506,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(context, List.of());
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 
         BDDMockito.verifyNoInteractions(recordBuilder);
     }
@@ -520,10 +542,12 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .accountId(ACCOUNT_3434_ID)
                 .balance(fungibleAmountToTransfer)
                 .build());
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
+        readableTokenStore = TestStoreFactory.newReadableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(context, List.of());
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -599,10 +623,22 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenId(token2Id)
                 .balance(token2AmountTransferred)
                 .build());
+
+        final var fungibleToken1 =
+                givenValidFungibleToken().copyBuilder().tokenId(token1Id).build();
+        final var fungibleToken2 =
+                givenValidFungibleToken().copyBuilder().tokenId(token2Id).build();
+        final var fungibleToken3 =
+                givenValidFungibleToken().copyBuilder().tokenId(token3Id).build();
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(
+                TOKEN_321_FUNGIBLE, fungibleToken1, fungibleToken2, fungibleToken3);
+        readableTokenStore = TestStoreFactory.newReadableStoreWithTokens(
+                TOKEN_321_FUNGIBLE, fungibleToken1, fungibleToken2, fungibleToken3);
+
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(context, List.of());
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(
@@ -665,7 +701,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(context, List.of());
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -701,14 +737,14 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
 
         given(context.configuration()).willReturn(configuration);
-        subject.finalizeParentRecord(context, List.of());
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
                         .token(TOKEN_321)
                         .nftTransfers(NftTransfer.newBuilder()
                                 .serialNumber(1)
-                                .senderAccountID((AccountID) null)
+                                .senderAccountID(AccountID.newBuilder().accountNum(0))
                                 .receiverAccountID(ACCOUNT_3434_ID)
                                 .build())
                         .build()));
@@ -722,9 +758,9 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         final var nftId111 =
                 NftID.newBuilder().tokenId(TOKEN_321).serialNumber(111).build();
         final var nft111 =
-                Nft.newBuilder().id(nftId111).ownerId(ACCOUNT_1212_ID).build();
+                Nft.newBuilder().nftId(nftId111).ownerId(ACCOUNT_1212_ID).build();
         final var nft112 = nft111.copyBuilder()
-                .id(nftId111.copyBuilder().serialNumber(112).build())
+                .nftId(nftId111.copyBuilder().serialNumber(112).build())
                 .build();
         final var acct1212tokenRel1 = givenNonFungibleTokenRelation()
                 .copyBuilder()
@@ -740,9 +776,9 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         final var nftId222 =
                 NftID.newBuilder().tokenId(token246Id).serialNumber(222).build();
         final var nft222 =
-                nft111.copyBuilder().id(nftId222).ownerId(ACCOUNT_3434_ID).build();
+                nft111.copyBuilder().nftId(nftId222).ownerId(ACCOUNT_3434_ID).build();
         final var nft223 = nft222.copyBuilder()
-                .id(nftId222.copyBuilder().serialNumber(223).build())
+                .nftId(nftId222.copyBuilder().serialNumber(223).build())
                 .build();
         final var acct1212tokenRel2 = givenNonFungibleTokenRelation()
                 .copyBuilder()
@@ -772,7 +808,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
-        subject.finalizeParentRecord(context, List.of());
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 
         // The transfer list should be sorted by token ID, then by serial number
         BDDMockito.verify(recordBuilder)
@@ -808,7 +844,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                                 .build())
                                 .build()));
 
-        subject.finalizeParentRecord(context, List.of());
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
         verify(stakingRewardsHandler, never()).applyStakingRewards(context);
     }
 
@@ -856,10 +892,12 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         // Make NFT changes
         writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
+        writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE);
+        readableTokenStore = TestStoreFactory.newReadableStoreWithTokens(TOKEN_321_FUNGIBLE);
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(context, List.of());
+        subject.finalizeParentRecord(ACCOUNT_1212_ID, context);
 
         BDDMockito.verify(recordBuilder)
                 .transferList(TransferList.newBuilder()
@@ -897,8 +935,9 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                 .build()));
     }
 
-    private HandleContext mockContext() {
-        given(context.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(recordBuilder);
+    private FinalizeContext mockContext() {
+        given(context.userTransactionRecordBuilder(CryptoTransferRecordBuilder.class))
+                .willReturn(recordBuilder);
 
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
@@ -906,6 +945,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
         given(context.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
         given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+        given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
 
         return context;
     }

@@ -32,7 +32,7 @@ public record PendingCreation(
         requireNonNull(address);
     }
 
-    public boolean isTopLevel() {
+    public boolean isHapiCreation() {
         return body != null;
     }
 

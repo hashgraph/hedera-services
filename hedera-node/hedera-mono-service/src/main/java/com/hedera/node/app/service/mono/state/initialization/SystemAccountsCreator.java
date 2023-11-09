@@ -18,8 +18,10 @@ package com.hedera.node.app.service.mono.state.initialization;
 
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.system.address.AddressBook;
+import java.time.Instant;
 
 public interface SystemAccountsCreator {
     /**
@@ -31,4 +33,11 @@ public interface SystemAccountsCreator {
      * @param addressBook the current address book
      */
     void ensureSystemAccounts(BackingStore<AccountID, HederaAccount> backingAccounts, AddressBook addressBook);
+
+    /**
+     * Called in {@link MigrationRecordsManager#publishMigrationRecords(Instant)} to ensure that
+     * event replay from a round one state will export the same synthetic records that would occur
+     * when starting from genesis without a restart.
+     */
+    void ensureSynthRecordsPresentOnFirstEverTransaction();
 }

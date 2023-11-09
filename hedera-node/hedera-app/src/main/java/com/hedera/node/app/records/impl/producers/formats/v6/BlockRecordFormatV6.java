@@ -24,7 +24,7 @@ import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.records.impl.producers.BlockRecordFormat;
 import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
 import com.hedera.node.app.service.mono.stream.RecordStreamObject;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.crypto.DigestType;
@@ -94,8 +94,8 @@ public final class BlockRecordFormatV6 implements BlockRecordFormat {
             @NonNull final SemanticVersion hapiVersion) {
         try {
             // create RecordStreamItem
-            final RecordStreamItem recordStreamItem =
-                    new RecordStreamItem(singleTransactionRecord.transaction(), singleTransactionRecord.record());
+            final RecordStreamItem recordStreamItem = new RecordStreamItem(
+                    singleTransactionRecord.transaction(), singleTransactionRecord.transactionRecord());
             // serialize in format for hashing
             // the format is SelfSerializable header and then protobuf fields in reverse order with no protobuf tag
             final var bout = new ByteArrayOutputStream();

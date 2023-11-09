@@ -27,13 +27,14 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDet;
 import com.swirlds.common.io.exceptions.ClassNotFoundException;
 import com.swirlds.common.io.exceptions.InvalidVersionException;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.ValueReference;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
@@ -101,9 +102,9 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * 		thrown if any IO problems occur
      */
     public <T extends SelfSerializable> T readSerializable(
-            final boolean readClassId, final Supplier<T> serializableConstructor) throws IOException {
+            final boolean readClassId, @NonNull final Supplier<T> serializableConstructor) throws IOException {
 
-        CommonUtils.throwArgNull(serializableConstructor, "serializableConstructor");
+        Objects.requireNonNull(serializableConstructor, "serializableConstructor must not be null");
         return readSerializable(readClassId, id -> serializableConstructor.get());
     }
 
@@ -335,9 +336,9 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * 		thrown if any IO problems occur
      */
     public <T extends SelfSerializable> List<T> readSerializableList(
-            final int maxListSize, final boolean readClassId, final Supplier<T> serializableConstructor)
+            final int maxListSize, final boolean readClassId, @NonNull final Supplier<T> serializableConstructor)
             throws IOException {
-        CommonUtils.throwArgNull(serializableConstructor, "serializableConstructor");
+        Objects.requireNonNull(serializableConstructor, "serializableConstructor must not be null");
         return readSerializableList(maxListSize, readClassId, id -> serializableConstructor.get());
     }
 

@@ -17,8 +17,9 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.utility.Threshold.MAJORITY;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.SIGNED_STATE;
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.SIGNED_STATE;
 import static com.swirlds.platform.state.PlatformData.GENESIS_ROUND;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.CREATION;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
@@ -36,6 +37,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
+import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
@@ -48,8 +50,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -121,6 +121,21 @@ public class SignedState implements SignedStateInfo {
     private SignedStateGarbageCollector signedStateGarbageCollector;
 
     /**
+     * Indicates whether this signed state has been saved to disk.
+     * <p>
+     * Note: this value only applies to signed states that are saved inside the normal workflow: states that are dumped
+     * out of band do not affect this value.
+     */
+    private boolean hasBeenSavedToDisk;
+
+    /**
+     * Indicates if this state is a special state used to jumpstart emergency recovery. This will only be true for a
+     * state that has a root hash that exactly matches the current epoch hash. A recovery state is considered to be
+     * "completely signed" regardless of its actual signatures.
+     */
+    private boolean recoveryState;
+
+    /**
      * Used to track the lifespan of this signed state.
      */
     private final RuntimeObjectRecord registryRecord;
@@ -151,21 +166,7 @@ public class SignedState implements SignedStateInfo {
             @NonNull final State state,
             @NonNull String reason,
             final boolean freezeState) {
-        this(platformContext, state, reason);
-        this.freezeState = freezeState;
-    }
 
-    /**
-     * Instantiate a signed state.
-     *
-     * @param platformContext the platform context
-     * @param state           a fast copy of the state resulting from all transactions in consensus order from all
-     *                        events with received rounds up through the round this SignedState represents
-     * @param reason          a short description of why this SignedState is being created. Each location where a
-     *                        SignedState is created should attempt to use a unique reason, as this makes debugging
-     *                        reservation bugs easier.
-     */
-    public SignedState(@NonNull PlatformContext platformContext, @NonNull final State state, @NonNull String reason) {
         state.reserve();
 
         this.state = state;
@@ -181,6 +182,8 @@ public class SignedState implements SignedStateInfo {
 
         registryRecord = RuntimeObjectRegistry.createRecord(getClass(), history);
         sigSet = new SigSet();
+
+        this.freezeState = freezeState;
     }
 
     /**
@@ -257,6 +260,15 @@ public class SignedState implements SignedStateInfo {
      */
     public boolean isFreezeState() {
         return freezeState;
+    }
+
+    /**
+     * Mark this state as a recovery state. A recovery state is a state with a root hash that exactly matches the
+     * current hash epoch. Recovery states are always considered to be "completely signed" regardless of their actual
+     * signatures.
+     */
+    public void markAsRecoveryState() {
+        recoveryState = true;
     }
 
     /**
@@ -362,21 +374,15 @@ public class SignedState implements SignedStateInfo {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
-
-        final SignedState that = (SignedState) o;
-
-        return new EqualsBuilder()
-                .append(sigSet, that.sigSet)
-                .append(state, that.state)
-                .isEquals();
+        final SignedState that = (SignedState) other;
+        return Objects.equals(sigSet, that.sigSet) && Objects.equals(state, that.state);
     }
 
     /**
@@ -384,7 +390,7 @@ public class SignedState implements SignedStateInfo {
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(sigSet).append(state).toHashCode();
+        return Objects.hash(sigSet, state);
     }
 
     /**
@@ -426,7 +432,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return events in the platformState
      */
-    public @NonNull EventImpl[] getEvents() {
+    public @Nullable EventImpl[] getEvents() {
         return state.getPlatformState().getPlatformData().getEvents();
     }
 
@@ -437,15 +443,6 @@ public class SignedState implements SignedStateInfo {
      */
     public @NonNull Hash getHashEventsCons() {
         return state.getPlatformState().getPlatformData().getHashEventsCons();
-    }
-
-    /**
-     * Get the number of consensus events in this state.
-     *
-     * @return the number of consensus events in this state
-     */
-    public long getNumEventsCons() {
-        return state.getPlatformState().getPlatformData().getNumEventsCons();
     }
 
     /**
@@ -479,15 +476,6 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
-     * Get the timestamp of the last transaction added to this state.
-     *
-     * @return the timestamp of the last transaction added to this state
-     */
-    public @NonNull Instant getLastTransactionTimestamp() {
-        return state.getPlatformState().getPlatformData().getLastTransactionTimestamp();
-    }
-
-    /**
      * Check if this is a state that needs to be eventually written to disk.
      *
      * @return true if this state eventually needs to be written to disk
@@ -516,6 +504,31 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
+     * Checks whether this state has been saved to disk.
+     * <p>
+     * The return value of this method applies only to states saved in the normal course of operation, NOT states that
+     * have been dumped to disk out of band.
+     * <p>
+     * This method isn't threadsafe, and should only be called from the thread that is writing the state to disk.
+     *
+     * @return true if this state has been saved to disk, false otherwise
+     */
+    public boolean hasStateBeenSavedToDisk() {
+        return hasBeenSavedToDisk;
+    }
+
+    /**
+     * Indicate that this state has been saved to disk.
+     * <p>
+     * This method shouldn't be called when dumping state to disk out of band.
+     * <p>
+     * This method isn't threadsafe, and should only be called from the thread that is writing the state to disk.
+     */
+    public void stateSavedToDisk() {
+        hasBeenSavedToDisk = true;
+    }
+
+    /**
      * Get the total signing weight collected so far.
      *
      * @return total weight of members whose signatures have been collected
@@ -529,17 +542,35 @@ public class SignedState implements SignedStateInfo {
      */
     @Override
     public boolean isComplete() {
-        return MAJORITY.isSatisfiedBy(signingWeight, getAddressBook().getTotalWeight());
+        return recoveryState | signedBy(SUPER_MAJORITY);
     }
 
     /**
-     * Throw an exception if this state has not been completely signed. This method does not validate signatures, call
-     * {@link #pruneInvalidSignatures()} to guarantee that only valid signatures are considered.
-     *
-     * @throws SignedStateInvalidException if this state lacks sufficient signatures to be considered complete
+     * @return true if the state has enough signatures so that it can be trusted to be valid
      */
-    public void throwIfIncomplete() {
-        if (!isComplete()) {
+    public boolean isVerifiable() {
+        return recoveryState | signedBy(MAJORITY);
+    }
+
+    /**
+     * Checks if this state is signed by a supplied threshold
+     *
+     * @param threshold the threshold to check
+     * @return true if this state is signed by the threshold, false otherwise
+     */
+    private boolean signedBy(@NonNull final Threshold threshold) {
+        return Objects.requireNonNull(threshold)
+                .isSatisfiedBy(signingWeight, getAddressBook().getTotalWeight());
+    }
+
+    /**
+     * Throw an exception if this state has not been signed by the majority. This method does not validate signatures,
+     * call {@link #pruneInvalidSignatures()} to guarantee that only valid signatures are considered.
+     *
+     * @throws SignedStateInvalidException if this has not been signed by the majority
+     */
+    public void throwIfNotVerifiable() {
+        if (!isVerifiable()) {
             throw new SignedStateInvalidException(
                     "Signed state lacks sufficient valid signatures. This state has " + sigSet.size()
                             + " valid signatures representing " + signingWeight + "/"
@@ -598,6 +629,11 @@ public class SignedState implements SignedStateInfo {
 
         if (isComplete()) {
             // No need to add more signatures
+            return false;
+        }
+
+        if (!addressBook.contains(nodeId)) {
+            // we can ignore signatures from nodes no longer in the address book
             return false;
         }
 

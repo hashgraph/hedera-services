@@ -17,6 +17,7 @@
 package com.hedera.node.config.data;
 
 import com.hedera.node.config.NetworkProperty;
+import com.hedera.node.config.types.LongPair;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
@@ -28,7 +29,7 @@ public record FilesConfig(
         @ConfigProperty(defaultValue = "111") @NetworkProperty long feeSchedules,
         @ConfigProperty(defaultValue = "122") @NetworkProperty long hapiPermissions,
         @ConfigProperty(defaultValue = "102") @NetworkProperty long nodeDetails,
-        // @ConfigProperty(defaultValue = "150-159") Pair<Long, Long> softwareUpdateRange,
+        @ConfigProperty(defaultValue = "150-159") LongPair softwareUpdateRange,
         @ConfigProperty(defaultValue = "123") @NetworkProperty long throttleDefinitions,
         @ConfigProperty(defaultValue = "1000000") @NetworkProperty long maxNumber,
         @ConfigProperty(defaultValue = "1024") @NetworkProperty int maxSizeKb,

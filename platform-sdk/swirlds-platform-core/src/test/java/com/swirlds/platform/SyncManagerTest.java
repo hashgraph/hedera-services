@@ -16,44 +16,31 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.system.EventCreationRuleResponse.CREATE;
-import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
-import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.EventConfig;
-import com.swirlds.common.config.TransactionConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.CriticalQuorum;
-import com.swirlds.platform.components.EventCreationRules;
-import com.swirlds.platform.eventhandling.EventTransactionPool;
+import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.RandomGraph;
-import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.List;
 import java.util.Random;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -61,20 +48,16 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 // Tests utilize static Settings configuration and must not be run in parallel
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class SyncManagerTest {
+class SyncManagerTest {
 
     /**
      * A helper class that contains dummy data to feed into SyncManager lambdas.
      */
     private static class SyncManagerTestData {
-
-        FreezeManager freezeManager;
-        StartUpEventFrozenManager startUpEventFrozenManager;
         public DummyHashgraph hashgraph;
         public AddressBook addressBook;
         public NodeId selfId;
-        public EventTransactionPool eventTransactionPool;
-        public SwirldStateManager swirldStateManager;
+        public TransactionPool transactionPool;
         public RandomGraph connectionGraph;
         public SyncManagerImpl syncManager;
         public CriticalQuorum criticalQuorum;
@@ -82,22 +65,12 @@ public class SyncManagerTest {
         public Configuration configuration;
 
         public SyncManagerTestData() {
-            this(spy(SwirldStateManager.class));
-        }
-
-        public SyncManagerTestData(final SwirldStateManager swirldStateManager) {
-            freezeManager = mock(FreezeManager.class);
-            startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
             final Random random = getRandomPrintSeed();
             hashgraph = new DummyHashgraph(random, 0);
-            final TransactionConfig transactionConfig =
-                    new TestConfigBuilder().getOrCreateConfig().getConfigData(TransactionConfig.class);
-            eventTransactionPool = spy(new EventTransactionPool(new NoOpMetrics(), transactionConfig, null));
+            final PlatformContext platformContext =
+                    TestPlatformContextBuilder.create().build();
 
-            this.swirldStateManager = swirldStateManager;
-
-            doReturn(0).when(eventTransactionPool).numTransForEvent();
-            doReturn(false).when(swirldStateManager).isInFreezePeriod(any());
+            transactionPool = spy(new TransactionPool(platformContext));
 
             this.addressBook = hashgraph.getAddressBook();
             this.selfId = addressBook.getNodeId(0);
@@ -116,11 +89,6 @@ public class SyncManagerTest {
 
                 @Override
                 public void eventAdded(final EventImpl event) {}
-
-                @Override
-                public EventCreationRuleResponse shouldCreateEvent(BaseEvent selfParent, BaseEvent otherParent) {
-                    return null;
-                }
             };
             configuration = new TestConfigBuilder()
                     .withValue("reconnect.fallenBehindThreshold", "0.25")
@@ -131,11 +99,10 @@ public class SyncManagerTest {
             final EventConfig eventConfig = configuration.getConfigData(EventConfig.class);
             eventQueue = new DummyEventQueue(hashgraph);
             syncManager = new SyncManagerImpl(
-                    new NoOpMetrics(),
+                    platformContext,
                     eventQueue,
                     connectionGraph,
                     selfId,
-                    new EventCreationRules(List.of(startUpEventFrozenManager, freezeManager)),
                     criticalQuorum,
                     hashgraph.getAddressBook(),
                     new FallenBehindManagerImpl(
@@ -147,15 +114,6 @@ public class SyncManagerTest {
                             reconnectConfig),
                     eventConfig);
         }
-    }
-
-    @BeforeAll
-    static void beforeAll() {
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("sync.maxIncomingSyncsInc", 10)
-                .withValue("sync.maxOutgoingSyncs", 10)
-                .getOrCreateConfig();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
     }
 
     /**
@@ -269,151 +227,8 @@ public class SyncManagerTest {
             final int nextIndex = addressBook.getIndexOfNodeId(next.get(0));
             final int selfIndex = addressBook.getIndexOfNodeId(selfId);
             assertNotEquals(null, next);
-            assertEquals(1, next.size());
+            assertTrue(next.size() <= 10);
             assertTrue(nextIndex >= firstIndex && nextIndex <= lastIndex && nextIndex != selfIndex);
         }
-    }
-
-    /**
-     * Verify basic behavior of shouldCreateEvent()
-     */
-    @Test
-    @Order(5)
-    void shouldCreateEventTest() {
-        final SyncManagerTestData test = new SyncManagerTestData();
-        final AddressBook addressBook = test.hashgraph.getAddressBook();
-        final NodeId ID = addressBook.getNodeId(0);
-        final NodeId OTHER_ID = addressBook.getNodeId(1);
-
-        // The first time this is called it should return false.
-        // This is because the dummy hashgraph always returns false for isStrongMinorityInMaxRound by default
-        // and we will never create an event if this node (ID 0) or the other node are not a part of the super-minority.
-        assertFalse(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0));
-
-        // If the current node is in the critical quorum then an event should be created.
-        test.hashgraph.isInCriticalQuorum.put(ID, true);
-        assertTrue(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0));
-        test.hashgraph.isInCriticalQuorum.put(ID, false);
-        assertFalse(
-                test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0),
-                "if neither node is part of the superMinority in the latest round, don't create an event");
-
-        // If the other node is in the critical quorum then an event should be created.
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID, true);
-        assertTrue(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0));
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID, false);
-        assertFalse(
-                test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0),
-                "if neither node is part of the superMinority in the latest round, don't create an event");
-
-        // If both are in the critical quorum then an event should be created.
-        test.hashgraph.isInCriticalQuorum.put(ID, true);
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID, true);
-        assertTrue(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0));
-    }
-
-    /**
-     * If there any frozen transaction events then do not create any new events.
-     */
-    @Test
-    @Order(7)
-    void shouldCreateEventFreeze() {
-        final SyncManagerTestData test = new SyncManagerTestData();
-        final AddressBook addressBook = test.hashgraph.getAddressBook();
-        final NodeId ID = addressBook.getNodeId(0);
-        final NodeId OTHER_ID = addressBook.getNodeId(1);
-
-        test.hashgraph.isInCriticalQuorum.put(ID, true);
-
-        when(test.startUpEventFrozenManager.shouldCreateEvent()).thenReturn(PASS);
-        when(test.freezeManager.shouldCreateEvent()).thenReturn(DONT_CREATE);
-        assertFalse(
-                test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0),
-                "should not create event when startUpEventFrozenManager returns PASS and freezeManager returns "
-                        + "DONT_CREATE");
-
-        when(test.startUpEventFrozenManager.shouldCreateEvent()).thenReturn(DONT_CREATE);
-        when(test.freezeManager.shouldCreateEvent()).thenReturn(CREATE);
-        assertFalse(
-                test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0),
-                "should not create event when startUpEventFrozenManager returns DONT_CREATE");
-
-        when(test.startUpEventFrozenManager.shouldCreateEvent()).thenReturn(CREATE);
-        when(test.freezeManager.shouldCreateEvent()).thenReturn(DONT_CREATE);
-        assertTrue(
-                test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0),
-                "should create event when startUpEventFrozenManager returns CREATE");
-    }
-
-    @Test
-    @Order(8)
-    void shouldCreateEventFallenBehind() {
-        final SyncManagerTestData test = new SyncManagerTestData();
-        final AddressBook addressBook = test.hashgraph.getAddressBook();
-        final NodeId OTHER_ID = addressBook.getNodeId(1);
-
-        // If one node has fallen behind then do not create new events.
-        assertFalse(
-                test.syncManager.shouldCreateEvent(OTHER_ID, true, 0, 0),
-                "when one node fallen behind, should not create events");
-    }
-
-    /**
-     * Verify shouldCreateEvent() while throttled
-     */
-    @Test
-    @Order(9)
-    void shouldCreateEventThrottled() {
-        final int eventsRead = 0;
-        final int eventsWritten = 0;
-
-        final SyncManagerTestData test = new SyncManagerTestData();
-        final AddressBook addressBook = test.hashgraph.getAddressBook();
-        final NodeId ID = addressBook.getNodeId(0);
-        final NodeId OTHER_ID = addressBook.getNodeId(1);
-
-        test.hashgraph.isInCriticalQuorum.put(ID, true);
-
-        when(test.startUpEventFrozenManager.shouldCreateEvent()).thenReturn(DONT_CREATE);
-        assertFalse(
-                test.syncManager.shouldCreateEvent(OTHER_ID, false, eventsRead, eventsWritten),
-                "when startUpEventFrozenManager.shouldNotCreateEvent returns true , should not create events");
-        when(test.startUpEventFrozenManager.shouldCreateEvent()).thenReturn(PASS);
-
-        when(test.freezeManager.shouldCreateEvent()).thenReturn(DONT_CREATE);
-        assertFalse(
-                test.syncManager.shouldCreateEvent(OTHER_ID, false, eventsRead, eventsWritten),
-                "when freezeManager.shouldNotCreateEvent returns true , should not create events");
-        when(test.freezeManager.shouldCreateEvent()).thenReturn(PASS);
-
-        assertTrue(
-                test.syncManager.shouldCreateEvent(OTHER_ID, false, eventsRead, eventsWritten),
-                "if all checks pass, an event should be created");
-    }
-
-    /**
-     * Verify behavior of shouldCreateEvent() when a large number of events are read.
-     */
-    @Test
-    @Order(10)
-    void shouldCreateEventLargeRead() {
-        final SyncManagerTestData test = new SyncManagerTestData();
-        final AddressBook addressBook = test.hashgraph.getAddressBook();
-        final NodeId ID = addressBook.getNodeId(0);
-        final NodeId OTHER_ID = addressBook.getNodeId(1);
-        final EventConfig config = test.configuration.getConfigData(EventConfig.class);
-
-        // If events read is too large then do not create an event
-        test.hashgraph.isInCriticalQuorum.put(ID, true);
-        assertFalse(
-                test.syncManager.shouldCreateEvent(
-                        OTHER_ID,
-                        false,
-                        config.staleEventPreventionThreshold()
-                                        * test.hashgraph.getAddressBook().getSize()
-                                + 1,
-                        0),
-                "if we read too many events during this sync, we skip creating an event to reduce the probability of "
-                        + "having a stale event");
     }
 }

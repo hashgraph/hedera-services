@@ -30,6 +30,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Set;
@@ -39,8 +40,9 @@ import java.util.Set;
  */
 public class HapiUtils {
     private static final int EVM_ADDRESS_ALIAS_LENGTH = 20;
-    private static final Key EMPTY_KEY_LIST =
+    public static final Key EMPTY_KEY_LIST =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
+    public static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;
 
     /** A {@link Comparator} for {@link AccountID}s. Sorts first by account number, then by alias. */
     public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = (o1, o2) -> {
@@ -121,7 +123,27 @@ public class HapiUtils {
         return TIMESTAMP_COMPARATOR.compare(t1, t2) < 0;
     }
 
-    public static final Set<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
+    /** Given a key, determines the number of cryptographic keys contained within it. */
+    public static int countOfCryptographicKeys(@NonNull final Key key) {
+        return switch (key.key().kind()) {
+            case ECDSA_384, ED25519, RSA_3072, ECDSA_SECP256K1 -> 1;
+            case KEY_LIST -> key.keyListOrThrow().keysOrElse(Collections.emptyList()).stream()
+                    .mapToInt(HapiUtils::countOfCryptographicKeys)
+                    .sum();
+            case THRESHOLD_KEY -> key
+                    .thresholdKeyOrThrow()
+                    .keysOrElse(KeyList.DEFAULT)
+                    .keysOrElse(Collections.emptyList())
+                    .stream()
+                    .mapToInt(HapiUtils::countOfCryptographicKeys)
+                    .sum();
+            case CONTRACT_ID, DELEGATABLE_CONTRACT_ID, UNSET -> 0;
+        };
+    }
+
+    // Suppressing the warning that this field is not used
+    @SuppressWarnings("java:S1068")
+    private static final Set<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
             HederaFunctionality.CONSENSUS_GET_TOPIC_INFO,
             HederaFunctionality.GET_BY_SOLIDITY_ID,
             HederaFunctionality.CONTRACT_CALL_LOCAL,
@@ -222,7 +244,7 @@ public class HapiUtils {
             case NETWORK_GET_VERSION_INFO -> HederaFunctionality.GET_VERSION_INFO;
             case TRANSACTION_GET_RECEIPT -> HederaFunctionality.TRANSACTION_GET_RECEIPT;
             case TRANSACTION_GET_RECORD -> HederaFunctionality.TRANSACTION_GET_RECORD;
-            case TRANSACTION_GET_FAST_RECORD -> throw new UnknownHederaFunctionality();
+            case TRANSACTION_GET_FAST_RECORD -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }

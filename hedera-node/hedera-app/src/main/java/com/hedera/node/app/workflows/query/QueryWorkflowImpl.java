@@ -21,12 +21,14 @@ import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTIO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
-import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
@@ -34,15 +36,20 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.fees.FeeAccumulator;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
+import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
@@ -75,52 +82,72 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES =
             List.of(NETWORK_GET_EXECUTION_TIME, GET_ACCOUNT_DETAILS);
 
+    private static final Response DEFAULT_UNSUPPORTED_RESPONSE = Response.newBuilder()
+            .transactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
+                    .header(ResponseHeader.newBuilder()
+                            .nodeTransactionPrecheckCode(NOT_SUPPORTED)
+                            .build()))
+            .build();
+
     private final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
-    private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
     private final QueryChecker queryChecker;
     private final IngestChecker ingestChecker;
     private final QueryDispatcher dispatcher;
 
-    private final FeeAccumulator feeAccumulator;
     private final Codec<Query> queryParser;
     private final ConfigProvider configProvider;
     private final RecordCache recordCache;
+    private final Authorizer authorizer;
+    private final ExchangeRateManager exchangeRateManager;
+    private final FeeManager feeManager;
+    private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
      *
-     * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed
-     *     state depending on the {@link ResponseType}
-     * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
+     * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed state depending on the
+     * {@link ResponseType}
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param queryChecker the {@link QueryChecker} with specific checks of an ingest-workflow
      * @param ingestChecker the {@link IngestChecker} to handle the crypto transfer
      * @param dispatcher the {@link QueryDispatcher} that will call query-specific methods
+     * @param queryParser the {@link Codec} to parse a query
+     * @param configProvider the {@link ConfigProvider} to get the current configuration
+     * @param recordCache the {@link RecordCache}
+     * @param authorizer the {@link Authorizer} to check permissions and special privileges
+     * @param exchangeRateManager the {@link ExchangeRateManager} to get the {@link ExchangeRateInfo}
+     * @param feeManager the {@link FeeManager} to calculate the fees
+     * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
     public QueryWorkflowImpl(
             @NonNull final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor,
-            @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker queryChecker,
             @NonNull final IngestChecker ingestChecker,
             @NonNull final QueryDispatcher dispatcher,
-            @NonNull final FeeAccumulator feeAccumulator,
             @NonNull final Codec<Query> queryParser,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final RecordCache recordCache) {
-        this.stateAccessor = requireNonNull(stateAccessor);
-        this.throttleAccumulator = requireNonNull(throttleAccumulator);
-        this.submissionManager = requireNonNull(submissionManager);
-        this.ingestChecker = requireNonNull(ingestChecker);
-        this.queryChecker = requireNonNull(queryChecker);
-        this.dispatcher = requireNonNull(dispatcher);
-        this.feeAccumulator = requireNonNull(feeAccumulator);
-        this.queryParser = requireNonNull(queryParser);
-        this.configProvider = requireNonNull(configProvider);
-        this.recordCache = requireNonNull(recordCache);
+            @NonNull final RecordCache recordCache,
+            @NonNull final Authorizer authorizer,
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final FeeManager feeManager,
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
+        this.stateAccessor = requireNonNull(stateAccessor, "stateAccessor must not be null");
+        this.submissionManager = requireNonNull(submissionManager, "submissionManager must not be null");
+        this.ingestChecker = requireNonNull(ingestChecker, "ingestChecker must not be null");
+        this.queryChecker = requireNonNull(queryChecker, "queryChecker must not be null");
+        this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
+        this.queryParser = requireNonNull(queryParser, "queryParser must not be null");
+        this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
+        this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
+        this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
+        this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
+        this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
+        this.synchronizedThrottleAccumulator =
+                requireNonNull(synchronizedThrottleAccumulator, "hapiThrottling must not be null");
     }
 
     @Override
@@ -128,102 +155,141 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
 
+        // We use wall-clock time when calculating fees
+        final var consensusTime = Instant.now();
+
         // 1. Parse and check header
         final Query query = parseQuery(requestBuffer);
         logger.debug("Received query: {}", query);
 
         final var function = functionOf(query);
 
-        final var handler = dispatcher.getHandler(query);
-        final var queryHeader = handler.extractHeader(query);
-        if (queryHeader == null) {
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
-        }
-        final ResponseType responseType = queryHeader.responseType();
-        logger.debug("Started answering a {} query of type {}", function, responseType);
-
         Response response;
-        long fee = 0L;
-        try (final var wrappedState = stateAccessor.apply(responseType)) {
-            // 2. Do some general pre-checks
-            ingestChecker.checkNodeState();
-            if (UNSUPPORTED_RESPONSE_TYPES.contains(responseType)) {
-                throw new PreCheckException(NOT_SUPPORTED);
+        if (!HederaFunctionality.NONE.equals(function)) {
+            final var handler = dispatcher.getHandler(query);
+            var queryHeader = handler.extractHeader(query);
+            if (queryHeader == null) {
+                queryHeader = QueryHeader.DEFAULT;
             }
+            final ResponseType responseType = queryHeader.responseType();
+            logger.debug("Started answering a {} query of type {}", function, responseType);
 
-            // 3. Check query throttles
-            if (throttleAccumulator.shouldThrottleQuery(function, query)) {
-                throw new PreCheckException(BUSY);
-            }
-
-            final var state = wrappedState.get();
-            final var storeFactory = new ReadableStoreFactory(state);
-            final var paymentRequired = handler.requiresNodePayment(responseType);
-            Transaction allegedPayment = null;
-            TransactionBody txBody = null;
-            if (paymentRequired) {
-                allegedPayment = queryHeader.paymentOrThrow();
-
-                // 4.i Ingest checks
-                final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment);
-
-                // 4.ii Validate CryptoTransfer
-                queryChecker.validateCryptoTransfer(transactionInfo);
-
-                txBody = transactionInfo.txBody();
-                final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
-
-                // 4.iii Check permissions
-                queryChecker.checkPermissions(payer, function);
-
-                // 4.iv Calculate costs
-                final var feeData =
-                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
-                fee = feeData.totalFee();
-
-                // 4.v Check account balances
-                queryChecker.validateAccountBalances(payer, transactionInfo, fee);
-
-                // 4.vi Submit payment to platform
-                final var txBytes = PbjConverter.asWrappedBytes(Transaction.PROTOBUF, allegedPayment);
-                submissionManager.submit(txBody, txBytes);
-            } else {
-                if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
+            try (final var wrappedState = stateAccessor.apply(responseType)) {
+                // 2. Do some general pre-checks
+                ingestChecker.checkNodeState();
+                if (UNSUPPORTED_RESPONSE_TYPES.contains(responseType)) {
                     throw new PreCheckException(NOT_SUPPORTED);
                 }
-            }
 
-            // 5. Check validity of query
-            final var context =
-                    new QueryContextImpl(storeFactory, query, configProvider.getConfiguration(), recordCache);
-            handler.validate(context);
+                final var state = wrappedState.get();
+                final var storeFactory = new ReadableStoreFactory(state);
+                final var paymentRequired = handler.requiresNodePayment(responseType);
+                final var feeCalculator = feeManager.createFeeCalculator(function, consensusTime);
+                final QueryContext context;
+                Transaction allegedPayment = null;
+                TransactionBody txBody = null;
+                AccountID payerID = null;
+                if (paymentRequired) {
+                    allegedPayment = queryHeader.paymentOrThrow();
+                    final var configuration = configProvider.getConfiguration();
 
-            if (handler.needsAnswerOnlyCost(responseType)) {
-                // 6.i Estimate costs
-                final var feeData =
-                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
-                fee = feeData.totalFee();
+                    // 3.i Ingest checks
+                    final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment, configuration);
+                    txBody = transactionInfo.txBody();
 
-                final var header = createResponseHeader(responseType, OK, fee);
+                    // get payer
+                    payerID = transactionInfo.payerID();
+                    context = new QueryContextImpl(
+                            state,
+                            storeFactory,
+                            query,
+                            configuration,
+                            recordCache,
+                            exchangeRateManager,
+                            feeCalculator,
+                            payerID);
+
+                    // A super-user does not have to pay for a query and has all permissions
+                    if (!authorizer.isSuperUser(payerID)) {
+
+                        // 3.ii Validate CryptoTransfer
+                        queryChecker.validateCryptoTransfer(transactionInfo);
+
+                        // 3.iii Check permissions
+                        queryChecker.checkPermissions(payerID, function);
+
+                        // Get the payer
+                        final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
+                        final var payer = accountStore.getAccountById(payerID);
+                        if (payer == null) {
+                            // This should never happen, because the account is checked in the pure checks
+                            throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
+                        }
+
+                        // 3.iv Calculate costs
+                        final var queryFees = handler.computeFees(context).totalFee();
+                        final var txFees = queryChecker.estimateTxFees(
+                                storeFactory, consensusTime, transactionInfo, payer.keyOrThrow(), configuration);
+
+                        // 3.v Check account balances
+                        queryChecker.validateAccountBalances(accountStore, transactionInfo, payer, queryFees, txFees);
+
+                        // 3.vi Submit payment to platform
+                        final var txBytes = Transaction.PROTOBUF.toBytes(allegedPayment);
+                        submissionManager.submit(txBody, txBytes);
+                    }
+                } else {
+                    if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
+                        throw new PreCheckException(NOT_SUPPORTED);
+                    }
+                    context = new QueryContextImpl(
+                            state,
+                            storeFactory,
+                            query,
+                            configProvider.getConfiguration(),
+                            recordCache,
+                            exchangeRateManager,
+                            feeCalculator,
+                            null);
+                }
+
+                // 4. Check validity of query
+                handler.validate(context);
+
+                // 5. Check query throttles
+                if (synchronizedThrottleAccumulator.shouldThrottle(function, query, payerID)
+                        && !RESTRICTED_FUNCTIONALITIES.contains(function)) {
+                    throw new PreCheckException(BUSY);
+                }
+
+                if (handler.needsAnswerOnlyCost(responseType)) {
+                    // 6.i Estimate costs
+                    final var queryFees = handler.computeFees(context).totalFee();
+
+                    final var header = createResponseHeader(responseType, OK, queryFees);
+                    response = handler.createEmptyResponse(header);
+                } else {
+                    // 6.ii Find response
+                    final var header = createResponseHeader(responseType, OK, 0L);
+                    response = handler.findResponse(context, header);
+                }
+            } catch (InsufficientBalanceException e) {
+                final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
                 response = handler.createEmptyResponse(header);
-            } else {
-                // 6.ii Find response
-                final var header = createResponseHeader(responseType, OK, fee);
-                response = handler.findResponse(context, header);
+            } catch (PreCheckException e) {
+                final var header = createResponseHeader(responseType, e.responseCode(), 0L);
+                response = handler.createEmptyResponse(header);
             }
-        } catch (InsufficientBalanceException e) {
-            final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
-            response = handler.createEmptyResponse(header);
-        } catch (PreCheckException e) {
-            final var header = createResponseHeader(responseType, e.responseCode(), fee);
-            response = handler.createEmptyResponse(header);
+        } else {
+            response = DEFAULT_UNSUPPORTED_RESPONSE;
+            logger.warn("Received a query for an unknown functionality");
         }
 
         try {
             Response.PROTOBUF.write(response, responseBuffer);
             logger.debug("Finished handling a query request in Query workflow");
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.warn("Unexpected IO exception while writing protobuf", e);
             throw new StatusRuntimeException(Status.INTERNAL);
         }
     }
@@ -257,7 +323,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         try {
             return HapiUtils.functionOf(query);
         } catch (UnknownHederaFunctionality e) {
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
+            return HederaFunctionality.NONE;
         }
     }
 }

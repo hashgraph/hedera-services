@@ -19,10 +19,11 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,6 +60,11 @@ public interface HederaOperations {
     void revert();
 
     /**
+     * Revert child records.
+     */
+    void revertChildRecords();
+
+    /**
      * Returns the {@link WritableStates} the {@code ContractService} can use to update
      * its own state within this {@link HederaOperations}.
      *
@@ -79,6 +85,13 @@ public interface HederaOperations {
      * @return the reserved entity number
      */
     long useNextEntityNumber();
+
+    /**
+     * Returns the maximum number of contracts that we should allow in this operation scope.
+     *
+     * @return the maximum number of contracts
+     */
+    long contractCreationLimit();
 
     /**
      * Returns the entropy available in this scope. See <a href="https://hips.hedera.com/hip/hip-351">HIP-351</a>
@@ -146,10 +159,10 @@ public interface HederaOperations {
      * Updates the storage metadata for the given contract.
      *
      * @param contractNumber the number of the contract
-     * @param firstKey       the first key in the storage linked list, or {@code null} if the list is empty
+     * @param firstKey       the first key in the storage linked list, or null if the list is empty
      * @param netChangeInSlotsUsed      the net change in the number of storage slots used by the contract
      */
-    void updateStorageMetadata(long contractNumber, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
+    void updateStorageMetadata(long contractNumber, @Nullable Bytes firstKey, int netChangeInSlotsUsed);
 
     /**
      * Creates a new contract with the given entity number and EVM address; and also "links" the alias
@@ -162,10 +175,9 @@ public interface HederaOperations {
      *
      * @param number       the number of the contract to create
      * @param parentNumber the number of the contract whose properties the new contract should inherit
-     * @param nonce        the nonce of the contract to create
      * @param evmAddress   if not null, the EVM address to use as an alias of the created contract
      */
-    void createContract(long number, long parentNumber, long nonce, @Nullable Bytes evmAddress);
+    void createContract(long number, long parentNumber, @Nullable Bytes evmAddress);
 
     /**
      * Creates a new contract with the given entity number and EVM address; and also "links" the alias
@@ -176,12 +188,11 @@ public interface HederaOperations {
      *
      * <p>The record of this creation should only be externalized if the top-level HAPI transaction succeeds.
      *
-     * @param number       the number of the contract to create
-     * @param op           the top-level operation creating this contract
-     * @param nonce        the nonce of the contract to create
-     * @param evmAddress   if not null, the EVM address to use as an alias of the created contract
+     * @param number     the number of the contract to create
+     * @param op         the top-level operation creating this contract
+     * @param evmAddress if not null, the EVM address to use as an alias of the created contract
      */
-    void createContract(long number, @NonNull ContractCreateTransactionBody op, long nonce, @Nullable Bytes evmAddress);
+    void createContract(long number, @NonNull ContractCreateTransactionBody op, @Nullable Bytes evmAddress);
 
     /**
      * Deletes the contract whose alias is the given {@code evmAddress}, and also "unlinks" the alias.
@@ -209,18 +220,11 @@ public interface HederaOperations {
     List<Long> getModifiedAccountNumbers();
 
     /**
-     * Returns a list of the contract ids that have been created in this scope, in increasing id order.
+     * Returns a summary of the changes made to contract state.
      *
-     * @return the list of created contract ids
+     * @return a summary of the changes made to contract state
      */
-    List<ContractID> createdContractIds();
-
-    /**
-     * Returns the contract nonces updated in this scope, in increasing id order.
-     *
-     * @return the list of updated contract nonces, in increasing id order
-     */
-    List<ContractNonceInfo> updatedContractNonces();
+    ContractChangeSummary summarizeContractChanges();
 
     /**
      * Returns number of slots used by the contract with the given number, ignoring any uncommitted
@@ -230,5 +234,12 @@ public interface HederaOperations {
      * @param contractNumber the contract number
      * @return the number of storage slots used by the contract, ignoring any uncommitted modifications
      */
-    int getOriginalSlotsUsed(long contractNumber);
+    long getOriginalSlotsUsed(long contractNumber);
+
+    /**
+     * Creates a {@link ContractCreateRecordBuilder}, containing information about the hollow account.
+     * @param contractId    ContractId of hollow account
+     * @param evmAddress    Evm address of hollow account
+     */
+    void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress);
 }

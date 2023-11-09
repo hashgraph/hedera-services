@@ -152,7 +152,7 @@ public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
                 new com.hedera.node.app.service.mono.state.merkle.MerkleTopic();
         merkleTopic.setMemo(topic.memo());
         merkleTopic.setExpirationTimestamp(
-                new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expiry(), 0));
+                new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expirationSecond(), 0));
         merkleTopic.setAdminKey((com.hedera.node.app.service.mono.legacy.core.jproto.JKey)
                 com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT))
                         .orElse(null));
@@ -174,7 +174,7 @@ public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
                 new com.hedera.node.app.service.mono.state.merkle.MerkleTopic();
         merkleTopic.setMemo(topic.memo());
         merkleTopic.setExpirationTimestamp(
-                new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expiry(), 0));
+                new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expirationSecond(), 0));
         merkleTopic.setAutoRenewDurationSeconds(topic.autoRenewPeriod());
         merkleTopic.setDeleted(topic.deleted());
         merkleTopic.setSequenceNumber(topic.sequenceNumber());
@@ -192,7 +192,7 @@ public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
                 new com.hedera.node.app.service.mono.state.merkle.MerkleTopic();
         merkleTopic.setMemo(topic.memo());
         merkleTopic.setExpirationTimestamp(
-                new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expiry(), 0));
+                new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expirationSecond(), 0));
         merkleTopic.setAdminKey(adminKey);
         merkleTopic.setSubmitKey(submitKey);
         merkleTopic.setAutoRenewDurationSeconds(topic.autoRenewPeriod());

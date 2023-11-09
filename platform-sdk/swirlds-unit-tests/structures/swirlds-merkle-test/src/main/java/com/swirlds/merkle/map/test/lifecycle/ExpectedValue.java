@@ -18,13 +18,11 @@ package com.swirlds.merkle.map.test.lifecycle;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkle.map.test.pta.MapValue;
 import java.io.Serializable;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
+import java.util.Objects;
 
 /**
  * Value stored in the ExpectedMap with corresponding MapKey
@@ -174,38 +172,29 @@ public class ExpectedValue implements Serializable {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder()
-                .append(entityType)
-                .append(hash)
-                .append(isErrored)
-                .append(latestHandledStatus)
-                .append(latestSubmitStatus)
-                .append(historyHandledStatus)
-                .toHashCode();
+        return Objects.hash(entityType, hash, isErrored, latestHandledStatus, latestSubmitStatus, historyHandledStatus);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == null || obj.getClass() != getClass()) {
-            return false;
-        }
-        if (this == obj) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-        ExpectedValue that = (ExpectedValue) obj;
-        return new EqualsBuilder()
-                .append(this.entityType, that.entityType)
-                .append(this.hash, that.hash)
-                .append(this.isErrored, that.isErrored)
-                .append(this.latestHandledStatus, that.latestHandledStatus)
-                .append(this.latestSubmitStatus, that.latestSubmitStatus)
-                .append(this.historyHandledStatus, that.historyHandledStatus)
-                .isEquals();
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        final ExpectedValue that = (ExpectedValue) other;
+        return isErrored == that.isErrored
+                && entityType == that.entityType
+                && Objects.equals(hash, that.hash)
+                && Objects.equals(latestHandledStatus, that.latestHandledStatus)
+                && Objects.equals(latestSubmitStatus, that.latestSubmitStatus)
+                && Objects.equals(historyHandledStatus, that.historyHandledStatus);
     }
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("EntityType", entityType)
                 .append("Hash", hash)
                 .append("isErrored", isErrored)

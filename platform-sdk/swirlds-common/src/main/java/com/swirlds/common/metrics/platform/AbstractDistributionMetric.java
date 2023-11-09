@@ -19,8 +19,8 @@ package com.swirlds.common.metrics.platform;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
-import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Represents a metric computed over a distribution function
@@ -58,7 +58,7 @@ public abstract class AbstractDistributionMetric extends DefaultMetric {
      */
     @Override
     public Double get(final ValueType valueType) {
-        CommonUtils.throwArgNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType must not be null");
         return switch (valueType) {
             case VALUE -> get();
             case MAX -> getStatsBuffered().getMax();

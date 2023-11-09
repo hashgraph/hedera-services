@@ -17,11 +17,13 @@
 package com.swirlds.common.io.utility;
 
 import static com.swirlds.common.io.utility.TemporaryFileBuilder.buildTemporaryDirectory;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static java.nio.file.Files.exists;
 
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -32,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,7 +53,7 @@ public final class FileUtils {
      *
      * @param runnable an operation to run
      */
-    public static void rethrowIO(final IORunnable runnable) {
+    public static void rethrowIO(@NonNull final IORunnable runnable) {
         try {
             runnable.run();
         } catch (final IOException e) {
@@ -63,7 +66,7 @@ public final class FileUtils {
      *
      * @param supplier an operation that supplies a value
      */
-    public static <T> T rethrowIO(final IOSupplier<T> supplier) {
+    public static <T> @NonNull T rethrowIO(@NonNull final IOSupplier<T> supplier) {
         try {
             return supplier.get();
         } catch (final IOException e) {
@@ -74,7 +77,7 @@ public final class FileUtils {
     /**
      * Get an absolute path to the current working directory, i.e. ".".
      */
-    public static Path getAbsolutePath() {
+    public static @NonNull Path getAbsolutePath() {
         return getAbsolutePath(".");
     }
 
@@ -86,7 +89,7 @@ public final class FileUtils {
      * @param pathDescription a description of the path, e.g. "foo", "/foobar", "foo/bar"
      * @return an absolute Path to the requested location
      */
-    public static Path getAbsolutePath(final String pathDescription) {
+    public static @NonNull Path getAbsolutePath(@NonNull final String pathDescription) {
         final String expandedPath = pathDescription.replaceFirst("^~", System.getProperty("user.home"));
         return FileSystems.getDefault().getPath(expandedPath).toAbsolutePath().normalize();
     }
@@ -99,7 +102,7 @@ public final class FileUtils {
      * @param path a non-absolute path
      * @return an absolute Path to the requested location
      */
-    public static Path getAbsolutePath(final Path path) {
+    public static @NonNull Path getAbsolutePath(@NonNull final Path path) {
         return getAbsolutePath(path.toString());
     }
 
@@ -109,7 +112,7 @@ public final class FileUtils {
      *
      * @param directoryToBeDeleted the directory to be deleted
      */
-    public static void deleteDirectory(final Path directoryToBeDeleted) throws IOException {
+    public static void deleteDirectory(@NonNull final Path directoryToBeDeleted) throws IOException {
         if (Files.isDirectory(directoryToBeDeleted)) {
             try (final Stream<Path> list = Files.list(directoryToBeDeleted)) {
                 final Iterator<Path> children = list.iterator();
@@ -129,7 +132,7 @@ public final class FileUtils {
      *
      * @param directoryToBeDeleted the directory to be deleted
      */
-    public static void deleteDirectoryAndLog(final Path directoryToBeDeleted) throws IOException {
+    public static void deleteDirectoryAndLog(@NonNull final Path directoryToBeDeleted) throws IOException {
         logger.info(STATE_TO_DISK.getMarker(), "deleting directory {}", directoryToBeDeleted);
 
         try {
@@ -152,7 +155,7 @@ public final class FileUtils {
      *                    placed at this destination, and not in this destination.
      * @throws UncheckedIOException if there is a problem hard linking the tree
      */
-    public static void hardLinkTree(final Path source, final Path destination) throws IOException {
+    public static void hardLinkTree(@NonNull final Path source, @NonNull final Path destination) throws IOException {
         if (!exists(source)) {
             throw new IOException(source + " does not exist or can not be accessed");
         }
@@ -194,7 +197,7 @@ public final class FileUtils {
      * @param files an array of files
      * @throws IOException if any of the files exist
      */
-    public static void throwIfFileExists(final Path... files) throws IOException {
+    public static void throwIfFileExists(@Nullable final Path... files) throws IOException {
         if (files == null) {
             return;
         }
@@ -212,7 +215,8 @@ public final class FileUtils {
      * @param directory the name of directory after it is renamed
      * @param operation an operation that writes to a directory
      */
-    public static void executeAndRename(final Path directory, final IOConsumer<Path> operation) throws IOException {
+    public static void executeAndRename(@NonNull final Path directory, @NonNull final IOConsumer<Path> operation)
+            throws IOException {
         executeAndRename(directory, buildTemporaryDirectory(), operation);
     }
 
@@ -224,7 +228,8 @@ public final class FileUtils {
      * @param tmpDirectory the name of the temporary directory, if it does not exist then it is created
      * @param operation    an operation that writes to a directory
      */
-    public static void executeAndRename(final Path directory, final Path tmpDirectory, final IOConsumer<Path> operation)
+    public static void executeAndRename(
+            @NonNull final Path directory, @NonNull final Path tmpDirectory, @NonNull final IOConsumer<Path> operation)
             throws IOException {
 
         try {
@@ -263,7 +268,8 @@ public final class FileUtils {
      * @param file        the file to be written to, should not exist prior to this method being called
      * @param writeMethod the method that writes
      */
-    public static void writeAndFlush(final Path file, final IOConsumer<MerkleDataOutputStream> writeMethod)
+    public static void writeAndFlush(
+            @NonNull final Path file, @NonNull final IOConsumer<MerkleDataOutputStream> writeMethod)
             throws IOException {
 
         throwIfFileExists(file);
@@ -286,7 +292,36 @@ public final class FileUtils {
      *
      * @return the user directory path
      */
-    public static String getUserDir() {
+    public static @NonNull String getUserDir() {
         return System.getProperty("user.dir");
+    }
+
+    /**
+     * Find files in the given directory that end with the given suffix.
+     * @param dir the directory to search
+     * @param suffix the suffix to match
+     * @return a list of paths to files that match the given suffix
+     * @throws IOException if there is a problem walking the directory
+     */
+    public static @NonNull List<Path> findFiles(@NonNull final Path dir, @NonNull final String suffix)
+            throws IOException {
+        try (Stream<Path> files = Files.walk(dir)) {
+            return files.filter(Files::isRegularFile)
+                    .filter(f -> f.toString().endsWith(suffix))
+                    .toList();
+        }
+    }
+
+    /**
+     * Delete files in the given directory that end with the given suffix.
+     * @param dir the directory to search
+     * @param suffix the suffix to match
+     * @throws IOException if there is a problem walking the directory or deleting
+     */
+    public static void deleteFiles(@NonNull final Path dir, @NonNull final String suffix) throws IOException {
+        final List<Path> files = findFiles(dir, suffix);
+        for (final Path file : files) {
+            Files.delete(file);
+        }
     }
 }

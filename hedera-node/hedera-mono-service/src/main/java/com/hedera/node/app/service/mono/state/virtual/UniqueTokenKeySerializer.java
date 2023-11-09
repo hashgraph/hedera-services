@@ -16,10 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.swirlds.merkledb.serialize.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -38,8 +35,8 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public int getSerializedSize(long dataVersion) {
-        return DataFileCommon.VARIABLE_DATA_SIZE;
+    public int getSerializedSize() {
+        return VARIABLE_DATA_SIZE;
     }
 
     @Override
@@ -56,11 +53,10 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public int serialize(final UniqueTokenKey tokenKey, final SerializableDataOutputStream outputStream)
-            throws IOException {
+    public int serialize(UniqueTokenKey tokenKey, ByteBuffer byteBuffer) throws IOException {
         Objects.requireNonNull(tokenKey);
-        Objects.requireNonNull(outputStream);
-        return tokenKey.serializeTo(outputStream::write);
+        Objects.requireNonNull(byteBuffer);
+        return tokenKey.serializeTo(byteBuffer::put);
     }
 
     @Override
@@ -77,17 +73,6 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     @Override
     public long getClassId() {
         return CLASS_ID;
-    }
-
-    @Override
-    public void deserialize(final SerializableDataInputStream serializableDataInputStream, final int i)
-            throws IOException {
-        /* no state to load, so no-op */
-    }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        /* no state to save, so no-op */
     }
 
     @Override

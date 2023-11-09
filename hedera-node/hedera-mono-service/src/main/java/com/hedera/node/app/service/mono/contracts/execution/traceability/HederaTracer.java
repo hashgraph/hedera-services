@@ -46,7 +46,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.code.CodeV0;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.frame.MessageFrame.Type;
@@ -169,7 +168,7 @@ public class HederaTracer implements HederaOperationTracer {
                 messageFrame.getRemainingGas(),
                 messageFrame.getInputData().toArray(),
                 messageFrame.getValue().toLong(),
-                messageFrame.getMessageStackDepth());
+                messageFrame.getDepth());
         final var contractAddress = messageFrame.getContractAddress();
         if (messageFrame.getType() != Type.CONTRACT_CREATION
                 && messageFrame.getWorldUpdater().getAccount(contractAddress) == null) {
@@ -238,8 +237,8 @@ public class HederaTracer implements HederaOperationTracer {
                     // intended call (e.g. the targeted invalid address) and sequence of events leading to the failure
                     // are lost
                     if (action.getCallType().equals(CALL) && exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
-                        final var syntheticInvalidAction = new SolidityAction(
-                                CALL, frame.getRemainingGas(), null, 0, frame.getMessageStackDepth() + 1);
+                        final var syntheticInvalidAction =
+                                new SolidityAction(CALL, frame.getRemainingGas(), null, 0, frame.getDepth() + 1);
                         syntheticInvalidAction.setCallingContract(
                                 EntityId.fromAddress(asMirrorAddress(frame.getContractAddress(), frame)));
                         syntheticInvalidAction.setTargetedAddress(
@@ -280,17 +279,6 @@ public class HederaTracer implements HederaOperationTracer {
             lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
             finalizeActionFor(lastAction, frame, frame.getState());
         });
-    }
-
-    @Override
-    public void traceAccountCreationResult(final MessageFrame frame, final Optional<ExceptionalHaltReason> haltReason) {
-        frame.setExceptionalHaltReason(haltReason);
-        if (areActionSidecarsEnabled()) {
-            // we take the last action from the list since there is a chance
-            // it has already been popped from the stack
-            final var lastAction = allActions.get(allActions.size() - 1);
-            finalizeActionFor(lastAction, frame, frame.getState());
-        }
     }
 
     public List<SolidityAction> getActions() {

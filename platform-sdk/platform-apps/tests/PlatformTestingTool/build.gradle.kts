@@ -14,34 +14,36 @@
  * limitations under the License.
  */
 
+import com.google.protobuf.gradle.ProtobufExtract
+
 plugins {
-    id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.application")
-    id("com.swirlds.platform.protobuf")
+    id("com.hedera.hashgraph.application")
+    id("com.google.protobuf")
 }
 
-dependencies {
-    // Individual Dependencies
-    compileOnly(libs.spotbugs.annotations)
-    implementation(project(":swirlds-merkle"))
-    implementation(libs.commons.math3)
-    implementation(libs.commons.io)
-    implementation(libs.protobuf)
+application.mainClass.set("com.swirlds.demo.platform.PlatformTestingToolMain")
 
-    // Bundle Dependencies
-    implementation(libs.bundles.logging.impl)
-
-    // Test Dependencies
-
-    // These should not be implementation() based deps, but this requires refactoring to eliminate.
-    implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
-    implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-    implementation(project(":swirlds-unit-tests:structures:swirlds-merkle-test"))
-    implementation(testFixtures(project(":swirlds-common")))
-
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testLibs.bundles.mocking)
-    testImplementation(testFixtures(project(":swirlds-common")))
+testModuleInfo {
+    requires("com.swirlds.test.framework")
+    requires("org.apache.logging.log4j.core")
+    requires("org.bouncycastle.provider")
+    requires("org.junit.jupiter.params")
+    requires("org.junit.jupiter.api")
+    requires("org.mockito")
 }
 
-tasks.withType<Javadoc>() { enabled = false }
+protobuf { protoc { artifact = "com.google.protobuf:protoc:3.21.5" } }
+
+configurations {
+    // Give proto compile access to the dependency versions
+    compileProtoPath { extendsFrom(configurations.internal.get()) }
+    testCompileProtoPath { extendsFrom(configurations.internal.get()) }
+}
+
+tasks.withType<ProtobufExtract>().configureEach {
+    if (name == "extractIncludeProto") {
+        enabled = false
+    }
+}
+
+tasks.withType<Javadoc>().configureEach { enabled = false }

@@ -15,19 +15,17 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
-    id("com.swirlds.platform.maven-publish")
+    id("com.hedera.hashgraph.sdk.conventions")
+    id("com.hedera.hashgraph.platform-maven-publish")
 }
 
-dependencies {
-    // Individual Dependencies
-    api(project(":swirlds-platform-core"))
-    compileOnly(libs.spotbugs.annotations)
-
-    // Test Dependencies
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testFixtures(project(":swirlds-config-api")))
+testModuleInfo {
+    requires("com.swirlds.common.testing")
+    requires("com.swirlds.config.api")
+    requires("com.swirlds.merkledb")
+    requires("com.swirlds.test.framework")
+    requires("com.swirlds.virtualmap")
+    requires("com.swirlds.config.api.test.fixtures")
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
 }

@@ -33,6 +33,7 @@ public class HandleException extends RuntimeException {
     private final ResponseCodeEnum status;
 
     public HandleException(final ResponseCodeEnum status) {
+        super(status.protoName());
         this.status = status;
     }
 
@@ -45,6 +46,9 @@ public class HandleException extends RuntimeException {
      * @throws UnsupportedOperationException always.  This method must not be called.
      */
     @Override
+    // Suppressing the warning that this method is not synchronized as its parent.
+    // Since the method will only throw an error there is no need for synchronization
+    @SuppressWarnings("java:S3551")
     public Throwable initCause(Throwable cause) {
         throw new UnsupportedOperationException("HandleException must not chain a cause");
     }
@@ -63,6 +67,11 @@ public class HandleException extends RuntimeException {
         validateTrue(!flag, errorStatus);
     }
 
+    @Override
+    public String toString() {
+        return "HandleException{" + "status=" + status + '}';
+    }
+
     /**
      * <strong>Disallowed</strong> constructor of {@code HandleException}.
      * This {@link Exception} subclass is used as a form of unconditional jump, rather than a true
@@ -74,6 +83,8 @@ public class HandleException extends RuntimeException {
      * @param cause the {@link Throwable} that caused this exception.  This is ignored.
      * @throws UnsupportedOperationException always.  This constructor must not be called.
      */
+    // Suppressing the warning that the constructor and arguments are not used
+    @SuppressWarnings({"java:S1144", "java:S1172"})
     private HandleException(@NonNull final ResponseCodeEnum responseCode, @Nullable final Throwable cause) {
         throw new UnsupportedOperationException("HandleException must not chain a cause");
     }

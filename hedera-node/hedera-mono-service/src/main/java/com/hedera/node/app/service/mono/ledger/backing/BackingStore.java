@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.mono.ledger.backing;
 
-import java.util.Set;
-
 /**
  * Defines a type that provides safe and unsafe access to a collection of accounts. ("Safe" implies
  * a defensive copy is returned from the accessor, while "unsafe" implies a reference to the element
@@ -73,15 +71,6 @@ public interface BackingStore<K, A> {
      * @return a flag for existence
      */
     boolean contains(K id);
-
-    /**
-     * Returns the set of extant account ids. <b>This is a very computation-intensive operation.
-     * <i>idSet</i> should only be called at state initialisation Avoid using this method in a
-     * normal handleTransaction flow.</b>
-     *
-     * @return the set of extant account ids
-     */
-    Set<K> idSet();
 
     /**
      * Returns the count of extant entities stored in the correspondent collection

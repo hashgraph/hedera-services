@@ -32,7 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class NetworkingStakingTranslatorTest {
+class NetworkingStakingTranslatorTest {
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     private ReadableStates states;

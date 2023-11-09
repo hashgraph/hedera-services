@@ -16,10 +16,10 @@
 
 package com.swirlds.common.utility;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.base.function.CheckedFunction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.LongToIntFunction;
 
 /**
@@ -47,8 +47,8 @@ public final class BinarySearch {
      * 		(i.e. all of the values in the provided range are too large)
      */
     public static long search(
-            final long minimumIndex, final long maximumIndex, final LongToIntFunction compareToDesired) {
-        throwArgNull(compareToDesired, "compareToDesired");
+            final long minimumIndex, final long maximumIndex, @NonNull final LongToIntFunction compareToDesired) {
+        Objects.requireNonNull(compareToDesired, "compareToDesired must not be null");
         return throwingSearch(minimumIndex, maximumIndex, compareToDesired::applyAsInt);
     }
 
@@ -74,14 +74,16 @@ public final class BinarySearch {
      * 		if compareToDesired throws E
      */
     public static <E extends Exception> long throwingSearch(
-            final long minimumIndex, final long maximumIndex, final CheckedFunction<Long, Integer, E> compareToDesired)
+            final long minimumIndex,
+            final long maximumIndex,
+            @NonNull final CheckedFunction<Long, Integer, E> compareToDesired)
             throws E {
 
         if (minimumIndex >= maximumIndex) {
             throw new IllegalArgumentException("maximum index must be strictly greater than the minimum index");
         }
 
-        throwArgNull(compareToDesired, "compareToDesired");
+        Objects.requireNonNull(compareToDesired, "compareToDesired must not be null");
 
         long leftBoundary = minimumIndex;
         long rightBoundary = maximumIndex - 1;

@@ -16,13 +16,14 @@
 
 package com.swirlds.common.merkle.synchronization.streams;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.common.utility.StopWatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -30,7 +31,6 @@ import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -237,7 +237,7 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
      * Flush the stream if necessary.
      */
     private void flushIfRequired() {
-        if (timeSinceLastFlush.getTime(TimeUnit.MILLISECONDS) > flushInterval.toMillis()) {
+        if (timeSinceLastFlush.getElapsedTimeNano() > flushInterval.toNanos()) {
             flush();
         }
     }

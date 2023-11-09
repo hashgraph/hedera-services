@@ -18,7 +18,9 @@ package com.hedera.node.app.config;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.AccountIDConverter;
 import com.hedera.node.config.converter.BytesConverter;
@@ -27,10 +29,12 @@ import com.hedera.node.config.converter.ContractIDConverter;
 import com.hedera.node.config.converter.EntityScaleFactorsConverter;
 import com.hedera.node.config.converter.EntityTypeConverter;
 import com.hedera.node.config.converter.FileIDConverter;
+import com.hedera.node.config.converter.FunctionalitySetConverter;
 import com.hedera.node.config.converter.HederaFunctionalityConverter;
 import com.hedera.node.config.converter.KeyValuePairConverter;
 import com.hedera.node.config.converter.KnownBlockValuesConverter;
 import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
+import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.converter.MapAccessTypeConverter;
 import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
 import com.hedera.node.config.converter.RecomputeTypeConverter;
@@ -46,6 +50,7 @@ import com.hedera.node.config.data.BalancesConfig;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.CacheConfig;
+import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
 import com.hedera.node.config.data.DevConfig;
@@ -70,12 +75,10 @@ import com.hedera.node.config.data.TraceabilityConfig;
 import com.hedera.node.config.data.UpgradeConfig;
 import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.node.config.data.VersionConfig;
-import com.hedera.node.config.data.VirtualdatasourceConfig;
 import com.hedera.node.config.sources.PropertyConfigSource;
+import com.hedera.node.config.sources.SettingsConfigSource;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.sources.PropertyFileConfigSource;
 import com.swirlds.common.config.sources.SystemEnvironmentConfigSource;
 import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
 import com.swirlds.common.threading.locks.AutoClosableLock;
@@ -83,13 +86,9 @@ import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.ObjIntConsumer;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -98,25 +97,9 @@ import org.apache.logging.log4j.Logger;
  * Implementation of the {@link ConfigProvider} interface.
  */
 @Singleton
-public class ConfigProviderImpl implements ConfigProvider {
+public class ConfigProviderImpl extends ConfigProviderBase {
     private static final Logger logger = LogManager.getLogger(ConfigProviderImpl.class);
 
-    /**
-     * Name of an environment variable that can be used to override the default path to the genesis.properties file (see
-     * {@link #GENESIS_PROPERTIES_DEFAULT_PATH}).
-     */
-    public static final String GENESIS_PROPERTIES_PATH_ENV = "HEDERA_GENESIS_PROPERTIES_PATH";
-    /**
-     * Name of an environment variable that can be used to override the default path to the application.properties file
-     * (see {@link #APPLICATION_PROPERTIES_DEFAULT_PATH}).
-     */
-    public static final String APPLICATION_PROPERTIES_PATH_ENV = "HEDERA_APP_PROPERTIES_PATH";
-    /** Default path to the genesis.properties file. */
-    public static final String GENESIS_PROPERTIES_DEFAULT_PATH = "genesis.properties";
-    /** Default path to the application.properties file. */
-    public static final String APPLICATION_PROPERTIES_DEFAULT_PATH = "application.properties";
-    /** Default path to the semantic-version.properties file. */
-    private static final String SEMANTIC_VERSION_PROPERTIES_DEFAULT_PATH = "semantic-version.properties";
     /**
      * The actual underlying versioned configuration provided by this provider. This must provided thread-safe access
      * since many threads (ingestion, pre-handle, etc.) will be accessing it from different threads while it is
@@ -125,6 +108,14 @@ public class ConfigProviderImpl implements ConfigProvider {
     private final AtomicReference<VersionedConfiguration> configuration;
     /** Provides synchronous access to updating the configuration to one thread at a time. */
     private final AutoClosableLock updateLock = Locks.createAutoLock();
+
+    /**
+     * Create a new instance, particularly from dependency injection.
+     */
+    @Inject
+    public ConfigProviderImpl() {
+        this(false);
+    }
 
     /**
      * Create a new instance. You must specify whether to use the genesis.properties file as a source for the
@@ -149,6 +140,7 @@ public class ConfigProviderImpl implements ConfigProvider {
      * @param propertyFileContent the new property file content
      */
     public void update(@NonNull final Bytes propertyFileContent) {
+        logger.info("Updating configuration based on new property file content.");
         try (final var ignoredLock = updateLock.lock()) {
             final var builder = createConfigurationBuilder();
             addFileSources(builder, false);
@@ -198,7 +190,6 @@ public class ConfigProviderImpl implements ConfigProvider {
                 .withConfigDataType(UpgradeConfig.class)
                 .withConfigDataType(UtilPrngConfig.class)
                 .withConfigDataType(VersionConfig.class)
-                .withConfigDataType(VirtualdatasourceConfig.class)
                 .withConverter(new CongestionMultipliersConverter())
                 .withConverter(new EntityScaleFactorsConverter())
                 .withConverter(new EntityTypeConverter())
@@ -214,7 +205,9 @@ public class ConfigProviderImpl implements ConfigProvider {
                 .withConverter(new PermissionedAccountsRangeConverter())
                 .withConverter(new SidecarTypeConverter())
                 .withConverter(new SemanticVersionConverter())
+                .withConverter(new LongPairConverter())
                 .withConverter(new KeyValuePairConverter())
+                .withConverter(new FunctionalitySetConverter())
                 .withConverter(new BytesConverter())
                 .withValidator(new EmulatesMapValidator());
     }
@@ -222,16 +215,13 @@ public class ConfigProviderImpl implements ConfigProvider {
     private void addByteSource(@NonNull final ConfigurationBuilder builder, @NonNull final Bytes propertyFileContent) {
         requireNonNull(builder);
         requireNonNull(propertyFileContent);
-        try (final var in = propertyFileContent.toInputStream()) {
-            final byte[] bytes = in.readAllBytes();
-            try (ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes)) {
-                Properties properties = new Properties();
-                properties.load(inputStream);
-                final PropertyConfigSource configSource = new PropertyConfigSource(properties, 101);
-                builder.withSource(configSource);
-            }
-        } catch (IOException e) {
-            throw new IllegalStateException("Can not create config source for bytes", e);
+        try {
+            final var configurationList =
+                    ServicesConfigurationList.PROTOBUF.parseStrict(propertyFileContent.toReadableSequentialData());
+            final var configSource = new SettingsConfigSource(configurationList.nameValueOrThrow(), 101);
+            builder.withSource(configSource);
+        } catch (IOException | NullPointerException e) {
+            // Ignore. This method may be called with a partial file during regular execution.
         }
     }
 
@@ -248,40 +238,6 @@ public class ConfigProviderImpl implements ConfigProvider {
 
         try {
             addFileSource(builder, APPLICATION_PROPERTIES_PATH_ENV, APPLICATION_PROPERTIES_DEFAULT_PATH, 100);
-        } catch (final Exception e) {
-            throw new IllegalStateException("Can not create config source for application properties", e);
-        }
-    }
-
-    private void addFileSource(
-            @NonNull final ConfigurationBuilder builder,
-            @NonNull final String envName,
-            @NonNull final String defaultPath,
-            final int priority) {
-        requireNonNull(builder);
-        requireNonNull(envName);
-        requireNonNull(defaultPath);
-
-        final ObjIntConsumer<Path> addSource = (path, p) -> {
-            if (path.toFile().exists()) {
-                if (!path.toFile().isDirectory()) {
-                    try {
-                        builder.withSource(new PropertyFileConfigSource(path, p));
-                    } catch (IOException e) {
-                        throw new IllegalStateException("Can not create config source for property file", e);
-                    }
-                } else {
-                    throw new IllegalArgumentException("File " + path + " is a directory and not a property file");
-                }
-            } else {
-                logger.warn("Properties file {} does not exist and won't be used as configuration source", path);
-            }
-        };
-
-        try {
-            final Path propertiesPath =
-                    Optional.ofNullable(System.getenv(envName)).map(Path::of).orElseGet(() -> Path.of(defaultPath));
-            addSource.accept(propertiesPath, priority);
         } catch (final Exception e) {
             throw new IllegalStateException("Can not create config source for application properties", e);
         }

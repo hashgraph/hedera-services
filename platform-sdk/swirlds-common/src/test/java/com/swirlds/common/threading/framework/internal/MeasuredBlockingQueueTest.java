@@ -91,10 +91,9 @@ class MeasuredBlockingQueueTest {
         final BlockingQueue<String> queue = new LinkedBlockingQueue<>();
         final MeasuredBlockingQueue.Config config = new MeasuredBlockingQueue.Config(metrics, CATEGORY, QUEUE_NAME);
 
-        assertThatThrownBy(() -> new MeasuredBlockingQueue<>(null, null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new MeasuredBlockingQueue<>(queue, null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new MeasuredBlockingQueue<>(null, config))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new MeasuredBlockingQueue<>(null, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new MeasuredBlockingQueue<>(queue, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new MeasuredBlockingQueue<>(null, config)).isInstanceOf(NullPointerException.class);
     }
 
     @Test

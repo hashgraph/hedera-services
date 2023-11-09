@@ -35,7 +35,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.utility.ThrowingRunnable;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -46,7 +45,6 @@ import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.SwirldStateManagerImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import com.swirlds.test.framework.TestQualifierTags;
@@ -108,9 +106,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 .when(swirldStateManager)
                 .handleConsensusRound(any(ConsensusRound.class));
 
-        // the thread is not interruptable
-        when(swirldStateManager.getStopBehavior()).thenReturn(Stoppable.StopBehavior.BLOCKING);
-
         final ExecutorService executor = Executors.newFixedThreadPool(1);
 
         // Set up a separate thread to invoke clear
@@ -128,7 +123,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 eventStreamManager,
                 stateHashSignQueue,
                 e -> {},
-                () -> {},
                 mock(StatusActionSubmitter.class),
                 (round) -> {},
                 new BasicSoftwareVersion(1));
@@ -216,7 +210,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 .withConfiguration(configuration)
                 .build();
 
-        final SwirldStateManager swirldStateManager = new SwirldStateManagerImpl(
+        final SwirldStateManager swirldStateManager = new SwirldStateManager(
                 platformContext,
                 addressBook,
                 selfId,
@@ -224,7 +218,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 consensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
                 mock(StatusActionSubmitter.class),
-                () -> false,
                 state,
                 new BasicSoftwareVersion(1));
 
@@ -237,7 +230,6 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 eventStreamManager,
                 stateHashSignQueue,
                 e -> {},
-                () -> {},
                 mock(StatusActionSubmitter.class),
                 (round) -> {},
                 new BasicSoftwareVersion(1));

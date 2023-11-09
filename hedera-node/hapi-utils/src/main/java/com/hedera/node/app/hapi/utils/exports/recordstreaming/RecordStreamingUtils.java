@@ -156,7 +156,7 @@ public class RecordStreamingUtils {
         return isRelevant(file) && !file.contains(SIDECAR_ONLY_TOKEN);
     }
 
-    private static boolean isSidecarFile(final String file) {
+    public static boolean isSidecarFile(final String file) {
         return isRelevant(file) && file.contains(SIDECAR_ONLY_TOKEN);
     }
 

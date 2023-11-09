@@ -414,9 +414,7 @@ class MerkleSerializationTests {
         final MerkleDataOutputStream out = new MerkleDataOutputStream(new ByteArrayOutputStream());
 
         assertThrows(
-                IllegalArgumentException.class,
-                () -> in.readMerkleTree(null, 0),
-                "null directory should not be permitted");
+                NullPointerException.class, () -> in.readMerkleTree(null, 0), "null directory should not be permitted");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> out.writeMerkleTree(null, null),

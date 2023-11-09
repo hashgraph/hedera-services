@@ -58,7 +58,10 @@ import org.apache.logging.log4j.Logger;
  */
 public class QueryOnlyLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(QueryOnlyLoadTest.class);
-    private static final Random r = new Random();
+
+    @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
+    private static final Random r = new Random(870333L);
+
     private static final String ACCOUNT_PATTERN = "0.0.%d";
 
     private static int startingScheduleNum = 0;

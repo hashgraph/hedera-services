@@ -19,9 +19,9 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -29,6 +29,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
@@ -38,13 +39,13 @@ import com.hedera.hapi.node.file.FileDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -91,12 +92,15 @@ class FileDeleteTest extends FileTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected Account payerAccount;
 
+    @Mock
+    protected FileFeeBuilder usageEstimator;
+
     protected Configuration testConfig;
 
     @BeforeEach
     void setUp() {
         mockStore = mock(ReadableFileStoreImpl.class);
-        subject = new FileDeleteHandler();
+        subject = new FileDeleteHandler(usageEstimator);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
@@ -104,6 +108,8 @@ class FileDeleteTest extends FileTestBase {
         testConfig = HederaTestConfigBuilder.createConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
+        when(mockStoreFactory.getStore(ReadableFileStore.class)).thenReturn(mockStore);
+        when(mockStoreFactory.getStore(ReadableAccountStore.class)).thenReturn(accountStore);
     }
 
     @Test
@@ -112,8 +118,7 @@ class FileDeleteTest extends FileTestBase {
         // given:
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
-        final var context = new FakePreHandleContext(accountStore, newDeleteTxn());
-        context.registerStore(ReadableFileStore.class, mockStore);
+        final var context = new PreHandleContextImpl(mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher);
 
         // when:
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FILE_ID);
@@ -157,8 +162,13 @@ class FileDeleteTest extends FileTestBase {
 
         subject.preHandle(realPreContext);
 
-        assertTrue(realPreContext.requiredNonPayerKeys().size() > 0);
-        assertEquals(3, realPreContext.requiredNonPayerKeys().size());
+        assertThat(realPreContext.requiredNonPayerKeys().size()).isEqualTo(1);
+        assertThat(realPreContext
+                        .requiredNonPayerKeys()
+                        .toArray(Key[]::new)[0]
+                        .thresholdKey()
+                        .threshold())
+                .isEqualTo(1);
     }
 
     @Test
@@ -183,7 +193,7 @@ class FileDeleteTest extends FileTestBase {
     void keysDoesntExist() {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
@@ -217,13 +227,13 @@ class FileDeleteTest extends FileTestBase {
 
         assertTrue(changedFile.isPresent());
         assertTrue(changedFile.get().deleted());
-        assertNull(changedFile.get().contents());
+        assertEquals(Bytes.EMPTY, changedFile.get().contents());
     }
 
     @Test
     @DisplayName("File without keys returns error")
     void noFileKeys() {
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
         final var txn = newDeleteTxn().fileDeleteOrThrow();

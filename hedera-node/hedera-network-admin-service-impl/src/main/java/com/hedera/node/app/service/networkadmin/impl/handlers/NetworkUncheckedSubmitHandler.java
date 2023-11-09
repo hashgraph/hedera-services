@@ -20,6 +20,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -32,8 +34,11 @@ import javax.inject.Singleton;
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#UNCHECKED_SUBMIT}.
  * <p>
- * This transaction type has been deprecated. Because protobufs promise backwards compatibility,
- * we cannot remove it. However, it should not be used.
+ * Unchecked submit is a mechanism to bypass ingest checks. This is a dangerous operation and will be removed
+ * in the future.
+ * Transactions that are wrapped in an unchecked submit call are unwrapped during ingest and then submitted directly.
+ * Therefore, unchecked submit is not a transaction type that is actually submitted to the network and there is no
+ * reason to implement a handler for it. This class exists for completeness but should never actually be called.
  */
 @Singleton
 public class NetworkUncheckedSubmitHandler implements TransactionHandler {
@@ -54,5 +59,11 @@ public class NetworkUncheckedSubmitHandler implements TransactionHandler {
         // because preHandle will always throw
         requireNonNull(context);
         throw new HandleException(NOT_SUPPORTED);
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(final FeeContext feeContext) {
+        return Fees.FREE;
     }
 }

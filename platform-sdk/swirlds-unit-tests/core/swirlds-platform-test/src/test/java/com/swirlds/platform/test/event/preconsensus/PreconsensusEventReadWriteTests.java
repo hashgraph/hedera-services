@@ -40,11 +40,13 @@ import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -107,7 +109,7 @@ class PreconsensusEventReadWriteTests {
         maximumGeneration += random.nextInt(0, 10);
 
         final PreconsensusEventFile file = PreconsensusEventFile.of(
-                random.nextInt(0, 100), 0, maximumGeneration, RandomUtils.randomInstant(random), testDirectory, false);
+                RandomUtils.randomInstant(random), random.nextInt(0, 100), 0, maximumGeneration, 0, testDirectory);
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
@@ -154,7 +156,12 @@ class PreconsensusEventReadWriteTests {
         maximumGeneration += random.nextInt(0, 10);
 
         final PreconsensusEventFile file = PreconsensusEventFile.of(
-                random.nextInt(0, 100), 0, maximumGeneration, RandomUtils.randomInstant(random), testDirectory, false);
+                RandomUtils.randomInstant(random),
+                random.nextInt(0, 100),
+                0,
+                maximumGeneration,
+                maximumGeneration,
+                testDirectory);
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
@@ -188,12 +195,12 @@ class PreconsensusEventReadWriteTests {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final PreconsensusEventFile file = PreconsensusEventFile.of(
+                RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 random.nextLong(0, 1000),
                 random.nextLong(1000, 2000),
-                RandomUtils.randomInstant(random),
-                testDirectory,
-                false);
+                0,
+                testDirectory);
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         mutableFile.close();
@@ -230,7 +237,12 @@ class PreconsensusEventReadWriteTests {
         maximumGeneration += random.nextInt(0, 10);
 
         final PreconsensusEventFile file = PreconsensusEventFile.of(
-                random.nextInt(0, 100), 0, maximumGeneration, RandomUtils.randomInstant(random), testDirectory, false);
+                RandomUtils.randomInstant(random),
+                random.nextInt(0, 100),
+                0,
+                maximumGeneration,
+                maximumGeneration,
+                testDirectory);
 
         final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
@@ -290,7 +302,7 @@ class PreconsensusEventReadWriteTests {
         maximumGeneration += random.nextInt(0, 10);
 
         final PreconsensusEventFile file = PreconsensusEventFile.of(
-                random.nextInt(0, 100), 0, maximumGeneration, RandomUtils.randomInstant(random), testDirectory, false);
+                RandomUtils.randomInstant(random), random.nextInt(0, 100), 0, maximumGeneration, 0, testDirectory);
 
         final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
@@ -350,12 +362,12 @@ class PreconsensusEventReadWriteTests {
         final long restrictedMaximumGeneration = maximumGeneration - (minimumGeneration + maximumGeneration) / 4;
 
         final PreconsensusEventFile file = PreconsensusEventFile.of(
+                RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 restrictedMinimumGeneration,
                 restrictedMaximumGeneration,
-                RandomUtils.randomInstant(random),
-                testDirectory,
-                false);
+                0,
+                testDirectory);
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
 
         final List<EventImpl> validEvents = new ArrayList<>();
@@ -408,12 +420,12 @@ class PreconsensusEventReadWriteTests {
         maximumGeneration += random.nextInt(1, 10);
 
         final PreconsensusEventFile file = PreconsensusEventFile.of(
+                RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 minimumGeneration,
                 maximumGeneration,
-                RandomUtils.randomInstant(random),
-                testDirectory,
-                false);
+                0,
+                testDirectory);
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
@@ -474,12 +486,12 @@ class PreconsensusEventReadWriteTests {
         final long uncompressedSpan = 5;
 
         final PreconsensusEventFile file = PreconsensusEventFile.of(
+                RandomUtils.randomInstant(random),
                 random.nextInt(0, 100),
                 minimumEventGeneration,
                 maximumFileGeneration,
-                RandomUtils.randomInstant(random),
-                testDirectory,
-                false);
+                0,
+                testDirectory);
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
@@ -509,5 +521,21 @@ class PreconsensusEventReadWriteTests {
         for (int i = 0; i < events.size(); i++) {
             assertEventsAreEqual(events.get(i), deserializedEvents.get(i));
         }
+    }
+
+    @Test
+    @DisplayName("Empty File Test")
+    void emptyFileTest() throws IOException {
+        final PreconsensusEventFile file = PreconsensusEventFile.of(Instant.now(), 0, 0, 100, 0, testDirectory);
+
+        final Path path = file.getPath();
+
+        Files.createDirectories(path.getParent());
+        assertTrue(path.toFile().createNewFile());
+        assertTrue(Files.exists(path));
+
+        final PreconsensusEventFileIterator iterator = file.iterator(Long.MIN_VALUE);
+        assertFalse(iterator.hasNext());
+        assertThrows(NoSuchElementException.class, iterator::next);
     }
 }

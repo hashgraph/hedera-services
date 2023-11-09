@@ -39,8 +39,9 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.gui.model.GuiModel;
 import com.swirlds.platform.Browser;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.Random;
@@ -142,10 +143,9 @@ public class CryptocurrencyDemoMain implements SwirldMain {
     public void init(final Platform platform, final NodeId id) {
         this.platform = platform;
         this.selfId = id;
-        final int winNum = GuiPlatformAccessor.getInstance().getInstanceNumber(selfId);
+        final int winNum = GuiModel.getInstance().getInstanceNumber(selfId);
         this.console = createConsole(platform, winNum, true); // create the window, make it visible
-        GuiPlatformAccessor.getInstance()
-                .setAbout(platform.getSelfId(), "Cryptocurrency and stock market demo v. 1.0\n");
+        GuiModel.getInstance().setAbout(platform.getSelfId(), "Cryptocurrency and stock market demo v. 1.0\n");
         this.console.addKeyListener(keyListener);
     }
 
@@ -182,6 +182,7 @@ public class CryptocurrencyDemoMain implements SwirldMain {
     }
 
     @Override
+    @NonNull
     public SwirldState newState() {
         return new CryptocurrencyDemoState();
     }

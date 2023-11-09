@@ -29,10 +29,14 @@ import java.util.concurrent.Future;
 
 public class DoNothingCryptoEngine implements Cryptography {
     @Override
-    public void digestAsync(Message message) {}
+    public void digestAsync(Message message) {
+        // fake crypto engine does nothing
+    }
 
     @Override
-    public void digestAsync(List<Message> list) {}
+    public void digestAsync(List<Message> list) {
+        // fake crypto engine does nothing
+    }
 
     @Override
     public Future<Hash> digestAsync(byte[] bytes, DigestType digestType) {
@@ -45,7 +49,9 @@ public class DoNothingCryptoEngine implements Cryptography {
     }
 
     @Override
-    public void digestSync(List<Message> list) {}
+    public void digestSync(List<Message> list) {
+        // fake crypto engine does nothing
+    }
 
     @Override
     public Hash digestSync(byte[] bytes, DigestType digestType) {
@@ -68,10 +74,14 @@ public class DoNothingCryptoEngine implements Cryptography {
     }
 
     @Override
-    public void verifyAsync(TransactionSignature transactionSignature) {}
+    public void verifyAsync(TransactionSignature transactionSignature) {
+        // fake crypto engine does nothing
+    }
 
     @Override
-    public void verifyAsync(List<TransactionSignature> list) {}
+    public void verifyAsync(List<TransactionSignature> list) {
+        // fake crypto engine does nothing
+    }
 
     @Override
     public Future<Boolean> verifyAsync(byte[] bytes, byte[] bytes1, byte[] bytes2, SignatureType signatureType) {

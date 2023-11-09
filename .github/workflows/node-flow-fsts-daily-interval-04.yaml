@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Node: FSTS Daily (Interval: 4)"
+name: "ZXF: [Node] FSTS Daily (Interval: 4)"
 on:
   workflow_dispatch:
     inputs:
@@ -41,17 +41,12 @@ concurrency:
 # Panel Definition & Timings:
 #   "configs/services/suites/daily/GCP-Daily-Services-Comp-3NReconnect-15N-4C.json"                   ----         90m
 #   "configs/services/suites/daily/GCP-Daily-Services-Global-3NReconnect-15N-4C.json"                 ----         90m
-#   "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C.json"    ----         150m
-#   "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C.json"     ----         220m
-#   "configs/services/suites/weekly/GCP-Weekly-Services-Query-Restart-Performance-7N-7C.json"         ----         40m
 
-#   TOTAL RUN TIME:             590 minutes, 9.8 hours
+#   TOTAL RUN TIME:             180 minutes, 3 hours
 #
-#   Three parallel jobs:
+#   Parallel job(s):
 #
 #     comp-3nreconnect-15n-4c -> global-3nreconnect-15n-4c
-#     comp-restart-performance-hotspot-6n-6c
-#     comp-restart-performance-random-7n-7c
 
 
 jobs:
@@ -62,9 +57,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-3NReconnect-15N-4C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -73,6 +66,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     if: ${{ !cancelled() && always() }}
 
 
@@ -83,9 +78,7 @@ jobs:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
       hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
+      use-branch-for-slack-channel: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Global-3NReconnect-15N-4C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -94,68 +87,8 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+      gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
+      gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
     needs:
       - comp-3nreconnect-15n-4c
-    if: ${{ !cancelled() && always() }}
-
-
-  comp-restart-performance-hotspot-6n-6c:
-    name: Comp-Restart-Performance-Hotspot-6N-6C
-    uses: ./.github/workflows/zxc-jrs-regression.yaml
-    with:
-      ref: ${{ github.event.inputs.ref }}
-      branch-name: ${{ github.event.inputs.branch-name }}
-      hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
-      panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C.json"
-    secrets:
-      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
-    if: ${{ !cancelled() && always() }}
-
-
-  comp-restart-performance-random-7n-7c:
-    name: Comp-Restart-Performance-Random-7N-7C
-    uses: ./.github/workflows/zxc-jrs-regression.yaml
-    with:
-      ref: ${{ github.event.inputs.ref }}
-      branch-name: ${{ github.event.inputs.branch-name }}
-      hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
-      panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C.json"
-    secrets:
-      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
-    if: ${{ !cancelled() && always() }}
-
-  query-restart-performance-7n-7c:
-    name: Query-Restart-Performance-7N-7C
-    uses: ./.github/workflows/zxc-jrs-regression.yaml
-    with:
-      ref: ${{ github.event.inputs.ref }}
-      branch-name: ${{ github.event.inputs.branch-name }}
-      hedera-tests-enabled: true
-      slack-results-channel: hedera-regression
-      slack-summary-channel: hedera-regression-summary
-      use-branch-for-slack-channel: false
-      panel-config: "configs/services/suites/weekly/GCP-Weekly-Services-Query-Restart-Performance-7N-7C.json"
-    secrets:
-      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     if: ${{ !cancelled() && always() }}

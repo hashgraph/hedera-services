@@ -21,6 +21,7 @@ import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
 import picocli.CommandLine;
@@ -60,9 +61,25 @@ public class DumpStateCommand extends AbstractCommand {
         YES
     }
 
+    enum WithFeeSummary {
+        NO,
+        YES
+    }
+
+    enum OmitContents {
+        NO,
+        YES
+    }
+
     enum Format {
         CSV,
         ELIDED_DEFAULT_FIELDS
+    }
+
+    enum KeyDetails {
+        STRUCTURE,
+        STRUCTURE_WITH_IDS,
+        NONE
     }
 
     // We want to open the signed state file only once but run a bunch of dumps against it
@@ -72,10 +89,11 @@ public class DumpStateCommand extends AbstractCommand {
     // that we have to track ourselves, via `init` and `finish` methods that _each_
     // subcommand is responsible for calling.
 
-    @Command(name = "contract-bytecodes")
+    @Command(name = "contract-bytecodes", description = "Dump all contract (runtime) bytecodes")
     void contractBytecodes(
             @Option(
                             names = {"-o", "--bytecode", "--contract-bytecode"},
+                            required = true,
                             arity = "1",
                             description = "Output file for contracts bytecode dump")
                     @NonNull
@@ -94,7 +112,7 @@ public class DumpStateCommand extends AbstractCommand {
                     final boolean withIds) {
         Objects.requireNonNull(bytecodePath);
         init();
-        System.out.println("=== bytecodes ===");
+        System.out.println("=== contract bytecodes ===");
         DumpContractBytecodesSubcommand.doit(
                 parent.signedState,
                 bytecodePath,
@@ -105,10 +123,11 @@ public class DumpStateCommand extends AbstractCommand {
         finish();
     }
 
-    @Command(name = "contract-stores")
+    @Command(name = "contract-stores", description = "Dump all contract stores (all of their slots)")
     void contractStores(
             @Option(
-                            names = {"-o", "--contract-store"},
+                            names = {"-o", "--store"},
+                            required = true,
                             arity = "1",
                             description = "Output file for contracts store dump")
                     @NonNull
@@ -123,7 +142,7 @@ public class DumpStateCommand extends AbstractCommand {
                     final boolean withSlots) {
         Objects.requireNonNull(storePath);
         init();
-        System.out.println("=== stores ===");
+        System.out.println("=== contract stores ===");
         DumpContractStoresSubcommand.doit(
                 parent.signedState,
                 storePath,
@@ -133,10 +152,11 @@ public class DumpStateCommand extends AbstractCommand {
         finish();
     }
 
-    @Command(name = "accounts")
+    @Command(name = "accounts", description = "Dump all accounts (EOA + smart contract)")
     void accounts(
             @Option(
                             names = {"--account"},
+                            required = true,
                             arity = "1",
                             description = "Output file for accounts dump")
                     @NonNull
@@ -150,14 +170,19 @@ public class DumpStateCommand extends AbstractCommand {
                             names = {"--low"},
                             arity = "0..1",
                             defaultValue = "0",
-                            description = "Lowest acount number (inclusive) to dump")
+                            description = "Lowest account number (inclusive) to dump")
                     int lowLimit,
             @Option(
                             names = {"--high"},
                             arity = "0..1",
                             defaultValue = "2147483647",
                             description = "highest account number (inclusive) to dump")
-                    int highLimit) {
+                    int highLimit,
+            @Option(
+                            names = {"--keys"},
+                            arity = "0..*",
+                            description = "How to dump key summaries")
+                    final EnumSet<KeyDetails> keyDetails) {
         Objects.requireNonNull(accountPath);
         if (lowLimit > highLimit)
             throw new CommandLine.ParameterException(
@@ -170,30 +195,143 @@ public class DumpStateCommand extends AbstractCommand {
                 accountPath,
                 lowLimit,
                 highLimit,
+                null != keyDetails ? keyDetails : EnumSet.noneOf(KeyDetails.class),
                 doCsv ? Format.CSV : Format.ELIDED_DEFAULT_FIELDS,
                 parent.verbosity);
         finish();
     }
 
+    @Command(name = "files", description = "Dump data files (no special files, no contracts)")
+    void files(
+            @Option(
+                            names = {"--file"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for files dump")
+                    @NonNull
+                    final Path filesPath,
+            @Option(
+                            names = {"--keys"},
+                            arity = "0..*",
+                            description = "How to dump key summaries")
+                    final EnumSet<KeyDetails> keyDetails,
+            @Option(
+                            names = {"--omit-contents"},
+                            description = "Omit the contents (bytes) of the file")
+                    final boolean omitContents,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit summary information")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(filesPath);
+        init();
+        System.out.println("=== files ===");
+        DumpFilesSubcommand.doit(
+                parent.signedState,
+                filesPath,
+                null != keyDetails ? keyDetails : EnumSet.noneOf(KeyDetails.class),
+                emitSummary ? EmitSummary.YES : EmitSummary.NO,
+                omitContents ? OmitContents.YES : OmitContents.NO,
+                parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "tokens", description = "Dump fungible token types")
+    void tokens(
+            @Option(
+                            names = {"--token"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for fungibles dump")
+                    @NonNull
+                    final Path tokensPath,
+            @Option(
+                            names = {"--keys"},
+                            arity = "0..*",
+                            description = "How to dump key summaries")
+                    final EnumSet<KeyDetails> keyDetails,
+            @Option(
+                            names = {"--fees"},
+                            description = "Emit a summary of the types of fees")
+                    final boolean doFeeSummary,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit summary information")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(tokensPath);
+        init();
+        System.out.println("=== tokens ===");
+        DumpTokensSubcommand.doit(
+                parent.signedState,
+                tokensPath,
+                null != keyDetails ? keyDetails : EnumSet.noneOf(KeyDetails.class),
+                doFeeSummary ? WithFeeSummary.YES : WithFeeSummary.NO,
+                emitSummary ? EmitSummary.YES : EmitSummary.NO,
+                parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "uniques", description = "Dump unique (serial-numbered) tokens")
+    void uniques(
+            @Option(
+                            names = {"--unique"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for unique tokens dump")
+                    @NonNull
+                    final Path uniquesPath,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit a summary information")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(uniquesPath);
+        init();
+        System.out.println("=== unique NFTs ===");
+        DumpUniqueTokensSubcommand.doit(
+                parent.signedState, uniquesPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "associations", description = "Dump token associations (tokenrels)")
+    void associations(
+            @Option(
+                            names = {"--associations"},
+                            required = true,
+                            arity = "1",
+                            description = "Output file for token associations dump")
+                    @NonNull
+                    final Path associationsPath,
+            @Option(
+                            names = {"-s", "--summary"},
+                            description = "Emit summary information")
+                    final boolean emitSummary) {
+        Objects.requireNonNull(associationsPath);
+        init();
+        System.out.println("=== token associations ===");
+        DumpTokenAssociationsSubcommand.doit(
+                parent.signedState, associationsPath, emitSummary ? EmitSummary.YES : EmitSummary.NO, parent.verbosity);
+        finish();
+    }
+
     /** Setup to run a dump subcommand: If _first_ subcommand being run then open signed state file */
     void init() {
-        if (thisSubcommandisNumber == null) {
-            thisSubcommandisNumber = 0;
+        if (thisSubcommandsNumber == null) {
+            thisSubcommandsNumber = 0;
             subcommandsToRun = getSubcommandsToRun();
             parent.openSignedState();
         } else {
-            thisSubcommandisNumber++;
+            thisSubcommandsNumber++;
         }
     }
 
     /** Cleanup after running a dump subcommand: If _last_ subcommand being run then close signed state file */
     void finish() {
-        if (thisSubcommandisNumber == subcommandsToRun.size() - 1) {
+        if (thisSubcommandsNumber == subcommandsToRun.size() - 1) {
             parent.closeSignedState();
         }
     }
 
-    Integer thisSubcommandisNumber;
+    Integer thisSubcommandsNumber;
     Set<String> subcommandsToRun;
 
     /** We need to find out how many subcommands we're going to run, so that we can manage the signed state file.

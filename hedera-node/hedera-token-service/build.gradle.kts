@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
+plugins {
+    id("com.hedera.hashgraph.conventions")
+    id("java-test-fixtures")
+}
 
 description = "Hedera Token Service API"

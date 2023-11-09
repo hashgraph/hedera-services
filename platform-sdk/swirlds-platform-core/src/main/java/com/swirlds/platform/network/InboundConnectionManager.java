@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.network;
 
-import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
+import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
 import com.swirlds.common.threading.locks.AutoClosableResourceLock;
 import com.swirlds.common.threading.locks.Locks;
@@ -99,7 +99,7 @@ public class InboundConnectionManager implements ConnectionManager {
         try (final LockedResource<Connection> lockedConn = lock.lockInterruptibly()) {
             final Connection old = lockedConn.getResource();
             if (old.connected()) {
-                logger.error(
+                logger.warn(
                         SOCKET_EXCEPTIONS.getMarker(),
                         "{} got new connection from {}, disconnecting old one",
                         old.getSelfId(),

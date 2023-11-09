@@ -55,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -119,6 +120,7 @@ public final class TokenPauseSpecs extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec cannotAddPauseKeyViaTokenUpdate() {
         return defaultHapiSpec("CannotAddPauseKeyViaTokenUpdate")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(ADMIN_KEY))
@@ -128,6 +130,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                         tokenUpdate(SECONDARY).pauseKey(PAUSE_KEY).hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
     }
 
+    @HapiTest
     private HapiSpec cannotPauseWithInvalidPauseKey() {
         return defaultHapiSpec("cannotPauseWithInvalidPauseKey")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(OTHER_KEY))
@@ -135,6 +138,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                 .then(tokenPause(PRIMARY).signedBy(DEFAULT_PAYER, OTHER_KEY).hasKnownStatus(INVALID_SIGNATURE));
     }
 
+    @HapiTest
     private HapiSpec pausedTokenInCustomFeeCaseStudy() {
         return defaultHapiSpec("PausedTokenInCustomFeeCaseStudy")
                 .given(
@@ -179,6 +183,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                         .hasKnownStatus(TOKEN_IS_PAUSED));
     }
 
+    @HapiTest
     private HapiSpec unpauseWorks() {
         final String firstUser = FIRST_USER;
         final String token = PRIMARY;
@@ -213,6 +218,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                         getAccountInfo(firstUser).logged());
     }
 
+    @HapiTest
     private HapiSpec pausedNonFungibleUniqueCannotBeUsed() {
         final String uniqueToken = "nonFungibleUnique";
         final String firstUser = FIRST_USER;
@@ -294,6 +300,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .hasToken(relationshipWith(otherToken).balance(500)));
     }
 
+    @HapiTest
     private HapiSpec pausedFungibleTokenCannotBeUsed() {
         final String token = PRIMARY;
         final String otherToken = SECONDARY;
@@ -373,6 +380,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .hasToken(relationshipWith(otherToken).balance(500)));
     }
 
+    @HapiTest
     private HapiSpec cannotChangePauseStatusIfMissingPauseKey() {
         return defaultHapiSpec("CannotChangePauseStatusIfMissingPauseKey")
                 .given(cryptoCreate(TOKEN_TREASURY))
@@ -402,6 +410,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY));
     }
 
+    @HapiTest
     private HapiSpec basePauseAndUnpauseHaveExpectedPrices() {
         final var expectedBaseFee = 0.001;
         final var token = "token";

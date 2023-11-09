@@ -36,6 +36,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -102,16 +103,15 @@ public class EndOfStakingPeriodCalculator {
         final var curNetworkCtx = networkCtx.get();
         final var curStakingInfos = stakingInfos.get();
         final var totalStakedRewardStart = curNetworkCtx.getTotalStakedRewardStart();
-        final var rewardRate = rewardRateForEndingPeriod(totalStakedRewardStart);
+        final var rewardRate = perHbarRewardRateForEndingPeriod(totalStakedRewardStart);
         // The tinybars earned per hbar for stakers who were staked to a node whose total
         // stakedRewardStart for the ending period was in the range [minStake, maxStake]
-        final var perHbarRate = totalStakedRewardStart < HBARS_TO_TINYBARS
-                ? 0
-                : rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS);
+        // plus a boundary-case check for zero whole hbars staked
+        final var perHbarRate = totalStakedRewardStart < HBARS_TO_TINYBARS ? 0 : rewardRate;
         log.info(
                 "The reward rate for the period was {} tb ({} tb/hbar for nodes with in-range"
                         + " stake, given {} total stake reward start)",
-                rewardRate,
+                perHbarRate * (totalStakedRewardStart / HBARS_TO_TINYBARS),
                 perHbarRate,
                 totalStakedRewardStart);
 
@@ -130,7 +130,7 @@ public class EndOfStakingPeriodCalculator {
             // in the just-finished period
             final var nodeRewardRate = stakingInfo.updateRewardSumHistory(
                     perHbarRate,
-                    dynamicProperties.maxDailyStakeRewardThPerH(),
+                    dynamicProperties.stakingPerHbarRewardRate(),
                     dynamicProperties.requireMinStakeToReward());
 
             final var oldStakeRewardStart = stakingInfo.getStakeRewardStart();
@@ -203,8 +203,18 @@ public class EndOfStakingPeriodCalculator {
                 curNetworkCtx.pendingRewards(),
                 rewardsBalance());
 
+        final long reservedStakingRewards = curNetworkCtx.pendingRewards();
+        final long unreservedStakingRewardBalance = rewardsBalance() - reservedStakingRewards;
         final var syntheticNodeStakeUpdateTxn = syntheticTxnFactory.nodeStakeUpdate(
-                lastInstantOfPreviousPeriodFor(consensusTime), nodeStakingInfos, properties);
+                lastInstantOfPreviousPeriodFor(consensusTime),
+                nodeStakingInfos,
+                properties,
+                totalStakedRewardStart,
+                perHbarRate,
+                reservedStakingRewards,
+                unreservedStakingRewardBalance,
+                dynamicProperties.stakingRewardBalanceThreshold(),
+                dynamicProperties.maxStakeRewarded());
         log.info("Exporting:\n{}", nodeStakingInfos);
         recordsHistorian.trackPrecedingChildRecord(
                 DEFAULT_SOURCE_ID,
@@ -215,7 +225,8 @@ public class EndOfStakingPeriodCalculator {
 
     /**
      * Scales up the weight of the node to the range [minStake, maxStakeOfAllNodes] from the consensus weight range [0, sumOfConsensusWeights].
-     * @param weight weight of the node
+     *
+     * @param weight      weight of the node
      * @param newMinStake min stake of the node
      * @param newMaxStake real max stake of all nodes computed by taking max(stakeOfNode1, stakeOfNode2, ...)
      * @return scaled weight of the node
@@ -262,7 +273,8 @@ public class EndOfStakingPeriodCalculator {
      * If stake is less than minStake the weight of a node A will be 0. If stake is greater than minStake, the weight of a node A
      * will be computed so that every node above minStake has weight at least 1; but any node that has staked at least 1
      * out of every 250 whole hbars staked will have weight >= 2.
-     * @param stake the stake of current node, includes stake rewarded and non-rewarded
+     *
+     * @param stake                the stake of current node, includes stake rewarded and non-rewarded
      * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
      * @return calculated consensus weight of the node
      */
@@ -291,24 +303,52 @@ public class EndOfStakingPeriodCalculator {
      * the effective per-hbar reward rate for the period.
      *
      * @param stakedToReward the amount of hbars staked to reward at the start of the ending period
-     * @return the effective per-hbar reward rate for the period
+     * @return the per-hbar reward rate for the period
      */
     @VisibleForTesting
-    long rewardRateForEndingPeriod(final long stakedToReward) {
+    long perHbarRewardRateForEndingPeriod(final long stakedToReward) {
         // The balance left in 0.0.800 (in tinybars), after paying all rewards earned so far
         final var unreservedBalance = rewardsBalance() - networkCtx.get().pendingRewards();
-
         final var thresholdBalance = dynamicProperties.stakingRewardBalanceThreshold();
         // A number proportional to the unreserved balance, from 0 for empty, up to 1 at the threshold
-        final var balanceRatio = thresholdBalance > 0L
+        final var balanceRatio = ratioOf(unreservedBalance, thresholdBalance);
+
+        return rescaledPerHbarRewardRate(balanceRatio, stakedToReward, dynamicProperties.stakingPerHbarRewardRate());
+    }
+
+    /**
+     * Given the {@code 0.0.800} unreserved balance and its threshold setting, returns the ratio of the balance to the
+     * threshold, from 0 for empty, up to 1 at the threshold.
+     *
+     * @param unreservedBalance the balance in {@code 0.0.800} minus the pending rewards
+     * @param thresholdBalance  the threshold balance setting
+     * @return the ratio of the balance to the threshold, from 0 for empty, up to 1 at the threshold
+     */
+    @VisibleForTesting
+    BigDecimal ratioOf(final long unreservedBalance, final long thresholdBalance) {
+        return thresholdBalance > 0L
                 ? BigDecimal.valueOf(Math.min(unreservedBalance, thresholdBalance))
                         .divide(BigDecimal.valueOf(thresholdBalance), MATH_CONTEXT)
                 : BigDecimal.ONE;
+    }
 
+    /**
+     * Given the {@code 0.0.800} balance ratio relative to the threshold, the amount that was staked to reward at the
+     * start of the period that is now ending, and the maximum amount of tinybars to pay as staking rewards in the
+     * period, returns the effective per-hbar reward rate for the period.
+     *
+     * @param balanceRatio   the ratio of the {@code 0.0.800} balance to the threshold
+     * @param stakedToReward the amount of hbars staked to reward at the start of the ending period
+     * @param maxRewardRate  the maximum amount of tinybars to pay as staking rewards in the period
+     * @return the effective per-hbar reward rate for the period
+     */
+    @VisibleForTesting
+    long rescaledPerHbarRewardRate(
+            @NonNull final BigDecimal balanceRatio, final long stakedToReward, final long maxRewardRate) {
         // When 0.0.800 has a high balance, and less than maxStakeRewarded is staked for reward, then
         // effectiveRewardRate == rewardRate. But as the balance drops or the staking increases, then
         // it can be the case that effectiveRewardRate < rewardRate
-        return BigDecimal.valueOf(dynamicProperties.stakingRewardRate())
+        return BigDecimal.valueOf(maxRewardRate)
                 .multiply(balanceRatio.multiply(BigDecimal.valueOf(2).subtract(balanceRatio)))
                 .multiply(
                         dynamicProperties.maxStakeRewarded() >= stakedToReward

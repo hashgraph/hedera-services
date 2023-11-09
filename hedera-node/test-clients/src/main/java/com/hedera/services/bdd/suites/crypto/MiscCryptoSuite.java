@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -63,14 +64,14 @@ public class MiscCryptoSuite extends HapiSuite {
         return Arrays.asList(
                 //				transferChangesBalance()
                 //				getsGenesisBalance()
-                //				reduceTransferFee(),
-                sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign());
+                reduceTransferFee(), sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign());
     }
 
     private List<HapiSpec> negativeTests() {
         return List.of(updateWithOutOfDateKeyFails());
     }
 
+    @HapiTest
     private HapiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
         String sysAccount = "0.0.977";
         String randomAccountA = "randomAccountA";
@@ -125,20 +126,23 @@ public class MiscCryptoSuite extends HapiSuite {
                                 .logged());
     }
 
-    public static HapiSpec getsGenesisBalance() {
+    @HapiTest
+    private HapiSpec getsGenesisBalance() {
         return defaultHapiSpec("GetsGenesisBalance")
                 .given()
                 .when()
                 .then(getAccountBalance(GENESIS).logged());
     }
 
-    public static HapiSpec transferChangesBalance() {
+    @HapiTest
+    private HapiSpec transferChangesBalance() {
         return defaultHapiSpec("TransferChangesBalance")
                 .given(cryptoCreate("newPayee").balance(0L))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, "newPayee", 1_000_000_000L)))
                 .then(getAccountBalance("newPayee").hasTinyBars(1_000_000_000L).logged());
     }
 
+    @HapiTest
     private HapiSpec updateWithOutOfDateKeyFails() {
         return defaultHapiSpec("UpdateWithOutOfDateKeyFails")
                 .given(

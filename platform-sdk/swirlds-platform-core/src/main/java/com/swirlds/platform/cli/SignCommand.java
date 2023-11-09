@@ -18,6 +18,7 @@ package com.swirlds.platform.cli;
 
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.util.FileSigningUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -27,12 +28,16 @@ import java.nio.file.Path;
 import java.security.KeyPair;
 import java.util.List;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 /**
  * An abstract command type for generating signature files
  */
 public abstract class SignCommand extends AbstractCommand {
+    private static final Logger logger = LogManager.getLogger(SignCommand.class);
+
     /**
      * The paths to the sources that signature files will be generated for. Can contain individual files, as well as
      * directories
@@ -156,8 +161,11 @@ public abstract class SignCommand extends AbstractCommand {
 
         // if signature file already exists, don't continue
         if (Files.exists(signatureFileDestinationPath)) {
-            System.out.println(
-                    "Signature file " + signatureFileDestinationPath + " already exists. Skipping file " + fileToSign);
+            logger.warn(
+                    LogMarker.CLI.getMarker(),
+                    "Signature file {} already exists. Skipping file {}",
+                    signatureFileDestinationPath,
+                    fileToSign);
             return;
         }
 
@@ -175,8 +183,12 @@ public abstract class SignCommand extends AbstractCommand {
         try {
             Files.copy(fileToSign, destinationDirectory.resolve(fileToSign.getFileName()));
         } catch (final IOException e) {
-            System.err.println("Failed to copy source file " + fileToSign.getFileName() + " to destination directory "
-                    + destinationDirectory + ". Exception: " + e);
+            logger.error(
+                    LogMarker.EXCEPTION.getMarker(),
+                    "Failed to copy source file {} to destination directory {}",
+                    fileToSign.getFileName(),
+                    destinationDirectory,
+                    e);
         }
     }
 

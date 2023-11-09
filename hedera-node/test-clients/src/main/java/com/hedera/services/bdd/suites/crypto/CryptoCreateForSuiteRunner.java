@@ -25,7 +25,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -42,7 +41,6 @@ import org.junit.jupiter.api.Assertions;
  * each test client. This class should be used only for that purpose and not be used in any other
  * testing.
  */
-@HapiTestSuite
 public class CryptoCreateForSuiteRunner extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoCreateForSuiteRunner.class);
     private final String nodes;

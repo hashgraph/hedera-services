@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.file.impl.FileServiceImpl.UPGRADE_FILE
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableQueueState;
@@ -31,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -43,10 +44,11 @@ import java.util.Objects;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
 public class ReadableUpgradeFileStoreImpl implements ReadableUpgradeFileStore {
-    private final FileID UPGRADE_FILE_ID = new FileID(0, 0, 150);
+
+    private static final FileID UPGRADE_FILE_ID = new FileID(0, 0, 150);
 
     /** The underlying data storage class that holds the file data. */
-    private final ReadableQueueState<Bytes> upgradeState;
+    private final ReadableQueueState<ProtoBytes> upgradeState;
 
     private final ReadableKVState<FileID, File> upgradeFileState;
 
@@ -56,8 +58,8 @@ public class ReadableUpgradeFileStoreImpl implements ReadableUpgradeFileStore {
      * @param states The state to use.
      */
     public ReadableUpgradeFileStoreImpl(@NonNull final ReadableStates states) {
-        this.upgradeState = Objects.requireNonNull(states.getQueue(UPGRADE_DATA_KEY));
-        this.upgradeFileState = Objects.requireNonNull(states.get(BLOBS_KEY));
+        upgradeState = Objects.requireNonNull(states.getQueue(UPGRADE_DATA_KEY));
+        upgradeFileState = Objects.requireNonNull(states.get(BLOBS_KEY));
     }
 
     @Override
@@ -81,7 +83,7 @@ public class ReadableUpgradeFileStoreImpl implements ReadableUpgradeFileStore {
     @NonNull
     public Iterator<File> iterator() {
         final File upgradeFile = upgradeFileState.get(UPGRADE_FILE_ID);
-        return upgradeFile != null ? List.of(upgradeFile).iterator() : new ArrayList<File>(0).iterator();
+        return upgradeFile != null ? List.of(upgradeFile).iterator() : Collections.emptyIterator();
     }
 
     @Override
@@ -91,7 +93,7 @@ public class ReadableUpgradeFileStoreImpl implements ReadableUpgradeFileStore {
         final var iterator = upgradeState.iterator();
         while (iterator.hasNext()) {
             final var file = iterator.next();
-            collector.write(file.toByteArray());
+            collector.write(file.value().toByteArray());
         }
         return Bytes.wrap(collector.toByteArray());
     }

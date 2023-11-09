@@ -16,6 +16,8 @@
 
 package com.swirlds.common.utility;
 
+import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
+
 import java.awt.Dialog;
 import java.awt.GraphicsEnvironment;
 import java.awt.Window;
@@ -28,8 +30,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Synthesizer;
@@ -40,10 +42,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.Conversion;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Utility class for other operations
@@ -52,6 +50,11 @@ public class CommonUtils {
 
     /** the default charset used by swirlds */
     private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
+
+    /** lower characters for hex conversion */
+    private static final char[] DIGITS_LOWER = {
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+    };
 
     /** used by beep() */
     private static Synthesizer synthesizer;
@@ -199,12 +202,20 @@ public class CommonUtils {
      * @param length the length of the array to convert to hex
      * @return a {@link String} containing the lowercase hexadecimal representation of the byte array
      */
+    @SuppressWarnings("java:S127")
     public static String hex(final byte[] bytes, final int length) {
         if (bytes == null) {
             return "null";
         }
         throwRangeInvalid("length", length, 0, bytes.length);
-        return new String(Hex.encodeHex(bytes, 0, length, true));
+
+        final char[] out = new char[length << 1];
+        for (int i = 0, j = 0; i < length; i++) {
+            out[j++] = DIGITS_LOWER[(0xF0 & bytes[i]) >>> 4];
+            out[j++] = DIGITS_LOWER[0x0F & bytes[i]];
+        }
+
+        return new String(out);
     }
 
     /**
@@ -223,15 +234,54 @@ public class CommonUtils {
      * @param string the hexadecimal string to be converted
      * @return an array of bytes
      */
+    @SuppressWarnings("java:S127")
     public static byte[] unhex(final String string) {
         if (string == null) {
             return null;
         }
-        try {
-            return Hex.decodeHex(string);
-        } catch (final DecoderException e) {
-            throw new IllegalArgumentException(e);
+
+        final char[] data = string.toCharArray();
+        final int len = data.length;
+
+        if ((len & 0x01) != 0) {
+            throw new IllegalArgumentException("Odd number of characters.");
         }
+
+        final byte[] out = new byte[len >> 1];
+
+        for (int i = 0, j = 0; j < len; i++) {
+            int f = toDigit(data[j], j) << 4;
+            j++;
+            f = f | toDigit(data[j], j);
+            j++;
+            out[i] = (byte) (f & 0xFF);
+        }
+
+        return out;
+    }
+
+    /**
+     * Convert an int to a byte array, little endian.
+     *
+     * @param value the int to convert
+     * @return the byte array
+     */
+    public static byte[] intToBytes(final int value) {
+        final byte[] dst = new byte[Integer.BYTES];
+
+        for (int i = 0; i < Integer.BYTES; i++) {
+            final int shift = i * 8;
+            dst[i] = (byte) (0xff & (value >> shift));
+        }
+        return dst;
+    }
+
+    private static int toDigit(final char ch, final int index) throws IllegalArgumentException {
+        final int digit = Character.digit(ch, 16);
+        if (digit == -1) {
+            throw new IllegalArgumentException("Illegal hexadecimal character " + ch + " at index " + index);
+        }
+        return digit;
     }
 
     /**
@@ -254,13 +304,13 @@ public class CommonUtils {
      *
      * @param arg     the argument checked
      * @param argName the name of the argument
-     * @see StringUtils#isBlank(CharSequence)
+     * @see String#isBlank()
      * @deprecated use {@link com.swirlds.base.ArgumentUtils#throwArgBlank(String, String)} instead
      */
     @Deprecated(forRemoval = true)
     public static String throwArgBlank(final String arg, final String argName) {
-        throwArgNull(arg, argName);
-        if (StringUtils.isBlank(arg)) {
+        Objects.requireNonNull(arg, argName);
+        if (arg.isBlank()) {
             throw new IllegalArgumentException(String.format("The supplied argument '%s' cannot be blank!", argName));
         }
         return arg;
@@ -318,17 +368,6 @@ public class CommonUtils {
     }
 
     /**
-     * Convert an int to a byte array, little endian.
-     *
-     * @param value the int to convert
-     * @return the byte array
-     */
-    public static byte[] intToBytes(final int value) {
-        final byte[] result = new byte[Integer.BYTES];
-        return Conversion.intToByteArray(value, 0, result, 0, Integer.BYTES);
-    }
-
-    /**
      * Joins multiple lists into a single list
      *
      * @param lists the lists to join
@@ -337,7 +376,7 @@ public class CommonUtils {
      */
     @SafeVarargs
     public static <T> List<T> joinLists(final List<T>... lists) {
-        return Arrays.stream(lists).flatMap(Collection::stream).collect(Collectors.toList());
+        return Arrays.stream(lists).flatMap(Collection::stream).toList();
     }
 
     /**
@@ -347,7 +386,7 @@ public class CommonUtils {
      * @return the original value if not null or an empty string if null.
      */
     public static String nullToBlank(final String value) {
-        return (value == null) ? StringUtils.EMPTY : value;
+        return (value == null) ? "" : value;
     }
 
     /**
@@ -375,5 +414,15 @@ public class CommonUtils {
                 consumer.accept(t);
             }
         };
+    }
+
+    /**
+     * Returns a string representation of the given byte count in human readable format.
+     *
+     * @param bytes number of bytes
+     * @return human-readable string representation of the given byte count
+     */
+    public static String byteCountToDisplaySize(final long bytes) {
+        return UNIT_BYTES.buildFormatter(bytes).setDecimalPlaces(1).render();
     }
 }

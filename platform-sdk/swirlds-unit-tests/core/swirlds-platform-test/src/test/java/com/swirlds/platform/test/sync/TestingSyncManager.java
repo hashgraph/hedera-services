@@ -18,41 +18,11 @@ package com.swirlds.platform.test.sync;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.FallenBehindManager;
-import com.swirlds.platform.gossip.shadowgraph.SyncResult;
-import com.swirlds.platform.gossip.sync.SyncManager;
-import java.util.Collections;
 import java.util.List;
 
-public class TestingSyncManager implements SyncManager, FallenBehindManager {
+public class TestingSyncManager implements FallenBehindManager {
     /** whether we have fallen behind or not */
     private boolean fallenBehind = false;
-
-    @Override
-    public boolean shouldAcceptSync() {
-        return false;
-    }
-
-    @Override
-    public boolean shouldInitiateSync() {
-        return false;
-    }
-
-    @Override
-    public List<NodeId> getNeighborsToCall() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public boolean shouldCreateEvent(NodeId otherId, boolean oneNodeFallenBehind, int eventsRead, int eventsWritten) {
-        // For testing purposes, never create a new event to commemorate the sync
-        return false;
-    }
-
-    @Override
-    public boolean shouldCreateEvent(SyncResult info) {
-        // For testing purposes, never create a new event to commemorate the sync
-        return false;
-    }
 
     @Override
     public void reportFallenBehind(NodeId id) {

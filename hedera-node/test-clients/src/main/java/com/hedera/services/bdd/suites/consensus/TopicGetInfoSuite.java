@@ -24,13 +24,18 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exposeTargetLedgerIdTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,8 +60,10 @@ public class TopicGetInfoSuite extends HapiSuite {
         return true;
     }
 
+    @HapiTest
     private HapiSpec allFieldsSetHappyCase() {
         // sequenceNumber should be 0 and runningHash should be 48 bytes all 0s.
+        final AtomicReference<ByteString> targetLedgerId = new AtomicReference<>();
         return defaultHapiSpec("AllFieldsSetHappyCase")
                 .given(
                         newKeyNamed("adminKey"),
@@ -71,14 +78,15 @@ public class TopicGetInfoSuite extends HapiSuite {
                                 .via("createTopic"))
                 .when()
                 .then(
-                        getTopicInfo(TEST_TOPIC)
-                                .hasExpectedLedgerId("0x03")
+                        exposeTargetLedgerIdTo(targetLedgerId::set),
+                        sourcing(() -> getTopicInfo(TEST_TOPIC)
+                                .hasEncodedLedgerId(targetLedgerId.get())
                                 .hasMemo(TESTMEMO)
                                 .hasAdminKey("adminKey")
                                 .hasSubmitKey("submitKey")
                                 .hasAutoRenewAccount("autoRenewAccount")
                                 .hasSeqNo(0)
-                                .hasRunningHash(new byte[48]),
+                                .hasRunningHash(new byte[48])),
                         getTxnRecord("createTopic").logged(),
                         submitMessageTo(TEST_TOPIC)
                                 .blankMemo()
@@ -86,26 +94,26 @@ public class TopicGetInfoSuite extends HapiSuite {
                                 .message(new String("test".getBytes()))
                                 .via("submitMessage"),
                         getTxnRecord("submitMessage").logged(),
-                        getTopicInfo(TEST_TOPIC)
-                                .hasExpectedLedgerId("0x03")
+                        sourcing(() -> getTopicInfo(TEST_TOPIC)
+                                .hasEncodedLedgerId(targetLedgerId.get())
                                 .hasMemo(TESTMEMO)
                                 .hasAdminKey("adminKey")
                                 .hasSubmitKey("submitKey")
                                 .hasAutoRenewAccount("autoRenewAccount")
                                 .hasSeqNo(1)
-                                .logged(),
+                                .logged()),
                         updateTopic(TEST_TOPIC)
                                 .topicMemo("Don't worry about the vase")
                                 .via("updateTopic"),
                         getTxnRecord("updateTopic").logged(),
-                        getTopicInfo(TEST_TOPIC)
-                                .hasExpectedLedgerId("0x03")
+                        sourcing(() -> getTopicInfo(TEST_TOPIC)
+                                .hasEncodedLedgerId(targetLedgerId.get())
                                 .hasMemo("Don't worry about the vase")
                                 .hasAdminKey("adminKey")
                                 .hasSubmitKey("submitKey")
                                 .hasAutoRenewAccount("autoRenewAccount")
                                 .hasSeqNo(1)
-                                .logged(),
+                                .logged()),
                         deleteTopic(TEST_TOPIC).via("deleteTopic"),
                         getTxnRecord("deleteTopic").logged(),
                         getTopicInfo(TEST_TOPIC)

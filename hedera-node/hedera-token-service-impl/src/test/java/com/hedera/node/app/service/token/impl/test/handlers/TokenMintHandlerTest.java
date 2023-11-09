@@ -23,6 +23,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
@@ -119,7 +121,8 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableAccountStore.get(treasuryId).tinybarBalance()).isEqualTo(10000L);
         assertThat(writableAccountStore.get(treasuryId).numberOwnedNfts()).isEqualTo(2);
         assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1000L);
-        assertThat(recordBuilder.build().record().receipt().serialNumbers()).isEmpty();
+        assertThat(recordBuilder.build().transactionRecord().receipt().serialNumbers())
+                .isEmpty();
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
 
@@ -131,9 +134,10 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
         // number of owned NFTs should increase
         assertThat(writableAccountStore.get(treasuryId).numberOwnedNfts()).isEqualTo(4);
-        // treasury relation supply will not increase since its not fungible token change
-        assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1000L);
-        assertThat(recordBuilder.build().record().receipt().serialNumbers()).isEqualTo(List.of(3L, 4L));
+        // token total supply should be increased
+        assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1002L);
+        assertThat(recordBuilder.build().transactionRecord().receipt().serialNumbers())
+                .isEqualTo(List.of(3L, 4L));
     }
 
     @Test
@@ -142,6 +146,28 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
+    }
+
+    @Test
+    void failsOnDeletedToken() {
+        final var deletedToken = givenValidFungibleToken(payerId, true, false, false, false, true);
+        writableTokenStore.put(deletedToken);
+        givenMintTxn(fungibleTokenId, List.of(metadata1, metadata2), null);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_WAS_DELETED));
+    }
+
+    @Test
+    void failsOnPausedToken() {
+        final var pausedToken = givenValidFungibleToken(payerId, false, true, false, false, true);
+        writableTokenStore.put(pausedToken);
+        givenMintTxn(fungibleTokenId, List.of(metadata1, metadata2), null);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_IS_PAUSED));
     }
 
     @Test

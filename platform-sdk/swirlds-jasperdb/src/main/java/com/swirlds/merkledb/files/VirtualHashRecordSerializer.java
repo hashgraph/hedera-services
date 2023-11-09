@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
 public final class VirtualHashRecordSerializer implements DataItemSerializer<VirtualHashRecord> {
 
     /**
-     * The digest type to use for Virtual Internals, if this is changed then serialized version need
+     * The digest type to use for Virtual hashes, if this is changed then serialized version need
      * to change
      */
     public static final DigestType DEFAULT_DIGEST = DigestType.SHA_384;

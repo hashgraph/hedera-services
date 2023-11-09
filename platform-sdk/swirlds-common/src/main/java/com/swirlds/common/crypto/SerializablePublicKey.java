@@ -17,12 +17,12 @@
 package com.swirlds.common.crypto;
 
 import static com.swirlds.common.utility.CommonUtils.hex;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.legacy.LogMarker;
 import java.io.IOException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -30,7 +30,6 @@ import java.security.PublicKey;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public class SerializablePublicKey implements SelfSerializable {
     private static final long CLASS_ID = 0x2554c14f4f61cd9L;
@@ -167,7 +166,7 @@ public class SerializablePublicKey implements SelfSerializable {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("publicKey", hex(publicKey.getEncoded()))
                 .append("keyType", keyType)
                 .toString();

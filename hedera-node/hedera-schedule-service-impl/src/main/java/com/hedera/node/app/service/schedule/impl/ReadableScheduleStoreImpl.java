@@ -16,53 +16,75 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.hapi.node.state.primitives.ProtoLong;
+import com.hedera.hapi.node.state.primitives.ProtoString;
+import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
- * Default implementation of {@link ReadableScheduleStore}.
+ * Provides read-only methods for interacting with the underlying data storage mechanisms for
+ * working with Schedules.
+ *
  */
 public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
-    /** The underlying data storage class that holds the token data. */
-    private final ReadableKVState<Long, ScheduleVirtualValue> schedulesById;
+    private static final String NULL_STATE_IN_CONSTRUCTOR_MESSAGE =
+            "Null states instance passed to ReadableScheduleStore constructor, possible state corruption.";
+
+    private final ReadableKVState<ScheduleID, Schedule> schedulesById;
+    private final ReadableKVState<ProtoLong, ScheduleList> schedulesByExpirationSecond;
+    private final ReadableKVState<ProtoString, ScheduleList> schedulesByStringHash;
 
     /**
-     * Create a new {@link ReadableScheduleStoreImpl} instance.
+     * Create a new {@link ReadableScheduleStore} instance.
      *
      * @param states The state to use.
      */
     public ReadableScheduleStoreImpl(@NonNull final ReadableStates states) {
-        Objects.requireNonNull(states);
-        this.schedulesById = states.get("SCHEDULES_BY_ID");
+        Objects.requireNonNull(states, NULL_STATE_IN_CONSTRUCTOR_MESSAGE);
+        schedulesById = states.get(ScheduleServiceImpl.SCHEDULES_BY_ID_KEY);
+        schedulesByExpirationSecond = states.get(ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY);
+        schedulesByStringHash = states.get(ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY);
+    }
+
+    /**
+     * Get a {@link Schedule} referenced by {@link ScheduleID}.
+     * If the schedule ID is null or there is no schedule referenced by that ID, then return null.
+     *
+     * @param id given id for the schedule
+     *
+     * @return The Schedule corresponding to the id provided, or null if there is no such schedule.
+     */
+    @Override
+    @Nullable
+    public Schedule get(@Nullable final ScheduleID id) {
+        return (id == null) ? null : schedulesById.get(id);
     }
 
     @Override
-    @NonNull
-    public Optional<ScheduleMetadata> get(@NonNull final ScheduleID id) {
-        final var schedule = schedulesById.get(id.scheduleNum());
-        if (schedule == null) {
-            return Optional.empty();
-        }
-        final Key adminKey;
-        if (schedule.hasAdminKey()) {
-            adminKey = PbjConverter.asPbjKey(schedule.adminKey().get());
-        } else {
-            adminKey = null;
-        }
-        return Optional.ofNullable(schedule)
-                .map(s -> new ScheduleMetadata(
-                        adminKey,
-                        PbjConverter.toPbj(schedule.ordinaryViewOfScheduledTxn()),
-                        schedule.hasExplicitPayer()
-                                ? Optional.of(schedule.payer().toPbjAccountId())
-                                : Optional.empty()));
+    @Nullable
+    public List<Schedule> getByEquality(final @NonNull Schedule scheduleToMatch) {
+        String stringHash = ScheduleStoreUtility.calculateStringHash(scheduleToMatch);
+        final ScheduleList inStateValue = schedulesByStringHash.get(new ProtoString(stringHash));
+        return inStateValue != null ? inStateValue.schedules() : null;
+    }
+
+    @Nullable
+    @Override
+    public List<Schedule> getByExpirationSecond(final long expirationTime) {
+        final ScheduleList inStateValue = schedulesByExpirationSecond.get(new ProtoLong(expirationTime));
+        return inStateValue != null ? inStateValue.schedules() : null;
+    }
+
+    @Override
+    public long numSchedulesInState() {
+        return schedulesById.size();
     }
 }

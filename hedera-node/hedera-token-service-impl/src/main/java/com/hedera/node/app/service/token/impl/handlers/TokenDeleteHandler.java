@@ -17,19 +17,25 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenDeleteResourceUsage;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -46,9 +52,7 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenDeleteHandler implements TransactionHandler {
     @Inject
-    public TokenDeleteHandler() {
-        // Exists for injection
-    }
+    public TokenDeleteHandler() {}
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
@@ -99,5 +103,16 @@ public class TokenDeleteHandler implements TransactionHandler {
         validateTrue(token.adminKey() != null, ResponseCodeEnum.TOKEN_IS_IMMUTABLE);
 
         return token;
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var op = feeContext.body();
+
+        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            return new TokenDeleteResourceUsage(txnEstimateFactory).usageGiven(fromPbj(op), sigValueObj, null);
+        });
     }
 }

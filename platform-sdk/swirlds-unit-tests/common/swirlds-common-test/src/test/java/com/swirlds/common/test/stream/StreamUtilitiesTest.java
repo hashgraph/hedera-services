@@ -50,6 +50,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -75,7 +76,6 @@ import java.security.PublicKey;
 import java.time.Instant;
 import java.util.Deque;
 import java.util.Iterator;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -189,16 +189,16 @@ class StreamUtilitiesTest {
         // check entireHash
         assertEquals(
                 computeEntireHash(singleStreamFile),
-                pairs.getLeft().getLeft(),
+                pairs.left().left(),
                 "the EntireHash extracted from the signature file doesn't match the EntireHash calculated from the "
                         + "stream file");
-        assertNotNull(pairs.getLeft().getRight(), "Fail to extract EntireSignature");
+        assertNotNull(pairs.left().right(), "Fail to extract EntireSignature");
         assertEquals(
                 computeMetaHash(singleStreamFile, TEST_STREAM),
-                pairs.getRight().getLeft(),
+                pairs.right().left(),
                 "the MetaHash extracted from the signature file doesn't match the MetaHash calculated from the "
                         + "stream file");
-        assertNotNull(pairs.getRight().getRight(), "Fail to extract MetaSignature");
+        assertNotNull(pairs.right().right(), "Fail to extract MetaSignature");
 
         Exception exception = assertThrows(
                 InvalidStreamFileException.class,
@@ -235,7 +235,7 @@ class StreamUtilitiesTest {
     void validateEventsDirTest() throws Exception {
         Pair<StreamValidationResult, Hash> result =
                 LinkedObjectStreamValidateUtils.validateDirOrFile(readStreamDirFile, TEST_STREAM);
-        assertEquals(OK, result.getLeft(), "the files are not valid, result: " + result.getLeft());
+        assertEquals(OK, result.left(), "the files are not valid, result: " + result.left());
     }
 
     /**
@@ -263,11 +263,9 @@ class StreamUtilitiesTest {
 
         Pair<Hash, Hash> readHashPair = readHashesFromStreamFile(singleStreamFile, TEST_STREAM);
         assertEquals(
-                expectedStartHash,
-                readHashPair.getLeft(),
-                "readStartRunningHash should match expected StartRunningHash");
+                expectedStartHash, readHashPair.left(), "readStartRunningHash should match expected StartRunningHash");
 
-        assertEquals(expectedEndHash, readHashPair.getRight(), "The extracted EndRunningHash doesn't match expected");
+        assertEquals(expectedEndHash, readHashPair.right(), "The extracted EndRunningHash doesn't match expected");
     }
 
     /**
@@ -457,7 +455,7 @@ class StreamUtilitiesTest {
     void validateNullIteratorTest() {
         assertEquals(
                 PARSE_STREAM_FILE_FAIL,
-                LinkedObjectStreamValidateUtils.validateIterator(null).getLeft(),
+                LinkedObjectStreamValidateUtils.validateIterator(null).left(),
                 "when iterator is null, validation result should be PARSE_STREAM_FILE_FAIL");
     }
 
@@ -476,7 +474,7 @@ class StreamUtilitiesTest {
         };
         assertEquals(
                 STREAM_FILE_EMPTY,
-                LinkedObjectStreamValidateUtils.validateIterator(emptyIterator).getLeft(),
+                LinkedObjectStreamValidateUtils.validateIterator(emptyIterator).left(),
                 "when iterator doesn't contain elements, validation result should be STREAM_FILE_EMPTY");
     }
 
@@ -496,7 +494,7 @@ class StreamUtilitiesTest {
         assertEquals(
                 STREAM_FILE_MISS_START_HASH,
                 LinkedObjectStreamValidateUtils.validateIterator(missStartHashIterator)
-                        .getLeft(),
+                        .left(),
                 "when the first element is not Hash, validation result should be STREAM_FILE_MISS_START_HASH");
     }
 
@@ -521,7 +519,7 @@ class StreamUtilitiesTest {
         assertEquals(
                 STREAM_FILE_MISS_OBJECTS,
                 LinkedObjectStreamValidateUtils.validateIterator(missObjectsIterator)
-                        .getLeft(),
+                        .left(),
                 "when the file only contains two Hash, validation result should be STREAM_FILE_MISS_OBJECTS");
     }
 
@@ -552,7 +550,7 @@ class StreamUtilitiesTest {
         assertEquals(
                 CALCULATED_END_HASH_NOT_MATCH,
                 LinkedObjectStreamValidateUtils.validateIterator(endHashNotMatchIterator)
-                        .getLeft(),
+                        .left(),
                 "when the calculated endHash doesn't match the endHash in the iterator, validation result should be "
                         + "CALCULATED_END_HASH_NOT_MATCH");
     }

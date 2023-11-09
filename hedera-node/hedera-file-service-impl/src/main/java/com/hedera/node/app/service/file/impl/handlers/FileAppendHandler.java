@@ -20,19 +20,24 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_CONTENT_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
+import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -74,10 +79,11 @@ public class FileAppendHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileAppendOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        preValidate(transactionBody.fileID(), fileStore, context, false);
+        final var transactionFileId = requireNonNull(transactionBody.fileID());
+        preValidate(transactionFileId, fileStore, context, false);
 
-        var file = fileStore.getFileLeaf(transactionBody.fileID());
-        validateAndAddRequiredKeys(file.orElse(null), null, context);
+        var file = fileStore.getFileLeaf(transactionFileId);
+        validateAndAddRequiredKeys(file, null, context);
     }
 
     @Override
@@ -129,7 +135,7 @@ public class FileAppendHandler implements TransactionHandler {
         /* Copy all the fields from existing file and change deleted flag */
         final var fileBuilder = new File.Builder()
                 .fileId(file.fileId())
-                .expirationTime(file.expirationTime())
+                .expirationSecond(file.expirationSecond())
                 .keys(file.keys())
                 .contents(Bytes.wrap(newContents))
                 .memo(file.memo())
@@ -138,6 +144,59 @@ public class FileAppendHandler implements TransactionHandler {
         /* --- Put the modified file. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
         fileStore.put(fileBuilder.build());
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull FeeContext feeContext) {
+        final var body = feeContext.body();
+        final var op = body.fileAppendOrThrow();
+        final var fileID = op.fileIDOrThrow();
+        final var fileStore = feeContext.readableStore(ReadableFileStore.class);
+        final var config = feeContext.configuration();
+        final var fileServiceConfig = config.getConfigData(FilesConfig.class);
+
+        final var dataLength = op.contents().length();
+
+        /**
+         * TODO: revisit after modularizaion completed
+         * PR conversation: 8089
+         */
+        final long effectiveLifeTime;
+        final var file = fileStore.getFileLeaf(fileID);
+
+        if (file == null) {
+            return feeContext
+                    .feeCalculator(SubType.DEFAULT)
+                    .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE)
+                    .calculate();
+        }
+
+        final var fileNum = fileID.fileNum();
+
+        final var firstSoftwareUpdateFile =
+                fileServiceConfig.softwareUpdateRange().left();
+        final var lastSoftwareUpdateFile =
+                fileServiceConfig.softwareUpdateRange().right();
+
+        /* Since only authorized payers can update special files---and their
+        fees will be waived---just return something immediately, without the
+        expense of looking up actual file metadata. */
+        if (firstSoftwareUpdateFile <= fileNum && fileNum <= lastSoftwareUpdateFile) {
+            effectiveLifeTime = THREE_MONTHS_IN_SECONDS;
+        } else {
+            final var effCreationTime =
+                    body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
+            final var effExpiration =
+                    (file != null && file.expirationSecond() > 0) ? file.expirationSecond() : effCreationTime;
+            effectiveLifeTime = effExpiration - effCreationTime;
+        }
+
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE + dataLength)
+                .addStorageBytesSeconds(dataLength * effectiveLifeTime)
+                .calculate();
     }
 
     private void handleAppendUpgradeFile(FileAppendTransactionBody fileAppend, HandleContext handleContext) {

@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.transactions;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.explicitBytesOf;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate.WELL_KNOWN_INITIAL_SUPPLY;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate.WELL_KNOWN_NFT_SUPPLY_KEY;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -33,6 +34,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -82,7 +84,9 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.transactions.util.HapiUtilPrng;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -290,6 +294,10 @@ public class TxnVerbs {
         return new HapiTokenWipe(token, account, amount);
     }
 
+    public static HapiTokenWipe wipeTokenAccountWithAlias(String token, ByteString alias, long amount) {
+        return new HapiTokenWipe(token, alias, amount);
+    }
+
     public static HapiTokenWipe wipeTokenAccount(String token, String account, List<Long> serialNumbers) {
         return new HapiTokenWipe(token, account, serialNumbers);
     }
@@ -421,6 +429,10 @@ public class TxnVerbs {
         return HapiEthereumCall.explicitlyTo(to, amount);
     }
 
+    public static HapiEthereumCall ethereumCryptoTransferToAddress(@NonNull final Address address, final long amount) {
+        return HapiEthereumCall.explicitlyTo(explicitBytesOf(address), amount);
+    }
+
     /**
      * This method provides for the proper execution of specs, which execute contract calls with a
      * function ABI instead of function name
@@ -456,6 +468,30 @@ public class TxnVerbs {
         } else {
             return new HapiContractCreate(contractName).bytecode(contractName);
         }
+    }
+
+    /**
+     * Constructs a {@link HapiContractCreate} by letting the client code explicitly customize the {@link ContractCreateTransactionBody}.
+     *
+     * @param contractName the name the contract should register in this {@link HapiSpec}
+     * @param spec the spec to use to customize the {@link ContractCreateTransactionBody}
+     * @return a {@link HapiContractCreate} that can be used to create a contract
+     */
+    public static HapiContractCreate explicitContractCreate(
+            final String contractName, final BiConsumer<HapiSpec, ContractCreateTransactionBody.Builder> spec) {
+        return new HapiContractCreate(contractName, spec);
+    }
+
+    /**
+     * Constructs a {@link HapiEthereumContractCreate} by letting the client code explicitly customize the {@link EthereumTransactionBody}.
+     *
+     * @param contractName the name the contract should register in this {@link HapiSpec}
+     * @param spec the spec to use to customize the {@link EthereumTransactionBody}
+     * @return a {@link HapiEthereumContractCreate} that can be used to create a contract
+     */
+    public static HapiEthereumContractCreate explicitEthereumTransaction(
+            final String contractName, final BiConsumer<HapiSpec, EthereumTransactionBody.Builder> spec) {
+        return new HapiEthereumContractCreate(contractName, spec);
     }
 
     public static HapiContractCreate createDefaultContract(final String name) {

@@ -17,18 +17,21 @@
 package com.hedera.node.app.service.contract.impl.test.utils;
 
 import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
+import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.NON_CANONICAL_REFERENCE_NUMBER;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ALIASED_SOMEBODY;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOG;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_DURATION;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_MEMO;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOMEBODY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_STORAGE_ACCESSES;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.TOPIC;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountCreationFor;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asExactLongValueOrZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asHeadlongAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogFrom;
@@ -40,17 +43,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractLoginfo;
-import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -69,78 +69,17 @@ class ConversionUtilsTest {
     private HederaNativeOperations nativeOperations;
 
     @Test
-    void canConvertContractCreationWithAdminKeyAndStakedNodeIdToCryptoCreation() {
-        final var bodyIn = ContractCreateTransactionBody.newBuilder()
-                .adminKey(AN_ED25519_KEY)
-                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
-                .autoRenewPeriod(SOME_DURATION)
-                .declineReward(true)
-                .stakedNodeId(123L)
-                .maxAutomaticTokenAssociations(321)
-                .memo(SOME_MEMO)
-                .build();
-        final var bodyOut = CryptoCreateTransactionBody.newBuilder()
-                .key(AN_ED25519_KEY)
-                .autoRenewPeriod(SOME_DURATION)
-                .declineReward(true)
-                .stakedNodeId(123L)
-                .maxAutomaticTokenAssociations(321)
-                .memo(SOME_MEMO)
-                .build();
-        assertEquals(bodyOut, accountCreationFor(CALLED_CONTRACT_ID, null, bodyIn));
+    void outOfRangeBiValuesAreZero() {
+        assertEquals(
+                0L, asExactLongValueOrZero(BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE)));
+        assertEquals(
+                0L, asExactLongValueOrZero(BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.ONE)));
     }
 
     @Test
-    void canConvertContractCreationWithoutAdminKeyAndStakedAccountIdToCryptoCreation() {
-        final var bodyIn = ContractCreateTransactionBody.newBuilder()
-                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
-                .autoRenewPeriod(SOME_DURATION)
-                .declineReward(true)
-                .stakedAccountId(NON_SYSTEM_ACCOUNT_ID)
-                .maxAutomaticTokenAssociations(321)
-                .memo(SOME_MEMO)
-                .build();
-        final var bodyOut = CryptoCreateTransactionBody.newBuilder()
-                .key(Key.newBuilder().contractID(CALLED_CONTRACT_ID).build())
-                .autoRenewPeriod(SOME_DURATION)
-                .declineReward(true)
-                .stakedAccountId(NON_SYSTEM_ACCOUNT_ID)
-                .maxAutomaticTokenAssociations(321)
-                .memo(SOME_MEMO)
-                .build();
-        assertEquals(bodyOut, accountCreationFor(CALLED_CONTRACT_ID, null, bodyIn));
-    }
-
-    @Test
-    void canConvertContractCreationWithEmptyAdminKeyAndNoStakedToCryptoCreation() {
-        final var bodyIn = ContractCreateTransactionBody.newBuilder()
-                .adminKey(Key.newBuilder().keyList(KeyList.DEFAULT))
-                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
-                .autoRenewPeriod(SOME_DURATION)
-                .maxAutomaticTokenAssociations(321)
-                .memo(SOME_MEMO)
-                .build();
-        final var bodyOut = CryptoCreateTransactionBody.newBuilder()
-                .key(Key.newBuilder().contractID(CALLED_CONTRACT_ID).build())
-                .autoRenewPeriod(SOME_DURATION)
-                .maxAutomaticTokenAssociations(321)
-                .memo(SOME_MEMO)
-                .build();
-        assertEquals(bodyOut, accountCreationFor(CALLED_CONTRACT_ID, null, bodyIn));
-    }
-
-    @Test
-    void canConvertAliasedContractCreationToCryptoCreation() {
-        final var bodyIn = ContractCreateTransactionBody.newBuilder()
-                .autoRenewPeriod(SOME_DURATION)
-                .build();
-        final var alias = tuweniToPbjBytes(EIP_1014_ADDRESS);
-        final var bodyOut = CryptoCreateTransactionBody.newBuilder()
-                .key(Key.newBuilder().contractID(CALLED_CONTRACT_ID).build())
-                .autoRenewPeriod(SOME_DURATION)
-                .alias(alias)
-                .build();
-        assertEquals(bodyOut, accountCreationFor(CALLED_CONTRACT_ID, alias, bodyIn));
+    void inRangeBiValuesAreExact() {
+        assertEquals(Long.MAX_VALUE, asExactLongValueOrZero(BigInteger.valueOf(Long.MAX_VALUE)));
+        assertEquals(Long.MIN_VALUE, asExactLongValueOrZero(BigInteger.valueOf(Long.MIN_VALUE)));
     }
 
     @Test
@@ -170,6 +109,30 @@ class ConversionUtilsTest {
     }
 
     @Test
+    void returnsMissingIfSmallLongZeroAddressIsMissing() {
+        final var address = asHeadlongAddress(Address.fromHexString("0x1234").toArray());
+        final var actual = accountNumberForEvmReference(address, nativeOperations);
+        assertEquals(MISSING_ENTITY_NUMBER, actual);
+    }
+
+    @Test
+    void returnsNumberIfSmallLongZeroAddressIsPresent() {
+        final long number = A_NEW_ACCOUNT_ID.accountNumOrThrow();
+        given(nativeOperations.getAccount(number)).willReturn(SOMEBODY);
+        final var address = asHeadlongAddress(asEvmAddress(number));
+        final var actual = accountNumberForEvmReference(address, nativeOperations);
+        assertEquals(number, actual);
+    }
+
+    @Test
+    void returnsNonCanonicalRefIfSmallLongZeroAddressRefersToAliasedAccount() {
+        final var address = asHeadlongAddress(Address.fromHexString("0x1234").toArray());
+        given(nativeOperations.getAccount(0x1234)).willReturn(ALIASED_SOMEBODY);
+        final var actual = accountNumberForEvmReference(address, nativeOperations);
+        assertEquals(NON_CANONICAL_REFERENCE_NUMBER, actual);
+    }
+
+    @Test
     void justReturnsNumberFromLargeLongZeroAddress() {
         final var largeNumber = 0x7fffffffffffffffL;
         final var address = Address.fromHexString("0x7fffffffffffffff");
@@ -178,10 +141,19 @@ class ConversionUtilsTest {
     }
 
     @Test
-    void returnsZeroIfMissingAlias() {
+    void returnsMissingOnAbsentAlias() {
         final var address = Address.fromHexString("0x010000000000000000");
-        given(nativeOperations.resolveAlias(any())).willReturn(HederaNativeOperations.MISSING_ENTITY_NUMBER);
+        given(nativeOperations.resolveAlias(any())).willReturn(MISSING_ENTITY_NUMBER);
         final var actual = ConversionUtils.maybeMissingNumberOf(address, nativeOperations);
+        assertEquals(-1L, actual);
+    }
+
+    @Test
+    void returnsMissingOnAbsentAliasReference() {
+        final var address =
+                asHeadlongAddress(Address.fromHexString("0x010000000000000000").toArray());
+        given(nativeOperations.resolveAlias(any())).willReturn(MISSING_ENTITY_NUMBER);
+        final var actual = ConversionUtils.accountNumberForEvmReference(address, nativeOperations);
         assertEquals(-1L, actual);
     }
 

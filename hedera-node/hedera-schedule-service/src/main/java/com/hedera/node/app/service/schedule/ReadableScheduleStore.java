@@ -16,37 +16,66 @@
 
 package com.hedera.node.app.service.schedule;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.state.schedule.Schedule;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import java.util.Optional;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
- * working with Schedules. If the scheduleID is valid and a schedule exists returns {@link
- * ScheduleMetadata}.
+ * working with Schedules.
+ * There are three ways to look up schedules.  A single schedule by {@link ScheduleID}, a list
+ * of schedules by "equality" (a hash comparison for efficiency), and a list of schedules by
+ * "expiration second" (for quickly finding expired schedules to remove).
  */
 public interface ReadableScheduleStore {
 
     /**
      * Gets the schedule with the given {@link ScheduleID}. If there is no schedule with given ID
-     * returns {@link Optional#empty()}.
+     * returns null.  We do not use {@link Optional} here because null is not a valid value, so
+     * there is no need to distinguish between empty and null.
      *
      * @param id given id for the schedule
+     *
      * @return the schedule with the given id
      */
-    @NonNull
-    Optional<ScheduleMetadata> get(@NonNull ScheduleID id);
+    @Nullable
+    Schedule get(final @Nullable ScheduleID id);
 
     /**
-     * Metadata about a schedule.
-     *
-     * @param adminKey admin key on the schedule
-     * @param scheduledTxn scheduled transaction
-     * @param designatedPayer payer for the schedule execution.If there is no explicit payer,
-     *     returns {@link Optional#empty()}.
+     * Get a set of schedules that are "hash equal" to the provided Schedule.
+     * Two schedules are "hash equal" if the hash of the original create transaction for one schedule
+     * is identical to the hash of the create transaction for the other schedule.  This is primarily
+     * used to ensure that we do not permit duplicate schedules to be created. Note that hash equality
+     * is necessary, but not sufficient, so the return values must be compared field-by-field to ensure
+     * actual equality (within the constraints of schedule duplication) before asserting that the requested
+     * schedule is a duplicate.
+     * @param scheduleToMatch a {@link Schedule} to match according to hash
+     * @return a {@link List<Schedule>} of entries that have the same hash as the provided schedule.
+     *     These may not actually be equal to the provided schedule, and further comparison should be performed.
      */
-    record ScheduleMetadata(Key adminKey, TransactionBody scheduledTxn, Optional<AccountID> designatedPayer) {}
+    @Nullable
+    public List<Schedule> getByEquality(final @NonNull Schedule scheduleToMatch);
+
+    /**
+     * Given a time as seconds since the epoch, find all schedules currently in state that expire at that time.
+     * The {@link List<Schedule>} returned will contain all {@link Schedule} entries in the system that have a
+     * calculated expiration time that matches the requested value.  The check is no more precise than one second,
+     * so the list may be quite large (significantly larger than the "schedules created" throttle).
+     *
+     * @param expirationTime the number of seconds since the epoch that describes the expiration time of schedules
+     *     to be returned.
+     * @return a {@link List<Schedule>} of entries that have expiration times within the requested second.
+     */
+    @Nullable
+    public List<Schedule> getByExpirationSecond(final long expirationTime);
+
+    /**
+     * Returns the number of schedules in state, for use in enforcing creation limits.
+     *
+     * @return the number of schedules in state
+     */
+    long numSchedulesInState();
 }

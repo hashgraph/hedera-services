@@ -19,7 +19,8 @@ package com.hedera.node.app.service.evm.contracts.operations;
 import static com.hedera.node.app.service.evm.contracts.operations.AbstractEvmRecordingCreateOperation.haltWith;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -28,17 +29,19 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
+import java.lang.reflect.Field;
 import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.collections.undo.UndoSet;
+import org.hyperledger.besu.collections.undo.UndoTable;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
-import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.frame.TxValues;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
@@ -57,29 +60,30 @@ class AbstractEvmRecordingCreateOperationTest {
     @Mock
     private EVM evm;
 
-    @Mock
+    @Mock()
     private MessageFrame frame;
 
     @Mock
-    private EvmAccount recipientAccount;
-
-    @Mock
-    private MutableAccount mutableAccount;
+    private MutableAccount recipientAccount;
 
     @Mock
     private HederaEvmWorldUpdater updater;
 
     @Mock
-    private BlockValues blockValues;
-
-    @Mock
-    private Deque<MessageFrame> stack;
-
-    @Mock
     private CreateOperationExternalizer externalizer;
 
-    private static final long childStipend = 1_000_000L;
-    private static final Wei gasPrice = Wei.of(1000L);
+    @Mock
+    private TxValues txValues;
+
+    @Mock
+    private UndoTable<Address, Bytes32, Bytes32> undoTable;
+
+    @Mock
+    private Deque<MessageFrame> messageFrameStack;
+
+    @Mock
+    private UndoSet<Address> warmedUpAddresses;
+
     private static final long value = 123_456L;
     private static final Address recipient = Address.BLAKE2B_F_COMPRESSION;
     private static final Operation.OperationResult EMPTY_HALT_RESULT =
@@ -134,8 +138,7 @@ class AbstractEvmRecordingCreateOperationTest {
         given(frame.getRecipientAddress()).willReturn(recipient);
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.getAccount(recipient)).willReturn(recipientAccount);
-        given(recipientAccount.getMutable()).willReturn(mutableAccount);
-        given(mutableAccount.getBalance()).willReturn(Wei.ONE);
+        given(recipientAccount.getBalance()).willReturn(Wei.ONE);
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
         verify(frame).pushStackItem(UInt256.ZERO);
@@ -143,23 +146,31 @@ class AbstractEvmRecordingCreateOperationTest {
 
     @Test
     void failsWithExcessStackDepth() {
-        givenSpawnPrereqs();
-        given(frame.getMessageStackDepth()).willReturn(1024);
+        givenSpawnPrereqs(frame);
+        given(frame.getDepth()).willReturn(1024);
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
         verify(frame).pushStackItem(UInt256.ZERO);
     }
 
     @Test
-    void hasExpectedChildCompletionOnSuccessWithSidecarEnabled() {
+    void hasExpectedChildCompletionOnSuccessWithSidecarEnabled() throws NoSuchFieldException, IllegalAccessException {
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
-        givenSpawnPrereqs();
+        givenSpawnPrereqs(frame);
         givenBuilderPrereqs();
-        final var initCode = "initCode".getBytes();
-        given(frame.readMemory(anyLong(), anyLong())).willReturn(Bytes.wrap(initCode));
+
+        // A couple of private fields in the message frame must be set
+        final Field worldUdaterField = MessageFrame.class.getDeclaredField("worldUpdater");
+        worldUdaterField.setAccessible(true);
+        worldUdaterField.set(frame, updater);
+
+        final Field txValuesField = MessageFrame.class.getDeclaredField("txValues");
+        txValuesField.setAccessible(true);
+        txValuesField.set(frame, txValues);
+
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 
-        verify(stack).addFirst(frameCaptor.capture());
+        verify(messageFrameStack).addFirst(frameCaptor.capture());
         final var childFrame = frameCaptor.getValue();
         // when:
         childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
@@ -169,16 +180,23 @@ class AbstractEvmRecordingCreateOperationTest {
     }
 
     @Test
-    void hasExpectedChildCompletionOnFailure() {
+    void hasExpectedChildCompletionOnFailure() throws NoSuchFieldException, IllegalAccessException {
         final var captor = ArgumentCaptor.forClass(MessageFrame.class);
-        givenSpawnPrereqs();
+        givenSpawnPrereqs(frame);
         givenBuilderPrereqs();
-        final var initCode = "initCode".getBytes();
-        given(frame.readMemory(anyLong(), anyLong())).willReturn(Bytes.wrap(initCode));
+
+        // A couple of private fields in the message frame must be set
+        final Field worldUdaterField = MessageFrame.class.getDeclaredField("worldUpdater");
+        worldUdaterField.setAccessible(true);
+        worldUdaterField.set(frame, updater);
+
+        final Field txValuesField = MessageFrame.class.getDeclaredField("txValues");
+        txValuesField.setAccessible(true);
+        txValuesField.set(frame, txValues);
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 
-        verify(stack).addFirst(captor.capture());
+        verify(messageFrameStack).addFirst(captor.capture());
         final var childFrame = captor.getValue();
         // when:
         childFrame.setState(MessageFrame.State.COMPLETED_FAILED);
@@ -194,9 +212,8 @@ class AbstractEvmRecordingCreateOperationTest {
         given(frame.getRecipientAddress()).willReturn(recipient);
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.getAccount(recipient)).willReturn(recipientAccount);
-        given(recipientAccount.getMutable()).willReturn(mutableAccount);
-        given(mutableAccount.getBalance()).willReturn(Wei.of(value));
-        given(frame.getMessageStackDepth()).willReturn(1023);
+        given(recipientAccount.getBalance()).willReturn(Wei.of(value));
+        given(frame.getDepth()).willReturn(1023);
         given(frame.getStackItem(anyInt())).willReturn(Bytes.ofUnsignedLong(1));
         given(externalizer.shouldFailBasedOnLazyCreation(eq(frame), any())).willReturn(true);
 
@@ -208,17 +225,15 @@ class AbstractEvmRecordingCreateOperationTest {
     }
 
     private void givenBuilderPrereqs() {
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(updater.updater()).willReturn(updater);
-        given(gasCalculator.gasAvailableForChildCreate(anyLong())).willReturn(childStipend);
-        given(frame.getOriginatorAddress()).willReturn(recipient);
-        given(frame.getGasPrice()).willReturn(gasPrice);
-        given(frame.getBlockValues()).willReturn(blockValues);
-        given(frame.getMiningBeneficiary()).willReturn(recipient);
-        given(frame.getBlockHashLookup()).willReturn(l -> Hash.ZERO);
+        final var initCode = "initCode".getBytes();
+        given(frame.readMemory(anyLong(), anyLong())).willReturn(Bytes.wrap(initCode));
+        given(txValues.transientStorage()).willReturn(undoTable);
+        given(txValues.messageFrameStack()).willReturn(messageFrameStack);
+        given(txValues.warmedUpAddresses()).willReturn(warmedUpAddresses);
+        given(undoTable.mark()).willReturn(1L);
     }
 
-    private void givenSpawnPrereqs() {
+    private void givenSpawnPrereqs(MessageFrame frame) {
         given(frame.stackSize()).willReturn(3);
         given(frame.getStackItem(anyInt())).willReturn(Bytes.ofUnsignedLong(1));
         given(frame.getRemainingGas()).willReturn(Subject.PRETEND_GAS_COST);
@@ -226,9 +241,8 @@ class AbstractEvmRecordingCreateOperationTest {
         given(frame.getRecipientAddress()).willReturn(recipient);
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.getAccount(recipient)).willReturn(recipientAccount);
-        given(recipientAccount.getMutable()).willReturn(mutableAccount);
-        given(mutableAccount.getBalance()).willReturn(Wei.of(value));
-        given(frame.getMessageStackDepth()).willReturn(1023);
+        given(recipientAccount.getBalance()).willReturn(Wei.of(value));
+        given(frame.getDepth()).willReturn(1023);
     }
 
     private void assertSameResult(final Operation.OperationResult expected, final Operation.OperationResult actual) {

@@ -27,7 +27,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -39,6 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class CreateOperationTestBase {
     protected static final long VALUE = 123_456L;
+    protected static final long NONCE = 789L;
     protected static final long GAS_COST = 1_234L;
     protected static final long CHILD_STIPEND = 1_000_000L;
     protected static final Wei GAS_PRICE = Wei.of(1000L);
@@ -64,10 +64,7 @@ public class CreateOperationTestBase {
     protected ProxyWorldUpdater worldUpdater;
 
     @Mock
-    protected EvmAccount receiver;
-
-    @Mock
-    protected MutableAccount mutableReceiver;
+    protected MutableAccount receiver;
 
     @Mock
     protected Deque<MessageFrame> stack;
@@ -95,8 +92,7 @@ public class CreateOperationTestBase {
         given(frame.getRecipientAddress()).willReturn(RECIEVER_ADDRESS);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getAccount(RECIEVER_ADDRESS)).willReturn(receiver);
-        given(receiver.getMutable()).willReturn(mutableReceiver);
-        given(mutableReceiver.getBalance()).willReturn(Wei.of(VALUE));
-        given(frame.getMessageStackDepth()).willReturn(1023);
+        given(receiver.getBalance()).willReturn(Wei.of(VALUE));
+        given(frame.getDepth()).willReturn(1023);
     }
 }

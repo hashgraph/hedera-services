@@ -124,7 +124,7 @@ public class AccountStorageAdapter {
         try {
             onDiskAccounts.extractVirtualMapData(
                     getStaticThreadManager(),
-                    entry -> visitor.accept(entry.getKey().asEntityNum(), entry.getValue()),
+                    entry -> visitor.accept(entry.left().asEntityNum(), entry.right()),
                     THREAD_COUNT);
         } catch (final InterruptedException e) {
             log.error("Interrupted while extracting VM data", e);
@@ -138,7 +138,7 @@ public class AccountStorageAdapter {
             try {
                 onDiskAccounts.extractVirtualMapDataC(
                         getStaticThreadManager(),
-                        entry -> visitor.accept(entry.getKey().asEntityNum(), entry.getValue()),
+                        entry -> visitor.accept(entry.left().asEntityNum(), entry.right()),
                         THREAD_COUNT);
             } catch (final InterruptedException e) {
                 log.error("Interrupted while extracting VM data", e);

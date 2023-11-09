@@ -31,4 +31,7 @@ import org.junit.platform.commons.annotation.Testable;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Testable
-public @interface HapiTestSuite {}
+public @interface HapiTestSuite {
+    /** If true, then a new cluster is created for this test suite */
+    boolean isolated() default false;
+}

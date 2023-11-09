@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.benchmark.consensus;
 
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.config.api.Configuration;
@@ -23,12 +24,14 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
-import com.swirlds.platform.test.consensus.ConsensusTestDefinition;
+import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
+import com.swirlds.platform.test.event.source.EventSourceFactory;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
+import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.tuple.Pair;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -50,8 +53,8 @@ import org.openjdk.jmh.runner.options.TimeValue;
 
 @State(Scope.Benchmark)
 @Fork(value = 1)
-@Warmup(iterations = 1, time = 5)
-@Measurement(iterations = 3)
+@Warmup(iterations = 1, time = 1)
+@Measurement(iterations = 3, time = 10)
 public class ConsensusBenchmark {
     @Param({"39"})
     public int numNodes;
@@ -67,17 +70,17 @@ public class ConsensusBenchmark {
 
     @Setup
     public void setup() throws Exception {
-        final ConsensusTestDefinition testDefinition = new ConsensusTestDefinition(
-                "Performance Test", numNodes, (l, i) -> WeightGenerators.balancedNodeWeights(i), numEvents);
-        testDefinition.setSeed(seed);
-        events = testDefinition.getNode1EventEmitter().emitEvents(numEvents);
+        final List<EventSource<?>> eventSources =
+                EventSourceFactory.newStandardEventSources(WeightGenerators.balancedNodeWeights(numNodes));
+        final StandardGraphGenerator generator = new StandardGraphGenerator(seed, eventSources);
+        final StandardEventEmitter emitter = new StandardEventEmitter(generator);
+        events = emitter.emitEvents(numEvents);
 
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
         consensus = new ConsensusImpl(
                 configuration.getConfigData(ConsensusConfig.class),
                 new NoOpConsensusMetrics(),
-                (r, g) -> {},
-                testDefinition.getNode1EventEmitter().getGraphGenerator().getAddressBook());
+                emitter.getGraphGenerator().getAddressBook());
     }
 
     @Benchmark
@@ -85,7 +88,7 @@ public class ConsensusBenchmark {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public void calculateConsensus(final Blackhole bh) {
         for (final IndexedEvent event : events) {
-            bh.consume(consensus.addEvent(event, null));
+            bh.consume(consensus.addEvent(event));
         }
     }
 
@@ -107,8 +110,8 @@ public class ConsensusBenchmark {
                 run.stream().findFirst().orElseThrow().getPrimaryResult().getScore();
 
         for (final Pair<String, Double> pair : resultComparison) {
-            final double diff = actualScore - pair.getRight();
-            System.out.printf("Compared to '%s': %+.2f%%%n", pair.getLeft(), (100 * diff) / pair.getRight());
+            final double diff = actualScore - pair.right();
+            System.out.printf("Compared to '%s': %+.2f%%%n", pair.left(), (100 * diff) / pair.right());
         }
     }
 }

@@ -101,7 +101,7 @@ class PreHandleContextImplTest implements Scenarios {
     }
 
     @Test
-    void gettersWork() {
+    void gettersWork() throws PreCheckException {
         subject.requireKey(otherKey);
 
         assertThat(subject.body()).isEqualTo(createAccountTransaction());

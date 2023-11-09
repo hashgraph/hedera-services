@@ -20,16 +20,20 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionResponse;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.grpc.impl.netty.NettyGrpcServerManager;
+import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.TestBase;
+import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
+import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.GrpcConfig;
 import com.hedera.node.config.data.NettyConfig;
 import com.hedera.pbj.runtime.RpcMethodDefinition;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
@@ -89,6 +93,11 @@ abstract class GrpcTestBase extends TestBase {
      * This {@link NettyGrpcServerManager} is used to handle the wire protocol tasks and delegate to our gRPC handlers
      */
     private NettyGrpcServerManager grpcServer;
+
+    private final Configuration configuration = ConfigurationBuilder.create()
+            .withConfigDataType(MetricsConfig.class)
+            .build();
+
     /**
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
      * correctly for different types of calls.
@@ -97,11 +106,8 @@ abstract class GrpcTestBase extends TestBase {
             nodeSelfId,
             new MetricKeyRegistry(),
             METRIC_EXECUTOR,
-            new DefaultMetricsFactory(),
-            ConfigurationBuilder.create()
-                    .withConfigDataType(MetricsConfig.class)
-                    .build()
-                    .getConfigData(MetricsConfig.class));
+            new DefaultMetricsFactory(configuration.getConfigData(MetricsConfig.class)),
+            configuration.getConfigData(MetricsConfig.class));
     /** The query method to set up on the server. Only one method supported today */
     private String queryMethodName;
     /** The ingest method to set up on the server. Only one method supported today */
@@ -169,10 +175,13 @@ abstract class GrpcTestBase extends TestBase {
             }
         };
 
+        final var cr = ConstructableRegistry.getInstance();
+        final var registry = new MerkleSchemaRegistry(cr, "TestService", new NoOpGenesisRecordsBuilder());
+        final var registration = new ServicesRegistry.Registration(testService, registry);
         final var config = createConfig(new TestSource());
         this.grpcServer = new NettyGrpcServerManager(
                 () -> new VersionedConfigImpl(config, 1),
-                () -> Set.of(testService),
+                () -> Set.of(registration),
                 ingestWorkflow,
                 queryWorkflow,
                 metrics);

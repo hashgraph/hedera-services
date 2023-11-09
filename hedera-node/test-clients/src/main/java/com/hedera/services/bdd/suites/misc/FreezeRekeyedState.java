@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.suites.misc.RekeySavedStateTreasury.newTreasuryPassphrase;
 import static com.hedera.services.bdd.suites.misc.RekeySavedStateTreasury.newTreasuryPemLoc;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
@@ -33,7 +32,6 @@ import org.apache.logging.log4j.Logger;
  * Given a network with a "re-keyed" treasury account, we want to use this the new treasury account
  * to freeze our network and generate a signed state.
  */
-@HapiTestSuite
 public class FreezeRekeyedState extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FreezeRekeyedState.class);
 

@@ -32,7 +32,7 @@ class UnmodifiableIteratorTests {
     @Test
     @DisplayName("Null Base Iterator Test")
     void nullBaseIteratorTest() {
-        assertThrows(IllegalArgumentException.class, () -> new UnmodifiableIterator<>(null));
+        assertThrows(NullPointerException.class, () -> new UnmodifiableIterator<>(null));
     }
 
     @Test
