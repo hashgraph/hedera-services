@@ -159,7 +159,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
 
     public static void main(String... args) throws IOException {
         // Helper to review the snapshot saved for a particular HapiSuite-HapiSpec combination
-        final var snapshotFileMeta = new SnapshotFileMeta("ContractCall", "MultipleSelfDestructsAreSafe");
+        final var snapshotFileMeta = new SnapshotFileMeta("CryptoTransfer", "AliasKeysAreValidated");
         final var maybeSnapshot = suiteSnapshotsFrom(
                         resourceLocOf(PROJECT_ROOT_SNAPSHOT_RESOURCES_LOC, snapshotFileMeta.suiteName()))
                 .flatMap(
@@ -321,34 +321,35 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         final var itemsFromSnapshot = snapshotToMatchAgainst.parsedItems();
         final var minItems = Math.min(postPlaceholderItems.size(), itemsFromSnapshot.size());
         final var snapshotPlaceholderNum = snapshotToMatchAgainst.getPlaceholderNum();
+        final var streamLinedIngestChecks = spec.setup().streamlinedIngestChecks();
         for (int i = 0; i < minItems; i++) {
             final var fromSnapshot = itemsFromSnapshot.get(i);
             final var fromStream = postPlaceholderItems.get(i);
             final var j = i;
-            fuzzyMatch(
-                    fromSnapshot.itemBody(),
-                    snapshotPlaceholderNum,
-                    fromStream.itemBody(),
-                    placeholderAccountNum,
-                    () -> "Item #" + j + " body mismatch (EXPECTED " + fromSnapshot.itemBody() + " ACTUAL "
-                            + fromStream.itemBody() + ")");
-            fuzzyMatch(
-                    fromSnapshot.itemRecord(),
-                    snapshotPlaceholderNum,
-                    fromStream.itemRecord(),
-                    placeholderAccountNum,
-                    () -> "Item #" + j + " record mismatch (EXPECTED " + fromSnapshot.itemRecord() + " ACTUAL "
-                            + fromStream.itemRecord() + ")");
+            if (!streamLinedIngestChecks.contains(
+                    fromStream.itemRecord().getReceipt().getStatus())) {
+                fuzzyMatch(
+                        fromSnapshot.itemBody(),
+                        snapshotPlaceholderNum,
+                        fromStream.itemBody(),
+                        placeholderAccountNum,
+                        () -> "Item #" + j + " body mismatch (EXPECTED " + fromSnapshot.itemBody() + " ACTUAL "
+                                + fromStream.itemBody() + ")");
+                fuzzyMatch(
+                        fromSnapshot.itemRecord(),
+                        snapshotPlaceholderNum,
+                        fromStream.itemRecord(),
+                        placeholderAccountNum,
+                        () -> "Item #" + j + " record mismatch (EXPECTED " + fromSnapshot.itemRecord() + " ACTUAL "
+                                + fromStream.itemRecord() + "FOR BODY " + fromStream.itemBody() + ")");
+            }
         }
         if (postPlaceholderItems.size() != itemsFromSnapshot.size()) {
             // It is possible that some records generated are from ingestion checks, which are not in the snapshot.
             // We need to ignore them in the comparison if the status is in spec.streamlinedIngestChecks
             final var postPlaceholderItemsWithIngestCheckStatus = postPlaceholderItems.stream()
-                    .filter(item -> {
-                        final var streamLinedIngestChecks = spec.setup().streamlinedIngestChecks();
-                        return streamLinedIngestChecks.contains(
-                                item.itemRecord().getReceipt().getStatus());
-                    })
+                    .filter(item -> streamLinedIngestChecks.contains(
+                            item.itemRecord().getReceipt().getStatus()))
                     .collect(toSet());
             if (postPlaceholderItems.size() - postPlaceholderItemsWithIngestCheckStatus.size()
                     != itemsFromSnapshot.size()) {
