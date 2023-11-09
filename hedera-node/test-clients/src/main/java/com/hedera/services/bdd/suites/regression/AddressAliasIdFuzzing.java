@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.*;
 import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.*;
 
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -59,6 +60,7 @@ public class AddressAliasIdFuzzing extends HapiSuite {
         return List.of(addressAliasIdFuzzing(), transferToKeyFuzzing());
     }
 
+    @HapiTest
     private HapiSpec addressAliasIdFuzzing() {
         return propertyPreservingHapiSpec("AddressAliasIdFuzzing")
                 .preserving(
@@ -72,6 +74,7 @@ public class AddressAliasIdFuzzing extends HapiSuite {
                         .backoffSleepSecs(backoffSleepSecs::get));
     }
 
+    @HapiTest
     private HapiSpec transferToKeyFuzzing() {
         return defaultHapiSpec("TransferToKeyFuzzing")
                 .given(cryptoCreate(UNIQUE_PAYER_ACCOUNT)
