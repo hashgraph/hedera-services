@@ -64,6 +64,7 @@ import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.OneOf;
@@ -80,7 +81,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.UnaryOperator;
 
 /**
  * A custom builder for create a {@link SingleTransactionRecord}.
@@ -161,7 +161,7 @@ public class SingleTransactionRecordBuilderImpl
     // stream item is built; this was added to let the contract service externalize certain dispatched
     // CryptoCreate transactions as ContractCreate synthetic transactions
     @Nullable
-    private final UnaryOperator<Transaction> transactionFinisher;
+    private final ExternalizedRecordCustomizer customizer;
 
     /**
      * Possible behavior of a {@link SingleTransactionRecord} when a parent transaction fails,
@@ -212,10 +212,10 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl(
             @NonNull final Instant consensusNow,
             @NonNull final ReversingBehavior reversingBehavior,
-            @Nullable final UnaryOperator<Transaction> transactionFinisher) {
+            @Nullable final ExternalizedRecordCustomizer customizer) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
         this.reversingBehavior = requireNonNull(reversingBehavior, "reversingBehavior must not be null");
-        this.transactionFinisher = transactionFinisher;
+        this.customizer = customizer;
     }
 
     /**
@@ -224,8 +224,8 @@ public class SingleTransactionRecordBuilderImpl
      * @return the transaction record
      */
     public SingleTransactionRecord build() {
-        if (transactionFinisher != null) {
-            transaction = transactionFinisher.apply(transaction);
+        if (customizer != null) {
+            transaction = customizer.apply(transaction);
         }
         final var transactionReceipt = transactionReceiptBuilder
                 .exchangeRate(exchangeRate)
