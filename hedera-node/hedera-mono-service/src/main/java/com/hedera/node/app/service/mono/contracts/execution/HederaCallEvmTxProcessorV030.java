@@ -18,20 +18,17 @@ package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.service.evm.utils.ValidationUtils;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.models.Account;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Map;
-import javax.inject.Inject;
 import javax.inject.Provider;
-import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
@@ -41,13 +38,11 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
-@Singleton
-public class CallEvmTxProcessorV045 extends EvmTxProcessor {
+public class HederaCallEvmTxProcessorV030 extends CallEvmTxProcessor {
     private final CodeCache codeCache;
     private final AliasManager aliasManager;
 
-    @Inject
-    public CallEvmTxProcessorV045(
+    public HederaCallEvmTxProcessorV030(
             final HederaMutableWorldState worldState,
             final LivePricesSource livePricesSource,
             final CodeCache codeCache,
@@ -57,7 +52,16 @@ public class CallEvmTxProcessorV045 extends EvmTxProcessor {
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager,
             final InHandleBlockMetaSource blockMetaSource) {
-        super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+        super(
+                worldState,
+                livePricesSource,
+                codeCache,
+                dynamicProperties,
+                gasCalculator,
+                mcps,
+                ccps,
+                aliasManager,
+                blockMetaSource);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }
@@ -133,10 +137,9 @@ public class CallEvmTxProcessorV045 extends EvmTxProcessor {
          * If there is no bytecode, it means we have a non-token and non-contract account,
          * hence the code should be null and there must be a value transfer.
          */
-        //                validateTrue(code != null, INVALID_CONTRACT_ID);
-        if (!dynamicProperties.allowCallsToNonContractAccounts() && code == null) {
-            throw new HandleException(ResponseCodeEnum.INVALID_CONTRACT_ID);
-        }
+        ValidationUtils.validateTrue(
+                code != null || value > 0,
+                com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION);
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)
