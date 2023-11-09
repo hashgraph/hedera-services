@@ -84,6 +84,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -92,6 +93,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
@@ -250,7 +252,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var ownerWith4AutoAssoc = "ownerWith4AutoAssoc";
         return defaultHapiSpec("OkToRepeatSerialNumbersInWipeList")
                 .given(
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(WIPE_KEY),
                         cryptoCreate(TREASURY),
@@ -287,7 +289,7 @@ public class CryptoTransferSuite extends HapiSuite {
     private HapiSpec okToRepeatSerialNumbersInBurnList() {
         return defaultHapiSpec("okToRepeatSerialNumbersInBurnList")
                 .given(
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(WIPE_KEY),
                         cryptoCreate(TREASURY),
@@ -329,6 +331,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return defaultHapiSpec("canUseAliasAndAccountCombinations")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(collector),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
@@ -374,6 +377,7 @@ public class CryptoTransferSuite extends HapiSuite {
         return defaultHapiSpec(
                         "AliasKeysAreValidated", NONDETERMINISTIC_TRANSACTION_FEES, EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(validAlias).shape(ED25519),
                         withOpContext((spec, opLog) -> {
                             final var registry = spec.registry();
@@ -411,6 +415,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         cryptoCreate(COUNTERPARTY).maxAutomaticTokenAssociations(2),
@@ -614,6 +619,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         EXPECT_STREAMLINED_INGEST_RECORDS,
                         NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(multiKey),
                         uploadInitCode(contract),
                         // why is there transactionFee here ?
@@ -707,6 +713,7 @@ public class CryptoTransferSuite extends HapiSuite {
     private HapiSpec allowanceTransfersWithComplexTransfersWork() {
         return defaultHapiSpec("AllowanceTransfersWithComplexTransfersWork", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(ADMIN_KEY),
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(KYC_KEY),
@@ -831,6 +838,7 @@ public class CryptoTransferSuite extends HapiSuite {
     private HapiSpec allowanceTransfersWorkAsExpected() {
         return defaultHapiSpec("AllowanceTransfersWorkAsExpected", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(ADMIN_KEY),
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(KYC_KEY),
@@ -1069,6 +1077,7 @@ public class CryptoTransferSuite extends HapiSuite {
     private HapiSpec checksExpectedDecimalsForFungibleTokenTransferList() {
         return defaultHapiSpec("checksExpectedDecimalsForFungibleTokenTransferList", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(OWNING_PARTY).maxAutomaticTokenAssociations(123),
@@ -1123,6 +1132,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return defaultHapiSpec("NftTransfersCannotRepeatSerialNos")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(multipurpose),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(aParty).maxAutomaticTokenAssociations(1),
@@ -1163,6 +1173,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return defaultHapiSpec("NftSelfTransfersRejectedBothInPrecheckAndHandle", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(multipurpose),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(owningParty).maxAutomaticTokenAssociations(123),
@@ -1195,6 +1206,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return defaultHapiSpec("HbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(OWNING_PARTY).maxAutomaticTokenAssociations(123),
@@ -1241,7 +1253,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(fractionalCollector).maxAutomaticTokenAssociations(plentyOfSlots),
                         cryptoCreate(selfDenominatedCollector).maxAutomaticTokenAssociations(plentyOfSlots),
@@ -1304,6 +1316,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociation")
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(firstRoyaltyCollector).maxAutomaticTokenAssociations(plentyOfSlots),
                         cryptoCreate(secondRoyaltyCollector).maxAutomaticTokenAssociations(plentyOfSlots),
@@ -1410,6 +1423,7 @@ public class CryptoTransferSuite extends HapiSuite {
         return defaultHapiSpec(
                         "royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(royaltyCollectorNoSlots),
                         cryptoCreate(party).maxAutomaticTokenAssociations(123),
@@ -1462,6 +1476,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return defaultHapiSpec("AutoAssociationRequiresOpenSlots", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate(TREASURY).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(firstUser).balance(ONE_HBAR).maxAutomaticTokenAssociations(1),
                         cryptoCreate(secondUser).balance(ONE_HBAR).maxAutomaticTokenAssociations(2))
@@ -1536,8 +1551,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return defaultHapiSpec("baseCryptoTransferFeeChargedAsExpected")
                 .given(
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS,
-                        // NONDETERMINISTIC_TRANSACTION_FEES),
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate(nonTreasurySender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER),
@@ -1610,7 +1624,7 @@ public class CryptoTransferSuite extends HapiSuite {
     private HapiSpec okToSetInvalidPaymentHeaderForCostAnswer() {
         return defaultHapiSpec("OkToSetInvalidPaymentHeaderForCostAnswer")
                 .given(
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
                                 .via("misc"))
                 .when()
@@ -1624,7 +1638,7 @@ public class CryptoTransferSuite extends HapiSuite {
     private HapiSpec tokenTransferFeesScaleAsExpected() {
         return defaultHapiSpec("TokenTransferFeesScaleAsExpected", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate("a"),
                         cryptoCreate("b"),
                         cryptoCreate("c").balance(0L),
@@ -1766,10 +1780,14 @@ public class CryptoTransferSuite extends HapiSuite {
         AtomicReference<String> invalidAccountId = new AtomicReference<>();
 
         return defaultHapiSpec("TransferToNonAccountEntitiesReturnsInvalidAccountId", EXPECT_STREAMLINED_INGEST_RECORDS)
-                .given(tokenCreate(TOKEN), createTopic("something"), withOpContext((spec, opLog) -> {
-                    var topicId = spec.registry().getTopicID("something");
-                    invalidAccountId.set(asTopicString(topicId));
-                }))
+                .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        tokenCreate(TOKEN),
+                        createTopic("something"),
+                        withOpContext((spec, opLog) -> {
+                            var topicId = spec.registry().getTopicID("something");
+                            invalidAccountId.set(asTopicString(topicId));
+                        }))
                 .when()
                 .then(
                         sourcing(() -> cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, invalidAccountId.get(), 1L))
@@ -1790,7 +1808,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return defaultHapiSpec("ComplexKeyAcctPaysForOwnTransfer", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed("complexKey").shape(enoughUniqueSigs),
                         cryptoCreate(PAYER).key("complexKey").balance(1_000_000_000L))
                 .when()
@@ -1814,7 +1832,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return defaultHapiSpec("TwoComplexKeysRequired", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed("payerKey").shape(payerShape),
                         newKeyNamed("receiverKey").shape(receiverShape),
                         cryptoCreate(PAYER).key("payerKey").balance(100_000_000_000L),
@@ -1833,9 +1851,7 @@ public class CryptoTransferSuite extends HapiSuite {
     @HapiTest
     private HapiSpec specialAccountsBalanceCheck() {
         return defaultHapiSpec("SpecialAccountsBalanceCheck")
-                .given(
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS)
-                        )
+                .given(snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS))
                 .when()
                 .then(IntStream.concat(IntStream.range(1, 101), IntStream.range(900, 1001))
                         .mapToObj(i -> getAccountBalance("0.0." + i).logged())
@@ -1846,7 +1862,7 @@ public class CryptoTransferSuite extends HapiSuite {
     private HapiSpec transferWithMissingAccountGetsInvalidAccountId() {
         return defaultHapiSpec("transferWithMissingAccountGetsInvalidAccountId", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true))
                 .when(cryptoTransfer(tinyBarsFromTo("1.2.3", PAYEE_SIG_REQ, 1_000L))
                         .signedBy(DEFAULT_PAYER, PAYEE_SIG_REQ)
@@ -1860,7 +1876,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
         return defaultHapiSpec("VanillaTransferSucceeds", FULLY_NONDETERMINISTIC)
                 .given(
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate("somebody")
                                 .maxAutomaticTokenAssociations(5001)
                                 .hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
@@ -1897,6 +1913,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var SPENDER_SIGNATURE = "spenderSignature";
         return defaultHapiSpec("hapiTransferFromForNFTWithCustomFeesWithAllowance", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RECEIVER_SIGNATURE),
                         newKeyNamed(SPENDER_SIGNATURE),
@@ -2048,8 +2065,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         "hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance",
                         NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS,
-                        // NONDETERMINISTIC_TRANSACTION_FEES),
+                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         newKeyNamed(RECEIVER_SIGNATURE),
                         newKeyNamed(SPENDER_SIGNATURE),
                         cryptoCreate(TREASURY),
