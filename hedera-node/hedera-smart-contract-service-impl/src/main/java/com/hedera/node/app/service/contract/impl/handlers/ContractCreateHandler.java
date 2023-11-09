@@ -60,7 +60,8 @@ public class ContractCreateHandler implements TransactionHandler {
         // Assemble the appropriate top-level record for the result
         context.recordBuilder(ContractCreateRecordBuilder.class)
                 .contractCreateResult(outcome.result())
-                .contractID(outcome.recipientIdIfCreated());
+                .contractID(outcome.recipientIdIfCreated())
+                .withGasFee(outcome.gasCostInTinybar());
         throwIfUnsuccessful(outcome.status());
     }
 

@@ -25,18 +25,55 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public record CallOutcome(@Nullable ContractFunctionResult result, @NonNull ResponseCodeEnum status) {
+/**
+ * Summarizes the outcome of an EVM message call.
+ *
+ * @param result the result of the call
+ * @param status the resolved status of the call
+ * @param gasPrice the gas price used for the call
+ */
+public record CallOutcome(@NonNull ContractFunctionResult result, @NonNull ResponseCodeEnum status, long gasPrice) {
+
+    public CallOutcome {
+        requireNonNull(result);
+        requireNonNull(status);
+    }
+
+    /**
+     * Returns true if the call was successful.
+     *
+     * @return true if the call was successful
+     */
     public boolean isSuccess() {
         return status == SUCCESS;
     }
 
+    /**
+     * Returns the ID of the contract that was called, or null if no call could be attempted.
+     *
+     * @return the ID of the contract that was called, or null if no call could be attempted
+     */
     public @Nullable ContractID recipientIdIfCalled() {
-        // Even a non-null result could return a null id if the transaction didn't succeed
-        return result == null ? null : result.contractID();
+        return result.contractID();
     }
 
+    /**
+     * Returns the gas cost of the call in tinybar (always zero if the call was aborted before constructing
+     * the initial {@link org.hyperledger.besu.evm.frame.MessageFrame}).
+     *
+     * @return the gas cost of the call in tinybar
+     */
+    public long gasCostInTinybar() {
+        return gasPrice * result.gasUsed();
+    }
+
+    /**
+     * Returns the ID of the contract that was created, or null if no contract was created.
+     *
+     * @return the ID of the contract that was created, or null if no contract was created
+     */
     public @Nullable ContractID recipientIdIfCreated() {
-        return representsTopLevelCreation() ? requireNonNull(result).contractIDOrThrow() : null;
+        return representsTopLevelCreation() ? result.contractIDOrThrow() : null;
     }
 
     private boolean representsTopLevelCreation() {

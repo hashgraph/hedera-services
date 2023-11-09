@@ -27,7 +27,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /**
  * Exposes the record customizations needed for a HAPI contract create transaction.
  */
-public interface ContractCreateRecordBuilder extends SingleTransactionRecordBuilder {
+public interface ContractCreateRecordBuilder extends SingleTransactionRecordBuilder, GasFeeRecordBuilder {
 
     /**
      * Tracks the final status of a top-level contract creation.
