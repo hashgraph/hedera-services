@@ -269,7 +269,11 @@ public final class SignedStateFileWriter {
         }
 
         // The last file might be in the process of being written, so we need to do a deep copy of it.
-        Files.copy(lastFile.getPath(), pcesDestination.resolve(lastFile.getFileName()));
+        try {
+            Files.copy(lastFile.getPath(), pcesDestination.resolve(lastFile.getFileName()));
+        } catch (final IOException e) {
+            logger.error(EXCEPTION.getMarker(), "Exception when copying preconsensus event file", e);
+        }
 
         logger.info(
                 STATE_TO_DISK.getMarker(),
