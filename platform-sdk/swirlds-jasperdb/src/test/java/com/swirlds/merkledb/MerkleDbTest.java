@@ -220,8 +220,7 @@ public class MerkleDbTest {
                 instance.createDataSource(tableName, tableConfig, false);
         Assertions.assertNotNull(dataSource);
         dataSource.close();
-        Assertions.assertThrows(IllegalStateException.class,
-                () -> instance.getDataSource(tableName, false));
+        Assertions.assertThrows(IllegalStateException.class, () -> instance.getDataSource(tableName, false));
     }
 
     @Test
