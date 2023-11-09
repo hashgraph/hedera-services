@@ -16,13 +16,23 @@
 
 package com.hedera.node.app.spi.workflows.record;
 
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.hapi.node.base.Transaction;
 import org.junit.jupiter.api.Test;
 
 class ExternalizedRecordCustomizerTest {
     @Test
     void suppressionIsOffByDefault() {
         assertFalse(ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER.shouldSuppressRecord());
+    }
+
+    @Test
+    void suppressingCustomizerAsExpected() {
+        assertTrue(SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER.shouldSuppressRecord());
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER.apply(Transaction.DEFAULT));
     }
 }

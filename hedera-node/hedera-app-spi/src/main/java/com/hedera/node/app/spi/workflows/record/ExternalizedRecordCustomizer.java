@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.workflows.record;
 
 import com.hedera.hapi.node.base.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.UnaryOperator;
 
 /**
@@ -30,10 +31,27 @@ import java.util.function.UnaryOperator;
  *     to implement an internal contract creation, which should be externalized as an equivalent
  *     {@link com.hedera.hapi.node.contract.ContractCreateTransactionBody}.</li>
  * </ul>
+ *
+ * <b>IMPORTANT:</b> implementations that suppress the record should throw if they nonetheless receive an
+ * {@link ExternalizedRecordCustomizer#apply(Object)} call. (With the current scope of this interface, the
+ * provided {@link #SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER} can simply be used.)
  */
 @FunctionalInterface
 public interface ExternalizedRecordCustomizer extends UnaryOperator<Transaction> {
     ExternalizedRecordCustomizer NOOP_EXTERNALIZED_RECORD_CUSTOMIZER = tx -> tx;
+
+    ExternalizedRecordCustomizer SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER = new ExternalizedRecordCustomizer() {
+        @Override
+        public Transaction apply(@NonNull final Transaction transaction) {
+            throw new UnsupportedOperationException(
+                    "Will not customize a transaction that should have been suppressed");
+        }
+
+        @Override
+        public boolean shouldSuppressRecord() {
+            return true;
+        }
+    };
 
     /**
      * Indicates whether the record of a dispatched transaction should be suppressed.

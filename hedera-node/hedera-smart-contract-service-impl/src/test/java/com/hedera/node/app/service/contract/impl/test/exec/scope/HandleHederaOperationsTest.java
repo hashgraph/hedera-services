@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.HAPI_CREATION_FINISHER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
@@ -26,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -96,12 +94,6 @@ class HandleHederaOperationsTest {
     @BeforeEach
     void setUp() {
         subject = new HandleHederaOperations(DEFAULT_LEDGER_CONFIG, DEFAULT_CONTRACTS_CONFIG, context, tinybarValues);
-    }
-
-    @Test
-    void topLevelCreationCustomizerAsExpected() {
-        assertThrows(UnsupportedOperationException.class, () -> HAPI_CREATION_FINISHER.apply(Transaction.DEFAULT));
-        assertTrue(HAPI_CREATION_FINISHER.shouldSuppressRecord());
     }
 
     @Test
