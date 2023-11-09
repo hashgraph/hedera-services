@@ -426,6 +426,7 @@ public interface StatEntry extends Metric {
          * {@inheritDoc}
          */
         @Override
+        @NonNull
         public StatEntry create(final PlatformMetricsFactory factory) {
             return factory.createStatEntry(this);
         }
