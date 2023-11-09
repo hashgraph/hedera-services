@@ -415,6 +415,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
          * {@inheritDoc}
          */
         @Override
+        @NonNull
         public IntegerPairAccumulator<T> create(final PlatformMetricsFactory factory) {
             return factory.createIntegerPairAccumulator(this);
         }
