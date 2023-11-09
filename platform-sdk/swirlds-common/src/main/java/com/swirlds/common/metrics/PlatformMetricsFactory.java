@@ -16,6 +16,7 @@
 
 package com.swirlds.common.metrics;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**
@@ -97,7 +98,7 @@ public interface PlatformMetricsFactory extends MetricsFactory {
      * @return the new {@code Metric}
      * @param <T> sub-interface of the generated {@code Metric}
      */
-    default <T extends Metric> T createMetric(final MetricConfig<T, ?> config) {
+    default <T extends Metric> T createMetric(@NonNull final MetricConfig<T, ?> config) {
         Objects.requireNonNull(config, "config");
 
         // We use the double-dispatch pattern to create a Metric. This simplifies the API, because it allows us

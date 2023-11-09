@@ -122,7 +122,7 @@ public interface LongAccumulator extends Metric {
          * @throws IllegalArgumentException
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
-        public Config(final String category, final String name) {
+        public Config(@NonNull final String category, @NonNull final String name) {
             super(category, name, "%d");
             this.accumulator = Long::max;
             this.initializer = null;
@@ -149,7 +149,7 @@ public interface LongAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public LongAccumulator.Config withDescription(final String description) {
+        public LongAccumulator.Config withDescription(@NonNull final String description) {
             return new LongAccumulator.Config(
                     getCategory(),
                     getName(),
@@ -165,7 +165,7 @@ public interface LongAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public LongAccumulator.Config withUnit(final String unit) {
+        public LongAccumulator.Config withUnit(@NonNull final String unit) {
             return new LongAccumulator.Config(
                     getCategory(),
                     getName(),
@@ -186,7 +186,8 @@ public interface LongAccumulator extends Metric {
          * @throws IllegalArgumentException
          * 		if {@code format} is {@code null} or consists only of whitespaces
          */
-        public LongAccumulator.Config withFormat(final String format) {
+        @NonNull
+        public LongAccumulator.Config withFormat(@NonNull final String format) {
             return new LongAccumulator.Config(
                     getCategory(),
                     getName(),
@@ -203,6 +204,7 @@ public interface LongAccumulator extends Metric {
          *
          * @return the accumulator
          */
+        @NonNull
         public LongBinaryOperator getAccumulator() {
             return accumulator;
         }
@@ -227,7 +229,8 @@ public interface LongAccumulator extends Metric {
          * 		The {@link LongBinaryOperator} that is used to accumulate the value.
          * @return a new configuration-object with updated {@code initialValue}
          */
-        public LongAccumulator.Config withAccumulator(final LongBinaryOperator accumulator) {
+        @NonNull
+        public LongAccumulator.Config withAccumulator(@NonNull final LongBinaryOperator accumulator) {
             return new LongAccumulator.Config(
                     getCategory(),
                     getName(),
@@ -277,6 +280,7 @@ public interface LongAccumulator extends Metric {
          * 		the initial value
          * @return a reference to {@code this}
          */
+        @NonNull
         public LongAccumulator.Config withInitialValue(final long initialValue) {
             return new LongAccumulator.Config(
                     getCategory(),
@@ -302,7 +306,7 @@ public interface LongAccumulator extends Metric {
          */
         @Override
         @NonNull
-        public LongAccumulator create(final MetricsFactory factory) {
+        public LongAccumulator create(@NonNull final MetricsFactory factory) {
             return factory.createLongAccumulator(this);
         }
 

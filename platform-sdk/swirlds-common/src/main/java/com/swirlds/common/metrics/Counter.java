@@ -19,6 +19,7 @@ package com.swirlds.common.metrics;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.Objects;
 
@@ -104,11 +105,15 @@ public interface Counter extends Metric {
          * @throws IllegalArgumentException
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
-        public Config(final String category, final String name) {
+        public Config(@NonNull final String category, @NonNull final String name) {
             super(category, name, "%d");
         }
 
-        private Config(final String category, final String name, final String description, final String unit) {
+        private Config(
+                @NonNull final String category,
+                @NonNull final String name,
+                @NonNull final String description,
+                @NonNull final String unit) {
             super(category, name, description, unit, "%d");
         }
 
@@ -116,7 +121,7 @@ public interface Counter extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public Counter.Config withDescription(final String description) {
+        public Counter.Config withDescription(@NonNull final String description) {
             return new Counter.Config(getCategory(), getName(), description, getUnit());
         }
 
@@ -124,7 +129,7 @@ public interface Counter extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public Counter.Config withUnit(final String unit) {
+        public Counter.Config withUnit(@NonNull final String unit) {
             return new Counter.Config(getCategory(), getName(), getDescription(), unit);
         }
 
@@ -141,7 +146,7 @@ public interface Counter extends Metric {
          */
         @Override
         @NonNull
-        public Counter create(final MetricsFactory factory) {
+        public Counter create(@NonNull final MetricsFactory factory) {
             return factory.createCounter(this);
         }
 

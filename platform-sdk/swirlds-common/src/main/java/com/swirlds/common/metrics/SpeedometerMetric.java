@@ -23,6 +23,7 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.config.MetricsConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 
 /**
@@ -124,18 +125,18 @@ public interface SpeedometerMetric extends Metric {
          * @throws IllegalArgumentException
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
-        public Config(final String category, final String name) {
+        public Config(@NonNull final String category, @NonNull final String name) {
             super(category, name, FloatFormats.FORMAT_11_3);
             this.halfLife = -1;
             this.useDefaultHalfLife = true;
         }
 
         private Config(
-                final String category,
-                final String name,
-                final String description,
-                final String unit,
-                final String format,
+                @NonNull final String category,
+                @NonNull final String name,
+                @NonNull final String description,
+                @NonNull final String unit,
+                @NonNull final String format,
                 final double halfLife,
                 final boolean useDefaultHalfLife) {
             super(category, name, description, unit, format);
@@ -147,7 +148,7 @@ public interface SpeedometerMetric extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public SpeedometerMetric.Config withDescription(final String description) {
+        public SpeedometerMetric.Config withDescription(@NonNull final String description) {
             return new SpeedometerMetric.Config(
                     getCategory(),
                     getName(),
@@ -162,7 +163,7 @@ public interface SpeedometerMetric extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public SpeedometerMetric.Config withUnit(final String unit) {
+        public SpeedometerMetric.Config withUnit(@NonNull final String unit) {
             return new SpeedometerMetric.Config(
                     getCategory(),
                     getName(),
@@ -182,7 +183,8 @@ public interface SpeedometerMetric extends Metric {
          * @throws IllegalArgumentException
          * 		if {@code format} is {@code null} or consists only of whitespaces
          */
-        public SpeedometerMetric.Config withFormat(final String format) {
+        @NonNull
+        public SpeedometerMetric.Config withFormat(@NonNull final String format) {
             return new SpeedometerMetric.Config(
                     getCategory(),
                     getName(),
@@ -218,6 +220,7 @@ public interface SpeedometerMetric extends Metric {
          * 		the {@code halfLife}
          * @return a reference to {@code this}
          */
+        @NonNull
         public SpeedometerMetric.Config withHalfLife(final double halfLife) {
             return new SpeedometerMetric.Config(
                     getCategory(), getName(), getDescription(), getUnit(), getFormat(), halfLife, false);
@@ -236,7 +239,7 @@ public interface SpeedometerMetric extends Metric {
          */
         @Override
         @NonNull
-        public SpeedometerMetric create(final PlatformMetricsFactory factory) {
+        public SpeedometerMetric create(@NonNull final PlatformMetricsFactory factory) {
             return factory.createSpeedometerMetric(this);
         }
 

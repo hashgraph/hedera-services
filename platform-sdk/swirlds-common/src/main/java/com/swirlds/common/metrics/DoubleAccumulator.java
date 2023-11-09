@@ -65,7 +65,7 @@ public interface DoubleAccumulator extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default Double get(final ValueType valueType) {
+    default Double get(@NonNull final ValueType valueType) {
         Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
@@ -122,7 +122,7 @@ public interface DoubleAccumulator extends Metric {
          * @throws IllegalArgumentException
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
-        public Config(final String category, final String name) {
+        public Config(@NonNull final String category, @NonNull final String name) {
             super(category, name, FORMAT_11_3);
             this.accumulator = Double::max;
             this.initializer = null;
@@ -149,7 +149,7 @@ public interface DoubleAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public DoubleAccumulator.Config withDescription(final String description) {
+        public DoubleAccumulator.Config withDescription(@NonNull final String description) {
             return new DoubleAccumulator.Config(
                     getCategory(),
                     getName(),
@@ -165,7 +165,7 @@ public interface DoubleAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public DoubleAccumulator.Config withUnit(final String unit) {
+        public DoubleAccumulator.Config withUnit(@NonNull final String unit) {
             return new DoubleAccumulator.Config(
                     getCategory(),
                     getName(),
@@ -186,7 +186,7 @@ public interface DoubleAccumulator extends Metric {
          * @throws IllegalArgumentException
          * 		if {@code format} is {@code null} or consists only of whitespaces
          */
-        public DoubleAccumulator.Config withFormat(final String format) {
+        public DoubleAccumulator.Config withFormat(@NonNull final String format) {
             return new DoubleAccumulator.Config(
                     getCategory(),
                     getName(),
@@ -203,6 +203,7 @@ public interface DoubleAccumulator extends Metric {
          *
          * @return the accumulator
          */
+        @NonNull
         public DoubleBinaryOperator getAccumulator() {
             return accumulator;
         }
@@ -227,7 +228,8 @@ public interface DoubleAccumulator extends Metric {
          * 		The {@link DoubleBinaryOperator} that is used to accumulate the value.
          * @return a new configuration-object with updated {@code initialValue}
          */
-        public DoubleAccumulator.Config withAccumulator(final DoubleBinaryOperator accumulator) {
+        @NonNull
+        public DoubleAccumulator.Config withAccumulator(@NonNull final DoubleBinaryOperator accumulator) {
             return new DoubleAccumulator.Config(
                     getCategory(),
                     getName(),
@@ -255,6 +257,7 @@ public interface DoubleAccumulator extends Metric {
          * 		the initial value
          * @return a new configuration-object with updated {@code initialValue}
          */
+        @NonNull
         public DoubleAccumulator.Config withInitialValue(final double initialValue) {
             return new DoubleAccumulator.Config(
                     getCategory(),
@@ -302,7 +305,7 @@ public interface DoubleAccumulator extends Metric {
          */
         @Override
         @NonNull
-        public DoubleAccumulator create(final MetricsFactory factory) {
+        public DoubleAccumulator create(@NonNull final MetricsFactory factory) {
             return factory.createDoubleAccumulator(this);
         }
 

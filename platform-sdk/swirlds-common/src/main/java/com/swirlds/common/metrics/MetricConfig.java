@@ -18,6 +18,7 @@ package com.swirlds.common.metrics;
 
 import com.swirlds.base.ArgumentUtils;
 import com.swirlds.base.utility.ToStringBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**

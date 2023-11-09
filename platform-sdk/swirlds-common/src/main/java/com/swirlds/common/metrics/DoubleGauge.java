@@ -19,6 +19,7 @@ package com.swirlds.common.metrics;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.utility.ToStringBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.Objects;
 
@@ -58,7 +59,7 @@ public interface DoubleGauge extends Metric {
      * {@inheritDoc}
      */
     @Override
-    default Double get(final ValueType valueType) {
+    default Double get(@NonNull final ValueType valueType) {
         Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
@@ -104,17 +105,17 @@ public interface DoubleGauge extends Metric {
          * @throws IllegalArgumentException
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
-        public Config(final String category, final String name) {
+        public Config(@NonNull final String category, @NonNull final String name) {
             super(category, name, FloatFormats.FORMAT_11_3);
             this.initialValue = 0.0;
         }
 
         private Config(
-                final String category,
-                final String name,
-                final String description,
-                final String unit,
-                final String format,
+                @NonNull final String category,
+                @NonNull final String name,
+                @NonNull final String description,
+                @NonNull final String unit,
+                @NonNull final String format,
                 final double initialValue) {
 
             super(category, name, description, unit, format);
@@ -125,7 +126,7 @@ public interface DoubleGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public DoubleGauge.Config withDescription(final String description) {
+        public DoubleGauge.Config withDescription(@NonNull final String description) {
             return new DoubleGauge.Config(
                     getCategory(), getName(), description, getUnit(), getFormat(), getInitialValue());
         }
@@ -134,7 +135,7 @@ public interface DoubleGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
-        public DoubleGauge.Config withUnit(final String unit) {
+        public DoubleGauge.Config withUnit(@NonNull final String unit) {
             return new DoubleGauge.Config(
                     getCategory(), getName(), getDescription(), unit, getFormat(), getInitialValue());
         }
@@ -148,7 +149,8 @@ public interface DoubleGauge extends Metric {
          * @throws IllegalArgumentException
          * 		if {@code format} is {@code null} or consists only of whitespaces
          */
-        public DoubleGauge.Config withFormat(final String format) {
+        @NonNull
+        public DoubleGauge.Config withFormat(@NonNull final String format) {
             return new DoubleGauge.Config(
                     getCategory(), getName(), getDescription(), getUnit(), format, getInitialValue());
         }
@@ -169,6 +171,7 @@ public interface DoubleGauge extends Metric {
          * 		the initial value
          * @return a new configuration-object with updated {@code initialValue}
          */
+        @NonNull
         public DoubleGauge.Config withInitialValue(final double initialValue) {
             return new DoubleGauge.Config(
                     getCategory(), getName(), getDescription(), getUnit(), getFormat(), initialValue);
