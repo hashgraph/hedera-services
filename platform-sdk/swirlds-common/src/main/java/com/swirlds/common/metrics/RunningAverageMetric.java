@@ -227,6 +227,7 @@ public interface RunningAverageMetric extends Metric {
          * {@inheritDoc}
          */
         @Override
+        @NonNull
         public RunningAverageMetric create(final PlatformMetricsFactory factory) {
             return factory.createRunningAverageMetric(this);
         }
