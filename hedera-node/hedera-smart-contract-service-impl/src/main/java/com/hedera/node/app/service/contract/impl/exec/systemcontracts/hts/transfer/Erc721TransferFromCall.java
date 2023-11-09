@@ -39,7 +39,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Implements the ERC-721 {@code transferFrom()} call of the HTS contract.
@@ -80,7 +79,7 @@ public class Erc721TransferFromCall extends AbstractHtsCall {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull PricedResult execute(final MessageFrame frame) {
+    public @NonNull PricedResult execute() {
         // https://eips.ethereum.org/EIPS/eip-721
         if (tokenId == null) {
             return reversionWith(INVALID_TOKEN_ID, gasCalculator.canonicalGasRequirement(DispatchType.TRANSFER_NFT));

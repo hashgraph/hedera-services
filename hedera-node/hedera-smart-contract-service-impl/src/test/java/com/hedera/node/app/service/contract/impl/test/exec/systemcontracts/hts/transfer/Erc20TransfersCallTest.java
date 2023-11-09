@@ -79,7 +79,7 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
                 SENDER_ID,
                 addressIdConverter);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(Bytes.wrap(INVALID_TOKEN_ID.protoName().getBytes()), result.getOutput());
@@ -98,7 +98,7 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
 
         subject = subjectForTransfer(1L);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(asBytesResult(ERC_20_TRANSFER.getOutputs().encodeElements(true)), result.getOutput());
@@ -117,7 +117,7 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
 
         subject = subjectForTransferFrom(1L);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(asBytesResult(ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true)), result.getOutput());
@@ -136,7 +136,7 @@ class Erc20TransfersCallTest extends HtsCallTestBase {
 
         subject = subjectForTransfer(1L);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(Bytes.wrap(INSUFFICIENT_ACCOUNT_BALANCE.protoName().getBytes()), result.getOutput());

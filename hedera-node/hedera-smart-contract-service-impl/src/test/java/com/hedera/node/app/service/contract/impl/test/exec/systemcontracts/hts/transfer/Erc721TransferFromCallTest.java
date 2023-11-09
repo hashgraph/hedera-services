@@ -71,7 +71,7 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
 
         subject = subjectFor(1L);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(Bytes.EMPTY, result.getOutput());
@@ -90,7 +90,7 @@ class Erc721TransferFromCallTest extends HtsCallTestBase {
 
         subject = subjectFor(1L);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(Bytes.wrap(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO.protoName().getBytes()), result.getOutput());

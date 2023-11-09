@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setap
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbiConstants.APPROVAL_FOR_ALL_EVENT;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.setapproval.SetApprovalForAllTranslator.SET_APPROVAL_FOR_ALL;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
@@ -30,8 +31,7 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
-import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
@@ -66,8 +66,9 @@ public class SetApprovalForAllCall extends AbstractHtsCall {
         this.approved = call.get(2);
     }
 
+    @NonNull
     @Override
-    public @NonNull PricedResult execute(final MessageFrame frame) {
+    public PricedResult execute() {
         final var recordBuilder = systemContractOperations()
                 .dispatch(transactionBody, verificationStrategy, sender, SingleTransactionRecordBuilder.class);
 
@@ -85,16 +86,25 @@ public class SetApprovalForAllCall extends AbstractHtsCall {
             }
             return reversionWith(status, gasRequirement);
         } else {
-            frame.addLog(getLogForSetApprovalForAll(token));
-
             return completionWith(status, gasRequirement);
         }
     }
 
+    @Override
+    public @NonNull PricedResult execute(final MessageFrame frame) {
+        final var result = execute();
+
+        if (result.fullResult().result().getState().equals(MessageFrame.State.COMPLETED_SUCCESS)) {
+            frame.addLog(getLogForSetApprovalForAll(token));
+        }
+
+        return result;
+    }
+
     private Log getLogForSetApprovalForAll(final Address logger) {
-        return EncodingFacade.LogBuilder.logBuilder()
+        return LogBuilder.logBuilder()
                 .forLogger(logger)
-                .forEventSignature(AbiConstants.APPROVAL_FOR_ALL_EVENT)
+                .forEventSignature(APPROVAL_FOR_ALL_EVENT)
                 .forIndexedArgument(asLongZeroAddress(sender.accountNum()))
                 .forIndexedArgument(spender)
                 .forDataItem(approved)

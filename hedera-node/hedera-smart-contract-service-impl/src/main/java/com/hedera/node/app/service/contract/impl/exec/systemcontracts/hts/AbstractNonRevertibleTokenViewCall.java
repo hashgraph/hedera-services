@@ -32,7 +32,6 @@ import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Implementation support for view calls that require an extant token.
@@ -51,7 +50,7 @@ public abstract class AbstractNonRevertibleTokenViewCall extends AbstractHtsCall
     }
 
     @Override
-    public @NonNull PricedResult execute(final MessageFrame frame) {
+    public @NonNull PricedResult execute() {
         PricedResult result;
         if (token == null) {
             result = gasOnly(viewCallResultWith(INVALID_TOKEN_ID, gasCalculator.viewGasRequirement()));

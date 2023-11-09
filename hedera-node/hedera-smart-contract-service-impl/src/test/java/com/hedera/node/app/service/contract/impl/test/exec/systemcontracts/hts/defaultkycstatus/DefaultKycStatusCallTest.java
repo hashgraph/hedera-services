@@ -37,7 +37,7 @@ class DefaultKycStatusCallTest extends HtsCallTestBase {
     void returnsDefaultKycStatusForPresentToken() {
         final var subject = new DefaultKycStatusCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_TOKEN);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -52,7 +52,7 @@ class DefaultKycStatusCallTest extends HtsCallTestBase {
     void returnsDefaultKycStatusForMissingToken() {
         final var subject = new DefaultKycStatusCall(gasCalculator, mockEnhancement(), false, null);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -67,7 +67,7 @@ class DefaultKycStatusCallTest extends HtsCallTestBase {
     void returnsDefaultKycStatusForMissingTokenStaticCall() {
         final var subject = new DefaultKycStatusCall(gasCalculator, mockEnhancement(), true, null);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());

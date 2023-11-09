@@ -35,7 +35,6 @@ import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class ClassicCreatesCall extends AbstractHtsCall {
     /**
@@ -65,7 +64,7 @@ public class ClassicCreatesCall extends AbstractHtsCall {
     }
 
     @Override
-    public @NonNull PricedResult execute(final MessageFrame frame) {
+    public @NonNull PricedResult execute() {
         final var spenderId = addressIdConverter.convert(asHeadlongAddress(spender.toArrayUnsafe()));
         final var recordBuilder = systemContractOperations()
                 .dispatch(syntheticCreate, verificationStrategy, spenderId, CryptoCreateRecordBuilder.class);

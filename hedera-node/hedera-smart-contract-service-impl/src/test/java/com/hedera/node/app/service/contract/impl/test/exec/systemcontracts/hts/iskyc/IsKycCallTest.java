@@ -49,7 +49,7 @@ class IsKycCallTest extends HtsCallTestBase {
                 .when(() -> ConversionUtils.accountNumberForEvmReference(any(), any()))
                 .thenReturn(1L);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
         conversionUtilsMockStatic.close();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
@@ -71,7 +71,7 @@ class IsKycCallTest extends HtsCallTestBase {
                 .when(() -> ConversionUtils.accountNumberForEvmReference(any(), any()))
                 .thenReturn(1L);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
         conversionUtilsMockStatic.close();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
@@ -93,7 +93,7 @@ class IsKycCallTest extends HtsCallTestBase {
                 .when(() -> ConversionUtils.accountNumberForEvmReference(any(), any()))
                 .thenReturn(-1L);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
         conversionUtilsMockStatic.close();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
@@ -115,7 +115,7 @@ class IsKycCallTest extends HtsCallTestBase {
                 .when(() -> ConversionUtils.accountNumberForEvmReference(any(), any()))
                 .thenReturn(1L);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
         conversionUtilsMockStatic.close();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
@@ -132,7 +132,7 @@ class IsKycCallTest extends HtsCallTestBase {
                 .when(() -> ConversionUtils.accountNumberForEvmReference(any(), any()))
                 .thenReturn(-1L);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
         conversionUtilsMockStatic.close();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());

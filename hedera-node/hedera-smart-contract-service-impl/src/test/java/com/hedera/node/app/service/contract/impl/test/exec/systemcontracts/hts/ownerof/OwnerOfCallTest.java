@@ -47,7 +47,7 @@ class OwnerOfCallTest extends HtsCallTestBase {
     void revertsWithMissingToken() {
         subject = new OwnerOfCall(gasCalculator, mockEnhancement(), null, NFT_SERIAL_NO);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_TOKEN_ID), result.getOutput());
@@ -57,7 +57,7 @@ class OwnerOfCallTest extends HtsCallTestBase {
     void revertsWithMissingNft() {
         subject = new OwnerOfCall(gasCalculator, mockEnhancement(), NON_FUNGIBLE_TOKEN, NFT_SERIAL_NO);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_NFT_ID), result.getOutput());
@@ -69,7 +69,7 @@ class OwnerOfCallTest extends HtsCallTestBase {
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), NFT_SERIAL_NO))
                 .willReturn(CIVILIAN_OWNED_NFT);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_ACCOUNT_ID), result.getOutput());
@@ -83,7 +83,7 @@ class OwnerOfCallTest extends HtsCallTestBase {
         final long ownerNum = CIVILIAN_OWNED_NFT.ownerIdOrThrow().accountNumOrThrow();
         given(nativeOperations.getAccount(ownerNum)).willReturn(TestHelpers.SOMEBODY);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(
@@ -102,7 +102,7 @@ class OwnerOfCallTest extends HtsCallTestBase {
         final long ownerNum = NON_FUNGIBLE_TOKEN.treasuryAccountIdOrThrow().accountNumOrThrow();
         given(nativeOperations.getAccount(ownerNum)).willReturn(TestHelpers.ALIASED_SOMEBODY);
 
-        final var result = subject.execute(frame).fullResult().result();
+        final var result = subject.execute().fullResult().result();
 
         assertEquals(MessageFrame.State.COMPLETED_SUCCESS, result.getState());
         assertEquals(

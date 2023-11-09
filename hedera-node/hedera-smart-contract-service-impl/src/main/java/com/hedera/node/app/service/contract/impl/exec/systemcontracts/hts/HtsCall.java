@@ -49,5 +49,10 @@ public interface HtsCall {
      * @return the result, the gas requirement, and any non-gas cost
      */
     @NonNull
-    PricedResult execute(final MessageFrame frame);
+    PricedResult execute();
+
+    @NonNull
+    default PricedResult execute(MessageFrame frame) {
+        return execute();
+    }
 }
