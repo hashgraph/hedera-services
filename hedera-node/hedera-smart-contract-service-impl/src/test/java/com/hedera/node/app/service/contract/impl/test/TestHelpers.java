@@ -143,6 +143,13 @@ public class TestHelpers {
     public static final Key AN_ED25519_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
             .build();
+    public static final Key ANOTHER_ED25519_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0202020202020202020202020202020202020202020202020202020202020202"))
+            .build();
+
+    public static final Key YET_ANOTHER_ED25519_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("3232323232323232323232323232323232323232323232323232323232323232"))
+            .build();
     public static final long REQUIRED_GAS = 123L;
     public static final long NONCE = 678;
     public static final long VALUE = 999_999;
