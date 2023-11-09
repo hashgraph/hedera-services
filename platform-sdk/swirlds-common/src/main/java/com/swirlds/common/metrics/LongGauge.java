@@ -183,6 +183,7 @@ public interface LongGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
+        @NonNull
         public LongGauge create(final MetricsFactory factory) {
             return factory.createLongGauge(this);
         }
