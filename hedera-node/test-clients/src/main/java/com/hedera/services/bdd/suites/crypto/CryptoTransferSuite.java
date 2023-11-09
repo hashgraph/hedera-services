@@ -89,8 +89,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.IGNORE_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
@@ -366,12 +366,13 @@ public class CryptoTransferSuite extends HapiSuite {
                 .then(getTxnRecord(NFT_XFER).logged());
     }
 
-    @HapiTest // here body is different
+    @HapiTest
     private HapiSpec aliasKeysAreValidated() {
         final var validAlias = "validAlias";
         final var invalidAlias = "invalidAlias";
 
-        return defaultHapiSpec("AliasKeysAreValidated")
+        return defaultHapiSpec(
+                        "AliasKeysAreValidated", NONDETERMINISTIC_TRANSACTION_FEES, EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         newKeyNamed(validAlias).shape(ED25519),
                         withOpContext((spec, opLog) -> {
@@ -396,7 +397,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2875
-    @HapiTest
+    @HapiTest // here
     private HapiSpec canUseMirrorAliasesForNonContractXfers() {
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
@@ -405,7 +406,10 @@ public class CryptoTransferSuite extends HapiSuite {
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
 
-        return defaultHapiSpec("CanUseMirrorAliasesForNonContractXfers")
+        return defaultHapiSpec(
+                        "CanUseMirrorAliasesForNonContractXfers",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
@@ -605,7 +609,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var contract = "PayableConstructor";
         final var multiKey = "swiss";
 
-        return defaultHapiSpec("CannotTransferFromImmutableAccounts")
+        return defaultHapiSpec("CannotTransferFromImmutableAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         newKeyNamed(multiKey),
                         uploadInitCode(contract),
@@ -698,7 +702,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
     @HapiTest // fees differ 44071858 vs 44071845
     private HapiSpec allowanceTransfersWithComplexTransfersWork() {
-        return defaultHapiSpec("AllowanceTransfersWithComplexTransfersWork")
+        return defaultHapiSpec("AllowanceTransfersWithComplexTransfersWork", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         newKeyNamed(FREEZE_KEY),
@@ -820,12 +824,9 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .has(accountWith().balance(ONE_HBAR)));
     }
 
-    @HapiTest // here body mismatch
+    @HapiTest
     private HapiSpec allowanceTransfersWorkAsExpected() {
-        return defaultHapiSpec(
-                        "AllowanceTransfersWorkAsExpected",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        IGNORE_STREAMLINED_INGEST_RECORDS)
+        return defaultHapiSpec("AllowanceTransfersWorkAsExpected", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         newKeyNamed(FREEZE_KEY),
@@ -1232,7 +1233,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var selfDenominatedCollector = "selfDenominatedCollector";
         final var plentyOfSlots = 10;
 
-        return defaultHapiSpec("dissociatedRoyaltyCollectorsCanUseAutoAssociation")
+        return defaultHapiSpec("dissociatedRoyaltyCollectorsCanUseAutoAssociation", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1282,7 +1283,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                                         .balance(5)))));
     }
 
-    @HapiTest // here sorted differently automatic_token_associations
+    @HapiTest
     private HapiSpec royaltyCollectorsCanUseAutoAssociation() {
         final var uniqueWithRoyalty = "uniqueWithRoyalty";
         final var firstFungible = "firstFungible";
@@ -1400,7 +1401,8 @@ public class CryptoTransferSuite extends HapiSuite {
         final var multipurpose = MULTI_KEY;
         final var hodlXfer = HODL_XFER;
 
-        return defaultHapiSpec("royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots")
+        return defaultHapiSpec(
+                        "royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(royaltyCollectorNoSlots),
@@ -1452,7 +1454,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final String transferToFU = "transferToFU";
         final String transferToSU = "transferToSU";
 
-        return defaultHapiSpec("AutoAssociationRequiresOpenSlots")
+        return defaultHapiSpec("AutoAssociationRequiresOpenSlots", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         cryptoCreate(TREASURY).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(firstUser).balance(ONE_HBAR).maxAutomaticTokenAssociations(1),
@@ -1757,7 +1759,7 @@ public class CryptoTransferSuite extends HapiSuite {
     private HapiSpec transferToNonAccountEntitiesReturnsInvalidAccountId() {
         AtomicReference<String> invalidAccountId = new AtomicReference<>();
 
-        return defaultHapiSpec("TransferToNonAccountEntitiesReturnsInvalidAccountId")
+        return defaultHapiSpec("TransferToNonAccountEntitiesReturnsInvalidAccountId", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(tokenCreate(TOKEN), createTopic("something"), withOpContext((spec, opLog) -> {
                     var topicId = spec.registry().getTopicID("something");
                     invalidAccountId.set(asTopicString(topicId));
@@ -1836,7 +1838,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
     @HapiTest
     private HapiSpec transferWithMissingAccountGetsInvalidAccountId() {
-        return defaultHapiSpec("transferWithMissingAccountGetsInvalidAccountId")
+        return defaultHapiSpec("transferWithMissingAccountGetsInvalidAccountId", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         //                        snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS),
                         cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true))

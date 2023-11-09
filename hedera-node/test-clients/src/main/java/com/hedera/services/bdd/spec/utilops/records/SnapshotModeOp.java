@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACC
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
@@ -169,7 +170,9 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
         }
         final var snapshot = maybeSnapshot.get();
         final var items = snapshot.parsedItems();
+        System.out.println("Snapshot has " + items.size() + " items");
         final var dumpLoc = Files.newBufferedWriter(Paths.get(snapshotFileMeta + ".txt"));
+        System.out.println("Dumping snapshot to " + Paths.get(snapshotFileMeta + ".txt"));
         for (int i = 0, n = items.size(); i < n; i++) {
             final var item = items.get(i);
             dumpLoc.write("--- Item #" + i + " ---\n");
@@ -177,6 +180,7 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             dumpLoc.write("➡️\n\n");
             dumpLoc.write(item.itemRecord() + "\n\n");
         }
+        dumpLoc.flush();
     }
 
     /**
@@ -281,6 +285,13 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
                     // We cannot ever expect to match node stake update export sequencing
                     continue;
                 }
+                if (spec.setup()
+                                .streamlinedIngestChecks()
+                                .contains(parsedItem.itemRecord().getReceipt().getStatus())
+                        && !matchModes.contains(EXPECT_STREAMLINED_INGEST_RECORDS)) {
+                    // We cannot ever expect to match streamlined ingest check export sequencing
+                    continue;
+                }
                 if (!placeholderFound) {
                     if (body.getMemo().equals(placeholderMemo)) {
                         final var streamPlaceholderNum = parsedItem
@@ -326,38 +337,25 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
             final var fromSnapshot = itemsFromSnapshot.get(i);
             final var fromStream = postPlaceholderItems.get(i);
             final var j = i;
-            if (!streamLinedIngestChecks.contains(
-                    fromStream.itemRecord().getReceipt().getStatus())) {
-                fuzzyMatch(
-                        fromSnapshot.itemBody(),
-                        snapshotPlaceholderNum,
-                        fromStream.itemBody(),
-                        placeholderAccountNum,
-                        () -> "Item #" + j + " body mismatch (EXPECTED " + fromSnapshot.itemBody() + " ACTUAL "
-                                + fromStream.itemBody() + ")");
-                fuzzyMatch(
-                        fromSnapshot.itemRecord(),
-                        snapshotPlaceholderNum,
-                        fromStream.itemRecord(),
-                        placeholderAccountNum,
-                        () -> "Item #" + j + " record mismatch (EXPECTED " + fromSnapshot.itemRecord() + " ACTUAL "
-                                + fromStream.itemRecord() + "FOR BODY " + fromStream.itemBody() + ")");
-            }
+            fuzzyMatch(
+                    fromSnapshot.itemBody(),
+                    snapshotPlaceholderNum,
+                    fromStream.itemBody(),
+                    placeholderAccountNum,
+                    () -> "Item #" + j + " body mismatch (EXPECTED " + fromSnapshot.itemBody() + " ACTUAL "
+                            + fromStream.itemBody() + ")");
+            fuzzyMatch(
+                    fromSnapshot.itemRecord(),
+                    snapshotPlaceholderNum,
+                    fromStream.itemRecord(),
+                    placeholderAccountNum,
+                    () -> "Item #" + j + " record mismatch (EXPECTED " + fromSnapshot.itemRecord() + " ACTUAL "
+                            + fromStream.itemRecord() + "FOR BODY " + fromStream.itemBody() + ")");
         }
         if (postPlaceholderItems.size() != itemsFromSnapshot.size()) {
-            // It is possible that some records generated are from ingestion checks, which are not in the snapshot.
-            // We need to ignore them in the comparison if the status is in spec.streamlinedIngestChecks
-            final var postPlaceholderItemsWithIngestCheckStatus = postPlaceholderItems.stream()
-                    .filter(item -> streamLinedIngestChecks.contains(
-                            item.itemRecord().getReceipt().getStatus()))
-                    .collect(toSet());
-            if (postPlaceholderItems.size() - postPlaceholderItemsWithIngestCheckStatus.size()
-                    != itemsFromSnapshot.size()) {
-                Assertions.fail("Instead of " + itemsFromSnapshot.size() + " items, "
-                        + (postPlaceholderItems.size() - postPlaceholderItemsWithIngestCheckStatus.size())
-                        + " were generated, excluding " + postPlaceholderItemsWithIngestCheckStatus.size()
-                        + " items with status in spec.streamlinedIngestChecks");
-            }
+            Assertions.fail("Instead of " + itemsFromSnapshot.size() + " items, "
+                    + (postPlaceholderItems.size())
+                    + " were generated");
         }
     }
 

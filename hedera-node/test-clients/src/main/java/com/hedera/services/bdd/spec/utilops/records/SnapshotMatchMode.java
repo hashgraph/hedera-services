@@ -44,5 +44,5 @@ public enum SnapshotMatchMode {
      * But in modular service we produce a record. This will not cause any issue for differential testing, because we test
      * transactions that have reached consensus. Use this snapshot mode to ignore the extra produced records during fuzzy matching.
      */
-    IGNORE_STREAMLINED_INGEST_RECORDS,
+    EXPECT_STREAMLINED_INGEST_RECORDS,
 }

@@ -458,6 +458,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                                     .nanos(consensusNow().getNano())))
                     .build();
         }
+        if (authorizer.hasWaivedFees(syntheticPayerId, functionality, bodyToDispatch)) {
+            return Fees.FREE;
+        }
         return dispatcher.dispatchComputeFees(
                 new ChildFeeContextImpl(feeManager, this, bodyToDispatch, syntheticPayerId));
     }

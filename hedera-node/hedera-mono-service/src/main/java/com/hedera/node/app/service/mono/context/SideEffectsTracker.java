@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -303,7 +304,12 @@ public class SideEffectsTracker {
      * @return the created auto-associations
      */
     public List<FcTokenAssociation> getTrackedAutoAssociations() {
-        return autoAssociations.isEmpty() ? Collections.emptyList() : new ArrayList<>(autoAssociations);
+        final var newAssociations = new ArrayList<>(autoAssociations);
+        if (!autoAssociations.isEmpty()) {
+            newAssociations.sort(
+                    Comparator.comparingLong(FcTokenAssociation::token).thenComparingLong(FcTokenAssociation::account));
+        }
+        return newAssociations;
     }
 
     /**

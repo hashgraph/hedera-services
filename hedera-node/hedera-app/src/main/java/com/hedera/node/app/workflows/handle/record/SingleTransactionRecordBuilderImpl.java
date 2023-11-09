@@ -79,6 +79,8 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -253,7 +255,10 @@ public class SingleTransactionRecordBuilderImpl
         final Timestamp consensusTimestamp = HapiUtils.asTimestamp(consensusNow);
         final Timestamp parentConsensusTimestamp =
                 parentConsensus != null ? HapiUtils.asTimestamp(parentConsensus) : null;
-
+        Collections.sort(
+                automaticTokenAssociations,
+                Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
+                        .thenComparingLong(a -> a.accountIdOrThrow().accountNum()));
         final var transactionRecord = transactionRecordBuilder
                 .transactionID(transactionID)
                 .receipt(transactionReceipt)
