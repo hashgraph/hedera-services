@@ -395,9 +395,8 @@ public class CreateDecoder {
             @NonNull final AddressIdConverter addressIdConverter) {
         final long initSupply = 0L;
         final int decimals = 0;
-        final var tokenCreateWrapper = getTokenCreateWrapper(
+        return getTokenCreateWrapper(
                 tokenCreateStruct, false, initSupply, decimals, senderId, nativeOperations, addressIdConverter);
-        return tokenCreateWrapper;
     }
 
     private static TokenCreateWrapper getTokenCreateWrapperNonFungibleWithCustomFees(
