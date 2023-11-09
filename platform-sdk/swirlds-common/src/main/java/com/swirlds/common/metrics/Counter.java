@@ -140,6 +140,7 @@ public interface Counter extends Metric {
          * {@inheritDoc}
          */
         @Override
+        @NonNull
         public Counter create(final MetricsFactory factory) {
             return factory.createCounter(this);
         }
